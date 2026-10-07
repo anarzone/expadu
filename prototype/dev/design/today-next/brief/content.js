@@ -356,19 +356,18 @@
             emptyLabel: 'No plans added for today',
         };
     }
+    // A stop on the sample day shows its departures at the day's clock, like
+    // Travel's timetable; other stops show their capture.
     function board(timetable, id) {
         const stop = timetable.stops.find((item) => item.id === id);
         if (!stop) return null;
-        const { rows, total } = timetable.departures(
-            id,
-            stop.capture.date,
-            stop.capture.time,
-            3,
-        );
+        const now = stop.sampleDay || stop.capture;
+        const { rows, total } = timetable.departures(id, now.date, now.time, 3);
         return {
             stop,
-            date: stop.capture.date,
-            time: stop.capture.time,
+            date: now.date,
+            time: now.time,
+            sample: !!stop.sampleDay,
             rows,
             total,
         };

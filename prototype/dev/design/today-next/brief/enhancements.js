@@ -13,7 +13,7 @@
             }
             function boardRows() {
                 const board = C.board(T, stopId);
-                return `<p class="board-capture">Captured ${E(shortDate(board.date))} · ${board.time}<span>Not live</span></p>
+                return `<p class="board-capture">${board.sample ? 'Sample day' : `Captured ${E(shortDate(board.date))}`} · ${board.time}<span>Not live</span></p>
                     <div class="departure-rows">${board.rows
                         .map(
                             (row) => `<details class="departure-row">
@@ -185,7 +185,7 @@
                 main.querySelector('#departure-board-rows').innerHTML =
                     boardRows();
                 main.querySelector('#stop-feedback').textContent =
-                    `Showing three captured departures from ${C.board(T, stopId).stop.name}.`;
+                    `Showing ${C.board(T, stopId).sample ? 'sample-day' : 'captured'} departures from ${C.board(T, stopId).stop.name}.`;
             }
             function setMenu(open, focusSelected = false) {
                 const picker = main.querySelector('[data-stop-picker]');

@@ -46,6 +46,25 @@
         change.pendingCleared = true;
         return true;
     }
+    const dayLabel = (date) =>
+        /^\d{4}-\d{2}-\d{2}$/.test(date || '')
+            ? new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+              })
+            : 'that day';
+    // "Help with my trip from Neumarkt to Mülheim, arriving by 14:00 on
+    // Wed 30 Sept."
+    function tripRequest(item) {
+        const day = /^\d{4}-\d{2}-\d{2}$/.test(item.date || '')
+            ? dayLabel(item.date)
+            : '';
+        const when = item.requestedTime
+            ? `${item.preferences?.schedule === 'arrive' ? 'arriving by' : 'leaving at'} ${item.requestedTime}`
+            : 'leaving now';
+        return `Help with my trip from ${item.from || 'my starting point'} to ${item.to}, ${when}${day ? ` on ${day}` : ''}.`;
+    }
     function receive(state, shared, M, C) {
         C.ensure(state);
         state.reviewDay = shared.reviewDay ? clone(shared.reviewDay) : null;
@@ -104,6 +123,9 @@
                     );
                     if (old < 0) state.contextItems.push(item);
                     else state.contextItems[old] = item;
+                    // A trip request reads as what you asked for.
+                    const trip = item.type === 'journey' && !item.legs;
+                    if (trip) C.append(state, 'user', tripRequest(item));
                     C.append(
                         state,
                         'assistant',
@@ -114,7 +136,9 @@
                                     p.items.some((x) => x.sourceId === item.id),
                                 )
                             ? 'Review the shared appointment details before updating your plan. Your confirmed plan has not changed.'
-                            : `Brought into Composer: ${item.title}.`,
+                            : trip
+                              ? `Here’s your trip to ${item.to}. I’ve kept its details; your plan stays as it is.`
+                              : `Brought into Composer: ${item.title}.`,
                         { kind: 'department-context', context: item },
                     );
                     continue;
@@ -128,6 +152,13 @@
                     handoffDate: date,
                     handoffError: error.message,
                 });
+                // Say so in the conversation too, so what you asked for is
+                // the newest thing on screen, not an earlier exchange.
+                C.append(
+                    state,
+                    'assistant',
+                    `I’ve kept “${item.title}” for ${dayLabel(date)}, but couldn’t add it yet. ${error.message} Then choose “Try adding again” below.`,
+                );
             }
         }
         if (imported.length) {
@@ -201,6 +232,7 @@
     }
     const api = {
         receive,
+        tripRequest,
         savedId,
         clearCancelledHandoffs,
         bureaucracyLink,

@@ -95,6 +95,32 @@ test('another day stays pending instead of replacing the current proposal', () =
     assert.equal(result.remaining.length, 1);
     assert.match(result.remaining[0].handoffError, /proposal/);
     assert.equal(JSON.stringify(s.proposal), before);
+    // The conversation says so, so it's the newest thing on screen.
+    assert.match(C.current(s).entries.at(-1).text, /couldn’t add it yet/);
+});
+test('a Travel trip request reads as what you asked for', () => {
+    const s = fresh();
+    receive(s, [
+        {
+            id: 'request:Neumarkt:Mülheim',
+            type: 'journey',
+            title: 'Mülheim',
+            from: 'Neumarkt',
+            to: 'Mülheim',
+            date: '2026-09-30',
+            requestedTime: '14:00',
+            mode: 'transit',
+            preferences: { schedule: 'arrive' },
+        },
+    ]);
+    const [question, answer] = C.current(s).entries.slice(-2);
+    assert.equal(question.role, 'user');
+    assert.equal(
+        question.text,
+        'Help with my trip from Neumarkt to Mülheim, arriving by 14:00 on Wed 30 Sept.',
+    );
+    assert.match(answer.text, /^Here’s your trip to Mülheim/);
+    assert.equal(answer.kind, 'department-context');
 });
 test('service, route and incomplete appointment handoffs remain context, never invented schedules', () => {
     const s = fresh();

@@ -4,6 +4,28 @@ Connected to the approved Today C design, 18 September 2026. Start at `/dev/desi
 
 Open `/dev/design/composer-studio/` directly, or enter from Today. Today’s header bookmark opens Saved; the plus menu beside the Composer input contains My Plans, Saved and History. Both are panels in the same workspace; the older `/dev/design/my-plans/` links now open the corresponding panel in Composer.
 
+## Hand-offs from other pages — 7 October
+
+- **What you asked is in view.** Anything a page hands over (Travel's trip
+  help or a chosen route, an event's Review plan, Paperwork step help, a
+  service request) is the newest entry and is scrolled into view, even after a
+  long earlier conversation. Panels (My Plans, Saved, History) still open on
+  top.
+- **Trip requests in words.** Travel's "Help with this trip" reads as "Help with
+  my trip from Neumarkt to Mülheim, arriving by 14:00 on Wed 30 Sept", and its
+  card lists From, To, When and Travel instead of field names and ISO dates.
+- **Waiting selections say so.** When Composer can't add a selection yet (for
+  example another day's plan is unfinished), the conversation says why, beside
+  "Try adding again".
+- **"When should I leave for my 14:00?"** answers from the sample day's
+  appointment trip with Today's rule: leave now for the 13:14, 12 min to spare;
+  the 13:24 in the plan leaves only 2.
+
+Checked from Today, Events, Paperwork, Travel and Services (each with an
+earlier conversation): the Composer bar on each page, Today's My Plans, Events'
+Review plan, Paperwork's step help, Travel's trip and route help and Services'
+request all land on their own entry.
+
 ## Polish and fixes — 7 October
 
 Composer review items 7–16.

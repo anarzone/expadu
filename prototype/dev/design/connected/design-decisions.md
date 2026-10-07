@@ -364,6 +364,17 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Composer hand-offs land on what you asked — owner request, 7 October (in review):**
+whatever a page hands to Composer (Travel's trip help, a chosen route, an
+event's Review plan, Paperwork step help, a service request) is the newest
+entry and is scrolled into view, not the top of an earlier conversation. A
+Travel trip reads as your request ("Help with my trip from Neumarkt to Mülheim,
+arriving by 14:00 on Wed 30 Sept") with its details in words; a selection
+Composer can't add yet (another day's plan is unfinished) says so in the
+conversation. "When should I leave for my 14:00?" answers from the
+appointment's trip with Today's rule. Today's departures board shows the stop
+at the sample day's clock, like Travel's timetable.
+
 **Travel review fixes and one timetable — owner request, 7 October (in review):**
 the Timetable tab is the Neumarkt station board; Neumarkt is one stop that
 opens on the sample day with its line 4 and offers the 4 October capture as the

@@ -473,6 +473,19 @@
         return s.date;
     }
     // Places named in a journey question: "from A to B", or "get to B by 14:00".
+    // The sample day's appointment trip, when a question names it by time or
+    // as the appointment: "When should I leave for my 14:00?".
+    function leaveFor(t) {
+        if (!/\bwhen (should|do|must) i (leave|set off|go)\b|\bleave for my\b/.test(t))
+            return null;
+        const a = root.ExpaduSampleDay?.appointment;
+        const j = a?.journey;
+        if (!j) return null;
+        const time = t.match(/\b(\d{1,2}:\d{2})\b/)?.[1];
+        if (time ? normalizeTime(time) !== a.start : !/appointment|blue card/.test(t))
+            return null;
+        return { from: j.from, to: j.to, arriveBy: a.start, appointmentId: a.id };
+    }
     function journeyPlaces(text) {
         const sentence =
             text
@@ -576,6 +589,9 @@
             )
         )
             return { kind: 'help', date };
+        // "When should I leave for my 14:00?" is about the appointment's trip.
+        const leaving = leaveFor(t);
+        if (leaving) return { kind: 'journey', date, ...leaving };
         // Getting somewhere, or planning a day, comes before paperwork words:
         // "How do I get to my Blue Card appointment?" is a journey question.
         if (

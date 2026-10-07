@@ -36,7 +36,27 @@
                 mode: item.mode,
                 location: item.location,
             };
-            const fields = { ...baseFields };
+            // A trip request in words, not field names and ISO dates.
+            const tripDay = /^\d{4}-\d{2}-\d{2}$/.test(item.date || '')
+                ? new Date(`${item.date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+                : '';
+            const fields =
+                item.type === 'journey' && !item.legs && !item.requirements
+                    ? {
+                          from: item.from,
+                          to: item.to,
+                          when:
+                              [
+                                  tripDay,
+                                  item.requestedTime
+                                      ? `${item.preferences?.schedule === 'arrive' ? 'arrive by' : 'leave at'} ${item.requestedTime}`
+                                      : '',
+                              ]
+                                  .filter(Boolean)
+                                  .join(', ') || 'Leave now',
+                          travel: { transit: 'Public transport', bike: 'Cycle', walk: 'Walk' }[item.mode] || item.mode,
+                      }
+                    : { ...baseFields };
             const service =
                 item.servicePreference?.version === 1 &&
                 item.servicePreference.kind === 'service-preference' &&

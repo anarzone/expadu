@@ -5,6 +5,11 @@ restores the composition in the owner's screenshot, also saved at
 [`../review/continuity-desktop.png`](../review/continuity-desktop.png).
 The daily brief and its timeline-only correction were rejected.
 
+**7 October:** the Check departures board shows Köln Neumarkt at the sample
+day's clock (line 4 at 13:14 and 13:24, "Sample day · 13:10"), matching the
+journey card and Travel's timetable; stops without a sample day keep their
+capture. The sample day now loads before Travel's data.
+
 `index.html` reuses the parent Today renderer and shared interactions.
 `reference.css` restores the earlier proportions; the later cohesion pass below
 refines its section boundaries without removing its content:

@@ -1542,6 +1542,30 @@
                 to ||= shared.to || '';
             }
             const arriveBy = r.arriveBy || (shared && to === shared.to ? shared.targetStart : '') || '';
+            // The appointment's own trip: when to leave, by Today's rule
+            // (official appointments want ten minutes in hand).
+            const appointment = r.appointmentId && window.ExpaduSampleDay?.appointment;
+            if (appointment?.id === r.appointmentId && appointment.journey) {
+                const j = appointment.journey;
+                const mins = (time) => +time.slice(0, 2) * 60 + +time.slice(3);
+                const hhmm = (n) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+                const option = (o) => ({
+                    depart: o.depart,
+                    leave: mins(o.depart) - (j.accessWalkMinutes || 0),
+                    there: mins(o.arrive) + (j.walkMinutes || 0),
+                });
+                const planned = option(j);
+                const earlier = j.earlier ? option(j.earlier) : null;
+                const spare = (o) => mins(appointment.start) - o.there;
+                const margin = appointment.kind === 'official' ? 10 : 5;
+                const best = spare(planned) < margin && earlier && earlier.leave >= mins(M.nowTime()) ? earlier : planned;
+                const leaveText = best.leave <= mins(M.nowTime()) ? `Leave now — it’s ${M.nowTime()}.` : `Leave by ${hhmm(best.leave)}.`;
+                reply(
+                    `${leaveText} Take line ${j.line} at ${best.depart} from ${from} and you’re at your appointment by ${hhmm(best.there)}, with ${spare(best)} min to spare.${best !== planned ? ` The ${planned.depart} in your plan leaves only ${spare(planned)} min.` : ''} Scheduled sample times, not live.`,
+                    { kind: 'journey', journey: { from, to, arriveBy } },
+                );
+                return;
+            }
             if (from && to)
                 reply(
                     /\b(faster|quicker|another route|alternative)\b/i.test(text)
@@ -2493,6 +2517,16 @@
     }
     let incomingPrompt = '';
     let incomingStepHelp = false;
+    // What a page hands over becomes the newest entry; it's shown, not the
+    // top of an earlier conversation.
+    const latestEntry = () => {
+        const c = state.conversation;
+        return (
+            c?.chapters?.find((x) => x.id === c.currentId)?.entries?.at(-1)
+                ?.id || null
+        );
+    };
+    const beforeHandoff = latestEntry();
     if (incoming) {
         if (['ask', 'routine'].includes(shared.approvalMode))
             state.conversation.approval = shared.approvalMode;
@@ -2562,7 +2596,13 @@
     });
     render();
     store();
-    if (incomingStepHelp) revealLatest();
+    if (
+        incoming &&
+        !incomingPrompt &&
+        !initialPanel &&
+        (incomingStepHelp || latestEntry() !== beforeHandoff || handoff.date)
+    )
+        revealLatest();
     if (incomingPrompt) submit(incomingPrompt);
     if (initialPanel) {
         history.replaceState({}, '', StudioNavigation.panelUrl(location.href));

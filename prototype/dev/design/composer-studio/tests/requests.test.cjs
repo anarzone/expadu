@@ -97,6 +97,19 @@ test('everyday places near a point: kind, where, and today unless a day is named
     assert.equal(ask('something for kids on Saturday').kind, 'discovery');
 });
 
+test('“When should I leave for my 14:00?” is the appointment’s trip', () => {
+    const r = ask('When should I leave for my 14:00?');
+    assert.deepEqual(
+        copy([r.kind, r.from, r.to, r.arriveBy, r.appointmentId]),
+        ['journey', 'Neumarkt', 'Mülheim', '14:00', 'today-review-appointment'],
+    );
+    assert.equal(
+        ask('When should I leave for my appointment?').appointmentId,
+        'today-review-appointment',
+    );
+    // Another time isn't the appointment.
+    assert.equal(ask('When should I leave for my 18:00?').appointmentId, undefined);
+});
 test('green spaces and fast food are nearby kinds; green needs a place, like parks', () => {
     const green = ask('Somewhere green near my appointment?');
     assert.deepEqual(
