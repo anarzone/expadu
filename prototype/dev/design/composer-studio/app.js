@@ -1545,7 +1545,7 @@
             // The appointment's own trip: when to leave, by Today's rule
             // (official appointments want ten minutes in hand).
             const appointment = r.appointmentId && window.ExpaduSampleDay?.appointment;
-            if (appointment?.id === r.appointmentId && appointment.journey) {
+            if (appointment && appointment.id === r.appointmentId && appointment.journey) {
                 const j = appointment.journey;
                 const mins = (time) => +time.slice(0, 2) * 60 + +time.slice(3);
                 const hhmm = (n) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
