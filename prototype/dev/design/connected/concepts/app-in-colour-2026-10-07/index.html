@@ -154,8 +154,9 @@
         <main class="stage" id="stage"></main>
         <script>
             (() => {
-                // [label, approved page, redesign page]. Without a redesign
-                // page, "Concept" is the approved page with colour.js added.
+                // [label, approved page, redesign page, script]. Without a
+                // redesign page, "Concept" is the approved page with the
+                // script added (colour.js unless another is named).
                 const redesign =
                     '/dev/design/connected/concepts/app-in-colour-2026-10-07/redesign/';
                 const pages = {
@@ -165,6 +166,12 @@
                     services: ['Services', '/dev/design/services-next/'],
                     events: ['Events', '/dev/design/events-next/'],
                     travel: ['Travel', '/dev/design/departures-next/'],
+                    'today-ribbon': [
+                        'Today · shape of the day',
+                        '/dev/design/today-next/brief/',
+                        null,
+                        'today-ribbon.js',
+                    ],
                     'today-redesign': [
                         'Today redesign (not taken)',
                         '/dev/design/today-next/brief/',
@@ -232,8 +239,7 @@
                         };
                         const s = doc.createElement('script');
                         s.dataset.acLoader = '1';
-                        s.src =
-                            '/dev/design/connected/concepts/app-in-colour-2026-10-07/colour.js';
+                        s.src = `/dev/design/connected/concepts/app-in-colour-2026-10-07/${pages[state.page][3] || 'colour.js'}`;
                         doc.head.append(s);
                     } catch (error) {
                         console.warn(

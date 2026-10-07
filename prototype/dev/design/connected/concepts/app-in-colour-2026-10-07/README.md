@@ -177,3 +177,29 @@ lettering, the trip card's content, the honest sample labels and the colour
 roles (one orange main action, cyan selection and travel, lavender
 paperwork, amber attention). The tram that leads follows decision 4 (the
 13:14 here; `?tram=planned` shows the alternative).
+
+## Today: the shape of your day (one new idea on the current layout, 7 October)
+
+The owner kept Today's layout and asked for one original idea. `today-ribbon.js`
+(with `today-ribbon.css`) adds it to the approved Today page in the viewer
+("Today · shape of the day"); the page itself is unchanged.
+
+- **A ribbon at the top of the workspace** shows the whole day at a glance:
+  the morning behind you shaded, a "Now 13:10" marker, the trip (cyan, from
+  leave-by 13:20 to 13:58 at the appointment) and the 14:00–14:30 Blue Card
+  appointment (lavender), then "Nothing else in your plan" for the rest of the
+  day, with tonight's two sample events as outlined ideas inside it. Phones
+  show 12:00–24:00 with one line of caption. It reads the shared sample day
+  and Today's leave-by rule, so it agrees with the cards; it shows only for
+  the Everyday preview scenario. It's a picture with a full spoken label, not
+  another set of buttons.
+- **The next thing follows you.** Once the journey card's "Leave by" line has
+  scrolled away, a slim bar under the header keeps it in view ("Leave by 13:20
+  · Line 4 at 13:24 from Neumarkt · for 14:00 Blue Card appointment"). Tapping
+  it brings the appointment back. It fades in over 180ms, with no motion when
+  reduced motion is on.
+
+Why: Today's cards say what each thing is; nothing shows how the day fits
+together, or that the afternoon is open. The ribbon adds that in about 90px
+on desktop, and the bar keeps the time-critical action in view while you
+browse events lower down. Screenshots: `docs/reviews/2026-10-07-app-in-colour/today-ribbon-*.png`.

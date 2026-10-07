@@ -46,6 +46,13 @@ Checks: no sideways scroll at 390; Today's 14:00, Leave now and Journey
 details fit the first 844px; Composer's starters and input fit the first
 screen (884px page, the chips row sits just above the input).
 
+## Today: the shape of your day (one new idea on the current layout)
+
+`today-ribbon-1440.png`, `today-ribbon-390.png` (first screen with the day
+ribbon), `today-ribbon-1440-scrolled.png`, `today-ribbon-390-scrolled.png`
+(the next thing following you once its card has scrolled away). On a 390
+phone the whole journey card still fits the first screen.
+
 ## Part B — fixes to the current pages (committed)
 
 | Fix | Evidence |
