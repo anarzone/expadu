@@ -43,12 +43,15 @@ test('a visa holder is not told to submit a Blue Card application without confir
         'states' => ['case_goal' => $state],
     ], [], [], $catalogue, 'de-nrw-cologne', CarbonImmutable::now(), $goal))->toArray();
     $process = collect($assessment['processes'])->firstWhere('definition_id', 'residence.blue_card.first');
-    expect($process['variants'])->toHaveCount(2);
+    // The reviewed preparation/submission pair plus the checked appointment and visa-free cards.
+    expect(collect($process['variants'])->pluck('id')->all())->toContain('case.bc.first_application.prepare', 'case.bc.first_application.submit', 'bc.blue_card');
     foreach ($process['variants'] as $variant) {
         // A different preference does not make the legal criteria fail, but it
         // cannot turn an optional application into the person's next action.
-        expect($variant['assessment'])->toBe('supported_preparation')
-            ->and($variant['actionable'])->toBeFalse();
+        expect($variant['actionable'])->toBeFalse();
+        if (str_starts_with($variant['id'], 'case.')) {
+            expect($variant['assessment'])->toBe('supported_preparation');
+        }
     }
     expect(in_array('case_goal', array_column($assessment['question_dependencies'], 'fact_key'), true))
         ->toBe($state !== 'value');

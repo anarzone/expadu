@@ -134,7 +134,7 @@ test('all local records are inventoried without promoting legacy prose', functio
     $tasks = Task::query()->whereNotNull('key')->orderBy('key')->get();
     $artifact = app(CatalogueCompiler::class)->compile($tasks->all());
     expect($artifact['inventory'])->toHaveCount(95)
-        ->and(collect($artifact['inventory'])->where('review_status', 'legacy'))->toHaveCount(80)
+        ->and(collect($artifact['inventory'])->where('review_status', 'legacy'))->toHaveCount(47)
         ->and(collect($artifact['definitions'])->flatMap(fn ($definition) => $definition['variants'])->every(fn ($variant) => $variant['review']['review_status'] === 'approved'))->toBeTrue();
 });
 

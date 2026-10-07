@@ -248,7 +248,8 @@ test('real onboarding and explicit follow ups produce the canonical reviewed cas
             ->and($facts['evidence'][$key]['source'])->toBe($key === 'sponsor' ? 'attributed_report' : 'manual');
     }
     expect($facts['values']['current_residence_title'])->toBe($journey['onboarding']['current_residence_title'])
-        ->and($facts['values'])->not->toHaveKey('permit_track')
-        ->and($offeredKeys)->not->toContain('permit_track');
+        // Onboarding never writes the employment track. It may be asked later, because the
+        // checked standard-permit and Chancenkarte cards depend on it.
+        ->and($facts['values'])->not->toHaveKey('permit_track');
     expect($read())->toBe($plan);
 })->with('investigated onboarding journeys');

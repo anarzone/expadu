@@ -68,7 +68,10 @@ it('compares durations, money, sections and levels across English and German', f
         ->and($tokens('binnen 14 Tagen'))->toBe(['duration:days:14'])
         ->and($tokens('up to €1,000'))->toBe(['money:1000'])
         ->and($tokens('bis zu 1.000 Euro'))->toBe(['money:1000'])
+        ->and($tokens('25 000 Euro'))->toBe(['money:25000'])
+        ->and($tokens('€25,000'))->toBe(['money:25000'])
         ->and($tokens('§19(2) BMG'))->toBe(['section:19'])
+        ->and($tokens('Section 30(3) AufenthG'))->toBe(['section:30'])
         ->and($tokens('nach einundzwanzig Monaten mit B1'))->toBe(['duration:months:21', 'level:b1'])
         ->and($tokens('fünf Werktage'))->toBe(['duration:workdays:5'])
         ->and($tokens('an 11-digit number'))->toBe(['number:11']);

@@ -47,7 +47,7 @@ function pendingCase(array $facts): BureaucracyCase
     return $case;
 }
 
-it('offers essential orientation without interviewing from unapproved branch rules', function (string $label, array $facts) {
+it('offers essential orientation without interviewing from unapproved branch rules', function (string $label, array $facts, array $route = []) {
     $case = pendingCase($facts);
 
     $planQuestions = app(QuestionSelector::class)->rankedFactKeys(
@@ -57,22 +57,23 @@ it('offers essential orientation without interviewing from unapproved branch rul
 
     // Approved basic preparation applies across purposes, even when the
     // residence route has no reviewed module. It must not ask legacy selectors.
+    // $route lists registered facts that checked residence cards for this purpose depend on.
     expect($planQuestions)->toEqualCanonicalizing([
         'arrival_planned', 'registration_status', 'health_coverage_confirmed',
-        'tax_id_available', 'bank_account_help_needed',
-    ], "{$label}: only approved basic preparation should ask follow-ups");
+        'tax_id_available', 'bank_account_help_needed', ...$route,
+    ], "{$label}: only approved preparation and checked routes should ask follow-ups");
 
     expect(app(PendingAnswers::class)->forCase($case))->toContain('residence_title_expires_at')
-        ->not->toContain('entry_mode');
+        ->not->toContain('business_type')->not->toContain('license_country');
 })->with([
     'standard employee' => ['standard employee', [
         'citizenship_group' => 'non_eu', 'purpose' => 'employment',
         'permit_track' => 'standard', 'current_residence_title' => 'standard_work_permit',
-    ]],
+    ], ['case_goal', 'entry_mode']],
     'student' => ['student', [
         'citizenship_group' => 'non_eu', 'purpose' => 'study',
         'current_residence_title' => 'national_d_visa',
-    ]],
+    ], ['entry_mode']],
     'freelancer' => ['freelancer', [
         'citizenship_group' => 'non_eu', 'purpose' => 'freelance',
         'current_residence_title' => 'national_d_visa',
@@ -117,7 +118,7 @@ it('covers the approved questions plus missing essential orientation', function 
     expect($planQuestions)->not->toBeEmpty()
         ->and(array_diff($planQuestions, $pending))->toBe([])
         ->and($pending)->toContain('residence_title_expires_at')
-        ->and($pending)->not->toContain('entry_mode');
+        ->and($pending)->not->toContain('business_type');
 });
 
 it('leaves a contested fact to the conflict flow', function () {
@@ -129,6 +130,8 @@ it('leaves a contested fact to the conflict flow', function () {
     BureaucracyFactConflict::factory()->create([
         'case_id' => $case->id,
         'fact_key' => 'entry_mode',
+        'existing_fact_id' => BureaucracyCaseFact::factory()->create(['case_id' => $case->id, 'key' => 'entry_mode', 'value' => 'd_visa'])->id,
+        'candidate_fact_id' => BureaucracyCaseFact::factory()->candidate()->create(['case_id' => $case->id, 'key' => 'entry_mode', 'value' => 'visa_free'])->id,
         'status' => 'unresolved',
     ]);
 

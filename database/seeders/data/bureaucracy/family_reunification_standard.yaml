@@ -3,53 +3,105 @@
 situation: family_reunification
 
 tasks:
-  # Book-before-ready: one online application for the family, filed on day
-  # one — the appointment wait starts at submission.
-  - title: Submit the family's permit application online — today
+  # Visa-free entrants only: D-visa entrants are covered by
+  # case.family.first_permit.prepare (deadline = visa expiry).
+  - title: Apply for the joining spouse's permit within 90 days of visa-free entry
     key: fam.submit_application
-    depends_on: [fam.anmeldung]
-    verified_at: 2026-06-11
+    depends_on: []
     description: |
-      Reunifying family members need their own residence permits, even though the
-      sponsor already has one. Conditions: the sponsor holds an Aufenthalts- or
-      Niederlassungserlaubnis with habitual residence in Germany, both spouses are 18+,
-      the family's main residence is in Germany, the livelihood is fully secured
-      without Bürgergeld, and the joining spouse has German A1. Exception worth
-      knowing: spouses of Blue Card holders need no A1 and can work immediately.
-      File the online Erstantrag as soon as the family's Anmeldung is done. Your
-      filing window: visa-free entrants must apply within 90 days of arrival; if you
-      entered on a D visa, the real deadline is your visa's expiry date.
+      As the spouse of a non-EU national you need your own residence permit. Cologne
+      lists the usual conditions: your partner holds a residence title and lives in
+      Germany, you have basic German (A1), your shared main residence is in Germany,
+      both of you are at least 18, and your livelihood is fully secured without benefits
+      such as Bürgergeld. If your partner holds an EU Blue Card, the language requirement
+      does not apply. If you entered visa-free under §41 AufenthV (for example as a citizen of
+      Australia, Canada, Japan, the UK or the USA), apply within 90 days of entry. If you
+      entered visa-free on any other basis, ask the Ausländerbehörde whether you can apply
+      from inside Germany.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
     deadline_days: 90
     applies_if:
-      entry_mode: [d_visa, visa_free]
+      entry_mode: visa_free
     documents_required:
-      - label: Online application form (Erstantrag 33-F07; renewals 33-F06)
+      - label: Cologne's online application for a family-reunification residence permit
         note: Upload scans of the documents listed on the appointment task.
       - label: A1 German certificate for the joining spouse
-        note: Only Goethe-Institut, TestDaF or telc certificates are accepted (e.g. "Deutsch-Test für Zuwanderer") — other certificates are rejected.
+        note: Cologne accepts certificates from the Goethe-Institut, TestDaF-Institut or telc, for example the "Deutsch-Test für Zuwanderer".
         tone: warn
     links:
       - https://www.stadt-koeln.de/service/produkte/20335/index.html
     how_to_steps:
-      - title: Confirm the sponsor's permit covers family reunification
-        body: Skilled-worker permits (§18a/b) and the Blue Card qualify; some short-term titles don't. If the sponsor holds a Blue Card, the spouse skips the A1 requirement entirely and gets immediate unrestricted work access.
-      - title: Sponsor's Blue Card still in process? Ask before relying on the exemption
-        body: The A1 waiver and immediate work access are stated for spouses of Blue Card HOLDERS. If your spouse has only just filed their Blue Card application, ask the Ausländerbehörde whether the exemption already applies to you — and have an A1 certificate ready in case it doesn't. Don't delay your own filing to wait for their card; your window runs independently.
-      - title: File the online Erstantrag now
-        body: One application starts the process for the family — the invitation wait runs while you assemble the originals.
+      - title: File the online application
+        body: Cologne reviews the digital application and sends an appointment invitation once it can issue the permit.
         link: https://www.stadt-koeln.de/service/produkte/20335/index.html
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
+      - {kind: primary, label: '§41 AufenthV', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
+      - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+    claims:
+      - id: title-window
+        states: Apply for the joining spouse's permit within 90 days of visa-free entry
+        source: '§41 AufenthV'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: own-permit
+        states: you need your own residence permit
+        source: '§30 AufenthG'
+        quote: Dem Ehegatten eines Ausländers ist eine Aufenthaltserlaubnis zu erteilen, wenn
+      - id: sponsor-title
+        states: your partner holds a residence title and lives in Germany
+        source: 'Stadt Köln · family reunification'
+        quote: Diese Person muss im Besitz eines Aufenthaltstitels sein und ihren gewöhnlichen Aufenthalt in Deutschland haben.
+      - id: a1
+        states: you have basic German (A1)
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen über einfache deutsche Sprachkenntnisse (A1) verfügen.
+      - id: a1-certificate
+        states: A1 German certificate for the joining spouse
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen einfache deutsche Sprachkenntnisse Stufe A1 durch ein geeignetes Sprachstandszeugnis der Stufe A1
+      - id: main-residence
+        states: your shared main residence is in Germany
+        source: 'Stadt Köln · family reunification'
+        quote: Der Hauptwohnsitz Ihrer Lebensgemeinschaft muss in Deutschland sein.
+      - id: age
+        states: both of you are at least 18
+        source: '§30 AufenthG'
+        quote: beide Ehegatten das 18. Lebensjahr vollendet haben
+      - id: livelihood
+        states: your livelihood is fully secured without benefits
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen Ihren Lebensunterhalt vollständig sichern.
+      - id: blue-card-a1
+        states: If your partner holds an EU Blue Card, the language requirement
+        source: '§30 AufenthG'
+        quote: der Ausländer im Besitz einer Blauen Karte EU, einer ICT-Karte oder einer Mobiler-ICT-Karte
+      - id: visa-free-countries
+        states: visa-free under §41 AufenthV (for example as a citizen of
+        source: '§41 AufenthV'
+        quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs
+      - id: visa-free-window
+        states: apply within 90 days of entry
+        source: '§41 AufenthV'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: visa-free-deadline
+        covers: deadline
+        source: '§41 AufenthV'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
 
-  - title: Attend the family's permit appointment with the originals
+  - title: Attend the permit appointment with the originals
     key: fam.residence_permits
-    depends_on: [fam.submit_application, fam.health_insurance]
-    verified_at: 2026-07-18
+    depends_on: []
     description: |
-      After the online application, the Ausländerbehörde invites the family to an
-      appointment — everyone appears, originals in hand. Assemble the checklist below
-      while you wait.
+      After you apply online, Cologne reviews the application and invites you to an
+      appointment when it can issue the permit. Bring the originals of the documents
+      below; Cologne may ask for further documents in individual cases.
     phase: first_30_days
     urgency: critical
     deadline_type: none
@@ -57,64 +109,157 @@ tasks:
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Recognized, valid national passport (per family member)
-      - label: Copy of the entry visa, if visa-required
+      - label: Recognised, valid national passport
+      - label: Copy of the entry visa, if you needed one
       - label: Digital biometric photo
-      - label: Marriage/partnership certificate (first application only)
-        note: Foreign certificates need apostille/legalization + a sworn German translation.
-      - label: Mietvertrag + proof of the current rent level
-        note: Cologne wants the contract AND evidence of what you actually pay — e.g. a recent bank statement. Owners instead bring the purchase contract with the apartment size in m², loan-installment proofs and the monthly Hausgeld.
+      - label: Marriage certificate (first application only)
+        note: Bring a certified translation of every foreign certificate; depending on the country an apostille or legalisation is also needed.
+      - label: Rental contract plus proof of the current rent
+        note: For example a recent bank statement. Owners bring the purchase contract showing the flat's size in square metres and, where relevant, proof of loan instalments and the monthly Hausgeld.
       - label: A1 German certificate for the joining spouse
-        note: The original of the certificate you uploaded — Goethe-Institut, TestDaF or telc only.
-      - label: Livelihood proof for all working family members
-        note: 'Employees: last 3 payslips. Self-employed: last income-tax assessment + current P&L from the tax advisor + Gewerbeanmeldung if applicable + pension/life-insurance proof.'
-      - label: Birth certificates for joining children (§32)
-        note: Plus custody proof where parents are separated. Sworn-translation rules apply.
+        note: Goethe-Institut, TestDaF-Institut or telc certificates.
+      - label: Proof that the livelihood of all working family members is secured
+        note: 'Employees: payslips for the last three months. Self-employed: last income-tax assessment, current profit-and-loss statement from the tax adviser, business registration if applicable, pension or life-insurance proof.'
+      - label: Proof of full health insurance, if you are not publicly insured
     links:
       - https://www.stadt-koeln.de/service/produkte/20335/index.html
     how_to_steps:
-      - title: Make it one appointment for the whole family
-        body: Mention you're bringing dependents when the invitation comes — they'll allocate enough time instead of a 20-minute slot.
-      - title: Bring originals AND certified translations
-        body: For non-German documents you need the original + apostille + a sworn German translation. The Ausländerbehörde keeps copies but checks the originals.
+      - title: Bring originals and certified translations
+        body: Cologne asks for a certified translation of all foreign certificates, plus an apostille or legalisation depending on the country of origin.
       - title: Pay the fee at the appointment
-        body: 'First issue €100 per adult (under 18: €50); renewals €93 / €46.50. Turkish citizens with association rights pay €22.80 (under 24) / €37 (from 24). Fee-free when income consists solely of social benefits (SGB II/XII or AsylbLG).'
+        body: 'First issue from 18 years: €100. Renewal from 18 years: €93. Turkish citizens with association rights pay €27.60 up to 24 years and €46 from 24 years.'
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
+      - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+    claims:
+      - id: spouse-permit
+        states: when it can issue the permit
+        source: '§30 AufenthG'
+        quote: Dem Ehegatten eines Ausländers ist eine Aufenthaltserlaubnis zu erteilen, wenn
+      - id: invitation
+        states: invites you to an appointment when it can issue the permit
+        source: 'Stadt Köln · family reunification'
+        quote: Sie erhalten eine Termineinladung zur Vorsprache, wenn wir Ihnen die Aufenthaltserlaubnis zur Familienzusammenführung ausstellen können.
+      - id: a1-certificate
+        states: A1 German certificate for the joining spouse
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen einfache deutsche Sprachkenntnisse Stufe A1 durch ein geeignetes Sprachstandszeugnis der Stufe A1
+      - id: payslips
+        states: payslips for the last three months
+        source: 'Stadt Köln · family reunification'
+        quote: Wenn Sie Arbeitnehmer*in sind, benötigen wir die Gehaltsabrechnung der letzten drei Monate.
+      - id: first-issue-fee
+        states: 'First issue from 18 years: €100'
+        source: 'Stadt Köln · family reunification'
+        quote: 'Ersterteilung ab 18 Jahre: 100 Euro'
+      - id: renewal-fee
+        states: 'Renewal from 18 years: €93'
+        source: 'Stadt Köln · family reunification'
+        quote: 'Verlängerung ab 18 Jahre: 93 Euro'
+      - id: turkish-fee
+        states: €27.60 up to 24 years and €46 from 24 years
+        source: 'Stadt Köln · family reunification'
+        quote: 'bis 24 Jahre: 27,60 Euro ab 24 Jahre: 46 Euro'
 
-  - title: 'The long game: permanent residency after 5 years (§9)'
+  - title: 'Apply for permanent residency after five years (§9)'
     key: fam.ne_apply
     depends_on: []
-    verified_at: 2026-07-18
     description: |
-      Family-permit holders reach the general Niederlassungserlaubnis (permanent
-      residency) after 5 years of holding a residence permit. Requirements per
-      Cologne's official page: secured livelihood without Bürgergeld, 60 months of
-      pension contributions (in a marriage the working spouse's contributions can
-      fulfil this for both partners), B1 German, the "Leben in Deutschland" test (or
-      a German school qualification), health insurance, and sufficient housing —
-      12 m² per person aged 6+, 10 m² per child under 6. Fee: €113 (Turkish citizens
-      with association rights: €27.60 under 24 / €46 from 24). Submit digitally,
-      then attend the mandatory in-person appointment at the Bezirksausländeramt.
+      Once you have held a residence permit for at least five years, you can apply for
+      the general Niederlassungserlaubnis (permanent residence). Cologne lists these
+      conditions: you are at least 18; your livelihood is secured without benefits such
+      as Bürgergeld; at least 60 months of mandatory or voluntary pension contributions
+      (in a marriage, your spouse's contributions can count); health insurance; B1
+      German; basic knowledge of the legal and social order, usually shown with the
+      "Leben in Deutschland" test; and enough living space: 12 square metres for each
+      family member aged six or older and 10 square metres for each child under six.
+      Fee: €113 (Turkish citizens with association rights: €27.60 up to 24 years, €46
+      from 24 years). Apply online, then attend an appointment in person at your
+      Bezirksausländeramt.
     phase: ongoing
     urgency: low
     deadline_type: none
+    applies_if:
+      current_residence_title: family_reunification
+      family_residence_permit_held_since: {at_least_months_ago: 60}
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Valid national passport + digital biometric photo
+      - label: Valid national passport and digital biometric photo
       - label: B1 German certificate
-      - label: '"Leben in Deutschland" test result — or a German school qualification'
-        note: The Integrationskurs final exam covers both the B1 and the civics requirement in one go.
-      - label: Current pension record (Versicherungsverlauf)
-        note: 60 months of mandatory or voluntary contributions — in a marriage the working spouse's record can count for both partners.
-      - label: Employment contract + last 3 payslips (working family members)
-      - label: Mietvertrag + proof of current housing costs
-      - label: Proof of health insurance
+      - label: Proof of basic knowledge of the legal and social order
+        note: Usually the "Leben in Deutschland" test, or a school-leaving certificate from at least a Mittelschule.
+      - label: Current pension record (Rentenversicherungsverlauf)
+        note: Available from the Deutsche Rentenversicherung.
+      - label: Employment contract and payslips for the last three months
+      - label: Rental contract plus proof of current monthly housing costs (Warmmiete)
+      - label: Proof of health insurance, if you are self-employed
     links:
       - https://www.stadt-koeln.de/service/produkt/allgemeine-niederlassungserlaubnis
     how_to_steps:
-      - title: Check the faster tracks first
-        body: Holding your own skilled-worker permit cuts the wait to 3 years (2 with a German degree), and family members of German citizens qualify after 3 — the § printed on your permit card decides which track is yours. The 5-year general track is the default when no faster one fits.
-      - title: Ask about Daueraufenthalt-EU at the appointment
-        body: Same requirements, adds EU-wide mobility — if you might move within the EU one day, request that variant instead.
+      - title: Book an appointment at your Bezirksausländeramt
+        body: You must apply in person. Bring all documents; Cologne may ask for more at the appointment and give you a further date.
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§9 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9.html'}
+      - {kind: implementation, label: 'Stadt Köln · general settlement permit', url: 'https://www.stadt-koeln.de/service/produkt/allgemeine-niederlassungserlaubnis'}
+    claims:
+      - id: title-five-years
+        states: 'Apply for permanent residency after five years (§9)'
+        source: '§9 AufenthG'
+        quote: er seit fünf Jahren die Aufenthaltserlaubnis besitzt
+      - id: five-years
+        states: held a residence permit for at least five years
+        source: 'Stadt Köln · general settlement permit'
+        quote: Sie sind seit mindestens fünf Jahren im Besitz einer Aufenthaltserlaubnis.
+      - id: age
+        states: you are at least 18
+        source: 'Stadt Köln · general settlement permit'
+        quote: Sie haben das 18. Lebensjahr vollendet.
+      - id: pension
+        states: at least 60 months of mandatory or voluntary pension contributions
+        source: 'Stadt Köln · general settlement permit'
+        quote: Sie können mindestens 60 Monate Pflichtbeiträge oder freiwillige Beiträge zur gesetzlichen Rentenversicherungen nachweisen.
+      - id: spouse-pension
+        states: in a marriage, your spouse's contributions can count
+        source: 'Stadt Köln · general settlement permit'
+        quote: Bei einer familiären Lebensgemeinschaft in einer Ehe oder gleichgeschlechtlichen Lebenspartnerschaft können die Nachweise zur Altersvorsorge auch durch den*die Ehegatt*in oder Lebenspartner*in erbracht werden.
+      - id: b1
+        states: B1 German
+        source: 'Stadt Köln · general settlement permit'
+        quote: Ihre Deutschkenntnisse entsprechen dem Niveau B1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
+      - id: housing
+        states: 12 square metres for each family member aged six or older and 10 square metres for each child under six
+        source: 'Stadt Köln · general settlement permit'
+        quote: Dies ist der Fall, wenn jedem Familienangehörigen ab sechs Jahre 12 Quadratmeter Wohnfläche zur Verfügung steht und für Kinder unter sechs Jahre 10 Quadratmeter.
+      - id: fee
+        states: 'Fee: €113'
+        source: 'Stadt Köln · general settlement permit'
+        quote: Für die Erteilung einer Niederlassungserlaubnis müssen Sie eine Gebühr in Höhe von 113 Euro bezahlen.
+      - id: turkish-fee
+        states: €27.60 up to 24 years, €46
+        source: 'Stadt Köln · general settlement permit'
+        quote: 'bis 24 Jahre: 27,60 Euro ab 24 Jahre: 46 Euro'
+      - id: turkish-fee-age
+        states: from 24 years
+        source: 'Stadt Köln · general settlement permit'
+        quote: 'bis 24 Jahre: 27,60 Euro ab 24 Jahre: 46 Euro'
+      - id: payslips
+        states: payslips for the last three months
+        source: 'Stadt Köln · general settlement permit'
+        quote: Gehaltsabrechnungen der letzten drei Monate
+      - id: in-person
+        states: attend an appointment in person
+        source: 'Stadt Köln · general settlement permit'
+        quote: Für die Beantragung einer Niederlassungserlaubnis müssen Sie persönlich bei uns vorsprechen.
 
   - title: Prepare the joining spouse's first residence application
     key: case.family.first_permit.prepare
@@ -180,6 +325,15 @@ tasks:
     legal_sources:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
       - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+    claims:
+      - id: spouse-application
+        states: file the spouse's application on time
+        source: '§30 AufenthG'
+        quote: Dem Ehegatten eines Ausländers ist eine Aufenthaltserlaubnis zu erteilen, wenn
+      - id: livelihood
+        states: Provide the household livelihood information
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen einen Nachweis über die vollständige Lebensunterhaltssicherung aller berufstätigen Familienmitglieder vorlegen.
 
   - title: Renew the family permit before it expires
     key: case.family.renew.continuing_household
@@ -212,6 +366,15 @@ tasks:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
       - {kind: primary, label: '§81 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
       - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+    claims:
+      - id: extension-while-household-continues
+        states: Section 30(3) says the permit may be extended while the marital household continues
+        source: '§30 AufenthG'
+        quote: verlängert werden, solange die eheliche Lebensgemeinschaft fortbesteht.
+      - id: timely-application
+        states: subject to §81 and its exceptions
+        source: '§81 AufenthG'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung
 
   - title: Review the special settlement option for spouses of §18c holders
     key: case.family.settlement.spouse_18c_option
@@ -280,6 +443,31 @@ tasks:
     legal_sources:
       - {kind: primary, label: '§9 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9.html'}
       - {kind: implementation, label: 'Stadt Köln · general settlement permit', url: 'https://www.stadt-koeln.de/service/produkte/20356/index.html'}
+    claims:
+      - id: general-route
+        states: the general §9 route
+        source: '§9 AufenthG'
+        quote: Einem Ausländer ist die Niederlassungserlaubnis zu erteilen, wenn
+      - id: title-five-year
+        states: Track the general five-year settlement route
+        source: '§9 AufenthG'
+        quote: er seit fünf Jahren die Aufenthaltserlaubnis besitzt
+      - id: five-years-old
+        states: five years old
+        source: '§9 AufenthG'
+        quote: er seit fünf Jahren die Aufenthaltserlaubnis besitzt
+      - id: five-years
+        states: five years with a residence permit
+        source: '§9 AufenthG'
+        quote: er seit fünf Jahren die Aufenthaltserlaubnis besitzt
+      - id: pension
+        states: 60 months of pension contributions
+        source: '§9 AufenthG'
+        quote: er mindestens 60 Monate Pflichtbeiträge oder freiwillige Beiträge zur gesetzlichen Rentenversicherung geleistet hat
+      - id: b1
+        states: B1 German
+        source: 'Stadt Köln · general settlement permit'
+        quote: Ihre Deutschkenntnisse entsprechen dem Niveau B1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
 
   - title: Review an independent residence right after separation
     key: case.family.independent_after_separation
@@ -309,3 +497,12 @@ tasks:
     verified_at: '2026-08-03'
     legal_sources:
       - {kind: primary, label: '§31 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__31.html'}
+    claims:
+      - id: independent-right
+        states: If the marital household has ended, §31
+        source: '§31 AufenthG'
+        quote: Die Aufenthaltserlaubnis des Ehegatten wird im Falle der Aufhebung der ehelichen Lebensgemeinschaft als eigenständiges, vom Zweck des Familiennachzugs unabhängiges Aufenthaltsrecht für ein Jahr verlängert, wenn
+      - id: advice
+        states: before relying on §31
+        source: '§31 AufenthG'
+        quote: Eigenständiges Aufenthaltsrecht der Ehegatten

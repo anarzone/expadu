@@ -17,3 +17,37 @@ entries:
   case.bc.first_application.submit: {process_id: residence.blue_card.first, position: 2, topic: residence, kind: action, coverage: partial, occurrence_fact: current_residence_title, action_requires_intent: true}
   case.bc.settlement.track_21_months: {process_id: residence.settlement.blue_card, position: 1, topic: residence, kind: option, coverage: partial, occurrence_fact: current_residence_title}
   case.bc.verify_status_source: {process_id: residence.status_verification, position: 1, topic: residence, kind: context, coverage: partial}
+  # Converted to machine-checked cards on 2026-10-08.
+  nee.tax_return: {process_id: tax.income_tax_return, position: 1, topic: tax, kind: action, coverage: partial}
+  nee.submit_application: {process_id: residence.work_permit.first, position: 1, topic: residence, kind: action, coverage: partial}
+  nee.residence_permit: {process_id: residence.work_permit.first, position: 2, topic: residence, kind: action, coverage: partial}
+  nee.ne_check: {process_id: residence.settlement.skilled_worker, position: 1, topic: residence, kind: option, coverage: partial}
+  bc.submit_application: {process_id: residence.blue_card.first, position: 3, topic: residence, kind: action, coverage: partial, action_requires_intent: true}
+  bc.blue_card: {process_id: residence.blue_card.first, position: 4, topic: residence, kind: action, coverage: partial, action_requires_intent: true}
+  bc.ne_fast_track: {process_id: residence.settlement.blue_card, position: 2, topic: residence, kind: option, coverage: partial}
+  ck.work_limits: {process_id: residence.chancenkarte, position: 1, topic: residence, kind: context, coverage: partial}
+  ck.convert: {process_id: residence.chancenkarte, position: 2, topic: residence, kind: action, coverage: partial}
+  stu.health_insurance: {process_id: health.coverage, position: 2, topic: health, kind: preparation, coverage: partial}
+  stu.enrolment: {process_id: education.enrolment, position: 1, topic: education, kind: action, coverage: partial}
+  stu.submit_application: {process_id: residence.student.first, position: 1, topic: residence, kind: action, coverage: partial}
+  stu.residence_permit: {process_id: residence.student.first, position: 2, topic: residence, kind: action, coverage: partial}
+  stu.work_rules: {process_id: residence.student.work, position: 1, topic: work, kind: context, coverage: partial}
+  stu.post_graduation: {process_id: residence.student.job_search, position: 1, topic: residence, kind: context, coverage: partial}
+  stu.tax_return: {process_id: tax.income_tax_return, position: 2, topic: tax, kind: context, coverage: partial}
+  fre.gewerbe_check: {process_id: tax.self_employment.registration, position: 1, topic: tax, kind: preparation, coverage: partial}
+  fre.fragebogen: {process_id: tax.self_employment.registration, position: 2, topic: tax, kind: action, coverage: partial}
+  fre.kleinunternehmer: {process_id: tax.self_employment.registration, position: 3, topic: tax, kind: option, coverage: partial}
+  shared.verpflichtungserklaerung: {process_id: residence.visitor_sponsorship, position: 1, topic: residence, kind: context, coverage: partial}
+  shared.fiktionsbescheinigung: {process_id: residence.pending_application, position: 1, topic: residence, kind: context, coverage: partial}
+  shared.passport_transfer: {process_id: residence.passport_transfer, position: 1, topic: residence, kind: context, coverage: partial}
+  shared.long_game: {process_id: residence.settlement.general, position: 2, topic: residence, kind: context, coverage: partial}
+  shared.citizenship: {process_id: residence.citizenship, position: 1, topic: residence, kind: context, coverage: partial}
+  shared.other_permits: {process_id: residence.other_routes, position: 1, topic: residence, kind: context, coverage: partial}
+  fam.integration_course: {process_id: education.integration_course, position: 1, topic: education, kind: action, coverage: partial}
+  fam.submit_application: {process_id: residence.family.first, position: 3, topic: residence, kind: action, coverage: partial}
+  fam.residence_permits: {process_id: residence.family.first, position: 4, topic: residence, kind: action, coverage: partial}
+  fam.ne_apply: {process_id: residence.settlement.general, position: 3, topic: residence, kind: action, coverage: partial}
+  famde.submit_application: {process_id: residence.family.german.first, position: 1, topic: residence, kind: action, coverage: partial}
+  famde.residence_permit: {process_id: residence.family.german.first, position: 2, topic: residence, kind: action, coverage: partial}
+  famde.ne_three_years: {process_id: residence.settlement.german_family, position: 1, topic: residence, kind: context, coverage: partial}
+  fameu.aufenthaltskarte: {process_id: residence.family.eu_card, position: 1, topic: residence, kind: action, coverage: partial}

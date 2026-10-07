@@ -4,20 +4,59 @@ situation: non_eu_employee
 
 tasks:
   # Book-before-ready: the online application goes in on day one — the
-  # 6–12 week wait must start ticking while the documents are assembled.
-  - title: Submit your permit application online — today (§18a/b)
+  # appointment wait only starts once the application is submitted.
+  - title: Submit your work-permit application online
     key: nee.submit_application
-    depends_on: [nee.anmeldung]
-    verified_at: 2026-06-11
+    depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: primary, label: '§4a AufenthG — Zugang zur Erwerbstätigkeit', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__4a.html'}
+      - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit', url: 'https://www.stadt-koeln.de/service/produkte/01083/index.html'}
+    claims:
+      - id: ninety-days
+        states: within 90 days of arrival
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: filing-deadline
+        covers: deadline
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: visa-free-countries
+        states: citizen of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK or the USA
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs Großbritannien und Nordirland
+      - id: apply-before-expiry
+        states: apply before the visa expires so that it continues to count until the decision
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend
+      - id: work-shown-on-title
+        states: every residence title shows whether employment is allowed
+        source: '§4a AufenthG — Zugang zur Erwerbstätigkeit'
+        quote: Jeder Aufenthaltstitel muss erkennen lassen, ob die Ausübung einer Erwerbstätigkeit erlaubt ist
+      - id: ba-internal
+        states: the Ausländeramt obtains that approval internally
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: geschieht dies in einem internen Zustimmungsverfahren zwischen der Ausländerbehörde und der Bundesagentur für Arbeit
+      - id: no-visitor-visa
+        states: a visitor or business visa is not enough
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Ein Besuchs- oder Geschäftsvisum reicht nicht aus für die Erteilung einer Aufenthaltserlaubnis zum Zweck der Erwerbstätigkeit.
     description: |
-      Your entry visa expires; the residence permit for employment is what lets you stay
-      and work long-term. First applications go through Cologne's online Erstantrag —
-      file it the moment your Anmeldung is done, before your documents are complete:
-      the wait for the appointment invitation runs 6–12 weeks and it only starts when
-      you submit. The Bundesagentur für Arbeit approval is handled internally between
-      the authorities meanwhile. Your filing window: visa-free entrants must apply
-      within 90 days of arrival; if you entered on a D visa, the real deadline is your
-      visa's expiry date.
+      To stay and work in Germany you need a residence permit for employment. In
+      Cologne you apply to the Bezirksausländeramt for the Stadtteil you live in, and
+      you can submit the application digitally. The application is tied to a
+      concrete job offer. Where the Federal Employment Agency (BA) has to approve the
+      job, the Ausländeramt obtains that approval internally. Your filing window: if
+      you entered on a national D visa, apply before the visa expires so that it
+      continues to count until the decision. If you entered visa-free as a
+      citizen of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK or the USA,
+      you must apply within 90 days of arrival.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
@@ -25,29 +64,61 @@ tasks:
     applies_if:
       entry_mode: [d_visa, visa_free]
     documents_required:
-      - label: Online application form (Erstantrag 33-F07)
-        note: The same online form serves standard permit, Blue Card and student cases — the uploads differ, not the form. Upload scans of the documents listed on the appointment task.
+      - label: Cologne's online application for a residence permit for employment
+        note: Upload scans of the documents listed on the appointment task.
       - label: Job offer + Vordruck Stellenbeschreibung (job-description form)
-        note: The job-description form is filled by your EMPLOYER for the BA approval — tell HR on day one, it's the slowest document to chase.
+        note: The form describes the position planned for you. Ask your employer for it early.
         tone: warn
     links:
       - https://www.stadt-koeln.de/service/produkte/01083/index.html
     how_to_steps:
-      - title: File the online Erstantrag now
-        body: Cologne's online form (33-F07) starts the clock. Weeks of silence afterwards are normal, not a bad sign — the BA approval runs internally.
+      - title: File the online application now
+        body: Cologne accepts the application for a residence permit for employment digitally. If the BA has to approve the job, that happens between the authorities without a separate application from you.
         link: https://www.stadt-koeln.de/service/produkte/01083/index.html
-      - title: Entered visa-free? Don't start working yet
-        body: Visa-free entrants may generally not start working before the permit (or BA approval) — your D-visa colleagues can. Worth a sentence with HR.
+      - title: Check your visa's purpose
+        body: Your visa must have been issued for taking up work — a visitor or business visa is not enough.
+      - title: Check before you start working
+        body: Every residence title shows whether employment is allowed. Check your visa or permit with your employer before your first working day.
 
-  - title: Attend your permit appointment with the originals (§18a/b)
+  - title: Attend your work-permit appointment with the originals
     key: nee.residence_permit
-    depends_on: [nee.submit_application, nee.health_insurance]
-    verified_at: 2026-06-11
+    depends_on: [nee.submit_application]
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§45 AufenthV — Gebühren für die Aufenthaltserlaubnis', url: 'https://www.gesetze-im-internet.de/aufenthv/__45.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit', url: 'https://www.stadt-koeln.de/service/produkte/01083/index.html'}
+    claims:
+      - id: issue-fee
+        states: issuing the residence permit costs €100
+        source: '§45 AufenthV — Gebühren für die Aufenthaltserlaubnis'
+        quote: mit einer Geltungsdauer von mehr als einem Jahr 100 Euro
+      - id: permission-free
+        states: The employment permission itself is free
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Für die Beschäftigungserlaubnis fallen keine Gebühren an.
+      - id: in-person
+        states: You have to appear in person
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Eine persönliche Vorsprache ist erforderlich.
+      - id: two-photos
+        states: Two current passport photos
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Zwei aktuelle Passfotos
+      - id: fiktionsbescheinigung
+        states: you receive a certificate confirming the effect of your application (Fiktionsbescheinigung)
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Dem Ausländer ist eine Bescheinigung über die Wirkung seiner Antragstellung (Fiktionsbescheinigung) auszustellen.
     description: |
-      After your online application, the Bezirksausländeramt of your Stadtteil invites
-      you to an appointment. Bring the originals of everything you uploaded — use the
-      waiting weeks to assemble them with the checklist below. Fingerprints are taken
-      for the eAT card at the appointment.
+      You have to appear in person at the Bezirksausländeramt responsible for your
+      Stadtteil. Bring the originals of the documents on Cologne's checklist below —
+      use the waiting time to assemble them. If the Federal Employment Agency
+      approves the job, the residence permit can be issued with the matching employment
+      permission.
     phase: first_30_days
     urgency: critical
     deadline_type: none
@@ -55,54 +126,107 @@ tasks:
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Valid visa issued for work purposes
-        note: Cologne explicitly warns that a visitor or business visa does NOT qualify — it can never be converted into a work permit.
+      - label: Valid visa issued for taking up work, or your current residence permit
+        note: Cologne warns that a visitor or business visa is not enough for a residence permit for employment.
         tone: warn
       - label: Valid national passport
       - label: Mietvertrag (rental contract)
-        note: The Ausländeramt wants the contract here — not the Meldebescheinigung you used at Anmeldung. Two offices, two different housing proofs.
+        note: Cologne's checklist asks for the rental contract.
       - label: Job offer + Vordruck Stellenbeschreibung (job-description form)
-        note: The original of the form your employer filled for the online application.
+        note: The original of the form describing the position planned for you.
       - label: Proof of health insurance
-        note: The insurance card alone suffices once issued; otherwise a confirmation letter from the Kasse.
+        note: If you have an insurance card, showing it is enough; otherwise ask your insurer for a confirmation.
       - label: Two current passport photos
-        note: Cologne's list says two (the ABH also takes digital photos on site — bring two anyway).
     links:
       - https://www.stadt-koeln.de/service/produkte/01083/index.html
     how_to_steps:
       - title: Gather every document while you wait
-        body: A missing document means rebooking and another 6+ week wait. The employer's Stellenbeschreibung form is the most commonly missing piece.
-      - title: Pay the fee at the appointment
-        body: The work-permission check itself is free; the electronic residence card (eAT) costs about €100 on first issue (renewals €93–96). You'll get a Fiktionsbescheinigung as a bridge; the eAT card arrives by post 4–8 weeks later.
+        body: Check your folder against the list below and bring the originals of everything you uploaded.
+      - title: Know the fees
+        body: The employment permission itself is free; under the federal fee rules, issuing the residence permit costs €100.
+      - title: Keep proof of your pending application
+        body: If your application keeps your previous permission in force, you receive a certificate confirming the effect of your application (Fiktionsbescheinigung).
 
-  - title: 'After 3 years: permanent residency instead of another renewal (§18c)'
+  - title: 'After 3 years: permanent residence instead of another renewal (§18c)'
     key: nee.ne_check
     depends_on: []
-    verified_at: 2026-07-18
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
+      - {kind: implementation, label: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte', url: 'https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-fachkraefte'}
+    claims:
+      - id: three-years
+        states: After 3 years
+        source: '§18c AufenthG'
+        quote: sie seit drei Jahren im Besitz eines Aufenthaltstitels
+      - id: section
+        states: (§18c)
+        source: '§18c AufenthG'
+        quote: Einer Fachkraft ist ohne Zustimmung der Bundesagentur für Arbeit eine Niederlassungserlaubnis zu erteilen
+      - id: two-years-german-qualification
+        states: 2 years if you completed vocational training or a degree in Germany
+        source: '§18c AufenthG'
+        quote: Die Frist nach Satz 1 Nummer 1 verkürzt sich auf zwei Jahre
+      - id: thirty-six-months
+        states: 36 months of pension contributions
+        source: '§18c AufenthG'
+        quote: sie mindestens 36 Monate Pflichtbeiträge oder freiwillige Beiträge zur gesetzlichen Rentenversicherung geleistet hat
+      - id: twenty-four-months
+        states: 24 months with a German qualification
+        source: '§18c AufenthG'
+        quote: die Frist nach Satz 1 Nummer 3 verkürzt sich auf 24 Monate
+      - id: b1
+        states: B1 German
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: Ihre Deutschkenntnisse entsprechen dem Niveau B1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
+      - id: fee
+        states: 'Fee: €113'
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: Für die Erteilung einer Niederlassungserlaubnis müssen Sie eine Gebühr in Höhe von 113 Euro bezahlen.
+      - id: turkish-fee
+        states: €22.80 up to 24 years of age, €37 from 24 years
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: 'bis 24 Jahre: 22,80 Euro ab 24 Jahre: 37 Euro'
+      - id: payslips
+        states: Payslips for the last three months
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: Gehaltsabrechnungen der letzten drei Monate
+      - id: b1-certificate
+        states: B1 German certificate
+        source: 'Stadt Köln · Niederlassungserlaubnis für Fachkräfte'
+        quote: Nachweis in Form eines Sprachzertifikats über Deutschkenntnisse auf B1 Niveau
     description: |
-      After 3 years on a skilled-worker permit (§18a/b) — or just 2 with a degree
-      earned in Germany — you can apply for the Niederlassungserlaubnis (permanent
-      residency) instead of paying another €93–96 renewal. Cologne's counters only
-      mention this if you ask. Requirements per the city's skilled-worker NE page:
-      36 months of pension contributions (24 with the German degree), B1 German, and
-      secured livelihood. Fee: €113 (Turkish citizens with association rights €22.80
-      under 24 / €37 from 24). Submit digitally; the Ausländeramt sends a
-      Termineinladung once it can issue the permit — the invitation states the final
-      document list.
+      After 3 years with a skilled-worker residence permit — or 2 years if you completed vocational training or a degree in Germany —
+      you can apply for the Niederlassungserlaubnis (permanent residence). Cologne's
+      skilled-worker page lists, among other conditions: continued work as a skilled
+      worker, 36 months of pension contributions (24 months with a German qualification), B1 German,
+      basic knowledge of the legal and social order, secured livelihood without
+      benefits such as Bürgergeld, sufficient housing and health insurance.
+      Fee: €113 (Turkish citizens with association rights: €22.80 up to 24 years of age, €37 from 24 years).
+      You can apply digitally; the Ausländeramt sends an appointment invitation once
+      it can issue the permit.
     phase: ongoing
     urgency: low
     deadline_type: none
     booking_service_key: auslaenderbehoerde
     documents_required:
       - label: Valid national passport + digital biometric photo
+      - label: Employment contract
+      - label: Payslips for the last three months
+      - label: Rental contract + proof of current monthly housing costs
+      - label: Current pension record (Rentenversicherungsverlauf)
+        note: Request it from the Deutsche Rentenversicherung.
       - label: B1 German certificate
-      - label: Current pension record (Versicherungsverlauf)
-        note: 36 contribution months — 24 if your degree is from a German university. Request it from the Deutsche Rentenversicherung early.
-      - label: Employment contract + recent payslips
+      - label: Proof of basic knowledge of the legal and social order
+        note: Usually the "Leben in Deutschland" test.
     links:
       - https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-fachkraefte
     how_to_steps:
       - title: Check eligibility before every renewal
-        body: When a renewal comes due, run the numbers first — qualifying for the permanent permit costs €113 once instead of €93–96 every extension.
-      - title: Ask about Daueraufenthalt-EU at the appointment
-        body: Same requirements, adds EU-wide mobility — if you might leave Germany one day, request that variant instead.
+        body: When a renewal comes due, check first whether you already meet the conditions for permanent residence.
+      - title: Expect a possible request for more documents
+        body: Cologne may ask for further documents in individual cases and will tell you if so.

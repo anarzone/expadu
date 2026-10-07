@@ -159,6 +159,6 @@ test('the local catalogue inventory reports its actual partial and legacy units 
     $release = $store->stage(app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->get()->all()));
     $store->activate($release->id, null);
     expect(app(CoverageManifest::class)->current()['counts'])->toBe([
-        'total' => 95, 'covered' => 0, 'partial' => 14, 'unsupported' => 1, 'review_required' => 80,
+        'total' => 95, 'covered' => 0, 'partial' => 47, 'unsupported' => 28, 'review_required' => 20,
     ]);
 });

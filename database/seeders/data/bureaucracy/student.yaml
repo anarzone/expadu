@@ -1,8 +1,10 @@
 situation: student
 
 tasks:
+  # Retired 2026-10-08: covered by core.anmeldung.
   - title: Register your address (Anmeldung)
     key: stu.anmeldung
+    is_published: false
     depends_on: []
     verified_at: 2026-06-11
     description: |
@@ -30,132 +32,249 @@ tasks:
 
   - title: Enrol at your university (Immatrikulation)
     key: stu.enrolment
-    depends_on: [stu.health_insurance]
+    depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten', url: 'https://www.gesetze-im-internet.de/sgb_5/__199a.html'}
+      - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken', url: 'https://www.stadt-koeln.de/service/produkte/00973/index.html'}
+    claims:
+      - id: insurance-before-enrolment
+        states: Before enrolment you must prove your health insurance status to the university (§199a SGB V)
+        source: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten'
+        quote: Jeder Studieninteressierte hat gegenüber der staatlichen oder staatlich anerkannten Hochschule vor der Einschreibung nachzuweisen, dass er in der gesetzlichen Krankenversicherung versichert ist
+      - id: insurance-step
+        states: §199a SGB V
+        source: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten'
+        quote: Der Studieninteressierte fordert bei der Krankenkasse an, dass die Krankenkasse den Nachweis über seinen Versichertenstatus nach Satz 1 an die staatliche oder staatlich anerkannte Hochschule meldet.
+      - id: permit-evidence
+        states: Immatrikulationsbescheinigung or a conditional admission
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Immatrikulationsbescheinigung oder bedingte Hochschulzulassung
     description: |
-      Officially become a student. Until enrolment is complete you don't have your
-      student ID, can't access most facilities, and can't get the semester ticket.
+      Enrolment is done with your university: follow the instructions in your
+      admission letter and on the university's portal. Before enrolment you must
+      prove your health insurance status to the university (§199a SGB V). If you
+      need a residence permit for study, Cologne asks for your
+      Immatrikulationsbescheinigung or a conditional admission.
     phase: arrival
     urgency: critical
-    deadline_type: days_since_arrival
-    deadline_days: 30
+    deadline_type: none
     documents_required:
-      - Admission letter (Zulassungsbescheid)
-      - Passport
-      - label: Meldebescheinigung
-        from: stu.anmeldung
-      - label: Health insurance confirmation
+      - Admission letter (Zulassungsbescheid) and the documents your university lists
+      - label: Report of your health insurance status
         from: stu.health_insurance
-      - Proof of payment of Semesterbeitrag
-    links:
-      - https://www.portal.uni-koeln.de/
+        note: Your health insurer sends it to the university.
+    links: []
     how_to_steps:
-      - title: Pay the Semesterbeitrag
-        body: ~€300/semester — includes the Deutschlandsemesterticket (public transit across all of Germany). Pay by bank transfer; takes 1–2 working days to clear.
-      - title: Submit enrolment documents
-        body: Most German universities now accept digital uploads via the student portal. Some still require an in-person submission.
-      - title: Pick up your student ID + semester ticket
-        body: Usually mailed within 2 weeks of enrolment. Since 2024 the Semesterticket is the Deutschlandsemesterticket — it covers regional transit nationwide, not just NRW.
+      - title: Follow your university's enrolment instructions
+        body: Check your admission letter and the university portal for the documents, payments and dates your university sets.
+      - title: Have your insurance status reported
+        body: Ask your health insurer to report your insurance status to the university before you enrol (§199a SGB V).
+        link: https://www.gesetze-im-internet.de/sgb_5/__199a.html
+      - title: Keep your Immatrikulationsbescheinigung
+        body: Non-EU students need it, or a conditional admission, for the residence permit for study.
+        link: https://www.stadt-koeln.de/service/produkte/00973/index.html
 
-  - title: Sign up for student health insurance
+  - title: Prove your health insurance status before enrolment
     key: stu.health_insurance
     depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§5 SGB V — Versicherungspflicht', url: 'https://www.gesetze-im-internet.de/sgb_5/__5.html'}
+      - {kind: primary, label: '§8 SGB V — Befreiung von der Versicherungspflicht', url: 'https://www.gesetze-im-internet.de/sgb_5/__8.html'}
+      - {kind: primary, label: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten', url: 'https://www.gesetze-im-internet.de/sgb_5/__199a.html'}
+    claims:
+      - id: student-compulsory-insurance
+        states: generally compulsorily insured in statutory health insurance up to the age of thirty, unless they are entitled to benefits through another country under EU or international rules (§5 SGB V)
+        source: '§5 SGB V — Versicherungspflicht'
+        quote: Studenten, die an staatlichen oder staatlich anerkannten Hochschulen eingeschrieben sind, unabhängig davon, ob sie ihren Wohnsitz oder gewöhnlichen Aufenthalt im Inland haben, wenn für sie auf Grund über- oder zwischenstaatlichen Rechts kein Anspruch auf Sachleistungen besteht, längstens bis zur Vollendung des dreißigsten Lebensjahres
+      - id: exemption
+        states: exempted from this, applying within three months of compulsory insurance starting (§8 SGB V)
+        source: '§8 SGB V — Befreiung von der Versicherungspflicht'
+        quote: Der Antrag ist innerhalb von drei Monaten nach Beginn der Versicherungspflicht bei der Krankenkasse zu stellen.
+      - id: exemption-ground
+        states: You can apply to a statutory health insurer to be exempted
+        source: '§8 SGB V — Befreiung von der Versicherungspflicht'
+        quote: durch die Einschreibung als Student oder die berufspraktische Tätigkeit
+      - id: proof-before-enrolment
+        states: before you enrol you must prove your insurance status to your university
+        source: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten'
+        quote: Jeder Studieninteressierte hat gegenüber der staatlichen oder staatlich anerkannten Hochschule vor der Einschreibung nachzuweisen, dass er in der gesetzlichen Krankenversicherung versichert ist
+      - id: insurer-reports
+        states: §199a SGB V
+        source: '§199a SGB V — Informationspflichten bei krankenversicherten Studenten'
+        quote: Der Studieninteressierte fordert bei der Krankenkasse an, dass die Krankenkasse den Nachweis über seinen Versichertenstatus nach Satz 1 an die staatliche oder staatlich anerkannte Hochschule meldet.
     description: |
-      Students under 30 pay a discounted statutory rate — for 2026 {{figure:student_insurance_monthly}}
-      all-in (base contribution €87.38 + the insurer's Zusatzbeitrag + mandatory
-      long-term care insurance). You must have proof of insurance before you can
-      enrol — many universities won't finalise enrolment without it.
+      Students enrolled at a state or state-recognised university are
+      generally compulsorily insured in statutory health insurance up to the age of thirty, unless they are entitled to benefits through another country under EU or international rules (§5 SGB V).
+      You can apply to a statutory health insurer to be exempted from this, applying within three months of compulsory insurance starting (§8 SGB V).
+      Either way, before you enrol you must prove your insurance status to your
+      university: a statutory health insurer reports it to the university at your
+      request, also if you are exempt or not compulsorily insured (§199a SGB V).
     phase: arrival
     urgency: critical
-    deadline_type: days_since_arrival
-    deadline_days: 14
-    documents_required:
-      - Passport
-      - Meldebescheinigung
-      - Admission letter
+    deadline_type: none
+    documents_required: []
     links:
-      - https://www.tk.de/en
+      - https://www.gesetze-im-internet.de/sgb_5/__199a.html
     how_to_steps:
-      - title: Choose a public insurer
-        body: TK, AOK, Barmer all offer student rates. TK has the best English service for international students.
-      - title: Apply online for student membership
-        body: Specify you're a Pflichtversicherter as a student. The insurer issues a Studienbescheinigung for your university enrolment.
-      - title: Forward the confirmation to your university
-        body: Submit the insurance confirmation in the student portal — required to complete Immatrikulation.
+      - title: Check your situation with a statutory health insurer
+        body: Explain your studies and any cover you already have, including cover from your home country. The insurer tells you whether you are compulsorily insured; Expadu does not decide this.
+      - title: Ask for the report to your university
+        body: Ask the insurer to send your insurance status to your university, so that your enrolment can go ahead (§199a SGB V).
+        link: https://www.gesetze-im-internet.de/sgb_5/__199a.html
 
-  # Book-before-ready: the online application can go in with the admission
-  # letter — don't wait for full enrolment, the queue is the bottleneck.
-  - title: Submit your student permit application online — today (§16b)
+  # Book-before-ready: the application can go in with a conditional admission
+  # letter — don't wait for full enrolment.
+  - title: Apply for your student residence permit (§16b)
     key: stu.submit_application
-    eu_filter: non_eu_only
-    depends_on: [stu.anmeldung]
-    verified_at: 2026-06-11
+    depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§16b AufenthG — Studium', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__16b.html'}
+      - {kind: primary, label: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
+      - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken', url: 'https://www.stadt-koeln.de/service/produkte/00973/index.html'}
+    claims:
+      - id: study-permit
+        states: residence permit (§16b)
+        source: '§16b AufenthG — Studium'
+        quote: Einem Ausländer wird zum Zweck des Vollzeitstudiums an einer staatlichen Hochschule, an einer staatlich anerkannten Hochschule oder an einer vergleichbaren Bildungseinrichtung eine Aufenthaltserlaubnis erteilt, wenn er von der Bildungseinrichtung zugelassen worden ist.
+      - id: study-permit-law
+        states: residence permit for study under §16b AufenthG
+        source: '§16b AufenthG — Studium'
+        quote: Einem Ausländer wird zum Zweck des Vollzeitstudiums an einer staatlichen Hochschule, an einer staatlich anerkannten Hochschule oder an einer vergleichbaren Bildungseinrichtung eine Aufenthaltserlaubnis erteilt, wenn er von der Bildungseinrichtung zugelassen worden ist.
+      - id: application-window
+        states: within your visa's validity, or within 90 days of entry if you entered without a visa
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Anschließend beantragen Sie bitte innerhalb des erlaubten Visumszeitraums beziehungsweise innerhalb von 90 Tagen (bei Befreiung von der Visumpflicht) einen Aufenthaltstitel (Erstantrag).
+      - id: visa-free-deadline
+        covers: deadline
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: register-first
+        states: Register your address in Cologne first
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: dann müssen Sie zuerst Ihren offiziellen Wohnsitz in Köln anmelden
+      - id: conditional-admission
+        states: A conditional university admission is accepted
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Immatrikulationsbescheinigung oder bedingte Hochschulzulassung
+      - id: finance-alternatives
+        states: a Verpflichtungserklärung, a scholarship certificate, or your parents' declaration that they will fund your studies
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Verpflichtungserklärung / Stipendienbescheinigung / Erklärung der Eltern, für die Dauer des Studiums den Lebensunterhalt zu sichern
     description: |
-      Non-EU students must convert their entry visa into a student residence permit —
-      apply within the visa's validity, or within 90 days if you entered visa-free.
-      File Cologne's online Erstantrag as soon as your Anmeldung is done: a conditional
-      university admission is enough to apply, and the appointment wait (6–12 weeks,
-      worst around semester start) only begins at submission.
+      Non-EU students turn their entry visa into a residence permit for study under
+      §16b AufenthG. Register your address in Cologne first, then apply (Erstantrag)
+      within your visa's validity, or within 90 days of entry if you entered without a visa.
+      A conditional university admission is accepted with the application, so you
+      do not need to wait for full enrolment.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
     deadline_days: 90
     applies_if:
+      citizenship_group: non_eu
       entry_mode: [d_visa, visa_free]
     documents_required:
-      - label: Online application form (Erstantrag 33-F07)
-        note: Upload scans of the documents listed on the appointment task — the conditional admission letter works if you're not enrolled yet.
-      - label: 'Finance proof: Sperrkonto with {{figure:sperrkonto_students}}'
-        note: The 2025/2026 value per Cologne. Alternatives — Verpflichtungserklärung, scholarship certificate, or your parents' written declaration to fund the studies (an option most guides omit).
+      - label: Residence permit application (Erstantrag)
+        note: Apply online via the city page or book an appointment at your Bezirksausländeramt. A conditional university admission works if you're not enrolled yet.
+      - label: 'Finance proof, for example a Sperrkonto with {{figure:sperrkonto_students}}'
+        note: Cologne also accepts a Verpflichtungserklärung, a scholarship certificate, or your parents' declaration that they will fund your studies.
     links:
       - https://www.stadt-koeln.de/service/produkte/00973/index.html
     how_to_steps:
-      - title: Open a blocked account or line up your finance proof
-        body: Most students use a Sperrkonto (Fintiba, Expatrio, Deutsche Bank) with one year's living costs — {{figure:sperrkonto_students}} for 2025/26. A scholarship letter or your parents' written funding declaration also works.
-      - title: File the online Erstantrag now
-        body: Demand is heaviest in Sep/Oct — submitting in early August beats the rush if you have an accepted offer.
+      - title: Line up your finance proof
+        body: For a first permit Cologne accepts, for example, a blocked account (Sperrkonto) at a German bank with {{figure:sperrkonto_students}}. See the city page for the other accepted proofs.
+        link: https://www.stadt-koeln.de/service/produkte/00973/index.html
+      - title: File your Erstantrag
+        body: Apply online or book an appointment at your district immigration office (Bezirksausländeramt), as the city page describes.
         link: https://www.stadt-koeln.de/service/produkte/00973/index.html
 
-  - title: Attend your permit appointment with the originals (§16b)
+  - title: Attend your permit appointment with the originals
     key: stu.residence_permit
-    eu_filter: non_eu_only
-    depends_on: [stu.submit_application, stu.enrolment, stu.health_insurance]
-    verified_at: 2026-06-11
+    depends_on: [stu.submit_application]
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§16b AufenthG — Studium', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__16b.html'}
+      - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken', url: 'https://www.stadt-koeln.de/service/produkte/00973/index.html'}
+    claims:
+      - id: work-account
+        states: work of up to 140 working days per year (§16b(3) AufenthG)
+        source: '§16b AufenthG — Studium'
+        quote: Die Aufenthaltserlaubnis berechtigt nach Maßgabe der folgenden Sätze nur zur Ausübung von Beschäftigungen, die insgesamt bis zu 140 Arbeitstage im Jahr nicht überschreiten dürfen (Arbeitstagekonto).
+      - id: bring-documents
+        states: Bring all the required documents to your appointment
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Bringen Sie bitte alle benötigten Unterlagen zum Termin mit.
+      - id: further-documents
+        states: the office can ask for further documents and give you another appointment
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Im Einzelfall kann es erforderlich sein, dass im Termin weitere Unterlagen und Nachweise angefordert werden.
+      - id: language-course-hours
+        states: at least 18 lessons per week
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: mindestens 18 Unterrichtsstunden pro Woche
+      - id: visitor-visa
+        states: A visitor visa does not lead to a residence permit for study
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: dass ein Besuchsvisum nicht zur Erteilung einer Aufenthaltserlaubnis zu Studienzwecken führt
     description: |
-      After your online application, the Ausländerbehörde invites you to an appointment
-      — bring the originals of everything you uploaded. The permit covers your studies
-      plus part-time work: 140 full working days per year (half-days count as half;
-      20 hours/week during lecture time counts as 2.5 days).
+      Bring all the required documents to your appointment at the Bezirksausländeramt.
+      In some cases the office can ask for further documents and give you another appointment.
+      The permit covers your studies and allows work of up to 140 working days per year (§16b(3) AufenthG);
+      the work card explains how days are counted.
     phase: first_30_days
     urgency: critical
     deadline_type: none
     applies_if:
+      citizenship_group: non_eu
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
       - label: Valid national passport including copies of ALL printed pages
-        note: Cologne is specific about the all-pages copies — bring them, don't count on the office copier.
-      - label: Biometric photo, not older than 3 months
+        note: Cologne asks for copies of every printed page; bring them with you.
+      - label: Digital biometric photo
       - label: Valid study visa, if one was required for entry
-        note: A visitor visa is explicitly insufficient and cannot be converted.
+        note: A visitor visa does not lead to a residence permit for study.
       - label: Immatrikulationsbescheinigung or conditional university admission
-        note: 'If you''re still in study preparation: language-course attendance proof stating at least 18 lessons/week, or Studienkolleg enrollment.'
+        note: 'If you''re still in study preparation: proof of the preparatory language course with its length and weekly hours (at least 18 lessons per week), or your Studienkolleg enrolment certificate.'
       - label: Studienverlaufsplan (study plan), if already in degree study
         note: Renewals additionally need a certificate of orderly study progress.
-      - label: 'Finance proof: Sperrkonto with {{figure:sperrkonto_students}}'
-        note: The original confirmation of the blocked account, scholarship or funding declaration you uploaded.
-      - label: Proof of health insurance
-        note: Renewals need confirmation of continuous coverage.
-      - label: Mietvertrag in copy
+      - label: 'Finance proof, for example a Sperrkonto with {{figure:sperrkonto_students}}'
+        note: The blocked account confirmation, Verpflichtungserklärung, scholarship certificate or your parents' funding declaration.
+      - label: Proof of sufficient health insurance
+        note: Renewals also need your insurer's confirmation of continuous cover.
+      - label: Copy of your rental contract (Mietvertrag)
     links:
       - https://www.stadt-koeln.de/service/produkte/00973/index.html
     how_to_steps:
-      - title: Bring originals + colour copies of everything
-        body: Even the smallest missing document means a rebooked appointment — currently a 6–12 week wait in Cologne.
+      - title: Bring originals and copies of everything
+        body: Check the city's document list before the appointment. A missing document can mean a further appointment.
+        link: https://www.stadt-koeln.de/service/produkte/00973/index.html
 
+  # Retired 2026-10-08: covered by core.steuer_id.
   - title: Wait for your Steuer-ID
     key: stu.steuer_id
+    is_published: false
     type: wait
-    depends_on: [stu.anmeldung]
+    depends_on: []
     description: |
       Automatically sent by post 2–4 weeks after Anmeldung. As a student you'll need
       it for any paid work (mini-jobs, working student contracts, tutoring) and to file
@@ -173,9 +292,11 @@ tasks:
       - title: Request a copy if it doesn't arrive in 4 weeks
         body: Use the BZSt online contact form.
 
+  # Retired 2026-10-08: covered by core.bank_account.
   - title: Open a student bank account
     key: stu.bank_account
-    depends_on: [stu.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Most German banks offer free Girokonto accounts to students under 30 — no monthly
       fee, free debit card, English support at the bigger banks.
@@ -219,9 +340,11 @@ tasks:
       - title: Top it up online
         body: Most dorms have charging stations. Meals are €3–6 vs. €10+ outside.
 
+  # Retired 2026-10-08: covered by core.rundfunkbeitrag.
   - title: Settle your Rundfunkbeitrag (or apply for exemption)
     key: stu.rundfunkbeitrag
-    depends_on: [stu.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       €18.36/month per household. If you receive BAföG you can apply for exemption
       and skip the fee entirely.
@@ -238,47 +361,131 @@ tasks:
       - title: Apply for BAföG exemption if eligible
         body: BAföG recipients pay €0/month — submit your BAföG-Bescheid as proof.
 
-  - title: 'Working as a student: your 140-day account'
+  - title: 'Working as a student: 140 working days per year'
     key: stu.work_rules
     type: info
-    eu_filter: non_eu_only
     depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§16b AufenthG — Studium', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__16b.html'}
+      - {kind: primary, label: '§4a AufenthG — Zugang zur Erwerbstätigkeit', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__4a.html'}
+      - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken', url: 'https://www.stadt-koeln.de/service/produkte/00973/index.html'}
+    claims:
+      - id: work-account
+        states: 140 working days per year
+        source: '§16b AufenthG — Studium'
+        quote: Die Aufenthaltserlaubnis berechtigt nach Maßgabe der folgenden Sätze nur zur Ausübung von Beschäftigungen, die insgesamt bis zu 140 Arbeitstage im Jahr nicht überschreiten dürfen (Arbeitstagekonto).
+      - id: half-days
+        states: days with up to four hours of work count as half days
+        source: '§16b AufenthG — Studium'
+        quote: Die Beschäftigungen können für jeden Tag, an dem die Arbeitszeit bis zu vier Stunden beträgt, als halber Arbeitstag
+      - id: lecture-time-weeks
+        states: if you work up to 20 hours in a lecture-time week, that week counts as two and a half days
+        source: '§16b AufenthG — Studium'
+        quote: während der Vorlesungszeit, wenn sie bis zu 20 Stunden je Kalenderwoche ausgeübt werden
+      - id: outside-lecture-time
+        states: outside lecture time each week counts as two and a half days however the hours are spread
+        source: '§16b AufenthG — Studium'
+        quote: außerhalb der Vorlesungszeit unabhängig von der Verteilung der Arbeitszeit als zweieinhalb Arbeitstage auf das Arbeitstagekonto angerechnet werden
+      - id: weekly-choice
+        states: For each calendar week the more favourable way of counting applies
+        source: '§16b AufenthG — Studium'
+        quote: Die Günstigkeitsprüfung nach Satz 3 erfolgt derart, dass einzeln für jede Kalenderwoche bestimmt wird
+      - id: student-jobs
+        states: Student jobs at a university or other research institution (studentische Nebentätigkeiten) don't count
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Studentische Nebentätigkeiten sind ohne zeitliche Beschränkungen erlaubt und werden nicht auf das Arbeitstagekonto angerechnet.
+      - id: beyond-needs-permission
+        states: Work beyond this account needs separate permission
+        source: '§4a AufenthG — Zugang zur Erwerbstätigkeit'
+        quote: Die Ausübung einer über das Verbot oder die Beschränkung hinausgehenden Erwerbstätigkeit bedarf der Erlaubnis.
     description: |
-      Your student permit includes an Arbeitstagekonto: 140 full working days per year,
-      with half-days (up to 4 hours) counting as half a day. Working up to 20 hours/week
-      during lecture time burns 2.5 days a week. Werkstudent contracts, mini-jobs and
-      tutoring all count. Going over without BA permission risks your permit — keep a
-      simple tally.
+      Your student permit includes an Arbeitstagekonto: employment of up to
+      140 working days per year. For each calendar week the more favourable way of counting applies:
+      either days with up to four hours of work count as half days, or
+      if you work up to 20 hours in a lecture-time week, that week counts as two and a half days;
+      outside lecture time each week counts as two and a half days however the hours are spread.
+      Student jobs at a university or other research institution (studentische Nebentätigkeiten) don't count.
+      Work beyond this account needs separate permission, so keep a simple tally.
     phase: ongoing
     urgency: low
     deadline_type: none
+    applies_if:
+      citizenship_group: non_eu
     documents_required: []
     links:
       - https://www.stadt-koeln.de/service/produkte/00973/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__16b.html
 
   - title: 'After graduation: 18 months to find your job'
     key: stu.post_graduation
     type: info
-    eu_filter: non_eu_only
     depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§20 AufenthG — Arbeitsplatzsuche', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__20.html'}
+      - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken', url: 'https://www.stadt-koeln.de/service/produkte/00973/index.html'}
+    claims:
+      - id: title-period
+        states: 18 months to find your job
+        source: '§20 AufenthG — Arbeitsplatzsuche'
+        quote: Sie wird in den Fällen des Absatzes 1 Nummer 1 bis 4 für einen Zeitraum von bis zu 18 Monaten erteilt.
+      - id: job-search-permit
+        states: a residence permit for up to 18 months to look for a job (§20 AufenthG)
+        source: '§20 AufenthG — Arbeitsplatzsuche'
+        quote: Sie wird in den Fällen des Absatzes 1 Nummer 1 bis 4 für einen Zeitraum von bis zu 18 Monaten erteilt.
+      - id: after-degree
+        states: After successfully completing your degree in Germany
+        source: '§20 AufenthG — Arbeitsplatzsuche'
+        quote: wird einem Ausländer nach erfolgreichem Abschluss eines Studiums im Bundesgebiet im Rahmen eines Aufenthalts nach § 16b oder § 16c eine Aufenthaltserlaubnis erteilt
+      - id: livelihood
+        states: Your livelihood must be secured for the whole period
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Ihr Lebensunterhalt muss während der gesamten Dauer der Aufenthaltserlaubnis gesichert sein.
+      - id: no-extension
+        states: the permit cannot be extended
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Eine Verlängerung der Aufenthaltserlaubnis zur Arbeitsplatzsuche ist nicht möglich.
+      - id: job-need-not-match
+        states: The job you find does not have to match your degree
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Ab diesem Zeitpunkt muss die von Ihnen gefundene Arbeitsstelle keinen Zusammenhang mit Ihrem Studienabschluss erkennen lassen.
+      - id: next-permit
+        states: as long as you meet the requirements of a permit such as the one for skilled workers with an academic qualification or the EU Blue Card
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Es genügt, wenn Sie die Voraussetzungen zum Erhalt einer Aufenthaltserlaubnis als Fachkraft mit akademischer Ausbildung, zur Forschung, als Beamter oder die Voraussetzungen der Blauen Karte EU erfüllen.
+      - id: self-employment
+        states: You can also use the permit to prepare self-employment
+        source: 'Stadt Köln · Aufenthaltserlaubnis zu Studienzwecken'
+        quote: Die Aufenthaltserlaubnis kann weiterhin zur Vorbereitung einer Unternehmensgründung oder freiberuflichen Selbstständigkeit erteilt werden.
     description: |
-      Once you complete your degree, you can get a residence permit of up to 18 months
-      to find a qualified job — with unrestricted work allowed while you search (§20
-      Abs. 3 AufenthG). Two practical tips: the degree certificate often arrives months
-      late, but the university's official confirmation of completion suffices; and your
-      health insurance jumps off the student rate after exmatriculation — budget for it.
-      When you find the job, convert to a work permit or Blue Card without leaving
-      Germany.
+      After successfully completing your degree in Germany, you can get
+      a residence permit for up to 18 months to look for a job (§20 AufenthG).
+      Your livelihood must be secured for the whole period, and the permit cannot be extended.
+      The job you find does not have to match your degree,
+      as long as you meet the requirements of a permit such as the one for skilled workers with an academic qualification or the EU Blue Card.
+      You can also use the permit to prepare self-employment.
     phase: ongoing
     urgency: low
     deadline_type: none
+    applies_if:
+      citizenship_group: non_eu
     documents_required: []
     links:
-      - https://www.stadt-koeln.de/service/produkte/01083/index.html
+      - https://www.stadt-koeln.de/service/produkte/00973/index.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__20.html
 
   - title: Apply for BAföG (if eligible)
     key: stu.bafoeg
-    depends_on: [stu.enrolment, stu.bank_account]
+    depends_on: [stu.enrolment]
     description: |
       Federal student aid for low-income students, including some non-EU students with
       certain residence titles. The amount depends on your housing, insurance, income,
@@ -301,19 +508,44 @@ tasks:
       - title: Submit yearly updates
         body: BAföG is recalculated each year — keep income + enrolment docs ready every September.
 
-  - title: 'Your first tax return: often a refund'
+  - title: 'Your first tax return: you can file one yourself'
     key: stu.tax_return
     type: info
     depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§46 EStG — Veranlagung bei Einkünften aus nichtselbständiger Arbeit', url: 'https://www.gesetze-im-internet.de/estg/__46.html'}
+    claims:
+      - id: mandatory-cases
+        states: §46 EStG lists cases in which an assessment is required
+        source: '§46 EStG — Veranlagung bei Einkünften aus nichtselbständiger Arbeit'
+        quote: so wird eine Veranlagung nur durchgeführt
+      - id: several-employers
+        states: for example if you were paid by several employers at the same time
+        source: '§46 EStG — Veranlagung bei Einkünften aus nichtselbständiger Arbeit'
+        quote: wenn der Steuerpflichtige nebeneinander von mehreren Arbeitgebern Arbeitslohn bezogen hat
+      - id: voluntary-assessment
+        states: you can still apply for an assessment yourself, in particular to have the withheld wage tax credited against your income tax
+        source: '§46 EStG — Veranlagung bei Einkünften aus nichtselbständiger Arbeit'
+        quote: wenn die Veranlagung beantragt wird, insbesondere zur Anrechnung von Lohnsteuer auf die Einkommensteuer
+      - id: by-return
+        states: You apply by filing an income tax return
+        source: '§46 EStG — Veranlagung bei Einkünften aus nichtselbständiger Arbeit'
+        quote: Der Antrag ist durch Abgabe einer Einkommensteuererklärung zu stellen
     description: |
-      Worked a mini-job, Werkstudent contract or tutoring gig? Filing a tax return is
-      usually voluntary for students — and usually money back, because tax withheld on
-      part-year work overshoots. Tools like Taxfix or Wundertax do it in English for
-      ~€40; ELSTER is the free official route. Study costs (laptop, semester fees for a
-      second degree) can even carry forward as future deductions.
+      Had wage tax deducted from your pay, for example on a Werkstudent contract?
+      §46 EStG lists cases in which an assessment is required,
+      for example if you were paid by several employers at the same time. Otherwise
+      you can still apply for an assessment yourself, in particular to have the withheld wage tax credited against your income tax.
+      You apply by filing an income tax return.
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
     links:
+      - https://www.gesetze-im-internet.de/estg/__46.html
       - https://www.elster.de/eportal/start

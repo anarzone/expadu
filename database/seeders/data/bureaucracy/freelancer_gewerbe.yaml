@@ -7,7 +7,7 @@ tasks:
   - title: Apply for the self-employment residence permit (§21 Abs. 1)
     key: gw.residence_permit
     eu_filter: non_eu_only
-    depends_on: [fre.anmeldung, fre.health_insurance]
+    depends_on: []
     description: |
       Commercial self-employment needs the §21(1) permit before you trade. Cologne's
       stated conditions: an overriding economic interest or regional need for your
@@ -53,7 +53,7 @@ tasks:
     # trade registration forever for EU traders and non-EU who already hold a
     # permit. The permit is a soft prerequisite for non-EU only — conveyed in the
     # copy + document list below, not as a hard DAG edge.
-    depends_on: [fre.anmeldung]
+    depends_on: []
     description: |
       Once your permit allows it, register the trade at the Gewerbeamt — €26 for a sole
       proprietorship in Cologne, fully online via the NRW business portal, with the

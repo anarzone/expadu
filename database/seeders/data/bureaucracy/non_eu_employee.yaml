@@ -7,8 +7,10 @@ situation:
   - non_eu_employee_chancenkarte
 
 tasks:
+  # Retired 2026-10-08: covered by core.anmeldung.
   - title: Register your address (Anmeldung)
     key: nee.anmeldung
+    is_published: false
     depends_on: []
     verified_at: 2026-06-11
     description: |
@@ -44,10 +46,12 @@ tasks:
       - title: Make digital copies of the Meldebescheinigung
         body: You'll attach it to bank, insurance and permit paperwork repeatedly — keep a PDF handy.
 
+  # Retired 2026-10-08: covered by core.steuer_id.
   - title: Wait for your Steuer-ID (tax identification number)
     key: nee.steuer_id
+    is_published: false
     type: wait
-    depends_on: [nee.anmeldung]
+    depends_on: []
     description: |
       The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post
       within 2–4 weeks of Anmeldung. You can't legally be paid in Germany without it.
@@ -67,9 +71,11 @@ tasks:
       - title: Give it to your employer immediately
         body: Without your Steuer-ID, payroll defaults to maximum tax class — you'll be over-taxed every payslip until you fix it.
 
+  # Retired 2026-10-08: covered by core.health_insurance.
   - title: Sign up for German health insurance
     key: nee.health_insurance
-    depends_on: [nee.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Health insurance is mandatory in Germany. As an employee, you'll typically be
       enrolled in a gesetzliche Krankenversicherung (public/statutory) — the employer
@@ -93,9 +99,11 @@ tasks:
       - title: Wait for your insurance card
         body: Arrives by post in 2–3 weeks. In the meantime, doctors will accept the membership confirmation letter — and your residence-permit appointment accepts the card alone once issued.
 
+  # Retired 2026-10-08: covered by core.bank_account.
   - title: Open a German bank account
     key: nee.bank_account
-    depends_on: [nee.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Required for receiving your salary and paying rent. Pick a Girokonto from a bank
       that supports IBAN, mobile app, and ideally English service.
@@ -119,9 +127,11 @@ tasks:
       - title: Share the IBAN with employer + landlord
         body: Your IBAN should be on the employer's HR portal before payroll. Same with rent direct-debit.
 
+  # Retired 2026-10-08: covered by core.rundfunkbeitrag.
   - title: Settle your Rundfunkbeitrag (broadcasting fee)
     key: nee.rundfunkbeitrag
-    depends_on: [nee.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Every household in Germany pays €18.36/month for public broadcasting, regardless of
       whether you own a TV. The Beitragsservice will write to you automatically a few
@@ -141,9 +151,11 @@ tasks:
       - title: Apply for exemption if eligible
         body: BAföG recipients, certain low-income workers, and disabled persons can be exempted — full list on the official site.
 
+  # Retired 2026-10-08: covered by core.liability_insurance.
   - title: Get private liability insurance (Haftpflichtversicherung)
     key: nee.liability_insurance
-    depends_on: [nee.bank_account]
+    is_published: false
+    depends_on: []
     description: |
       Not legally required, but culturally near-universal and landlords increasingly
       expect it — covers damage you accidentally cause to other people's property.
@@ -160,27 +172,64 @@ tasks:
       - title: Note your policy number
         body: You'll need it if you ever cause damage (e.g., breaking a friend's TV, damaging a rented item).
 
-  - title: File your annual tax return (Einkommensteuererklärung)
+  # Serves every employee (EU and non-EU): eu_employee's copy (eue.tax_return) is retired.
+  - title: File your annual income tax return (Einkommensteuererklärung)
     key: nee.tax_return
-    depends_on: [nee.steuer_id]
+    depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      purpose: employment
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§46 EStG — Veranlagung bei Arbeitnehmern', url: 'https://www.gesetze-im-internet.de/estg/__46.html'}
+      - {kind: primary, label: '§149 AO — Abgabe der Steuererklärungen', url: 'https://www.gesetze-im-internet.de/ao_1977/__149.html'}
+      - {kind: primary, label: '§41b EStG — Lohnsteuerbescheinigung', url: 'https://www.gesetze-im-internet.de/estg/__41b.html'}
+    claims:
+      - id: several-employers
+        states: if you were paid by several employers at the same time
+        source: '§46 EStG — Veranlagung bei Arbeitnehmern'
+        quote: wenn der Steuerpflichtige nebeneinander von mehreren Arbeitgebern Arbeitslohn bezogen hat
+      - id: section-46
+        states: cases listed in §46 EStG
+        source: '§46 EStG — Veranlagung bei Arbeitnehmern'
+        quote: so wird eine Veranlagung nur durchgeführt
+      - id: voluntary-filing
+        states: you can still file a return to have the wage tax already withheld credited against your income tax
+        source: '§46 EStG — Veranlagung bei Arbeitnehmern'
+        quote: wenn die Veranlagung beantragt wird, insbesondere zur Anrechnung von Lohnsteuer auf die Einkommensteuer
+      - id: seven-months
+        states: due seven months after the end of the calendar year
+        source: '§149 AO — Abgabe der Steuererklärungen'
+        quote: spätestens sieben Monate nach Ablauf des Kalenderjahres
+      - id: wage-tax-certificate
+        states: Your employer must hand you a printout of your electronic wage tax certificate or make it available electronically
+        source: '§41b EStG — Lohnsteuerbescheinigung'
+        quote: Der Arbeitgeber hat dem Arbeitnehmer die elektronische Lohnsteuerbescheinigung nach amtlich vorgeschriebenem Muster binnen angemessener Frist als Ausdruck auszuhändigen oder elektronisch bereitzustellen.
     description: |
-      Mandatory if you had multiple employers in a year, received unemployment benefits,
-      or want to claim deductions (commute, work-from-home, professional fees, etc.).
-      Most expats get money back — average refund is ~€1,000.
+      As an employee, wage tax is deducted from your salary. A tax return is
+      mandatory in the cases listed in §46 EStG — for example if you were paid by
+      several employers at the same time. If none of those cases applies, you can
+      still file a return to have the wage tax already withheld credited against
+      your income tax. If you are required to file and do it yourself, the return
+      is due seven months after the end of the calendar year; a different deadline
+      applies when a tax adviser prepares it.
     phase: ongoing
     urgency: medium
     deadline_type: none
     recurrence_months: 12
     documents_required:
-      - Lohnsteuerbescheinigung from each employer
-      - Receipts for deductible expenses
-      - Bank statements showing tax-relevant transactions
+      - Lohnsteuerbescheinigung (wage tax certificate) from each employer
+      - Receipts for expenses you want to claim
     links:
+      - https://www.gesetze-im-internet.de/estg/__46.html
       - https://www.elster.de/eportal/start
     how_to_steps:
-      - title: Pick a filing method
-        body: ELSTER (free, German-only, complex) or commercial tools like Taxfix, Wundertax, Steuerbot (English, ~€40, much easier).
-      - title: Gather your Lohnsteuerbescheinigung
-        body: Your employer sends this by end of February each year. It's the tax summary for the previous year.
-      - title: File by July 31
-        body: Standard deadline if filing yourself; later if a Steuerberater files for you. Late penalties accrue if missed.
+      - title: Collect your Lohnsteuerbescheinigung
+        body: Your employer must hand you a printout of your electronic wage tax certificate or make it available electronically. It summarises the wage and wage tax of the year.
+      - title: Check whether you must file
+        body: Read the cases listed in §46 EStG, or ask your tax office or a tax adviser. If you are not required to file, filing is your choice.
+        link: https://www.gesetze-im-internet.de/estg/__46.html

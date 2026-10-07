@@ -309,7 +309,7 @@ test('imported content carries substituted figures and cards explain themselves'
     $blueCard = Task::where('key', 'bc.submit_application')->first();
     expect($blueCard->description)->toContain('€50,700');
     expect($blueCard->description)->not->toContain('{{figure:');
-    expect($blueCard->review_status)->toBe('legacy');
+    expect($blueCard->review_status)->toBe('approved')->and($blueCard->source_verification)->toBe('quote_checked');
     engineFixture('fixture.explanation', ['applies_if' => [['citizenship_group' => 'non_eu', 'purpose' => 'employment']]]);
 
     $user = User::factory()->onboarded()->create([

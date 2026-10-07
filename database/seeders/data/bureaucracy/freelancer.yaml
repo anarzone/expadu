@@ -6,8 +6,10 @@ situation:
   - freelancer_gewerbe
 
 tasks:
+  # Retired 2026-10-08: covered by core.anmeldung.
   - title: Register your address (Anmeldung)
     key: fre.anmeldung
+    is_published: false
     depends_on: []
     verified_at: 2026-06-11
     description: |
@@ -38,10 +40,12 @@ tasks:
       - title: Make digital copies
         body: You'll attach the Meldebescheinigung to bank, insurance and tax paperwork repeatedly — keep a PDF handy.
 
+  # Retired 2026-10-08: covered by core.steuer_id.
   - title: Wait for your Steuer-ID (tax identification number)
     key: fre.steuer_id
+    is_published: false
     type: wait
-    depends_on: [fre.anmeldung]
+    depends_on: []
     description: |
       The Bundeszentralamt für Steuern automatically sends your 11-digit personal tax ID
       by post within 2–4 weeks of Anmeldung. You need it for the Fragebogen zur
@@ -60,49 +64,118 @@ tasks:
         body: Use the BZSt input form — it's only ever sent by post to your registered address.
         link: https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
 
-  - title: Submit the Fragebogen zur steuerlichen Erfassung
+  - title: Report your self-employment to the Finanzamt
     key: fre.fragebogen
-    depends_on: [fre.anmeldung, fre.steuer_id]
+    depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      purpose: freelance
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§138 AO', url: 'https://www.gesetze-im-internet.de/ao_1977/__138.html'}
+      - {kind: primary, label: '§14 UStG', url: 'https://www.gesetze-im-internet.de/ustg_1980/__14.html'}
+    claims:
+      - id: one-month-notice
+        states: within one month (§138 AO)
+        source: '§138 AO'
+        quote: Mitteilungen nach den Absätzen 1, 1a und 1b sind innerhalb eines Monats nach dem meldepflichtigen Ereignis zu erstatten
+      - id: freelance-notice
+        states: notify the Finanzamt directly
+        source: '§138 AO'
+        quote: Wer eine freiberufliche Tätigkeit aufnimmt, hat dies dem nach § 19 zuständigen Finanzamt mitzuteilen
+      - id: further-information
+        states: give the Finanzamt further information about the tax-relevant facts
+        source: '§138 AO'
+        quote: haben sie dem in Absatz 1 bezeichneten Finanzamt weitere Auskünfte über die für die Besteuerung erheblichen rechtlichen und tatsächlichen Verhältnisse zu erteilen
+      - id: invoice-tax-number
+        states: (§14 UStG)
+        source: '§14 UStG'
+        quote: die dem leistenden Unternehmer vom Finanzamt erteilte Steuernummer oder die ihm vom Bundeszentralamt für Steuern erteilte Umsatzsteuer-Identifikationsnummer
     description: |
-      Within one month of starting your freelance activity you must register it with the
-      Finanzamt — electronically, via the Fragebogen zur steuerlichen Erfassung on ELSTER
-      (§138 AO). The outcome is your Steuernummer, which must appear on every invoice you
-      send. Miss the deadline and the tax office can fine you and estimate your income.
+      When you start self-employed work, the tax office has to be told within one month (§138 AO).
+      If you take up a liberal profession, you notify the Finanzamt directly; a trade business
+      is reported to the municipality, which informs the Finanzamt. In both cases you also
+      give the Finanzamt further information about the tax-relevant facts of your business,
+      electronically in the official data set — on ELSTER this is the Fragebogen zur
+      steuerlichen Erfassung. Your invoices must show the Steuernummer the Finanzamt gives
+      you, or a VAT identification number (§14 UStG).
     phase: first_30_days
     urgency: critical
     deadline_type: none
     booking_service_key: finanzamt
     documents_required:
       - Steuer-ID
-      - ELSTER account (certificate file)
-      - Estimated revenue + profit for year 1 and year 2
-      - German IBAN for tax refunds/payments
+      - ELSTER account
+      - Estimates of your expected revenue and profit
     links:
-      - https://www.elster.de/elsterweb/infoseite/unternehmensgruendung
+      - https://www.gesetze-im-internet.de/ao_1977/__138.html
       - https://www.elster.de/eportal/formulare-leistungen/alleformulare/fseeun
     how_to_steps:
-      - title: Create an ELSTER account early
-        body: Registration involves a postal activation code — allow up to 2 weeks. You can't submit the Fragebogen without it, and the one-month clock runs from your first day of activity.
+      - title: Set up your ELSTER access early
+        body: The information is submitted electronically, so set up ELSTER before you start work. If electronic submission would be an unreasonable hardship, you can ask the Finanzamt to accept the paper form instead.
         link: https://www.elster.de/eportal/start
-      - title: Fill in the Fragebogen honestly but conservatively
-        body: Your revenue estimate drives income-tax prepayments (Vorauszahlungen). Estimate low-but-realistic for year one — you can always adjust later, but high estimates lock cash in quarterly prepayments.
-      - title: Wait for your Steuernummer by post
-        body: After review, the Finanzamt sends your Steuernummer by post. Put it on every invoice; clients' accounting departments will reject invoices without it.
+      - title: Answer the questionnaire accurately
+        body: It asks about the legal and factual details of your business that matter for your taxes. Give realistic figures; the Finanzamt uses them for your taxation.
+      - title: Put your Steuernummer on every invoice
+        body: Once the Finanzamt has issued your Steuernummer, include it (or your VAT identification number) on your invoices.
 
-  - title: Decide on the Kleinunternehmerregelung (§19 UStG)
+  - title: Decide on the Kleinunternehmerregelung (small-business VAT exemption)
     key: fre.kleinunternehmer
     type: decision
     decision_options:
       - label: Kleinunternehmer
-        body: No VAT on invoices, no VAT filings. Best when clients are consumers and revenue stays under the thresholds.
+        body: No VAT on your invoices and no regular VAT returns, but no reclaiming of VAT on your own business purchases.
       - label: Regular VAT
-        body: Charge 19%, reclaim VAT on your laptop, software and coworking. Best when clients are VAT-registered businesses.
+        body: Charge VAT on your invoices and reclaim the VAT on your business purchases. Usually the better fit when your clients are VAT-registered businesses.
     depends_on: [fre.fragebogen]
+    applies_if_mode: explicit
+    applies_if:
+      purpose: freelance
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§19 UStG', url: 'https://www.gesetze-im-internet.de/ustg_1980/__19.html'}
+      - {kind: primary, label: '§12 UStG', url: 'https://www.gesetze-im-internet.de/ustg_1980/__12.html'}
+      - {kind: primary, label: '§34a UStDV', url: 'https://www.gesetze-im-internet.de/ustdv_1980/__34a.html'}
+    claims:
+      - id: exemption-section
+        states: (§19 UStG)
+        source: '§19 UStG'
+        quote: Besteuerung der Kleinunternehmer
+      - id: turnover-thresholds
+        states: no more than 25 000 euros in the previous calendar year and does not exceed 100 000 euros in the current year
+        source: '§19 UStG'
+        quote: wenn der Gesamtumsatz nach Absatz 2 im vorangegangenen Kalenderjahr 25 000 Euro nicht überschritten hat und im laufenden Kalenderjahr 100 000 Euro nicht überschreitet
+      - id: no-vat-returns
+        states: don't file the regular VAT returns
+        source: '§19 UStG'
+        quote: über die Erklärungspflichten (§ 18 Absatz 1 bis 4) keine Anwendung
+      - id: waiver-binding
+        states: binds you for at least five calendar years
+        source: '§19 UStG'
+        quote: Der Verzicht bindet den Unternehmer mindestens für fünf Kalenderjahre
+      - id: standard-rate
+        states: generally 19%
+        source: '§12 UStG'
+        quote: Die Steuer beträgt für jeden steuerpflichtigen Umsatz 19 Prozent der Bemessungsgrundlage
+      - id: invoice-note
+        states: (§34a UStDV)
+        source: '§34a UStDV'
+        quote: mit einem Hinweis darauf, dass für die Lieferung oder sonstige Leistung die Steuerbefreiung für Kleinunternehmer gilt
     description: |
-      Inside the Fragebogen you choose whether to use the small-business VAT exemption.
-      Since January 2025 the thresholds are €25,000 turnover in the previous calendar
-      year and €100,000 in the current year. Kleinunternehmer don't charge VAT and skip
-      VAT returns — but also can't reclaim VAT on their own purchases.
+      When you register with the Finanzamt, you choose whether to use the small-business
+      VAT exemption (§19 UStG). It is available when your turnover was no more than 25 000 euros
+      in the previous calendar year and does not exceed 100 000 euros in the current year.
+      Kleinunternehmer don't charge VAT and don't file the regular VAT returns, but they also
+      can't reclaim VAT on their own purchases. Otherwise you charge VAT, generally 19%.
+      You can waive the exemption, but the waiver binds you for at least five calendar years.
     phase: first_30_days
     urgency: high
     deadline_type: none
@@ -111,15 +184,18 @@ tasks:
       - https://www.gesetze-im-internet.de/ustg_1980/__19.html
     how_to_steps:
       - title: Check who your clients are
-        body: If your clients are VAT-registered businesses, charging VAT costs them nothing (they reclaim it) — opting out of §19 lets you reclaim VAT on your laptop, software and co-working space. If you sell to consumers, Kleinunternehmer status makes you ~19% cheaper.
-      - title: Mind the thresholds
-        body: Up to €25,000 turnover in the previous year and €100,000 in the current year (since 1 January 2025). Crossing the €100,000 line mid-year ends the exemption from that moment — watch your running total.
-      - title: Put the right line on your invoices
-        body: Kleinunternehmer invoices must state that no VAT is charged under §19 UStG. Without the clause, clients may withhold payment until you reissue.
+        body: VAT-registered business clients can normally reclaim the VAT you charge them, and opting out of the exemption lets you reclaim VAT on your own business purchases. Consumers can't reclaim VAT, so for them it adds to your price.
+      - title: Watch your running turnover
+        body: Keep track of your turnover during the year so you notice in time if you approach the current-year limit.
+      - title: Put the required note on your invoices
+        body: Invoices under the exemption must say that the small-business exemption applies (§34a UStDV).
+        link: https://www.gesetze-im-internet.de/ustdv_1980/__34a.html
 
+  # Retired 2026-10-08: covered by core.health_insurance.
   - title: Sort out self-paid health insurance
     key: fre.health_insurance
-    depends_on: [fre.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Health insurance is mandatory and, unlike employees, you pay the full premium
       yourself. Freelancers choose between voluntary statutory insurance (GKV, income-based)
@@ -148,9 +224,11 @@ tasks:
         body: Designers, writers, journalists, musicians and similar professions can join the KSK, which gives self-employed artists employee-style social cover — you pay roughly the employee half of pension, health and care contributions and the KSK system covers the rest. Applications take months, so file early.
         link: https://www.kuenstlersozialkasse.de/
 
+  # Retired 2026-10-08: covered by core.bank_account.
   - title: Open a bank account for your freelance work
     key: fre.bank_account
-    depends_on: [fre.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       You need an account for client payments, tax prepayments, and insurance debits.
       Legally a separate business account is not required for sole-proprietor freelancers,
@@ -178,9 +256,11 @@ tasks:
       - title: Put the IBAN in the Fragebogen
         body: The Finanzamt uses it for refunds and SEPA collection of prepayments — getting it right avoids paper-cheque chaos.
 
+  # Retired 2026-10-08: covered by core.rundfunkbeitrag.
   - title: Settle your Rundfunkbeitrag (broadcasting fee)
     key: fre.rundfunkbeitrag
-    depends_on: [fre.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Every household pays €18.36/month for public broadcasting — one fee per dwelling,
       regardless of devices or how many people live there. The Beitragsservice learns
