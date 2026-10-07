@@ -2121,3 +2121,186 @@ body[data-page='bureaucracy'] .sr-only {
         transform: scale(0.98);
     }
 }
+
+/* Sample-day dates, a clearer header and tucked-away review tools
+   (7 October). Dates are the person's own records, never a calculated
+   legal deadline; amber marks the visa expiring today or tomorrow. */
+.person-picker summary {
+    padding: 0 10px 0 12px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+}
+.person-picker summary > span.person-name {
+    display: inline;
+    font-weight: var(--weight-medium);
+}
+.coming-up-dates {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 16px;
+}
+.coming-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 64px;
+    padding: 10px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    text-align: left;
+    font: inherit;
+}
+.coming-row.is-urgent {
+    border-color: var(--color-attention-border);
+    background: var(--color-attention-bg);
+}
+.coming-when {
+    display: grid;
+    flex: 0 0 84px;
+}
+.coming-when strong {
+    font-size: var(--text-section);
+    line-height: 1.2;
+}
+.coming-row.is-urgent .coming-when strong {
+    color: var(--color-attention-text);
+}
+.coming-when small,
+.coming-what small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.coming-what {
+    display: grid;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.coming-what strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.coming-row > svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.due-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+    margin-top: 6px;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+}
+.due-chip.is-urgent {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+.due-chip svg {
+    width: 14px;
+    height: 14px;
+}
+.process-step summary .due-chip {
+    display: flex;
+}
+.timeline-date em {
+    display: block;
+    font-style: normal;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-soft);
+}
+.timeline-date.is-urgent em,
+.process-resources small.is-urgent {
+    color: var(--color-attention-text);
+    font-weight: var(--weight-semibold);
+}
+.review-tools {
+    position: relative;
+}
+.review-tools summary {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    list-style: none;
+    cursor: pointer;
+    color: var(--color-text);
+    font-size: var(--text-small);
+}
+.review-tools summary::-webkit-details-marker {
+    display: none;
+}
+.review-tools summary svg {
+    width: 14px;
+    height: 14px;
+}
+.review-tools-panel {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    z-index: 10;
+    display: grid;
+    gap: 8px;
+    min-width: 240px;
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    box-shadow: 0 12px 36px #211d151a;
+}
+.review-tools-panel label {
+    display: grid;
+    gap: 4px;
+    color: var(--color-text-soft);
+}
+.review-tools-panel select {
+    min-height: 44px;
+    padding: 8px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font: inherit;
+}
+.review-tools-panel button {
+    justify-self: start;
+}
+.review-tools-panel small {
+    color: var(--color-text-soft);
+}
+@media (min-width: 1000px) {
+    .coming-up-dates {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    }
+}
+.case-details-short {
+    display: none;
+}
+/* Small phones: a shorter label and title so "Paperwork" isn't clipped. */
+@media (max-width: 420px) {
+    .case-top {
+        gap: 6px;
+    }
+    .case-top h1 {
+        font-size: var(--text-title-lg);
+    }
+    .case-top .case-details {
+        gap: 4px;
+        padding: 6px;
+    }
+    .case-details-long {
+        display: none;
+    }
+    .case-details-short {
+        display: inline;
+    }
+}

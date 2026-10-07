@@ -11,7 +11,9 @@
         I = U.icon,
         E = U.esc,
         key = 'expadu-bureaucracy-design-v1';
-    let state = J.fresh();
+    // On the preview's sample day "you" have the Blue Card plan Today shows;
+    // a fresh start is one of the Review choices.
+    let state = window.ExpaduSampleDay ? B.fresh() : J.fresh();
     let editorOrigin = null;
     let guideController = null;
     try {
@@ -53,7 +55,56 @@
                   year: 'numeric',
               }).format(new Date(d + 'T12:00:00'))
             : 'Date unknown';
+    // Recorded dates relative to the sample day (or today): "Today",
+    // "Tomorrow", a weekday this week. Never a calculated legal deadline.
+    const todayISO = () =>
+        window.ExpaduSampleDay?.date || new Date().toLocaleDateString('en-CA');
+    function relative(d) {
+        if (!B.validDate(d)) return null;
+        const days = Math.round(
+            (new Date(d + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) /
+                86400000,
+        );
+        const label =
+            days === 0
+                ? 'Today'
+                : days === 1
+                  ? 'Tomorrow'
+                  : days > 1 && days < 7
+                    ? new Intl.DateTimeFormat('en-GB', {
+                          weekday: 'long',
+                      }).format(new Date(d + 'T12:00:00'))
+                    : '';
+        return { days, label };
+    }
+    // Within the coming week, including today.
+    const soon = (d) => {
+        const r = relative(d);
+        return r && r.days >= 0 && r.days < 7 ? r : null;
+    };
+    const when = (d) => {
+        const r = soon(d);
+        return r?.label ? `${r.label} · ${date(d)}` : date(d);
+    };
+    // The Blue Card submission step is the one the visa expiry is about.
+    const dueStep = (a) =>
+        a.process === 'blue-card' && a.record === 1 && soon(state.expiry);
+    const dueChip = (a) => {
+        const r = dueStep(a);
+        return r
+            ? `<span class="due-chip${r.days <= 1 ? ' is-urgent' : ''}">${I('calendar')}Visa expires ${r.days === 0 ? 'today' : r.days === 1 ? 'tomorrow' : 'on ' + r.label}</span>`
+            : '';
+    };
     const current = () => P.process(state, state.process);
+    // The sample day's appointment is already in Today's plan.
+    const onToday = (a) => {
+        const day = window.ExpaduSampleDay;
+        return (
+            !!day?.appointment &&
+            a?.date === day.date &&
+            a?.time === day.appointment.start
+        );
+    };
     const button = (text, action, cls = 'secondary') =>
         `<button type="button" class="button ${cls}" data-case="${action}">${text}</button>`;
     function save() {
@@ -179,7 +230,7 @@
         const heading =
             state.view === 'detail' && current() ? current().name : 'Paperwork';
         document.querySelector('#main').innerHTML =
-            `<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Choose whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-avatar">${E(H.info(state)?.initial || 'Y')}</span><span>${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
+            `<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
                 .filter(
                     (p) => state.profileKind !== 'personal' || p.id === 'self',
                 )
@@ -189,7 +240,7 @@
                 )
                 .join(
                     '',
-                )}</div></details>${allowed ? `<button class="icon-button case-details" data-case="facts" aria-label="Your details">${I('sliders')}<span>Details</span></button>` : ''}</div><div class="case-navigation"><div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Paperwork</button></div><span class="case-sample">Sample</span></div><div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="situation-preview"><label>Preview <select data-situation-scenario aria-label="Preview scenario">${[
+                )}</div></details>${allowed ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div><div class="case-navigation"><div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div></div><div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress · Historical guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><label>Preview <select data-situation-scenario aria-label="Preview scenario">${[
                 ['fresh', 'Fresh start'],
                 ['returning', 'Returning user'],
                 ['existing', 'Existing sample plan'],
@@ -200,7 +251,7 @@
                 )
                 .join(
                     '',
-                )}</select></label></div><div class="case-footnote">${I('info')}<span>Sample progress · Historical guidance</span>${allowed ? '<button data-case="coverage">Sources</button>' : ''}<button data-case="reset" aria-label="Reset sample workspace">Reset demo</button></div>`;
+                )}</select></label><button data-case="reset" aria-label="Reset sample workspace">Reset demo</button><small>For reviewing this preview.</small></div></details></div>`;
         for (const token of opened)
             document
                 .querySelector(`[data-paper-row="${CSS.escape(token)}"]`)
@@ -267,10 +318,31 @@
         return `<button class="view-back" data-view="overview">${I('back')}Your overview</button>`;
     }
     function actionRow(a) {
-        return `<article class="overview-action"><span class="topic-icon ${a.tone}">${I(a.icon)}</span><div><div class="action-meta">${E(a.name)}${badge(P.statuses[a.status], a.status)}</div><h3><button data-open-action="${E(a.id)}">${E(R[a.record].title)}</button></h3></div><button class="icon-button" data-open-action="${E(a.id)}" aria-label="Open ${E(R[a.record].title)}">${I('arrow')}</button></article>`;
+        return `<article class="overview-action"><span class="topic-icon ${a.tone}">${I(a.icon)}</span><div><div class="action-meta">${E(a.name)}${badge(P.statuses[a.status], a.status)}</div><h3><button data-open-action="${E(a.id)}">${E(R[a.record].title)}</button></h3>${dueChip(a)}</div><button class="icon-button" data-open-action="${E(a.id)}" aria-label="Open ${E(R[a.record].title)}">${I('arrow')}</button></article>`;
+    }
+    // Recorded dates this week, above everything else on the overview.
+    function comingUp() {
+        const rows = P.timeline(state).filter((t) => soon(t.date));
+        if (!rows.length) return '';
+        return `<section class="coming-up-dates" aria-label="Coming up">${rows
+            .map((t) => {
+                const r = soon(t.date);
+                const expiry = t.id === 'expiry';
+                return `<button class="coming-row${expiry && r.days <= 1 ? ' is-urgent' : ''}" data-process="${E(t.process)}"><span class="coming-when"><strong>${E(r.label || date(t.date))}</strong>${t.time ? `<small>${E(t.time)}</small>` : `<small>${E(date(t.date))}</small>`}</span><span class="coming-what"><strong>${expiry ? 'Your D visa expires' : t.kind === 'Appointment' ? `${E(t.name)} appointment` : E(t.kind)}</strong><small>${E(expiry ? t.name : t.location || 'Location not recorded')}</small></span>${I('arrow')}</button>`;
+            })
+            .join('')}</section>`;
     }
     function overview(plan) {
-        return `${J.applies(state) ? '' : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question()}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.total}${I('arrow')}</button></div>${plan.next.length ? plan.next.map(actionRow).join('') : '<div class="honest-empty"><h3>No next actions right now</h3><p>Your waiting work and process history are still here.</p></div>'}<div class="plan-states" aria-label="Action progress">${Object.entries(
+        return `${comingUp()}${J.applies(state) ? '' : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question()}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.total}${I('arrow')}</button></div>${
+            plan.next.length
+                ? [...plan.next]
+                      .sort(
+                          (a, b) => (dueStep(b) ? 1 : 0) - (dueStep(a) ? 1 : 0),
+                      )
+                      .map(actionRow)
+                      .join('')
+                : '<div class="honest-empty"><h3>No next actions right now</h3><p>Your waiting work and process history are still here.</p></div>'
+        }<div class="plan-states" aria-label="Action progress">${Object.entries(
             P.statuses,
         )
             .map(
@@ -295,7 +367,7 @@
     }
     function dates() {
         const rows = P.timeline(state);
-        return `<section class="overview-dates" aria-labelledby="dates-heading"><div class="case-section-head"><h2 id="dates-heading">Dates & appointments</h2><button class="icon-button" data-case="choose-appointment" aria-label="Record an appointment">${I('plus')}</button></div><div class="date-grid">${rows.map((t) => `<button class="timeline-row" data-timeline="${E(t.id)}" data-for="${t.process}"><span class="timeline-icon">${I(t.icon)}</span><span><strong>${E(t.kind)}</strong><small>${E(t.name)}</small></span><span class="timeline-date">${date(t.date)}${t.time ? '<small>' + E(t.time) + '</small>' : ''}</span>${I('pencil')}</button>`).join('') || '<p class="muted">Your recorded dates will appear here.</p>'}</div></section>`;
+        return `<section class="overview-dates" aria-labelledby="dates-heading"><div class="case-section-head"><h2 id="dates-heading">Dates & appointments</h2><button class="icon-button" data-case="choose-appointment" aria-label="Record an appointment">${I('plus')}</button></div><div class="date-grid">${rows.map((t) => `<button class="timeline-row" data-timeline="${E(t.id)}" data-for="${t.process}"><span class="timeline-icon">${I(t.icon)}</span><span><strong>${E(t.kind)}</strong><small>${E(t.name)}</small></span><span class="timeline-date${t.id === 'expiry' && soon(t.date)?.days <= 1 ? ' is-urgent' : ''}">${soon(t.date)?.label ? `<em>${E(soon(t.date).label)}</em>` : ''}${date(t.date)}${t.time ? '<small>' + E(t.time) + '</small>' : ''}</span>${I('pencil')}</button>`).join('') || '<p class="muted">Your recorded dates will appear here.</p>'}</div></section>`;
     }
     function allActions(plan) {
         const list = plan.actions.filter(
@@ -474,7 +546,7 @@
                   P.appointmentForComposer(state, p.id)?.id,
               )
             : null;
-        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(p.name)} progress</h2>${badge(workflow[p.workflow], p.workflow)}</div>${p.started && !P.terminal(p) ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${!p.started ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${p.note ? `<p class="process-note">${I(p.workflow === 'waiting' ? 'clock' : 'info')}${E(p.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${done}/${acts.length} done</span></div>${acts.map((a) => `<details class="process-step" data-step="${E(a.id)}" ${a.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${a.status}">${I(a.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(R[a.record].title)}</strong><small>${E(a.status === 'blocked' ? 'Needs attention' : P.statuses[a.status])}</small></span>${I('down')}</summary><div class="step-content">${stepContent(p, a)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${p.id}">${I('document')}<span>Documents<small>${P.documents(state, p.id).filter((d) => d === 'confirmed_for_use').length} marked ready</small></span>${I('arrow')}</button><button data-source-for="${p.id}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${p.id === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${p.id === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small>${date(state.expiry)}</small></span>${I('pencil')}</button>` : ''}</section></div>${p.started && !P.terminal(p) ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${p.appointment ? 'Edit' : 'Record'} appointment">${I(p.appointment ? 'pencil' : 'plus')}</button></div>${p.appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${date(p.appointment.date)} · ${E(p.appointment.time)}</strong><small>${E(p.appointment.location || 'Location not recorded')}</small></div><button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button></div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${p.submission ? date(p.submission) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${p.submission ? 'Review' : 'Record'} submission">${I(p.submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
+        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(p.name)} progress</h2>${badge(workflow[p.workflow], p.workflow)}</div>${p.started && !P.terminal(p) ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${!p.started ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${p.note ? `<p class="process-note">${I(p.workflow === 'waiting' ? 'clock' : 'info')}${E(p.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${done}/${acts.length} done</span></div>${acts.map((a) => `<details class="process-step" data-step="${E(a.id)}" ${a.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${a.status}">${I(a.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(R[a.record].title)}</strong><small>${E(a.status === 'blocked' ? 'Needs attention' : P.statuses[a.status])}</small>${dueChip(a)}</span>${I('down')}</summary><div class="step-content">${stepContent(p, a)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${p.id}">${I('document')}<span>Documents<small>${P.documents(state, p.id).filter((d) => d === 'confirmed_for_use').length} marked ready</small></span>${I('arrow')}</button><button data-source-for="${p.id}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${p.id === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${p.id === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${p.started && !P.terminal(p) ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${p.appointment ? 'Edit' : 'Record'} appointment">${I(p.appointment ? 'pencil' : 'plus')}</button></div>${p.appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(p.appointment.date))} · ${E(p.appointment.time)}</strong><small>${E(p.appointment.location || 'Location not recorded')}</small></div>${onToday(p.appointment) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${p.submission ? date(p.submission) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${p.submission ? 'Review' : 'Record'} submission">${I(p.submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
     }
     function docsFor(p) {
         return p.records
@@ -544,6 +616,7 @@
         o.details ||= BureaucracyDetails.create({
             current_residence_title: 'national_d_visa',
             ...(state.expiry ? { visa_expires_at: state.expiry } : {}),
+            ...B.sampleFacts(state),
         });
         o.details.open = true;
         if (field) BureaucracyDetails.edit(o.details, field);

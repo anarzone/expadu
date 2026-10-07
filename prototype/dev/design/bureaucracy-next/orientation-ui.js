@@ -33,6 +33,7 @@
                               ...(s.expiry
                                   ? { visa_expires_at: s.expiry }
                                   : {}),
+                              ...root.BureaucracyPreview.sampleFacts(s),
                           }
                         : {};
                 const move = o.answers.move_stage?.value;
@@ -106,7 +107,7 @@
             const detail = detailState(s);
             if (detail.open) {
                 const name = root.BureaucracyFamily?.info(s)?.name || 'You';
-                host.innerHTML = `<section class="orientation"><header class="orientation-header"><span class="orientation-kicker">${I('document')}Personal details</span><button type="button" class="orientation-close" data-guide="pause" aria-label="Pause and close">${I('close')}</button></header><div class="orientation-content">${DU.markup(detail, name)}<div class="orientation-bottom">${options.onComposer ? `<button type="button" data-guide="composer">${I('chat')}Continue in Composer ${I('arrow')}</button>` : `<button type="button" data-guide="bureaucracy">${I('back')}Continue in Bureaucracy</button>`}<small>Sample details · example tasks stay unchanged.</small></div></div><p class="orientation-error" role="alert" hidden></p></section>`;
+                host.innerHTML = `<section class="orientation"><header class="orientation-header"><span class="orientation-kicker">${I('document')}Your situation</span><button type="button" class="orientation-close" data-guide="pause" aria-label="Pause and close">${I('close')}</button></header><div class="orientation-content">${DU.markup(detail, name)}<div class="orientation-bottom">${options.onComposer ? `<button type="button" data-guide="composer">${I('chat')}Continue in Composer ${I('arrow')}</button>` : `<button type="button" data-guide="bureaucracy">${I('back')}Continue in Bureaucracy</button>`}<small>Sample details · example tasks stay unchanged.</small></div></div><p class="orientation-error" role="alert" hidden></p></section>`;
                 root.ExpaduDate?.enhance(host);
                 host.querySelector('[data-detail-date]')
                     ?.parentElement.querySelector('.shared-date-toggle')

@@ -20,6 +20,7 @@
             : existing?.date ||
               S.studio()?.proposal?.date ||
               S.read().brief.date ||
+              root.ExpaduSampleDay?.date ||
               new Date().toLocaleDateString('en-CA');
         const dateLabel = (value) =>
             new Date(value + 'T12:00:00').toLocaleDateString('en-GB', {
@@ -52,7 +53,23 @@
         function refresh() {
             const choice = values(),
                 linked = D.linked(S.studio(), item.sourceId);
-            const day = H.dayItems(S.read(), S.studio(), choice.date);
+            // The sample day's appointment is already in Today's day.
+            const sample = root.ExpaduSampleDay;
+            const planned = H.dayItems(S.read(), S.studio(), choice.date);
+            const day =
+                sample?.date === choice.date &&
+                sample.appointment &&
+                !planned.some((x) => x.title === sample.appointment.title)
+                    ? [
+                          ...planned,
+                          {
+                              start: sample.appointment.start,
+                              end: sample.appointment.end,
+                              title: sample.appointment.title,
+                              planStatus: sample.appointment.planStatus,
+                          },
+                      ].sort((a, b) => a.start.localeCompare(b.start))
+                    : planned;
             form.querySelector('[data-day-count]').textContent = day.length
                 ? String(day.length)
                 : 'Free so far';
@@ -65,13 +82,19 @@
                 suggestedDate !== choice.date + JSON.stringify(day)
             ) {
                 suggestedDate = choice.date + JSON.stringify(day);
+                // Nothing is suggested in the past on the sample day.
                 const now = new Date(),
-                    today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    today =
+                        sample?.date ||
+                        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                const [h, m] = (
+                    sample?.time || `${now.getHours()}:${now.getMinutes()}`
+                )
+                    .split(':')
+                    .map(Number);
                 const suggestions = H.suggestTimes(
                     day.filter((i) => i.sourceId !== item.sourceId),
-                    choice.date === today
-                        ? now.getHours() * 60 + now.getMinutes() + 1
-                        : 0,
+                    choice.date === today ? h * 60 + m + 1 : 0,
                 );
                 ideas.innerHTML = `<span>${I('clock')}1-hour ideas</span><div role="group" aria-label="Suggested preparation times">${suggestions.map((s) => `<button type="button" data-start="${s.start}" data-end="${s.end}" aria-pressed="false">${s.start}–${s.end}</button>`).join('')}</div>`;
             }

@@ -44,6 +44,11 @@
         },
     };
     const applies = (s) => s?.person === 'self' && s.profileKind === 'personal';
+    // "Now" on the preview's sample day, so dates match Today and Composer.
+    const now = () =>
+        root.ExpaduSampleDay
+            ? `${root.ExpaduSampleDay.date}T${root.ExpaduSampleDay.time}:00`
+            : new Date().toISOString();
     function state(s) {
         if (!G.allowed(s)) return null;
         const o = G.hydrate(s);
@@ -150,7 +155,7 @@
         const j = state(s),
             r = G.hydrate(s).details;
         j.review = j.review.filter((k) => k !== r.current);
-        j.lastChecked = new Date().toISOString();
+        j.lastChecked = now();
         if (j.origin === 'starter') {
             j.batch++;
             return next(s);
@@ -208,7 +213,7 @@
         const j = state(s),
             draft = j.changeDraft;
         if (!draft || !changes[draft.kind]) return false;
-        j.changes.unshift({ ...draft, reportedAt: new Date().toISOString() });
+        j.changes.unshift({ ...draft, reportedAt: now() });
         const relevant = changes[draft.kind].review.filter(
             (k) => k !== 'current_residence_title' || questions(s).includes(k),
         );
@@ -224,15 +229,15 @@
             r = G.hydrate(s).details;
         if (!j.review.includes(key) || !r.facts[key]) return false;
         j.review = j.review.filter((k) => k !== key);
-        r.facts[key].checkedAt = new Date().toISOString();
+        r.facts[key].checkedAt = now();
         r.revision++;
-        j.lastChecked = new Date().toISOString();
+        j.lastChecked = now();
         return true;
     }
     function check(s) {
         const j = state(s);
         j.checkDue = false;
-        j.lastChecked = new Date().toISOString();
+        j.lastChecked = now();
         j.notice = 'Your answers are still up to date.';
         j.stage = 'summary';
         return true;

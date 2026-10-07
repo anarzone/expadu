@@ -4,6 +4,41 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## Sample day, dates and a clearer header — 7 October 2026 (in review)
+
+From the owner's Paperwork review (items 1–4):
+
+1. **One sample day.** Paperwork opens on the Blue Card plan Today shows
+   (Wednesday 30 September, `connected/sample-day.js`); Fresh start and
+   Returning user stay available under Review. The plan carries Today's
+   appointment (14:00, Mülheim), marked "On Today" instead of offering to add
+   it again. Set aside time defaults to the sample day, suggests times after
+   13:10 around the appointment and lists it under Your day. "Last checked"
+   and reported changes use the sample day. Your situation for this plan
+   records arrived, employment, non-EU and address not registered yet.
+2. **What's coming up.** The overview starts with this week's recorded dates:
+   "Today · 14:00 · EU Blue Card appointment" and "Tomorrow · Your D visa
+   expires" in amber. The submission step carries "Visa expires tomorrow" and
+   comes first under Next steps; the task page shows "Tomorrow · 1 Oct 2026"
+   and "Today · 14:00". These are the person's own recorded dates, never a
+   calculated legal deadline.
+3. **Header.** The person menu shows the name ("You") instead of a second
+   avatar beside the account's; "Details" is "Your situation" ("Situation" on
+   small phones, where the title is a size smaller so it isn't clipped); the
+   tabs are Overview and Documents; the loose "Sample" tag is gone (the
+   footer keeps "Sample progress · Historical guidance").
+4. **Review tools.** The Preview scenario menu and Reset demo sit in a small
+   Review menu in the footer, beside Sources & coverage.
+
+Items 5, 7 and 8 (what the getting-started answers change, English document
+names, which task produces which document) wait for the catalogue and engine
+review in the separate Bürokratiekarten session.
+
+Verification: Paperwork 65 tests and every other suite pass. Browser checks at
+320, 360, 375, 390 and 1440px cover the overview, the Blue Card task page,
+Set aside time with Your day, Your situation and switching scenarios under
+Review. Every other page's default view is unchanged.
+
 ## Finished in this pass
 
 - Whole-plan Overview: at most three actionable next steps. Blocked/waiting work remains in the exact status counts and full action list. Compact process cards and recorded dates stay accessible.

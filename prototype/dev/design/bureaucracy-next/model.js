@@ -1,4 +1,13 @@
 (function (root) {
+    // The sample day's Blue Card appointment (connected/sample-day.js), so
+    // Paperwork and Today show the same record. None without the sample day.
+    function sampleAppointment() {
+        const day = root.ExpaduSampleDay;
+        const a = day?.appointment;
+        return a?.process === 'blue-card'
+            ? { date: day.date, time: a.start, location: a.location }
+            : null;
+    }
     const fresh = () => ({
         person: 'self',
         process: 'blue-card',
@@ -6,7 +15,7 @@
         expiry: '2026-10-01',
         candidate: null,
         questionSkipped: false,
-        appointment: null,
+        appointment: sampleAppointment(),
         submission: null,
         prepared: false,
         docs: [
@@ -19,6 +28,22 @@
         otherProcesses: [],
     });
     const canEdit = (s) => s.person === 'self';
+    // What the sample day's person has told us: arrived from outside the EU
+    // to work, address not registered yet (that task is still open).
+    function sampleFacts(s) {
+        if (
+            !root.ExpaduSampleDay ||
+            s?.person !== 'self' ||
+            (s.scenario && s.scenario !== 'existing')
+        )
+            return {};
+        return {
+            arrival_planned: false,
+            purpose: 'employment',
+            citizenship_group: 'non_eu',
+            registration_status: 'not_registered',
+        };
+    }
     const blank = () => ({
         ...fresh(),
         profileKind: 'personal',
@@ -26,6 +51,7 @@
         scenario: 'fresh',
         process: null,
         expiry: null,
+        appointment: null,
         docs: Array(5).fill('unknown'),
         workflow: 'not_started',
         tracked: [],
@@ -100,6 +126,7 @@
     }
     root.BureaucracyPreview = {
         fresh,
+        sampleFacts,
         blank,
         canEdit,
         validDate,

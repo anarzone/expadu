@@ -364,6 +364,16 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Paperwork on the sample day — owner request, 7 October (in review):**
+Paperwork opens on the Blue Card plan Today shows, with Today's 14:00
+appointment and the sample day's dates (fresh start stays under Review). The
+overview starts with this week's recorded dates — today's appointment and the
+visa expiring tomorrow in amber — and the submission step says so. These are
+the person's own dates, never computed legal deadlines. The header shows the
+person's name instead of a second avatar, "Your situation" instead of
+"Details" and an Overview/Documents switch; scenario and reset controls live
+in a footer Review menu. Details are in `bureaucracy-next/README.md`.
+
 **Places as a layer — owner request, 7 October (in review):** following the
 places data review, places stay out of the navigation and appear where a need
 comes up: Composer answers "near" questions with up to three real places and
