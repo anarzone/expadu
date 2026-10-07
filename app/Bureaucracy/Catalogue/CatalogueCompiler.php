@@ -48,6 +48,9 @@ final class CatalogueCompiler
                 || ! in_array($map['coverage'] ?? null, ['partial', 'complete'], true)) {
                 throw new DomainException("Reviewed unit [{$key}] needs an explicit valid process mapping.");
             }
+            if (array_key_exists('position', $map) && (! is_int($map['position']) || $map['position'] < 1)) {
+                throw new DomainException("Unit [{$key}] needs a positive reviewed step position.");
+            }
             $conditions = $task->applies_if ?? [];
             $keys = $this->validateConditions($conditions);
             $decisionPolicy = (new DecisionPolicy)->compile($task, $map, $keys);
@@ -120,7 +123,7 @@ final class CatalogueCompiler
                 'coverage_scope' => $task->coverage_scope, 'depends_on' => $task->depends_on ?? [], 'conflicts_with' => $task->conflicts_with ?? [],
                 'deadline' => ['type' => $task->deadline_type?->value ?? 'none', 'fact_key' => $task->deadline_fact_key, 'days' => $task->deadline_days],
                 'trigger_event' => $task->trigger_event, 'recurrence_months' => $task->recurrence_months,
-                'step_id' => $key.'.complete', 'instructions' => $instructions, 'documents' => $documents,
+                'step_id' => $key.'.complete', 'position' => $map['position'] ?? null, 'instructions' => $instructions, 'documents' => $documents,
                 'actions' => $actions, 'unavailable_actions' => $unavailableActions,
             ];
             $id = $map['process_id'];
@@ -128,6 +131,9 @@ final class CatalogueCompiler
                 throw new DomainException("Process [{$id}] has contradictory topic mappings.");
             }
             $definitions[$id] ??= ['topic' => $map['topic'], 'variants' => []];
+            if ($variant['position'] !== null && in_array($variant['position'], array_column($definitions[$id]['variants'], 'position'), true)) {
+                throw new DomainException("Process [{$id}] has two steps at reviewed position [{$variant['position']}].");
+            }
             $definitions[$id]['variants'][] = $variant;
         }
         ksort($definitions);

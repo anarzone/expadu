@@ -86,6 +86,11 @@ final class PlanReadModel
                 ? $this->paperwork->for($actor, $person, $input) : ['available' => false, 'reason' => 'permission_required'];
             $question = in_array(AccessScope::EditFacts->value, $scopes, true)
                 ? $this->questions->for($actor, $caseId, $input) : ['status' => 'permission_required', 'question' => null];
+            $order = new CatalogueOrder($input->catalogue);
+            $details = new ProcessDetails;
+            $requirements = $paperwork['requirements'] ?? null;
+            $processes = array_map(fn ($process) => $details->for($process, $order, $timeline, $requirements, $events), $processes);
+            $history = array_map(fn ($process) => $details->for($process, $order, $timeline, $requirements, $events), $history);
             $guidance = [];
             foreach ($assessment['processes'] as $decision) {
                 foreach ($decision['variants'] as $variant) {
@@ -111,6 +116,7 @@ final class PlanReadModel
                 'assessment_revision' => $revision, 'evaluated_at' => $input->at->toIso8601String(), 'next_reassessment_at' => $nextTime,
                 'overview' => ['next_actions' => array_slice($next, 0, 3), 'question' => $question['question'], 'remaining_action_count' => max(0, count($next) - 3)],
                 'questions' => $question, 'actions' => $next, 'processes' => $processes, 'history' => $history,
+                'history_count' => count($history) + count(array_filter($processes, fn ($process) => $process['is_closed'])),
                 'topics' => $this->topics($assessment['processes'], $processes, $history), 'guidance' => $guidance,
                 'progress' => $progress, 'timeline' => $timeline, 'coverage' => $coverage, 'paperwork' => $paperwork, 'scopes' => $scopes,
                 'ai' => ['available' => in_array(AccessScope::RequestAi->value, $scopes, true) && in_array(AccessScope::EditFacts->value, $scopes, true)
@@ -126,7 +132,7 @@ final class PlanReadModel
                 continue;
             }
             $topic = $decision['topic'];
-            $topics[$topic] ??= ['id' => $topic, 'definition_ids' => [], 'occurrence_keys' => [], 'history_ids' => []];
+            $topics[$topic] ??= ['id' => $topic, 'label' => (new ProcessDetails)->topicLabel($topic), 'definition_ids' => [], 'occurrence_keys' => [], 'history_ids' => []];
             $topics[$topic]['definition_ids'][] = $decision['definition_id'];
         }
         foreach ($processes as $process) {
@@ -134,7 +140,7 @@ final class PlanReadModel
         }
         foreach ($history as $process) {
             if ($process['topic'] !== null) {
-                $topics[$process['topic']] ??= ['id' => $process['topic'], 'definition_ids' => [], 'occurrence_keys' => [], 'history_ids' => []];
+                $topics[$process['topic']] ??= ['id' => $process['topic'], 'label' => (new ProcessDetails)->topicLabel($process['topic']), 'definition_ids' => [], 'occurrence_keys' => [], 'history_ids' => []];
                 $topics[$process['topic']]['history_ids'][] = $process['id'];
             }
         }
@@ -152,10 +158,13 @@ final class PlanReadModel
             $key = $process['bind_occurrence'] ?? $process['occurrence_key'];
             $proposal = collect($proposals)->firstWhere('occurrence_key', $key);
             $history = (new ProcessHistory)->active(array_values(array_filter($events, fn ($event) => $event['process_id'] === $process['id'])));
+            $steps = array_column($proposal['variants'] ?? [], 'step_id', 'id');
             foreach ($builder->for($proposal['variants'] ?? [], $facts, $history, $input->at, $timezone) as $row) {
                 if ($row['kind'] !== 'document_expiry') {
+                    $step = $steps[$row['source_rule_id'] ?? ''] ?? null;
                     $rows[] = [...$row, 'id' => $process['occurrence_key'].':'.$row['id'],
-                        'process_id' => $process['id'], 'occurrence_key' => $process['occurrence_key'], 'workflow' => $process['state']['workflow']];
+                        'process_id' => $process['id'], 'occurrence_key' => $process['occurrence_key'], 'workflow' => $process['state']['workflow'],
+                        'step_id' => $step, 'action_id' => $step === null ? null : ($process['id'] ?? $process['occurrence_key']).':'.$step];
                 }
             }
         }
@@ -167,16 +176,19 @@ final class PlanReadModel
     {
         $actions = [];
         foreach ($processes as $process) {
+            if (in_array($process['state']['workflow'], ['completed', 'cancelled'], true)) {
+                continue; // Closed work never returns as a next action until it is explicitly reopened.
+            }
             foreach ($process['guidance'] as $guidance) {
                 $id = ($process['id'] ?? $process['occurrence_key']).':'.$guidance['step_id'];
                 if (! in_array($id, $progress['todo']['ids'], true)) {
                     continue;
                 }
-                $dates = array_values(array_filter($timeline, fn ($event) => ($event['occurrence_key'] ?? null) === $process['occurrence_key']
-                    && ($event['source_rule_id'] ?? null) === $guidance['id'] && in_array($event['kind'], ['legal_due', 'preparation_target', 'authority_follow_up'], true)));
+                $dates = array_values(array_filter($timeline, fn ($event) => ($event['action_id'] ?? null) === $id
+                    && in_array($event['kind'], ['legal_due', 'preparation_target', 'authority_follow_up'], true)));
                 $actions[] = ['id' => $id, 'type' => 'open_process', 'person_id' => $process['person_id'],
                     'process_id' => $process['id'], 'occurrence_key' => $process['occurrence_key'], 'step_id' => $guidance['step_id'],
-                    'title' => $guidance['title'], 'source_rule_id' => $guidance['id'], 'source_hash' => $guidance['source_hash'],
+                    'title' => $guidance['title'], 'process_title' => $process['title'] ?? null, 'source_rule_id' => $guidance['id'], 'source_hash' => $guidance['source_hash'],
                     'dates' => $dates, 'requires_process_start' => $process['id'] === null];
             }
         }
