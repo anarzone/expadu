@@ -126,6 +126,12 @@ decorative loops. One band per page, no animated art.
 
 ## Redesign: Today and Composer (owner request, 7 October)
 
+**Owner review, 7 October:** the Today redesign is not taken. The current
+Today is better; this version rearranged the same blocks, and its day
+timeline is close to the timeline direction rejected on 2 October. Today
+keeps its approved two-column layout. The Composer redesign has ideas to use;
+which ones is being decided. The files stay here for reference.
+
 The colour pass above keeps the approved layouts. This goes further: new
 compositions for Today and Composer, as standalone mock pages in `redesign/`.
 They use the approved header (a copy of the prerendered block, with absolute
