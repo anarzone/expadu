@@ -51,7 +51,10 @@
         </div>`;
     }
     function detail(id) {
-        const item = [...M.places, ...M.events].find((x) => x.id === id);
+        const item = [
+            ...M.places,
+            ...(window.ExpaduEventCatalogue?.() || M.events),
+        ].find((x) => x.id === id);
         if (!item) return;
         if (item.type === 'place' && window.ExpaduPlaceSheet) {
             ExpaduPlaceSheet.open(item);

@@ -53,10 +53,15 @@ body[data-page='events'] #main {
     aspect-ratio: 4 / 5;
     scroll-snap-align: start;
 }
+/* Short enough that the filters below show on the first screen. */
 .festival-card--hero {
     flex: 0 0 calc(100% - 68px);
     aspect-ratio: auto;
-    height: clamp(430px, 42vw, 540px);
+    height: clamp(320px, calc(100svh - 420px), 420px);
+}
+/* One featured event uses the whole width; there's nothing to peek at. */
+.festival-track > .festival-card--hero:only-child {
+    flex-basis: 100%;
 }
 .festival-card svg,
 .festival-pagination svg,
@@ -172,7 +177,7 @@ body[data-page='events'] #main {
     width: 100%;
     font-family: 'Festival Marker', Geist, sans-serif;
     font-weight: var(--weight-regular);
-    font-size: clamp(38px, 5.4vw, 74px);
+    font-size: clamp(36px, 4.6vw, 64px);
     line-height: 1.08;
     letter-spacing: -1.8px;
     max-width: 850px;
@@ -194,7 +199,7 @@ body[data-page='events'] #main {
 }
 .festival-card--hero[data-event-card='kunst-machen'] .festival-title {
     max-width: 800px;
-    font-size: clamp(52px, 6.7vw, 94px);
+    font-size: clamp(48px, 5.6vw, 80px);
 }
 .festival-title em {
     display: block;
@@ -486,7 +491,7 @@ body[data-page='events'] #main .festival-plan:focus-visible {
 @media (max-width: 999px) {
     .festival-card--hero {
         flex-basis: calc(100% - 44px);
-        height: 480px;
+        height: clamp(320px, calc(100svh - 440px), 420px);
     }
     .festival-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -536,7 +541,7 @@ body[data-page='events'] #main .festival-plan:focus-visible {
     }
     .festival-card--hero {
         flex-basis: calc(100% - 24px);
-        height: clamp(320px, calc(100svh - 270px), 446px);
+        height: clamp(300px, calc(100svh - 472px), 380px);
         border-radius: var(--radius-xl);
     }
     .festival-card--hero .festival-category {
@@ -659,7 +664,7 @@ body[data-page='events'] #main .festival-plan:focus-visible {
         font-size: var(--text-title);
     }
     .festival-card--hero {
-        height: clamp(320px, calc(100svh - 270px), 430px);
+        height: clamp(300px, calc(100svh - 472px), 360px);
     }
     .festival-card--hero .festival-story {
         inset-inline: 16px;
@@ -686,5 +691,112 @@ body[data-page='events'] #main .festival-plan:focus-visible {
         transition: none !important;
         animation: none !important;
         scroll-behavior: auto;
+    }
+}
+
+/* The English meaning under a German title. */
+.festival-translation {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    max-width: calc(100% - 52px);
+    margin-top: -8px;
+    color: #f5f7ffd9;
+    font-size: var(--text-small);
+    line-height: 1.35;
+}
+.festival-card--hero .festival-translation {
+    margin-top: -14px;
+    font-size: var(--text-body);
+}
+/* Past events: a quiet date marker and slightly muted artwork. */
+.festival-date.is-past {
+    background: #f1ebdfeb;
+    color: var(--color-text-soft);
+    transform: none;
+    box-shadow: none;
+}
+.festival-card.is-past .event-poster-image {
+    filter: saturate(0.6);
+}
+.festival-featured-note {
+    margin: 4px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+#event-count-note:not(:empty)::before {
+    content: '· ';
+}
+#event-count-note {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Captured listings that have already happened. */
+.event-past-note {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin: 4px 0 16px;
+    padding: 10px 12px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.event-past-note > svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--color-text-soft);
+}
+.event-past-note p {
+    flex: 1 1 220px;
+    margin: 0;
+}
+.event-past-note button,
+.event-text-button {
+    min-height: 44px;
+    padding: 0 4px;
+    color: var(--color-action-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.event-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px 12px;
+}
+@media (max-width: 700px) {
+    .festival-translation {
+        margin-top: -6px;
+        font-size: var(--text-caption);
+    }
+    .festival-card--hero .festival-translation {
+        margin-top: -8px;
+        font-size: var(--text-small);
+    }
+    .event-results-count {
+        flex-wrap: wrap;
+        white-space: normal;
+        row-gap: 0;
+    }
+}
+/* Keep "Find your kind of day" on one line beside the date on phones. */
+@media (max-width: 420px) {
+    .event-browse-heading #event-calendar-toggle {
+        padding: 0 8px;
+        gap: 4px;
+    }
+}
+@media (max-width: 380px) {
+    .event-browse-heading h2 {
+        font-size: var(--text-section);
     }
 }

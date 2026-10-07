@@ -70,7 +70,7 @@
         const listedTime = (name, label) =>
             `<div class="event-session-time"><span>${label}</span><strong><time>${E(item[name] || 'Not listed')}</time></strong><input type="hidden" name="${name}" value="${E(item[name] || '')}"></div>`;
         const timeFields = `<div class="selection-times${session ? ' event-session-times' : ''}">${session ? listedTime('start', 'Starts') : timeInput('start', 'From', isEvent || appointment ? 'Start' : '13:00')}<span aria-hidden="true">–</span>${session && item.end ? listedTime('end', 'Ends') : timeInput('end', session ? 'Expected end' : 'Until', isEvent || appointment ? 'End' : '14:00')}</div>`;
-        const html = `<p class="selection-name">${E(item.title)}</p><form id="selection-form" class="${container ? 'selection-visit' : ''}">${eventDay}${attendance}<p class="visit-edit-context" data-visit-edit-context hidden></p>${timeFields}<div class="visit-edit-feedback" data-visit-edit-feedback role="status" tabindex="-1" hidden></div><p class="selection-error" id="selection-error" role="alert" tabindex="-1" hidden></p><p class="selection-hint muted">${visualEvent ? I('info') : ''}<span>${visualEvent ? (policy === 'unknown' ? 'Admission isn’t booked · entry unconfirmed.' : 'Plan only · admission isn’t booked.') : isEvent ? (policy === 'unknown' ? 'Your visit is a plan, not a booking. Entry rules still need checking.' : 'Your plan does not book admission. Check entry with the organiser.') : appointment ? 'Use the time you arranged. Adding it here does not book or change the appointment.' : 'Opening hours and travel still need checking.'}</span></p><div class="actions"><button class="button primary" type="submit">${visualEvent ? I('calendar') : ''}Add to proposal</button></div></form>`;
+        const html = `<p class="selection-name">${E(item.title)}</p><form id="selection-form" class="${container ? 'selection-visit' : ''}">${eventDay}${attendance}<p class="visit-edit-context" data-visit-edit-context hidden></p>${timeFields}<div class="visit-edit-feedback" data-visit-edit-feedback role="status" tabindex="-1" hidden></div><p class="selection-error" id="selection-error" role="alert" tabindex="-1" hidden></p><p class="selection-hint muted">${visualEvent ? I('info') : ''}<span>${visualEvent ? (policy === 'unknown' ? 'Admission isn’t booked · entry unconfirmed.' : 'Plan only · admission isn’t booked.') : isEvent ? (policy === 'unknown' ? 'Your visit is a plan, not a booking. Entry rules still need checking.' : 'Your plan does not book admission. Check entry with the organiser.') : appointment ? 'Use the time you arranged. Adding it here does not book or change the appointment.' : 'Opening hours and travel still need checking.'}</span></p><div class="actions"><button class="button primary" type="submit">${visualEvent ? I('calendar') : ''}Add to plan</button></div></form>`;
         if (container) container.innerHTML = html;
         else U.open('Add to your plan', html);
         const form = (container || document).querySelector('#selection-form');
@@ -152,9 +152,7 @@
                 }
             }
             const submit = form.querySelector('[type="submit"]');
-            submit.textContent = editingVisit
-                ? 'Save changes'
-                : 'Add to proposal';
+            submit.textContent = editingVisit ? 'Save changes' : 'Add to plan';
             const normalized = (value) =>
                 window.ExpaduTime?.normalizeTime(value) || value;
             submit.disabled =
@@ -700,7 +698,7 @@
                 }
                 U.close();
                 U.toast(
-                    'Added to your proposal. Keep exploring, or open Composer.',
+                    'Added to your plan. Confirm it in Composer when you’re ready.',
                     undoAddition,
                 );
             } catch (error) {
@@ -708,11 +706,17 @@
             }
         };
     }
+    // A page can list more events than the captured ones (Events adds the
+    // sample day's).
+    const entries = () => [
+        ...M.places,
+        ...(window.ExpaduEventCatalogue?.() || M.events),
+    ];
     document.addEventListener('click', (e) => {
         const b = e.target.closest('[data-plan-item],[data-save-item]');
         if (!b) return;
         const id = b.dataset.planItem || b.dataset.saveItem;
-        const item = [...M.places, ...M.events].find((x) => x.id === id);
+        const item = entries().find((x) => x.id === id);
         if (!item) return;
         if (b.dataset.planItem) open(item);
         else {
@@ -733,9 +737,7 @@
     function refresh() {
         const s = S.read();
         document.querySelectorAll('[data-save-item]').forEach((b) => {
-            const x = [...M.places, ...M.events].find(
-                (x) => x.id === b.dataset.saveItem,
-            );
+            const x = entries().find((x) => x.id === b.dataset.saveItem);
             if (!x) return;
             const yes = (s.savedIdeas || []).some((y) => H.key(x) === H.key(y));
             b.setAttribute('aria-pressed', String(yes));

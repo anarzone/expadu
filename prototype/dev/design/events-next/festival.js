@@ -13,8 +13,18 @@
         'tandem',
         'film',
     ]);
-    // Explicit sample editorial choices, independent of filters and result order.
-    const picks = ['kunst-machen', 'garden', 'exhibition-ludwig'];
+    // Explicit sample editorial choices, independent of filters and result
+    // order. Only events that haven't happened yet are featured.
+    const picks = [
+        'today-review-culture',
+        'kunst-machen',
+        'garden',
+        'exhibition-ludwig',
+    ];
+    // The preview's sample day (connected/sample-day.js), when loaded.
+    const sampleDay = () => window.ExpaduSampleDay?.date || '';
+    const past = (item) =>
+        !!sampleDay() && !!item.date && item.date < sampleDay();
     const calendarPlus =
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4m8-4v4M3 10h18M12 21H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v6M18 16v6m-3-3h6"/></svg>';
     const unique = (items) => [
@@ -23,9 +33,13 @@
         ).values(),
     ];
     function image(item, eager = false) {
-        if (P.approvedMedia(item) || !photos.has(item.id))
+        // Sample-day events name the illustration they share.
+        const photo = photos.has(item.illustration)
+            ? item.illustration
+            : item.id;
+        if (P.approvedMedia(item) || !photos.has(photo))
             return P.image(item, eager);
-        return `<img class="event-poster-image" src="../events-next/photos/${E(item.id)}.webp" data-event-fallback="../events-next/art/${E(item.id)}.svg" alt="" width="1536" height="1024" loading="${eager ? 'eager' : 'lazy'}" ${eager ? 'fetchpriority="high"' : ''} decoding="async">`;
+        return `<img class="event-poster-image" src="../events-next/photos/${E(photo)}.webp" data-event-fallback="../events-next/art/${E(photo)}.svg" alt="" width="1536" height="1024" loading="${eager ? 'eager' : 'lazy'}" ${eager ? 'fetchpriority="high"' : ''} decoding="async">`;
     }
     const date = (item) =>
         item.date
@@ -47,26 +61,40 @@
             ? 'Kunst zum <em>Mit-Machen</em>'
             : E(item.title);
     }
-    function card(item, index = 0, hero = false, { standalone = false } = {}) {
+    // `distance` is a short label such as "3.1 km", when known.
+    function card(
+        item,
+        index = 0,
+        hero = false,
+        { standalone = false, distance = '' } = {},
+    ) {
         const id = E(item.id);
-        return `<article class="festival-card${hero ? ' festival-card--hero' : ''}" data-event-card="${id}"${hero && !standalone ? ` role="group" aria-roledescription="slide" aria-label="${index + 1}: ${E(item.title)}"` : ''}>
-            <button class="festival-open" data-detail="${id}" aria-label="Explore ${E(item.title)}">
+        const gone = past(item);
+        // Short venue names say more than a district; long ones don't fit.
+        const place =
+            hero && String(item.venue || '').length > 20
+                ? item.area || item.venue
+                : item.venue;
+        return `<article class="festival-card${hero ? ' festival-card--hero' : ''}${gone ? ' is-past' : ''}" data-event-card="${id}"${hero && !standalone ? ` role="group" aria-roledescription="slide" aria-label="${index + 1}: ${E(item.title)}"` : ''}>
+            <button class="festival-open" data-detail="${id}" aria-label="${gone ? 'Past event: ' : 'Explore '}${E(item.title)}">
                 ${image(item, hero && index === 0)}
                 <span class="festival-shade" aria-hidden="true"></span>
                 <span class="festival-category">${I(item.icon || 'calendar')}<span>${E(item.category)}</span></span>
                 <span class="festival-story">
-                    <span class="festival-date">${E(date(item))}</span>
-                    <strong class="festival-title" role="heading" aria-level="${hero ? 2 : 3}" lang="de">${title(item, hero)}</strong>
-                    <span class="festival-facts"><span>${I('clock')}<span>${time(item)}</span></span><span>${I('pin')}<span>${E(hero ? item.area || item.venue : item.venue)}</span></span><span>${I('ticket')}<span>${E(item.price || 'Price to check')}</span></span></span>
+                    <span class="festival-date${gone ? ' is-past' : ''}">${gone ? 'Past · ' : ''}${E(date(item))}</span>
+                    <strong class="festival-title" role="heading" aria-level="${hero ? 2 : 3}"${item.titleEnglish ? ' lang="de"' : ''}>${title(item, hero)}</strong>
+                    ${item.titleEnglish ? `<span class="festival-translation">${E(item.titleEnglish)}</span>` : ''}
+                    <span class="festival-facts"><span>${I('clock')}<span>${time(item)}</span></span><span>${I('pin')}<span>${E(place)}${distance ? ` · ${E(distance)}` : ''}</span></span><span>${I('ticket')}<span>${E(item.price || 'Price to check')}</span></span></span>
                 </span>
-            </button>${save(item)}${plan(item)}
+            </button>${gone ? '' : save(item) + plan(item)}
         </article>`;
     }
     function featured(items) {
-        const catalogue = unique(items);
+        const catalogue = unique(items).filter((item) => !past(item));
         const selection = picks
             .map((id) => catalogue.find((item) => item.id === id))
-            .filter(Boolean);
+            .filter(Boolean)
+            .slice(0, 3);
         return selection.length
             ? selection
             : catalogue.filter((item) => item.discovery?.featured).slice(0, 3);
@@ -89,9 +117,9 @@
             </div></div>${credits ? `<p class="festival-credit">${credits}</p>` : ''}
         </div>`;
     }
-    function collection(title, icon, items) {
+    function collection(title, icon, items, options) {
         if (!items.length) return '';
-        return `<section class="festival-collection" aria-label="${E(title)}"><h2>${I(icon)}${E(title)}</h2><div class="festival-card-rail" style="--festival-columns:${Math.min(4, items.length)}">${items.map((item, i) => card(item, i)).join('')}</div></section>`;
+        return `<section class="festival-collection" aria-label="${E(title)}"><h2>${I(icon)}${E(title)}</h2><div class="festival-card-rail" style="--festival-columns:${Math.min(4, items.length)}">${items.map((item, i) => card(item, i, false, options(item))).join('')}</div></section>`;
     }
     function today(items) {
         const catalogue = unique(items);
@@ -125,21 +153,32 @@
             .join(' · ');
         return `Sample programme. AI illustrations depict the activity, not the listed event or venue.${credits ? '<br>' + credits : ''}`;
     }
-    function render(items, { discover = false } = {}) {
+    // Browsing (`discover`) leaves out events already featured above, so a
+    // card appears once; filtered results show every match.
+    function render(
+        items,
+        { discover = false, featured: shown = [], distance = () => '' } = {},
+    ) {
         const events = unique(items);
         if (!events.length) return '';
-        const content = discover
-            ? collection(
-                  'Make an afternoon of it',
-                  'sun',
-                  events.filter((item) => item.start < '18:00'),
-              ) +
-              collection(
-                  'Let the evening happen',
-                  'spark',
-                  events.filter((item) => item.start >= '18:00'),
-              )
-            : `<div class="festival-grid">${events.map((item, i) => card(item, i)).join('')}</div>`;
+        const options = (item) => ({ distance: distance(item) });
+        const browse = events.filter((item) => !shown.includes(item.id));
+        const content = !discover
+            ? `<div class="festival-grid">${events.map((item, i) => card(item, i, false, options(item))).join('')}</div>`
+            : browse.length
+              ? collection(
+                    'Make an afternoon of it',
+                    'sun',
+                    browse.filter((item) => item.start < '18:00'),
+                    options,
+                ) +
+                collection(
+                    'Let the evening happen',
+                    'spark',
+                    browse.filter((item) => item.start >= '18:00'),
+                    options,
+                )
+              : `<p class="festival-featured-note">${events.length === 1 ? 'This event is' : 'These events are'} featured above.</p>`;
         return `${content}<p class="festival-credit">${credit(events)}</p>`;
     }
     function bindRail(track) {
@@ -419,6 +458,7 @@
         sync();
     }
     window.ExpaduEventFestival = {
+        past,
         image,
         card,
         today,

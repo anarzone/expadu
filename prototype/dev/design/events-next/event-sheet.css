@@ -1416,3 +1416,93 @@
     outline: 2px solid var(--event-violet);
     outline-offset: -2px;
 }
+
+/* About: the English title, what the listing says and what it leaves out. */
+.event-sheet .event-translation {
+    display: grid;
+    gap: 2px;
+    margin: 0 0 12px;
+}
+.event-sheet .event-translation small {
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.event-sheet .event-translation span {
+    color: var(--color-text);
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+}
+.event-sheet .event-description.is-unknown {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.event-sheet .event-about-source {
+    margin: -8px 0 14px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.event-sheet .event-about-source a {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.event-sheet .event-know dl {
+    display: grid;
+    gap: 0;
+    margin: 0 0 12px;
+}
+.event-sheet .event-know dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: var(--text-small);
+}
+.event-sheet .event-know dt {
+    color: var(--color-text-soft);
+}
+.event-sheet .event-know dd {
+    margin: 0;
+    text-align: right;
+    font-weight: var(--weight-medium);
+}
+.event-sheet .event-know dd.is-unknown {
+    color: var(--color-text-soft);
+    font-weight: var(--weight-regular);
+}
+/* Today opens this sheet too, without the Events page styles. */
+.event-sheet .event-past-note {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 10px;
+    color: var(--color-text);
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.event-sheet .event-past-note > span {
+    flex: 1;
+}
+.event-sheet .event-past-note > svg {
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    color: var(--color-text-soft);
+}
+.event-sheet a.event-venue {
+    text-decoration: none;
+}
+/* Why the starting point was filled in for you. */
+.event-sheet .route-field-note {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}

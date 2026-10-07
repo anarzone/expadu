@@ -20,7 +20,7 @@ function setup(draft = []) {
             this.revealed = true;
         },
     };
-    const submit = { textContent: 'Add to proposal' };
+    const submit = { textContent: 'Add to plan' };
     const editContext = { hidden: true, textContent: '' };
     const feedback = { hidden: true, focus() {}, scrollIntoView() {} };
     const choice = { date: '2026-09-19', start: '18:00', end: '19:00' };
@@ -567,7 +567,7 @@ test('changing dates switches editing mode and a stale edit cannot overwrite a n
     h.api.mount(place, h.container);
     h.form.elements.date.value = '2026-09-20';
     h.form.onchange();
-    assert.equal(h.submit.textContent, 'Add to proposal');
+    assert.equal(h.submit.textContent, 'Add to plan');
     assert.equal(h.form.elements.start.value, '');
     h.form.elements.date.value = '2026-09-19';
     h.form.onchange();

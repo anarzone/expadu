@@ -89,6 +89,6 @@ test('new event selection exposes a direct dated review without automatically le
 test('reopening a pending event never labels it as confirmed in the day', () => {
     const sheet = openSelection('Pending');
     assert.doesNotMatch(sheet.container.innerHTML, /Already in your day/);
-    assert.match(sheet.container.innerHTML, /proposal/i);
+    assert.match(sheet.container.innerHTML, /isn’t confirmed yet/);
     assert.match(sheet.container.innerHTML, /19:00.*21:00/);
 });

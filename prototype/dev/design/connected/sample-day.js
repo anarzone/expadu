@@ -1,8 +1,9 @@
 /* One sample "today" for the connected previews: Wednesday 30 September 2026,
    13:10, Cologne. Today and Composer read it instead of the real clock, so a
    plan made on Today is "today" in Composer too. Everything here is fictional
-   review data: no live listings, bookings or legal claims. Captured listings
-   elsewhere (Events, Travel) keep their own capture dates. */
+   review data: no live listings, bookings or legal claims. Events opens on this
+   day too; its captured 8 September listings are shown as past. Travel's
+   captures keep their own dates. */
 (function (root) {
     root.ExpaduSampleDay = {
         date: '2026-09-30',
@@ -17,7 +18,11 @@
                 start: '18:30',
                 end: '21:00',
                 venue: 'Rheinauhafen',
-                area: 'Cologne',
+                // Real venue points from Expadu's local catalogue (spots,
+                // read 7 October 2026); the events themselves are fictional.
+                area: 'Neustadt-Süd',
+                lat: 50.92262,
+                lng: 6.96838,
                 category: 'Culture',
                 icon: 'calendar',
                 color: 'blue',
@@ -36,7 +41,9 @@
                 start: '20:00',
                 end: '22:00',
                 venue: 'Stadtgarten',
-                area: 'Cologne',
+                area: 'Neustadt-Nord',
+                lat: 50.9445,
+                lng: 6.93694,
                 category: 'Film',
                 icon: 'film',
                 color: 'blue',

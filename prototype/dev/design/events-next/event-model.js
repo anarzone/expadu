@@ -9,8 +9,10 @@
             month: 'long',
             ...options,
         });
-    function normalize(value = {}, items = []) {
-        const fallback = items[0]?.date || '2026-09-08';
+    // `today` is the preview's sample day; without it the first listed date
+    // is used.
+    function normalize(value = {}, items = [], today = '') {
+        const fallback = today || items[0]?.date || '2026-09-08';
         let date =
             value.date ||
             (value.day
@@ -30,10 +32,17 @@
             free: value.free === true,
             saved: value.saved === true,
             query: typeof value.query === 'string' ? value.query : '',
-            sort: value.sort === 'Evening first' ? value.sort : 'Soonest',
+            sort: ['Evening first', 'Closest'].includes(value.sort)
+                ? value.sort
+                : 'Soonest',
         };
     }
-    function select(items, filters, saved = []) {
+    // An event before the sample day has already happened.
+    const past = (item, today = '') =>
+        !!today && !!item?.date && item.date < today;
+    // `distance(item)` gives kilometres, or null when the venue or starting
+    // point is unknown; those events sort after the ones with a distance.
+    function select(items, filters, saved = [], distance = () => null) {
         const query = filters.query.trim().toLocaleLowerCase();
         return items
             .filter(
@@ -46,15 +55,21 @@
                     (!filters.saved ||
                         saved.some((y) => y.occurrence === x.occurrence)) &&
                     (!query ||
-                        `${x.title} ${x.venue} ${x.area} ${x.category}`
+                        `${x.title} ${x.titleEnglish || ''} ${x.venue} ${x.area} ${x.category}`
                             .toLocaleLowerCase()
                             .includes(query)),
             )
-            .sort((a, b) =>
-                filters.sort === 'Evening first'
+            .sort((a, b) => {
+                if (filters.sort === 'Closest') {
+                    const da = distance(a),
+                        db = distance(b);
+                    if (da !== db)
+                        return da === null ? 1 : db === null ? -1 : da - db;
+                }
+                return filters.sort === 'Evening first'
                     ? b.start.localeCompare(a.start)
-                    : a.start.localeCompare(b.start),
-            );
+                    : a.start.localeCompare(b.start);
+            });
     }
     function week(date) {
         const start = new Date(date + 'T12:00:00');
@@ -90,6 +105,7 @@
     }
     root.ExpaduEvents = {
         normalize,
+        past,
         select,
         week,
         month,

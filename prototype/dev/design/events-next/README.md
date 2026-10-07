@@ -1,8 +1,53 @@
 # Events design preview
 
-Review the captured sample programme at
-`http://127.0.0.1:8765/dev/design/events-next/?date=2026-09-08`.
-Other dates can legitimately have no sample events; this is not a live catalogue.
+Review at `http://127.0.0.1:8765/dev/design/events-next/`. It opens on the
+preview's sample day, Wednesday 30 September 2026; the captured programme is at
+`?date=2026-09-08` and is shown as past. Other dates can legitimately have no
+sample events; this is not a live catalogue.
+
+## Sample day, past listings and clearer details — 7 October 2026
+
+From the owner's Events review (items 1–6):
+
+1. **One sample day.** Events opens on Wednesday 30 September, the day Today and
+   Composer use (`connected/sample-day.js`), with its two evening events. The
+   captured 8 September programme is a past sample: "Past · 8 Sept" markers,
+   no Save or Plan, a note above the results and "Past sample" beside the count.
+   Their sheet keeps the same three tabs: About says it already happened, Plan
+   explains why it can't be planned and links to upcoming events, and Get there
+   gives directions to the venue only (from today's starting point, with no
+   event date or arrival time). Empty dates name both days.
+   The calendar's Today button goes to the sample day.
+2. **What an event is.** Cards and the sheet show the English meaning of German
+   titles. The sheet shows the city's description where Expadu's local catalogue
+   has one, translated and labelled with the later listing in the same series
+   it comes from, and a Good to know list: language, who it's for (ages) and
+   accessibility, each "Not listed" when unknown. Search also matches English
+   titles (for example "chess").
+3. **Planning in plain words.** "Add to plan"; after adding, "Added to your
+   plan. It isn't confirmed yet." The Museum Ludwig exhibition is a flexible
+   visit within its opening hours. Get there starts from your chosen starting
+   point, otherwise from where you'll be (after the Blue Card appointment, or
+   the sample day's starting point) with a short reason.
+4. **Starting point.** Districts, Neumarkt and listed venues are recognised
+   (`distance.js`: district centres and venue points read from Expadu's local
+   catalogue on 7 October 2026). Cards then show a straight-line distance, the
+   count line says where it's measured from, and "Closest first" appears in
+   Sort. Unrecognised places and the film venue (no captured location) show no
+   distance and sort last. No travel times are claimed.
+5. **Composer button.** With the shorter poster, no control sits under it on
+   first load at 390×844, 375×812, 393×852, 820×1180, 1280×800, 1366×768 or
+   1440×900. On a 375×667 phone the Saved filter button still starts beneath it.
+6. **Featured once.** The featured poster shows upcoming events only and is
+   shorter (about 380px on phones, 420px on desktop); while browsing, featured
+   events are left out of the rails ("1 featured above"), while filtered
+   results list every match.
+
+Verification: Events 51 tests (6 new for these rules), connected 153, Today 44,
+Composer 111, Paperwork 65, Travel 124, Places 14 and Today C 56 pass. Every
+other page's default view at 390px and 1440px is pixel-identical to the previous
+commit. Browser checks covered the flows above at phone and desktop sizes with
+no console errors.
 
 ## Connected review and frontend — 3 October 2026
 

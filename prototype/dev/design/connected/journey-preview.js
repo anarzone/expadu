@@ -4,7 +4,7 @@
         const route = model?.filtered({ mode })[0];
         if (!route) return '';
         if (options.compact)
-            return `<section class="mini-departures event-route-preview" aria-label="Journey planning"><header><strong>Get there with Departures</strong><span>Preview</span></header><p>Find a journey that fits your arrival time.</p><div class="event-route-mode">${mode === 'transit' ? 'Transit connections' : mode === 'bike' ? 'Cycle route' : 'Walking route'} <span>to ${esc(destination)}</span></div><small>Live routes aren’t connected in this preview. The full planner contains clearly marked sample journeys.</small></section>`;
+            return `<section class="mini-departures event-route-preview" aria-label="Journey planning"><header><strong>Get there with Departures</strong><span>Preview</span></header><p>${options.anytime ? 'Find a journey to the venue.' : 'Find a journey that fits your arrival time.'}</p><div class="event-route-mode">${mode === 'transit' ? 'Transit connections' : mode === 'bike' ? 'Cycle route' : 'Walking route'} <span>to ${esc(destination)}</span></div><small>Live routes aren’t connected in this preview. The full planner contains clearly marked sample journeys.</small></section>`;
         const capture = model.capture;
         const sameDestination =
             String(destination).toLocaleLowerCase() ===

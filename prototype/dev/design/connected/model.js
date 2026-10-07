@@ -91,6 +91,7 @@
         price,
         color,
         icon,
+        extra = {},
     ) => ({
         id,
         type: 'event',
@@ -107,6 +108,17 @@
         captured: '8 September 2026',
         occurrence: `${id}|2026-09-08T${start}:00+02:00`,
         attendancePolicy: 'unknown',
+        // Not in the captured listings: shown as "Not listed", never guessed.
+        language: null,
+        ...extra,
+    });
+    // Venue points from Expadu's local catalogue (venues and spots tables,
+    // read 7 October 2026). English titles are translations of the German
+    // titles. `about` translates the city's listing for a later date in the
+    // same series (stadt-koeln.de), so it says which listing it comes from.
+    const series = (date, page) => ({
+        aboutSource: `City listing for ${date} in the same series`,
+        sourceUrl: `https://www.stadt-koeln.de/leben-in-koeln/veranstaltungen/daten/${page}/index.html`,
     });
     const events = [
         event(
@@ -120,6 +132,14 @@
             null,
             'blue',
             'museum',
+            {
+                titleEnglish: 'Here and now at Museum Ludwig',
+                // An exhibition: the listed times are opening hours, so you
+                // choose when to visit within them.
+                attendancePolicy: 'window',
+                lat: 50.94083,
+                lng: 6.96002,
+            },
         ),
         event(
             'kunst-machen',
@@ -132,6 +152,13 @@
             'Free',
             'peach',
             'pencil',
+            {
+                titleEnglish: 'Art to join in with',
+                about: 'Look at artworks and make your own, with Eva Degenhardt from the children’s art project KunstPostStation.',
+                ...series('13 October 2026', 41191),
+                lat: 50.96103,
+                lng: 7.0048,
+            },
         ),
         event(
             'schach',
@@ -144,6 +171,14 @@
             'Free',
             'yellow',
             'ball',
+            {
+                titleEnglish: 'Chess experts',
+                about: 'Play and learn chess, from age 8.',
+                ages: '8 and up',
+                ...series('6 October 2026', 41126),
+                lat: 51.02232,
+                lng: 6.89936,
+            },
         ),
         event(
             'forest',
@@ -156,6 +191,11 @@
             'Free',
             'green',
             'leaf',
+            {
+                titleEnglish: 'Experience the forest: climate change up close',
+                lat: 50.91569,
+                lng: 6.87564,
+            },
         ),
         event(
             'garden',
@@ -168,6 +208,13 @@
             'Free · donations welcome',
             'green',
             'leaf',
+            {
+                titleEnglish: 'After-work tour of the Botanical Garden',
+                about: 'Garden lovers and anyone curious about botany discover the garden’s many plants and animals on a 45-minute short tour.',
+                ...series('6 October 2026', 41411),
+                lat: 50.95911,
+                lng: 6.97242,
+            },
         ),
         event(
             'tandem',
@@ -180,6 +227,10 @@
             'Free',
             'blue',
             'chat',
+            {
+                lat: 50.93493,
+                lng: 6.94999,
+            },
         ),
         event(
             'film',
@@ -192,6 +243,9 @@
             null,
             'peach',
             'film',
+            {
+                titleEnglish: 'Alpine Film Festival tour 2026',
+            },
         ),
     ];
     // Editorial choice for the sample discovery composition.

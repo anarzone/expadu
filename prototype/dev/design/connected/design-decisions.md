@@ -364,6 +364,24 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Events on the sample day — owner request, 7 October (in review):** Events
+opens on Wednesday 30 September with the sample day's two evening events, the
+same ones Today and Composer show. The captured 8 September programme stays as
+a past sample: its cards say "Past", have no Save or Plan, its sheet says it
+already happened, and other dates point to both. Featured events are upcoming
+only and appear once while browsing (filtered results still list every match);
+the featured poster is shorter, so the filters show on the first screen and no
+control sits under the Composer button on common phones or laptops. Event
+details add the English meaning of German titles, the city's description where
+Expadu has one (labelled with its source listing) and a Good to know list where
+language, ages and accessibility say "Not listed" when unknown. Planning says
+"Add to plan" and "It isn't confirmed yet"; exhibitions are flexible visits
+within opening hours; Get there starts from where you'll be (for example after
+the Blue Card appointment). A recognised starting point (a Cologne district,
+Neumarkt or a listed venue) shows straight-line distances on cards and offers
+"Closest first"; unknown places show no distance. Details are in
+`events-next/README.md`.
+
 **Composer polish — owner request, 7 October (in review):** new replies scroll
 into view above the input; Composer's Quick look, Add appointment and Try
 Composer are bottom sheets on phones (drag down to close); Quick look shows the

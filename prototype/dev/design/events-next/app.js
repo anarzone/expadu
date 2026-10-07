@@ -5,7 +5,35 @@
         E = U.esc,
         I = U.icon,
         F = ExpaduEvents,
-        V = window.ExpaduEventFestival;
+        V = window.ExpaduEventFestival,
+        D = window.ExpaduEventDistance;
+    // The preview's sample day (Wednesday 30 September): its events come first;
+    // the captured 8 September programme stays as a past sample.
+    const today = window.ExpaduSampleDay?.date || '';
+    const catalogue = [...(window.ExpaduSampleDay?.events || []), ...M.events];
+    // Planning, saving and details on this page look events up here.
+    window.ExpaduEventCatalogue = () => catalogue;
+    const dates = [...new Set(catalogue.map((x) => x.date))].sort();
+    const upcomingDates = dates.filter((date) => !F.past({ date }, today));
+    const pastDates = dates.filter((date) => F.past({ date }, today));
+    const upcomingDate = upcomingDates[0] || dates[0];
+    const longDate = (date) => F.dateLabel(date, { weekday: 'long' });
+    const shortDate = (date) =>
+        F.dateLabel(date, { weekday: 'short', month: 'short' });
+    const listWords = (words) =>
+        words.length < 2
+            ? words.join('')
+            : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
+    // Venues double as starting points ("from Museum Ludwig").
+    const venues = catalogue.map((x) => ({
+        name: x.venue,
+        lat: x.lat,
+        lng: x.lng,
+    }));
+    function origin() {
+        const from = (S.read().brief.from || '').trim();
+        return { from, place: from && D ? D.locate(from, venues) : null };
+    }
     // Match the custom 24px stroke family used by Places and shared navigation.
     const controlIcon = (name) => {
         const paths = {
@@ -22,6 +50,7 @@
             Games: 'ball',
             Outdoors: 'leaf',
             Language: 'chat',
+            Film: 'film',
         })[category] || 'grid';
     let savedFilters = {};
     try {
@@ -35,7 +64,8 @@
             ...(params.get('discover') === '1' ? {} : savedFilters),
             ...(params.get('date') ? { date: params.get('date') } : {}),
         },
-        M.events,
+        catalogue,
+        today,
     );
     let renderedDate = filters.date;
     function syncDateURL(replace = false) {
@@ -50,8 +80,8 @@
         history[replace ? 'replaceState' : 'pushState'](history.state, '', url);
     }
     syncDateURL(true);
-    const categories = ['All', ...new Set(M.events.map((x) => x.category))];
-    const areas = [...new Set(M.events.map((x) => x.area))].sort();
+    const categories = ['All', ...new Set(catalogue.map((x) => x.category))];
+    const areas = [...new Set(catalogue.map((x) => x.area))].sort();
     const picker = (id, label, body) =>
         `<section class="events-popover" id="events-${id}" aria-label="${label}" hidden><header><strong>${label}</strong><button type="button" data-close-event-picker aria-label="Close ${label.toLowerCase()}">${I('close')}</button></header>${body}</section>`;
     document.querySelector('#main').innerHTML =
@@ -84,14 +114,15 @@
                 )
                 .join(
                     '',
-                )}</div></fieldset><div class="events-popover-foot"><small>Used for directions.</small><button type="submit">Done</button></div></form>`,
+                )}</div></fieldset><div class="events-popover-foot"><small>Used for distances and directions.</small><button type="submit">Done</button></div></form>`,
         )}
-        ${picker('sort', 'Sort events', `<div class="events-options"><button data-event-sort="Soonest" aria-pressed="false">Soonest first</button><button data-event-sort="Evening first" aria-pressed="false">Evening first</button></div>`)}
-        </div></section><div class="event-results-head"><div class="event-results-count"><span id="event-count" role="status"></span><span class="event-sample" title="Captured sample programme">Sample</span></div><button id="reset-event-filters" aria-label="Reset event filters" title="Reset filters" hidden>${controlIcon('reset')}</button></div><section id="event-list" aria-label="Events"></section></section>`;
+        ${picker('sort', 'Sort events', `<div class="events-options"><button data-event-sort="Soonest" aria-pressed="false">Soonest first</button><button data-event-sort="Evening first" aria-pressed="false">Evening first</button><button data-event-sort="Closest" aria-pressed="false" hidden>Closest first</button></div>`)}
+        </div></section><div class="event-results-head"><div class="event-results-count"><span id="event-count" role="status"></span><span class="event-sample" title="Captured sample programme">Sample</span><span id="event-count-note"></span></div><button id="reset-event-filters" aria-label="Reset event filters" title="Reset filters" hidden>${controlIcon('reset')}</button></div><section id="event-list" aria-label="Events"></section></section>`;
     const main = document.querySelector('#main'),
         weekStrip = main.querySelector('.event-week');
     const featured = main.querySelector('#event-featured');
-    featured.innerHTML = V.feature(M.events);
+    featured.innerHTML = V.feature(catalogue);
+    const featuredIds = V.featured(catalogue).map((x) => x.id);
     featured.hidden = !featured.innerHTML;
     V.bind(featured);
     let activePicker = null;
@@ -249,7 +280,17 @@
             syncDateURL();
             renderedDate = filters.date;
         }
-        const items = F.select(M.events, filters, S.read().savedIdeas || []);
+        const { from, place } = origin();
+        // Closest needs a known starting point.
+        if (filters.sort === 'Closest' && !place) filters.sort = 'Soonest';
+        const kilometres = (item) => (place ? D.km(place, item) : null);
+        const items = F.select(
+            catalogue,
+            filters,
+            S.read().savedIdeas || [],
+            kilometres,
+        );
+        const pastDay = F.past({ date: filters.date }, today);
         main.querySelector('#event-count').textContent =
             `${items.length} ${items.length === 1 ? 'event' : 'events'}`;
         main.querySelector('#event-day-title').textContent = F.dateLabel(
@@ -266,16 +307,53 @@
             filters.sort !== 'Soonest'
         );
         const nextKey =
-            `${discover}:` +
+            `${discover}:${place?.name || ''}:` +
             filters.date +
             ':' +
             items.map((item) => item.occurrence || item.id).join('|');
+        const shownAbove = discover
+            ? items.filter((item) => featuredIds.includes(item.id)).length
+            : 0;
+        main.querySelector('#event-count-note').textContent = [
+            shownAbove && !pastDay ? `${shownAbove} featured above` : '',
+            place
+                ? `Distances from ${place.name}, in a straight line`
+                : from
+                  ? `No distances for “${from}” in this preview`
+                  : '',
+        ]
+            .filter(Boolean)
+            .join(' · ');
+        main.querySelector('.event-sample').textContent = pastDay
+            ? 'Past sample'
+            : 'Sample';
         const results = main.querySelector('#event-list');
         if (nextKey !== resultKey) {
             main.dataset.discover = String(discover);
+            const listed = catalogue.some((x) => x.date === filters.date);
+            const pastNote =
+                pastDay && items.length
+                    ? `<div class="event-past-note" role="note">${I('clock')}<p><strong>Already happened.</strong> These listings were captured for ${E(longDate(filters.date))}. You can look at them, but not plan them.</p>${upcomingDate !== filters.date ? `<button type="button" data-event-date="${E(upcomingDate)}">See ${E(shortDate(upcomingDate))}</button>` : ''}</div>`
+                    : '';
+            const elsewhere = [
+                upcomingDates.length
+                    ? `This preview has sample events on ${listWords(upcomingDates.map(longDate))}.`
+                    : '',
+                pastDates.length
+                    ? `${listWords(pastDates.map(longDate))} ${pastDates.length === 1 ? 'has' : 'have'} a captured programme that has already happened.`
+                    : '',
+            ]
+                .filter(Boolean)
+                .join(' ');
+            const pastLink = pastDates.find((date) => date !== filters.date);
             results.innerHTML = items.length
-                ? V.render(items, { discover })
-                : `<div class="event-empty">${I('calendar')}<h2>${M.events.some((x) => x.date === filters.date) ? 'Nothing in this selection.' : 'No events captured for this day.'}</h2><p>${M.events.some((x) => x.date === filters.date) ? 'Try another category or clear your filters.' : `This sample programme covers ${F.dateLabel(M.events[0].date)}. You can still explore other dates.`}</p><button class="button secondary" id="event-empty-reset">${M.events.some((x) => x.date === filters.date) ? 'Clear filters' : 'View sample programme'}</button></div>`;
+                ? pastNote +
+                  V.render(items, {
+                      discover: discover && !pastDay,
+                      featured: featuredIds,
+                      distance: (item) => D?.format(kilometres(item)) || '',
+                  })
+                : `<div class="event-empty">${I('calendar')}<h2>${listed ? 'Nothing in this selection.' : 'No events captured for this day.'}</h2><p>${listed ? 'Try another category or clear your filters.' : E(elsewhere)}</p><div class="event-empty-actions"><button class="button secondary" id="event-empty-reset">${listed ? 'Clear filters' : `View ${E(shortDate(upcomingDate))}`}</button>${!listed && pastLink ? `<button type="button" class="event-text-button" data-event-date="${E(pastLink)}">See ${E(shortDate(pastLink))} (past)</button>` : ''}</div></div>`;
             if (resultKey !== null)
                 window.ExpaduMotion?.run(
                     results,
@@ -332,12 +410,20 @@
             'aria-label',
             `Search area: ${filters.area || 'All areas'}`,
         );
-        main.querySelector('[data-sort-label]').textContent =
-            filters.sort === 'Soonest' ? 'Soonest' : 'Evening';
+        const sortName = {
+            Soonest: 'Soonest first',
+            'Evening first': 'Evening first',
+            Closest: 'Closest first',
+        }[filters.sort];
+        main.querySelector('[data-sort-label]').textContent = sortName.replace(
+            ' first',
+            '',
+        );
         main.querySelector('[data-event-picker="sort"]').setAttribute(
             'aria-label',
-            `Sort events: ${filters.sort === 'Soonest' ? 'Soonest first' : 'Evening first'}`,
+            `Sort events: ${sortName}`,
         );
+        main.querySelector('[data-event-sort="Closest"]').hidden = !place;
         ['category', 'area', 'sort'].forEach((id) => {
             const trigger = main.querySelector(`[data-event-picker="${id}"]`);
             trigger.title = trigger.getAttribute('aria-label');
@@ -397,7 +483,9 @@
         }
         if (b.id === 'event-calendar-today') {
             const now = new Date();
-            b.dataset.eventDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            b.dataset.eventDate =
+                today ||
+                `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         }
         if (b.dataset.eventPicker) {
             openPicker(b.dataset.eventPicker);
@@ -452,10 +540,10 @@
         ) {
             const date =
                 b.id === 'event-empty-reset' &&
-                !M.events.some((x) => x.date === filters.date)
-                    ? M.events[0].date
+                !catalogue.some((x) => x.date === filters.date)
+                    ? upcomingDate
                     : filters.date;
-            filters = F.normalize({ date }, M.events);
+            filters = F.normalize({ date }, catalogue, today);
             calendarCursor = filters.date;
             main.querySelector('#event-search').value = '';
             render();
@@ -548,24 +636,21 @@
                 setCalendarOpen(false, true);
         }
     });
+    // Saved items and the starting point (distances) can change elsewhere.
     function refreshState() {
-        if (filters.saved) {
-            const savedFocus = document.activeElement?.dataset.saveItem;
-            render();
-            if (savedFocus)
-                (
-                    main.querySelector(
-                        `[data-save-item="${CSS.escape(savedFocus)}"]`,
-                    ) || main.querySelector('#saved-events')
-                ).focus({ preventScroll: true });
-        } else {
-            window.ExpaduPlanning?.refresh();
-            syncTravel();
-        }
+        const savedFocus =
+            filters.saved && document.activeElement?.dataset.saveItem;
+        render();
+        if (savedFocus)
+            (
+                main.querySelector(
+                    `[data-save-item="${CSS.escape(savedFocus)}"]`,
+                ) || main.querySelector('#saved-events')
+            ).focus({ preventScroll: true });
     }
     window.addEventListener('popstate', () => {
         const date = new URLSearchParams(location.search).get('date');
-        filters = F.normalize({ ...filters, date }, M.events);
+        filters = F.normalize({ ...filters, date }, catalogue, today);
         renderedDate = calendarCursor = calendarFocus = filters.date;
         syncDateURL(true);
         closePicker();
