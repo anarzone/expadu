@@ -153,3 +153,29 @@ test('green spaces without a center use their bounds midpoint', function () {
         ->and($point->invoke($command, ['type' => 'way', 'center' => ['lat' => 50.91, 'lon' => 6.91]]))->toBe([50.91, 6.91])
         ->and($point->invoke($command, ['type' => 'way']))->toBe([0.0, 0.0]);
 });
+
+test('a forest and reserve sharing a name import once as the larger object', function () {
+    $command = new ImportOsmSpots;
+    $unique = new ReflectionMethod($command, 'uniqueElements');
+    $box = fn (float $size): array => ['minlat' => 51.0, 'maxlat' => 51.0 + $size, 'minlon' => 6.9, 'maxlon' => 6.9 + $size];
+
+    $result = $unique->invoke($command, [
+        ['type' => 'way', 'id' => 1, '_category' => 'green', 'tags' => ['name' => 'Worringer Bruch', 'landuse' => 'forest'], 'bounds' => $box(0.01)],
+        ['type' => 'relation', 'id' => 2, '_category' => 'green', 'tags' => ['name' => 'Worringer Bruch', 'leisure' => 'nature_reserve'], 'bounds' => $box(0.03)],
+        ['type' => 'way', 'id' => 3, '_category' => 'green', 'tags' => ['name' => 'Königsforst', 'landuse' => 'forest'], 'bounds' => $box(0.05)],
+        ['type' => 'node', 'id' => 4, '_category' => 'cafe', 'tags' => ['name' => 'Worringer Bruch']],
+    ]);
+
+    expect(array_map(fn (array $e): string => $e['type'].'/'.$e['id'], $result))->toBe(['relation/2', 'way/3', 'node/4']);
+});
+
+test('sources named as closed or administrative are not recommended', function (string $name, bool $expected) {
+    $command = new ImportOsmSpots;
+    $method = new ReflectionMethod($command, 'isRecommendationDestination');
+
+    expect($method->invoke($command, 'library', $name))->toBe($expected);
+})->with([
+    ['Stadtteilbibliothek Nippes', true],
+    ['Zentralbibliothek (geschlossen, Umbau)', false],
+    ['Kunst- und Museumsbibliothek der Stadt Köln (Verwaltung)', false],
+]);

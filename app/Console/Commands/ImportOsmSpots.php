@@ -426,6 +426,12 @@ class ImportOsmSpots extends Command
 
     private function isRecommendationDestination(string $category, string $name): bool
     {
+        // Source names that announce a closure or a back office are kept for
+        // identity but never suggested as somewhere to go.
+        if (preg_match('/\b(geschlossen|closed|dauerhaft geschlossen)\b|\((verwaltung|administration)\)/iu', $name) === 1) {
+            return false;
+        }
+
         $microfacilities = [
             'playground', 'pitch', 'basketball', 'tennis', 'table_tennis',
             'boules', 'dog_park', 'bbq', 'picnic', 'skatepark',
@@ -688,6 +694,26 @@ class ImportOsmSpots extends Command
             $unique[($element['type'] ?? 'node').'/'.($element['id'] ?? '')] ??= $element;
         }
 
+        // A forest and the reserve covering it often share a name; keep the
+        // larger green-space object so one place is not listed twice.
+        $largestGreen = [];
+        foreach ($unique as $key => $element) {
+            if (($element['_category'] ?? null) !== 'green') {
+                continue;
+            }
+            $name = mb_strtolower(trim((string) ($element['tags']['name'] ?? '')));
+            $kept = $largestGreen[$name] ?? null;
+            if ($kept !== null && $this->boundsHectares($unique[$kept]) >= $this->boundsHectares($element)) {
+                unset($unique[$key]);
+
+                continue;
+            }
+            if ($kept !== null) {
+                unset($unique[$kept]);
+            }
+            $largestGreen[$name] = $key;
+        }
+
         return array_values($unique);
     }
 
@@ -723,19 +749,26 @@ class ImportOsmSpots extends Command
             return false;
         }
 
-        $bounds = $element['bounds'] ?? null;
-        if (! is_array($bounds) || ! isset($bounds['minlat'], $bounds['maxlat'], $bounds['minlon'], $bounds['maxlon'])) {
-            return false;
-        }
-        $height = ((float) $bounds['maxlat'] - (float) $bounds['minlat']) * 111_320;
-        $width = ((float) $bounds['maxlon'] - (float) $bounds['minlon']) * 111_320 * cos(deg2rad((float) $bounds['minlat']));
         $kind = match (true) {
             ($tags['natural'] ?? null) === 'water' => 'water',
             ($tags['landuse'] ?? null) === 'recreation_ground' => 'recreation_ground',
             default => 'default',
         };
 
-        return $height * $width / 10_000 >= self::GREEN_MIN_HECTARES[$kind];
+        return $this->boundsHectares($element) >= self::GREEN_MIN_HECTARES[$kind];
+    }
+
+    /** @param array<string, mixed> $element */
+    protected function boundsHectares(array $element): float
+    {
+        $bounds = $element['bounds'] ?? null;
+        if (! is_array($bounds) || ! isset($bounds['minlat'], $bounds['maxlat'], $bounds['minlon'], $bounds['maxlon'])) {
+            return 0.0;
+        }
+        $height = ((float) $bounds['maxlat'] - (float) $bounds['minlat']) * 111_320;
+        $width = ((float) $bounds['maxlon'] - (float) $bounds['minlon']) * 111_320 * cos(deg2rad((float) $bounds['minlat']));
+
+        return $height * $width / 10_000;
     }
 
     public const USER_AGENT = 'Expadu/1.0 (places import; +https://expadu.com)';

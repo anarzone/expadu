@@ -19,5 +19,11 @@ return [
         'way/948232592', // Flittarder Rheinaue: already the "NSG Flittarder Rheinaue" attraction
         'way/11025898', // Blücherparkweiher: pond inside Blücherpark
         'relation/7362563', // Volksgartenweiher: pond inside Volksgarten
+        // Forstbotanischer Garten sections, not separate destinations
+        'way/1382866867', 'relation/19067822', 'relation/19067821', 'way/1382866866', 'relation/19067823',
+        // "Wald für Köln" plantation plots
+        'relation/19020809', 'relation/19020808',
+        // "Wildniswald": one generic name for three unrelated patches
+        'relation/3533839', 'way/861088325', 'way/233681793',
     ],
 ];
