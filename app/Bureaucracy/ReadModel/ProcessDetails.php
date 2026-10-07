@@ -3,6 +3,7 @@
 namespace App\Bureaucracy\ReadModel;
 
 use App\Bureaucracy\Processes\ProcessHistory;
+use App\Bureaucracy\Processes\UntrackEligibility;
 
 /**
  * Presentation fields for one process projection. Everything is copied or counted from the
@@ -16,15 +17,22 @@ final class ProcessDetails
      * @param  list<array>|null  $requirements  paperwork requirement rows, or null without evidence access
      * @param  list<array>  $events  stored process events with payloads
      */
-    public function for(array $process, CatalogueOrder $order, array $timeline, ?array $requirements, array $events): array
+    /** @param array<int, true> $withRecords process ids that hold requirement uses or evidence shares */
+    public function for(array $process, CatalogueOrder $order, array $timeline, ?array $requirements, array $events, array $withRecords = []): array
     {
         $current = $process['guidance'] !== [];
-        $title = $current ? $order->primaryTitle($process['guidance']) : $order->definitionTitle($process['definition_id']);
+        // The process name, then (for releases without one) the first step's reviewed title.
+        $title = $order->processTitle($process['definition_id'])
+            ?? ($current ? $order->primaryTitle($process['guidance']) : $order->definitionTitle($process['definition_id']));
         $steps = $current ? $this->currentSteps($process, $order, $timeline, $requirements) : $this->retainedSteps($process, $order);
         $closure = $this->closure($process, $events);
 
+        $types = array_column(array_filter($events, fn ($event) => $process['id'] !== null && $event['process_id'] === $process['id']), 'type');
+
         return [...$process, 'title' => $title, 'topic_label' => $this->topicLabel($process['topic'] ?? null), 'steps' => $steps, ...$closure,
-            'blocking_reason' => $this->blockingReason($process, $steps, $requirements)];
+            'blocking_reason' => $this->blockingReason($process, $steps, $requirements),
+            // Whether "Track task" can still be undone with process_untracked (same rule the command enforces).
+            'untrackable' => $process['id'] !== null && UntrackEligibility::allows($process['state'], $types, isset($withRecords[$process['id']]))];
     }
 
     public function topicLabel(?string $topic): ?string

@@ -64,7 +64,7 @@ Schema: `bureaucracy.plan.1`. Fields are additive while the schema remains compa
 | `overview.next_actions` | At most three next actions. This limit does not mean the rest are unimportant or absent. |
 | `overview.remaining_action_count`, `actions` | A route to the complete action list; counts must open the underlying records. |
 | `questions` | Interview state and at most one current preview/offer. `overview.question` mirrors it. |
-| `processes` | Current process occurrences; a proposal has `id: null`, `version: 0`. Each also has `title`, `topic_label`, `steps`, `is_closed`, `closed_on`, `closed_event_id` and `blocking_reason` (see “Process presentation fields”). |
+| `processes` | Current process occurrences; a proposal has `id: null`, `version: 0`. Each also has `title`, `topic_label`, `steps`, `is_closed`, `closed_on`, `closed_event_id`, `blocking_reason` and `untrackable` (see “Process presentation fields”). |
 | `history` | Retained occurrences without current guidance; never silently discard old work. Same presentation fields as `processes`. |
 | `history_count` | `history.length` plus closed (`is_closed`) entries of `processes`: what a History list shows. |
 | `topics` | Topic IDs with `label`, definition, occurrence and history references. |
@@ -84,8 +84,9 @@ and none of them moves a decision to the client.
 
 ```json
 {
-  "title": "Prepare the evidence for your first Blue Card application",
+  "title": "EU Blue Card",
   "topic_label": "Residence",
+  "untrackable": true,
   "is_closed": false,
   "closed_on": null,
   "closed_event_id": null,
@@ -115,8 +116,16 @@ and none of them moves a decision to the client.
 }
 ```
 
-- `title` is the reviewed title of the process's first step by reviewed position.
-  A `history` entry whose units are no longer in the active release has `title: null`.
+- `title` is the process's own short name from
+  `database/seeders/data/bureaucracy/schema/process-titles.yaml` (for example “EU Blue
+  Card”, “Address registration”), so a single-step process no longer repeats its step
+  heading. Names carry no figures or legal claims. A release without a name for that
+  process falls back to the first step's reviewed title. A `history` entry whose units are
+  no longer in the active release and has no name has `title: null`.
+- `untrackable` is true when “Track task” can still be undone with `process_untracked`:
+  the process is started, `not_started`, with no completed step, no event other than
+  `process_started`/`process_untracked`, and no requirement confirmation or evidence share.
+  The command applies the same rule. A proposal (`id: null`) is never untrackable.
   `topic_label` comes from `config('bureaucracy_catalogue.topic_labels')` (navigation
   copy, not legal content).
 - `steps[].id` equals the action/progress id `<process_id or occurrence_key>:<step_id>`.

@@ -15,18 +15,32 @@ final readonly class CatalogueOrder
     /** @var array<string, list<array>> */
     private array $variantsByDefinition;
 
+    /** @var array<string, string> */
+    private array $processTitles;
+
     public function __construct(array $catalogue)
     {
         $positions = [];
         $variants = [];
+        $titles = [];
         foreach ($catalogue['definitions'] ?? [] as $definition) {
             $variants[$definition['id']] = $definition['variants'];
+            if (is_string($definition['title'] ?? null)) {
+                $titles[$definition['id']] = $definition['title'];
+            }
             foreach ($definition['variants'] as $variant) {
                 $positions[$variant['id']] = is_int($variant['position'] ?? null) ? $variant['position'] : null;
             }
         }
         $this->positions = $positions;
         $this->variantsByDefinition = $variants;
+        $this->processTitles = $titles;
+    }
+
+    /** The definition-level name of a process, when the release carries one. */
+    public function processTitle(string $definitionId): ?string
+    {
+        return $this->processTitles[$definitionId] ?? null;
     }
 
     public function position(string $unitId): ?int

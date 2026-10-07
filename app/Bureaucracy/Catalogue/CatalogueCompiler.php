@@ -15,10 +15,16 @@ final class CatalogueCompiler
 
     public function __construct(private FactRegistry $facts, private RuleSourcePolicy $policy, private GuidancePublication $publication, private VerifiedActionDirectory $actions) {}
 
-    /** @param list<Task> $tasks @param array<string, array>|null $mapping */
-    public function compile(array $tasks, ?array $mapping = null): array
+    /** @param list<Task> $tasks @param array<string, array>|null $mapping @param array<string, string>|null $titles */
+    public function compile(array $tasks, ?array $mapping = null, ?array $titles = null): array
     {
         $mapping ??= Yaml::parseFile(database_path('seeders/data/bureaucracy/schema/process-map.yaml'))['entries'];
+        $titles ??= Yaml::parseFile(database_path('seeders/data/bureaucracy/schema/process-titles.yaml'))['titles'] ?? [];
+        foreach ($titles as $id => $title) {
+            if (! is_string($id) || ! is_string($title) || trim($title) === '' || preg_match('/\d|§|€/u', $title) === 1) {
+                throw new DomainException('Process titles are plain names: no figures, sections or amounts.');
+            }
+        }
         $byKey = [];
         foreach ($tasks as $task) {
             if (! $task instanceof Task || ! is_string($task->key) || ! preg_match('/^[a-z0-9][a-z0-9._-]*$/D', $task->key) || isset($byKey[$task->key])) {
@@ -141,10 +147,12 @@ final class CatalogueCompiler
             $definitions[$id]['variants'][] = $variant;
         }
         ksort($definitions);
+        $titles = array_intersect_key($titles, $definitions);
+        ksort($titles);
 
         return ['schema_version' => config('bureaucracy_catalogue.schema_version'), 'registry_version' => $this->facts->version(),
-            'mapping_hash' => CatalogueHash::of($mapping), 'mapping' => $mapping, 'inventory' => $inventory,
-            'definitions' => array_map(fn ($id, $definition) => (new ProcessDefinition($id, $definition['topic'], $definition['variants']))->toArray(), array_keys($definitions), array_values($definitions))];
+            'mapping_hash' => CatalogueHash::of($mapping), 'mapping' => $mapping, 'inventory' => $inventory, 'process_titles' => $titles,
+            'definitions' => array_map(fn ($id, $definition) => (new ProcessDefinition($id, $definition['topic'], $definition['variants'], $titles[$id] ?? null))->toArray(), array_keys($definitions), array_values($definitions))];
     }
 
     public function reviewOf(Task $task): array

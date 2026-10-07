@@ -100,6 +100,18 @@ test('starting to track can be undone before any progress and started again from
         ->toBe(['process_started', 'process_untracked', 'process_started']);
 });
 
+test('the plan says whether starting to track can still be undone, by the same rule the command applies', function () {
+    expect($this->getJson($this->planUrl)->json('processes.0.untrackable'))->toBeTrue();
+    ($this->report)('preparation_started')->assertSuccessful();
+    expect($this->getJson($this->planUrl)->json('processes.0.untrackable'))->toBeFalse();
+    ($this->report)('process_untracked', [], '')->assertUnprocessable();
+});
+
+test('a process not yet started cannot be untracked', function () {
+    ($this->report)('process_untracked', [], '')->assertSuccessful();
+    expect($this->getJson($this->planUrl)->json('processes.0'))->toMatchArray(['id' => null, 'untrackable' => false]);
+});
+
 test('untracking is refused once progress was reported, so cancelling remains the honest path', function () {
     ($this->report)('preparation_started')->assertSuccessful();
     ($this->report)('process_untracked', [], '')->assertUnprocessable()->assertJsonValidationErrors('event');

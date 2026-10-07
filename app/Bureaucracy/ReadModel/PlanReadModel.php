@@ -16,6 +16,7 @@ use App\Bureaucracy\Processes\ProcessPrerequisites;
 use App\Bureaucracy\Processes\ProcessStateMachine;
 use App\Bureaucracy\Processes\ProgressSummary;
 use App\Bureaucracy\Processes\ProjectProcess;
+use App\Bureaucracy\Processes\UntrackEligibility;
 use App\Bureaucracy\Questions\QuestionProtocol;
 use App\Bureaucracy\Timeline\BuildTimeline;
 use App\Models\BureaucracyPerson;
@@ -90,7 +91,8 @@ final class PlanReadModel
             $order = new CatalogueOrder($input->catalogue);
             $details = new ProcessDetails;
             $requirements = $paperwork['requirements'] ?? null;
-            $processes = array_map(fn ($process) => $details->for($process, $order, $timeline, $requirements, $events), $processes);
+            $withRecords = UntrackEligibility::withRecords(array_values(array_filter(array_column($processes, 'id'))));
+            $processes = array_map(fn ($process) => $details->for($process, $order, $timeline, $requirements, $events, $withRecords), $processes);
             $history = array_map(fn ($process) => $details->for($process, $order, $timeline, $requirements, $events), $history);
             $guidance = [];
             foreach ($assessment['processes'] as $decision) {

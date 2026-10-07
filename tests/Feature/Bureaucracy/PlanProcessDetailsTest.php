@@ -150,3 +150,27 @@ test('recorded title expiry dates are not shown for an unknown or settlement tit
     'settlement title' => ['settlement_permit_9', 'residence_title_expires_at', []],
     'unknown residence title' => [null, 'residence_title_expires_at', []],
 ]);
+
+test('a process carries its own name instead of repeating its first step', function () {
+    $store = app(CatalogueReleaseStore::class);
+    $definition = $this->mapping[array_key_first($this->mapping)]['process_id'];
+    $artifact = app(CatalogueCompiler::class)->compile($this->units, $this->mapping, [$definition => 'Fixture process name']);
+
+    expect(collect($artifact['definitions'])->firstWhere('id', $definition)['title'])->toBe('Fixture process name')
+        ->and($store->stage($artifact)->artifact['process_titles'])->toBe([$definition => 'Fixture process name']);
+});
+
+test('process names stay plain names without figures', function () {
+    $definition = $this->mapping[array_key_first($this->mapping)]['process_id'];
+
+    expect(fn () => app(CatalogueCompiler::class)->compile($this->units, $this->mapping, [$definition => 'Register within 14 days']))
+        ->toThrow(DomainException::class, 'Process titles are plain names');
+});
+
+test('every process in the local catalogue has a name', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    $artifact = app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->where('key', 'not like', 'fixture.%')->get()->all());
+
+    expect($artifact['definitions'])->not->toBeEmpty()
+        ->and(collect($artifact['definitions'])->whereNull('title')->pluck('id')->all())->toBe([]);
+});

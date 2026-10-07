@@ -4,10 +4,8 @@ namespace App\Bureaucracy\Processes;
 
 use App\Bureaucracy\Assessment\PrepareAssessmentInput;
 use App\Bureaucracy\Catalogue\CatalogueHash;
-use App\Models\BureaucracyEvidenceShare;
 use App\Models\BureaucracyProcess;
 use App\Models\BureaucracyProcessEvent;
-use App\Models\BureaucracyRequirementUse;
 use App\Models\User;
 use DomainException;
 use Illuminate\Validation\ValidationException;
@@ -53,9 +51,8 @@ final class RecordProcessEvent
                     throw ValidationException::withMessages(['payload.event_id' => 'Choose a submission report in this process that has not been withdrawn.']);
                 }
             }
-            if ($type === 'process_untracked' && (collect($history)->contains(fn ($event) => ! in_array($event['type'], ['process_started', 'process_untracked'], true))
-                || BureaucracyRequirementUse::query()->where('process_id', $current->id)->exists()
-                || BureaucracyEvidenceShare::query()->where('process_id', $current->id)->exists())) {
+            if ($type === 'process_untracked' && ! UntrackEligibility::allows(['workflow' => 'not_started', 'steps' => []], array_column($history, 'type'),
+                isset(UntrackEligibility::withRecords([$current->id])[$current->id]))) {
                 throw ValidationException::withMessages(['event' => 'This process already has recorded progress. Report it as cancelled instead; its history stays.']);
             }
             try {
