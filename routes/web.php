@@ -164,7 +164,7 @@ $appRoutes = function () use ($appDomain) {
 
         Route::get('dashboard', HomeFeedController::class)->name('dashboard');
 
-        Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:60,1')->group(function () {
+        Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:bureaucracy-v2')->group(function () {
             Route::get('plan', AccountPlanController::class)->name('plan');
             Route::get('preview/{persona}', ScenarioPreviewController::class)->name('preview');
             Route::get('people', [PeopleController::class, 'index'])->name('people.index');
@@ -195,7 +195,7 @@ $appRoutes = function () use ($appDomain) {
             Route::post('question-sessions/{session}/answers/{question}', [QuestionSessionController::class, 'answer'])->whereNumber('question')->name('question-sessions.answer');
             Route::post('question-sessions/{session}/defer/{question}', [QuestionSessionController::class, 'defer'])->whereNumber('question')->name('question-sessions.defer');
             Route::post('question-sessions/{session}/resume', [QuestionSessionController::class, 'resume'])->name('question-sessions.resume');
-            Route::post('question-sessions/{session}/extract/{question}', [FactExtractionController::class, 'extract'])->whereNumber('question')->middleware('throttle:20,1')->name('questions.extract');
+            Route::post('question-sessions/{session}/extract/{question}', [FactExtractionController::class, 'extract'])->whereNumber('question')->middleware('throttle:bureaucracy-extract')->name('questions.extract');
             Route::post('question-sessions/{session}/candidates/{candidate}/confirm', [FactExtractionController::class, 'confirm'])->whereUuid('candidate')->name('questions.confirm-extraction');
             Route::delete('question-sessions/{session}/candidates/{candidate}', [FactExtractionController::class, 'reject'])->whereUuid('candidate')->name('questions.reject-extraction');
             Route::delete('people/{person}/processing', [FactExtractionController::class, 'withdraw'])->name('people.processing.withdraw');
@@ -207,12 +207,12 @@ $appRoutes = function () use ($appDomain) {
             Route::get('people/{person}/relationships', [RelationshipController::class, 'index'])->name('relationships.index');
             Route::post('people/{person}/relationships', [RelationshipController::class, 'store'])->name('relationships.store');
             Route::delete('people/{person}/relationships/{relationship}', [RelationshipController::class, 'destroy'])->whereNumber('relationship')->name('relationships.destroy');
-            Route::post('invitations', [DelegationController::class, 'store'])->middleware('throttle:10,60')->name('invitations.store');
+            Route::post('invitations', [DelegationController::class, 'store'])->middleware('throttle:bureaucracy-invitations')->name('invitations.store');
             Route::post('invitations/inspect', [DelegationController::class, 'inspect'])->name('invitations.inspect');
             Route::post('invitations/accept', [DelegationController::class, 'accept'])->name('invitations.accept');
             Route::delete('invitations/{invitation}', [DelegationController::class, 'cancel'])->name('invitations.cancel');
             Route::delete('grants/{grant}', [DelegationController::class, 'revoke'])->name('grants.revoke');
-            Route::post('dependents', [DependentAuthorityController::class, 'store'])->middleware('throttle:5,60')->name('dependents.store');
+            Route::post('dependents', [DependentAuthorityController::class, 'store'])->middleware('throttle:bureaucracy-dependents')->name('dependents.store');
             Route::post('authorities/{authority}/approve', [DependentAuthorityController::class, 'approve'])->middleware('password.confirm')->name('authorities.approve');
             Route::delete('authorities/{authority}', [DependentAuthorityController::class, 'revoke'])->name('authorities.revoke');
             Route::post('people/{person}/export', [PersonDataController::class, 'export'])->middleware('password.confirm')->name('people.export');
@@ -228,9 +228,9 @@ $appRoutes = function () use ($appDomain) {
             ->middleware('throttle:composer-parse')
             ->name('composer.parse');
         Route::get('privacy/processing/{purpose}', ProcessingNoticeController::class)
-            ->middleware('throttle:60,1')->name('privacy.processing.show');
+            ->middleware('throttle:privacy-processing')->name('privacy.processing.show');
         Route::delete('privacy/processing/{purpose}', [ProcessingNoticeController::class, 'withdraw'])
-            ->middleware('throttle:60,1')->name('privacy.processing.withdraw');
+            ->middleware('throttle:privacy-processing')->name('privacy.processing.withdraw');
         Route::post('composer/compose', [ComposerController::class, 'compose'])
             ->middleware('throttle:composer-compose')
             ->name('composer.compose');
