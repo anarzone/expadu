@@ -9,7 +9,7 @@ use App\Models\User;
 /**
  * Situation, Veedel and arrival are required; every other bureaucracy answer is skippable.
  * Exercise the canonical account API without inventing a branch or reapproving
- * legacy prose. Only clocks declared with a primary source become legal deadlines.
+ * legacy prose. The imported clock is not promoted to a reviewed legal deadline.
  */
 beforeEach(function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
@@ -96,7 +96,7 @@ it('tells the user the Anmeldung clock is missing instead of showing nothing', f
         ->and($plan['overview']['question']['fact_key'])->toBe('moved_in_at');
 });
 
-it('anchors the §17 BMG registration deadline to the supplied move-in date', function () {
+it('anchors the imported preparation target to the supplied move-in date', function () {
     [$user] = completeOnboarding([
         'address_registration_status' => 'registrable',
         'registration_status' => 'not_registered',
@@ -110,8 +110,7 @@ it('anchors the §17 BMG registration deadline to the supplied move-in date', fu
     $anmeldung = anmeldungAction($plan);
     expect($anmeldung['dates'][0]['state'])->toBe('dated')
         ->and($anmeldung['dates'][0]['date'])->toBe(now()->addDays(11)->toDateString())
-        // §17(1) BMG: two weeks after moving in is a legal deadline.
-        ->and($anmeldung['dates'][0]['kind'])->toBe('legal_due');
+        ->and($anmeldung['dates'][0]['kind'])->toBe('preparation_target');
 });
 
 it('keeps undated registration preparation reachable alongside its question', function () {
