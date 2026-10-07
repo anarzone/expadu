@@ -30,15 +30,17 @@ const plan = (s) => JSON.parse(JSON.stringify(C.plan(s)));
 const fresh = () => P.hydrate(B.fresh());
 const proc = (p, key) => p.processes.find((x) => x.occurrence_key === key);
 
-test('next actions are the todo steps, earliest deadline first, at most three', () => {
+test('next actions are the todo steps, earliest target first, at most three', () => {
     const p = plan(fresh());
     assert.equal(p.schema_version, 'bureaucracy.plan.1');
     assert.equal(p.evaluated_at, '2026-09-30T13:10:00+02:00');
     assert.deepEqual(
         p.overview.next_actions.map((a) => a.id),
-        ['blue-card:1', 'blue-card:0', 'address:0'],
+        ['blue-card:0', 'blue-card:1', 'address:0'],
     );
+    // Both Blue Card steps aim for the visa expiry; they keep their order.
     assert.equal(p.overview.next_actions[0].dates[0].date, '2026-10-01');
+    assert.equal(p.overview.next_actions[1].dates[0].date, '2026-10-01');
     assert.equal(p.overview.remaining_action_count, 1);
     // The bank task isn't started: its step needs a start first.
     assert.equal(
@@ -77,7 +79,8 @@ test('steps carry their position, own documents, first open one and completion e
     assert.equal(steps[0].first_open_requirement.conditional, false);
     assert.equal(steps[0].completion_event, 'step_completed');
     assert.equal(steps[1].completion_event, 'submission_recorded');
-    assert.equal(steps[1].dates[0].kind, 'legal_due');
+    assert.equal(steps[0].dates[0].kind, 'preparation_target');
+    assert.equal(steps[1].dates[0].kind, 'preparation_target');
 });
 
 test('applicability is data, and "unknown" readiness is reported as missing', () => {
@@ -92,15 +95,24 @@ test('applicability is data, and "unknown" readiness is reported as missing', ()
     assert.equal(bc[0].id, 'case.bc.first_application.prepare.document.1');
 });
 
-test('the visa expiry is a personal date; the submission deadline is anchored to it', () => {
+test('the visa expiry is a personal date; both Blue Card targets are anchored to it', () => {
     const p = plan(fresh());
     const expiry = p.timeline.find((t) => t.id === 'visa.expiry');
     assert.equal(expiry.kind, 'document_expiry');
     assert.equal(expiry.legal_effect, 'not_assessed');
-    const due = p.timeline.find((t) => t.kind === 'legal_due' && t.date);
-    assert.equal(due.anchor_fact, 'visa_expires_at');
-    assert.equal(due.anchor_event_id, 'visa.expiry');
-    assert.equal(due.action_id, 'blue-card:1');
+    // No date is a legal deadline any more: every step date is a target.
+    assert.ok(p.timeline.every((t) => t.kind !== 'legal_due'));
+    const targets = p.timeline.filter(
+        (t) => t.kind === 'preparation_target' && t.date,
+    );
+    assert.deepEqual(
+        targets.map((t) => t.action_id),
+        ['blue-card:0', 'blue-card:1'],
+    );
+    for (const due of targets) {
+        assert.equal(due.anchor_fact, 'visa_expires_at');
+        assert.equal(due.anchor_event_id, 'visa.expiry');
+    }
     // Unknown expiry: no expiry row, and the deadline waits for the fact.
     const s = fresh();
     B.confirmExpiry(s, null);
@@ -114,13 +126,15 @@ test('the visa expiry is a personal date; the submission deadline is anchored to
     assert.equal(waiting.needed_fact, 'visa_expires_at');
 });
 
-test('the registration deadline stays undated with its law and the fact it needs', () => {
+test('the registration date is an undated target that needs the move-in date', () => {
     const p = plan(fresh());
     const row = p.timeline.find((t) => t.id === 'address:core.anmeldung.due');
-    assert.equal(row.kind, 'legal_due');
+    // Owner decision, 7 Oct: a target to aim for, not a legal deadline.
+    assert.equal(row.kind, 'preparation_target');
     assert.equal(row.date, null);
     assert.equal(row.needed_fact, 'moved_in_at');
-    assert.equal(row.legal_source.label, '§17(1) BMG');
+    assert.equal('legal_source' in row, false);
+    assert.match(row.target, /^Aim to register within two weeks/);
     const listed = p.attention.find((t) => t.id === row.id);
     assert.equal(listed.urgency, 'date_unknown');
     assert.equal(listed.days_remaining, null);
@@ -132,12 +146,13 @@ test('attention keeps the backend windows; coming up is today and the next seven
         p.attention.map((t) => [t.kind, t.days_remaining, t.urgency]),
         [
             ['appointment', 0, 'appointment_today'],
-            ['legal_due', 1, 'critical'],
+            ['preparation_target', 1, 'critical'],
+            ['preparation_target', 1, 'critical'],
             ['document_expiry', 1, 'critical'],
-            ['legal_due', null, 'date_unknown'],
+            ['preparation_target', null, 'date_unknown'],
         ],
     );
-    assert.equal(p.coming_up.length, 3);
+    assert.equal(p.coming_up.length, 4);
     // A finished step's deadline leaves attention; the expiry stays.
     const s = fresh();
     P.recordSubmission(s, 'blue-card', '2026-09-29');
@@ -336,4 +351,55 @@ test('Today and Composer read the records Paperwork keeps, not a copy', () => {
     shared.BureaucracyPlan.event(s, 'blue-card', 'cancellation_reported');
     store['expadu-bureaucracy-design-v1'] = JSON.stringify(s);
     assert.deepEqual(read(), []);
+});
+
+test('an unconfirmed card shows only its title and official page, nothing of its guidance', () => {
+    const own = load();
+    const Bo = own.BureaucracyPreview,
+        Po = own.BureaucracyPlan,
+        Co = own.BureaucracyContract;
+    // The daily source check hasn't confirmed the Blue Card submission card.
+    own.BureaucracySource.find(
+        (r) => r.key === 'case.bc.first_application.submit',
+    ).state = 'unconfirmed';
+    const p = JSON.parse(JSON.stringify(Co.plan(Po.hydrate(Bo.fresh()))));
+    const unit = p.coverage.units.find(
+        (u) => u.unit_id === 'case.bc.first_application.submit',
+    );
+    assert.equal(unit.state, 'unconfirmed');
+    assert.match(unit.title, /^Submit the Blue Card application/);
+    assert.deepEqual(unit.source_urls.official, []);
+    assert.equal(unit.source_urls.legal.length, 1);
+    assert.equal(unit.verified_at, null);
+    // Its step, date and action are gone; the confirmed card stays.
+    const bc = p.processes.find((x) => x.occurrence_key === 'blue-card');
+    assert.deepEqual(
+        bc.steps.map((x) => x.guidance_id),
+        ['case.bc.first_application.prepare'],
+    );
+    assert.equal(
+        p.timeline.some(
+            (t) => t.source_rule_id === 'case.bc.first_application.submit',
+        ),
+        false,
+    );
+    assert.equal(
+        p.actions.some((a) => a.id === 'blue-card:1'),
+        false,
+    );
+    // With every card unconfirmed, the task leaves the plan.
+    own.BureaucracySource.find(
+        (r) => r.key === 'case.bc.first_application.prepare',
+    ).state = 'unconfirmed';
+    const none = JSON.parse(JSON.stringify(Co.plan(Po.hydrate(Bo.fresh()))));
+    assert.equal(
+        none.processes.some((x) => x.occurrence_key === 'blue-card'),
+        false,
+    );
+    assert.equal(
+        none.paperwork.requirements.some(
+            (r) => r.occurrence_key === 'blue-card',
+        ),
+        false,
+    );
 });

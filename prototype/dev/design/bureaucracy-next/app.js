@@ -100,26 +100,34 @@
         const r = soon(d);
         return r?.label ? `${r.label} · ${date(d)}` : date(d);
     };
-    // "today", "tomorrow", "on Friday" or "on 7 Oct" from a day count.
-    const onDay = (days, d) =>
+    // "today", "tomorrow", "on Friday" or "on 7 Oct" from a day count; "by"
+    // instead of "on" for a target.
+    const onDay = (days, d, by = false) =>
         days === 0
             ? 'today'
             : days === 1
               ? 'tomorrow'
-              : days > 1 && days < 7
-                ? 'on ' + relative(d).label
-                : 'on ' + date(d);
-    // A step's own dated deadline, when it's this week: "Visa expires
-    // tomorrow" when it's anchored to the visa's recorded expiry. Only while
-    // the step is still to do (a recorded submission waits instead).
+              : (by ? 'by ' : 'on ') +
+                (days > 1 && days < 7 ? relative(d).label : date(d));
+    // The kinds of date a step can carry. Today they are all targets
+    // (preparation_target): something to aim for, never "due".
+    const stepKinds = [
+        'legal_due',
+        'preparation_target',
+        'authority_follow_up',
+    ];
+    // A step's own dated target, when it's this week: "Visa expires
+    // tomorrow" when it's anchored to the visa's recorded expiry, otherwise
+    // "Aim to finish by Friday". Only while the step is still to do (a
+    // recorded submission waits instead).
     const dueChip = (plan, step) => {
         if (step?.status !== 'todo') return '';
         const row = plan.coming_up.find(
-            (x) => x.action_id === step.id && x.kind === 'legal_due',
+            (x) => x.action_id === step.id && stepKinds.includes(x.kind),
         );
         if (!row) return '';
         const anchor = plan.timeline.find((x) => x.id === row.anchor_event_id);
-        return `<span class="due-chip${row.days_remaining <= 1 ? ' is-urgent' : ''}">${I('calendar')}${anchor?.document === 'visa' ? 'Visa expires' : 'Due'} ${onDay(row.days_remaining, row.date)}</span>`;
+        return `<span class="due-chip${row.days_remaining <= 1 ? ' is-urgent' : ''}">${I('calendar')}${anchor?.document === 'visa' ? `Visa expires ${onDay(row.days_remaining, row.date)}` : `Aim to finish ${onDay(row.days_remaining, row.date, true)}`}</span>`;
     };
     const current = () => P.process(state, state.process);
     // The contract's view of a task, by its occurrence key.
@@ -403,13 +411,13 @@
             local = P.process(state, key);
         return `<article class="overview-action"><span class="topic-icon ${local?.tone || ''}">${I(local?.icon || 'document')}</span><div><div class="action-meta">${E(nameOf(key))}${badge(P.statuses[step.status], step.status)}</div><h3><button data-open-action="${E(step.id)}">${E(step.title)}</button></h3>${dueChip(plan, step)}</div><button class="icon-button" data-open-action="${E(step.id)}" aria-label="Open ${E(step.title)}">${I('arrow')}</button></article>`;
     }
-    // A step deadline anchored to a recorded expiry in the same list is
-    // that date; it shows once, as the expiry.
+    // A step target anchored to a recorded expiry in the same list is that
+    // date; it shows once, as the expiry.
     const folded = (rows) =>
         rows.filter(
             (row) =>
                 !(
-                    row.kind === 'legal_due' &&
+                    stepKinds.includes(row.kind) &&
                     row.anchor_event_id &&
                     rows.some((x) => x.id === row.anchor_event_id)
                 ),
@@ -491,7 +499,7 @@
     const kindLabels = {
         document_expiry: 'Document expiry',
         legal_due: 'Legal deadline',
-        preparation_target: 'Preparation target',
+        preparation_target: 'Target date',
         authority_follow_up: 'Follow-up',
         appointment: 'Appointment',
         submission_recorded: 'Submission recorded',
@@ -507,8 +515,8 @@
                 .map((t) => {
                     const key = anchoredTo(plan, t),
                         r = soon(t.date),
-                        legal = t.kind === 'legal_due';
-                    return `<button class="timeline-row" data-timeline="${E(t.kind)}" data-for="${E(key || '')}"><span class="timeline-icon">${I(t.kind === 'submission_recorded' ? 'check' : t.kind === 'document_expiry' ? 'document' : 'calendar')}</span><span><strong>${E(kindLabels[t.kind])}</strong><small>${E(nameOf(key))}</small></span><span class="timeline-date${t.kind === 'document_expiry' && r?.days <= 1 ? ' is-urgent' : ''}">${r?.label ? `<em>${E(r.label)}</em>` : ''}${t.state === 'date_unknown' ? `Needs ${E(factLabels[t.needed_fact] || 'more information')}${t.legal_source?.label ? `<small>${E(t.legal_source.label)}</small>` : ''}` : date(t.date)}${t.kind === 'appointment' ? '<small>' + E(clock(t)) + '</small>' : ''}</span>${I(legal ? 'arrow' : 'pencil')}</button>`;
+                        step = stepKinds.includes(t.kind);
+                    return `<button class="timeline-row" data-timeline="${E(t.kind)}" data-for="${E(key || '')}"><span class="timeline-icon">${I(t.kind === 'submission_recorded' ? 'check' : t.kind === 'document_expiry' ? 'document' : 'calendar')}</span><span><strong>${E(kindLabels[t.kind])}</strong><small>${E(nameOf(key))}</small></span><span class="timeline-date${t.kind === 'document_expiry' && r?.days <= 1 ? ' is-urgent' : ''}">${r?.label ? `<em>${E(r.label)}</em>` : ''}${t.state === 'date_unknown' ? `Needs ${E(factLabels[t.needed_fact] || 'more information')}` : date(t.date)}${t.kind === 'appointment' ? '<small>' + E(clock(t)) + '</small>' : ''}</span>${I(step ? 'arrow' : 'pencil')}</button>`;
                 })
                 .join('') ||
             '<p class="muted">Your recorded dates will appear here.</p>'
@@ -714,8 +722,15 @@
         const appointment = rows.find((t) => t.kind === 'appointment'),
             submission = rows.find((t) => t.kind === 'submission_recorded'),
             deadline = rows.find(
-                (t) => t.kind === 'legal_due' && t.state === 'date_unknown',
+                (t) => stepKinds.includes(t.kind) && t.state === 'date_unknown',
             );
+        // The card's own source for a target date (its legal page first).
+        const targetStep =
+            deadline && steps.find((x) => x.step_id === deadline.step_id);
+        const targetSource =
+            targetStep?.sources.legal[0]?.url ||
+            targetStep?.sources.official[0]?.url ||
+            '';
         // Undo "Track task" until there's progress (process_untracked).
         const undo =
             tracked &&
@@ -738,7 +753,7 @@
             (n, x) => n + (x.requirements?.ready || 0),
             0,
         );
-        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(nameOf(key))} progress</h2>${badge(workflow[c.state.workflow], tone(c.state.workflow))}</div>${tracked ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${c.id === null ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${undo ? `<p class="process-note">${I('info')}<span>Tracking started. Nothing is reported yet.</span><button class="plain-button" data-case="untrack">Undo</button></p>` : ''}${c.state.report?.note ? `<p class="process-note">${I(c.state.workflow === 'waiting_authority' ? 'clock' : 'info')}${E(c.state.report.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${c.progress.completed}/${c.progress.total} done</span></div>${steps.map((x) => `<details class="process-step" data-step="${E(x.id)}" ${x.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${x.status}">${I(x.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(x.title)}</strong><small>${E(P.statuses[x.status] || '')}</small>${dueChip(plan, x)}</span>${I('down')}</summary><div class="step-content">${stepContent(c, x)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${E(key)}">${I('document')}<span>Documents<small>${ready} marked ready</small></span>${I('arrow')}</button><button data-source-for="${E(key)}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${deadline?.legal_source ? `<a href="${E(deadline.legal_source.url)}" target="_blank" rel="noopener">${I('calendar')}<span>Legal deadline<small>${E(deadline.rule)} · ${E(deadline.legal_source.label)}. The date needs ${E(factLabels[deadline.needed_fact] || 'more information')}.</small></span>${I('arrow')}</a>` : ''}${key === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${key === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${tracked ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${appointment ? 'Edit' : 'Record'} appointment">${I(appointment ? 'pencil' : 'plus')}</button></div>${appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(appointment.date))} · ${E(clock(appointment))}</strong><small>${E(appointment.location?.label || 'Location not recorded')} · ${E(durationText(appointment.duration_minutes))}</small>${appointment.location && !appointment.routable ? `<small>Saved as text, so no journey can be planned to it yet.</small>` : ''}</div>${onToday(local) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${submission ? date(submission.date) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${submission ? 'Review' : 'Record'} submission">${I(submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
+        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(nameOf(key))} progress</h2>${badge(workflow[c.state.workflow], tone(c.state.workflow))}</div>${tracked ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${c.id === null ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${undo ? `<p class="process-note">${I('info')}<span>Tracking started. Nothing is reported yet.</span><button class="plain-button" data-case="untrack">Undo</button></p>` : ''}${c.state.report?.note ? `<p class="process-note">${I(c.state.workflow === 'waiting_authority' ? 'clock' : 'info')}${E(c.state.report.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${c.progress.completed}/${c.progress.total} done</span></div>${steps.map((x) => `<details class="process-step" data-step="${E(x.id)}" ${x.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${x.status}">${I(x.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(x.title)}</strong><small>${E(P.statuses[x.status] || '')}</small>${dueChip(plan, x)}</span>${I('down')}</summary><div class="step-content">${stepContent(c, x)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${E(key)}">${I('document')}<span>Documents<small>${ready} marked ready</small></span>${I('arrow')}</button><button data-source-for="${E(key)}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${deadline ? `<a href="${E(targetSource)}" target="_blank" rel="noopener">${I('calendar')}<span>Target date<small>${E(deadline.target || 'A date to aim for')}. The date needs ${E(factLabels[deadline.needed_fact] || 'more information')}; it isn’t a confirmed legal deadline.</small></span>${I('arrow')}</a>` : ''}${key === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${key === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${tracked ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${appointment ? 'Edit' : 'Record'} appointment">${I(appointment ? 'pencil' : 'plus')}</button></div>${appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(appointment.date))} · ${E(clock(appointment))}</strong><small>${E(appointment.location?.label || 'Location not recorded')} · ${E(durationText(appointment.duration_minutes))}</small>${appointment.location && !appointment.routable ? `<small>Saved as text, so no journey can be planned to it yet.</small>` : ''}</div>${onToday(local) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${submission ? date(submission.date) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${submission ? 'Review' : 'Record'} submission">${I(submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
     }
     // plan.paperwork.requirements for one task. Applicability and readiness
     // come from the plan; "I have this" and "Ready for this task" are
@@ -794,6 +809,7 @@
         partial: 'Preparation guidance only',
         not_covered: 'Outside its review window',
         withdrawn: 'Withdrawn',
+        unconfirmed: 'Not confirmed right now',
     };
     function sources(pid = state.process) {
         const plan = C.plan(state),
@@ -806,9 +822,12 @@
         U.open(
             'Source and coverage',
             `${p ? scope(p) : ''}<p>Historical catalogue copy. Current publication validity and personal applicability are not established by this preview.</p>${units
-                .map(
-                    (u) =>
-                        `<section class="source-record"><h3>${E(u.title || 'Withdrawn guidance')}</h3><small>${E(coverageLabels[u.state])} · verification recorded ${date(u.verified_at)} · ${E(u.content_version)}</small><div class="source-links">${u.source_urls.official.map((url) => `<a href="${E(url)}" target="_blank" rel="noopener">Official source ↗</a>`).join('')}${u.source_urls.legal.map((url) => `<a href="${E(url)}" target="_blank" rel="noopener">Legal source ↗</a>`).join('')}</div></section>`,
+                .map((u) =>
+                    // An unconfirmed card shows nothing of its own guidance:
+                    // only its title and the official pages.
+                    u.state === 'unconfirmed'
+                        ? `<section class="source-record is-unconfirmed"><h3>${E(u.title || 'Guidance')}</h3><p>We couldn’t confirm this right now. Check the official page.</p><div class="source-links">${u.source_urls.legal.map((url) => `<a href="${E(url)}" target="_blank" rel="noopener">Official page ↗</a>`).join('')}</div></section>`
+                        : `<section class="source-record"><h3>${E(u.title || 'Withdrawn guidance')}</h3><small>${E(coverageLabels[u.state])} · verification recorded ${date(u.verified_at)} · ${E(u.content_version)}</small><div class="source-links">${u.source_urls.official.map((url) => `<a href="${E(url)}" target="_blank" rel="noopener">Official source ↗</a>`).join('')}${u.source_urls.legal.map((url) => `<a href="${E(url)}" target="_blank" rel="noopener">Legal source ↗</a>`).join('')}</div></section>`,
                 )
                 .join(
                     '',

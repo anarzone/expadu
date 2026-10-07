@@ -139,31 +139,41 @@
                 timezone: ZONE,
                 workflow: wire(p.workflow),
             };
+            // Every dated step row is a preparation_target: the backend has
+            // no legal_due policy any more (process-map.yaml has no
+            // temporal_policy since f761736d). Copy reads "Aim to … by".
             if (p.id === 'blue-card') {
                 const known = B.validDate(s.expiry);
-                rows.push({
-                    ...base,
-                    id: `${p.id}:case.bc.first_application.submit.due`,
-                    kind: 'legal_due',
-                    source_rule_id: 'case.bc.first_application.submit',
-                    date: known ? s.expiry : null,
-                    precision: 'calendar_date',
-                    state: known ? 'dated' : 'date_unknown',
-                    needed_fact: known ? null : 'visa_expires_at',
-                    overdue: known && daysFrom(s.expiry) < 0,
-                    conditional: true,
-                    anchor_fact: 'visa_expires_at',
-                    anchor_event_id: known ? 'visa.expiry' : null,
-                    step_id: 'case.bc.first_application.submit.complete',
-                    action_id: `${p.id}:1`,
-                });
+                // Both Blue Card steps take their date from the visa expiry
+                // (deadline_type fact_date on visa_expires_at).
+                [
+                    ['case.bc.first_application.prepare', 0],
+                    ['case.bc.first_application.submit', 1],
+                ].forEach(([unit, i]) =>
+                    rows.push({
+                        ...base,
+                        id: `${p.id}:${unit}.due`,
+                        kind: 'preparation_target',
+                        source_rule_id: unit,
+                        date: known ? s.expiry : null,
+                        precision: 'calendar_date',
+                        state: known ? 'dated' : 'date_unknown',
+                        needed_fact: known ? null : 'visa_expires_at',
+                        overdue: known && daysFrom(s.expiry) < 0,
+                        conditional: true,
+                        anchor_fact: 'visa_expires_at',
+                        anchor_event_id: known ? 'visa.expiry' : null,
+                        step_id: `${unit}.complete`,
+                        action_id: `${p.id}:${i}`,
+                    }),
+                );
             }
             if (p.id === 'address') {
                 const d = P.registrationDeadline;
                 rows.push({
                     ...base,
                     id: `${p.id}:core.anmeldung.due`,
-                    kind: 'legal_due',
+                    kind: 'preparation_target',
                     source_rule_id: 'core.anmeldung',
                     date: null,
                     precision: 'calendar_date',
@@ -173,14 +183,10 @@
                     conditional: true,
                     step_id: 'core.anmeldung.complete',
                     action_id: `${p.id}:0`,
-                    // The reviewed rule and its legal source.
-                    rule: d.rule,
-                    legal_source: {
-                        kind: 'primary',
-                        label: d.law,
-                        url: d.source,
-                        verified_at: d.verifiedAt,
-                    },
+                    // Fixture only: in the real plan this wording is in the
+                    // card's reviewed guidance ("a two-week period under
+                    // §17 BMG"), not on the row.
+                    target: d.rule,
                 });
             }
             const a = p.appointment;
@@ -235,9 +241,10 @@
         'preparation_target',
         'authority_follow_up',
     ];
-    function processOf(s, p, timeline, requirements, local) {
+    function processOf(s, p, timeline, requirements, local, hidden) {
         const definition = definitions[p.id];
-        const steps = p.records.map((n, i) => {
+        const steps = p.records.flatMap((n, i) => {
+            if (hidden?.has(R()[n]?.key)) return [];
             const r = R()[n];
             const id = `${p.id}:${i}`;
             const rows = requirements.filter((x) => x.source_rule_id === r.key);
@@ -440,20 +447,43 @@
         return {
             state: 'partial',
             units: R()
-                .map((r) => ({
-                    definition_id: unitDefinitions[r.key] || null,
-                    unit_id: r.key,
-                    title: r.title,
-                    content_version: r.version,
-                    verified_at: r.verifiedAt,
-                    review_due_at: null,
-                    source_urls: {
-                        official: [r.source],
-                        legal: r.law && r.law !== r.source ? [r.law] : [],
-                    },
-                    // The sample catalogue is preparation guidance only.
-                    state: 'partial',
-                }))
+                .map((r) =>
+                    // A card the daily source check hasn't confirmed shows
+                    // only its title and official pages (bureaucracy-v2.md,
+                    // "Automatically checked cards").
+                    r.state === 'unconfirmed'
+                        ? {
+                              definition_id: unitDefinitions[r.key] || null,
+                              unit_id: r.key,
+                              title: r.title,
+                              content_version: null,
+                              verified_at: null,
+                              review_due_at: null,
+                              source_urls: {
+                                  official: [],
+                                  legal: [r.law || r.source].filter(Boolean),
+                              },
+                              state: 'unconfirmed',
+                          }
+                        : {
+                              definition_id: unitDefinitions[r.key] || null,
+                              unit_id: r.key,
+                              title: r.title,
+                              content_version: r.version,
+                              verified_at: r.verifiedAt,
+                              review_due_at: null,
+                              source_urls: {
+                                  official: [r.source],
+                                  legal:
+                                      r.law && r.law !== r.source
+                                          ? [r.law]
+                                          : [],
+                              },
+                              // The sample catalogue is preparation guidance
+                              // only.
+                              state: 'partial',
+                          },
+                )
                 .sort((a, b) => a.unit_id.localeCompare(b.unit_id)),
         };
     }
@@ -497,17 +527,27 @@
         P.hydrate(s);
         const local = P.projection(s).actions;
         const all = P.processes(s);
-        const requirements = all.flatMap(requirementsOf);
-        const timeline = timelineOf(s, all);
-        const processes = all.map((p) =>
-            processOf(
-                s,
-                p,
-                timeline,
-                requirements.filter((r) => r.occurrence_key === p.id),
-                local,
-            ),
+        // Unconfirmed cards never show their steps, documents or dates.
+        const hidden = new Set(
+            R()
+                .filter((r) => r.state === 'unconfirmed')
+                .map((r) => r.key),
         );
+        const shown = (row) => !hidden.has(row.source_rule_id);
+        const requirements = all.flatMap(requirementsOf).filter(shown);
+        const timeline = timelineOf(s, all).filter(shown);
+        const processes = all
+            .map((p) =>
+                processOf(
+                    s,
+                    p,
+                    timeline,
+                    requirements.filter((r) => r.occurrence_key === p.id),
+                    local,
+                    hidden,
+                ),
+            )
+            .filter((p) => p.steps.length);
         const steps = processes.flatMap((p) =>
             p.steps.map((step) => ({ ...step, process: p })),
         );
@@ -650,7 +690,7 @@
                     (t) => t.occurrence_key === record.id,
                 );
                 const due = rows.find(
-                    (t) => t.kind === 'legal_due' && t.anchor_event_id,
+                    (t) => stepKinds.includes(t.kind) && t.anchor_event_id,
                 );
                 const expiry =
                     due && p.timeline.find((t) => t.id === due.anchor_event_id);

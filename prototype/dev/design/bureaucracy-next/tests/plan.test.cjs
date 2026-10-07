@@ -137,12 +137,14 @@ test('Update progress offers only the changes the backend accepts', () => {
     assert.equal(P.toggleStep(s, 'address:0'), true);
     assert.equal(s.records.address.workflow, 'blocked');
 });
-test('the registration deadline is a legal deadline with its source and no calculated date', () => {
+test('the registration date is a target with its source and no calculated date', () => {
     const s = fresh();
     const row = P.timeline(s).find((t) => t.id === 'deadline-address');
-    assert.equal(row.kind, 'Legal deadline');
+    // Owner decision, 7 Oct: a target to aim for, not a legal deadline.
+    assert.equal(row.kind, 'Target date');
     assert.equal(row.date, null);
-    assert.equal(row.legal.law, '§17(1) BMG');
+    assert.equal(row.legal.law, '§17 BMG');
+    assert.match(row.legal.rule, /^Aim to register/);
     assert.match(row.legal.source, /gesetze-im-internet\.de\/bmg\/__17/);
     assert.equal(row.legal.verifiedAt, '2026-09-08');
 });

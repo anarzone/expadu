@@ -723,13 +723,15 @@
               }
             : null;
     }
-    // The one legal deadline the backend declares (process-map.yaml,
-    // legal_due): §17(1) BMG, register "innerhalb von zwei Wochen nach dem
-    // Einzug". Its date needs the move-in date, which this sample doesn't
-    // record, so it stays unknown; the client never calculates it.
+    // The registration date is a target to aim for, not a legal deadline
+    // (owner decision, 7 Oct 2026; backend f761736d). The reviewed card puts
+    // it two weeks after the move-in date (deadline_days 14, quoting §17
+    // BMG) and says it "is not a confirmed personal legal deadline". It needs
+    // the move-in date, which this sample doesn't record, so it stays
+    // unknown; the client never calculates it.
     const registrationDeadline = {
-        rule: 'Within two weeks of moving in',
-        law: '§17(1) BMG',
+        rule: 'Aim to register within two weeks of moving in',
+        law: '§17 BMG',
         source: 'https://www.gesetze-im-internet.de/bmg/__17.html',
         verifiedAt: '2026-09-08',
         needs: 'your move-in date',
@@ -745,7 +747,7 @@
                               id: 'deadline-' + p.id,
                               process: p.id,
                               name: p.name,
-                              kind: 'Legal deadline',
+                              kind: 'Target date',
                               date: null,
                               icon: 'calendar',
                               legal: registrationDeadline,

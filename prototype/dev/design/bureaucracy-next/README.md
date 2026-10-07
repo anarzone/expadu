@@ -17,9 +17,10 @@ replayed from them, like `POST /processes/{id}/events`. Sample data only.
 
 What changes on screen:
 
-- **Next steps follow the backend's order:** earliest step deadline first,
-  undated ones after, untouched. The sample shows the Blue Card submission
-  (due with the visa, 1 Oct), its preparation, then address registration.
+- **Next steps follow the backend's order:** earliest step date first,
+  undated ones after, untouched. The sample shows the Blue Card preparation
+  and submission (both aiming for the visa expiry, 1 Oct), then address
+  registration.
 - **A hold-up you report blocks the task, not its steps.** The counts are
   steps (4 to do, 0 blocked, 1 waiting), and a step can still be finished
   while its task is on hold; the task stays Blocked. Only an unfinished
@@ -38,10 +39,20 @@ What changes on screen:
   ("End time not known", never assumed); a place typed as text is kept but
   "no journey can be planned to it yet". The sample appointment keeps its
   30 minutes and the Wiener Platz point.
-- **Dates come from the timeline.** The visa expiry is a personal date
-  (`document_expiry`, not a legal claim); the submission deadline is anchored
-  to it, so "Visa expires tomorrow" comes from data and shows once. The
-  registration deadline stays undated: "Needs your move-in date · §17(1) BMG".
+- **Dates come from the timeline, and every step date is a target.** The
+  visa expiry is a personal date (`document_expiry`, not a legal claim). Both
+  Blue Card steps aim for it (`preparation_target`, anchored to the expiry),
+  so "Visa expires tomorrow" comes from data and shows once. Since the
+  owner's 7 October decision (backend f761736d) no date is a legal deadline:
+  address registration is a "Target date" that "needs your move-in date",
+  and its task says "Aim to register within two weeks of moving in … it isn't
+  a confirmed legal deadline", as the reviewed card does. A target that isn't
+  anchored reads "Aim to finish by …", never "Due".
+- **Unconfirmed cards** (the backend's daily source check hasn't confirmed
+  them) show in Sources & coverage as "We couldn't confirm this right now.
+  Check the official page." with the official links, and nothing of their
+  steps, documents or dates. The sample's cards are all confirmed, so this
+  shows only when a card is marked unconfirmed (tests cover it).
 - **The question is the registry's:** "When does your entry visa expire?"
   with why it's asked. Skip defers it; "I don't know" answers it.
 - **Documents:** readiness has no "unknown" (it reads Not ready yet), "May be
@@ -65,8 +76,11 @@ Still open (owner or backend): the backend's process `title` is its first
 step's title, which repeats that step, so the cards keep the short names (EU
 Blue Card, Address registration…) until the owner chooses between them and
 `topic_label` (unreviewed navigation copy); "Add a task" has no backend
-entity; the document English names and the links between tasks are next on
-the backend side. Tests: `tests/contract.test.cjs` (16), `tests/plan.test.cjs`.
+entity; the document English names, the links between tasks, a reviewed
+process title and an explicit "can still be untracked" flag are next on the
+backend side. The backend catalogue has grown to about 46 cards in 30
+processes (Blue Card first application now has four steps); this preview
+keeps its historical sample of two Blue Card steps and three other tasks. Tests: `tests/contract.test.cjs` (17), `tests/plan.test.cjs`.
 
 ## Aligned with the v2 backend rules — 7 October 2026 (in review)
 
@@ -95,7 +109,8 @@ see:
   Returning user or the existing sample plan read-only, like the app's QA
   preview, with "Back to your plan"; changes are refused and your plan isn't
   touched. Reset demo is gone. `?scenario=returning` opens the preview.
-- **Anmeldung legal deadline.** Address registration shows "Legal deadline:
+- **Anmeldung legal deadline** (superseded 8 October: it's a target to aim
+  for, see above). Address registration shows "Legal deadline:
   within two weeks of moving in · §17(1) BMG" (verification recorded 8 Sept
   2026), as the backend declares it. Its date needs the move-in date, which the
   sample doesn't record, so it says so; the client never calculates it.

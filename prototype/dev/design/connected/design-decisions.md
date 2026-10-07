@@ -393,9 +393,12 @@ Today and Composer. Details are in `composer-studio/README.md`.
 it after the design refresh, 8 October (in review):** Paperwork renders the
 backend's `bureaucracy.plan.1` shape (`bureaucracy-next/contract.js`) instead
 of working anything out itself: next actions in the backend's order, step
-counts, the timeline with the visa expiry as a personal date and the
-submission deadline anchored to it, attention, coverage per reviewed unit and
-the registry's question. Progress changes follow the contract's events (a
+counts, the timeline with the visa expiry as a personal date and both Blue
+Card steps' targets anchored to it, attention, coverage per reviewed unit
+(an unconfirmed card shows only "We couldn't confirm this right now. Check the
+official page.") and the registry's question. Every step date is a target to
+aim for, never a legal deadline: the owner decided on 7 October that the
+Anmeldung date is a target (backend f761736d), and its copy reads "Aim to …". Progress changes follow the contract's events (a
 reported hold-up before a submission, "the office needs something" after one,
 withdrawing a submission, undoing "Track task", optional notes and dates).
 Appointments keep an unknown length as unknown and a text-only place as not
