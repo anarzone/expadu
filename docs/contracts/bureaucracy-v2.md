@@ -64,15 +64,184 @@ Schema: `bureaucracy.plan.1`. Fields are additive while the schema remains compa
 | `overview.next_actions` | At most three next actions. This limit does not mean the rest are unimportant or absent. |
 | `overview.remaining_action_count`, `actions` | A route to the complete action list; counts must open the underlying records. |
 | `questions` | Interview state and at most one current preview/offer. `overview.question` mirrors it. |
-| `processes` | Current process occurrences; a proposal has `id: null`, `version: 0`. |
-| `history` | Retained occurrences without current guidance; never silently discard old work. |
-| `topics` | Topic IDs with definition, occurrence and history references. |
+| `processes` | Current process occurrences; a proposal has `id: null`, `version: 0`. Each also has `title`, `topic_label`, `steps`, `is_closed`, `closed_on`, `closed_event_id` and `blocking_reason` (see “Process presentation fields”). |
+| `history` | Retained occurrences without current guidance; never silently discard old work. Same presentation fields as `processes`. |
+| `history_count` | `history.length` plus closed (`is_closed`) entries of `processes`: what a History list shows. |
+| `topics` | Topic IDs with `label`, definition, occurrence and history references. |
 | `guidance` | Reviewed text, criteria, instructions, official actions and source metadata. |
 | `progress` | `total` and `todo`, `blocked`, `waiting`, `completed`, each with exact `count` and `ids`. |
 | `timeline` | Typed dates/appointments, with uncertainty and provenance kept separate. |
-| `coverage` | Overall `partial`, `not_activated` or `outside_coverage`, process-level results and withdrawn rules. |
+| `attention` | Dated rows inside the product attention windows plus open-step deadlines whose date is unknown (see “Attention and coming up”). |
+| `coming_up` | The `attention` rows due today or within the next 7 calendar days in the jurisdiction time zone. |
+| `coverage` | Overall `partial`, `not_activated` or `outside_coverage`, process-level results, withdrawn rules and per-unit `units`. |
 | `paperwork` | Scoped requirements and evidence metadata, or `available: false, reason: permission_required`. |
 | `scopes`, `ai` | Available operations; AI still needs single-request consent and confirmation. |
+
+All of the fields below are read-only projections. Reading the plan writes nothing,
+and none of them moves a decision to the client.
+
+### Process presentation fields
+
+```json
+{
+  "title": "Prepare the evidence for your first Blue Card application",
+  "topic_label": "Residence",
+  "is_closed": false,
+  "closed_on": null,
+  "closed_event_id": null,
+  "blocking_reason": null,
+  "steps": [{
+    "id": "42:case.bc.first_application.prepare.complete",
+    "step_id": "case.bc.first_application.prepare.complete",
+    "guidance_id": "case.bc.first_application.prepare",
+    "title": "Prepare the evidence for your first Blue Card application",
+    "description": "…reviewed text…",
+    "status": "todo",
+    "step_state": "todo",
+    "position": 1,
+    "depends_on": [],
+    "verified_at": "2026-09-08",
+    "review_due_at": "2027-03-08",
+    "content_version": "2026-09-08.1",
+    "sources": {
+      "official": [{"id": "case.bc.first_application.prepare.action.1", "url": "https://www.stadt-koeln.de/…", "purpose": "information"}],
+      "legal": [{"kind": "primary", "label": "§18g AufenthG", "url": "https://www.gesetze-im-internet.de/…"}]
+    },
+    "requirements": {"ready": 0, "total": 5},
+    "first_open_requirement": {"id": "case.bc.first_application.prepare.document.1", "label": "Valid passport and national D visa",
+      "readiness": "missing", "applicability": "required", "conditional": false},
+    "dates": []
+  }]
+}
+```
+
+- `title` is the reviewed title of the process's first step by reviewed position.
+  A `history` entry whose units are no longer in the active release has `title: null`.
+  `topic_label` comes from `config('bureaucracy_catalogue.topic_labels')` (navigation
+  copy, not legal content).
+- `steps[].id` equals the action/progress id `<process_id or occurrence_key>:<step_id>`.
+  `status` uses the progress buckets `todo`, `blocked`, `waiting`, `completed`, plus
+  `cancelled` for a cancelled process. `step_state` is the raw stored step state.
+- `position` is the reviewed `position` from `schema/process-map.yaml` (1 = first).
+  Steps are listed in that order. The compiler rejects non-positive or duplicate
+  positions within a process. Releases compiled before positions existed report
+  `null` and keep their stored order. Re-import the catalogue to get positions.
+- `requirements` and `first_open_requirement` are `null` without `manage_evidence`.
+  They count this step's paperwork rows whose applicability is not `not_required`.
+  `ready` counts `confirmed_for_use`. The first open requirement is a presentation
+  aid, not the cause of anything. `conditional` is `applicability !== 'required'`.
+- `steps[].dates` are the timeline rows with this step's `action_id`.
+- Retained `history` steps keep their recorded states. Fields that need current
+  reviewed guidance are `null` or empty.
+- `is_closed` is `workflow ∈ {completed, cancelled}`. `closed_on` is the
+  `occurred_on` of the person's active completion/cancellation report (`null` when
+  they gave none). `closed_event_id` is that report's event id. Closed processes
+  never appear in `actions`.
+- `blocking_reason` is set only for workflow `action_required` or `blocked`, and only
+  from the person's own paperwork: the first requirement (step order, then catalogue
+  order) whose readiness is `missing` or `needs_reconfirmation`. Otherwise it is `null`.
+  It is never a legal reason.
+
+  ```json
+  {"basis": "requirement_readiness", "step_id": "…prepare.complete", "requirement_id": "…prepare.document.1",
+   "label": "Valid passport and national D visa", "readiness": "missing", "applicability": "required"}
+  ```
+
+`actions[]` also carry `process_title`.
+
+### Timeline links
+
+Timeline rows produced by a step add `step_id` and `action_id`, so `actions[].dates`
+and `steps[].dates` are explicit joins, not inferences. A `dated` deadline row adds
+`anchor_fact` (the confirmed date fact it was taken from). When that fact also has a
+recorded expiry row, `anchor_event_id` names it:
+
+```json
+{"id": "<occurrence_key>:case.bc.first_application.submit.due", "kind": "legal_due", "date": "2026-10-08",
+ "state": "dated", "action_id": "42:case.bc.first_application.submit.complete",
+ "step_id": "case.bc.first_application.submit.complete", "anchor_fact": "visa_expires_at", "anchor_event_id": "visa.expiry", "…": "…"}
+```
+
+`document_expiry` rows are personal recorded dates, not legal deadlines:
+
+```json
+{"id": "visa.expiry", "kind": "document_expiry", "date": "2026-10-08", "precision": "calendar_date", "timezone": "Europe/Berlin",
+ "state": "dated", "overdue": false, "provenance": "confirmed_fact", "legal_effect": "not_assessed",
+ "fact_key": "visa_expires_at", "document": "visa"}
+```
+
+| `id` | Fact | Shown when |
+|---|---|---|
+| `visa.expiry` | `visa_expires_at` | the confirmed `current_residence_title` is `national_d_visa` |
+| `residence-title.expiry` | `residence_title_expires_at` | the title is known and not `settlement_permit_9/18c/unknown` |
+| `residence-card.expiry` | `residence_card_expires_at` | the date is confirmed (unchanged) |
+
+An unknown title shows no visa or title expiry row. Showing an old date as the end
+of an unlimited status would be wrong.
+
+### Attention and coming up
+
+`attention[]` reuses `PlanAttention`: the same windows (appointments 7 days, other
+kinds 14 days, overdue kept) and `urgency` values as Home and reminders.
+`event_revision` is unchanged by the additive fields. In the plan it also lists
+open-step deadline rows in state `date_unknown` with a `needed_fact`, as
+`date: null`, `days_remaining: null`, `urgency: "date_unknown"`, `label: null`.
+Dated rows come first, sorted by `days_remaining`.
+
+```json
+{"id": "visa.expiry", "person_id": 7, "jurisdiction": "de-nrw-cologne", "process_id": null, "occurrence_key": null,
+ "kind": "document_expiry", "date": "2026-10-08", "timezone": "Europe/Berlin", "days_remaining": 1, "urgency": "critical",
+ "title": "Document expiry", "label": "Document expiry: 8 Oct 2026", "source_rule_id": null, "source_hash": null,
+ "action": {"type": "review_details", "person_id": 7, "process_id": null, "occurrence_key": null, "event_id": "visa.expiry"},
+ "event_revision": "…", "assessment_revision": "…",
+ "state": "dated", "needed_fact": null, "overdue": false, "conditional": false, "action_id": null, "step_id": null,
+ "anchor_fact": null, "anchor_event_id": null, "legal_effect": "not_assessed", "provenance": "confirmed_fact",
+ "fact_key": "visa_expires_at", "document": "visa", "starts_at": null, "duration_minutes": null, "location": null}
+```
+
+Appointment rows fill `starts_at`, `duration_minutes` and `location`. Step deadline
+rows fill `action_id`/`step_id` (`legal_effect` is `null` there; `kind` says whether
+it is `legal_due`). `coming_up[]` holds the same row objects with
+`0 <= days_remaining <= 7`. Overdue and undated rows stay in `attention` only.
+
+### Question entry state
+
+`questions` adds `entry_state`, `deferred` and `candidates_count`. They are `null`,
+`[]` and `null` when the viewer lacks `edit_facts`.
+
+```json
+{"status": "preview", "session_id": 12, "remaining_information_count": 2, "question": {"…": "…"},
+ "entry_state": "in_progress", "deferred": ["visa_expires_at"], "candidates_count": 3}
+```
+
+- `entry_state`: `none` means no unexpired interview session for this viewer.
+  `paused` matches `status: paused`. `in_progress` covers any other session.
+- `deferred`: fact keys skipped in this session whose skip is still valid. Keys only,
+  no values.
+- `candidates_count`: all current protocol candidates, including deferred ones.
+  `remaining_information_count` excludes deferred ones.
+
+### Coverage units
+
+```json
+{"definition_id": "residence.blue_card.first", "unit_id": "case.bc.first_application.submit",
+ "title": "Submit the Blue Card application before your D visa expires", "content_version": "2026-09-08.1",
+ "verified_at": "2026-09-08", "review_due_at": "2027-03-08",
+ "source_urls": {"official": ["https://www.stadt-koeln.de/…"], "legal": ["https://www.gesetze-im-internet.de/…"]},
+ "state": "partial"}
+```
+
+`coverage.units[]` lists every reviewed unit in the active release for the
+jurisdiction, sorted by `definition_id` then `unit_id`. The `state` values:
+
+- `complete`: a version-bound complete criterion review exists.
+- `partial`: reviewed preparation guidance only.
+- `not_covered`: in the release but outside its review/validity window.
+- `withdrawn`: removed by the live publication gate since activation, including an
+  overdue review. Its identity and review metadata stay, with `title: null` and no
+  official URLs.
+
+No state means the person is eligible, or that every legal case is covered.
 
 Do not label overall coverage “everything covered”. A process-level assessment may
 describe supported preparation or that its reviewed criteria are met; neither is an
@@ -149,6 +318,45 @@ attributed report, and `can_remove` / `can_edit_related_facts`. Changing the rep
 does not change the sponsor's own record. Removing an incorrect relationship uses
 the exact relationship ID. Lack of access is not evidence that the sponsor lacks a title.
 
+### Fact schema, last checked and answer history
+
+`GET /facts/schema` (authenticated; no person) returns the reviewed registry wording
+and answer shapes. There are no display labels in the registry. Option values are
+raw enum values, and the UI owns their labels.
+
+```json
+{"schema_version": "bureaucracy.fact-schema.1", "registry_version": "…",
+ "facts": [{"key": "visa_expires_at", "type": "date", "options": [], "question": "When does your entry visa expire?",
+   "why": "We use this date to calculate your residence-application deadline.", "date_semantics": "expiry",
+   "allows_not_applicable": false, "subject_scope": "person", "sensitivity": "high", "reconfirm_after_days": 180}]}
+```
+
+`GET /people/{person}/facts` adds `evidence[key].checked_at`: the ISO instant the
+current assertion was confirmed.
+
+`GET /people/{person}/facts/{key}/history` (needs `view_facts`; unknown keys 404)
+lists confirmed answers newest first. AI candidates and synthetic QA rows are
+excluded. Values are returned to an authorised viewer.
+
+```json
+{"schema_version": "bureaucracy.fact-history.1", "person_id": 7, "key": "current_residence_title", "revision": 4,
+ "entries": [{"fact_id": 31, "operation": "changed", "state": "confirmed", "source": "manual",
+   "after": {"answer_state": "value", "value": "blue_card"},
+   "before": {"fact_id": 30, "answer_state": "value", "value": "standard_work_permit"},
+   "effective_from": "2025-06-01", "effective_until": null, "end_date_unknown": false,
+   "recorded_at": "2026-10-07T18:00:00+00:00", "confirmed_at": "2026-10-07T18:00:00+00:00", "superseded_at": null}]}
+```
+
+`operation` is one of:
+
+- `asserted`: a first answer, or the same answer reconfirmed.
+- `corrected`: replaces a mistaken answer. `before` is the corrected row.
+- `changed`: a real change. `before` is the previous answer.
+- `resolved`: a conflict confirmation.
+- `recorded`: legacy rows with no operation.
+
+`value` is `null` unless `answer_state` is `value`.
+
 Outside an interview, use `PUT /people/{person}/facts/{key}` for a real change and
 `POST /people/{person}/facts/{fact}/corrections` for a correction, with
 `expected_revision` and `value`. Offer this distinction in plain language; do not
@@ -199,6 +407,23 @@ Confirm a requirement with
 `expected_version` (process), `evidence_id`, `evidence_version`, current
 `requirement_hash` and `confirmed: true`. Start a proposal before confirming a use.
 Evidence changes and sharing require their own explicit commands and permission.
+
+`PUT /people/{person}/evidence/{uuid}` accepts an optional
+`details.requirement_refs`: a list (max 50) of requirement ids from
+`paperwork.requirements[].id`. The item stays one person-level record. Paperwork
+lists it in `suggested_evidence_ids` and shows `reported_available` on every
+requirement it references, in any process, or whose reviewed `evidence_kind`
+matches `details.kind`. The catalogue currently defines no `evidence_kind`, so send
+references. To say “I have this” for another requirement later, `PUT` the item again
+with the extended list and the current `expected_version`. A reference never
+confirms use. Confirmation still needs the confirm command, which accepts a
+referenced item even when its free-text `kind` differs.
+
+```json
+{"request_id": "…uuid…", "expected_version": 0,
+ "details": {"label": "Passport", "kind": "passport", "reported_available": true, "expires_on": "2030-01-01",
+   "requirement_refs": ["case.bc.first_application.prepare.document.1"]}}
+```
 
 Evidence has `storage: metadata_only`; there are no uploaded files to preview.
 Translation, email writing, tax preparation, upload and OCR remain

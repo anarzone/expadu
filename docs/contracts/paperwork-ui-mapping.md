@@ -251,6 +251,11 @@ appointment, submission and expiry separate.
 
 ## 4. Backend gaps to close before wiring (priority order)
 
+Update, 7 October 2026: G1 (evidence `requirement_refs`), G2, G3, G7, G12 and G15 are
+now in the plan payload. G9 is covered for the closing date only (`closed_on`, no
+notes). G10 is covered for the schema, `checked_at` and answer history, but not
+display labels. See `bureaucracy-v2.md` for shapes. The other gaps are still open.
+
 | # | Gap | Proposed shape |
 |---|---|---|
 | G1 | Per-requirement availability cannot be shown: no catalogue document has `evidence_kind`, so `suggested_evidence_ids` is always empty and readiness never becomes `reported_available`. "I have this" has no visible effect. | Populate `evidence_kind` in the catalogue, **or** let `PUT evidence` carry `requirement_refs[]`/a `kind` derived from the requirement, so the paperwork projection can attach it. |
