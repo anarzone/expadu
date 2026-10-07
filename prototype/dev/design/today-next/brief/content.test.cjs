@@ -7,6 +7,7 @@ for (const file of [
     '../../departures-next/departure-data.js',
     '../../departures-next/journeys.js',
     '../../departures-next/timetable.js',
+    '../../connected/sample-day.js',
     '../model.js',
     '../continuity.js',
     './content.js',

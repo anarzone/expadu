@@ -16,8 +16,19 @@
             beginLoading,
         } = ctx;
         const catalogue = ExpaduModel.places;
-        const events = ExpaduModel.events;
+        // Sample-day events (connected/sample-day.js) and captured listings.
+        const events = [
+            ...(root.ExpaduSampleDay?.events || []),
+            ...ExpaduModel.events,
+        ];
         const eventFor = (id) => events.find((x) => 'event:' + x.id === id);
+        const today = () => M.today?.() || '';
+        const eventDate = (date) =>
+            new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+            });
         const getItem = (id) =>
             catalogue.find((x) => x.id === id) ||
             eventFor(id) ||
@@ -310,21 +321,30 @@
         }
         function serviceCard(entry) {
             if (entry.kind === 'event') {
-                const x = eventFor(entry.eventId);
-                if (!x) return '';
-                const id = 'event:' + x.id;
                 const current = getState();
-                const added = (
-                    current.proposal?.date === x.date
-                        ? current.proposal
-                        : current.plans.find((p) => p.date === x.date)
-                )?.items.some((item) => item.id === id);
-                return `<section class="service-card"><span class="service-type">${I('calendar')}Event · historical sample</span><button class="service-title" data-preview="${E(id)}">${E(x.title)}</button><p>${E(x.venue)}</p><div class="service-time">${I('clock')}8 September 2026 · ${E(x.start)}–${E(x.end)} <span>Fixed time</span></div><p class="detail-caution">This occurrence is in the past. Use it only to test the plan flow; no current availability is implied.</p><div class="service-actions"><button class="plain-button" data-preview="${E(id)}">Preview event</button><button class="studio-button light" data-add-event="${E(id)}" ${added ? 'disabled' : ''}>${added ? 'Added to sample day' : 'Add to sample day'} ${I(added ? 'check' : 'plus')}</button></div></section>`;
+                const ids = entry.eventIds || [entry.eventId];
+                return ids
+                    .map(eventFor)
+                    .filter(Boolean)
+                    .map((x) => {
+                        const id = 'event:' + x.id;
+                        const past = x.date < today();
+                        const added = (
+                            current.proposal?.date === x.date
+                                ? current.proposal
+                                : current.plans.find((p) => p.date === x.date)
+                        )?.items.some((item) => item.id === id);
+                        const source = /sample/i.test(x.captured || '')
+                            ? 'Sample event'
+                            : `Captured listing · ${E(x.captured || '')}`;
+                        return `<section class="service-card"><span class="service-type">${I('calendar')}${source}${past ? ' · past' : ''}</span><button class="service-title" data-preview="${E(id)}">${E(x.title)}</button><p>${E(x.venue)}${x.price ? ` · ${E(x.price)}` : ''}</p><div class="service-time">${I('clock')}${E(eventDate(x.date))} · ${E(x.start)}${x.end ? `–${E(x.end)}` : ''} <span>Fixed time</span></div>${past ? '<p class="detail-caution">This listing has passed. It’s shown for reference only.</p>' : ''}<div class="service-actions"><button class="plain-button" data-preview="${E(id)}">Preview event</button>${past ? '' : `<button class="studio-button light" data-add-event="${E(id)}" ${added ? 'disabled' : ''}>${added ? 'Added' : 'Add to plan'} ${I(added ? 'check' : 'plus')}</button>`}</div></section>`;
+                    })
+                    .join('');
             }
             if (entry.kind === 'journey') {
                 const q = entry.journey;
                 const edit = entry.journeyDraft || {};
-                return `<section class="service-card"><span class="service-type">${I('route')}Journey</span>${q ? `<h3>${E(q.from)} → ${E(q.to)}</h3><p class="service-unavailable">Live route unavailable</p><ol class="journey-stages"><li>${I('pin')}Start at ${E(q.from)}</li><li>${I('route')}Transport, transfers and duration need checking</li><li>${I('pin')}Arrive at ${E(q.to)}</li></ol><p class="detail-caution">No route has been calculated. Your plan’s times are unchanged.</p><button class="plain-button" data-journey-edit="${E(entry.id)}">Edit journey</button>` : `<h3>Where are you heading?</h3><form class="journey-form" data-journey-form="${E(entry.id)}"><label>From<input name="from" required maxlength="120" placeholder="Starting place" value="${E(edit.from || '')}"></label><label>To<input name="to" required maxlength="120" placeholder="Destination" value="${E(edit.to || '')}"></label><button class="studio-button light">Check journey ${I('arrow')}</button></form><p class="detail-caution">Sample flow · live routes are not connected.</p>`}</section>`;
+                return `<section class="service-card"><span class="service-type">${I('route')}Journey</span>${q ? `<h3>${E(q.from)} → ${E(q.to)}</h3>${q.arriveBy ? `<p class="service-time">${I('clock')}Arrive by ${E(q.arriveBy)}</p>` : ''}<p class="service-unavailable">Routes aren’t connected here. Travel has sample routes and times.</p><div class="service-actions"><a class="studio-button light" href="${E(`${root.ExpaduStore.routes.departures}?${new URLSearchParams({ from: q.from, to: q.to, ...(q.arriveBy ? { arrive: q.arriveBy } : {}) })}`)}">${I('route')}Compare routes in Travel</a><button class="plain-button" data-journey-edit="${E(entry.id)}">Edit journey</button></div><p class="detail-caution">No route has been calculated. Your plan’s times are unchanged.</p>` : `<h3>${edit.to && !edit.from ? 'Where are you starting from?' : 'Where are you heading?'}</h3><form class="journey-form" data-journey-form="${E(entry.id)}"><label>From<input name="from" required maxlength="120" placeholder="Starting place" value="${E(edit.from || '')}"></label><label>To<input name="to" required maxlength="120" placeholder="Destination" value="${E(edit.to || '')}"></label><button class="studio-button light">Check journey ${I('arrow')}</button></form><p class="detail-caution">Sample flow · live routes are not connected.</p>`}</section>`;
             }
             if (entry.kind === 'bureaucracy') {
                 if (entry.orientation) {
@@ -346,7 +366,7 @@
         }
         function examples(anchor) {
             const body = shell('Try Composer', anchor);
-            body.innerHTML = `<p>Explore a sample response without changing your typed message.</p><div class="example-actions"><button data-sample="Find an event">${I('calendar')}An event with fixed times</button><button data-sample="Help me with a journey">${I('route')}A journey request</button><button data-sample="Help me register my address">${I('document')}Reviewed bureaucracy information</button></div><p class="detail-caution">Day planning in this version · one unfinished day at a time. Weekly planning comes later.</p>`;
+            body.innerHTML = `<p>Explore a sample response without changing your typed message.</p><div class="example-actions"><button data-sample="What’s on tonight?">${I('calendar')}An event with fixed times</button><button data-sample="Help me with a journey">${I('route')}A journey request</button><button data-sample="Help me register my address">${I('document')}Reviewed bureaucracy information</button></div><p class="detail-caution">Day planning in this version · one unfinished day at a time. Weekly planning comes later.</p>`;
             body.querySelectorAll('[data-sample]').forEach((button) =>
                 button.addEventListener('click', () => {
                     const text = button.dataset.sample;
@@ -365,6 +385,10 @@
             if (el.dataset.addEvent) {
                 const x = eventFor(el.dataset.addEvent);
                 if (!x) return;
+                if (x.date < today()) {
+                    notify('This event has already happened.');
+                    return;
+                }
                 try {
                     M.addScheduled(
                         getState(),
@@ -372,7 +396,7 @@
                         x.date,
                     );
                     changed('Added captured event');
-                    notify('Added to 8 September, the original sample date.');
+                    notify(`Added to your plan for ${eventDate(x.date)}.`);
                 } catch (error) {
                     notify(error.message);
                 }

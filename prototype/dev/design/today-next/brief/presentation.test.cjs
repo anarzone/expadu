@@ -3,7 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const context = { JourneyModel: { capture: {} } };
-for (const file of ['../model.js', '../continuity.js', './presentation.js']) {
+for (const file of [
+    '../../connected/sample-day.js',
+    '../model.js',
+    '../continuity.js',
+    './presentation.js',
+]) {
     vm.runInNewContext(fs.readFileSync(require.resolve(file), 'utf8'), context);
 }
 const M = context.TodayNext;

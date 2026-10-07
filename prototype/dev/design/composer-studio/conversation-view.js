@@ -150,7 +150,26 @@
         }
         if (entry.kind === 'answer' && entry.plan)
             body += `<details class="chat-plan-reference"><summary>${I('calendar')}Earlier plan snapshot · ${E(dateLabel(entry.plan.date))}</summary><p class="history-readonly">Saved at the time of this reply · read only</p>${timeline(entry.plan)}</details>${!ctx.historical && (s.proposal?.date === entry.plan.date || s.plans.some((p) => p.date === entry.plan.date)) ? `<button class="plain-button" data-open-plan="${E(entry.plan.date)}">Open current plan</button>` : ''}`;
-        return `<article class="chat-entry chat-${entry.role === 'user' ? 'user' : 'assistant'} ${entry.kind === 'plan' ? 'chat-plan' : ''}" data-chat-entry="${E(entry.id)}"><span class="chat-speaker">${entry.role === 'user' ? 'You' : I('spark') + 'Composer'}</span>${body}</article>`;
+        // Next steps a reply offers: a request to send, a panel or another page.
+        // Only the latest reply offers next steps, so they don't pile up.
+        const section = c.chapters?.find((x) => x.id === c.currentId);
+        const latest = section?.entries
+            .filter((x) => x.role === 'assistant')
+            .at(-1);
+        if (!ctx.historical && entry.suggestions?.length && latest?.id === entry.id)
+            body += `<div class="reply-suggestions">${entry.suggestions
+                .map((x) =>
+                    x.href
+                        ? `<a class="suggestion-chip" href="${E(x.href)}">${E(x.label)}${I('arrow')}</a>`
+                        : x.nav
+                          ? `<button class="suggestion-chip" data-nav="${E(x.nav)}">${E(x.label)}</button>`
+                          : `<button class="suggestion-chip" data-prompt="${E(x.prompt)}">${E(x.label)}</button>`,
+                )
+                .join('')}</div>`;
+        const from = entry.pageContext?.label
+            ? `<small class="chat-context">${I('pin')}From ${E(entry.pageContext.label)}</small>`
+            : '';
+        return `<article class="chat-entry chat-${entry.role === 'user' ? 'user' : 'assistant'} ${entry.kind === 'plan' ? 'chat-plan' : ''}" data-chat-entry="${E(entry.id)}"><span class="chat-speaker">${entry.role === 'user' ? 'You' : I('spark') + 'Composer'}</span>${from}${body}</article>`;
     }
     root.StudioConversationView = { entry };
 })(globalThis);

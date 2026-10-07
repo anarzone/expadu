@@ -22,10 +22,36 @@
         }),
     );
     const form = document.querySelector('#compose-form');
+    // What this page is showing goes with the request (connected/page-context.js),
+    // so Composer can answer "Which of these…?". You can leave it out.
+    let includeContext = true;
+    function showContext() {
+        document.querySelector('.composer-page-context')?.remove();
+        const context = includeContext && window.ExpaduPageContext?.();
+        if (!context?.label) return;
+        const esc = window.ExpaduUI?.esc || ((x) => String(x));
+        form.insertAdjacentHTML(
+            'beforebegin',
+            `<div class="composer-page-context"><span>About: ${esc(context.label)}</span><button type="button" aria-label="Don’t include ${esc(context.label)}">${window.ExpaduIcon?.('close') || '×'}</button></div>`,
+        );
+        document
+            .querySelector('.composer-page-context button')
+            .addEventListener('click', (event) => {
+                event.stopPropagation();
+                includeContext = false;
+                document.querySelector('.composer-page-context')?.remove();
+                field.focus();
+            });
+    }
+    document
+        .querySelector('#composer-tray')
+        .addEventListener('focusin', showContext);
     function submit() {
         if (!field.value.trim()) return;
+        const context = includeContext ? window.ExpaduPageContext?.() : null;
         S.update((s) => {
             s.prompt = field.value.trim();
+            s.pageContext = context || null;
         });
         S.go('composer', { compose: '1' });
     }

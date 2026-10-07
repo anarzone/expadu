@@ -4,6 +4,35 @@ Connected to the approved Today C design, 18 September 2026. Start at `/dev/desi
 
 Open `/dev/design/composer-studio/` directly, or enter from Today. Today’s header bookmark opens Saved; the plus menu beside the Composer input contains My Plans, Saved and History. Both are panels in the same workspace; the older `/dev/design/my-plans/` links now open the corresponding panel in Composer.
 
+## Helpful replies and page context — 7 October
+
+Composer review items 1–6.
+
+- **One sample day:** Composer reads `../connected/sample-day.js` (Wednesday
+  30 September 2026, 13:10, the same day Today shows) instead of the real
+  clock. "Today", "tomorrow", weekdays and "this weekend" count from it, and a
+  plan for today starts after 13:10.
+- **Everyday questions:** greetings and "What can you do?" get a short answer
+  with four suggestions; events by time and topic ("tonight", "this weekend",
+  "concerts"); kids, sport and swimming from the sample places; doctors and
+  other services point to Services; cafés, rain and opening times say honestly
+  what the sample data can't answer. An unclear request no longer repeats the
+  same sentence, and only the latest reply shows its suggestions.
+- **Page context:** the Composer bar on Events, Travel, Paperwork and Services
+  shows "About: …" (removable) and sends what the page shows
+  (`../connected/page-context.js`). Composer answers "Which of these is good for
+  meeting people?" from the listed events, uses Travel's journey, Paperwork's
+  first step and Services' chosen category. The request shows "From …".
+- **Details kept:** journey questions keep the places and arrival time
+  ("from Neumarkt to Mülheim by 14:00"), or take them from Today's journey; the
+  result links to Travel's sample routes. Day plans keep the plans you already
+  have (Today's day, the sample day's coming plans, and any you mention, such as
+  "I already have Language class in Ehrenfeld at 18:00").
+- **Questions don't plan:** "When is my next appointment?" answers from your
+  plans and changes nothing.
+- **Upcoming events only:** Composer shows sample events still to come; captured
+  listings that have passed are marked past and can't be added.
+
 ## Shared palette and fixes — 7 October
 
 Composer uses the shared cream palette from `../connected/tokens.css` (see "Composer on the shared palette" in `../connected/design-decisions.md`). The toast now sits just above the input whatever its height, Edit time opens below itself without moving, the desktop side panel starts below the app header, and the Composer bar lines up with the conversation column.

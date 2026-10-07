@@ -3,10 +3,37 @@
     const identity = (item) => String(item.id).replace(/^event:/, '');
     const iso = (d) =>
         `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    function saturday() {
+    // The previews share one sample "today" (connected/sample-day.js) so a
+    // plan made on Today is "today" here too; without it, the real date.
+    function today() {
+        return root.ExpaduSampleDay?.date || iso(new Date());
+    }
+    function nowTime() {
+        if (root.ExpaduSampleDay?.time) return root.ExpaduSampleDay.time;
         const d = new Date();
-        d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7));
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+    function addDays(date, days) {
+        const d = new Date(date + 'T12:00:00');
+        d.setDate(d.getDate() + days);
         return iso(d);
+    }
+    const weekdays = [
+        'sunday',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+    ];
+    function nextWeekday(name) {
+        const d = new Date(today() + 'T12:00:00');
+        d.setDate(d.getDate() + ((weekdays.indexOf(name) - d.getDay() + 7) % 7));
+        return iso(d);
+    }
+    function saturday() {
+        return nextWeekday('saturday');
     }
     const fresh = () => ({
         version: 1,
@@ -102,12 +129,20 @@
             );
             const title = titles[id] || source?.title;
             if (!title || draft.items.some((x) => x.id === id)) continue;
+            const preferred = draft.items.some((x) => !x.fixed)
+                ? '16:00'
+                : '13:00';
+            // On the sample day itself, nothing is suggested in the past.
+            const soonest =
+                root.ExpaduSampleDay && date === today()
+                    ? clock(Math.ceil((minutes(nowTime()) + 15) / 30) * 30)
+                    : '00:00';
             const at =
                 id === 'appointment'
                     ? ['15:00', '15:30']
                     : nextFreeTime(
                           [...draft.items, ...reserved],
-                          draft.items.some((x) => !x.fixed) ? '16:00' : '13:00',
+                          preferred > soonest ? preferred : soonest,
                       );
             if (!at)
                 throw Error(
@@ -418,9 +453,7 @@
         const [day, month] = /\d/.test(match[1])
             ? [match[1], match[2]]
             : [match[2], match[1]];
-        const year = validDate(s.date)
-            ? s.date.slice(0, 4)
-            : String(new Date().getFullYear());
+        const year = today().slice(0, 4);
         const value = `${year}-${String(months.indexOf(month.toLowerCase()) + 1).padStart(2, '0')}-${day.padStart(2, '0')}`;
         return validDate(value) ? value : null;
     }
@@ -429,28 +462,98 @@
         if (explicit) return explicit[0];
         const named = namedDate(text, s);
         if (named) return named;
-        if (/saturday/i.test(text)) return saturday();
-        const d = new Date();
-        if (/tomorrow/i.test(text)) {
-            d.setDate(d.getDate() + 1);
-            return iso(d);
-        }
-        if (/today/i.test(text)) return iso(d);
+        if (/\b(this )?weekend\b/i.test(text)) return saturday();
+        if (/\btomorrow\b/i.test(text)) return addDays(today(), 1);
+        const day = text.toLowerCase().match(new RegExp(`\\b(${weekdays.join('|')})\\b`));
+        if (day) return nextWeekday(day[1]);
+        if (/\b(today|tonight|this (morning|afternoon|evening|week))\b/i.test(text))
+            return today();
         return s.date;
     }
+    // Places named in a journey question: "from A to B", or "get to B by 14:00".
+    function journeyPlaces(text) {
+        const sentence =
+            text
+                .split(/[?!]|\.\s/)
+                .find((part) => /\b(to|from)\b/i.test(part)) || '';
+        const by = text.match(/\bby\s+(\d{1,2}:\d{2})\b/i);
+        const arrive = by ? { arriveBy: normalizeTime(by[1]) } : {};
+        const both = sentence.match(/\bfrom\s+(.+?)\s+to\s+(.+?)(?:\s+(?:by|at|on|before)\b.*)?$/i);
+        if (both) return { from: both[1].trim(), to: both[2].trim(), ...arrive };
+        const to = sentence.match(
+            /\b(?:get to|go to|directions to|journey to|route to|way to)\s+(.+?)(?:\s+(?:by|at|on|before|from)\b.*)?$/i,
+        );
+        return { ...(to ? { to: to[1].trim() } : {}), ...arrive };
+    }
+    // Plans a person mentions: "I already have Language class in Ehrenfeld at 18:00."
+    function mentionedPlans(text) {
+        const match = text.match(/\bI (?:already )?have (.+?)(?:\.|$)/i);
+        if (!match) return [];
+        return match[1]
+            .split(/,\s*|\s+and\s+/)
+            .map((part) =>
+                part.match(/^(.+?)(?:\s+in\s+(.+?))?\s+at\s+(\d{1,2}:\d{2})$/i),
+            )
+            .filter(Boolean)
+            .map((m) => {
+                const start = normalizeTime(m[3]);
+                const end = start ? clock(Math.min(minutes(start) + 60, 1439)) : null;
+                return { title: m[1].trim(), location: m[2]?.trim() || '', start, end };
+            })
+            .filter((plan) => plan.start && plan.end);
+    }
+    const services = [
+        ['doctors', /\b(doctor|gp|hausarzt|physician)s?\b/],
+        ['dentists', /\b(dentist|zahnarzt)s?\b/],
+        ['pharmacies', /\b(pharmac(y|ies)|apotheke|chemist)\b/],
+        ['banks', /\b(bank|bank account)s?\b/],
+        ['tax', /\btax (advisor|adviser|return)s?\b/],
+        ['lawyers', /\b(lawyer|legal advice)s?\b/],
+    ];
+    const topics = [
+        ['music', /\b(music|concerts?|gigs?|live band)\b/],
+        ['exhibition', /\b(exhibitions?|museums?|art|gallery|galleries)\b/],
+        ['film', /\b(films?|cinema|movies?)\b/],
+        ['football', /\b(football|match|bundesliga|fc)\b/],
+    ];
+    const placeCategories = [
+        ['Family', /\b(kids?|children|child|family|playground)\b/],
+        ['Sport', /\b(table tennis|ping pong|kick ?about|pitch|sports?)\b/],
+        ['Swimming', /\b(swim|swimming|lake|bathing)\b/],
+    ];
+    const find = (list, t) => list.find(([, pattern]) => pattern.test(t))?.[0] || null;
     function respond(text, s) {
-        const t = text.toLowerCase(),
+        // Curly apostrophes and accents read the same as typed ones.
+        const t = text
+                .toLowerCase()
+                .replace(/[’‘]/g, "'")
+                .replace(/é/g, 'e'),
             date = requestDate(text, s);
         if (!validDate(date)) return { kind: 'clarify', date: s.date };
-        // Getting somewhere, or planning a day, comes before paperwork words:
-        // "How do I get to my Blue Card appointment?" is a journey question.
         if (
-            /\b(how (do|can|should) i get to|get there|directions to|journey to|route to)\b/.test(
+            /^(hi|hello|hey|hallo|moin|good (morning|afternoon|evening))[!. ]*$|what can you do|how (can|do) you help|^help[?!. ]*$|who are you/.test(
                 t,
             )
         )
-            return { kind: 'journey', date };
-        if (/\b(help me plan|plan my day|what should i do)\b/.test(t))
+            return { kind: 'help', date };
+        // Getting somewhere, or planning a day, comes before paperwork words:
+        // "How do I get to my Blue Card appointment?" is a journey question.
+        if (
+            /\b(how (do|can|should) i get to|get there|directions to|journey to|route to|faster way|quicker way|another route)\b/.test(
+                t,
+            )
+        )
+            return { kind: 'journey', date, ...journeyPlaces(text) };
+        // Questions about your plans answer from them; they never change them.
+        if (
+            /\b(when|what time)\b.*\b(my|next)\b.*\b(appointment|plan|class)\b|\bnext (appointment|plan)\b|\bwhat('s| is)( on)? my (day|plan|schedule)\b/.test(
+                t,
+            )
+        )
+            return { kind: 'next', date, appointment: /appointment/.test(t) };
+        if (/\b(rain|rainy|raining|indoors?|inside)\b/.test(t))
+            return { kind: 'indoor', date };
+        if (/\b(help me plan|plan my day)\b/.test(t))
             return {
                 kind: 'proposal',
                 date,
@@ -462,9 +565,30 @@
             )
         )
             return { kind: 'bureaucracy', date };
-        if (/event|concert|exhibition/.test(t)) return { kind: 'event', date };
+        const service = find(services, t);
+        if (service) return { kind: 'service', date, service };
+        if (
+            /\b(events?|concerts?|exhibitions?|museums?|music|films?|cinema|what('s| is) on|things to do|going out|tonight)\b/.test(
+                t,
+            )
+        )
+            return {
+                kind: 'event',
+                date,
+                topic: find(topics, t),
+                days: /\bweekend\b/.test(t) ? 2 : /\b(this|next) week\b/.test(t) ? 7 : 1,
+                evening: /\b(tonight|this evening|evening)\b/.test(t),
+            };
         if (/journey|route|how.*get|transport/.test(t))
-            return { kind: 'journey', date };
+            return { kind: 'journey', date, ...journeyPlaces(text) };
+        const category = find(placeCategories, t);
+        if (category) return { kind: 'discovery', date, category };
+        if (
+            /\b(cafes?|coffee|work from|laptop|bars?|pubs?|restaurants?|eat|food|brunch|christmas market|open now|opening hours)\b/.test(
+                t,
+            )
+        )
+            return { kind: 'unavailable', date, topic: 'listing' };
         if (/indoors|no parks|quiet|volleyball|free|budget|30 minutes/.test(t))
             return { kind: 'unavailable', date };
         if (/what.*plan|show.*plan|what.*saturday|what.*doing/.test(t))
@@ -482,6 +606,11 @@
         return { kind: 'clarify', date };
     }
     const api = {
+        today,
+        nowTime,
+        addDays,
+        journeyPlaces,
+        mentionedPlans,
         addScheduled,
         updateRecordedAppointment,
         normalizeTime,

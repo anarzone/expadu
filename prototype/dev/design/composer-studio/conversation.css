@@ -823,3 +823,51 @@
     width: 16px;
     height: 16px;
 }
+
+/* Next steps a reply offers: a request, a panel or another page. */
+.reply-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+.studio .suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    cursor: pointer;
+}
+.studio .suggestion-chip:hover {
+    background: var(--color-bg-quiet);
+}
+.studio .suggestion-chip:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.studio .suggestion-chip svg {
+    width: 14px;
+    height: 14px;
+}
+/* Where a request came from, e.g. "From Events on Tue 8 Sept · 7 listed". */
+.chat-context {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-bottom: 4px;
+    font-size: var(--text-caption);
+    color: var(--color-text-soft);
+}
+.chat-context svg {
+    width: 13px;
+    height: 13px;
+}

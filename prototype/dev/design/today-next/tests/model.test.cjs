@@ -3,10 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const context = {};
-vm.runInNewContext(
-    fs.readFileSync(require.resolve('../model.js'), 'utf8'),
-    context,
-);
+for (const file of ['../../connected/sample-day.js', '../model.js'])
+    vm.runInNewContext(fs.readFileSync(require.resolve(file), 'utf8'), context);
 const M = context.TodayNext;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 

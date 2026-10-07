@@ -225,6 +225,8 @@ test('requests from Today keep their date and reach the right reply', () => {
     );
     assert.equal(M.respond('Plan Saturday afternoon around my 15:00 appointment.', s).appointment, true);
     assert.equal(M.respond('October 3rd walk', s).date, '2026-10-03');
+    // A general question is not a request to plan a day.
+    assert.notEqual(M.respond('What should I do first?', s).kind, 'proposal');
     assert.equal(M.respond('Plan 31 September', s).date, '2026-10-10');
 });
 test('explicit dates are retained and adjacent activities do not overlap', () => {

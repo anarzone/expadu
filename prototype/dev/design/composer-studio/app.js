@@ -93,6 +93,57 @@
             day: 'numeric',
             month: 'short',
         });
+    // "today", "tomorrow" or "on Saturday 3 October", against the shared sample day.
+    const whenLabel = (date) =>
+        date === M.today()
+            ? 'today'
+            : date === M.addDays(M.today(), 1)
+              ? 'tomorrow'
+              : `on ${longDate(date)}`;
+    const listWords = (items) =>
+        items.length > 1
+            ? `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
+            : items[0] || '';
+    // What Composer can do, offered wherever it cannot answer.
+    const everyday = [
+        { label: 'What’s on tonight?', prompt: 'What’s on tonight?' },
+        { label: 'Plan my Saturday', prompt: 'Help me plan Saturday' },
+        {
+            label: 'Somewhere outside',
+            prompt: 'Find something outdoors for Saturday afternoon.',
+        },
+        {
+            label: 'Paperwork to sort first',
+            prompt: 'Help me settle in: which paperwork should I sort out first?',
+        },
+    ];
+    const allEvents = () => [
+        ...(window.ExpaduSampleDay?.events || []),
+        ...ExpaduModel.events,
+    ];
+    const eventById = (id) =>
+        allEvents().find((x) => x.id === String(id).replace(/^event:/, ''));
+    // Plans you already have on a date: Today's day, the sample day's coming
+    // plans and any you mention ("I already have … at 18:00").
+    function knownPlans(date, text = '') {
+        const sample = window.ExpaduSampleDay;
+        const plans = [];
+        if (state.reviewDay?.date === date)
+            plans.push(...(state.reviewDay.agenda || []));
+        else if (sample?.date === date && sample.appointment)
+            plans.push(sample.appointment);
+        plans.push(...(sample?.upcoming || []).filter((x) => x.date === date));
+        plans.push(...M.mentionedPlans(text));
+        const seen = new Set();
+        return plans
+            .map((x) => ({ ...x, date }))
+            .filter((x) => {
+                const key = x.title.toLowerCase();
+                if (seen.has(key) || !x.start) return false;
+                seen.add(key);
+                return true;
+            });
+    }
     const place = (id) =>
         catalogue.find((x) => x.id === id) ||
         ExpaduModel.events
@@ -722,7 +773,7 @@
                     (place(x.id) || x.type === 'event' || x.personal);
                 const appointment =
                     x.type === 'appointment' || x.id === 'appointment';
-                return `<li class="${x.fixed ? 'fixed-item' : ''}"><div class="timeline-time"><strong>${E(x.start)}</strong><span>${E(x.end)}</span></div><div class="timeline-node">${I(x.type === 'task' ? 'document' : x.fixed || appointment ? 'calendar' : 'pin')}</div><div class="timeline-content">${x.fixed ? `<span class="fixed-label">${x.type === 'event' ? 'Fixed event · captured sample' : processItem ? 'Recorded appointment' : x.personal ? 'Confirmed appointment' : 'Fixed · sample appointment'}</span>` : appointment ? '<span class="fixed-label">Personal appointment</span>' : ''}${changed ? `<span class="changed-label">${before ? `Was ${before.start}–${before.end}` : 'Added to this proposal'}</span>` : ''}<h3>${previewable ? `<button class="item-preview-title" data-preview="${E(x.id)}" aria-label="Preview ${E(x.title)}">${E(x.title)}</button>` : E(x.title)}</h3><p>${E(x.venue || x.location || place(x.id)?.area || (x.type === 'task' ? 'Preparation time' : 'Location to be added'))}</p>${journeyFor(p, x)}${processItem ? `<a class="plain-button" href="${E(StudioIntegration.bureaucracyLink(x))}">${I('document')}Open process ${I('arrow')}</a>` : ''}${editable ? `<div class="timeline-actions">${!x.fixed ? timeEditor(x) : ''}${!x.fixed && !appointment && x.type !== 'event' && x.type !== 'task' ? `<button class="plain-button" data-swap="${x.id}">Swap place</button>` : ''}<button class="plain-button" data-remove="${x.id}" aria-label="Remove ${E(x.title)}">Remove</button></div>` : ''}</div></li>`;
+                return `<li class="${x.fixed ? 'fixed-item' : ''}"><div class="timeline-time"><strong>${E(x.start)}</strong><span>${E(x.end)}</span></div><div class="timeline-node">${I(x.type === 'task' ? 'document' : x.fixed || appointment ? 'calendar' : 'pin')}</div><div class="timeline-content">${x.fixed ? `<span class="fixed-label">${x.known ? 'Already in your plans' : x.type === 'event' ? 'Fixed event · sample' : processItem ? 'Recorded appointment' : x.personal ? 'Confirmed appointment' : 'Fixed · sample appointment'}</span>` : appointment ? '<span class="fixed-label">Personal appointment</span>' : ''}${changed ? `<span class="changed-label">${before ? `Was ${before.start}–${before.end}` : 'Added to this proposal'}</span>` : ''}<h3>${previewable ? `<button class="item-preview-title" data-preview="${E(x.id)}" aria-label="Preview ${E(x.title)}">${E(x.title)}</button>` : E(x.title)}</h3><p>${E(x.venue || x.location || place(x.id)?.area || (x.type === 'task' ? 'Preparation time' : 'Location to be added'))}</p>${journeyFor(p, x)}${processItem ? `<a class="plain-button" href="${E(StudioIntegration.bureaucracyLink(x))}">${I('document')}Open process ${I('arrow')}</a>` : ''}${editable ? `<div class="timeline-actions">${!x.fixed ? timeEditor(x) : ''}${!x.fixed && !appointment && x.type !== 'event' && x.type !== 'task' ? `<button class="plain-button" data-swap="${x.id}">Swap place</button>` : ''}<button class="plain-button" data-remove="${x.id}" aria-label="Remove ${E(x.title)}">Remove</button></div>` : ''}</div></li>`;
             })
             .join('')}</ol>`;
     }
@@ -765,7 +816,7 @@
         if (main.dataset.chapter !== chapter.id) {
             main.innerHTML =
                 navBar() +
-                `<p class="chat-section-date">${E(new Date(chapter.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }))} · Sample responses</p><div class="chat-feed" aria-label="Conversation"></div>`;
+                `<p class="chat-section-date">${E(longDate(M.today()))} · Sample day</p><div class="chat-feed" aria-label="Conversation"></div>`;
             main.dataset.chapter = chapter.id;
             entryMarkup.clear();
         }
@@ -1025,7 +1076,14 @@
         text = A.requestText(state, text, consumeDraft);
         if (!text) return;
         closePanel(false);
-        C.append(state, 'user', text);
+        C.append(
+            state,
+            'user',
+            text,
+            state.pageContext?.label
+                ? { pageContext: { label: state.pageContext.label } }
+                : {},
+        );
         const entry = C.append(state, 'assistant', 'Thinking…', {
             kind: 'pending',
             request: text,
@@ -1128,15 +1186,227 @@
             reply('Last applied change undone.');
             return;
         }
-        const r = M.respond(text, state);
-        if (r.kind === 'event' || r.kind === 'journey') {
+        let r = M.respond(text, state);
+        // What you were looking at on another page, used once for this request.
+        const page = state.pageContext || null;
+        state.pageContext = null;
+        if (
+            page?.page === 'events' &&
+            page.eventIds?.length &&
+            (r.kind === 'clarify' ||
+                /\b(these|them|which|any of|one of|recommend|best|good for)\b/i.test(
+                    text,
+                ))
+        ) {
+            state.conversation.activeDate = null;
+            const listed = page.eventIds.map(eventById).filter(Boolean);
+            const filters = [
+                [
+                    /meet|people|friends|social|lonely|new here/i,
+                    (x) => ['Language', 'Games'].includes(x.category),
+                    'these are built around taking part with others',
+                ],
+                [/free|cheap|budget/i, (x) => /free/i.test(x.price || ''), 'these are free'],
+                [
+                    /outdoor|outside|nature|fresh air/i,
+                    (x) => x.category === 'Outdoors',
+                    'these are outside',
+                ],
+            ];
+            if (/kid|child|family/i.test(text)) {
+                reply(
+                    'The listings don’t say which of these events suit children, so I won’t pick for you. Check each event’s details on Events.',
+                    { suggestions: [{ label: 'Back to Events', href: ExpaduStore.routes.events }] },
+                );
+                return;
+            }
+            const match = filters.find(([pattern]) => pattern.test(text));
+            const chosen = match ? listed.filter(match[1]) : listed;
+            reply(
+                chosen.length
+                    ? `Of the events you were viewing, ${match ? match[2] : 'here they are again'}:`
+                    : 'None of the events you were viewing match that.',
+                chosen.length
+                    ? { kind: 'event', eventIds: chosen.map((x) => 'event:' + x.id) }
+                    : { suggestions: [{ label: 'Back to Events', href: ExpaduStore.routes.events }] },
+            );
+            return;
+        }
+        if (page?.page === 'travel' && r.kind === 'clarify')
+            r = { ...r, kind: 'journey' };
+        if (page?.page === 'services' && ['clarify', 'service'].includes(r.kind))
+            r = { ...r, kind: 'service', service: r.service || page.service };
+        if (
+            page?.page === 'paperwork' &&
+            (r.kind === 'clarify' ||
+                /\b(first|next step|what now|start)\b/i.test(text))
+        ) {
             state.conversation.activeDate = null;
             reply(
-                r.kind === 'event'
-                    ? 'Here is a captured event to try with a fixed time.'
-                    : 'Let’s check a journey. Your plan stays as it is.',
-                { kind: r.kind, eventId: 'event:kunst-machen' },
+                page.next
+                    ? `On Paperwork, your first step is for the ${page.next.name}: “${page.next.title}”. Open it there to see what it involves. I can’t add guidance beyond your reviewed checklist.`
+                    : 'Paperwork can help you work out where to start: answer a few questions and it shows the steps that apply to you. I can’t add guidance beyond reviewed records.',
+                {
+                    suggestions: [
+                        page.next
+                            ? { label: `Open ${page.next.name}`, href: page.next.url }
+                            : {
+                                  label: 'Get started on Paperwork',
+                                  href: `${ExpaduStore.routes.bureaucracy}?person=self`,
+                              },
+                    ],
+                },
             );
+            return;
+        }
+        if (r.kind === 'help') {
+            state.conversation.activeDate = null;
+            reply(
+                'I can help you plan a day, find events and places, check a journey, and point you to reviewed paperwork information. In this preview my answers use sample data.',
+                { suggestions: everyday },
+            );
+            return;
+        }
+        if (r.kind === 'next') {
+            // A question about your plans: answer from them, change nothing.
+            state.conversation.activeDate = null;
+            const today = M.today(),
+                now = M.nowTime();
+            const sample = window.ExpaduSampleDay;
+            const items = [
+                ...state.plans.flatMap((p) =>
+                    p.items.map((x) => ({ ...x, date: p.date })),
+                ),
+                ...(state.proposal?.items || []).map((x) => ({
+                    ...x,
+                    date: state.proposal.date,
+                    proposed: true,
+                })),
+                ...knownPlans(today),
+                ...(sample?.upcoming || []),
+            ].filter(
+                (x) =>
+                    x.start &&
+                    (x.date > today || (x.date === today && x.start >= now)),
+            );
+            const appointmentLike = (x) =>
+                /appointment/i.test(x.title) ||
+                x.type === 'appointment' ||
+                x.kind === 'official';
+            const pool = r.appointment ? items.filter(appointmentLike) : items;
+            const next = pool.sort((a, b) =>
+                `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`),
+            )[0];
+            reply(
+                next
+                    ? `Your next ${r.appointment ? 'appointment' : 'plan'}: ${next.title}, ${whenLabel(next.date)} at ${next.start}${next.location ? ` in ${next.location}` : ''}.${next.proposed ? ' It’s in a proposal you haven’t confirmed yet.' : ''}`
+                    : `You have no ${r.appointment ? 'appointments' : 'plans'} from today onwards.`,
+                {
+                    suggestions: next
+                        ? next.date === today
+                            ? [{ label: 'Open Today', href: ExpaduStore.routes.today }]
+                            : [{ label: 'My Plans', nav: 'plans' }]
+                        : [everyday[1]],
+                },
+            );
+            return;
+        }
+        if (r.kind === 'indoor') {
+            state.conversation.activeDate = null;
+            reply(
+                `For rain I’d look indoors, but the sample listings here only have parks, sport pitches, a playground and a lake. Nothing changed for ${longDate(r.date)}.`,
+                { suggestions: [everyday[0], { label: 'My saved ideas', nav: 'saved' }] },
+            );
+            return;
+        }
+        if (r.kind === 'service') {
+            state.conversation.activeDate = null;
+            const title =
+                ExpaduModel.categories?.find((x) => x.id === r.service)?.title ||
+                'Services';
+            reply(
+                `Expadu doesn’t list ${title.toLowerCase()} yet. On Services you can describe what you need, such as a language, and keep the request until listings arrive.`,
+                { suggestions: [{ label: `Open Services`, href: ExpaduStore.routes.services }] },
+            );
+            return;
+        }
+        if (r.kind === 'event') {
+            // Only what is still to come; captured listings that have passed stay on Events.
+            state.conversation.activeDate = null;
+            const from = r.date < M.today() ? M.today() : r.date;
+            const until = M.addDays(from, (r.days || 1) - 1);
+            const inWindow = allEvents().filter(
+                (x) =>
+                    x.date >= from &&
+                    x.date <= until &&
+                    (!r.evening || (x.start || '') >= '17:00'),
+            );
+            const topics = {
+                music: [/music|concert/i, 'concerts or live music'],
+                exhibition: [/exhibition|museum|\bart\b/i, 'exhibitions'],
+                film: [/film|cinema/i, 'films'],
+                football: [/football|match/i, 'football screenings'],
+            };
+            const topic = topics[r.topic];
+            const matching = topic
+                ? inWindow.filter((x) =>
+                      topic[0].test(`${x.title} ${x.category} ${x.description || ''}`),
+                  )
+                : inWindow;
+            const when =
+                r.days === 2
+                    ? 'this weekend'
+                    : r.days === 7
+                      ? 'this week'
+                      : from === M.today()
+                        ? r.evening
+                            ? 'tonight'
+                            : 'today'
+                        : `on ${longDate(from)}`;
+            const shown = matching.length ? matching : inWindow;
+            if (!inWindow.length)
+                reply(`Nothing is listed ${when} in this preview’s sample programme.`, {
+                    suggestions: [
+                        { label: 'Browse Events', href: ExpaduStore.routes.events },
+                        everyday[2],
+                    ],
+                });
+            else
+                reply(
+                    topic && !matching.length
+                        ? `I don’t see ${topic[1]} ${when} in the sample programme. This is what’s on:`
+                        : `${shown.length === 1 ? 'One sample event' : `${shown.length} sample events`} ${when}:`,
+                    { kind: 'event', eventIds: shown.map((x) => 'event:' + x.id) },
+                );
+            return;
+        }
+        if (r.kind === 'journey') {
+            state.conversation.activeDate = null;
+            const travel = page?.page === 'travel' ? page : null;
+            const shared = [...(state.contextItems || [])]
+                .reverse()
+                .find((x) => x.type === 'journey');
+            let from = r.from || travel?.from || '',
+                to = r.to || travel?.to || '';
+            if (!from && shared && (!to || to === shared.to)) {
+                from = shared.from || '';
+                to ||= shared.to || '';
+            }
+            const arriveBy = r.arriveBy || (shared && to === shared.to ? shared.targetStart : '') || '';
+            if (from && to)
+                reply(
+                    /\b(faster|quicker|another route|alternative)\b/i.test(text)
+                        ? `I can’t compare routes here yet. Travel lists the sample routes from ${from} to ${to}, with their times.`
+                        : `Here’s your journey from ${from} to ${to}${arriveBy ? `, arriving by ${arriveBy}` : ''}. Your plan stays as it is.`,
+                    { kind: 'journey', journey: { from, to, arriveBy } },
+                );
+            else
+                reply(
+                    to
+                        ? `Where are you starting from? Then I’ll show the way to ${to}.`
+                        : 'Where are you heading? Your plan stays as it is.',
+                    { kind: 'journey', journeyDraft: { from, to } },
+                );
             return;
         }
         if (r.kind === 'bureaucracy') {
@@ -1261,6 +1531,34 @@
         state.response = { ...r, request: text };
         if (r.kind === 'proposal') {
             state.date = r.date;
+            M.propose(state, [], r.date);
+            const kept = [];
+            for (const plan of knownPlans(r.date, text)) {
+                const title = plan.title.toLowerCase();
+                if (state.proposal.items.some((x) => x.title.toLowerCase() === title)) {
+                    kept.push(plan.title);
+                    continue;
+                }
+                try {
+                    M.addScheduled(
+                        state,
+                        {
+                            id: plan.id || `known-${title.replace(/\W+/g, '-')}-${plan.start}`,
+                            title: plan.title,
+                            location: plan.location || '',
+                            start: plan.start,
+                            end: plan.end,
+                            fixed: true,
+                            known: true,
+                            type: 'appointment',
+                        },
+                        r.date,
+                    );
+                    kept.push(plan.title);
+                } catch {
+                    /* A clash leaves the plan you already have untouched. */
+                }
+            }
             M.propose(
                 state,
                 r.appointment ? ['walk', 'appointment'] : ['walk'],
@@ -1270,15 +1568,23 @@
             reply(
                 applied
                     ? 'Your plan is saved. Undo is available.'
-                    : 'Here is a proposal. Edit it here or ask me to make a change. Nothing is confirmed until you apply it.',
+                    : `Here is a proposal for ${longDate(r.date)}.${kept.length ? ` I kept ${listWords(kept)} at ${kept.length === 1 ? 'its' : 'their'} time${kept.length === 1 ? '' : 's'}.` : ''} Edit it here or ask me for a change. Nothing is confirmed until you apply it.`,
             );
         } else if (r.kind === 'discovery') {
             state.conversation.activeDate = null;
+            const picked = r.category
+                ? catalogue.filter((p) => p.category === r.category).slice(0, 4)
+                : catalogue.slice(0, 2);
+            const label = { Family: 'families', Sport: 'sport', Swimming: 'a swim' }[r.category];
             reply(
-                'Two outdoor ideas from the sample city listings. Save one for later, or add it to your plan.',
+                r.category
+                    ? picked.length
+                        ? `${picked.length === 1 ? 'One idea' : `${picked.length} ideas`} for ${label} from the sample city listings. Check access before you go.`
+                        : `The sample city listings have nothing for ${label} yet.`
+                    : 'Two outdoor ideas from the sample city listings. Save one for later, or add it to your plan.',
                 {
                     kind: 'discovery',
-                    placeIds: catalogue.slice(0, 2).map((p) => p.id),
+                    placeIds: picked.map((p) => p.id),
                 },
             );
         } else if (r.kind === 'answer') {
@@ -1312,12 +1618,22 @@
                 );
             else if (r.kind === 'unavailable')
                 reply(
-                    'The sample listings do not contain enough verified information to answer that preference. I will not guess about prices, access or current availability.',
+                    r.topic === 'listing'
+                        ? 'The sample listings here don’t cover that, or current opening times, so I can’t check it. I won’t guess.'
+                        : 'The sample listings do not contain enough verified information to answer that preference. I will not guess about prices, access or current availability.',
+                    { suggestions: [everyday[0], everyday[2]] },
                 );
-            else
+            else {
+                const previous = C.current(state)
+                    .entries.filter((x) => x.role === 'assistant' && x.id !== replyId)
+                    .at(-1);
                 reply(
-                    'This preview understands a few examples: find outdoor places, plan Saturday around an appointment, or change an activity’s time. The live Composer will support more Expadu services.',
+                    previous?.clarify
+                        ? 'That’s outside this preview too. These are the kinds of things I can do:'
+                        : 'I can’t help with that in this preview yet. I can plan a day, find events and places, check a journey, or point you to reviewed paperwork information.',
+                    { clarify: true, suggestions: everyday },
                 );
+            }
         }
     }
     const closeTimeOptions = () => ExpaduTime.close();
@@ -2034,7 +2350,10 @@
             );
         if (!incomingStepHelp) StudioIntegration.receive(state, shared, M, C);
         state.lastHandoff = handoff.id;
-        if (handoff.submit) incomingPrompt = shared.prompt.trim();
+        if (handoff.submit) {
+            incomingPrompt = shared.prompt.trim();
+            state.pageContext = shared.pageContext || null;
+        }
         else if (shared.prompt.trim() && !state.prompt.trim())
             state.prompt = shared.prompt;
         if (!incomingStepHelp) shared.draft = state.handoffs;
@@ -2045,7 +2364,10 @@
             state.date = handoff.date;
             C.presentPlan(state, handoff.date);
         }
-        if (handoff.submit) shared.prompt = '';
+        if (handoff.submit) {
+            shared.prompt = '';
+            shared.pageContext = null;
+        }
         writeShared(shared);
     }
     window.addEventListener('storage', (event) => {

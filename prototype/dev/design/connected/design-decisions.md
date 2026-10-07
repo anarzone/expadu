@@ -364,6 +364,18 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Composer helpful replies and one sample day — owner request, 7 October (in review):**
+Today and Composer share one sample day, `connected/sample-day.js` (Wednesday
+30 September 2026, 13:10, its appointment, coming plans and evening events);
+Today's model reads it rather than its own copy. Captured listings (Events,
+Travel) keep their capture dates and stay labelled. Composer answers everyday
+questions with sample data or an honest gap plus suggestions, never the same
+fallback twice; the department Composer bar sends what its page shows
+(`connected/page-context.js`, shown as a removable "About: …"); journey and
+plan requests keep the details given; questions about plans never change them;
+past listings can't be added. Every other page's default view stayed
+pixel-identical. Details are in `composer-studio/README.md`.
+
 **Today sheets, details and Composer requests — owner request, 7 October (in review):**
 Today's journey, plan details, forecast and Add a plan open as a bottom sheet
 on phones (drag down to close) and a compact centred dialog on larger screens,

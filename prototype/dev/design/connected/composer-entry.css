@@ -65,3 +65,45 @@
 .department-return:hover {
     background: var(--color-bg-quiet, #e9f2f4);
 }
+
+/* What this page is showing, sent with the request unless you remove it. */
+.composer-page-context {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0 0 8px;
+    padding: 2px 4px 2px 12px;
+    width: fit-content;
+    max-width: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet, #f1f7f8);
+    color: var(--color-text-soft, #426871);
+    font-size: var(--text-caption);
+}
+.composer-page-context span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.composer-page-context button {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+.composer-page-context button:hover {
+    background: var(--color-bg-hover, #e9f2f4);
+}
+.composer-page-context svg {
+    width: 14px;
+    height: 14px;
+}
+#composer-tray:not(.is-active) .composer-page-context {
+    display: none;
+}
