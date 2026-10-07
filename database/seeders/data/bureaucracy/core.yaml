@@ -21,6 +21,23 @@ tasks:
       - {kind: primary, label: '§19 BMG — Wohnungsgeber confirmation', url: 'https://www.gesetze-im-internet.de/bmg/__19.html'}
       - {kind: primary, label: '§27 BMG — Registration exceptions', url: 'https://www.gesetze-im-internet.de/bmg/__27.html'}
       - {kind: implementation, label: 'Stadt Köln · Anmeldung Ihres Wohnsitzes', url: 'https://www.stadt-koeln.de/service/produkte/00415/index.html'}
+    claims:
+      - id: registration-period
+        states: two-week period under §17 BMG
+        source: '§17 BMG — Anmeldung, Abmeldung'
+        quote: hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden
+      - id: registration-deadline
+        covers: deadline
+        source: '§17 BMG — Anmeldung, Abmeldung'
+        quote: hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden
+      - id: registration-exceptions
+        states: exceptions in §27 BMG
+        source: '§27 BMG — Registration exceptions'
+        quote: Ausnahmen von der Meldepflicht
+      - id: missing-confirmation
+        states: notify the registration authority without delay as required by §19(2) BMG
+        source: '§19 BMG — Wohnungsgeber confirmation'
+        quote: so hat die meldepflichtige Person dies der Meldebehörde unverzüglich mitzuteilen
     description: |
       Registration normally follows moving into a dwelling, with a two-week
       period under §17 BMG. Temporary stays and other situations can fall under
@@ -108,6 +125,11 @@ tasks:
       - {kind: primary, label: '§6 SGB V — Versicherungsfreiheit', url: 'https://www.gesetze-im-internet.de/sgb_5/__6.html'}
       - {kind: primary, label: '§193 VVG — Insurance obligation and exceptions', url: 'https://www.gesetze-im-internet.de/vvg_2008/__193.html'}
       - {kind: implementation, label: 'Make it in Germany · Health insurance', url: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/health-insurance'}
+    claims:
+      - id: cover-obligation
+        states: Statutory and private insurance have different entry conditions and exceptions
+        source: '§193 VVG — Insurance obligation and exceptions'
+        quote: Jede Person mit Wohnsitz im Inland ist verpflichtet, bei einem in Deutschland zum Geschäftsbetrieb zugelassenen Versicherungsunternehmen
     description: |
       Confirm which cover applies to your stay and when it starts. Statutory and
       private insurance have different entry conditions and exceptions; this card
@@ -142,6 +164,11 @@ tasks:
     legal_sources:
       - {kind: primary, label: '§31 ZKG — Anspruch auf Abschluss eines Basiskontovertrags', url: 'https://www.gesetze-im-internet.de/zkg/__31.html'}
       - {kind: implementation, label: 'Make it in Germany · Bank account', url: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/bank-account'}
+    claims:
+      - id: basic-account
+        states: A basic payment account (Basiskonto) has a separate statutory application framework under the ZKG
+        source: '§31 ZKG — Anspruch auf Abschluss eines Basiskontovertrags'
+        quote: hat mit einem Berechtigten einen Basiskontovertrag zu schließen, wenn dessen Antrag die Voraussetzungen des § 33 erfüllt
     description: |
       If you need an account, compare costs, payment facilities and access to
       support. Document requirements depend on the provider and account type.

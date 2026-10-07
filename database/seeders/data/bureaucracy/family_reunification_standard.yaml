@@ -145,6 +145,11 @@ tasks:
     legal_sources:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
       - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
+    claims:
+      - id: spouse-permit
+        states: the joining spouse's own residence application
+        source: '§30 AufenthG'
+        quote: Dem Ehegatten eines Ausländers ist eine Aufenthaltserlaubnis zu erteilen, wenn
 
   - title: Confirm which sponsor rules apply while the Blue Card is pending
     key: case.family.first_permit.sponsor_pending_review

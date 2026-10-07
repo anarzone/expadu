@@ -154,6 +154,11 @@ tasks:
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+    claims:
+      - id: six-month-offer
+        states: at least six months
+        source: '§18g AufenthG'
+        quote: eine Beschäftigungsdauer von mindestens sechs Monaten vorsieht
 
   - title: Submit the Blue Card application before your D visa expires
     key: case.bc.first_application.submit
@@ -186,6 +191,15 @@ tasks:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
       - {kind: primary, label: '§81 AufenthG — Applying for a residence title', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+    claims:
+      - id: blue-card-requirements
+        states: every requirement in §18g is met
+        source: '§18g AufenthG'
+        quote: Einer Fachkraft mit akademischer Ausbildung wird ohne Zustimmung der Bundesagentur für Arbeit eine Blaue Karte EU
+      - id: apply-before-expiry
+        states: file the Cologne residence application before the visa expires
+        source: '§81 AufenthG — Applying for a residence title'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels
 
   - title: Track the 21-month Blue Card settlement route
     key: case.bc.settlement.track_21_months
@@ -212,12 +226,34 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: owner_authorised_source_review
-    content_version: 2026-09-08.1
+    content_version: 2026-10-07.1
     source_verification: dual_source
     verified_at: '2026-09-08'
     legal_sources:
       - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+      - {kind: primary, label: '§2 AufenthG — Begriffsbestimmungen', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__2.html'}
+    claims:
+      - id: route-length
+        states: 21-month Blue Card
+        source: '§18c AufenthG'
+        quote: Die Frist nach Satz 1 verkürzt sich auf 21 Monate, wenn der Ausländer über ausreichende Kenntnisse der deutschen Sprache verfügt.
+      - id: language-level
+        states: With B1 German
+        source: '§2 AufenthG — Begriffsbestimmungen'
+        quote: Ausreichende deutsche Sprachkenntnisse entsprechen dem Niveau B 1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
+      - id: months-so-far
+        states: fewer than 21 documented qualifying months
+        source: '§18c AufenthG'
+        quote: Die Frist nach Satz 1 verkürzt sich auf 21 Monate, wenn der Ausländer über ausreichende Kenntnisse der deutschen Sprache verfügt.
+      - id: at-21-months
+        states: At 21 months
+        source: '§18c AufenthG'
+        quote: Die Frist nach Satz 1 verkürzt sich auf 21 Monate, wenn der Ausländer über ausreichende Kenntnisse der deutschen Sprache verfügt.
+      - id: remaining-conditions
+        states: §18c(2), including the applicable §9 checks
+        source: '§18c AufenthG'
+        quote: die Voraussetzungen des § 9 Absatz 2 Satz 1 Nummer 2 und 4 bis 6, 8 und 9 vorliegen und er über einfache Kenntnisse der deutschen Sprache verfügt
 
   - title: Verify an unrecognized title against the official source
     key: case.bc.verify_status_source
@@ -245,3 +281,8 @@ tasks:
     legal_sources:
       - {kind: primary, label: '§4 AufenthG — Erfordernis eines Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__4.html'}
       - {kind: implementation, label: 'Stadt Köln · Ausländeramt contact', url: 'https://www.stadt-koeln.de/service/adressen/auslaenderamt'}
+    claims:
+      - id: title-required
+        states: residence title
+        source: '§4 AufenthG — Erfordernis eines Aufenthaltstitels'
+        quote: Ausländer bedürfen für die Einreise und den Aufenthalt im Bundesgebiet eines Aufenthaltstitels

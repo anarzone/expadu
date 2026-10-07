@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['key', 'type', 'title', 'description', 'description_variants', 'situation', 'eu_filter', 'applies_if', 'decision_options', 'trigger_event', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published', 'jurisdiction', 'legal_sources', 'review_status', 'source_verification', 'reviewed_by', 'content_version', 'effective_from', 'effective_to', 'review_due_at', 'conflicts_with', 'coverage_scope', 'deadline_fact_key'])]
+#[Fillable(['key', 'type', 'title', 'description', 'description_variants', 'situation', 'eu_filter', 'applies_if', 'decision_options', 'trigger_event', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published', 'jurisdiction', 'legal_sources', 'review_status', 'source_verification', 'reviewed_by', 'content_version', 'effective_from', 'effective_to', 'review_due_at', 'conflicts_with', 'coverage_scope', 'deadline_fact_key', 'claims'])]
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
@@ -38,6 +38,7 @@ class Task extends Model
             'how_to_steps' => 'array',
             'legal_sources' => 'array',
             'conflicts_with' => 'array',
+            'claims' => 'array',
             'deadline_type' => DeadlineType::class,
             'urgency' => Urgency::class,
             'verified_at' => 'datetime',

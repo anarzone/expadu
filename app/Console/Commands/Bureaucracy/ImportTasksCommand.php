@@ -5,6 +5,7 @@ namespace App\Console\Commands\Bureaucracy;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\GuidancePublication;
 use App\Bureaucracy\RuleSourcePolicy;
+use App\Bureaucracy\Verification\ClaimCheck;
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
 use App\Models\Task;
@@ -114,7 +115,8 @@ class ImportTasksCommand extends Command
             || ! $this->validateDag($entries)
             || ! $this->validateFigures($entries)
             || ! $this->validateRuleConditions($entries)
-            || ! $this->validateSourceApproval($entries)) {
+            || ! $this->validateSourceApproval($entries)
+            || ! $this->validateClaims($entries)) {
             return self::FAILURE;
         }
 
@@ -316,6 +318,28 @@ class ImportTasksCommand extends Command
 
             foreach ($this->sourcePolicy->importErrors($entry['data']) as $error) {
                 $this->error("  ABORT — task `{$key}` source approval: {$error}");
+                $valid = false;
+            }
+        }
+
+        return $valid;
+    }
+
+    /**
+     * Source claims must cover every figure on their card and agree with their quotes.
+     * Whether each quote is still on its page is checked by bureaucracy:verify-sources.
+     *
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function validateClaims(array $entries): bool
+    {
+        $valid = true;
+        foreach ($entries as $entry) {
+            if (! array_key_exists('claims', $entry['data'])) {
+                continue;
+            }
+            foreach (app(ClaimCheck::class)->offlineErrors($entry['data']) as $error) {
+                $this->error("  ABORT — task `{$entry['data']['key']}` source claims: {$error}");
                 $valid = false;
             }
         }
@@ -534,6 +558,8 @@ class ImportTasksCommand extends Command
             'conflicts_with' => array_values((array) ($data['conflicts_with'] ?? [])),
             'coverage_scope' => $data['coverage_scope'] ?? 'case',
             'deadline_fact_key' => $data['deadline_fact_key'] ?? null,
+            // Source quotes for the automated check; they never change what a person reads.
+            'claims' => $data['claims'] ?? null,
             'is_published' => (bool) ($data['is_published'] ?? true),
         ];
 
