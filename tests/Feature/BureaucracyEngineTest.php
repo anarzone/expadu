@@ -1,5 +1,11 @@
 <?php
 
+use Carbon\CarbonImmutable;
+use App\Profile\ProfileEngine;
+use App\Bureaucracy\BureaucracyPersonas;
+use App\Bureaucracy\Catalogue\CatalogueCompiler;
+use App\Bureaucracy\Assessment\AssessPerson;
+use App\Bureaucracy\Assessment\AssessmentInput;
 use App\Models\Task;
 use App\Models\User;
 use App\Notifications\BureaucracyDeadlineNotification;
@@ -92,110 +98,30 @@ test('malformed operator conditions fail explicitly', function (mixed $condition
     'invalid date age range' => [['months_ago_between' => [60, 36]]],
 ])->throws(DomainException::class);
 
-// ── Table-driven path fixtures over the REAL catalogue ─────────────────
-// One fixture per case: profile → keys that must be visible / absent.
-// This is the regression net that keeps 24+ cases honest.
-
-dataset('path fixtures', [
-    'non-EU employee, standard, visa-free' => [
-        ['situation' => 'non_eu_employee', 'bureaucracy_path' => 'non_eu_employee'],
-        ['entry_mode' => 'visa_free'],
-        ['nee.anmeldung', 'nee.residence_permit', 'shared.long_game'],
-        ['bc.blue_card', 'eue.anmeldung', 'core.anmeldung', 'stu.residence_permit'],
-    ],
-    'non-EU employee who already holds a permit' => [
-        ['situation' => 'non_eu_employee', 'bureaucracy_path' => 'non_eu_employee'],
-        ['entry_mode' => 'has_permit'],
-        ['nee.anmeldung'],
-        ['nee.residence_permit'],
-    ],
-    'Blue Card path shares the employee spine' => [
-        ['situation' => 'non_eu_employee', 'bureaucracy_path' => 'non_eu_employee_blue_card'],
-        ['entry_mode' => 'd_visa'],
-        ['nee.anmeldung', 'bc.blue_card', 'bc.ne_fast_track'],
-        ['nee.residence_permit', 'nee.ne_check'],
-    ],
-    'EU employee: shortest path, no permits, no non-EU cards' => [
-        ['situation' => 'eu_employee'],
-        [],
-        ['eue.anmeldung', 'shared.church_tax'],
-        ['nee.residence_permit', 'bc.blue_card', 'shared.long_game', 'shared.fiktionsbescheinigung'],
-    ],
-    'EU student skips the permit' => [
-        ['situation' => 'student', 'is_eu' => true],
-        [],
-        ['stu.anmeldung', 'stu.enrolment'],
-        ['stu.residence_permit', 'stu.work_rules'],
-    ],
-    'non-EU student gets the §16b permit' => [
-        ['situation' => 'student', 'is_eu' => false],
-        ['entry_mode' => 'd_visa'],
-        ['stu.residence_permit', 'stu.work_rules'],
-        [],
-    ],
-    'Gewerbe freelancer swaps the permit, keeps the tax spine' => [
-        ['situation' => 'freelancer', 'is_eu' => false, 'bureaucracy_path' => 'freelancer_gewerbe'],
-        ['entry_mode' => 'd_visa'],
-        ['fre.anmeldung', 'fre.fragebogen', 'gw.residence_permit', 'gw.gewerbeanmeldung'],
-        ['fre.residence_permit', 'fre.gewerbe_check'],
-    ],
-    'family joining a German citizen' => [
-        ['situation' => 'family_reunification', 'bureaucracy_path' => 'family_reunification_of_german'],
-        ['entry_mode' => 'd_visa'],
-        ['fam.anmeldung', 'famde.residence_permit', 'famde.ne_three_years'],
-        ['fam.residence_permits', 'fameu.aufenthaltskarte'],
-    ],
-    'digital nomad gets the core spine only' => [
-        ['situation' => 'digital_nomad', 'is_eu' => false],
-        [],
-        ['core.anmeldung', 'shared.schufa'],
-        ['nee.anmeldung', 'nee.residence_permit', 'stu.anmeldung'],
-    ],
-    'foreign licence answer reveals the driving task' => [
-        ['situation' => 'eu_employee'],
-        ['license_country' => 'other'],
-        ['shared.driving_licence'],
-        [],
-    ],
-    'EU licence answer keeps the driving task away' => [
-        ['situation' => 'eu_employee'],
-        ['license_country' => 'eu'],
-        [],
-        ['shared.driving_licence'],
-    ],
-]);
-
-test('legacy persona labels cannot publish unreviewed routes from the real catalogue', function (array $userFields, array $attributes, array $visible, array $absent) {
+test('every persona can reach approved address registration and is offered no unreviewed route', function (array $persona) {
+    // Real catalogue, compiled the way a release is. Registration may wait on an
+    // answer (needs_information) but must never be ruled out for someone who has
+    // arrived, and guidance may only come from reviewed, approved content.
+    $this->travelTo('2026-09-08 10:00:00');
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    $catalogue = app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->get()->all());
+    $attributes = app(ProfileEngine::class)->build(BureaucracyPersonas::userFor($persona))->attributes;
+    $values = array_filter([
+        'arrival_planned' => false,
+        'citizenship_group' => $persona['is_eu'] ? 'eu' : 'non_eu',
+        'purpose' => $attributes['purpose'] ?? null,
+        'entry_mode' => $persona['entry_mode'],
+    ], fn ($value) => $value !== null);
 
-    $user = User::factory()->onboarded()->create([
-        ...$userFields,
-        'profile_attributes' => $attributes ?: null,
-    ]);
+    $assessment = (new AssessPerson)->assess(new AssessmentInput(['values' => $values], [], [], $catalogue, 'de-nrw-cologne', CarbonImmutable::now()))->toArray();
+    $registration = collect($assessment['processes'])->firstWhere('definition_id', 'address.registration');
 
-    $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
-
-    $response->assertInertia(function ($page) use ($visible, $absent) {
-        $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
-
-        // Formerly visible branch rules require source review, not merely a
-        // matching persona. Approved core registration needs its own answers.
-        foreach ($visible as $key) {
-            $task = Task::where('key', $key)->firstOrFail();
-            if ($key !== 'core.anmeldung') {
-                expect($task->review_status)->toBe('legacy');
-            }
-            expect($keys)->not->toContain($key);
-        }
-        foreach ($absent as $key) {
-            expect($keys)->not->toContain($key);
-        }
-        expect($keys)->toContain('case.bc.verify_status_source');
-
-        return true;
-    });
-})->with('path fixtures');
+    expect($registration)->not->toBeNull()
+        ->and(array_column($registration['variants'], 'assessment'))->each->toBeIn(['needs_information', 'supported_preparation', 'requirements_met'])
+        ->and(collect($assessment['processes'])->pluck('variants')->flatten(1)->pluck('id')->filter(
+            fn ($id) => Task::where('key', $id)->value('review_status') !== 'approved'
+        )->all())->toBe([]);
+})->with(fn () => array_map(fn ($persona) => [$persona], BureaucracyPersonas::coverage()));
 
 // ── Teasers ────────────────────────────────────────────────────────────
 

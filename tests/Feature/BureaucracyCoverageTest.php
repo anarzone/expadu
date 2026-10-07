@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Artisan;
  * It does not prove legal coverage, a user's obligations or publication readiness.
  * CoverageManifestTest exercises the canonical, source-aware strict release gate.
  */
-it('audits catalogue structure without claiming every persona needs registration or a new permit', function () {
+it('audits catalogue structure and every persona can reach registration and a permit', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
     $exitCode = Artisan::call('bureaucracy:coverage', ['--full' => true, '--fail-on-gap' => true]);
@@ -32,6 +32,24 @@ it('audits catalogue structure without claiming every persona needs registration
         ->not->toContain('MISSING ANMELDUNG')
         ->not->toContain('MISSING PERMIT')
         ->not->toContain('fall through to the');
+});
+
+it('fails the gate when a persona is shut out of address registration', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    Task::query()->where('key', 'like', '%.anmeldung')->orWhere('booking_service_key', 'anmeldung')->update(['is_published' => false]);
+
+    $exitCode = Artisan::call('bureaucracy:coverage', ['--full' => true, '--fail-on-gap' => true]);
+
+    expect($exitCode)->not->toBe(0)->and(Artisan::output())->toContain('MISSING ANMELDUNG');
+});
+
+it('fails the gate when a non-EU newcomer can never reach a residence permit', function () {
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    Task::query()->where('key', 'like', '%permit%')->orWhere('key', 'like', '%aufenthalt%')->update(['is_published' => false]);
+
+    $exitCode = Artisan::call('bureaucracy:coverage', ['--full' => true, '--fail-on-gap' => true]);
+
+    expect($exitCode)->not->toBe(0)->and(Artisan::output())->toContain('MISSING PERMIT');
 });
 
 /**
@@ -269,6 +287,9 @@ it('keeps supported investigated rules authoritative, the duplicate retired and 
 });
 
 it('distinguishes an unanswered prerequisite from a definitely incompatible or missing one', function (string $state, int $exitCode) {
+    // Against the real catalogue, so the persona-reachability gates are satisfied
+    // and only the dependency under test decides the exit code.
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
     task3PublishUnreachable('fixture.dependent', ['applies_if' => [[]], 'depends_on' => ['fixture.prerequisite']]);
     if ($state !== 'missing') {
         task3PublishUnreachable('fixture.prerequisite', [

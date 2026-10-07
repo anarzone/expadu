@@ -6,6 +6,7 @@ use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\Catalogue\CoverageManifest;
 use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\RuleSourcePolicy;
+use App\Enums\Situation;
 use App\Models\Task;
 use App\Profile\Applicability;
 use App\Profile\Profile;
@@ -333,11 +334,30 @@ class CoverageCommand extends Command
             fn (string $key) => str_ends_with($key, '.anmeldung')
                 || ($this->tasks[$key]->booking_service_key ?? null) === 'anmeldung'
         );
-        // A broad persona label cannot establish that registration or a new
-        // permit is required. Actual facts and reviewed canonical rules do that.
         $hasPermit = collect($yes)->contains(
             fn (string $key) => str_contains($key, 'permit') || str_contains($key, 'aufenthalt')
         );
+
+        // Reachable = applies now, or is only waiting on an unanswered question
+        // (the plan will ask it). Only a definite "does not apply" is a gap: a
+        // persona must never be shut out of registration or a residence permit.
+        $reachable = [...$yes, ...array_keys($verdict['unknown'])];
+        $reachesAnmeldung = collect($reachable)->contains(
+            fn (string $key) => str_ends_with($key, '.anmeldung')
+                || ($this->tasks[$key]->booking_service_key ?? null) === 'anmeldung'
+        );
+        if (! $reachesAnmeldung) {
+            $violations[] = "MISSING ANMELDUNG — {$label} can never reach an address-registration task.";
+        }
+        $needsPermit = ! $persona['is_eu']
+            && ! in_array($persona['situation'], [Situation::DigitalNomad, Situation::Other], true)
+            && $persona['entry_mode'] !== 'has_permit';
+        $reachesPermit = collect($reachable)->contains(
+            fn (string $key) => str_contains($key, 'permit') || str_contains($key, 'aufenthalt')
+        );
+        if ($needsPermit && ! $reachesPermit) {
+            $violations[] = "MISSING PERMIT — {$label} is a non-EU newcomer yet can never reach a residence-permit task.";
+        }
 
         // Separate source-approved synthetic matches from unreviewed ones.
         // Neither count substitutes for the canonical person assessment.
@@ -345,7 +365,12 @@ class CoverageCommand extends Command
             fn (string $key) => isset($this->authoritative[$key])
                 && $this->sourcePolicy->persistedErrors($this->tasks[$key]) === []
         );
-        $approvedAnmeldung = $approved->contains(
+        // An approved card that only waits on an answer is still the one the
+        // person will get once they answer; count it as reviewed coverage.
+        $approvedAnmeldung = collect($reachable)->filter(
+            fn (string $key) => isset($this->authoritative[$key])
+                && $this->sourcePolicy->persistedErrors($this->tasks[$key]) === []
+        )->contains(
             fn (string $key) => str_ends_with($key, '.anmeldung')
                 || ($this->tasks[$key]->booking_service_key ?? null) === 'anmeldung'
         );
