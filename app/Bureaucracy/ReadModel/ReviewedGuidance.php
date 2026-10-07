@@ -38,6 +38,8 @@ final class ReviewedGuidance
         return ['id' => $variant['id'], 'step_id' => $variant['step_id'], 'title' => $variant['title'], 'description' => $description,
             'description_additions' => $additions,
             'kind' => $variant['kind'], 'type' => $variant['type'], 'assessment' => $variant['assessment'],
+            // Reviewed action steps are finished by reporting the submission; every other kind by completing the step.
+            'completion_event' => $variant['kind'] === 'action' ? 'submission_recorded' : 'step_completed',
             'actionable' => $variant['actionable'], 'coverage' => $variant['coverage'], 'criteria' => $variant['criteria'],
             'missing_facts' => $variant['missing_facts'], 'instructions' => $instructions,
             'actions' => $variant['actions'], 'unavailable_actions' => $variant['unavailable_actions'],

@@ -105,3 +105,10 @@ test('untracking is refused once progress was reported, so cancelling remains th
     ($this->report)('process_untracked', [], '')->assertUnprocessable()->assertJsonValidationErrors('event');
     $this->getJson($this->url)->assertSuccessful()->assertJsonPath('state.workflow', 'preparing');
 });
+
+test('guidance tells the UI which report finishes a step, derived from the reviewed step kind', function () {
+    $plan = $this->getJson($this->planUrl)->assertSuccessful();
+    expect($plan->json('processes.0.guidance.0.kind'))->toBe('action')
+        ->and($plan->json('processes.0.guidance.0.completion_event'))->toBe('submission_recorded')
+        ->and($plan->json('guidance.0.completion_event'))->toBe('submission_recorded');
+});
