@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>App in colour — concept viewer</title>
+        <link rel="stylesheet" href="../../tokens.css" />
+        <style>
+            /* Review chrome only: it loads the approved pages unchanged and,
+               for "Concept", adds colour.js to them. */
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                background: #e9e4da;
+                color: var(--color-text);
+                font: 14px/1.4 var(--font-sans);
+            }
+            .bar {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px 16px;
+                padding: 10px 16px;
+                background: var(--color-bg-surface);
+                border-bottom: 1px solid var(--color-border);
+            }
+            .bar strong {
+                margin-right: 4px;
+            }
+            .group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 2px;
+                padding: 3px;
+                border-radius: var(--radius-pill);
+                background: var(--color-bg-quiet);
+            }
+            .group button {
+                min-height: 36px;
+                padding: 0 12px;
+                border: 0;
+                border-radius: var(--radius-pill);
+                background: transparent;
+                color: var(--color-text);
+                font: inherit;
+                cursor: pointer;
+                transition: background-color var(--duration-fast)
+                    var(--ease-settle);
+            }
+            .group button[aria-pressed='true'] {
+                background: var(--color-text);
+                color: var(--color-bg-surface);
+            }
+            .group button:focus-visible {
+                outline: 2px solid var(--color-focus);
+                outline-offset: 1px;
+            }
+            .note {
+                color: var(--color-text-soft);
+                font-size: var(--text-caption);
+            }
+            .stage {
+                flex: 1;
+                display: flex;
+                justify-content: center;
+                gap: 24px;
+                padding: 16px;
+                overflow: auto;
+            }
+            .frame {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                align-items: center;
+            }
+            .frame span {
+                font-size: var(--text-caption);
+                color: var(--color-text-soft);
+            }
+            iframe {
+                border: 0;
+                border-radius: var(--radius-lg);
+                background: #fff;
+                box-shadow: var(--shadow-raised);
+            }
+            .is-desktop iframe {
+                width: 100%;
+                height: calc(100vh - 140px);
+            }
+            .is-desktop .frame {
+                flex: 1;
+                max-width: 1440px;
+            }
+            .is-phone iframe {
+                width: 390px;
+                height: 844px;
+            }
+            @media (max-width: 700px) {
+                .stage {
+                    padding: 8px 0;
+                }
+                .is-phone iframe,
+                .is-desktop iframe {
+                    width: 100vw;
+                    height: calc(100vh - 200px);
+                    border-radius: 0;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="bar">
+            <strong>App in colour · concept</strong>
+            <div
+                class="group"
+                role="group"
+                aria-label="Page"
+                data-key="page"
+            ></div>
+            <div
+                class="group"
+                role="group"
+                aria-label="Design"
+                data-key="mode"
+            ></div>
+            <div
+                class="group"
+                role="group"
+                aria-label="Width"
+                data-key="width"
+            ></div>
+            <div
+                class="group"
+                role="group"
+                aria-label="Time of day (Today)"
+                data-key="time"
+            ></div>
+            <div
+                class="group"
+                role="group"
+                aria-label="Title font"
+                data-key="display"
+            ></div>
+            <span class="note"
+                >Sample day Wed 30 Sept, 13:10 · the time switch previews colour
+                only</span
+            >
+        </div>
+        <main class="stage" id="stage"></main>
+        <script>
+            (() => {
+                const pages = {
+                    today: ['Today', '/dev/design/today-next/brief/'],
+                    composer: ['Composer', '/dev/design/composer-studio/'],
+                    paperwork: ['Paperwork', '/dev/design/bureaucracy-next/'],
+                    services: ['Services', '/dev/design/services-next/'],
+                    events: ['Events', '/dev/design/events-next/'],
+                    travel: ['Travel', '/dev/design/departures-next/'],
+                };
+                const choices = {
+                    page: Object.entries(pages).map(([id, [label]]) => [
+                        id,
+                        label,
+                    ]),
+                    mode: [
+                        ['concept', 'Concept'],
+                        ['current', 'Current'],
+                        ['both', 'Side by side'],
+                    ],
+                    width: [
+                        ['phone', '390'],
+                        ['desktop', 'Desktop'],
+                    ],
+                    time: [
+                        ['sample', '13:10'],
+                        ['morning', 'Morning'],
+                        ['midday', 'Midday'],
+                        ['afternoon', 'Afternoon'],
+                        ['evening', 'Evening'],
+                        ['night', 'Night'],
+                    ],
+                    display: [
+                        ['geist', 'Geist'],
+                        ['bricolage', 'Bricolage'],
+                    ],
+                };
+                const params = new URLSearchParams(location.search);
+                const state = {
+                    page: params.get('page') || 'today',
+                    mode: params.get('mode') || 'concept',
+                    width:
+                        params.get('width') ||
+                        (innerWidth < 1100 ? 'phone' : 'desktop'),
+                    time: params.get('time') || 'sample',
+                    display: params.get('display') || 'geist',
+                };
+                const stage = document.getElementById('stage');
+
+                function inject(frame) {
+                    try {
+                        const win = frame.contentWindow;
+                        const doc = frame.contentDocument;
+                        if (!doc || doc.querySelector('script[data-ac-loader]'))
+                            return;
+                        win.__appInColour = {
+                            time: state.time,
+                            display: state.display,
+                        };
+                        const s = doc.createElement('script');
+                        s.dataset.acLoader = '1';
+                        s.src =
+                            '/dev/design/connected/concepts/app-in-colour-2026-10-07/colour.js';
+                        doc.head.append(s);
+                    } catch (error) {
+                        console.warn(
+                            'Concept could not be added to this page',
+                            error,
+                        );
+                    }
+                }
+                function frame(label, concept) {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'frame';
+                    const f = document.createElement('iframe');
+                    f.title = `${pages[state.page][0]} · ${label}`;
+                    f.src = pages[state.page][1];
+                    if (concept) f.addEventListener('load', () => inject(f));
+                    const caption = document.createElement('span');
+                    caption.textContent = label;
+                    wrap.append(f, caption);
+                    return wrap;
+                }
+                function render() {
+                    stage.className = `stage is-${state.width}`;
+                    stage.replaceChildren();
+                    if (state.mode !== 'concept')
+                        stage.append(frame('Current', false));
+                    if (state.mode !== 'current')
+                        stage.append(frame('Concept', true));
+                    sync();
+                }
+                // Time and font apply to the open concept without reloading it.
+                function restyle() {
+                    stage.querySelectorAll('iframe').forEach((f) => {
+                        f.contentWindow?.AppInColour?.set({
+                            time: state.time,
+                            display: state.display,
+                        });
+                    });
+                    sync();
+                }
+                function sync() {
+                    document.querySelectorAll('.group').forEach((g) => {
+                        g.querySelectorAll('button').forEach((b) =>
+                            b.setAttribute(
+                                'aria-pressed',
+                                String(state[g.dataset.key] === b.value),
+                            ),
+                        );
+                    });
+                    history.replaceState(
+                        null,
+                        '',
+                        `?${new URLSearchParams(state)}`,
+                    );
+                }
+                document.querySelectorAll('.group').forEach((g) => {
+                    const key = g.dataset.key;
+                    for (const [value, label] of choices[key]) {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.value = value;
+                        b.textContent = label;
+                        b.addEventListener('click', () => {
+                            state[key] = value;
+                            if (key === 'time' || key === 'display') restyle();
+                            else render();
+                        });
+                        g.append(b);
+                    }
+                });
+                render();
+            })();
+        </script>
+    </body>
+</html>

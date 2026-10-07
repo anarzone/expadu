@@ -1,0 +1,125 @@
+# App in colour — concept, 7 October 2026
+
+**Status: concept for review, not approved.** The approved pages are
+unchanged. Moving away from cream on every page (the 6 October palette
+decision) is the owner's call; `design-decisions.md` and `tokens.css` stay as
+they are until then.
+
+Brings some of the marketing page's colour ("Cologne in colour",
+`resources/css/marketing-landing.css`) into the app, carefully: colour goes
+in one place per page, cards stay light, motion stays at the app's
+120/180/280ms with the ease-settle curve.
+
+- Compare current and concept side by side in the Design canvas
+  <https://claude.ai/artifact/7g3WeH5wdAkjaSeXk4PXt1>.
+- Try it live: `python3 prototype/serve.py`, then
+  <http://127.0.0.1:8765/dev/design/connected/concepts/app-in-colour-2026-10-07/>.
+  The bar switches page, Concept / Current / Side by side, 390 / Desktop, the
+  time of day (Today) and Geist / Bricolage. Settings are in the URL, e.g.
+  `?page=today&mode=both&width=phone&time=evening`.
+- Screenshots: `docs/reviews/2026-10-07-app-in-colour/`.
+
+## How it's built
+
+`colour.js` adds `colour.css` and a few classes to an approved page; nothing
+is copied. Everything is scoped under `html.ac`, so a page without the script
+renders exactly as before. The viewer (`index.html`) loads the real pages in
+frames and adds the script to the Concept frame. Composer's starter cards and
+event posters are added to its rendered markup by the script; its own data
+(`connected/sample-day.js`) supplies every time, place and count. `fonts/`
+links to the self-hosted Bricolage Grotesque files in `public/fonts/` (SIL OFL
+1.1, licence alongside).
+
+## 1. Today: colour follows the day
+
+Only the top band changes colour: greeting, date, the visa deadline and "Your
+day" on phones; greeting, date and deadline on larger screens, where the
+workspace card overlaps the band so its three column headings stay on one
+light surface. Cards stay light. The deadline becomes a light card on every
+band; its amber tile and arrow keep the attention colour.
+
+| Time | Band | Text | Detail text |
+| --- | --- | --- | --- |
+| Morning 05–11 | peach `#ffe0d4` | `#211d15` 13.5:1 | `#5c4636` 7.1:1 |
+| Midday 11–14 (sample 13:10) | yellow `#ffe680` | `#211d15` 13.5:1 | `#5a4a14` 7.0:1 |
+| Afternoon 14–18 | deep teal `#0f3a42` | `#fffdf8` 12.1:1 | `#b9d3d7` 7.8:1 |
+| Evening 18–22 | dusk `#2b1d3f` | `#fffdf8` 15.3:1 | `#cdbfe3` 9.0:1 |
+| Night 22–05 | ink `#0b1a2b` | `#fffdf8` 17.3:1 | `#a9c4dd` 9.7:1 |
+
+Tuning: midday is softened from the marketing yellow `#ffe363` to `#ffe680`
+for a band seen every day; the others are the marketing values. The name's
+orange full stop becomes the marketing sun `#ff7a3d` on dark bands.
+
+The time switch previews colour only; the sample day stays Wednesday
+30 September, 13:10. Page height is identical at every time (2,226px at 390,
+1,501px at 1440). Colour changes fade over 280ms, with no transition for
+reduced motion. The band is measured once per layout, never per time.
+
+**Dark mode (not built):** `html.dark` would keep the same five moments but
+start from the dark canvas: morning and midday become deep tints (about
+`#3a2620` and `#3a3312`) with light text, so the band never glows white at
+night; afternoon and evening keep their colours; night lifts a step to
+`#13263b` so it still reads as a band against a dark canvas. Cards use the
+dark surface, and the same 4.5:1 rule applies to every pair.
+
+## 2. Composer: the brightest page
+
+- A white stage (`#ffffff`) like the marketing demo; no beige fills. The input
+  sits on white with a 3:1 border. Your messages use the pale cyan bubble.
+- The single sparkle is replaced by starter cards in their section colour:
+  **Travel** (cyan `#c9f1fa`, teal ink): "When to leave for 14:00", Neumarkt →
+  Mülheim · line 4. **Paperwork** (lavender `#e4d8fb`, violet ink): "What to
+  bring at 14:00", your EU Blue Card checklist. **Events** (dusk `#2b1d3f`,
+  yellow marker date stamp): "What's on tonight", 2 sample events from 18:30.
+  Plan my Saturday and A little time outdoors stay as outlined ink chips. Each
+  detail comes from the sample day; nothing is invented. Phones show the three
+  as compact rows with both chips on one line, all above the input.
+- Event answers carry the Events poster picture with its yellow date stamp,
+  labelled "AI illustration · sample". Place answers keep the existing map
+  pictures from `connected/place-maps/` (no photos).
+- Add to plan is orange; Added stays cyan. (Also fixed on the approved page in
+  Part B.)
+
+The Travel starter asks "When should I leave for my 14:00?", which answers
+with Today's 10-minute rule. The Paperwork starter gets Composer's honest
+"no verified guidance" reply with the process link; that's correct for now.
+
+## 3. One colour per section
+
+Each section's colour sits in its heading area and its icon tiles, nowhere
+else. Selection stays cyan, actions orange, attention amber, conflict coral.
+
+- **Paperwork:** lavender `#efe7fb` heading area; icon tiles `#e4d8fb` with
+  violet `#67409a` (5.6:1); To do / Preparing badges lavender. The cyan tiles,
+  badges and "One step at a time" banner (which looked like Travel) are gone;
+  the banner is a light row with Composer's teal mark.
+- **Travel:** cyan/Lagoon, unchanged. **Events:** dusk and the yellow marker,
+  unchanged.
+- **Services (proposal): sage** `#e2f3e8`, tiles `#cdebd8` with `#1f6b45`
+  (5.1:1). Not orange (action), amber or coral (attention, conflict), and
+  clear of cyan, lavender and dusk. Green reads as everyday help (doctors,
+  pharmacies). The beige side menu and field fills are gone: the menu is a
+  plain list with the cyan selection, fields are white with a 3:1 border, the
+  bookmark is outlined ink.
+
+## 4. Bricolage Grotesque for big titles only
+
+Page titles ("Today, Anar.", "Paperwork", "Good things to turn up for.",
+"Travel", "What's on your mind?") and big times ("14:00") at weight 800.
+Body text and controls stay Geist. The canvas has every title with and
+without it.
+
+## Not brought over
+
+The scroll-story animations, full-colour sections on every part of a page and
+decorative loops. One band per page, no animated art.
+
+## Findings for the colour roles
+
+- Composer's event time row ("Wed 30 Sept · 18:30–21:00", "Fixed time") is
+  violet and lavender, the Paperwork colour. The concept makes it ink.
+- Midday yellow sits close to the attention amber. That is why the deadline
+  becomes a light card with an amber tile on every band; the band is never
+  used for chips or badges.
+- Evening dusk is also the Events colour. On Today it only fills the band in
+  the evening, so it reads as the time of day.
