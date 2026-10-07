@@ -25,6 +25,7 @@ class ReviewPlaceFacts
             $normalized['activity_discovery'] += [
                 'basis' => array_map(fn (mixed $value): mixed => $value instanceof \BackedEnum ? $value->value : $value, $spot->only(PlaceFacts::ACTIVITY_REVIEW_FIELDS)),
                 'observation_id' => (int) PlaceFactObservation::where('spot_id', $spot->id)->max('id'),
+                'access_correction_id' => (int) PlaceFactCorrection::where('spot_id', $spot->id)->where('field', 'access')->max('id'),
             ];
         }
         $snapshot = $this->snapshot($spot, $normalized);
@@ -63,6 +64,15 @@ class ReviewPlaceFacts
             $changed = false;
             $now = now()->utc();
             foreach ($current['changes'] as $field => $value) {
+                if ($field === 'activity_discovery' && ($value['value'] ?? false) === true) {
+                    $access = app(PlaceFacts::class)->resolve($canonical->fresh())['access'];
+                    if ($access['value'] !== 'public' || $access['status'] !== 'known' || $access['conditional'] !== null) {
+                        throw new DomainException('Activity qualification requires current known public access.');
+                    }
+                    // Access sorts before qualification, so a combined review binds
+                    // to its own new correction as well as pre-existing history.
+                    $value['access_correction_id'] = (int) PlaceFactCorrection::where('spot_id', $canonical->id)->where('field', 'access')->max('id');
+                }
                 $active = PlaceFactCorrection::query()
                     ->where('spot_id', $canonical->id)
                     ->where('field', $field)
@@ -73,7 +83,7 @@ class ReviewPlaceFacts
                 if ($value === null && $active->isEmpty()) {
                     continue;
                 }
-                if ($value !== null && $latest !== null && $latest->value === $value && $active->count() === 1) {
+                if ($value !== null && $latest !== null && $this->comparableValue($latest->value) === $this->comparableValue($value) && $active->count() === 1) {
                     continue;
                 }
 
@@ -98,6 +108,25 @@ class ReviewPlaceFacts
                 app(PlaceFactRevision::class)->bump();
             }
         });
+    }
+
+    /** JSON object key order is not significant; list order and scalar types are. */
+    private function comparableValue(array $value): string
+    {
+        $sort = function (mixed $item) use (&$sort): mixed {
+            if (! is_array($item)) {
+                return $item;
+            }
+            if (! array_is_list($item)) {
+                ksort($item);
+            }
+
+            return array_map($sort, $item);
+        };
+
+        // Encoding also equates whole numeric values such as 8 and 8.0 after
+        // a JSONB round trip, without equating numbers to strings or booleans.
+        return json_encode($sort($value), JSON_THROW_ON_ERROR);
     }
 
     /**

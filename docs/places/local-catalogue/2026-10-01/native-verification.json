@@ -1,0 +1,61 @@
+{
+    "status": "passed",
+    "checked_at": "2026-10-01T09:44:48+00:00",
+    "snapshot_sha256": "e46d38199007add85a73e4901015cad8e7ae1b1282909055194435dd4dfe947d",
+    "scope": "local_native_places_and_composer_place_candidates",
+    "stored_records": 11802,
+    "eligible_place_components": 4235,
+    "general_destinations": 4224,
+    "shared_contract_records_checked": 4235,
+    "fact_counts": {
+        "source": {
+            "osm": 4067,
+            "overture": 168
+        },
+        "name_kind": {
+            "source": 4235
+        },
+        "access": {
+            "unknown": 4112,
+            "public": 123
+        },
+        "fee": {
+            "unknown": 4149,
+            "free": 49,
+            "paid": 37
+        }
+    },
+    "retained_aliases_verified": 798,
+    "alias_api_samples": 12,
+    "held_source_null_exclusions": 3558,
+    "held_detail_api_samples": 12,
+    "api_totals": {
+        "all": 4139,
+        "food_drink": 3412,
+        "culture": 242,
+        "park": 136,
+        "pitch": 15,
+        "court": 9,
+        "playground": 141
+    },
+    "football_within_3km": {
+        "central": {
+            "any_budget": 0,
+            "free": 0
+        },
+        "north": {
+            "any_budget": 0,
+            "free": 0
+        },
+        "east": {
+            "any_budget": 0,
+            "free": 0
+        }
+    },
+    "general_destinations_with_policy_publishable_hero": 119,
+    "policy_photo_coverage_percent": 2.817,
+    "photo_urls_freshly_revalidated": false,
+    "full_composer_conversation_verified": false,
+    "real_users_imported": 0,
+    "remote_changed": false
+}

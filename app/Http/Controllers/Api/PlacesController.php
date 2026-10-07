@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * GET /api/places?veedel=&category=&page=
  *
- * Lists leisure and food places from our own seeded DB — no live
+ * Lists supported physical places from our own seeded DB — no live
  * third-party calls. Distance is measured from the shared origin
  * (UserLocationService::context — live fix / picked or browsed area, else
  * none); transit_hint is the nearest GTFS stop (our static data).
@@ -41,8 +41,6 @@ class PlacesController extends Controller
     /** "Near me" browse radius around the user's location. */
     private const NEAR_RADIUS_KM = 3.0;
 
-    private const COARSE = ['park', 'pitch', 'court', 'swimming', 'playground', 'dog_park', 'culture', 'food_drink'];
-
     /** Named areas that represent their contained facilities as activities. */
     private const DESTINATION_CATEGORIES = ['park', 'sports_centre'];
 
@@ -58,6 +56,10 @@ class PlacesController extends Controller
      */
     public function show(Request $request, Spot $spot): PlaceResource
     {
+        $eligibility = $spot->destination_spot_id === null
+            ? Spot::query()->recommendationEligible(true)->whereNull('destination_spot_id')
+            : app(DestinationGrouping::class)->eligible(Spot::query(), true);
+        $spot->recommendation_available = $eligibility->whereKey($spot->id)->exists();
         $spot->loadMissing(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
         $origin = $this->locations->context($request->user(), $request);
 
@@ -66,9 +68,9 @@ class PlacesController extends Controller
             : null;
         $spot->transit_hint = $this->nearestStopHint((float) $spot->lat, (float) $spot->lng);
         $spot->activities = $this->activitiesForDestinations(collect([$spot]))[$spot->id] ?? [];
-        $spot->cluster_size = $spot->category?->coarse() === 'food_drink' ? 1 : Spot::query()
+        $spot->cluster_size = $spot->category?->preservesVenueIdentity() ? 1 : Spot::query()
             ->canonical()
-            ->whereNotIn('category', SpotCategory::finesForCoarse('food_drink'))
+            ->whereNotIn('category', SpotCategory::independentVenueFines())
             ->where('is_active', true)
             ->where('name', $spot->name)
             ->where('veedel', $spot->veedel)
@@ -99,7 +101,7 @@ class PlacesController extends Controller
         $validated = $request->validate([
             'veedel' => ['nullable', 'string', 'max:100'],
             'bezirk' => ['nullable', 'string', 'max:100'],
-            'category' => ['nullable', 'string', 'in:'.implode(',', self::COARSE)],
+            'category' => ['nullable', 'string', 'in:'.implode(',', SpotCategory::placesCoarse())],
             'activity' => ['nullable', 'string', 'in:'.implode(',', SpotCategory::placesFines())],
             'page' => ['nullable', 'integer', 'min:1'],
             'near' => ['nullable', 'boolean'],
@@ -132,7 +134,7 @@ class PlacesController extends Controller
         $grouping = app(DestinationGrouping::class);
         $query = empty($validated['activity'])
             ? $grouping->general(Spot::query())
-            : $grouping->eligible(Spot::query());
+            : $grouping->eligible(Spot::query(), SpotCategory::from($validated['activity'])->isActivityFacility());
 
         $query->whereNotNull('lat')
             ->whereNotNull('lng')
@@ -208,7 +210,7 @@ class PlacesController extends Controller
 
         // OSM seeds many identically-named rows (e.g. three "Tischtennisplatte"
         // in one park corner). Collapse same-name clusters within a ~100m grid
-        // cell into one card carrying cluster_size. Food venues keep their
+        // cell into one card carrying cluster_size. Named businesses keep their
         // canonical identity: nearby branches can share a brand name.
         $query->select('*');
 
@@ -221,12 +223,12 @@ class PlacesController extends Controller
             $query->selectRaw('NULL::float8 as distance_km');
         }
 
-        $foodCategories = SpotCategory::finesForCoarse('food_drink');
-        $foodBindings = implode(', ', array_fill(0, count($foodCategories), '?'));
-        $clusterPartition = "name, veedel, round(lat::numeric, 3), round(lng::numeric, 3), CASE WHEN category IN ({$foodBindings}) THEN id END";
+        $venueCategories = SpotCategory::independentVenueFines();
+        $venueBindings = implode(', ', array_fill(0, count($venueCategories), '?'));
+        $clusterPartition = "name, veedel, round(lat::numeric, 3), round(lng::numeric, 3), CASE WHEN category IN ({$venueBindings}) THEN id END";
         $query
-            ->selectRaw("count(*) over (partition by {$clusterPartition}) as cluster_size", $foodCategories)
-            ->selectRaw("row_number() over (partition by {$clusterPartition} order by id) as cluster_rank", $foodCategories);
+            ->selectRaw("count(*) over (partition by {$clusterPartition}) as cluster_size", $venueCategories)
+            ->selectRaw("row_number() over (partition by {$clusterPartition} order by id) as cluster_rank", $venueCategories);
 
         $outer = Spot::query()->fromSub($query, 'spots')
             ->when(empty($validated['activity']), fn ($rows) => $rows->where('cluster_rank', 1));

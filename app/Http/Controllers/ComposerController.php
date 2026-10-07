@@ -143,9 +143,7 @@ class ComposerController extends Controller
         $areas = collect(config('veedels', []))->flatten()->all();
         $categories = [
             ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
-            'court',
-            'culture',
-            'food_drink',
+            ...SpotCategory::placesCoarse(),
             'event',
         ];
 
@@ -331,11 +329,11 @@ class ComposerController extends Controller
     }
 
     /** Refuel + wind-down categories that round any single activity out into a day. */
-    private const COMPLEMENT_FINES = ['cafe', 'bakery', 'restaurant', 'fast_food', 'park', 'viewpoint', 'lake'];
+    private const COMPLEMENT_FINES = ['cafe', 'bakery', 'restaurant', 'fast_food', 'park', 'viewpoint', 'lake', 'nature'];
 
     private const REFUEL_FINES = ['cafe', 'bakery', 'restaurant', 'fast_food'];
 
-    private const UNWIND_FINES = ['park', 'viewpoint', 'lake'];
+    private const UNWIND_FINES = ['park', 'viewpoint', 'lake', 'nature'];
 
     /** At most this many of one coarse category in a single itinerary (a day isn't six pitches). */
     private const SAME_COARSE_CAP = 2;

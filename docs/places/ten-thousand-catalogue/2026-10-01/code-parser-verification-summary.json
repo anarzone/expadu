@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "code_commit": "444d27e90dc0daeff727925506258c40997c2867",
+  "focused_php_tests": 83,
+  "focused_php_assertions": 266,
+  "compound_regressions_before_fix": {
+    "failed": 9,
+    "passed_separate_requests": 4,
+    "assertions": 13
+  },
+  "compound_requests_corrected": true,
+  "native_elapsed_time_replay_test_passed": true,
+  "python_tests_passed": 63,
+  "normal_commit_hooks": {
+    "secret_scan": "passed",
+    "formatting": "passed",
+    "php_tests_passed": 1818,
+    "php_tests_skipped": 1,
+    "php_assertions": 7577,
+    "duration_seconds": 164.27,
+    "bypassed": false
+  },
+  "frontend_files_changed": false,
+  "remote_changed": false
+}

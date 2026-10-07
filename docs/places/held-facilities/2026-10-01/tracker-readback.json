@@ -1,0 +1,36 @@
+{
+  "status": "verified",
+  "tickets": [
+    {
+      "id": "f86787e7-a0e6-4cb9-971c-6c7205d8aeac",
+      "updated_at": "2026-10-01T11:37:10.886131Z",
+      "state": "f461aebd-0985-469e-8763-d62d2fc288e6",
+      "history_preserved": true
+    },
+    {
+      "id": "8b28e050-bd90-496c-8119-d43f29909c2a",
+      "updated_at": "2026-10-01T11:37:15.092769Z",
+      "state": "f461aebd-0985-469e-8763-d62d2fc288e6",
+      "history_preserved": true
+    }
+  ],
+  "work_log_pages": [
+    {
+      "page": 33,
+      "updated_at": "2026-10-01T11:38:07.000000Z",
+      "full_content_readback_verified": true,
+      "history_preserved": true,
+      "characters": 97943
+    },
+    {
+      "page": 36,
+      "updated_at": "2026-10-01T11:38:12.000000Z",
+      "full_content_readback_verified": true,
+      "history_preserved": true,
+      "characters": 100288
+    }
+  ],
+  "tasks_remain_in_progress": true,
+  "staging_changed": false,
+  "production_changed": false
+}

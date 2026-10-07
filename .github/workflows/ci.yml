@@ -240,6 +240,13 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      # Relative persona dates and Node assertions must share the app calendar,
+      # including the UTC/Berlin month boundary after local midnight.
+      - name: Match browser-test calendar to application
+        run: |
+          browser_test_timezone="$(php -r 'require "vendor/autoload.php"; echo (require "config/app.php")["timezone"];')"
+          echo "TZ=$browser_test_timezone" >> "$GITHUB_ENV"
+
       - name: Migrate + seed (content + E2E user)
         run: |
           php artisan migrate --force --seed

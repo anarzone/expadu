@@ -12,6 +12,7 @@ use App\Places\RecordPlaceObservation;
 use App\Services\OpeningHoursParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -100,6 +101,11 @@ class ImportOsmSpots extends Command
             'bakery' => "[out:json][timeout:40];nwr[\"shop\"=\"bakery\"]({$bbox});out center;",
             'coworking' => "[out:json][timeout:25];(nwr[\"amenity\"=\"coworking_space\"]({$bbox});nwr[\"office\"=\"coworking\"]({$bbox}););out center;",
             'library' => "[out:json][timeout:25];nwr[\"amenity\"=\"library\"]({$bbox});out center;",
+            // Named lakes, woods, reserves and recreation grounds that people
+            // visit but OSM does not tag as parks (Königsforst, Fühlinger See,
+            // Poller Wiesen). Bounds let greenSpaceQualifies() skip fountains,
+            // basins and tiny ponds.
+            'green' => "[out:json][timeout:90];(nwr[\"landuse\"=\"recreation_ground\"][\"name\"]({$bbox});nwr[\"leisure\"=\"nature_reserve\"][\"name\"]({$bbox});wr[\"landuse\"=\"forest\"][\"name\"]({$bbox});wr[\"natural\"=\"wood\"][\"name\"]({$bbox});wr[\"natural\"=\"water\"][\"name\"]({$bbox}););out tags bb;",
         ];
 
         // Optionally re-import a subset (e.g. after a query fix) without
@@ -117,9 +123,9 @@ class ImportOsmSpots extends Command
         // Mirrors in preference order — the big city-wide leisure queries
         // get rate-limited on a single endpoint, so fall through on failure.
         $mirrors = [
-            'https://overpass.kumi.systems/api/interpreter',
             'https://overpass-api.de/api/interpreter',
             'https://overpass.private.coffee/api/interpreter',
+            'https://overpass.kumi.systems/api/interpreter',
         ];
 
         $allElements = [];
@@ -130,12 +136,20 @@ class ImportOsmSpots extends Command
 
             foreach ($mirrors as $mirror) {
                 try {
-                    $response = Http::timeout(90)->get($mirror, ['data' => $query]);
+                    $response = $this->overpass($mirror, $query);
 
                     if ($response->successful()) {
                         $payload = $response->json();
                         if (! is_array($payload) || isset($payload['remark']) || ! array_key_exists('elements', $payload) || ! is_array($payload['elements'])) {
                             $this->warn("    {$category} via {$mirror}: invalid Overpass payload");
+
+                            continue;
+                        }
+                        // A lagging mirror would record months-old tags as
+                        // observed today, and retire places opened since.
+                        $dataAge = $this->dataAgeHours($payload);
+                        if ($dataAge === null || $dataAge > self::MAX_SOURCE_AGE_HOURS) {
+                            $this->warn("    {$category} via {$mirror}: stale data (".($dataAge === null ? 'no timestamp' : round($dataAge).' h old').')');
 
                             continue;
                         }
@@ -193,7 +207,7 @@ class ImportOsmSpots extends Command
             return self::FAILURE;
         }
 
-        $elements = $response->json('elements', []);
+        $elements = $this->uniqueElements($response->json('elements', []));
 
         $this->info('  Received '.count($elements).' elements from Overpass');
 
@@ -204,11 +218,18 @@ class ImportOsmSpots extends Command
         $skippedNoName = 0;
         $skippedDuplicate = 0;
         $skippedOutside = 0;
+        $importedGreenNames = [];
 
         foreach ($elements as $element) {
             $bar->advance();
 
             $tags = $element['tags'] ?? [];
+
+            if (($element['_category'] ?? null) === 'green' && ! $this->greenSpaceQualifies($element)) {
+                $skippedNoName++;
+
+                continue;
+            }
 
             // Determine category from tags (query category as the hint)
             $category = $this->resolveCategory($tags, $element['_category'] ?? 'cafe');
@@ -223,8 +244,7 @@ class ImportOsmSpots extends Command
             }
 
             // Ways/relations carry their coordinate in `center`
-            $lat = (float) ($element['lat'] ?? $element['center']['lat'] ?? 0);
-            $lng = (float) ($element['lon'] ?? $element['center']['lon'] ?? 0);
+            [$lat, $lng] = $this->elementPoint($element);
             if (! $lat || ! $lng) {
                 $skippedNoName++;
 
@@ -236,6 +256,16 @@ class ImportOsmSpots extends Command
                 $skippedOutside++;
 
                 continue;
+            }
+
+            $greenName = ($element['_category'] ?? null) === 'green' ? mb_strtolower(trim($name)) : null;
+            if ($greenName !== null && isset($importedGreenNames[$greenName])) {
+                $skippedDuplicate++;
+
+                continue;
+            }
+            if ($greenName !== null) {
+                $importedGreenNames[$greenName] = true;
             }
 
             $keptTags = $this->keptTags($tags);
@@ -415,6 +445,12 @@ class ImportOsmSpots extends Command
 
     private function isRecommendationDestination(string $category, string $name): bool
     {
+        // Source names that announce a closure or a back office are kept for
+        // identity but never suggested as somewhere to go.
+        if (preg_match('/\b(geschlossen|closed|dauerhaft geschlossen)\b|\((verwaltung|administration)\)/iu', $name) === 1) {
+            return false;
+        }
+
         $microfacilities = [
             'playground', 'pitch', 'basketball', 'tennis', 'table_tennis',
             'boules', 'dog_park', 'bbq', 'picnic', 'skatepark',
@@ -583,6 +619,14 @@ class ImportOsmSpots extends Command
      */
     protected function resolveCategory(array $tags, string $hint): string
     {
+        if ($hint === 'green') {
+            return match (true) {
+                ($tags['natural'] ?? null) === 'water' => 'lake',
+                ($tags['landuse'] ?? null) === 'recreation_ground' => 'park',
+                default => 'nature',
+            };
+        }
+
         $amenity = $tags['amenity'] ?? '';
         $office = $tags['office'] ?? '';
 
@@ -634,6 +678,124 @@ class ImportOsmSpots extends Command
      *
      * @var array<string, string>
      */
+    /**
+     * Nodes carry lat/lon and ways `center`. Green-space queries request
+     * bounds for the size filter, so Overpass omits `center`; use the midpoint.
+     *
+     * @param  array<string, mixed>  $element
+     * @return array{0: float, 1: float}
+     */
+    protected function elementPoint(array $element): array
+    {
+        $bounds = $element['bounds'] ?? null;
+        $fromBounds = fn (string $axis): float => is_array($bounds) && isset($bounds["min{$axis}"], $bounds["max{$axis}"])
+            ? ((float) $bounds["min{$axis}"] + (float) $bounds["max{$axis}"]) / 2
+            : 0.0;
+
+        return [
+            (float) ($element['lat'] ?? $element['center']['lat'] ?? $fromBounds('lat')),
+            (float) ($element['lon'] ?? $element['center']['lon'] ?? $fromBounds('lon')),
+        ];
+    }
+
+    /**
+     * One OSM object can match several category queries, and each query may be
+     * answered by a mirror with different replication state. Record it once per
+     * run, keeping the first query's category hint.
+     *
+     * @param  list<array<string, mixed>>  $elements
+     * @return list<array<string, mixed>>
+     */
+    protected function uniqueElements(array $elements): array
+    {
+        $unique = [];
+        foreach ($elements as $element) {
+            $unique[($element['type'] ?? 'node').'/'.($element['id'] ?? '')] ??= $element;
+        }
+
+        // A forest and the reserve covering it often share a name. Offer the
+        // larger object first; the import keeps the first one inside the city.
+        $green = array_filter($unique, fn (array $element): bool => ($element['_category'] ?? null) === 'green');
+        uasort($green, fn (array $a, array $b): int => $this->boundsHectares($b) <=> $this->boundsHectares($a));
+
+        return [...array_values(array_diff_key($unique, $green)), ...array_values($green)];
+
+    }
+
+    /** @param array<string, mixed> $payload */
+    protected function dataAgeHours(array $payload): ?float
+    {
+        $base = $payload['osm3s']['timestamp_osm_base'] ?? null;
+        if (! is_string($base) || $base === '') {
+            return null;
+        }
+
+        try {
+            return max(0.0, (CarbonImmutable::now()->getTimestamp() - CarbonImmutable::parse($base)->getTimestamp()) / 3600);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /** overpass-api.de rejects anonymous clients (406); identify the importer and POST so long queries are not URL-bound. */
+    protected function overpass(string $mirror, string $query): Response
+    {
+        return Http::timeout(90)->withUserAgent(self::USER_AGENT)->asForm()->post($mirror, ['data' => $query]);
+    }
+
+    /**
+     * Minimum bounding-box size in hectares per green-space kind. The box
+     * overstates irregular shapes, so the floor is deliberately generous.
+     */
+    private const GREEN_MIN_HECTARES = ['water' => 2.5, 'recreation_ground' => 1.0, 'default' => 5.0];
+
+    /** Water features and club grounds that share the tags but are not destinations. */
+    private const GREEN_NAME_EXCLUSIONS = '/brunnen|becken|sandfang|regenversickerung|absetz|rückhalte|hafen|fontäne|stele|wasserw|kanal|tennis|club|\\be\\.\\s?v\\b|bsg|hundeübung|schutzhof|innenhof/iu';
+
+    /** @param array<string, mixed> $element */
+    protected function greenSpaceQualifies(array $element): bool
+    {
+        $tags = $element['tags'] ?? [];
+        $name = trim((string) ($tags['name'] ?? ''));
+        $sourceId = ($element['type'] ?? 'node').'/'.($element['id'] ?? '');
+
+        if ($name === '' || preg_match(self::GREEN_NAME_EXCLUSIONS, $name) === 1
+            || in_array($sourceId, config('places.green_space_exclusions', []), true)) {
+            return false;
+        }
+
+        $water = $tags['water'] ?? null;
+        if (($tags['natural'] ?? null) === 'water' && $water !== null && ! in_array($water, ['lake', 'pond', 'oxbow', 'reservoir'], true)) {
+            return false;
+        }
+
+        $kind = match (true) {
+            ($tags['natural'] ?? null) === 'water' => 'water',
+            ($tags['landuse'] ?? null) === 'recreation_ground' => 'recreation_ground',
+            default => 'default',
+        };
+
+        return $this->boundsHectares($element) >= self::GREEN_MIN_HECTARES[$kind];
+    }
+
+    /** @param array<string, mixed> $element */
+    protected function boundsHectares(array $element): float
+    {
+        $bounds = $element['bounds'] ?? null;
+        if (! is_array($bounds) || ! isset($bounds['minlat'], $bounds['maxlat'], $bounds['minlon'], $bounds['maxlon'])) {
+            return 0.0;
+        }
+        $height = ((float) $bounds['maxlat'] - (float) $bounds['minlat']) * 111_320;
+        $width = ((float) $bounds['maxlon'] - (float) $bounds['minlon']) * 111_320 * cos(deg2rad((float) $bounds['minlat']));
+
+        return $height * $width / 10_000;
+    }
+
+    /** Overpass mirrors replicate minutely; a day of lag means the mirror is stuck. */
+    public const MAX_SOURCE_AGE_HOURS = 24;
+
+    public const USER_AGENT = 'Expadu/1.0 (places import; +https://expadu.com)';
+
     public const FALLBACK_LABELS = [
         'playground' => 'Spielplatz',
         'pitch' => 'Bolzplatz',

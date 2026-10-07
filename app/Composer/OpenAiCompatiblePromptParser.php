@@ -46,7 +46,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
                     'window_start' => ['type' => 'string', 'description' => 'plan_day only: ISO 8601 local datetime the free time starts'],
                     'window_end' => ['type' => 'string', 'description' => 'plan_day only: ISO 8601 local datetime the free time ends'],
                     'areas' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Cologne Veedel names mentioned, empty if none'],
-                    'categories' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'activity categories: park, cafe, library, restaurant, bar, playground, pitch, basketball, lake, swimming, culture, event'],
+                    'categories' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Supported place types or category families; choose exact types for specific requests and never invent types'],
                     'activities' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES], 'description' => 'Explicit sports only; football means soccer. Never infer capability from pitch category.'],
                     'radius_km' => ['type' => ['number', 'null'], 'minimum' => 0.1, 'maximum' => 50, 'description' => 'Explicit maximum distance from the chosen starting point in kilometres.'],
                     'companions' => ['type' => ['string', 'null'], 'enum' => ['alone', 'partner', 'friends', 'kids', null]],
@@ -59,6 +59,18 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
     ];
 
     public function __construct(private readonly HeuristicPromptParser $fallback) {}
+
+    private function functionSchema(): array
+    {
+        $schema = self::FUNCTION;
+        $schema['function']['parameters']['properties']['categories']['items']['enum'] = array_values(array_unique([
+            ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
+            ...SpotCategory::placesCoarse(),
+            'event',
+        ]));
+
+        return $schema;
+    }
 
     public static function processingContext(string $text, Profile $profile): array
     {
@@ -85,7 +97,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
                 ->post('/chat/completions', [
                     'model' => (string) config('services.llm.model'),
                     'temperature' => 0,
-                    'tools' => [self::FUNCTION],
+                    'tools' => [$this->functionSchema()],
                     'tool_choice' => ['type' => 'function', 'function' => ['name' => 'route_prompt']],
                     'messages' => [
                         [
@@ -195,9 +207,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
 
         $allowed = [
             ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
-            'court',
-            'culture',
-            'food_drink',
+            ...SpotCategory::placesCoarse(),
             'event',
         ];
 
