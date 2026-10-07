@@ -2,6 +2,7 @@
 
 use App\Console\Commands\ImportOsmSpots;
 use App\Enums\SpotCategory;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -178,4 +179,16 @@ test('sources named as closed or administrative are not recommended', function (
     ['Stadtteilbibliothek Nippes', true],
     ['Zentralbibliothek (geschlossen, Umbau)', false],
     ['Kunst- und Museumsbibliothek der Stadt Köln (Verwaltung)', false],
+]);
+
+test('a mirror serving stale OSM data is refused', function (?string $base, bool $fresh) {
+    $this->travelTo(CarbonImmutable::parse('2026-10-07T18:00:00Z'));
+    $command = new ImportOsmSpots;
+    $age = (new ReflectionMethod($command, 'dataAgeHours'))->invoke($command, $base === null ? [] : ['osm3s' => ['timestamp_osm_base' => $base]]);
+
+    expect($age !== null && $age <= ImportOsmSpots::MAX_SOURCE_AGE_HOURS)->toBe($fresh);
+})->with([
+    'current' => ['2026-10-07T17:58:00Z', true],
+    'months old mirror' => ['2026-05-06T03:25:00Z', false],
+    'missing timestamp' => [null, false],
 ]);
