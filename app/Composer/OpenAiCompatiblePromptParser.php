@@ -5,6 +5,10 @@ namespace App\Composer;
 use App\Composer\Concerns\NormalisesConstraints;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Enums\SpotCategory;
+use App\Privacy\ExternalProcessingGate;
+use App\Privacy\ProcessingConsentStore;
+use App\Privacy\ProcessingPermit;
+use App\Privacy\ProcessingPurpose;
 use App\Profile\Profile;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
@@ -53,10 +57,25 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
 
     public function __construct(private readonly HeuristicPromptParser $fallback) {}
 
-    public function parse(string $text, Profile $profile, CarbonImmutable $now): ParsedPrompt
+    public static function processingContext(string $text, Profile $profile): array
     {
+        return ['text' => $text, 'veedel' => $profile->veedel];
+    }
+
+    public function parse(string $text, Profile $profile, CarbonImmutable $now, ?ProcessingPermit $permit = null): ParsedPrompt
+    {
+        if ($permit === null) {
+            return $this->fallback->parse($text, $profile, $now);
+        }
+        $reference = app(ProcessingConsentStore::class)->referenceTime($permit);
+        if ($reference === null) {
+            return $this->fallback->parse($text, $profile, $now);
+        }
+        $now = $reference->setTimezone($now->getTimezone());
+
         try {
-            $response = Http::baseUrl((string) config('services.llm.base_url'))
+            $body = app(ExternalProcessingGate::class)->send($permit, ProcessingPurpose::ComposerParse, self::processingContext($text, $profile), fn () => Http::baseUrl((string) config('services.llm.base_url'))
+                ->withOptions(['allow_redirects' => false])
                 ->withToken((string) config('services.llm.key'))
                 ->timeout(10)
                 ->connectTimeout(3)
@@ -78,10 +97,13 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
                                 .'Home Veedel: '.($profile->veedel ?? 'unknown').".\n\nPrompt: \"{$text}\"",
                         ],
                     ],
-                ])
-                ->throw();
+                ]));
 
-            $args = $this->arguments($response->json());
+            if ($body === null) {
+                return $this->fallback->parse($text, $profile, $now);
+            }
+
+            $args = $this->arguments($body);
             $intent = PromptIntent::tryFrom((string) ($args['intent'] ?? '')) ?? PromptIntent::Find;
 
             if ($intent === PromptIntent::PlanDay && isset($args['window_start'], $args['window_end'])) {
@@ -101,7 +123,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
 
             return new ParsedPrompt($intent, query: $args['query'] ?? $text, source: 'llm');
         } catch (\Throwable $e) {
-            Log::warning('llm prompt parse failed, using heuristic', ['error' => $e->getMessage()]);
+            Log::warning('llm prompt parse failed, using heuristic', ['error_type' => $e::class]);
 
             return $this->fallback->parse($text, $profile, $now);
         }

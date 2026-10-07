@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use App\Bureaucracy\Facts\CalendarDate;
+use App\Bureaucracy\PathGenerator;
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
 use App\Profile\Applicability;
-use App\Profile\ProfileEngine;
 use Carbon\Carbon;
 use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -152,9 +153,8 @@ class Task extends Model
 
     /**
      * Compute the absolute deadline for a given user. Returns null when no
-     * date is computable — which the UI may render as "paused" (move-in
-     * pending) or "before your visa expires" (D-visa permit window)
-     * depending on the user's attributes.
+     * date is computable. A missing date remains unknown, never proof that an
+     * obligation is paused or that a different entry window applies.
      *
      * @param  array<string, mixed>|null  $attributes  Profile attribute bag; derived from the user when omitted.
      */
@@ -164,49 +164,41 @@ class Task extends Model
             return null;
         }
 
-        $attributes ??= app(ProfileEngine::class)->build($user)->attributes;
+        $attributes ??= app(PathGenerator::class)->profileFor($user)->attributes;
 
         if ($this->deadline_type === DeadlineType::FactDate) {
+            if ($this->deadline_fact_key === 'residence_title_expires_at'
+                && in_array($attributes['current_residence_title'] ?? null, ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown'], true)) {
+                return null;
+            }
             $factDate = is_string($this->deadline_fact_key)
                 ? ($attributes[$this->deadline_fact_key] ?? null)
                 : null;
 
-            if (! is_string($factDate) || preg_match('/^\d{4}-\d{2}-\d{2}$/', $factDate) !== 1) {
-                return null;
-            }
-
-            $deadline = Carbon::createFromFormat('!Y-m-d', $factDate);
-
-            return $deadline->format('Y-m-d') === $factDate ? $deadline : null;
+            return CalendarDate::parse($factDate);
         }
 
-        if (! $this->deadline_days) {
+        if ($this->deadline_type === DeadlineType::PermitWindow && ($attributes['entry_mode'] ?? null) === 'd_visa') {
+            return CalendarDate::parse($attributes['visa_expires_at'] ?? null);
+        }
+
+        if ($this->deadline_days === null) {
             return null;
         }
 
         return match ($this->deadline_type) {
-            DeadlineType::DaysSinceArrival => $user->arrival_date
-                ? Carbon::parse($user->arrival_date)->addDays($this->deadline_days)
-                : null,
-            // §17 BMG: the clock starts at move-in. No move-in date yet
-            // (temporary housing) → null → the UI shows "paused".
-            DeadlineType::DaysSinceMoveIn => ($attributes['moved_in_at'] ?? null)
-                ? Carbon::parse($attributes['moved_in_at'])->addDays($this->deadline_days)
-                : null,
-            // Visa-free entrants get the 90-day clock; D-visa holders'
-            // real deadline is their visa expiry (when they've told us).
-            DeadlineType::PermitWindow => match ($attributes['entry_mode'] ?? 'visa_free') {
-                'visa_free' => $user->arrival_date
-                    ? Carbon::parse($user->arrival_date)->addDays($this->deadline_days)
-                    : null,
-                'd_visa' => ($attributes['visa_expires_at'] ?? null)
-                    ? Carbon::parse($attributes['visa_expires_at'])
-                    : null,
+            DeadlineType::DaysSinceArrival => CalendarDate::historical($user->arrival_date?->toDateString())?->addDays($this->deadline_days),
+            // A missing anchor is unknown, not proof that an obligation is paused.
+            DeadlineType::DaysSinceMoveIn => CalendarDate::historical($attributes['moved_in_at'] ?? null)
+                ?->addDays($this->deadline_days),
+            // Only an explicitly recorded entry mode selects the authored rule's window.
+            DeadlineType::PermitWindow => match ($attributes['entry_mode'] ?? null) {
+                'visa_free' => CalendarDate::historical($user->arrival_date?->toDateString())?->addDays($this->deadline_days),
                 default => null,
             },
             // Life-event tasks anchor on the recorded event date.
-            DeadlineType::DaysSinceEvent => $this->trigger_event && ($attributes["{$this->trigger_event}_at"] ?? null)
-                ? Carbon::parse($attributes["{$this->trigger_event}_at"])->addDays($this->deadline_days)
+            DeadlineType::DaysSinceEvent => $this->trigger_event
+                ? CalendarDate::historical($attributes["{$this->trigger_event}_at"] ?? null)?->addDays($this->deadline_days)
                 : null,
             default => null,
         };

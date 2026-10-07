@@ -2,218 +2,93 @@
 
 namespace App\Onboarding;
 
-use App\Bureaucracy\Facts\CaseFactStore;
+use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Enums\Situation;
 use App\Models\BureaucracyCase;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
+/** Compatibility input adapter only. It cannot choose a legal path or overwrite history. */
 final class ApplyOnboardingAnswers
 {
-    public function __construct(private CaseFactStore $factStore) {}
+    public function __construct(private EnsureAccountHolder $people, private SaveBureaucracyDraft $drafts, private CompleteBureaucracyOnboarding $complete) {}
 
-    /**
-     * @param  array<string, mixed>  $validated
-     */
     public function execute(User $user, array $validated): BureaucracyCase
     {
         return DB::transaction(function () use ($user, $validated): BureaucracyCase {
-            $lockedUser = User::query()
-                ->whereKey($user->getKey())
-                ->lockForUpdate()
-                ->firstOrFail();
+            $case = $this->people->dossier($user);
+            $answers = $this->answers($validated);
+            // A separate active draft may contain newer unfinished input: never overwrite it with a legacy POST.
+            $draft = $this->drafts->execute($user, $case->person, (string) Str::uuid(), 0, 1, $answers);
+            try {
+                $this->complete->execute($user, $case->person, $draft->id, $draft->version, $case->fact_version, (string) Str::uuid());
+            } catch (ValidationException $error) {
+                throw ValidationException::withMessages(collect($error->errors())->mapWithKeys(function ($messages, $path) {
+                    $key = explode('.', $path)[1] ?? $path;
 
-            $situation = Situation::from($validated['situation']);
-            $isEu = $this->isEu($situation, $validated['is_eu'] ?? null);
-            $residenceFactsApply = ! $isEu;
-            $entryMode = $residenceFactsApply ? ($validated['entry_mode'] ?? null) : null;
-            $currentResidenceTitle = $residenceFactsApply
-                ? ($validated['current_residence_title'] ?? null)
-                : null;
-            $caseGoal = $residenceFactsApply ? ($validated['case_goal'] ?? null) : null;
-            $permitTrack = $this->permitTrack($currentResidenceTitle, $caseGoal);
-            $bureaucracyPath = $this->bureaucracyPath(
-                $situation,
-                $permitTrack,
-                $validated['sponsor_current_title'] ?? null,
-            );
-            $planning = (bool) ($validated['arrival_planned'] ?? false);
-            $addressStatus = $validated['address_registration_status'] ?? null;
-            $movedInAt = $addressStatus === 'registrable' ? ($validated['moved_in_at'] ?? null) : null;
-            $housingStatus = match ($addressStatus) {
-                'registrable' => $movedInAt === null ? null : 'long_term',
-                'not_registrable' => 'temporary',
-                default => null,
-            };
+                    $field = match ($key) {
+                        'german_level' => 'documented_german_level',
+                        'purpose' => 'situation',
+                        'citizenship_group' => 'is_eu',
+                        default => $key,
+                    };
 
-            $profileValues = Arr::except($validated, [
-                'arrival_planned',
-                'entry_mode',
-                'housing_status',
-                'visa_expires_at',
-                'current_residence_title',
-                'residence_title_expires_at',
-                'case_goal',
-                'sponsor_current_title',
-                'documented_german_level',
-                'moved_in_at',
-                'address_registration_status',
-            ]);
+                    return [$field => $messages];
+                })->all());
+            }
 
-            $lockedUser->update([
-                ...$profileValues,
-                'is_eu' => $isEu,
-                'bureaucracy_path' => $bureaucracyPath,
-                'arrival_date' => $planning ? null : ($validated['arrival_date'] ?? null),
-                'city' => 'Köln',
-                'onboarded_at' => now(),
-            ]);
+            // Discovery preferences remain separate from the encrypted bureaucracy dossier.
+            $profile = Arr::only($validated, ['situation', 'veedel', 'german_level', 'has_deutschlandticket', 'interests']);
+            $profile = array_filter($profile, fn ($value) => $value !== null);
+            if (isset($profile['veedel']) && in_array($profile['veedel'], collect(config('veedels', []))->flatten()->all(), true)) {
+                $profile['city'] = config('bureaucracy_onboarding.legacy_neighbourhood_city');
+            }
+            $fresh = $user->fresh();
+            $fresh->update([...$profile, 'bureaucracy_path' => null]);
+            $fresh->setProfileAttribute('qa_persona', null, 'onboarding');
+            foreach (['home' => ['Home', '🏠', 0], 'work' => ['Work', '💼', 1]] as $category => [$name, $emoji, $order]) {
+                $fresh->places()->firstOrCreate(['category' => $category], ['name' => $name, 'emoji' => $emoji, 'sort_order' => $order]);
+            }
 
-            // Hand-answered onboarding replaces whatever persona the QA
-            // switcher last applied. Leaving the badge behind made the corner
-            // announce a persona the profile no longer matched, which reads as
-            // "onboarding did nothing".
-            $this->storeProfileAttribute($lockedUser, 'qa_persona', null);
-
-            $this->storeProfileAttribute($lockedUser, 'entry_mode', $entryMode);
-            $this->storeProfileAttribute($lockedUser, 'housing_status', $housingStatus);
-            $this->storeProfileAttribute(
-                $lockedUser,
-                'visa_expires_at',
-                $entryMode === 'd_visa' ? ($validated['visa_expires_at'] ?? null) : null,
-            );
-            $this->storeProfileAttribute($lockedUser, 'moved_in_at', $movedInAt);
-            // Saying "I hold a settlement permit" IS declaring yourself settled.
-            // These were two unconnected notions — current_residence_title is a
-            // case fact, settled_at a profile attribute — so someone who told
-            // onboarding they already hold permanent residency was still being
-            // offered it as something to apply for. Cleared when the answer
-            // changes, so re-onboarding cannot leave a stale claim behind.
-            $this->storeProfileAttribute(
-                $lockedUser,
-                'settled_at',
-                $this->settledAt($lockedUser, $currentResidenceTitle),
-            );
-            $this->storeProfileAttribute(
-                $lockedUser,
-                'address_registration_status',
-                $validated['address_registration_status'] ?? null,
-            );
-
-            $facts = [
-                'citizenship_group' => $isEu ? 'eu' : 'non_eu',
-                'purpose' => $this->purpose($situation),
-                'entry_mode' => $entryMode,
-                'visa_expires_at' => $entryMode === 'd_visa' ? ($validated['visa_expires_at'] ?? null) : null,
-                'current_residence_title' => $currentResidenceTitle,
-                'residence_title_expires_at' => $currentResidenceTitle === null
-                    ? null
-                    : ($validated['residence_title_expires_at'] ?? null),
-                'case_goal' => $caseGoal,
-                'sponsor_current_title' => $residenceFactsApply && $situation === Situation::FamilyReunification
-                    ? ($validated['sponsor_current_title'] ?? null)
-                    : null,
-                'permit_track' => $permitTrack,
-                'german_level' => $validated['documented_german_level'] ?? null,
-            ];
-
-            $case = $this->factStore->synchronizeConfirmedFacts(
-                $lockedUser,
-                $facts,
-                'onboarding',
-                array_keys(array_filter($facts, fn (mixed $value): bool => $value === null)),
-            );
-
-            $this->createRequiredPlaces($lockedUser);
-
-            return $case;
+            return $case->fresh();
         });
     }
 
-    private function storeProfileAttribute(User $user, string $attribute, mixed $value): void
+    private function answers(array $input): array
     {
-        $user->setProfileAttribute($attribute, $value, 'onboarding');
-    }
-
-    private function createRequiredPlaces(User $user): void
-    {
-        if (! $user->places()->where('category', 'home')->exists()) {
-            $user->places()->create([
-                'emoji' => '🏠',
-                'name' => 'Home',
-                'category' => 'home',
-                'sort_order' => 0,
-            ]);
+        $answers = [];
+        foreach (config('bureaucracy_onboarding.fact_keys') as $key) {
+            if ($key === 'german_level') {
+                continue; // General language preference is not the separate bureaucracy answer.
+            }
+            if (array_key_exists($key, $input) && $input[$key] !== null && $input[$key] !== '') {
+                $answers[$key] = ['value' => $key === 'arrival_planned' ? (bool) $input[$key] : $input[$key]];
+            }
         }
-
-        if (! $user->places()->where('category', 'work')->exists()) {
-            $user->places()->create([
-                'emoji' => '💼',
-                'name' => 'Work',
-                'category' => 'work',
-                'sort_order' => 1,
-            ]);
-        }
-    }
-
-    private function isEu(Situation $situation, mixed $explicit): bool
-    {
-        return match ($situation) {
-            Situation::EuEmployee => true,
-            Situation::NonEuEmployee, Situation::FamilyReunification => false,
-            default => (bool) $explicit,
+        $situation = isset($input['situation']) ? Situation::from($input['situation']) : null;
+        $citizenship = match ($situation) {
+            Situation::EuEmployee => 'eu',
+            Situation::NonEuEmployee => 'non_eu',
+            default => isset($input['is_eu']) ? ((bool) $input['is_eu'] ? 'eu' : 'non_eu') : null,
         };
-    }
-
-    private function purpose(Situation $situation): string
-    {
-        return match ($situation) {
-            Situation::NonEuEmployee, Situation::EuEmployee => 'employment',
-            Situation::Student => 'study',
-            Situation::Freelancer => 'freelance',
-            Situation::FamilyReunification => 'family',
-            Situation::DigitalNomad => 'digital_nomad',
-            Situation::Other => 'other',
-        };
-    }
-
-    /**
-     * Any settlement permit means the user already holds permanent residency.
-     * Matched by prefix so a future §9 / §18c split needs no change here.
-     * Keeps an existing date if one was already recorded — the day they told
-     * us is a worse answer than the day they actually settled.
-     */
-    private function settledAt(User $user, ?string $currentResidenceTitle): ?string
-    {
-        if ($currentResidenceTitle === null || ! str_starts_with($currentResidenceTitle, 'settlement_permit')) {
-            return null;
+        if ($citizenship !== null) {
+            $answers['citizenship_group'] = ['value' => $citizenship];
+        }
+        if ($situation !== null) {
+            $answers['purpose'] = ['value' => match ($situation) {
+                Situation::NonEuEmployee, Situation::EuEmployee => 'employment',
+                Situation::Student => 'study', Situation::Freelancer => 'freelance',
+                Situation::FamilyReunification => 'family', Situation::DigitalNomad => 'digital_nomad',
+                Situation::Other => 'other',
+            }];
+        }
+        if (isset($input['documented_german_level'])) {
+            $answers['german_level'] = ['value' => $input['documented_german_level']];
         }
 
-        $existing = data_get($user->profile_attributes, 'settled_at');
-
-        return is_string($existing) && $existing !== '' ? $existing : now()->toDateString();
-    }
-
-    private function permitTrack(?string $currentResidenceTitle, ?string $caseGoal): ?string
-    {
-        if ($currentResidenceTitle === 'blue_card' || $caseGoal === 'blue_card') {
-            return 'blue_card';
-        }
-
-        return $currentResidenceTitle === 'standard_work_permit' ? 'standard' : null;
-    }
-
-    private function bureaucracyPath(
-        Situation $situation,
-        ?string $permitTrack,
-        ?string $sponsorCurrentTitle,
-    ): ?string {
-        return match (true) {
-            $situation === Situation::NonEuEmployee && $permitTrack === 'blue_card' => 'non_eu_employee_blue_card',
-            $situation === Situation::NonEuEmployee && $permitTrack === 'standard' => 'non_eu_employee',
-            $situation === Situation::FamilyReunification && $sponsorCurrentTitle !== null => 'family_reunification',
-            default => null,
-        };
+        return $answers;
     }
 }

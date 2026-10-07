@@ -26,7 +26,10 @@ test('the extraction contract accepts only one server authorized fact request', 
         'question' => 'How many hours per week do you currently work?',
         'why' => 'This route depends on documented weekly work.',
         'message' => 'I work 20 hours.',
+        'permit' => null,
+        'context' => null,
     ]);
+    expect($request->processingContext())->not->toHaveKeys(['permit', 'context']);
 });
 
 test('results expose exactly the five allowed outcomes and only candidates carry values', function () {

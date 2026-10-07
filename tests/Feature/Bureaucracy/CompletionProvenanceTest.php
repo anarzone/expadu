@@ -9,12 +9,10 @@ use App\Models\UserTask;
  * Owner review: "How did it know I completed these? I never said anything about
  * them during onboarding."
  *
- * Declaring "I'm settled" marks every arrival basic done in one go. That is
- * defensible — someone settled here registered their address years ago — but
- * nothing recorded that the app had decided, so the page asserted finished work
- * the user never reported and could not explain itself when asked.
+ * A general settled declaration cannot prove completion of individual tasks.
+ * Keep explicit user progress and its provenance unchanged.
  */
-it('records that the app, not the user, completed a task', function () {
+it('does not complete individual tasks from a settled declaration', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
     $user = User::factory()->create([
@@ -29,6 +27,8 @@ it('records that the app, not the user, completed a task', function () {
 
     // Materialise the path, then declare settled.
     $this->actingAs($user)->get('/bureaucracy')->assertSuccessful();
+    $task = Task::factory()->approvedFixture()->create(['key' => 'fixture.anmeldung']);
+    $row = UserTask::factory()->for($user)->for($task)->create(['status' => 'in_progress']);
     $this->actingAs($user)->post('/bureaucracy/settle')->assertRedirect();
 
     $autoCompleted = UserTask::query()
@@ -36,12 +36,10 @@ it('records that the app, not the user, completed a task', function () {
         ->where('status', TaskStatus::Done)
         ->get();
 
-    expect($autoCompleted)->not->toBeEmpty();
-
-    // Every one of them can say who decided.
-    foreach ($autoCompleted as $userTask) {
-        expect($userTask->completed_source)->toBe('settled_declaration');
-    }
+    expect($autoCompleted)->toBeEmpty()
+        ->and($row->fresh()->status)->toBe(TaskStatus::InProgress)
+        ->and($row->fresh()->completed_at)->toBeNull()
+        ->and($row->fresh()->completed_source)->toBeNull();
 });
 
 it('leaves the source null when the user completes a task themselves', function () {

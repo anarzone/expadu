@@ -28,9 +28,9 @@ class PromptSuggestions
         /** @var list<array{p: int, label: string, icon: string, prompt?: string, href?: string}> $candidates */
         $candidates = [];
 
-        $daysSinceArrival = $profile->daysSinceArrival();
-        if ($daysSinceArrival !== null && $daysSinceArrival <= 60) {
-            $candidates[] = ['p' => 100, 'label' => 'Sort your Anmeldung', 'icon' => 'checklist', 'href' => '/bureaucracy'];
+        $nextBureaucracyAction = app(CurrentBureaucracyPlan::class)->for($context)['overview']['next_actions'][0] ?? null;
+        if ($nextBureaucracyAction !== null) {
+            $candidates[] = ['p' => 100, 'label' => $nextBureaucracyAction['title'], 'icon' => 'checklist', 'href' => '/bureaucracy'];
         }
 
         if (! empty($profile->attributes['child_born_at'])) {

@@ -42,7 +42,7 @@ pest()->extend(TestCase::class)
         // prefix, so strip it first, then clear every match.
         $prefix = (string) config('database.redis.options.prefix');
         $strip = fn (string $key): string => str_starts_with($key, $prefix) ? substr($key, strlen($prefix)) : $key;
-        foreach (['confirmed_location:*', 'location_history:*', 'notif_throttle:*'] as $pattern) {
+        foreach (['confirmed_location:*', 'location_history:*', 'notif_throttle:*', 'pending_actions:*', 'mute:*'] as $pattern) {
             $stale = array_map($strip, Redis::keys($pattern));
             if ($stale !== []) {
                 Redis::del(...$stale);
@@ -171,5 +171,6 @@ function homeContext(User $user, array $overrides = []): HomeContext
         todayPlanSlots: $overrides['todayPlanSlots'] ?? [],
         leaveByAnchors: $overrides['leaveByAnchors'] ?? [],
         intendedEventIds: $overrides['intendedEventIds'] ?? [],
+        bureaucracyPlan: $overrides['bureaucracyPlan'] ?? null,
     );
 }

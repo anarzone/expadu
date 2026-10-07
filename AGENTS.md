@@ -72,8 +72,9 @@ after pushing; "pushed" is not "live".
   it 500s only on a *warm* hit. Cache scalars, hydrate after.
 - **Dark mode must toggle `html.dark`** — `--color-*` indirection resolves at `:root`, so a nested
   `.dark` wrapper won't flip tokens.
-- **QA persona switching is a clean slate** (`ResetPersonaState`) — a persona means exactly that
-  persona, never a layer over the previous one.
+- **QA previews are read-only** (`ScenarioAssessmentPreview`). The old reset/become
+  endpoints and `ResetPersonaState` return 410 without changing account/family data.
+  Do not restore destructive switching; test persistent workflows in isolated services.
 - Local and prod hold different data (prod runs the cron, local doesn't). Reproduce data bugs
   against prod counts, not local ones.
 

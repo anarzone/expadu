@@ -1,15 +1,18 @@
 <?php
 
-use App\Bureaucracy\Cases\CaseMatcher;
-use App\Bureaucracy\Cases\CasePlanComposer;
-use App\Bureaucracy\Cases\CurrentCasePlan;
-use App\Bureaucracy\Facts\CaseFactStore;
+use App\Bureaucracy\Catalogue\CatalogueCompiler;
+use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
 use App\Models\BureaucracyCaseQuestion;
+use App\Models\Task;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
-    $this->travelTo('2026-08-03 10:00:00');
-    $this->artisan('bureaucracy:import-tasks', ['--prune' => true])->assertSuccessful();
+    $this->travelTo('2026-09-08 10:00:00');
+    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    $store = app(CatalogueReleaseStore::class);
+    $release = $store->stage(app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->get()->all()));
+    $store->activate($release->id, null);
 });
 
 dataset('investigated onboarding journeys', [
@@ -45,19 +48,18 @@ dataset('investigated onboarding journeys', [
             'case_goal' => 'family_reunification_permit',
             'sponsor_current_title' => 'blue_card_pending',
         ],
-        'structured_answers' => [],
+        'structured_answers' => ['sponsor' => 'non_eu'],
         'expected_path' => 'family_reunification',
         'coverage' => 'needs_information',
         'matched' => [
             'case.family.first_permit.prepare',
-            'case.family.register_address',
         ],
         'unknown' => ['case.family.first_permit.sponsor_pending_review'],
         'missing' => ['livelihood_secured'],
         'sections' => [
             'do_now' => [
                 'case.family.first_permit.prepare',
-                'case.family.register_address',
+                'core.anmeldung',
             ],
         ],
     ]],
@@ -92,6 +94,7 @@ dataset('investigated onboarding journeys', [
             'documented_german_level' => 'b1',
         ],
         'structured_answers' => [
+            'sponsor' => 'non_eu',
             'marital_household_continues' => true,
             'family_residence_permit_held_since' => '2023-08-03',
             'weekly_work_hours' => 25,
@@ -101,7 +104,8 @@ dataset('investigated onboarding journeys', [
         ],
         'expected_path' => 'family_reunification',
         'coverage' => 'matched',
-        'matched' => ['case.family.settlement.spouse_18c_option'],
+        // A settlement goal does not suppress independent renewal preparation.
+        'matched' => ['case.family.renew.continuing_household', 'case.family.settlement.general_coming_up', 'case.family.settlement.spouse_18c_option'],
         'unknown' => [],
         'sections' => [
             'options' => ['case.family.settlement.spouse_18c_option'],
@@ -118,6 +122,7 @@ dataset('investigated onboarding journeys', [
             'documented_german_level' => 'b1',
         ],
         'structured_answers' => [
+            'sponsor' => 'non_eu',
             'marital_household_continues' => true,
             'family_residence_permit_held_since' => '2022-09-01',
             'weekly_work_hours' => 25,
@@ -159,7 +164,7 @@ dataset('investigated onboarding journeys', [
     ]],
 ]);
 
-test('real onboarding and structured answers produce the reviewed case plan', function (array $journey) {
+test('real onboarding and explicit follow ups produce the canonical reviewed case plan', function (array $journey) {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
@@ -167,60 +172,83 @@ test('real onboarding and structured answers produce the reviewed case plan', fu
         'veedel' => 'Nippes',
         'arrival_date' => '2026-07-24',
         'arrival_planned' => false,
+        'moved_in_at' => '2026-07-24',
         'address_registration_status' => 'not_registrable',
+        'registration_status' => 'not_registered',
         'interests' => [],
         ...$journey['onboarding'],
     ])->assertRedirect(route('bureaucracy'));
 
     $user->refresh();
-    expect($user->bureaucracy_path)->toBe($journey['expected_path']);
+    expect($user->bureaucracy_path)->toBeNull()
+        ->and($user->onboarded_at)->not->toBeNull();
+    $read = fn () => $this->getJson('/bureaucracy/v2/plan')->assertSuccessful()->json('plan');
+    $initial = $read();
+    expect(BureaucracyCaseQuestion::query()->count())->toBe(0);
 
-    $remainingAnswers = $journey['structured_answers'];
+    $answers = $journey['structured_answers'];
+    $remainingAnswers = $answers;
+    $session = $remainingAnswers === [] ? null : $this->postJson('/bureaucracy/v2/people/'.$initial['person_id'].'/question-sessions', [
+        'jurisdiction' => 'de-nrw-cologne', 'request_id' => (string) Str::uuid(),
+    ])->assertCreated()->json('session_id');
+    $offeredKeys = [];
+    $attempts = 0;
 
     while ($remainingAnswers !== []) {
-        $plan = app(CurrentCasePlan::class)->for($user->fresh());
-        $questionId = $plan['next_question']['id'] ?? null;
-        expect($questionId)->not->toBeNull('The case stopped asking before every reviewed fact was confirmed.');
+        expect(++$attempts)->toBeLessThanOrEqual(20);
+        $response = $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/next', ['request_id' => (string) Str::uuid()])
+            ->assertSuccessful()->json();
+        if ($response['status'] === 'paused') {
+            $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/resume', ['revisit_deferred' => false])->assertNoContent();
 
-        $question = BureaucracyCaseQuestion::query()->findOrFail($questionId);
-        expect(
-            $remainingAnswers,
-            "Unexpected structured question for {$question->fact_key}.",
-        )->toHaveKey($question->fact_key);
+            continue;
+        }
+        expect($response['status'])->toBe('offered', 'Missing known answers: '.implode(', ', array_keys($remainingAnswers)));
+        $question = $response['question'];
+        $key = $question['fact_key'];
+        expect($offeredKeys)->not->toContain($key);
+        $offeredKeys[] = $key;
+        if (! array_key_exists($key, $remainingAnswers)) {
+            // A historical persona does not know every orientation detail.
+            // Skip explicitly instead of manufacturing an answer to finish QA.
+            $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/defer/'.$question['id'], ['token' => $question['token']])->assertNoContent();
 
-        $this->post(route('bureaucracy.case-question.answer', $question), [
-            'value' => $remainingAnswers[$question->fact_key],
-        ])->assertRedirect();
-
-        unset($remainingAnswers[$question->fact_key]);
+            continue;
+        }
+        $this->postJson('/bureaucracy/v2/question-sessions/'.$session.'/answers/'.$question['id'], [
+            'token' => $question['token'], 'value' => $remainingAnswers[$key],
+        ])->assertSuccessful();
+        unset($remainingAnswers[$key]);
     }
 
-    $case = $user->fresh()->bureaucracyCase;
-    $result = app(CaseMatcher::class)->match($case);
-    $sections = app(CasePlanComposer::class)->compose($case, $result);
-
-    expect($result->coverageState->value)->toBe($journey['coverage'])
-        ->and($result->matchedRuleKeys)->toBe($journey['matched'])
-        ->and($result->unknownRuleKeys)->toBe($journey['unknown']);
-
-    if (isset($journey['missing'])) {
-        expect($result->missingFactKeys)->toBe($journey['missing']);
+    $plan = $read();
+    $caseGuidance = collect($plan['guidance'])->filter(fn ($row) => str_starts_with($row['id'], 'case.') && $row['kind'] !== 'context');
+    expect($plan['coverage']['state'])->toBe('partial')
+        ->and($caseGuidance->where('assessment', 'supported_preparation')->pluck('id')->sort()->values()->all())
+        ->toBe(collect($journey['matched'])->sort()->values()->all())
+        ->and($caseGuidance->where('assessment', 'needs_information')->pluck('id')->sort()->values()->all())
+        ->toBe(collect($journey['unknown'])->sort()->values()->all())
+        ->and(array_column($plan['guidance'], 'assessment'))->not->toContain('requirements_met');
+    foreach ($journey['sections']['do_now'] ?? [] as $key) {
+        expect(array_column($plan['actions'], 'source_rule_id'))->toContain($key);
     }
-
-    if (isset($journey['universal'])) {
-        expect($result->universalRuleKeys)->toBe($journey['universal']);
+    foreach ([...($journey['sections']['options'] ?? []), ...($journey['sections']['coming_up'] ?? [])] as $key) {
+        expect($caseGuidance->firstWhere('id', $key)['kind'])->toBe('option')
+            ->and(array_column($plan['actions'], 'source_rule_id'))->not->toContain($key);
     }
-
-    foreach ($journey['sections'] as $section => $expectedKeys) {
-        $actualKeys = collect($sections[$section])->pluck('key')->filter()->sort()->values()->all();
-
-        expect($actualKeys)->toBe(collect($expectedKeys)->sort()->values()->all(), $section);
+    foreach ($journey['unknown'] as $key) {
+        expect($caseGuidance->firstWhere('id', $key)['missing_facts'])->toBe($journey['missing']);
     }
-
-    foreach ($journey['structured_answers'] as $key => $value) {
-        $fact = app(CaseFactStore::class)->confirmedFact($case, $key);
-
-        expect($fact?->value)->toBe($value)
-            ->and($fact?->source)->toBe('structured_interview');
+    foreach ($journey['universal'] ?? [] as $key) {
+        expect(collect($plan['guidance'])->firstWhere('id', $key)['kind'])->toBe('context');
     }
+    $facts = $this->getJson('/bureaucracy/v2/people/'.$initial['person_id'].'/facts')->assertSuccessful()->json();
+    foreach ($answers as $key => $value) {
+        expect($facts['values'][$key])->toBe($value)
+            ->and($facts['evidence'][$key]['source'])->toBe($key === 'sponsor' ? 'attributed_report' : 'manual');
+    }
+    expect($facts['values']['current_residence_title'])->toBe($journey['onboarding']['current_residence_title'])
+        ->and($facts['values'])->not->toHaveKey('permit_track')
+        ->and($offeredKeys)->not->toContain('permit_track');
+    expect($read())->toBe($plan);
 })->with('investigated onboarding journeys');

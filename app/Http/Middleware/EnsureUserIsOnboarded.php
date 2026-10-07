@@ -16,6 +16,10 @@ class EnsureUserIsOnboarded
     protected array $except = [
         'onboarding',
         'onboarding/*',
+        'bureaucracy/v2/*',
+        // Retired QA commands must return their explicit error, not restart onboarding.
+        'qa/become/*',
+        'qa/reset-tasks',
         'logout',
         'settings/*',
         'email/*',

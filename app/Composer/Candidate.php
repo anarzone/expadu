@@ -22,7 +22,7 @@ final readonly class Candidate
         public string $category,
         public bool $outdoor,
         public int $typicalDurationMin,
-        public string $costTier,           // free | low | normal
+        public string $costTier,           // free | low | normal | unknown (a reported appointment has no inferred fee)
         public ?CarbonImmutable $opensAt,  // null = always open within window
         public ?CarbonImmutable $closesAt,
         public ?CarbonImmutable $fixedStart = null, // events + appointments

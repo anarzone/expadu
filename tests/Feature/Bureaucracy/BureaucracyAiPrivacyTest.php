@@ -9,13 +9,18 @@ use App\Bureaucracy\Cases\QuestionSelector;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseMessage;
 use App\Models\BureaucracyCaseQuestion;
+use App\Models\BureaucracyProcessingConsent;
 use App\Models\Task;
 use App\Models\User;
+use App\Privacy\ProcessingPurpose;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
+use Tests\Support\ExternalProcessingFixtures;
+
+beforeEach(fn () => ExternalProcessingFixtures::configure());
 
 final class PrivacyTestExtractor implements ExtractsCaseFact
 {
@@ -23,9 +28,9 @@ final class PrivacyTestExtractor implements ExtractsCaseFact
 
     public function extract(CaseFactExtractionRequest $request): CaseFactExtractionResult
     {
-        $this->calls++;
-
-        return CaseFactExtractionResult::candidate('settlement_permit');
+        return ExternalProcessingFixtures::fakeExtraction($request, CaseFactExtractionResult::candidate('settlement_permit'), function (): void {
+            $this->calls++;
+        });
     }
 }
 
@@ -77,7 +82,7 @@ function privacyAiFixture(bool $consented = true): array
     return [$user, $case, $question];
 }
 
-test('AI consent requires authentication and updates only the current users case', function () {
+test('legacy AI consent permits withdrawal but cannot grant ongoing permission', function () {
     [$user, $case] = privacyAiFixture(false);
 
     $this->putJson(route('bureaucracy.case.ai-consent.update'), ['consent' => true])
@@ -85,10 +90,9 @@ test('AI consent requires authentication and updates only the current users case
 
     $this->actingAs($user)
         ->putJson(route('bureaucracy.case.ai-consent.update'), ['consent' => true])
-        ->assertSuccessful()
-        ->assertExactJson(['consented' => true]);
+        ->assertUnprocessable();
 
-    expect($case->fresh()->ai_consent_at)->not->toBeNull()
+    expect($case->fresh()->ai_consent_at)->toBeNull()
         ->and($case->fresh()->ai_consent_withdrawn_at)->toBeNull();
 
     $this->actingAs($user)
@@ -128,7 +132,7 @@ test('no AI message is stored or dispatched without current explicit consent', f
             'question_id' => $question->id,
             'message' => 'I want a settlement permit.',
         ])
-        ->assertForbidden();
+        ->assertOk()->assertJsonPath('outcome', 'consent_required');
 
     expect($extractor->calls)->toBe(0)
         ->and(BureaucracyCaseMessage::where('case_id', $case->id)->count())->toBe(0);
@@ -143,7 +147,7 @@ test('no AI message is stored or dispatched without current explicit consent', f
             'question_id' => $question->id,
             'message' => 'I want a settlement permit.',
         ])
-        ->assertForbidden();
+        ->assertOk()->assertJsonPath('outcome', 'consent_required');
 
     expect($extractor->calls)->toBe(0)
         ->and(BureaucracyCaseMessage::where('case_id', $case->id)->count())->toBe(0);
@@ -170,7 +174,7 @@ test('a disabled or incomplete provider returns fixed unavailable copy without s
     Http::assertNothingSent();
 });
 
-test('accepted raw messages are encrypted hidden and expire within thirty days', function () {
+test('new requests retain no raw message and only a hidden short lived encrypted response', function () {
     $this->travelTo('2026-08-04 12:00:00');
     [$user, $case, $question] = privacyAiFixture();
     $extractor = new PrivacyTestExtractor;
@@ -181,17 +185,17 @@ test('accepted raw messages are encrypted hidden and expire within thirty days',
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
             'message' => $plaintext,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
         ])
         ->assertSuccessful();
 
-    $message = BureaucracyCaseMessage::where('case_id', $case->id)->sole();
-    $stored = DB::table('bureaucracy_case_messages')->where('id', $message->id)->value('content');
+    $permission = BureaucracyProcessingConsent::where('case_id', $case->id)->sole();
+    $stored = DB::table('bureaucracy_processing_consents')->where('id', $permission->id)->value('result');
 
-    expect($message->content)->toBe($plaintext)
-        ->and($message->toArray())->not->toHaveKey('content')
-        ->and($stored)->toBeString()->not->toBe($plaintext)->not->toContain('Private reference')
-        ->and($message->expires_at->lessThanOrEqualTo($message->created_at->addDays(30)))->toBeTrue()
-        ->and($message->expires_at->lessThanOrEqualTo(now()->addDays(30)))->toBeTrue();
+    expect(BureaucracyCaseMessage::where('case_id', $case->id)->count())->toBe(0)
+        ->and($permission->toArray())->not->toHaveKey('result')
+        ->and($stored)->toBeString()->not->toContain('settlement_permit')->not->toContain('Private reference')
+        ->and($permission->expires_at->lessThanOrEqualTo(now()->addMinutes(15)))->toBeTrue();
 });
 
 test('expired raw messages are pruned while unexpired messages remain', function () {
@@ -248,6 +252,7 @@ test('the burst limiter returns short-window fixed copy instead of the daily quo
             ->postJson(route('bureaucracy.case.messages.store'), [
                 'question_id' => $question->id,
                 'message' => "Burst attempt {$attempt}",
+                'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             ])
             ->assertSuccessful();
     }

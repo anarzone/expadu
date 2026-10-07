@@ -2,7 +2,6 @@
 
 namespace App\Bureaucracy\Cases;
 
-use App\Bureaucracy\Facts\CaseFactStore;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Bureaucracy\RuleSourcePolicy;
 use App\Enums\BureaucracyCoverageState;
@@ -17,7 +16,7 @@ use Illuminate\Support\Collection;
 final class CasePlanComposer
 {
     /**
-     * Bump when the composer files the same rules into different sections.
+     * Bump when composition semantics change, including deadline inputs.
      *
      * The snapshot signature covers the CASE — facts, matched rules, dates —
      * so a purely presentational change never invalidated it, and a stored
@@ -25,7 +24,7 @@ final class CasePlanComposer
      * That is how "Options you may qualify for" went on showing a universal
      * caveat after the routing for it was fixed.
      */
-    public const LayoutVersion = '2026-08-23.good-to-know';
+    public const LayoutVersion = '2026-09-08.explicit-unconditional-guidance';
 
     /** @var list<string> */
     private const SectionKeys = [
@@ -44,7 +43,6 @@ final class CasePlanComposer
     public function __construct(
         private NearMissRules $nearMissRules,
         private FactRegistry $factRegistry,
-        private CaseFactStore $factStore,
         private RuleSourcePolicy $sourcePolicy,
         private CaseAttributes $caseAttributes,
     ) {}
@@ -55,9 +53,7 @@ final class CasePlanComposer
     public function compose(BureaucracyCase $case, CaseMatchResult $result): array
     {
         $sections = array_fill_keys(self::SectionKeys, []);
-        $user = $case->relationLoaded('user')
-            ? $case->user
-            : $case->user()->firstOrFail();
+        $user = $case->exists ? $case->user()->firstOrFail() : $case->user;
         // Profile underneath, confirmed case facts on top — the same bag every
         // applies_if is judged against, so a card's paragraphs and documents
         // answer to exactly what the case knows.
@@ -95,7 +91,7 @@ final class CasePlanComposer
 
             $userTask = $userTasks->get($task->id);
             $section = $this->sectionFor($task, $userTask, $doneKeys);
-            $sections[$section][] = $this->taskItem($case, $user, $task, $audience);
+            $sections[$section][] = $this->taskItem($user, $task, $audience);
         }
 
         // One card per unanswered QUESTION, not per blocked rule. Two rules can
@@ -275,15 +271,8 @@ final class CasePlanComposer
     /**
      * @param  array<string, mixed>  $audience  what this case knows about the person
      */
-    private function taskItem(BureaucracyCase $case, User $user, Task $task, array $audience): array
+    private function taskItem(User $user, Task $task, array $audience): array
     {
-        $attributes = null;
-
-        if ($task->deadline_type?->value === 'fact_date' && is_string($task->deadline_fact_key)) {
-            $fact = $this->factStore->confirmedFact($case, $task->deadline_fact_key);
-            $attributes = [$task->deadline_fact_key => $fact?->value];
-        }
-
         return [
             'key' => $task->key,
             'content_version' => $task->content_version,
@@ -293,7 +282,7 @@ final class CasePlanComposer
             'phase' => $task->phase,
             'urgency' => $task->urgency?->value,
             'depends_on' => $task->depends_on ?? [],
-            'deadline' => $task->computeDeadlineFor($user, $attributes)?->toDateString(),
+            'deadline' => $task->computeDeadlineFor($user, $audience)?->toDateString(),
             'documents_required' => $this->documentsFor($task, $audience),
             'decision_options' => $task->decision_options ?? [],
             'how_to_steps' => $task->how_to_steps ?? [],

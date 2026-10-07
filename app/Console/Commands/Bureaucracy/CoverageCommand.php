@@ -3,9 +3,9 @@
 namespace App\Console\Commands\Bureaucracy;
 
 use App\Bureaucracy\BureaucracyPersonas;
+use App\Bureaucracy\Catalogue\CoverageManifest;
 use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\RuleSourcePolicy;
-use App\Enums\Situation;
 use App\Models\Task;
 use App\Profile\Applicability;
 use App\Profile\Profile;
@@ -16,15 +16,13 @@ use Illuminate\Support\Collection;
 /**
  * A demo-cum-audit of the bureaucracy path engine: runs the REAL ProfileEngine
  * + PathGenerator over every reachable expat persona and reports the exact task
- * list each one sees, then checks the structural invariants that must hold for
- * the catalogue to be "complete":
+ * list each synthetic profile matches, then checks legacy catalogue structure.
+ * This is not a legal coverage report or a projection of what users see:
  *
- *   1. every persona gets the Anmeldung root (nothing downstream works without it);
- *   2. every non-EU permit-bearing persona gets a residence-permit task;
- *   3. no applicable task depends_on a task that is NOT applicable to the same
- *      persona (that task would be blocked forever);
- *   4. every published task is reachable by at least one persona (no dead cards);
- *   5. every task that can be Unknown has a teaser question for the attribute it
+ *   - definite mismatches and missing prerequisites are structural errors;
+ *   - unanswered prerequisites remain separately visible, not false mismatches;
+ *   - every published task is reachable or awaits an answer in the audit sweep;
+ *   - every unreviewed task that can be Unknown has a teaser for the attribute it
  *      waits on (otherwise it is silently hidden, never asked).
  *
  * Read-only: it materialises no rows — personas are in-memory User instances the
@@ -41,9 +39,9 @@ use Illuminate\Support\Collection;
  */
 class CoverageCommand extends Command
 {
-    protected $signature = 'bureaucracy:coverage {--full : Retained for compatibility; the audit always sweeps every modifier} {--fail-on-gap : Exit non-zero if any invariant is violated (CI gate)}';
+    protected $signature = 'bureaucracy:coverage {--full : Retained for compatibility; the audit always sweeps every modifier} {--manifest : Read-only JSON inventory of live v2 coverage and review gaps} {--fail-on-gap : Exit non-zero if any invariant or reported coverage gap remains (CI gate)}';
 
-    protected $description = 'Run the path engine over every expat persona and report task coverage + gaps';
+    protected $description = 'Audit legacy catalogue structure; use --manifest for canonical source and coverage gaps';
 
     /**
      * @var Collection<string, Task>
@@ -59,6 +57,9 @@ class CoverageCommand extends Command
      */
     private array $authoritative = [];
 
+    /** @var array<string, true> */
+    private array $unresolvedDependencies = [];
+
     public function __construct(
         private ProfileEngine $engine,
         private PathGenerator $paths,
@@ -69,6 +70,16 @@ class CoverageCommand extends Command
 
     public function handle(): int
     {
+        if ($this->option('manifest')) {
+            $report = app(CoverageManifest::class)->current();
+            $this->line(json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+            $hasGaps = $report['counts']['total'] === 0 || $report['unidentified_units'] !== []
+                || collect($report['units'])->contains(fn ($unit) => $unit['coverage'] !== 'covered' || $unit['gaps'] !== []);
+
+            return $this->option('fail-on-gap') && $hasGaps ? self::FAILURE : self::SUCCESS;
+        }
+
+        $this->unresolvedDependencies = [];
         $this->tasks = Task::query()
             ->where('is_published', true)
             ->get()
@@ -92,6 +103,14 @@ class CoverageCommand extends Command
         foreach ($this->tasks as $key => $task) {
             foreach ($this->sourcePolicy->persistedErrors($task) as $error) {
                 $violations[] = "SOURCE REVIEW — `{$key}`: {$error}.";
+            }
+            // A missing edge is invalid even behind unanswered or dormant
+            // conditions; the persona loop only checks definite mismatches.
+            foreach ((array) ($task->depends_on ?? []) as $dependency) {
+                if (! is_string($dependency) || ! $this->tasks->has($dependency)) {
+                    $label = is_string($dependency) ? $dependency : '[invalid key]';
+                    $violations[] = "BROKEN DEP — `{$key}` needs `{$label}`, which is missing or unpublished.";
+                }
             }
         }
 
@@ -119,6 +138,13 @@ class CoverageCommand extends Command
 
         $this->renderMatrix($rows);
         $this->renderVerifiedPlanAdvisory($unverified);
+        if ($this->unresolvedDependencies !== []) {
+            $this->newLine();
+            $this->warn('Unresolved dependencies — these prerequisites need answers, not an assumed result:');
+            foreach (array_keys($this->unresolvedDependencies) as $dependency) {
+                $this->line("  · {$dependency}");
+            }
+        }
         $this->renderGaps($dead, $orphanTeasers, $violations);
 
         // A silently-hidden task is invariant 5: it prints a warning AND fails
@@ -307,26 +333,14 @@ class CoverageCommand extends Command
             fn (string $key) => str_ends_with($key, '.anmeldung')
                 || ($this->tasks[$key]->booking_service_key ?? null) === 'anmeldung'
         );
-        if (! $hasAnmeldung) {
-            $violations[] = "MISSING ANMELDUNG — {$label} has no address-registration root task.";
-        }
-
-        // Non-EU, purpose-bearing personas must reach a residence-permit task.
-        $needsPermit = ! $persona['is_eu']
-            && ! in_array($persona['situation'], [Situation::DigitalNomad, Situation::Other], true)
-            && $persona['entry_mode'] !== 'has_permit';
+        // A broad persona label cannot establish that registration or a new
+        // permit is required. Actual facts and reviewed canonical rules do that.
         $hasPermit = collect($yes)->contains(
             fn (string $key) => str_contains($key, 'permit') || str_contains($key, 'aufenthalt')
         );
-        if ($needsPermit && ! $hasPermit) {
-            $violations[] = "MISSING PERMIT — {$label} is non-EU yet reaches no residence-permit task.";
-        }
 
-        // What this persona would actually see in the VERIFIED plan. The
-        // invariants above are satisfied by any published task, reviewed or
-        // not — so a branch whose whole spine is `legacy` passes them while its
-        // verified plan is empty and the page falls through to the unreviewed
-        // catalogue. That is invisible unless it is counted separately.
+        // Separate source-approved synthetic matches from unreviewed ones.
+        // Neither count substitutes for the canonical person assessment.
         $approved = collect($yes)->filter(
             fn (string $key) => isset($this->authoritative[$key])
                 && $this->sourcePolicy->persistedErrors($this->tasks[$key]) === []
@@ -340,11 +354,17 @@ class CoverageCommand extends Command
             $unverified[] = $label;
         }
 
-        // Dependency integrity: every applicable task's prerequisites must also
-        // be applicable, else the task can never unblock.
+        // Only a definite mismatch is a broken dependency. Missing answers
+        // remain an explicit unresolved prerequisite, not proof of impossibility.
         foreach ($yes as $key) {
             foreach ((array) ($this->tasks[$key]->depends_on ?? []) as $dep) {
-                if (! isset($applicable[$dep])) {
+                if (! is_string($dep)) {
+                    // The catalogue-wide integrity pass already reports this.
+                    continue;
+                }
+                if (array_key_exists($dep, $verdict['unknown'])) {
+                    $this->unresolvedDependencies["`{$key}` awaits `{$dep}`"] = true;
+                } elseif (! isset($applicable[$dep])) {
                     $violations[] = "BROKEN DEP — {$label}: `{$key}` needs `{$dep}`, which does not apply to this persona.";
                 }
             }
@@ -356,7 +376,7 @@ class CoverageCommand extends Command
             'Tasks' => (string) count($yes),
             'Verified' => $approved->isEmpty() ? '0 ✗' : (string) $approved->count(),
             'Anmeldung' => $approvedAnmeldung ? '✓' : ($hasAnmeldung ? 'legacy' : '✗'),
-            'Permit' => $hasPermit ? '✓' : ($needsPermit ? '✗' : '—'),
+            'Permit' => $hasPermit ? '✓' : '—',
             'Teasers' => (string) count($verdict['unknown']),
         ];
     }
@@ -381,16 +401,15 @@ class CoverageCommand extends Command
             $rows,
         );
         $this->line('  Tasks = published cards reachable · Verified = of those, how many pass Task::authoritative()');
+        $this->line('  Synthetic structural audit only; this is not the user plan or proof of legal coverage.');
+        $this->line('  Use bureaucracy:coverage --manifest for canonical publication and remaining criterion gaps.');
     }
 
     /**
      * Branches whose address registration exists only as unreviewed content.
      *
-     * Advisory, not a gate: closing it means approving content against a legal
-     * source, which is the owner's call and not something a red CI run should
-     * pressure. But it must be said out loud every run — "✓ No gaps" while most
-     * branches show an empty verified plan is exactly the reassurance this
-     * harness exists to prevent.
+     * Structural success must not imply publication readiness. The canonical
+     * manifest is the strict source/criteria audit; this legacy table is not.
      *
      * @param  list<string>  $unverified
      */
@@ -407,8 +426,8 @@ class CoverageCommand extends Command
             $this->line("  · {$label} — reaches an Anmeldung task, but no APPROVED one.");
         }
 
-        $this->line('  These personas see an empty verified plan and fall through to the');
-        $this->line('  unreviewed catalogue. Not a gate: approving content is an owner decision.');
+        $this->line('  Unreviewed matches are not user-facing guidance. Confirmed answers may also');
+        $this->line('  be missing; the canonical manifest and plan distinguish those states.');
     }
 
     /**
@@ -423,8 +442,8 @@ class CoverageCommand extends Command
             // Deliberately scoped to what was actually checked. The old wording
             // was a flat "No gaps", printed directly under an advisory saying
             // most branches have an empty verified plan.
-            $this->info('✓ No STRUCTURAL gaps: every persona has a root + permit, all deps resolve, every task is reachable.');
-            $this->line('  Says nothing about whether that content is reviewed — see the verified-plan advisory above.');
+            $this->info('✓ No STRUCTURAL gaps: no definite broken dependencies or unaskable tasks in this synthetic sweep.');
+            $this->line('  Unanswered prerequisites remain unresolved; this does not establish legal coverage or publication readiness.');
 
             return;
         }

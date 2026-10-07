@@ -56,6 +56,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // These are JSON commands even when Accept is missing/spoofed. A
+        // validation redirect must not flash personal prompts into a session.
+        $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $error): bool => $request->is('composer/parse', 'composer/compose', 'bureaucracy/case/messages', 'bureaucracy/case/ai-consent', 'bureaucracy/v2/*', 'privacy/processing/*')
+            || $request->expectsJson());
+        $exceptions->dontFlash(['text', 'message', 'answer', 'answers', 'payload', 'value', 'facts', 'processing', 'token', 'label', 'evidence_reference']);
+
         // Report every unhandled exception to Sentry (Laravel 11 needs this
         // wired explicitly). The scrub + user-id attribution happen in
         // config/sentry.php `before_send`. 404s and validation aren't bugs, so

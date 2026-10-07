@@ -1,0 +1,18 @@
+# Structural mapping only. This does not approve prose or declare complete eligibility.
+version: '2026-09-08.1'
+entries:
+  core.anmeldung: {process_id: address.registration, topic: address, kind: preparation, coverage: partial, occurrence_fact: moved_in_at}
+  core.steuer_id: {process_id: tax.identification, topic: tax, kind: preparation, coverage: partial}
+  core.health_insurance: {process_id: health.coverage, topic: health, kind: preparation, coverage: partial}
+  core.bank_account: {process_id: banking.account, topic: money, kind: preparation, coverage: partial}
+  case.family.register_address: {process_id: address.registration, topic: address, kind: preparation, coverage: partial, occurrence_fact: moved_in_at}
+  case.family.first_permit.prepare: {process_id: residence.family.first, topic: residence, kind: preparation, coverage: partial, occurrence_fact: current_residence_title}
+  case.family.first_permit.sponsor_pending_review: {process_id: residence.family.first, topic: residence, kind: verification, coverage: partial, occurrence_fact: current_residence_title}
+  case.family.renew.continuing_household: {process_id: residence.family.renewal, topic: residence, kind: preparation, coverage: partial, occurrence_fact: current_residence_title}
+  case.family.settlement.spouse_18c_option: {process_id: residence.settlement.spouse, topic: residence, kind: option, coverage: partial, occurrence_fact: current_residence_title}
+  case.family.settlement.general_coming_up: {process_id: residence.settlement.general, topic: residence, kind: option, coverage: partial, occurrence_fact: current_residence_title}
+  case.family.independent_after_separation: {process_id: residence.family.independent, topic: residence, kind: verification, coverage: partial, occurrence_fact: current_residence_title, relevance_keys: [purpose, sponsor, current_residence_title, marital_household_continues]}
+  case.bc.first_application.prepare: {process_id: residence.blue_card.first, topic: residence, kind: preparation, coverage: partial, occurrence_fact: current_residence_title, action_requires_intent: true}
+  case.bc.first_application.submit: {process_id: residence.blue_card.first, topic: residence, kind: action, coverage: partial, occurrence_fact: current_residence_title, action_requires_intent: true}
+  case.bc.settlement.track_21_months: {process_id: residence.settlement.blue_card, topic: residence, kind: option, coverage: partial, occurrence_fact: current_residence_title}
+  case.bc.verify_status_source: {process_id: residence.status_verification, topic: residence, kind: context, coverage: partial}

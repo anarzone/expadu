@@ -8,6 +8,11 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Schedule::command('bureaucracy:prune-processing')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('bureaucracy:prune-interactions')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('bureaucracy:process-erasures')->everyMinute()->withoutOverlapping()->onOneServer();
+Schedule::command('bureaucracy:process-reassessments')->everyMinute()->withoutOverlapping()->onOneServer();
+
 // Transit & disruptions
 Schedule::command('news:scrape')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('transit:check-disruptions')->everyTenMinutes()->withoutOverlapping();

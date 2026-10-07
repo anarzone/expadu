@@ -40,7 +40,9 @@ class BureaucracyDemoController extends Controller
         $persona = collect($personas)->firstWhere('key', $key) ?? $personas[0];
 
         $user = BureaucracyPersonas::userFor($persona);
-        $profile = $profileEngine->build($user);
+        $case = $this->syntheticCase($user, $persona);
+        $user->setRelation('bureaucracyCase', $case);
+        $profile = $generator->profileFor($user);
 
         // In-memory user_tasks for every published task — buildPayload filters
         // them by applicability exactly like the live page. Set attributes
@@ -60,7 +62,6 @@ class BureaucracyDemoController extends Controller
 
         $payload = $page->buildPayload($user, $profile, $userTasks, $buergeramtService, $profileEngine, $generator, $eligibility);
 
-        $case = $this->syntheticCase($user, $persona);
         $casePlan = $presenter->preview(
             $case,
             $composer->compose($case, $result = $matcher->match($case)),

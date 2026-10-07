@@ -11,14 +11,8 @@ use App\Models\BureaucracyFactConflict;
 use App\Models\User;
 
 /**
- * Onboarding is only safe to strip once a skipped answer can be finished
- * later. It could not be: QuestionSelector drives the case plan, so it only
- * looks at authoritative rules, and a fact gating a published-but-unapproved
- * branch was never asked for by anything.
- *
- * Measured against the real catalogue, that hole is `entry_mode` — 17
- * `applies_if` references, more than any other fact — invisible to standard
- * employees, students and freelancers.
+ * Skipped answers remain available through essential orientation or approved
+ * rule dependencies. Unapproved content must not create an endless interview.
  */
 beforeEach(function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
@@ -53,7 +47,7 @@ function pendingCase(array $facts): BureaucracyCase
     return $case;
 }
 
-it('asks for a fact the case plan is blind to', function (string $label, array $facts) {
+it('offers essential orientation without interviewing from unapproved branch rules', function (string $label, array $facts) {
     $case = pendingCase($facts);
 
     $planQuestions = app(QuestionSelector::class)->rankedFactKeys(
@@ -61,11 +55,15 @@ it('asks for a fact the case plan is blind to', function (string $label, array $
         app(CaseMatcher::class)->match($case),
     );
 
-    // The plan has nothing to ask: no approved rule covers this branch.
-    expect($planQuestions)->toBe([], "{$label} unexpectedly has plan questions");
+    // Approved basic preparation applies across purposes, even when the
+    // residence route has no reviewed module. It must not ask legacy selectors.
+    expect($planQuestions)->toEqualCanonicalizing([
+        'arrival_planned', 'registration_status', 'health_coverage_confirmed',
+        'tax_id_available', 'bank_account_help_needed',
+    ], "{$label}: only approved basic preparation should ask follow-ups");
 
-    // The prompt does, because a published rule is still waiting on it.
-    expect(app(PendingAnswers::class)->forCase($case))->toContain('entry_mode');
+    expect(app(PendingAnswers::class)->forCase($case))->toContain('residence_title_expires_at')
+        ->not->toContain('entry_mode');
 })->with([
     'standard employee' => ['standard employee', [
         'citizenship_group' => 'non_eu', 'purpose' => 'employment',
@@ -104,7 +102,7 @@ it('never asks a question that could not change what the user sees', function ()
         ->not->toContain('marital_household_continues');
 });
 
-it('covers everything the case plan already asks, and more', function () {
+it('covers the approved questions plus missing essential orientation', function () {
     $case = pendingCase([
         'citizenship_group' => 'non_eu', 'purpose' => 'employment',
         'permit_track' => 'blue_card', 'current_residence_title' => 'blue_card',
@@ -118,7 +116,8 @@ it('covers everything the case plan already asks, and more', function () {
 
     expect($planQuestions)->not->toBeEmpty()
         ->and(array_diff($planQuestions, $pending))->toBe([])
-        ->and($pending)->toContain('entry_mode');
+        ->and($pending)->toContain('residence_title_expires_at')
+        ->and($pending)->not->toContain('entry_mode');
 });
 
 it('leaves a contested fact to the conflict flow', function () {
@@ -155,10 +154,8 @@ it('ranks by the registry priority, not catalogue order', function () {
     expect($pending)->not->toBeEmpty()->and($priorities)->toBe($sorted);
 });
 
-it('surfaces the fallback question on the Bureaucracy page itself', function () {
-    // A non-EU student who never answered how they entered the country. No
-    // approved rule covers this branch, so before the fallback existed the page
-    // rendered with nothing to ask and the answer stayed blank forever.
+it('surfaces an essential orientation question on the Bureaucracy page itself', function () {
+    // Arrival orientation is useful without approving a student's residence route.
     $user = User::factory()->create([
         'situation' => 'student',
         'is_eu' => false,
@@ -177,15 +174,15 @@ it('surfaces the fallback question on the Bureaucracy page itself', function () 
     $question = $response->viewData('page')['props']['casePlan']['next_question'] ?? null;
 
     // The payload carries the rendered question, not the fact key, so assert
-    // against the registry's own wording for entry_mode.
-    $expected = app(FactRegistry::class)->definition('entry_mode');
+    // against the registry's own wording for the highest-priority question.
+    $expected = app(FactRegistry::class)->definition('arrival_planned');
 
     expect($question)->not->toBeNull()
         ->and($question['question'])->toBe($expected->question)
-        ->and($question['options'])->not->toBeEmpty();
+        ->and($question['type'])->toBe('boolean');
 });
 
-it('accepts the answer to a fallback question and records the fact', function () {
+it('accepts the offered orientation answer and records the fact', function () {
     // The guard in AnswerCaseQuestion re-derives "the question we are asking"
     // and rejects anything else, so a fallback question was posed and then
     // refused with a 403. Asking something the app will not accept an answer
@@ -204,23 +201,23 @@ it('accepts the answer to a fallback question and records the fact', function ()
     $this->actingAs($user)->get('/bureaucracy')->assertSuccessful();
 
     $question = BureaucracyCaseQuestion::query()
-        ->where('fact_key', 'entry_mode')
+        ->where('fact_key', 'arrival_planned')
         ->latest('id')
         ->firstOrFail();
 
     $this->actingAs($user)
-        ->post("/bureaucracy/case/questions/{$question->id}", ['value' => 'd_visa'])
+        ->post("/bureaucracy/case/questions/{$question->id}", ['value' => false])
         ->assertRedirect();
 
     expect($question->fresh()->answered_at)->not->toBeNull()
         ->and(BureaucracyCaseFact::query()
             ->where('case_id', $question->case_id)
-            ->where('key', 'entry_mode')
+            ->where('key', 'arrival_planned')
             ->where('state', 'confirmed')
             ->latest('id')
             ->first()
-            ?->value)->toBe('d_visa');
+            ?->value)->toBeFalse();
 
     // And it stops being asked.
-    expect(app(PendingAnswers::class)->forCase($question->case))->not->toContain('entry_mode');
+    expect(app(PendingAnswers::class)->forCase($question->case))->not->toContain('arrival_planned');
 });

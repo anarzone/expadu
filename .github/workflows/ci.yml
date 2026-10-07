@@ -404,7 +404,7 @@ jobs:
             docker compose up -d --force-recreate
             sleep 5
             docker exec staging-app php artisan migrate --force
-            docker exec staging-app php artisan bureaucracy:import-tasks --prune
+            docker exec staging-app php artisan bureaucracy:import-tasks --retire-missing
 
   deploy-production:
     name: Deploy to Production
@@ -425,4 +425,4 @@ jobs:
             docker compose up -d app
             sleep 5
             docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --prune
+            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --retire-missing

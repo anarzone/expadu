@@ -7,10 +7,23 @@ use App\Composer\PlanScorer;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
 use App\Composer\TravelEstimator;
+use App\Models\User;
+use App\Privacy\ProcessingConsentStore;
+use App\Privacy\ProcessingPurpose;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Tests\Support\ExternalProcessingFixtures;
+
+function rankWithConsent(Constraints $constraints, array $candidates, array $preferences = [], ?string $requestKey = null): array
+{
+    $ranker = app(AnthropicCandidateRanker::class);
+    $permit = app(ProcessingConsentStore::class)->grant(test()->rankingActor, ProcessingPurpose::ComposerRank,
+        $ranker->processingContext($constraints, $candidates, $preferences), ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerRank, $requestKey));
+
+    return $ranker->rank($constraints, $candidates, $preferences, $permit);
+}
 
 function llmCandidate(string $id, array $overrides = []): Candidate
 {
@@ -56,11 +69,15 @@ function rankingResponse(array $ids): array
 }
 
 beforeEach(function () {
+    $this->rankingActor = User::factory()->create();
     config()->set('services.composer_llm', [
         'enabled' => true,
         'key' => 'test-key',
         'model' => 'claude-sonnet-5-'.Str::uuid(),
         'timeout' => 8,
+        'processor_name' => 'Synthetic processor',
+        'processor_privacy_url' => 'https://processor.example.test/privacy',
+        'prompt_version' => 'synthetic.1',
     ]);
 });
 
@@ -69,7 +86,7 @@ test('a valid grounded ranking changes which otherwise equal candidate is select
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:preferred', 'spot:default']))]);
     $candidates = [llmCandidate('spot:default'), llmCandidate('spot:preferred')];
 
-    $ranking = app(AnthropicCandidateRanker::class)->rank(llmConstraints(), $candidates);
+    $ranking = rankWithConsent(llmConstraints(), $candidates);
     $context = new ScoringContext(false, [], llmRankWeights: $ranking);
     $plan = (new SlotFiller(new PlanScorer(new TravelEstimator), new TravelEstimator))
         ->fill(llmConstraints(), $candidates, $context, 50.94, 6.95);
@@ -84,7 +101,7 @@ test('sequence preference is consumed again after each placed slot', function ()
         llmCandidate('spot:b', ['typicalDurationMin' => 30]),
         llmCandidate('spot:c', ['typicalDurationMin' => 30]),
     ];
-    $ranking = app(AnthropicCandidateRanker::class)->rank(llmConstraints(), $candidates);
+    $ranking = rankWithConsent(llmConstraints(), $candidates);
     $plan = (new SlotFiller(new PlanScorer(new TravelEstimator), new TravelEstimator))
         ->fill(llmConstraints(), $candidates, new ScoringContext(false, [], llmRankWeights: $ranking), 50.94, 6.95);
 
@@ -95,7 +112,7 @@ test('sequence preference is consumed again after each placed slot', function ()
 test('invented and duplicate ids reject the whole ranking', function (array $ids) {
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse($ids))]);
 
-    expect(app(AnthropicCandidateRanker::class)->rank(llmConstraints(), [llmCandidate('spot:real')]))->toBe([]);
+    expect(rankWithConsent(llmConstraints(), [llmCandidate('spot:real')]))->toBe([]);
 })->with([
     'invented' => [['spot:invented']],
     'duplicate' => [['spot:real', 'spot:real']],
@@ -104,13 +121,13 @@ test('invented and duplicate ids reject the whole ranking', function (array $ids
 test('an api failure falls back to no ranking', function () {
     Http::fake(['api.anthropic.com/*' => Http::response(['error' => 'unavailable'], 503)]);
 
-    expect(app(AnthropicCandidateRanker::class)->rank(llmConstraints(), [llmCandidate('spot:real')]))->toBe([]);
+    expect(rankWithConsent(llmConstraints(), [llmCandidate('spot:real')]))->toBe([]);
 });
 
 test('the request contains grounded candidate facts without user pii or origin coordinates', function () {
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:real']))]);
 
-    app(AnthropicCandidateRanker::class)->rank(llmConstraints(), [llmCandidate('spot:real')]);
+    rankWithConsent(llmConstraints(), [llmCandidate('spot:real')]);
 
     Http::assertSent(function (Request $request): bool {
         $json = json_encode($request->data(), JSON_THROW_ON_ERROR);
@@ -128,7 +145,7 @@ test('the request contains grounded candidate facts without user pii or origin c
 test('sonnet request disables thinking and forces the ranking tool', function () {
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:real']))]);
 
-    app(AnthropicCandidateRanker::class)->rank(llmConstraints(), [llmCandidate('spot:real')]);
+    rankWithConsent(llmConstraints(), [llmCandidate('spot:real')]);
 
     Http::assertSent(fn (Request $request): bool => $request['thinking'] === ['type' => 'disabled']
         && $request['tool_choice'] === ['type' => 'tool', 'name' => 'rank_candidates']);
@@ -138,7 +155,7 @@ test('partial ordering and wrong stop contract fall back', function (array $resp
     Http::fake(['api.anthropic.com/*' => Http::response($response)]);
     $candidates = [llmCandidate('spot:a'), llmCandidate('spot:b')];
 
-    expect(app(AnthropicCandidateRanker::class)->rank(llmConstraints(), $candidates))->toBe([]);
+    expect(rankWithConsent(llmConstraints(), $candidates))->toBe([]);
 })->with([
     'partial' => [rankingResponse(['spot:a'])],
     'wrong stop' => [array_replace(rankingResponse(['spot:a', 'spot:b']), ['stop_reason' => 'end_turn'])],
@@ -160,16 +177,16 @@ test('diverse shortlist reserves events and one candidate from every available c
         return Http::response(rankingResponse($ids));
     });
 
-    expect(app(AnthropicCandidateRanker::class)->rank(llmConstraints(), $candidates))->toHaveCount(40);
+    expect(rankWithConsent(llmConstraints(), $candidates))->toHaveCount(40);
 });
 
 test('cache varies with grounded facts and anonymous preference vector', function () {
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:real']))]);
     $ranker = app(AnthropicCandidateRanker::class);
 
-    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'First'])], ['category_affinities' => ['park' => 0.2]]);
-    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'Changed'])], ['category_affinities' => ['park' => 0.2]]);
-    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'Changed'])], ['category_affinities' => ['park' => 0.9]]);
+    rankWithConsent(llmConstraints(), [llmCandidate('spot:real', ['description' => 'First'])], ['category_affinities' => ['park' => 0.2]]);
+    rankWithConsent(llmConstraints(), [llmCandidate('spot:real', ['description' => 'Changed'])], ['category_affinities' => ['park' => 0.2]]);
+    rankWithConsent(llmConstraints(), [llmCandidate('spot:real', ['description' => 'Changed'])], ['category_affinities' => ['park' => 0.9]]);
 
     Http::assertSentCount(3);
 });
@@ -184,7 +201,7 @@ test('grounding includes capped descriptive quality and safe travel facts inside
     ]);
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['event:real']))]);
 
-    app(AnthropicCandidateRanker::class)->rank(llmConstraints(), [$candidate]);
+    rankWithConsent(llmConstraints(), [$candidate]);
 
     Http::assertSent(function (Request $request): bool {
         $content = $request['messages'][0]['content'];
@@ -196,12 +213,13 @@ test('grounding includes capped descriptive quality and safe travel facts inside
     });
 });
 
-test('successful rankings are briefly cached without a second provider call', function () {
+test('successful rankings replay only within the same consented request', function () {
+    $requestKey = (string) Str::uuid();
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:real']))]);
     $ranker = app(AnthropicCandidateRanker::class);
 
-    expect($ranker->rank(llmConstraints(), [llmCandidate('spot:real')]))->not->toBeEmpty();
-    expect($ranker->rank(llmConstraints(), [llmCandidate('spot:real')]))->not->toBeEmpty();
+    expect(rankWithConsent(llmConstraints(), [llmCandidate('spot:real')], [], $requestKey))->not->toBeEmpty();
+    expect(rankWithConsent(llmConstraints(), [llmCandidate('spot:real')], [], $requestKey))->not->toBeEmpty();
 
     Http::assertSentCount(1);
 });
@@ -210,7 +228,7 @@ test('disabled ranking makes no http request', function () {
     config()->set('services.composer_llm.enabled', false);
     Http::fake();
 
-    expect(app(AnthropicCandidateRanker::class)->rank(llmConstraints(), [llmCandidate('spot:real')]))->toBe([]);
+    expect(rankWithConsent(llmConstraints(), [llmCandidate('spot:real')]))->toBe([]);
     Http::assertNothingSent();
 });
 

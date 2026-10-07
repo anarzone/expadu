@@ -4,7 +4,7 @@ namespace App\Composer;
 
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 
 /**
  * The one plan a user has pinned to their Today screen. "Save to Today" in the
@@ -17,10 +17,7 @@ class TodayPlanStore
 {
     private const MAX_TTL_HOURS = 72;
 
-    private function key(User $user): string
-    {
-        return "composer:today:{$user->id}";
-    }
+    public function __construct(private PrivatePlanCache $cache, private ActivePlanStore $active) {}
 
     /**
      * Pin a composed plan (its stored array form) to Today.
@@ -32,6 +29,7 @@ class TodayPlanStore
         if (empty($plan['slots'])) {
             return;
         }
+        $this->active->assertCurrent($user, $plan);
 
         $start = $plan['constraints']['window_start'] ?? null;
         $until = is_string($start)
@@ -43,7 +41,10 @@ class TodayPlanStore
             min(self::MAX_TTL_HOURS * 3600, (int) CarbonImmutable::now()->diffInSeconds($until, false)),
         );
 
-        Cache::put($this->key($user), [
+        $this->active->store($user, 'today', [
+            'constraints' => $plan['constraints'],
+            'appointment_revision' => $plan['appointment_revision'],
+            'schedule_feasible' => $plan['schedule_feasible'] ?? true,
             'window_start' => $start,
             'prompt' => $prompt,
             'slots' => array_values($plan['slots']),
@@ -58,7 +59,7 @@ class TodayPlanStore
      */
     public function get(User $user): ?array
     {
-        $data = Cache::get($this->key($user));
+        $data = $this->cache->get($user, 'today');
         if (! is_array($data) || empty($data['slots'])) {
             return null;
         }
@@ -67,7 +68,19 @@ class TodayPlanStore
             ? CarbonImmutable::parse($data['window_start'])->isoFormat('dddd')
             : 'day';
 
+        try {
+            $this->active->assertCurrent($user, $data);
+        } catch (ValidationException) {
+            return ['state' => 'needs_review', 'weekday' => $weekday, 'prompt' => null, 'slots' => [],
+                'message' => 'Your appointments changed. Rebuild your day plan to use the current times.', 'action' => 'recompose'];
+        }
+
         return [
+            'state' => 'current',
+            'schedule_feasible' => $data['schedule_feasible'] ?? true,
+            'notices' => ($data['schedule_feasible'] ?? true) ? [] : [[
+                'code' => 'appointment_conflict', 'text' => 'Your recorded appointments overlap or cannot all be reached in time. Review the timings before following this plan.',
+            ]],
             'weekday' => $weekday,
             'prompt' => is_string($data['prompt'] ?? null) ? $data['prompt'] : null,
             'slots' => array_values($data['slots']),
@@ -76,6 +89,6 @@ class TodayPlanStore
 
     public function forget(User $user): void
     {
-        Cache::forget($this->key($user));
+        $this->cache->forget($user, 'today');
     }
 }

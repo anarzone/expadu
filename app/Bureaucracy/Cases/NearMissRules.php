@@ -203,6 +203,7 @@ final class NearMissRules
             'family_reunification' => 'a family reunification permit',
             'settlement_permit_9' => 'permanent residence (§9)',
             'settlement_permit_18c' => 'permanent residence (§18c)',
+            'settlement_permit_unknown' => 'permanent residence (section not known)',
             'settlement_permit' => 'a settlement permit',
             'renew_current_title' => 'renewing your current title',
             'understand_options' => 'understanding your options',

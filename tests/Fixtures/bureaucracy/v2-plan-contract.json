@@ -1,0 +1,27 @@
+{
+    "fixture_kind": "synthetic_contract_expectations_not_legal_guidance",
+    "schema_version": "bureaucracy.plan.1",
+    "required_types": {
+        "person_id": "integer",
+        "jurisdiction": "string",
+        "assessment_revision": "string",
+        "evaluated_at": "string",
+        "next_reassessment_at": "string",
+        "overview": "array",
+        "questions": "array",
+        "actions": "array",
+        "processes": "array",
+        "history": "array",
+        "topics": "array",
+        "guidance": "array",
+        "progress": "array",
+        "timeline": "array",
+        "coverage": "array",
+        "paperwork": "array",
+        "scopes": "array",
+        "ai": "array"
+    },
+    "coverage_states": ["partial", "not_activated", "outside_coverage"],
+    "progress_buckets": ["todo", "blocked", "waiting", "completed"],
+    "future_capabilities": ["translation", "email_writing", "tax_preparation", "upload", "ocr"]
+}

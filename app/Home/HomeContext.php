@@ -50,6 +50,8 @@ class HomeContext
         public readonly array $leaveByAnchors = [],
         /** @var list<int> ids of today's events the user has a reminder or attendance for */
         public readonly array $intendedEventIds = [],
+        /** Explicit self-plan projection; family plans are selected separately. */
+        public readonly ?array $bureaucracyPlan = null,
     ) {}
 
     public function hasOrigin(): bool

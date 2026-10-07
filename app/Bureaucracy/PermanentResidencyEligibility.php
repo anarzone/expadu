@@ -3,53 +3,21 @@
 namespace App\Bureaucracy;
 
 use App\Profile\Profile;
-use Carbon\Carbon;
 
 /**
- * Niederlassungserlaubnis (permanent-residency) eligibility check. Pure date
- * math over the resolved Profile: when a non-EU resident has held their permit
- * past their track's threshold, they may apply. The remaining statutory
- * conditions (pension months, B1 German, secured livelihood) are listed in the
- * track note for the user to confirm — never asserted, since Cologne's counters
- * only mention NE if you ask.
- *
- * Single source of truth shared by the bureaucracy page hint
- * (BureaucracyController::index) and the good-news producer
- * (PermanentResidencyEvaluator), so the two never drift.
+ * Compatibility adapter during the reviewed-assessor cutover.
+ * A Profile does not establish the complete statutory criteria. Personalised
+ * options come from the source-checked case plan, never this duration calculator.
  */
 class PermanentResidencyEligibility
 {
     /**
      * @return array{months_held: int, threshold_months: int, track_note: string}|null
-     *                                                                                 null when the user is EU, has not recorded a permit-held date, has
-     *                                                                                 already declared themselves settled, or has not yet crossed the bar.
+     *                                                                                 null until the caller supplies a reviewed assessment, not just a Profile.
      */
     public function for(Profile $profile): ?array
     {
-        // Already declared settled (and typically already holding PR) — don't
-        // nudge them toward qualifying for what they have.
-        if (($profile->attributes['settled_at'] ?? null) !== null) {
-            return null;
-        }
-
-        $heldSince = $profile->attributes['permit_held_since'] ?? null;
-        if ($heldSince === null || $profile->isEu) {
-            return null;
-        }
-
-        [$threshold, $trackNote] = $this->trackThreshold($profile);
-
-        $monthsHeld = (int) now()->startOfDay()->diffInMonths(Carbon::parse($heldSince), true);
-
-        if ($monthsHeld < $threshold) {
-            return null;
-        }
-
-        return [
-            'months_held' => $monthsHeld,
-            'threshold_months' => $threshold,
-            'track_note' => $trackNote,
-        ];
+        return null;
     }
 
     /**
@@ -83,25 +51,5 @@ class PermanentResidencyEligibility
                 'note' => 'The general route opens after 5 years (§9).',
             ],
         ];
-    }
-
-    /**
-     * The track-specific NE threshold (months) + the note we surface so the
-     * user can confirm the conditions date math alone cannot prove.
-     *
-     * @return array{0: int, 1: string}
-     */
-    private function trackThreshold(Profile $profile): array
-    {
-        $tracks = self::tracks();
-
-        $key = match (true) {
-            ($profile->attributes['permit_track'] ?? null) === 'blue_card' => 'blue_card',
-            ($profile->attributes['sponsor'] ?? null) === 'german' && ($profile->attributes['purpose'] ?? null) === 'family' => 'family_of_german',
-            ($profile->attributes['purpose'] ?? null) === 'employment' => 'skilled_worker',
-            default => 'general',
-        };
-
-        return [$tracks[$key]['months'], $tracks[$key]['note']];
     }
 }

@@ -119,8 +119,8 @@ tasks:
   - title: Prepare the evidence for your first Blue Card application
     key: case.bc.first_application.prepare
     description: |
-      You currently hold a national D visa and want to change to an EU Blue Card.
-      Prepare the passport, employment contract or binding offer, qualification
+      If you hold a national D visa and plan to apply for an EU Blue Card,
+      prepare the passport, employment contract or binding offer, qualification
       evidence, health-insurance evidence, and any professional licence the Cologne
       authority requests. The job offer must cover at least six months and the
       statutory Blue Card conditions still have to be checked. This is preparation,
@@ -129,7 +129,10 @@ tasks:
     urgency: critical
     deadline_type: fact_date
     deadline_fact_key: visa_expires_at
+    applies_if_mode: explicit
     applies_if:
+      citizenship_group: non_eu
+      purpose: employment
       current_residence_title: national_d_visa
       case_goal: blue_card
       entry_mode: d_visa
@@ -144,10 +147,10 @@ tasks:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
+    reviewed_by: owner_authorised_source_review
+    content_version: 2026-09-08.1
     source_verification: dual_source
-    verified_at: '2026-08-03'
+    verified_at: '2026-09-08'
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
@@ -155,15 +158,18 @@ tasks:
   - title: Submit the Blue Card application before your D visa expires
     key: case.bc.first_application.submit
     description: |
-      File the Cologne online residence application before the expiry date shown on
-      your national D visa. Keep the submission confirmation and continue checking
+      If you are pursuing an EU Blue Card from a national D visa, file the Cologne
+      residence application before the visa expires. Keep the submission confirmation and continue checking
       official messages for requests or an appointment. The authority decides whether
       every requirement in §18g is met; Expadu does not decide eligibility.
     phase: first_30_days
     urgency: critical
     deadline_type: fact_date
     deadline_fact_key: visa_expires_at
+    applies_if_mode: explicit
     applies_if:
+      citizenship_group: non_eu
+      purpose: employment
       current_residence_title: national_d_visa
       case_goal: blue_card
       entry_mode: d_visa
@@ -172,27 +178,30 @@ tasks:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
+    reviewed_by: owner_authorised_source_review
+    content_version: 2026-09-08.1
     source_verification: dual_source
-    verified_at: '2026-08-03'
+    verified_at: '2026-09-08'
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: primary, label: '§81 AufenthG — Applying for a residence title', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
 
   - title: Track the 21-month Blue Card settlement route
     key: case.bc.settlement.track_21_months
     type: info
     description: |
-      With B1 German and 12 documented qualifying months, you are not yet eligible
-      under the 21-month Blue Card route. Keep tracking complete months of qualifying
+      With B1 German and fewer than 21 documented qualifying months, the time
+      requirement for the 21-month Blue Card route is not yet met. Track qualifying
       employment and pension or equivalent contributions. At 21 months, the authority
       must still verify the remaining conditions referenced by §18c(2), including the
       applicable §9 checks. Time in Germany alone is not the statutory counter.
     phase: ongoing
     urgency: medium
     deadline_type: none
+    applies_if_mode: explicit
     applies_if:
+      citizenship_group: non_eu
       current_residence_title: blue_card
       case_goal: settlement_permit
       blue_card_qualifying_months: {in: [12, 13, 14, 15, 16, 17, 18, 19, 20]}
@@ -202,10 +211,10 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
+    reviewed_by: owner_authorised_source_review
+    content_version: 2026-09-08.1
     source_verification: dual_source
-    verified_at: '2026-08-03'
+    verified_at: '2026-09-08'
     legal_sources:
       - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
@@ -214,6 +223,8 @@ tasks:
     key: case.bc.verify_status_source
     type: info
     coverage_scope: universal
+    applies_if_mode: explicit
+    applies_if: {}
     description: |
       Expadu does not have a reviewed case rule for every residence title. Check the
       exact legal basis printed on the card or visa and confirm the route with the
@@ -223,14 +234,13 @@ tasks:
     urgency: high
     deadline_type: none
     links:
-      - https://www.stadt-koeln.de/service/produkte/20321/index.html
-      - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
+      - https://www.stadt-koeln.de/service/adressen/auslaenderamt
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
+    reviewed_by: owner_authorised_source_review
+    content_version: 2026-09-08.1
     source_verification: dual_source
-    verified_at: '2026-08-03'
+    verified_at: '2026-09-08'
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
-      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+      - {kind: implementation, label: 'Stadt Köln · Ausländeramt contact', url: 'https://www.stadt-koeln.de/service/adressen/auslaenderamt'}

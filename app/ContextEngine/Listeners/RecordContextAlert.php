@@ -3,6 +3,7 @@
 namespace App\ContextEngine\Listeners;
 
 use App\Alerts\AlertClassifier;
+use App\Bureaucracy\GuidancePublication;
 use App\ContextEngine\ContextNotificationFactory;
 use App\ContextEngine\ScoredAction;
 use App\Events\Context\ScoredActionInserted;
@@ -65,6 +66,8 @@ class RecordContextAlert
                 'title' => $title,
                 'body' => (string) ($data['body'] ?? $data['summary'] ?? ''),
                 'deep_link' => $data['url'] ?? null,
+                'guidance_reference' => $action->type === 'bureaucracy_task'
+                    ? app(GuidancePublication::class)->referenceFor($action) : null,
             ],
         );
     }

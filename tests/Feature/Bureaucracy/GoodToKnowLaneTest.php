@@ -68,6 +68,7 @@ it('still calls a real route an option', function () {
     $sections = planSectionsFor([
         'citizenship_group' => 'non_eu',
         'purpose' => 'family',
+        'sponsor' => 'non_eu',
         'current_residence_title' => 'family_reunification',
         'case_goal' => 'renew_current_title',
         'sponsor_current_title' => 'settlement_permit_18c',

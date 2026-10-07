@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DeadlineType;
 use App\Enums\TaskStatus;
 use Carbon\Carbon;
 use Database\Factories\UserTaskFactory;
@@ -16,15 +17,6 @@ class UserTask extends Model
 {
     /** @use HasFactory<UserTaskFactory> */
     use HasFactory;
-
-    /**
-     * A deadline only weeks past is a fresh, chase-it miss; once it's months
-     * past, the precise "overdue by N days" countdown is noise (and the rule
-     * itself has often changed — e.g. a foreign licence past its 6-month
-     * conversion window). Beyond this many days overdue a deadline is "lapsed":
-     * softened and dropped out of the urgent hero, but still a visible loose end.
-     */
-    public const STALE_OVERDUE_DAYS = 60;
 
     /**
      * @return array<string, string>
@@ -55,15 +47,11 @@ class UserTask extends Model
     }
 
     /**
-     * Compute the absolute deadline date for this user+task pair. A booked
-     * appointment IS the deadline — reminders fire off it automatically.
+     * Compute the underlying deadline. An appointment is a separate event and
+     * cannot establish that an application was submitted or a deadline extended.
      */
     public function getAbsoluteDeadlineAttribute(): ?Carbon
     {
-        if ($this->appointment_at !== null) {
-            return Carbon::parse($this->appointment_at);
-        }
-
         $task = $this->task;
         $user = $this->user;
 
@@ -98,10 +86,12 @@ class UserTask extends Model
         $deadline = $this->absolute_deadline;
 
         if (! $deadline) {
+            $unknown = $this->task !== null && $this->task->deadline_type !== DeadlineType::None;
+
             return [
                 'days_remaining' => null,
-                'urgency' => 'none',
-                'label' => 'No deadline',
+                'urgency' => $unknown ? 'unknown' : 'none',
+                'label' => $unknown ? 'Deadline date unknown' : 'No deadline',
                 'priority_boost' => 0,
             ];
         }
@@ -110,19 +100,6 @@ class UserTask extends Model
 
         if ($daysRemaining < 0) {
             $daysOverdue = abs($daysRemaining);
-
-            // Lapsed: months past the deadline — the window has clearly closed.
-            // Stop the alarming countdown and drop it out of the urgent hero
-            // (TileComposer only tiles overdue/critical/urgent); it stays on the
-            // checklist as a loose end, just no longer "right now".
-            if ($daysOverdue > self::STALE_OVERDUE_DAYS) {
-                return [
-                    'days_remaining' => $daysRemaining,
-                    'urgency' => 'lapsed',
-                    'label' => 'Overdue — well past the deadline',
-                    'priority_boost' => 5,
-                ];
-            }
 
             return [
                 'days_remaining' => $daysRemaining,

@@ -17,7 +17,7 @@ class BureaucracyCaseQuestionController extends Controller
         $conflict = $answerCaseQuestion->answer(
             $request->user(),
             $question,
-            $request->validated('value'),
+            $request->canonicalValue(),
         );
 
         if ($conflict !== null) {

@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands\Bureaucracy;
 
+use App\Bureaucracy\Catalogue\OfficialLinkProbe;
 use App\Models\Task;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Every link the bureaucracy surface hands a user is an official source, and a
@@ -63,7 +63,7 @@ class CheckLinksCommand extends Command
 
         if ($unverifiable !== []) {
             $this->newLine();
-            $this->warn('Could not verify ('.count($unverifiable).') — connection or TLS, not a 404:');
+            $this->warn('Could not verify ('.count($unverifiable).') — host review, redirect, connection or temporary response:');
             $this->table(
                 ['Reason', 'URL', 'Used by'],
                 array_map(fn (array $r): array => [$r['reason'], $r['url'], $r['owners']], $unverifiable),
@@ -117,21 +117,8 @@ class CheckLinksCommand extends Command
      */
     private function probe(string $url): array
     {
-        try {
-            // Some official sites reject non-browser agents outright.
-            $status = Http::withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; ExpaduLinkCheck/1.0)'])
-                ->timeout((int) $this->option('timeout'))
-                ->get($url)
-                ->status();
+        $result = app(OfficialLinkProbe::class)->check($url, (int) $this->option('timeout'));
 
-            return [$status, ''];
-        } catch (\Throwable $e) {
-            $message = $e->getMessage();
-            $reason = str_contains($message, 'cURL error 60') || str_contains($message, 'SSL')
-                ? 'TLS / CA bundle'
-                : (str_contains($message, 'timed out') ? 'timeout' : 'connection');
-
-            return [0, $reason];
-        }
+        return [$result['status'] === 'unverifiable' ? 0 : $result['http_status'], $result['reason'] ?? ''];
     }
 }

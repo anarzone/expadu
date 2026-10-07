@@ -26,6 +26,11 @@ final readonly class CaseFactExtractionResult
         return new self('unknown', null, false);
     }
 
+    public static function unclearSubject(): self
+    {
+        return new self('unclear_subject', null, false);
+    }
+
     public static function offTopic(): self
     {
         return new self('off_topic', null, false);

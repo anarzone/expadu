@@ -9,25 +9,29 @@ use App\Profile\ProfileEngine;
 use Illuminate\Support\Facades\Artisan;
 
 /**
- * The catalogue must yield a complete, dependency-valid path for EVERY expat
- * persona the engine can represent. `bureaucracy:coverage --full --fail-on-gap`
- * runs the real ProfileEngine + PathGenerator across the whole persona
+ * The legacy structural audit runs ProfileEngine + PathGenerator across its
+ * synthetic persona
  * cross-product (situation × citizenship × entry_mode × housing × licence ×
  * life-event) and asserts the structural invariants:
- *   - every persona reaches the Anmeldung root;
- *   - every non-EU permit-bearing persona reaches a residence-permit task;
- *   - no applicable task depends_on a task that does not apply (blocked forever);
- *   - every published task is reachable by at least one persona (no dead cards);
- *   - every Unknown task has a teaser question (never silently hidden).
- * A future YAML edit that breaks any of these fails here with a named reason.
+ *   - definite broken prerequisites fail; unanswered ones are reported separately;
+ *   - published tasks are reachable or await a question in that sweep;
+ *   - unaskable unreviewed cards are reported rather than silently ignored.
+ * It does not prove legal coverage, a user's obligations or publication readiness.
+ * CoverageManifestTest exercises the canonical, source-aware strict release gate.
  */
-it('yields a complete, gap-free path for every persona', function () {
+it('audits catalogue structure without claiming every persona needs registration or a new permit', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
     $exitCode = Artisan::call('bureaucracy:coverage', ['--full' => true, '--fail-on-gap' => true]);
+    $output = Artisan::output();
 
-    expect($exitCode)->toBe(0)
-        ->and(Artisan::output())->toContain('✓ No STRUCTURAL gaps:');
+    expect($exitCode)->toBe(0, $output)
+        ->and($output)->toContain('✓ No STRUCTURAL gaps:')
+        ->toContain('Unresolved dependencies')
+        ->toContain('bureaucracy:coverage --manifest')
+        ->not->toContain('MISSING ANMELDUNG')
+        ->not->toContain('MISSING PERMIT')
+        ->not->toContain('fall through to the');
 });
 
 /**
@@ -227,8 +231,8 @@ it('scopes only genuinely cross-cutting rules as universal', function () {
         ->all())->toBe([]);
 });
 
-it('keeps every investigated case rule authoritative and every scenario in the QA roster', function () {
-    $this->travelTo('2026-08-03 10:00:00');
+it('keeps supported investigated rules authoritative, the duplicate retired and all QA scenarios available', function () {
+    $this->travelTo('2026-09-08 10:00:00');
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
     $expectedRuleKeys = [
@@ -239,7 +243,6 @@ it('keeps every investigated case rule authoritative and every scenario in the Q
         'case.family.first_permit.prepare',
         'case.family.first_permit.sponsor_pending_review',
         'case.family.independent_after_separation',
-        'case.family.register_address',
         'case.family.renew.continuing_household',
         'case.family.settlement.general_coming_up',
         'case.family.settlement.spouse_18c_option',
@@ -247,6 +250,8 @@ it('keeps every investigated case rule authoritative and every scenario in the Q
 
     expect(Task::query()->authoritative()->whereIn('key', $expectedRuleKeys)->orderBy('key')->pluck('key')->all())
         ->toBe($expectedRuleKeys)
+        ->and(Task::query()->where('key', 'case.family.register_address')->firstOrFail()->is_published)->toBeFalse()
+        ->and(Task::query()->authoritative()->where('key', 'core.anmeldung')->exists())->toBeTrue()
         ->and(collect(BureaucracyPersonas::caseScenarios())->pluck('key')->all())->toBe([
             'case-blue-card-first',
             'case-family-sponsor-pending',
@@ -257,10 +262,61 @@ it('keeps every investigated case rule authoritative and every scenario in the Q
             // exercised — two of them created by the §9 / §18c split.
             'case-settlement-9-holder',
             'case-settlement-18c-holder',
+            'case-settlement-unknown-holder',
             'case-work-permit-renewal',
             'case-unsupported-title',
         ]);
 });
+
+it('distinguishes an unanswered prerequisite from a definitely incompatible or missing one', function (string $state, int $exitCode) {
+    task3PublishUnreachable('fixture.dependent', ['applies_if' => [[]], 'depends_on' => ['fixture.prerequisite']]);
+    if ($state !== 'missing') {
+        task3PublishUnreachable('fixture.prerequisite', [
+            'applies_if' => $state === 'unknown'
+                ? [['registration_status' => 'not_registered']]
+                : [['citizenship_group' => 'martian']],
+            'review_status' => 'approved',
+            // Synthetic source fixture isolates dependency analysis from source review.
+            ...Task::factory()->approvedFixture()->make()->only([
+                'jurisdiction', 'reviewed_by', 'content_version', 'source_verification',
+                'verified_at', 'review_due_at', 'legal_sources',
+            ]),
+        ]);
+    }
+
+    expect(Artisan::call('bureaucracy:coverage', ['--fail-on-gap' => true]))->toBe($exitCode);
+    $output = Artisan::output();
+    if ($state === 'unknown') {
+        expect($output)->toContain('Unresolved dependencies')->not->toContain('BROKEN DEP');
+    } else {
+        expect($output)->toContain('BROKEN DEP')->toContain('fixture.prerequisite');
+    }
+})->with([['unknown', 0], ['incompatible', 1], ['missing', 1]]);
+
+it('fails a missing dependency hidden behind an unanswered prerequisite', function () {
+    Task::factory()->approvedFixture()->create([
+        'key' => 'fixture.unknown-prerequisite',
+        'applies_if' => [['registration_status' => 'not_registered']],
+        'depends_on' => ['fixture.missing-nested-prerequisite'],
+    ]);
+    task3PublishUnreachable('fixture.dependent', [
+        'applies_if' => [[]],
+        'depends_on' => ['fixture.unknown-prerequisite'],
+    ]);
+
+    expect(Artisan::call('bureaucracy:coverage', ['--fail-on-gap' => true]))->toBe(1);
+    expect(Artisan::output())->toContain('Unresolved dependencies')
+        ->toContain('BROKEN DEP')->toContain('fixture.missing-nested-prerequisite');
+});
+
+it('reports malformed dependency keys without aborting the audit', function (mixed $dependency) {
+    task3PublishUnreachable('fixture.malformed-dependency', [
+        'applies_if' => [[]], 'depends_on' => [$dependency],
+    ]);
+
+    expect(Artisan::call('bureaucracy:coverage', ['--fail-on-gap' => true]))->toBe(1);
+    expect(Artisan::output())->toContain('BROKEN DEP')->toContain('[invalid key]');
+})->with([[[]], [42], [null]]);
 
 /**
  * @param  array<string, mixed>  $overrides

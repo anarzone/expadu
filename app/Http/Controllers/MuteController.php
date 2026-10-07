@@ -28,7 +28,7 @@ class MuteController extends Controller
             'type' => ['required', 'string', Rule::in([
                 'transit_disruption', 'transit_delay', 'weather_alert',
                 'rhine_level', 'buergeramt_slot', 'market_closure',
-                'leave_by', 'alternative_route',
+                'leave_by', 'alternative_route', 'bureaucracy_task',
             ])],
             'key' => ['required', 'string', 'max:128'],
             'duration_seconds' => ['nullable', 'integer', 'min:60', 'max:604800'],

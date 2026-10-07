@@ -2,7 +2,9 @@
 
 namespace App\Support;
 
+use Sentry\Breadcrumb;
 use Sentry\Event;
+use Sentry\Stacktrace;
 use Sentry\UserDataBag;
 
 /**
@@ -12,8 +14,9 @@ use Sentry\UserDataBag;
  *     hit it, never their email/name (send_default_pii stays off).
  *  2. Redact anything sensitive that could ride along in request data: auth
  *     tokens, session cookies, secrets, and — specific to this app — the GPS
- *     coordinates and location pings we treat as private. Wrapped so a shape
- *     we don't expect can never drop the whole event.
+ *     coordinates, case facts and AI input we treat as private. Error type and
+ *     code location remain useful without arbitrary message bodies or locals.
+ *     If sanitisation fails, do not send the unsanitised event.
  */
 class SentryScrubber
 {
@@ -23,6 +26,7 @@ class SentryScrubber
         'cookie', 'api_key', 'apikey', 'key', 'dsn', 'session',
         'lat', 'lng', 'latitude', 'longitude', 'coord', 'location',
         'vapid', 'csrf', 'xsrf',
+        'prompt', 'text', 'message', 'content', 'answer', 'facts', 'value', 'headers',
     ];
 
     private const REDACTED = '[redacted]';
@@ -37,6 +41,10 @@ class SentryScrubber
 
             $request = $event->getRequest();
             if ($request !== []) {
+                $path = parse_url((string) ($request['url'] ?? ''), PHP_URL_PATH) ?: '';
+                if (preg_match('~/(?:bureaucracy|composer|onboarding)(?:/|$)~', $path)) {
+                    $request['data'] = self::REDACTED;
+                }
                 $event->setRequest(self::redact($request));
             }
 
@@ -44,11 +52,43 @@ class SentryScrubber
             if ($extra !== []) {
                 $event->setExtra(self::redact($extra));
             }
+
+            foreach ($event->getContexts() as $name => $context) {
+                $event->setContext($name, self::isSensitive($name)
+                    ? ['redacted' => true]
+                    : self::redact($context));
+            }
+
+            if ($event->getMessage() !== null || $event->getMessageFormatted() !== null) {
+                $event->setMessage(self::REDACTED, [], self::REDACTED);
+            }
+
+            foreach ($event->getExceptions() as $exception) {
+                $exception->setValue(self::REDACTED);
+                self::removeVariables($exception->getStacktrace());
+            }
+            self::removeVariables($event->getStacktrace());
+
+            $event->setBreadcrumb(array_map(function (Breadcrumb $breadcrumb): Breadcrumb {
+                $clean = $breadcrumb->withMessage(self::REDACTED);
+                foreach (self::redact($breadcrumb->getMetadata()) as $key => $value) {
+                    $clean = $clean->withMetadata($key, $value);
+                }
+
+                return $clean;
+            }, $event->getBreadcrumbs()));
         } catch (\Throwable) {
-            // Never let scrubbing itself swallow the error report.
+            return null;
         }
 
         return $event;
+    }
+
+    private static function removeVariables(?Stacktrace $stacktrace): void
+    {
+        foreach ($stacktrace?->getFrames() ?? [] as $frame) {
+            $frame->setVars([]);
+        }
     }
 
     /**
@@ -72,6 +112,11 @@ class SentryScrubber
                 continue;
             }
             if (is_string($key) && self::isSensitive($key)) {
+                $data[$key] = self::REDACTED;
+
+                continue;
+            }
+            if (is_object($value) || is_resource($value)) {
                 $data[$key] = self::REDACTED;
 
                 continue;

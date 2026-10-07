@@ -47,10 +47,22 @@ class AnswerBureaucracyCaseQuestionRequest extends FormRequest
     {
         return match ($definition->type) {
             'enum' => ['required', 'string', Rule::in($definition->options)],
-            'date' => ['required', 'date_format:Y-m-d'],
+            'date' => ['required', 'date_format:Y-m-d', ...($definition->dateSemantics === 'historical' ? ['before_or_equal:today'] : [])],
             'integer' => ['required', 'integer', 'min:0'],
             'boolean' => ['required', 'boolean'],
             default => ['prohibited'],
+        };
+    }
+
+    public function canonicalValue(): mixed
+    {
+        $value = $this->validated('value');
+        $definition = app(FactRegistry::class)->definition($this->route('question')->fact_key);
+
+        return match ($definition->type) {
+            'integer' => (int) $value,
+            'boolean' => in_array($value, [true, 1, '1'], true),
+            default => $value,
         };
     }
 }

@@ -18,7 +18,10 @@ use App\Models\UserTask;
  * they did need costs them the appointment.
  */
 beforeEach(function () {
-    $this->artisan('bureaucracy:import-tasks', ['--prune' => true])->assertSuccessful();
+    Task::factory()->approvedFixture()->create([
+        'key' => 'fixture.scoped-documents', 'applies_if' => [[]],
+        'deadline_type' => 'none', 'depends_on' => [],
+    ]);
 });
 
 function documentsFor(User $user, string $taskKey): array
@@ -48,8 +51,8 @@ function seedScopedDocuments(string $taskKey): void
 }
 
 it('hides a document from someone it definitely does not apply to', function () {
-    $task = Task::query()->where('key', 'core.anmeldung')->firstOrFail();
-    seedScopedDocuments('core.anmeldung');
+    $task = Task::query()->where('key', 'fixture.scoped-documents')->firstOrFail();
+    seedScopedDocuments('fixture.scoped-documents');
 
     $nomad = User::factory()->onboarded()->create([
         'situation' => 'digital_nomad',
@@ -57,12 +60,12 @@ it('hides a document from someone it definitely does not apply to', function () 
     ]);
     UserTask::factory()->create(['user_id' => $nomad->id, 'task_id' => $task->id]);
 
-    expect(documentsFor($nomad, 'core.anmeldung'))->toBe(['Passport']);
+    expect(documentsFor($nomad, 'fixture.scoped-documents'))->toBe(['Passport']);
 });
 
 it('keeps a document whose condition cannot be judged yet', function () {
-    $task = Task::query()->where('key', 'core.anmeldung')->firstOrFail();
-    Task::query()->where('key', 'core.anmeldung')->update([
+    $task = Task::query()->where('key', 'fixture.scoped-documents')->firstOrFail();
+    Task::query()->where('key', 'fixture.scoped-documents')->update([
         'documents_required' => [
             ['label' => 'Passport'],
             // Nothing in this profile answers it, so the verdict is Unknown.
@@ -76,13 +79,13 @@ it('keeps a document whose condition cannot be judged yet', function () {
     ]);
     UserTask::factory()->create(['user_id' => $nomad->id, 'task_id' => $task->id]);
 
-    expect(documentsFor($nomad, 'core.anmeldung'))
+    expect(documentsFor($nomad, 'fixture.scoped-documents'))
         ->toBe(['Passport', 'Proof of the thing we never asked about']);
 });
 
 it('never leaks the condition to the browser', function () {
-    $task = Task::query()->where('key', 'core.anmeldung')->firstOrFail();
-    seedScopedDocuments('core.anmeldung');
+    $task = Task::query()->where('key', 'fixture.scoped-documents')->firstOrFail();
+    seedScopedDocuments('fixture.scoped-documents');
 
     $nomad = User::factory()->onboarded()->create([
         'situation' => 'digital_nomad',
@@ -93,7 +96,7 @@ it('never leaks the condition to the browser', function () {
     $response = $this->actingAs($nomad)->get('/bureaucracy');
     $card = collect($response->viewData('page')['props']['tasks'])
         ->flatten(1)
-        ->first(fn ($c) => is_array($c) && ($c['key'] ?? null) === 'core.anmeldung');
+        ->first(fn ($c) => is_array($c) && ($c['key'] ?? null) === 'fixture.scoped-documents');
 
     foreach ($card['documents_required'] as $doc) {
         expect($doc)->not->toHaveKey('applies_if');

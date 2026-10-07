@@ -38,9 +38,9 @@ final class CaseMatcher
             if ($task->coverage_scope === 'universal') {
                 if ($verdict === Applicability::Yes) {
                     $universal[] = $task->key;
-                }
 
-                continue;
+                    continue;
+                }
             }
 
             if ($verdict === Applicability::Yes) {
@@ -139,7 +139,7 @@ final class CaseMatcher
 
         try {
             foreach ($task->applies_if as $group) {
-                if (! is_array($group) || array_is_list($group) || $group === []) {
+                if (! is_array($group) || ($group !== [] && array_is_list($group))) {
                     return false;
                 }
 

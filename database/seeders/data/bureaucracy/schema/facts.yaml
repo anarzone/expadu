@@ -1,6 +1,6 @@
 current_residence_title:
   type: enum
-  options: [national_d_visa, standard_work_permit, blue_card, family_reunification, settlement_permit_9, settlement_permit_18c, other]
+  options: [national_d_visa, standard_work_permit, blue_card, family_reunification, settlement_permit_9, settlement_permit_18c, settlement_permit_unknown, other]
   question: Which German visa or residence title do you currently hold?
   why: Your current title changes the application route and which deadline applies.
   sensitivity: high
@@ -9,6 +9,7 @@ current_residence_title:
 
 residence_title_expires_at:
   type: date
+  date_semantics: expiry
   question: When does your current visa or residence permit expire?
   why: We use this date to warn you before your current permission ends.
   sensitivity: high
@@ -24,9 +25,20 @@ case_goal:
   priority: 90
   reconfirm_after_days: 180
 
-sponsor_current_title:
+sponsor:
+  subject_scope: related_person_report
   type: enum
-  options: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_9, settlement_permit_18c, other]
+  options: [german, eu_citizen, non_eu]
+  question: Is the family member you are joining a German citizen, another EU citizen, or a non-EU citizen?
+  why: We need to distinguish the family rules without assuming citizenship from a chosen path.
+  sensitivity: high
+  priority: 100
+  reconfirm_after_days: 180
+
+sponsor_current_title:
+  subject_scope: related_person_report
+  type: enum
+  options: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_9, settlement_permit_18c, settlement_permit_unknown, other]
   question: Which German residence status does your spouse currently have?
   why: Family-reunification and settlement options depend on the sponsor's current title.
   sensitivity: high
@@ -43,6 +55,7 @@ blue_card_qualifying_months:
 
 family_residence_permit_held_since:
   type: date
+  date_semantics: historical
   question: Since when have you continuously held your family-reunification residence permit?
   why: Several renewal and settlement routes use the duration of this permit.
   sensitivity: high
@@ -103,6 +116,7 @@ entry_mode:
 
 visa_expires_at:
   type: date
+  date_semantics: expiry
   question: When does your entry visa expire?
   why: We use this date to calculate your residence-application deadline.
   sensitivity: high
@@ -144,3 +158,90 @@ permit_track:
   sensitivity: high
   priority: 95
   reconfirm_after_days: 180
+
+arrival_planned:
+  type: boolean
+  question: Are you still planning this move to Germany?
+  why: Planning a move is different from having already arrived.
+  sensitivity: normal
+  priority: 100
+  reconfirm_after_days: 90
+
+arrival_date:
+  type: date
+  date_semantics: historical
+  question: When did you arrive in Germany for this stay?
+  why: An actual arrival date is different from a planned arrival.
+  sensitivity: high
+  priority: 100
+  reconfirm_after_days: 365
+
+moved_in_at:
+  type: date
+  date_semantics: historical
+  question: When did you actually move into your current home?
+  why: Moving in and having the housing provider's confirmation are different facts.
+  sensitivity: high
+  priority: 100
+  reconfirm_after_days: 180
+
+housing_provider_confirmation:
+  type: enum
+  options: [available, requested, not_available]
+  question: Do you have the housing provider's confirmation for this home?
+  why: We keep document availability separate from whether you already live there.
+  sensitivity: normal
+  priority: 80
+  reconfirm_after_days: 90
+
+registration_status:
+  type: enum
+  options: [registered, not_registered]
+  question: Have you completed address registration for this home?
+  why: Having a home or a confirmation document does not mean registration is complete.
+  sensitivity: high
+  priority: 90
+  reconfirm_after_days: 180
+
+residence_card_expires_at:
+  type: date
+  date_semantics: expiry
+  question: What expiry date is printed on your physical residence card?
+  why: The card's validity is recorded separately from your legal residence status.
+  sensitivity: high
+  priority: 80
+  reconfirm_after_days: 180
+
+tax_id_available:
+  type: boolean
+  question: Do you already have access to your German tax identification number?
+  why: We only need to know whether you have it, not the number itself. Moving home does not require a new number.
+  sensitivity: normal
+  priority: 55
+  reconfirm_after_days: 365
+
+health_coverage_confirmed:
+  type: boolean
+  question: Have you confirmed health insurance cover for your stay in Germany with your insurer?
+  why: This records your confirmation, not an insurance eligibility decision. Recheck it if your situation or cover changes.
+  sensitivity: high
+  priority: 85
+  reconfirm_after_days: 90
+
+bank_account_help_needed:
+  type: boolean
+  question: Do you need help finding or opening an account for your everyday payments?
+  why: If your existing account meets your needs, we should not tell you to open another one. Do not enter account numbers.
+  sensitivity: normal
+  priority: 50
+  reconfirm_after_days: 180
+
+sponsor_title_at_entry:
+  subject_scope: related_person_report
+  type: enum
+  options: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_9, settlement_permit_18c, settlement_permit_unknown, other]
+  question: What residence status did your sponsor have when you joined them?
+  why: Their status at that time may differ from the status they hold now.
+  sensitivity: high
+  priority: 80
+  reconfirm_after_days: 365

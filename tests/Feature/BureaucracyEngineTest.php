@@ -6,6 +6,16 @@ use App\Notifications\BureaucracyDeadlineNotification;
 use App\Profile\Applicability;
 use Carbon\Carbon;
 
+/** Isolates rendering/timing mechanics without approving real catalogue prose. */
+function engineFixture(string $key, array $attributes = []): Task
+{
+    return Task::factory()->approvedFixture()->create([
+        'key' => $key, 'title' => 'Synthetic '.$key, 'description' => 'Synthetic test content, not guidance.',
+        'applies_if' => [[]], 'deadline_type' => 'none', 'depends_on' => [],
+        ...$attributes,
+    ]);
+}
+
 // ── Applicability evaluator (pure) ─────────────────────────────────────
 
 dataset('applicability', [
@@ -155,7 +165,7 @@ dataset('path fixtures', [
     ],
 ]);
 
-test('path fixtures: each profile computes the expected catalogue subset', function (array $userFields, array $attributes, array $visible, array $absent) {
+test('legacy persona labels cannot publish unreviewed routes from the real catalogue', function (array $userFields, array $attributes, array $visible, array $absent) {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
     $user = User::factory()->onboarded()->create([
@@ -169,12 +179,19 @@ test('path fixtures: each profile computes the expected catalogue subset', funct
     $response->assertInertia(function ($page) use ($visible, $absent) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
 
+        // Formerly visible branch rules require source review, not merely a
+        // matching persona. Approved core registration needs its own answers.
         foreach ($visible as $key) {
-            expect($keys)->toContain($key);
+            $task = Task::where('key', $key)->firstOrFail();
+            if ($key !== 'core.anmeldung') {
+                expect($task->review_status)->toBe('legacy');
+            }
+            expect($keys)->not->toContain($key);
         }
         foreach ($absent as $key) {
             expect($keys)->not->toContain($key);
         }
+        expect($keys)->toContain('case.bc.verify_status_source');
 
         return true;
     });
@@ -183,7 +200,7 @@ test('path fixtures: each profile computes the expected catalogue subset', funct
 // ── Teasers ────────────────────────────────────────────────────────────
 
 test('an unanswered licence question renders as a teaser, not a task', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    engineFixture('fixture.licence', ['applies_if' => [['license_country' => ['other']]]]);
 
     $user = User::factory()->onboarded()->create(['situation' => 'eu_employee']);
 
@@ -194,7 +211,7 @@ test('an unanswered licence question renders as a teaser, not a task', function 
         $props = $page->toArray()['props'];
 
         $keys = collect($props['tasks'])->flatten(1)->pluck('key');
-        expect($keys)->not->toContain('shared.driving_licence');
+        expect($keys)->not->toContain('fixture.licence');
 
         $teaser = collect($props['teasers'])->firstWhere('attribute', 'license_country');
         expect($teaser)->not->toBeNull();
@@ -205,7 +222,7 @@ test('an unanswered licence question renders as a teaser, not a task', function 
 });
 
 test('answering a teaser recomputes the path and logs the change', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    engineFixture('fixture.licence', ['applies_if' => [['license_country' => ['other']]]]);
 
     $user = User::factory()->onboarded()->create(['situation' => 'eu_employee']);
 
@@ -222,7 +239,7 @@ test('answering a teaser recomputes the path and logs the change', function () {
     $response = $this->get(route('bureaucracy'));
     $response->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
-        expect($keys)->toContain('shared.driving_licence');
+        expect($keys)->toContain('fixture.licence');
         expect(collect($page->toArray()['props']['teasers']))->toBeEmpty();
 
         return true;
@@ -275,8 +292,8 @@ test('D-visa application deadlines still use visa expiry exactly', function () {
         ]))->toBeNull();
 });
 
-test('temporary housing pauses the Anmeldung deadline instead of going overdue', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+test('temporary housing without an occupancy date leaves timing unknown rather than paused', function () {
+    engineFixture('fixture.move-in', ['deadline_type' => 'days_since_move_in', 'deadline_days' => 14]);
 
     // Arrived 30 days ago — the naive 14-day clock would scream overdue.
     $user = User::factory()->onboarded()->create([
@@ -290,19 +307,19 @@ test('temporary housing pauses the Anmeldung deadline instead of going overdue',
 
     $response->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
-            ->firstWhere('key', 'eue.anmeldung');
+            ->firstWhere('key', 'fixture.move-in');
 
-        expect($card['deadline_tier'])->toBe('paused');
+        expect($card['deadline_tier'])->toBe('needs_answer');
         expect($card['deadline'])->toBeNull();
-        expect($card['deadline_note'])->toContain('paused');
+        expect($card['deadline_note'])->toContain('unknown');
         expect($card['bucket'])->toBe('active'); // still the primary next thing
 
         return true;
     });
 });
 
-test("'I've moved in' starts the real 14-day clock from the move-in date", function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+test('a recorded move-in anchors the configured interval independently of arrival', function () {
+    engineFixture('fixture.move-in', ['deadline_type' => 'days_since_move_in', 'deadline_days' => 14]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'eu_employee',
@@ -320,7 +337,7 @@ test("'I've moved in' starts the real 14-day clock from the move-in date", funct
     $response = $this->get(route('bureaucracy'));
     $response->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
-            ->firstWhere('key', 'eue.anmeldung');
+            ->firstWhere('key', 'fixture.move-in');
 
         expect($card['deadline'])->toBe(now()->addDays(14)->toDateString());
         expect($card['deadline_tier'])->toBe('approaching');
@@ -330,7 +347,8 @@ test("'I've moved in' starts the real 14-day clock from the move-in date", funct
 });
 
 test('a D-visa holder sees the visa-expiry framing instead of a 90-day date', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    engineFixture('fixture.submit', ['deadline_type' => 'permit_window', 'deadline_days' => 90]);
+    engineFixture('fixture.attend', ['depends_on' => ['fixture.submit']]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
@@ -345,12 +363,12 @@ test('a D-visa holder sees the visa-expiry framing instead of a 90-day date', fu
         $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
 
         // The submit task carries the permit window…
-        expect($cards['nee.submit_application']['deadline'])->toBeNull();
-        expect($cards['nee.submit_application']['deadline_note'])->toContain('visa expires');
-        expect($cards['nee.submit_application']['deadline_tier'])->toBe('urgent');
+        expect($cards['fixture.submit']['deadline'])->toBeNull();
+        expect($cards['fixture.submit']['deadline_note'])->toContain('visa expiry');
+        expect($cards['fixture.submit']['deadline_tier'])->toBe('needs_answer');
         // …the attend task is gated on it, no clock of its own.
-        expect($cards['nee.residence_permit']['blocked'])->toBeTrue();
-        expect($cards['nee.residence_permit']['deadline'])->toBeNull();
+        expect($cards['fixture.attend']['blocked'])->toBeTrue();
+        expect($cards['fixture.attend']['deadline'])->toBeNull();
 
         return true;
     });
@@ -364,10 +382,13 @@ test('imported content carries substituted figures and cards explain themselves'
     $blueCard = Task::where('key', 'bc.submit_application')->first();
     expect($blueCard->description)->toContain('€50,700');
     expect($blueCard->description)->not->toContain('{{figure:');
+    expect($blueCard->review_status)->toBe('legacy');
+    engineFixture('fixture.explanation', ['applies_if' => [['citizenship_group' => 'non_eu', 'purpose' => 'employment']]]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
         'bureaucracy_path' => 'non_eu_employee_blue_card',
+        'is_eu' => false,
         'profile_attributes' => ['entry_mode' => 'd_visa'],
     ]);
 
@@ -376,10 +397,10 @@ test('imported content carries substituted figures and cards explain themselves'
 
     $response->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
-            ->firstWhere('key', 'bc.blue_card');
+            ->firstWhere('key', 'fixture.explanation');
 
         expect($card['why'])->toContain('non-EU');
-        expect($card['why'])->toContain('Blue Card');
+        expect($card['why'])->toContain('employee');
 
         return true;
     });
@@ -418,7 +439,9 @@ test('the roadmap phase follows days since arrival', function () {
 // ── Life events ────────────────────────────────────────────────────────
 
 test('life-event tasks stay dormant until the event is recorded — then wake with anchored deadlines', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    foreach (['fixture.child-care', 'fixture.birth-support', 'fixture.child-status', 'fixture.child-benefit'] as $key) {
+        engineFixture($key, ['trigger_event' => 'child_born', 'deadline_type' => 'days_since_event', 'deadline_days' => 90]);
+    }
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
@@ -432,14 +455,14 @@ test('life-event tasks stay dormant until the event is recorded — then wake wi
         $props = $page->toArray()['props'];
         $keys = collect($props['tasks'])->flatten(1)->pluck('key');
 
-        expect($keys)->not->toContain('le.kita');
-        expect($keys)->not->toContain('le.elterngeld');
+        expect($keys)->not->toContain('fixture.child-care');
+        expect($keys)->not->toContain('fixture.birth-support');
         expect(collect($props['teasers'])->pluck('attribute'))->not->toContain('child_born_at');
 
         return true;
     });
 
-    // Record the birth — 40 days ago, so the Elterngeld window is ticking.
+    // Synthetic interval: recording an event starts only its configured clock.
     $birth = now()->subDays(40)->toDateString();
     $this->post(route('profile.attributes'), [
         'attribute' => 'child_born_at',
@@ -450,21 +473,24 @@ test('life-event tasks stay dormant until the event is recorded — then wake wi
     $this->get(route('bureaucracy'))->assertInertia(function ($page) use ($birth) {
         $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
 
-        expect($cards)->toHaveKey('le.kita');
-        expect($cards)->toHaveKey('le.elterngeld');
-        expect($cards)->toHaveKey('le.child_permit'); // non-EU parent
-        expect($cards)->toHaveKey('le.kindergeld');
+        expect($cards)->toHaveKey('fixture.child-care');
+        expect($cards)->toHaveKey('fixture.birth-support');
+        expect($cards)->toHaveKey('fixture.child-status');
+        expect($cards)->toHaveKey('fixture.child-benefit');
 
-        // Elterngeld deadline = birth + 90 days, anchored to the EVENT date.
+        // Not a statutory benefit deadline: this is the fixture's interval.
         $expected = Carbon::parse($birth)->addDays(90)->toDateString();
-        expect($cards['le.elterngeld']['deadline'])->toBe($expected);
+        expect($cards['fixture.birth-support']['deadline'])->toBe($expected);
 
         return true;
     });
 });
 
-test('the Kindergeld life-event task skips the family branch (it has its own)', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+test('event-specific audience conditions avoid duplicate family and general variants', function () {
+    engineFixture('fixture.child-care', ['trigger_event' => 'child_born']);
+    engineFixture('fixture.birth-support', ['trigger_event' => 'child_born']);
+    engineFixture('fixture.general-benefit', ['trigger_event' => 'child_born', 'applies_if' => [['purpose' => 'employment']]]);
+    engineFixture('fixture.family-benefit', ['trigger_event' => 'child_born', 'applies_if' => [['purpose' => 'family']]]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'family_reunification',
@@ -476,17 +502,17 @@ test('the Kindergeld life-event task skips the family branch (it has its own)', 
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
 
-        expect($keys)->toContain('le.kita');
-        expect($keys)->toContain('le.elterngeld');
-        expect($keys)->not->toContain('le.kindergeld'); // fam.kindergeld covers it
-        expect($keys)->toContain('fam.kindergeld');
+        expect($keys)->toContain('fixture.child-care');
+        expect($keys)->toContain('fixture.birth-support');
+        expect($keys)->not->toContain('fixture.general-benefit');
+        expect($keys)->toContain('fixture.family-benefit');
 
         return true;
     });
 });
 
-test('graduation wakes the 18-month job-search permit for non-EU students only', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+test('a graduation event respects a reviewed non-EU student audience', function () {
+    engineFixture('fixture.graduation', ['trigger_event' => 'graduated', 'applies_if' => [['purpose' => 'study', 'citizenship_group' => 'non_eu']]]);
 
     $nonEuStudent = User::factory()->onboarded()->create([
         'situation' => 'student',
@@ -497,7 +523,7 @@ test('graduation wakes the 18-month job-search permit for non-EU students only',
     $this->actingAs($nonEuStudent);
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
-        expect($keys)->toContain('le.job_search_permit');
+        expect($keys)->toContain('fixture.graduation');
 
         return true;
     });
@@ -511,7 +537,7 @@ test('graduation wakes the 18-month job-search permit for non-EU students only',
     $this->actingAs($euStudent);
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
-        expect($keys)->not->toContain('le.job_search_permit');
+        expect($keys)->not->toContain('fixture.graduation');
 
         return true;
     });
@@ -520,7 +546,10 @@ test('graduation wakes the 18-month job-search permit for non-EU students only',
 // ── Office resolution + document cross-links ───────────────────────────
 
 test('task cards resolve their office (Bezirk Bürgeramt) and document origins', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    engineFixture('fixture.registration', ['booking_service_key' => 'anmeldung']);
+    engineFixture('fixture.permit', ['booking_service_key' => 'auslaenderbehoerde']);
+    engineFixture('fixture.tax-id', ['title' => 'Synthetic Steuer-ID source']);
+    engineFixture('fixture.account', ['documents_required' => [['label' => 'Synthetic Tax ID copy', 'from' => 'fixture.tax-id']]]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
@@ -535,12 +564,12 @@ test('task cards resolve their office (Bezirk Bürgeramt) and document origins',
 
         // Anmeldung (a Bürgeramt service) pins no office — the concrete
         // Kundenzentrum is chosen at the end of the city's booking flow.
-        expect($cards['nee.anmeldung']['office'])->toBeNull();
+        expect($cards['fixture.registration']['office'])->toBeNull();
         // The permit is a single-site service, so its one office is pinned.
-        expect($cards['nee.residence_permit']['office']['name'])->toBe('Ausländerbehörde Köln');
+        expect($cards['fixture.permit']['office']['name'])->toBe('Ausländerbehörde Köln');
 
         // The bank task's Tax ID document points at the task that produces it.
-        $taxDoc = collect($cards['nee.bank_account']['documents_required'])
+        $taxDoc = collect($cards['fixture.account']['documents_required'])
             ->first(fn ($d) => is_array($d) && str_contains($d['label'], 'Tax ID'));
         expect($taxDoc['from_title'])->toContain('Steuer-ID');
 
@@ -551,7 +580,8 @@ test('task cards resolve their office (Bezirk Bürgeramt) and document origins',
 // ── Book/attend split ──────────────────────────────────────────────────
 
 test('the submit task is actionable on day one; attend waits for it', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    engineFixture('fixture.submit', ['title' => 'Synthetic submission', 'deadline_type' => 'days_since_arrival', 'deadline_days' => 90]);
+    engineFixture('fixture.attend', ['depends_on' => ['fixture.submit']]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
@@ -563,15 +593,13 @@ test('the submit task is actionable on day one; attend waits for it', function (
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
 
-        // Submit: blocked only by Anmeldung — NOT by health insurance.
-        expect($cards['nee.submit_application']['blocked_by'])
-            ->not->toContain('Sign up for German health insurance');
-        // Submit carries the 90-day window; attend has no clock of its own.
-        expect($cards['nee.submit_application']['deadline'])->not->toBeNull();
-        expect($cards['nee.residence_permit']['deadline'])->toBeNull();
+        expect($cards['fixture.submit']['blocked_by'])->toBe([]);
+        expect($cards['fixture.submit']['blocked'])->toBeFalse();
+        // Only the synthetic submission has a clock, not its dependent step.
+        expect($cards['fixture.submit']['deadline'])->not->toBeNull();
+        expect($cards['fixture.attend']['deadline'])->toBeNull();
         // Attend is gated on submit.
-        expect($cards['nee.residence_permit']['blocked_by'])
-            ->toContain('Submit your permit application online — today (§18a/b)');
+        expect($cards['fixture.attend']['blocked_by'])->toContain('Synthetic submission');
 
         return true;
     });
@@ -579,8 +607,8 @@ test('the submit task is actionable on day one; attend waits for it', function (
 
 // ── Appointment tracking ───────────────────────────────────────────────
 
-test('a booked appointment becomes the effective deadline and feeds reminders', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+test('a booked appointment remains separate and cannot replace the configured deadline', function () {
+    engineFixture('fixture.appointment', ['deadline_type' => 'days_since_arrival', 'deadline_days' => 90]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
@@ -591,26 +619,24 @@ test('a booked appointment becomes the effective deadline and feeds reminders', 
     $this->get(route('bureaucracy')); // materialise
 
     $userTask = $user->userTasks()
-        ->whereHas('task', fn ($q) => $q->where('key', 'nee.residence_permit'))
+        ->whereHas('task', fn ($q) => $q->where('key', 'fixture.appointment'))
         ->first();
+    $deadline = $userTask->absolute_deadline->toDateString();
 
     $appointment = now()->addDays(2)->setTime(9, 40);
     $this->patch(route('user-tasks.update', $userTask), [
         'appointment_at' => $appointment->toDateTimeString(),
     ])->assertRedirect();
 
-    // The push pipeline reads absolute_deadline — the appointment wins.
-    expect($userTask->fresh()->absolute_deadline->toDateTimeString())
-        ->toBe($appointment->toDateTimeString());
+    expect($userTask->fresh()->absolute_deadline->toDateString())->toBe($deadline);
 
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) use ($appointment) {
+    $this->get(route('bureaucracy'))->assertInertia(function ($page) use ($appointment, $deadline) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
-            ->firstWhere('key', 'nee.residence_permit');
+            ->firstWhere('key', 'fixture.appointment');
 
-        expect($card['deadline'])->toBe($appointment->toDateString());
-        expect($card['deadline_tier'])->toBe('critical'); // 2 days out
-        expect($card['deadline_note'])->toContain('Your appointment');
-        expect($card['appointment_at'])->not->toBeNull();
+        expect($card['deadline'])->toBe($deadline);
+        expect($card['deadline_note'])->toBeNull();
+        expect(Carbon::parse($card['appointment_at'])->toDateTimeString())->toBe($appointment->toDateTimeString());
 
         return true;
     });
@@ -618,7 +644,7 @@ test('a booked appointment becomes the effective deadline and feeds reminders', 
 
 // ── Permanent-residency eligibility hint ───────────────────────────────
 
-test('the NE hint appears once the permit has been held past the track threshold', function () {
+test('permit age alone never produces a permanent residence eligibility claim', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
     // Standard employee, 4 years in → past the 36-month skilled-worker mark.
@@ -631,9 +657,7 @@ test('the NE hint appears once the permit has been held past the track threshold
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $hint = $page->toArray()['props']['eligibility'];
 
-        expect($hint)->not->toBeNull();
-        expect($hint['threshold_months'])->toBe(36);
-        expect($hint['track_note'])->toContain('Skilled workers');
+        expect($hint)->toBeNull();
 
         return true;
     });
@@ -651,7 +675,7 @@ test('the NE hint appears once the permit has been held past the track threshold
     });
 });
 
-test('Blue Card holders cross the NE mark at 21 months', function () {
+test('a Blue Card path label and elapsed months do not establish qualifying service or eligibility', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
     $user = User::factory()->onboarded()->create([
@@ -664,8 +688,7 @@ test('Blue Card holders cross the NE mark at 21 months', function () {
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $hint = $page->toArray()['props']['eligibility'];
 
-        expect($hint)->not->toBeNull();
-        expect($hint['threshold_months'])->toBe(21);
+        expect($hint)->toBeNull();
 
         return true;
     });
@@ -673,7 +696,7 @@ test('Blue Card holders cross the NE mark at 21 months', function () {
 
 // ── Journey reset (testing tool) ───────────────────────────────────────
 
-test('user:reset-journey sends a user back through onboarding for a clean replay', function () {
+test('user:reset-journey cannot pretend a dossier is reset by clearing only the old profile', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
 
     $user = User::factory()->onboarded()->create([
@@ -684,46 +707,24 @@ test('user:reset-journey sends a user back through onboarding for a clean replay
     $this->actingAs($user);
     $this->get(route('bureaucracy')); // materialise tasks + progress
     expect($user->userTasks()->count())->toBeGreaterThan(0);
+    $before = $user->fresh()->getRawOriginal();
+    $tasks = $user->userTasks()->get()->toArray();
+    $facts = $user->bureaucracyCase->facts()->get()->toArray();
 
     $this->artisan('user:reset-journey', ['email' => $user->email, '--force' => true])
-        ->assertSuccessful();
+        ->expectsOutputToContain('read-only persona preview')
+        ->assertFailed();
 
     $user->refresh();
-    expect($user->onboarded_at)->toBeNull();
-    expect($user->situation)->toBeNull();
-    expect($user->bureaucracy_path)->toBeNull();
-    expect($user->profile_attributes)->toBeNull();
-    expect($user->userTasks()->count())->toBe(0);
-    expect($user->attributeChanges()->count())->toBe(0);
-
-    // The middleware sends them straight back to onboarding…
-    $this->get(route('explore'))->assertRedirect(route('onboarding'));
-
-    // …and a different persona replays cleanly on the same account.
-    $this->post(route('onboarding.complete'), [
-        'situation' => 'student',
-        'is_eu' => true,
-        'veedel' => 'Nippes',
-        'arrival_date' => now()->subDays(3)->toDateString(),
-        'arrival_planned' => false,
-        'address_registration_status' => 'registrable',
-        'moved_in_at' => now()->subDays(3)->toDateString(),
-        'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('bureaucracy'));
-
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
-        $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
-        expect($keys)->toContain('stu.anmeldung');
-        expect($keys)->not->toContain('bc.blue_card');
-
-        return true;
-    });
+    expect($user->getRawOriginal())->toBe($before)
+        ->and($user->userTasks()->get()->toArray())->toBe($tasks)
+        ->and($user->bureaucracyCase->facts()->get()->toArray())->toBe($facts);
 });
 
 // ── Visa expiry anchoring ──────────────────────────────────────────────
 
 test('a D-visa holder who gives the expiry date gets a real countdown', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    engineFixture('fixture.visa', ['deadline_type' => 'permit_window', 'deadline_days' => 90]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
@@ -737,7 +738,7 @@ test('a D-visa holder who gives the expiry date gets a real countdown', function
     $this->actingAs($user);
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
-            ->firstWhere('key', 'nee.submit_application');
+            ->firstWhere('key', 'fixture.visa');
 
         expect($card['deadline'])->toBe(now()->addDays(30)->toDateString());
         expect($card['deadline_tier'])->toBe('approaching'); // 30 days on the visa scale
@@ -749,7 +750,7 @@ test('a D-visa holder who gives the expiry date gets a real countdown', function
 });
 
 test('without the expiry date the card offers to capture it', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    engineFixture('fixture.visa', ['deadline_type' => 'permit_window', 'deadline_days' => 90]);
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
@@ -760,7 +761,7 @@ test('without the expiry date the card offers to capture it', function () {
     $this->actingAs($user);
     $this->get(route('bureaucracy'))->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
-            ->firstWhere('key', 'nee.submit_application');
+            ->firstWhere('key', 'fixture.visa');
 
         expect($card['deadline'])->toBeNull();
         expect($card['deadline_action'])->toBe('visa_expiry');

@@ -2,7 +2,8 @@
 
 namespace App\ContextEngine;
 
-use App\Notifications\BureaucracyDeadlineNotification;
+use App\Bureaucracy\GuidancePublication;
+use App\Notifications\BureaucracyPlanNotification;
 use App\Notifications\MarketClosureNotification;
 use App\Notifications\PermanentResidencyEligibleNotification;
 use App\Notifications\RhineFloodNotification;
@@ -24,6 +25,10 @@ class ContextNotificationFactory
 {
     public function build(ScoredAction $action): ?Notification
     {
+        if (! app(GuidancePublication::class)->allowsAction($action)) {
+            return null;
+        }
+
         return match ($action->type) {
             'transit_disruption' => $this->buildTransitDisruption($action),
             'transit_delay' => $this->buildTransitDelay($action),
@@ -45,21 +50,9 @@ class ContextNotificationFactory
         );
     }
 
-    private function buildBureaucracyTask(ScoredAction $action): ?BureaucracyDeadlineNotification
+    private function buildBureaucracyTask(ScoredAction $action): BureaucracyPlanNotification
     {
-        $title = (string) ($action->payload['title'] ?? '');
-        if ($title === '') {
-            return null;
-        }
-
-        return new BureaucracyDeadlineNotification(
-            taskTitle: $title,
-            tier: (string) ($action->payload['tier'] ?? 'urgent'),
-            daysRemaining: (int) ($action->payload['days_remaining'] ?? 0),
-            deadline: (string) ($action->payload['deadline'] ?? ''),
-            taskId: isset($action->payload['task_id']) ? (int) $action->payload['task_id'] : null,
-            appointmentAt: isset($action->payload['appointment_at']) ? (string) $action->payload['appointment_at'] : null,
-        );
+        return new BureaucracyPlanNotification(app(GuidancePublication::class)->referenceFor($action));
     }
 
     private function buildTransitDisruption(ScoredAction $action): ?TransitDisruptionNotification
