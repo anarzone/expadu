@@ -74,6 +74,7 @@
         s.expiry = value;
         s.candidate = null;
         s.questionSkipped = false;
+        s.expiryUnknown = false;
         if (changed && s.docs[0] === 'confirmed_for_use')
             s.docs[0] = 'needs_reconfirmation';
         return true;

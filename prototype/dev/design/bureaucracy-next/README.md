@@ -4,6 +4,45 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## Aligned with the v2 backend rules — 7 October 2026 (in review)
+
+From the Bürokratiekarten session's mapping (`docs/contracts/paperwork-ui-mapping.md`
+in its worktree), where the prototype disagreed with backend rules a person can
+see:
+
+- **Submitting isn't finishing.** "I've submitted it" records the date and
+  moves the task to Submitted; the step stays open ("The task waits for the
+  office; mark this step finished when you hear back") and the visa-expiry
+  warning goes. Removing the record goes back to Preparing.
+- **Only valid progress changes.** Update progress offers what the backend's
+  state machine accepts from the current state: Waiting for the office only
+  after a submission, Back to preparing from Blocked or Needs your action, and
+  Completed only once every step is finished (otherwise "To record completion,
+  mark each step finished first"). Blocked steps can't be marked finished.
+  Labels follow the backend: Needs your action, Submitted, Waiting for the
+  office. The free-text progress note is gone (no backend storage yet).
+- **"I don't know" isn't "Skip".** The visa-expiry question offers Enter date,
+  I don't know (an answer: "You don't know your visa expiry yet") and Skip for
+  now (left for later). The guided questions already kept "I'm not sure" and
+  "Skip for now" apart.
+- **Only people you can access.** The person switch lists you and the shared
+  sample people; "Private adult" and "Pending dependent" are gone.
+- **Read-only persona preview.** Review › Preview a persona shows Fresh start,
+  Returning user or the existing sample plan read-only, like the app's QA
+  preview, with "Back to your plan"; changes are refused and your plan isn't
+  touched. Reset demo is gone. `?scenario=returning` opens the preview.
+- **Anmeldung legal deadline.** Address registration shows "Legal deadline:
+  within two weeks of moving in · §17(1) BMG" (verification recorded 8 Sept
+  2026), as the backend declares it. Its date needs the move-in date, which the
+  sample doesn't record, so it says so; the client never calculates it.
+
+Already aligned: changing an answered visa or permit goes through Your
+situation with "Correct it" or "It changed". Not part of this mock: the app's
+onboarding (situation, Veedel and arrival are required there). Still open with
+the backend: data shapes (G2/G3/G7), "Add a task" (the backend suggests
+dropping it; the owner's call) and the introduction writing "arrival" without
+asking (C19).
+
 ## Sample day, dates and a clearer header — 7 October 2026 (in review)
 
 From the owner's Paperwork review (items 1–4):
@@ -66,7 +105,7 @@ Direction comes from the direct handoff with **Option B Bürokratiekarten** and 
 `source-data.js` preserves exact catalogue titles/document labels from:
 
 - `non_eu_employee_blue_card.yaml`: `case.bc.first_application.prepare` and `case.bc.first_application.submit`, version `2026-08-03.1`, recorded verification `2026-08-03`. Their descriptions are copied exactly as historical snapshots.
-- `core.yaml`: `core.anmeldung`, `core.health_insurance`, `core.bank_account`, `core.steuer_id`, version `2026-08-22.1`, recorded verification `2026-08-22`. Their legal descriptions, fee figures and timing rules are deliberately not presented here.
+- `core.yaml`: `core.anmeldung`, `core.health_insurance`, `core.bank_account`, `core.steuer_id`, version `2026-08-22.1`, recorded verification `2026-08-22`. Their legal descriptions, fee figures and timing rules are deliberately not presented here, except the §17(1) BMG registration deadline the backend now declares with its source.
 
 The YAML approval flag does not establish current publication validity. This prototype does not run or bypass `Task::authoritative()` or `RuleSourcePolicy`. Current validity is identified as unverified. No new legal instructions, fees, eligibility decisions or computed legal deadlines were authored for it.
 

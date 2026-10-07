@@ -24,8 +24,6 @@
     const requestedScenario = new URLSearchParams(location.search).get(
         'scenario',
     );
-    if (['fresh', 'returning', 'existing'].includes(requestedScenario))
-        state = J.activate(localStorage, requestedScenario);
     P.hydrate(state);
     H.hydrate(state);
     G.hydrate(state);
@@ -39,14 +37,20 @@
         needs_reconfirmation: 'Check again',
         unknown: 'Not checked yet',
     };
+    // The backend's reported workflow: action_required, submitted and
+    // waiting_authority ("waiting" here).
     const workflow = {
         not_started: 'Not started',
         preparing: 'Preparing',
-        blocked: 'Needs attention',
-        waiting: 'Waiting',
+        blocked: 'Blocked',
+        action_required: 'Needs your action',
+        submitted: 'Submitted',
+        waiting: 'Waiting for the office',
         completed: 'Completion recorded',
         cancelled: 'Cancelled',
     };
+    const tone = (w) =>
+        ({ submitted: 'waiting', action_required: 'blocked' })[w] || w;
     const date = (d) =>
         B.validDate(d)
             ? new Intl.DateTimeFormat('en-GB', {
@@ -88,7 +92,10 @@
     };
     // The Blue Card submission step is the one the visa expiry is about.
     const dueStep = (a) =>
-        a.process === 'blue-card' && a.record === 1 && soon(state.expiry);
+        a.process === 'blue-card' &&
+        a.record === 1 &&
+        !state.submission &&
+        soon(state.expiry);
     const dueChip = (a) => {
         const r = dueStep(a);
         return r
@@ -107,7 +114,54 @@
     };
     const button = (text, action, cls = 'secondary') =>
         `<button type="button" class="button ${cls}" data-case="${action}">${text}</button>`;
+    // Review: a read-only preview of a persona's plan, like the app's QA
+    // preview. Your own plan is kept aside, untouched, until you go back.
+    const personas = [
+        ['fresh', 'Fresh start'],
+        ['returning', 'Returning user'],
+        ['existing', 'Existing sample plan'],
+    ];
+    let own = null;
+    function previewPersona(name) {
+        if (!personas.some(([id]) => id === name)) return;
+        own ||= state;
+        state =
+            name === 'fresh'
+                ? J.fresh()
+                : name === 'returning'
+                  ? J.returning()
+                  : B.fresh();
+        P.hydrate(state);
+        H.hydrate(state);
+        G.hydrate(state);
+        if (J.applies(state)) J.state(state);
+        state.preview = name;
+        go('overview');
+    }
+    function endPreview() {
+        if (!own) return;
+        state = own;
+        own = null;
+        go('overview');
+    }
+    // Navigation and reading only; anything that would change a record isn't.
+    const previewSafe = (b) =>
+        [
+            'view',
+            'process',
+            'filter',
+            'openAction',
+            'sourceFor',
+            'paperFor',
+            'history',
+            'request',
+            'previewExit',
+            'previewPersona',
+        ].some((key) => key in b.dataset) ||
+        ['close-editor', 'coverage', 'close'].includes(b.dataset.case) ||
+        b.dataset.situation === 'browse';
     function save() {
+        if (state.preview) return true;
         try {
             localStorage.setItem(key, JSON.stringify(state));
             return true;
@@ -145,7 +199,7 @@
         const q = new URLSearchParams(location.search);
         const previousPerson = state.person;
         if (
-            H.roster.some((p) => p.id === q.get('person')) &&
+            H.roster.some((p) => p.id === q.get('person') && !p.denied) &&
             (state.profileKind !== 'personal' || q.get('person') === 'self')
         )
             state.person = q.get('person');
@@ -229,10 +283,13 @@
         const allowed = B.canEdit(state);
         const heading =
             state.view === 'detail' && current() ? current().name : 'Paperwork';
+        const persona = personas.find(([id]) => id === state.preview);
         document.querySelector('#main').innerHTML =
-            `<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
+            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>Read-only. Your own plan isn’t changed.</span><button data-preview-exit>Back to your plan</button></div>` : ''}<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
                 .filter(
-                    (p) => state.profileKind !== 'personal' || p.id === 'self',
+                    (p) =>
+                        !p.denied &&
+                        (state.profileKind !== 'personal' || p.id === 'self'),
                 )
                 .map(
                     (p) =>
@@ -240,18 +297,14 @@
                 )
                 .join(
                     '',
-                )}</div></details>${allowed ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div><div class="case-navigation"><div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div></div><div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress · Historical guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><label>Preview <select data-situation-scenario aria-label="Preview scenario">${[
-                ['fresh', 'Fresh start'],
-                ['returning', 'Returning user'],
-                ['existing', 'Existing sample plan'],
-            ]
+                )}</div></details>${allowed ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div><div class="case-navigation"><div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div></div><div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress · Historical guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
                 .map(
-                    ([v, l]) =>
-                        `<option value="${v}" ${(state.scenario || 'existing') === v ? 'selected' : ''}>${l}</option>`,
+                    ([id, label]) =>
+                        `<button data-preview-persona="${id}" aria-pressed="${state.preview === id}">${E(label)}</button>`,
                 )
                 .join(
                     '',
-                )}</select></label><button data-case="reset" aria-label="Reset sample workspace">Reset demo</button><small>For reviewing this preview.</small></div></details></div>`;
+                )}<small>Read-only, like the app’s QA preview. Your plan stays as it is.</small></div></details></div>`;
         for (const token of opened)
             document
                 .querySelector(`[data-paper-row="${CSS.escape(token)}"]`)
@@ -356,18 +409,21 @@
     function processCard(p, plan) {
         const a = plan.actions.filter((x) => x.process === p.id),
             done = a.filter((x) => x.status === 'completed').length;
-        return `<button class="process-summary" data-process="${p.id}"><span class="topic-icon ${p.tone}">${I(p.icon)}</span><span class="process-card-copy"><strong>${E(p.name)}</strong><small>${p.note ? E(p.note) : !p.started ? 'Explore before you start' : done + ' of ' + a.length + ' steps done'}</small></span><span class="process-card-status">${badge(workflow[p.workflow], p.workflow)}${I('arrow')}</span></button>`;
+        return `<button class="process-summary" data-process="${p.id}"><span class="topic-icon ${p.tone}">${I(p.icon)}</span><span class="process-card-copy"><strong>${E(p.name)}</strong><small>${p.note ? E(p.note) : !p.started ? 'Explore before you start' : done + ' of ' + a.length + ' steps done'}</small></span><span class="process-card-status">${badge(workflow[p.workflow], tone(p.workflow))}${I('arrow')}</span></button>`;
     }
+    // "I don't know" is an answer (unknown); "Skip for now" leaves the
+    // question for later. They're different, as in the backend.
     function question() {
-        return state.expiry === null && !state.questionSkipped
-            ? `<section class="question-card" aria-label="One question"><div><span class="question-context">For your EU Blue Card process</span><h3>What expiry date is on your D visa?</h3></div><div class="actions">${button('Enter date', 'expiry')}${button('I don’t know yet', 'skip')}</div></section>`
-            : state.expiry === null
-              ? `<div class="deferred-question"><span>${I('info')}Visa expiry remains unknown</span><button data-case="expiry">Answer when ready</button></div>`
-              : '';
+        if (state.expiry !== null) return '';
+        if (state.expiryUnknown)
+            return `<div class="deferred-question"><span>${I('info')}You don’t know your visa expiry yet</span><button data-case="expiry">Add it when you know</button></div>`;
+        if (state.questionSkipped)
+            return `<div class="deferred-question"><span>${I('info')}Visa expiry left for later</span><button data-case="expiry">Answer when ready</button></div>`;
+        return `<section class="question-card" aria-label="One question"><div><span class="question-context">For your EU Blue Card process</span><h3>What expiry date is on your D visa?</h3></div><div class="actions">${button('Enter date', 'expiry')}${button('I don’t know', 'expiry-unknown')}${button('Skip for now', 'skip')}</div></section>`;
     }
     function dates() {
         const rows = P.timeline(state);
-        return `<section class="overview-dates" aria-labelledby="dates-heading"><div class="case-section-head"><h2 id="dates-heading">Dates & appointments</h2><button class="icon-button" data-case="choose-appointment" aria-label="Record an appointment">${I('plus')}</button></div><div class="date-grid">${rows.map((t) => `<button class="timeline-row" data-timeline="${E(t.id)}" data-for="${t.process}"><span class="timeline-icon">${I(t.icon)}</span><span><strong>${E(t.kind)}</strong><small>${E(t.name)}</small></span><span class="timeline-date${t.id === 'expiry' && soon(t.date)?.days <= 1 ? ' is-urgent' : ''}">${soon(t.date)?.label ? `<em>${E(soon(t.date).label)}</em>` : ''}${date(t.date)}${t.time ? '<small>' + E(t.time) + '</small>' : ''}</span>${I('pencil')}</button>`).join('') || '<p class="muted">Your recorded dates will appear here.</p>'}</div></section>`;
+        return `<section class="overview-dates" aria-labelledby="dates-heading"><div class="case-section-head"><h2 id="dates-heading">Dates & appointments</h2><button class="icon-button" data-case="choose-appointment" aria-label="Record an appointment">${I('plus')}</button></div><div class="date-grid">${rows.map((t) => `<button class="timeline-row" data-timeline="${E(t.id)}" data-for="${t.process}"><span class="timeline-icon">${I(t.icon)}</span><span><strong>${E(t.kind)}</strong><small>${E(t.name)}</small></span><span class="timeline-date${t.id === 'expiry' && soon(t.date)?.days <= 1 ? ' is-urgent' : ''}">${soon(t.date)?.label ? `<em>${E(soon(t.date).label)}</em>` : ''}${t.legal && !t.date ? `Needs ${E(t.legal.needs)}<small>${E(t.legal.law)}</small>` : date(t.date)}${t.time ? '<small>' + E(t.time) + '</small>' : ''}</span>${I(t.legal ? 'arrow' : 'pencil')}</button>`).join('') || '<p class="muted">Your recorded dates will appear here.</p>'}</div></section>`;
     }
     function allActions(plan) {
         const list = plan.actions.filter(
@@ -426,7 +482,7 @@
         );
     }
     function startGuide(review = false) {
-        if (!G.allowed(state)) return;
+        if (!G.allowed(state) || state.preview) return;
         if (J.applies(state)) {
             if (review === 'surface') G.review(state);
             else if (review) {
@@ -492,7 +548,7 @@
         );
     }
     window.addEventListener('storage', (event) => {
-        if (event.key !== key) return;
+        if (event.key !== key || state.preview) return;
         try {
             const updated = JSON.parse(event.newValue);
             if (!updated) return;
@@ -518,15 +574,20 @@
         const guide = P.guide(state, a.id, R);
         const editable = p.started && !P.terminal(p);
         const papers = guide.primary === 'documents';
+        const submitStep = a.process === 'blue-card' && a.record === 1;
         const text =
             a.status === 'completed'
                 ? 'You marked this step done. You can review it or change that below.'
-                : a.status === 'waiting'
-                  ? 'You marked this task as waiting. Review your checklist or update your progress when something changes.'
-                  : papers
-                    ? 'Check what you have. Mark each document ready only for this task.'
-                    : 'Read the official information, then update your own checklist here.';
-        return `<div class="step-guide"><p>${text}</p><div class="step-main-actions">${papers ? `<button class="button primary" data-paper-for="${p.id}" ${guide.document ? `data-paper-focus="${p.id}:${guide.document.index}"` : ''}>${I('document')}${guide.document ? 'Check documents' : 'Review documents'}<span class="step-count">${guide.ready}/${guide.total}</span></button>` : `<a class="button primary" href="${E(R[a.record].source)}" target="_blank" rel="noopener">${I('arrow')}Read official information</a>`}<button class="step-help" data-help-step="${a.id}">${I('spark')}Help with this step</button></div>${papers && guide.document && a.status !== 'completed' ? `<div class="step-document-preview">${I('document')}<div><small>${/where|if |applicable/i.test(guide.document.label) ? 'May be needed · check this document' : 'First document to check'}</small><strong>${E(guide.document.label)}</strong></div></div>` : ''}</div>${R[a.record].description ? `<details class="step-guidance"><summary>About this step ${I('down')}</summary><p class="review-copy">${E(R[a.record].description)}</p><small>Historical information · current guidance needs checking</small></details>` : ''}${editable ? `<div class="step-actions"><button class="plain-button" data-plan-step="${E(a.id)}">${I('clock')}${BureaucracyPlanning.linked(S.studio(), 'bureaucracy-preparation-' + a.id) ? 'View planned time' : 'Set aside time'}</button>${a.process === 'blue-card' && a.record === 1 ? button('I’ve submitted it', 'submission') : `<button class="plain-button" data-toggle-step="${a.id}">${I(a.status === 'completed' ? 'back' : 'check')}${a.status === 'completed' ? 'Reopen step' : 'I’ve finished this step'}</button>`}</div><p class="step-record-note">${I('info')}Your checklist only. Nothing is sent or submitted.</p>` : ''}`;
+                : a.status === 'blocked'
+                  ? `This step is blocked${p.note ? `: ${p.note.charAt(0).toLowerCase()}${p.note.slice(1)}` : ''}. You can finish it once that’s sorted.`
+                  : submitStep && p.submission
+                    ? `You recorded your submission on ${date(p.submission)}. The task waits for the office; mark this step finished when you hear back.`
+                    : a.status === 'waiting'
+                      ? 'This task is with the office. Review your checklist or update your progress when something changes.'
+                      : papers
+                        ? 'Check what you have. Mark each document ready only for this task.'
+                        : 'Read the official information, then update your own checklist here.';
+        return `<div class="step-guide"><p>${text}</p><div class="step-main-actions">${papers ? `<button class="button primary" data-paper-for="${p.id}" ${guide.document ? `data-paper-focus="${p.id}:${guide.document.index}"` : ''}>${I('document')}${guide.document ? 'Check documents' : 'Review documents'}<span class="step-count">${guide.ready}/${guide.total}</span></button>` : `<a class="button primary" href="${E(R[a.record].source)}" target="_blank" rel="noopener">${I('arrow')}Read official information</a>`}<button class="step-help" data-help-step="${a.id}">${I('spark')}Help with this step</button></div>${papers && guide.document && a.status !== 'completed' ? `<div class="step-document-preview">${I('document')}<div><small>${/where|if |applicable/i.test(guide.document.label) ? 'May be needed · check this document' : 'First document to check'}</small><strong>${E(guide.document.label)}</strong></div></div>` : ''}</div>${R[a.record].description ? `<details class="step-guidance"><summary>About this step ${I('down')}</summary><p class="review-copy">${E(R[a.record].description)}</p><small>Historical information · current guidance needs checking</small></details>` : ''}${editable ? `<div class="step-actions"><button class="plain-button" data-plan-step="${E(a.id)}">${I('clock')}${BureaucracyPlanning.linked(S.studio(), 'bureaucracy-preparation-' + a.id) ? 'View planned time' : 'Set aside time'}</button>${submitStep && !p.submission ? button('I’ve submitted it', 'submission') : a.status === 'blocked' ? '' : `<button class="plain-button" data-toggle-step="${a.id}">${I(a.status === 'completed' ? 'back' : 'check')}${a.status === 'completed' ? 'Reopen step' : 'I’ve finished this step'}</button>`}</div><p class="step-record-note">${I('info')}Your checklist only. Nothing is sent or submitted.</p>` : ''}`;
     }
     function detail() {
         const p = current();
@@ -546,7 +607,7 @@
                   P.appointmentForComposer(state, p.id)?.id,
               )
             : null;
-        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(p.name)} progress</h2>${badge(workflow[p.workflow], p.workflow)}</div>${p.started && !P.terminal(p) ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${!p.started ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${p.note ? `<p class="process-note">${I(p.workflow === 'waiting' ? 'clock' : 'info')}${E(p.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${done}/${acts.length} done</span></div>${acts.map((a) => `<details class="process-step" data-step="${E(a.id)}" ${a.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${a.status}">${I(a.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(R[a.record].title)}</strong><small>${E(a.status === 'blocked' ? 'Needs attention' : P.statuses[a.status])}</small>${dueChip(a)}</span>${I('down')}</summary><div class="step-content">${stepContent(p, a)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${p.id}">${I('document')}<span>Documents<small>${P.documents(state, p.id).filter((d) => d === 'confirmed_for_use').length} marked ready</small></span>${I('arrow')}</button><button data-source-for="${p.id}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${p.id === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${p.id === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${p.started && !P.terminal(p) ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${p.appointment ? 'Edit' : 'Record'} appointment">${I(p.appointment ? 'pencil' : 'plus')}</button></div>${p.appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(p.appointment.date))} · ${E(p.appointment.time)}</strong><small>${E(p.appointment.location || 'Location not recorded')}</small></div>${onToday(p.appointment) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${p.submission ? date(p.submission) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${p.submission ? 'Review' : 'Record'} submission">${I(p.submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
+        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(p.name)} progress</h2>${badge(workflow[p.workflow], tone(p.workflow))}</div>${p.started && !P.terminal(p) ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${!p.started ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${p.note ? `<p class="process-note">${I(p.workflow === 'waiting' ? 'clock' : 'info')}${E(p.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${done}/${acts.length} done</span></div>${acts.map((a) => `<details class="process-step" data-step="${E(a.id)}" ${a.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${a.status}">${I(a.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(R[a.record].title)}</strong><small>${E(P.statuses[a.status])}</small>${dueChip(a)}</span>${I('down')}</summary><div class="step-content">${stepContent(p, a)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${p.id}">${I('document')}<span>Documents<small>${P.documents(state, p.id).filter((d) => d === 'confirmed_for_use').length} marked ready</small></span>${I('arrow')}</button><button data-source-for="${p.id}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${P.timeline(state).find((t) => t.legal && t.process === p.id) ? `<a href="${E(P.registrationDeadline.source)}" target="_blank" rel="noopener">${I('calendar')}<span>Legal deadline<small>${E(P.registrationDeadline.rule)} · ${E(P.registrationDeadline.law)}. The date needs ${E(P.registrationDeadline.needs)}.</small></span>${I('arrow')}</a>` : ''}${p.id === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${p.id === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${p.started && !P.terminal(p) ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${p.appointment ? 'Edit' : 'Record'} appointment">${I(p.appointment ? 'pencil' : 'plus')}</button></div>${p.appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(p.appointment.date))} · ${E(p.appointment.time)}</strong><small>${E(p.appointment.location || 'Location not recorded')}</small></div>${onToday(p.appointment) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${p.submission ? date(p.submission) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${p.submission ? 'Review' : 'Record'} submission">${I(p.submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
     }
     function docsFor(p) {
         return p.records
@@ -615,7 +676,11 @@
         if (!o) return;
         o.details ||= BureaucracyDetails.create({
             current_residence_title: 'national_d_visa',
-            ...(state.expiry ? { visa_expires_at: state.expiry } : {}),
+            ...(state.expiry
+                ? { visa_expires_at: state.expiry }
+                : state.expiryUnknown
+                  ? { visa_expires_at: 'unknown' }
+                  : {}),
             ...B.sampleFacts(state),
         });
         o.details.open = true;
@@ -654,24 +719,35 @@
             `${scope(p)}<h3>${E(d.label)}</h3><p>${E(ready[d.state])}${d.conditional ? ' · Conditional in source' : ''}</p>${!p.started ? `<p>Start this process before confirming a document.</p>${button('Start this process', 'start', 'primary')}` : `<div class="actions">${['missing', 'unknown'].includes(d.state) ? `<button class="button primary" data-doc-action="${token}|have">I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.state) ? `<button class="button primary" data-doc-action="${token}|confirm">Ready for this task</button>` : ''}<button class="button secondary" data-doc-action="${token}|missing">I don’t have it ready</button></div>`}`,
         );
     }
+    // Only the changes the backend accepts from here. Completion needs every
+    // step finished first; "waiting" needs a submission.
+    const changeLabels = {
+        preparing: 'Back to preparing',
+        submitted: 'I’ve submitted it',
+        waiting: 'Waiting for the office',
+        action_required: 'The office needs something from me',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+    };
     function statusDialog() {
         const p = current();
+        const options = P.choices(state, p.id);
+        const usable = options.filter((o) => o.allowed);
+        const openSteps = options.some(
+            (o) => o.value === 'completed' && !o.allowed,
+        );
         openEditor(
             'Update progress',
-            `${scope(p)}<form id="workflow-form"><label class="form-field">Your current progress<select name="workflow" id="workflow-choice">${['preparing', 'blocked', 'waiting', 'completed', 'cancelled'].map((v) => `<option value="${v}" ${p.workflow === v ? 'selected' : ''}>${workflow[v]}</option>`).join('')}</select></label><label class="form-field">Note <span class="muted">Optional</span><input name="note" maxlength="140" value="${E(p.note || '')}" placeholder="What are you waiting for?"></label><label class="form-field" id="closed-date-field" hidden>Date recorded<input type="date" name="closedOn"></label><p>This updates your progress in Expadu. It does not send documents or change anything with the authority.</p><button class="button primary" type="submit">Save progress</button></form>`,
+            `${scope(p)}<p class="workflow-now">Now: <strong>${E(workflow[p.workflow])}</strong></p>${
+                usable.length
+                    ? `<form id="workflow-form"><label class="form-field">Change to<select name="workflow" id="workflow-choice">${usable.map((o) => `<option value="${o.value}">${E(changeLabels[o.value])}</option>`).join('')}</select></label><label class="form-field" id="closed-date-field" ${['submitted', 'completed', 'cancelled'].includes(usable[0].value) ? '' : 'hidden'}><span data-date-label>${usable[0].value === 'submitted' ? 'Date submitted' : 'Date recorded'}</span><input type="date" name="closedOn" ${['submitted', 'completed', 'cancelled'].includes(usable[0].value) ? 'required' : ''}></label>${openSteps ? `<p class="workflow-hint">${I('info')}To record completion, mark each step finished first.</p>` : ''}<p>This updates your progress in Expadu. It does not send documents or change anything with the authority.</p><button class="button primary" type="submit">Save progress</button></form>`
+                    : '<p>Nothing to change from here yet.</p>'
+            }`,
         );
     }
     document.addEventListener('change', (e) => {
-        if (e.target.matches('[data-situation-scenario]')) {
-            closeEditor();
-            state = J.activate(localStorage, e.target.value);
-            P.hydrate(state);
-            H.hydrate(state);
-            G.hydrate(state);
-            go('overview');
-            return;
-        }
         if (!e.target.matches('[data-family-access]')) return;
+        if (state.preview) return;
         const access = e.target.value;
         closeEditor();
         if (H.setPreviewAccess(state, access)) {
@@ -682,6 +758,21 @@
     document.addEventListener('click', (e) => {
         const b = e.target.closest('button');
         if (!b || b.closest('[data-orientation-root]')) return;
+        if ('previewPersona' in b.dataset) {
+            closeEditor();
+            previewPersona(b.dataset.previewPersona);
+            return;
+        }
+        if ('previewExit' in b.dataset) {
+            endPreview();
+            return;
+        }
+        if (state.preview && !previewSafe(b)) {
+            U.toast(
+                'This is a read-only preview. Go back to your plan to make changes.',
+            );
+            return;
+        }
         if (
             J.applies(state) &&
             b.matches(
@@ -784,48 +875,9 @@
             }
             return;
         }
-        if (action === 'person') {
-            U.open(
-                'Whose plan?',
-                `${[
-                    ['self', 'Your sample plan', 'You can review and edit'],
-                    ['adult', 'Sample adult', 'Access not granted'],
-                    [
-                        'child',
-                        'Sample dependent',
-                        'Authorisation policy pending',
-                    ],
-                ]
-                    .map(
-                        ([id, title, note]) =>
-                            `<button class="person-option" data-person="${id}">${I('document')}<span><strong>${title}</strong><small>${note}</small></span>${I(id === state.person ? 'check' : 'arrow')}</button>`,
-                    )
-                    .join('')}`,
-            );
-            return;
-        }
         if (action === 'self') {
             state.person = 'self';
             go('overview');
-            return;
-        }
-        if (action === 'reset') {
-            U.open(
-                'Reset the sample plan?',
-                `<p>Only this Bureaucracy sample is reset. Your Composer draft is kept.</p><div class="actions">${button('Keep changes', 'close')}${button('Reset sample plan', 'confirm-reset', 'primary')}</div>`,
-            );
-            return;
-        }
-        if (action === 'confirm-reset') {
-            state = P.hydrate(
-                J.applies(state)
-                    ? state.scenario === 'returning'
-                        ? J.returning()
-                        : J.fresh()
-                    : B.fresh(),
-            );
-            go('overview');
-            U.toast('Sample plan reset');
             return;
         }
         if (action === 'close') {
@@ -919,13 +971,7 @@
             return;
         }
         if (b.dataset.toggleStep) {
-            const a = P.projection(state).actions.find(
-                    (a) => a.id === b.dataset.toggleStep,
-                ),
-                p = P.process(state, a.process);
-            if (!p.started || P.terminal(p)) return;
-            if (a.process === 'blue-card') state.prepared = !state.prepared;
-            else state.records[a.process].done = !state.records[a.process].done;
+            if (!P.toggleStep(state, b.dataset.toggleStep)) return;
             U.close();
             persist();
             document
@@ -946,6 +992,10 @@
         }
         if (b.dataset.timeline) {
             state.process = b.dataset.for;
+            if (b.dataset.timeline.startsWith('deadline-')) {
+                go('detail', b.dataset.for);
+                return;
+            }
             if (b.dataset.timeline === 'expiry') expiry();
             else if (b.dataset.timeline.startsWith('appointment'))
                 appointment();
@@ -967,6 +1017,11 @@
         }
         if (action === 'skip') {
             state.questionSkipped = true;
+            persist();
+            return;
+        }
+        if (action === 'expiry-unknown') {
+            state.expiryUnknown = true;
             persist();
             return;
         }
@@ -1028,12 +1083,10 @@
             action === 'confirm-remove-appointment' ||
             action === 'confirm-remove-submission'
         ) {
-            const k =
-                action === 'confirm-remove-appointment'
-                    ? 'appointment'
-                    : 'submission';
-            if (state.process === 'blue-card') state[k] = null;
-            else state.records[state.process][k] = null;
+            if (action === 'confirm-remove-submission')
+                P.removeSubmission(state, state.process);
+            else if (state.process === 'blue-card') state.appointment = null;
+            else state.records[state.process].appointment = null;
             U.close();
             persist();
             return;
@@ -1049,10 +1102,16 @@
             persist();
         }
         if (e.target.id === 'workflow-choice') {
-            const yes = ['completed', 'cancelled'].includes(e.target.value),
+            const yes = ['submitted', 'completed', 'cancelled'].includes(
+                    e.target.value,
+                ),
                 field = document.querySelector('#closed-date-field');
             field.hidden = !yes;
             field.querySelector('input').required = yes;
+            field.querySelector('[data-date-label]').textContent =
+                e.target.value === 'submitted'
+                    ? 'Date submitted'
+                    : 'Date recorded';
         }
     });
     document.addEventListener('submit', (e) => {
@@ -1077,9 +1136,15 @@
             return;
         }
         if (e.target.id === 'submission-form') {
-            if (!B.validDate(d.date)) return;
-            if (state.process === 'blue-card') state.submission = d.date;
-            else state.records[state.process].submission = d.date;
+            if (!P.recordSubmission(state, state.process, d.date)) {
+                U.toast(
+                    B.validDate(d.date)
+                        ? 'This task can’t record a submission from its current progress.'
+                        : 'Choose the date you submitted it.',
+                );
+                return;
+            }
+            U.toast('Submission recorded. The task now waits for the office.');
         }
         if (
             e.target.id === 'workflow-form' &&
@@ -1087,11 +1152,16 @@
                 state,
                 state.process,
                 d.workflow,
-                d.note,
+                '',
                 d.closedOn || null,
             )
         ) {
-            U.toast('Check the process status and date');
+            U.toast(
+                d.workflow === 'completed' &&
+                    !P.stepsDone(state, P.process(state, state.process))
+                    ? 'Confirm the individual steps before completing this task.'
+                    : 'Choose a date for this change.',
+            );
             return;
         }
         if (e.target.id === 'process-form') {
@@ -1105,6 +1175,8 @@
         persist();
     });
     render();
+    if (personas.some(([id]) => id === requestedScenario))
+        previewPersona(requestedScenario);
     const initial = new URLSearchParams(location.search);
     if (initial.has('guide') && (!J.applies(state) || G.hydrate(state).started))
         startGuide(

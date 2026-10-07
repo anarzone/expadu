@@ -159,13 +159,15 @@
                             ? 'completed'
                             : p.id === 'blue-card' &&
                                 ((i === 0 && s.prepared) ||
-                                    (i === 1 && s.submission))
+                                    (i === 1 && s.submitDone))
                               ? 'completed'
                               : p.id !== 'blue-card' && s.records[p.id].done
                                 ? 'completed'
                                 : p.workflow === 'blocked'
                                   ? 'blocked'
-                                  : ['waiting', 'submitted'].includes(
+                                  : // A submission waits for the office;
+                                    // its step stays open until confirmed.
+                                    ['waiting', 'submitted'].includes(
                                           p.workflow,
                                       )
                                     ? 'waiting'
@@ -210,31 +212,115 @@
             total: all.length,
         };
     }
-    function updateWorkflow(s, id, value, note = '', closedOn = null) {
+    // The backend's reported workflow (ProcessStateMachine): each target and
+    // the states it may follow. "Waiting" needs a submission first, and
+    // completion needs every step confirmed. Notes aren't stored.
+    const transitions = {
+        preparing: ['not_started', 'blocked', 'action_required'],
+        submitted: [
+            'not_started',
+            'preparing',
+            'submitted',
+            'waiting',
+            'action_required',
+        ],
+        waiting: ['submitted', 'waiting'],
+        action_required: ['submitted', 'waiting', 'preparing'],
+        completed: ['preparing', 'submitted', 'waiting', 'action_required'],
+        cancelled: [
+            'not_started',
+            'preparing',
+            'blocked',
+            'submitted',
+            'waiting',
+            'action_required',
+        ],
+    };
+    const dated = ['submitted', 'completed', 'cancelled'];
+    function stepsDone(s, p) {
+        return p.id === 'blue-card'
+            ? !!(s.prepared && s.submitDone)
+            : !!s.records[p.id]?.done;
+    }
+    // What "Update progress" may offer from where the task is now.
+    function choices(s, id) {
+        const p = process(s, id);
+        if (!p?.started || terminal(p)) return [];
+        return Object.keys(transitions)
+            .filter(
+                (value) =>
+                    value !== p.workflow &&
+                    transitions[value].includes(p.workflow),
+            )
+            .map((value) => ({
+                value,
+                allowed: value !== 'completed' || stepsDone(s, p),
+            }));
+    }
+    function updateWorkflow(s, id, value, note = '', date = null) {
         const p = process(s, id);
         if (
             !p ||
             !p.started ||
-            ![
-                'preparing',
-                'blocked',
-                'waiting',
-                'completed',
-                'cancelled',
-            ].includes(value)
+            !transitions[value]?.includes(p.workflow) ||
+            (value === 'completed' && !stepsDone(s, p)) ||
+            (dated.includes(value) && !B.validDate(date))
         )
             return false;
-        if (
-            ['completed', 'cancelled'].includes(value) &&
-            !B.validDate(closedOn)
-        )
-            return false;
+        const closedOn = terminal({ workflow: value }) ? date : null;
+        const submission = value === 'submitted' ? date : p.submission;
         if (id === 'blue-card') {
             s.workflow = value;
-            s.processNote = note;
+            s.processNote = '';
             s.closedOn = closedOn;
+            s.submission = submission;
         } else
-            Object.assign(s.records[id], { workflow: value, note, closedOn });
+            Object.assign(s.records[id], {
+                workflow: value,
+                note: '',
+                closedOn,
+                submission,
+            });
+        return true;
+    }
+    // "I've submitted it" records the date and moves the task to submitted;
+    // the step itself stays open. Removing it goes back to preparing.
+    function recordSubmission(s, id, date) {
+        return updateWorkflow(s, id, 'submitted', '', date);
+    }
+    function removeSubmission(s, id) {
+        const p = process(s, id);
+        if (!p?.started || terminal(p) || !p.submission) return false;
+        const back = ['submitted', 'waiting'].includes(p.workflow)
+            ? 'preparing'
+            : p.workflow;
+        if (id === 'blue-card') {
+            s.submission = null;
+            s.submitDone = false;
+            s.workflow = back;
+        } else
+            Object.assign(s.records[id], { submission: null, workflow: back });
+        return true;
+    }
+    // Finish or reopen one step; a blocked step can't be finished.
+    function toggleStep(s, actionId) {
+        const a = actions(s).find((x) => x.id === actionId);
+        const p = a && process(s, a.process);
+        if (!p?.started || terminal(p)) return false;
+        if (a.status === 'blocked') return false;
+        const finishing = a.status !== 'completed';
+        if (p.id === 'blue-card') {
+            if (actionId === 'blue-card:1') {
+                if (finishing && !s.submission) return false;
+                s.submitDone = finishing;
+            } else s.prepared = finishing;
+        } else s.records[p.id].done = finishing;
+        // Like the backend, step work outside the office's hands is
+        // preparation.
+        if (!['submitted', 'waiting', 'action_required'].includes(p.workflow)) {
+            if (p.id === 'blue-card') s.workflow = 'preparing';
+            else s.records[p.id].workflow = 'preparing';
+        }
         return true;
     }
     function start(s, id) {
@@ -329,10 +415,34 @@
               }
             : null;
     }
+    // The one legal deadline the backend declares (process-map.yaml,
+    // legal_due): §17(1) BMG, register "innerhalb von zwei Wochen nach dem
+    // Einzug". Its date needs the move-in date, which this sample doesn't
+    // record, so it stays unknown; the client never calculates it.
+    const registrationDeadline = {
+        rule: 'Within two weeks of moving in',
+        law: '§17(1) BMG',
+        source: 'https://www.gesetze-im-internet.de/bmg/__17.html',
+        verifiedAt: '2026-09-08',
+        needs: 'your move-in date',
+    };
     function timeline(s) {
         return processes(s)
             .filter((p) => !terminal(p))
             .flatMap((p) => [
+                ...(p.id === 'address' && !stepsDone(s, p)
+                    ? [
+                          {
+                              id: 'deadline-' + p.id,
+                              process: p.id,
+                              name: p.name,
+                              kind: 'Legal deadline',
+                              date: null,
+                              icon: 'calendar',
+                              legal: registrationDeadline,
+                          },
+                      ]
+                    : []),
                 ...(p.id === 'blue-card'
                     ? [
                           {
@@ -381,6 +491,11 @@
         process,
         projection,
         updateWorkflow,
+        choices,
+        stepsDone,
+        recordSubmission,
+        removeSubmission,
+        toggleStep,
         start,
         documents,
         guide,
@@ -389,5 +504,6 @@
         appointmentForComposer,
         timeline,
         terminal,
+        registrationDeadline,
     };
 })(globalThis);

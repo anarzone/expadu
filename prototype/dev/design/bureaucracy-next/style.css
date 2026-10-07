@@ -2257,22 +2257,85 @@ body[data-page='bureaucracy'] .sr-only {
     background: var(--color-bg-surface);
     box-shadow: 0 12px 36px #211d151a;
 }
-.review-tools-panel label {
-    display: grid;
-    gap: 4px;
+.review-tools-label {
     color: var(--color-text-soft);
+    font-size: var(--text-caption);
 }
-.review-tools-panel select {
+/* Persona choices: aligned rows, the one being previewed in cyan. */
+.review-tools-panel button {
     min-height: 44px;
-    padding: 8px;
+    padding: 0 12px;
     border: 0;
     border-radius: var(--radius-md);
     background: var(--color-bg-quiet);
     color: var(--color-text);
     font: inherit;
+    font-size: var(--text-small);
+    text-align: left;
+    cursor: pointer;
 }
-.review-tools-panel button {
-    justify-self: start;
+.review-tools-panel button[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-weight: var(--weight-semibold);
+}
+/* A read-only persona preview says so above the page. */
+.persona-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-text);
+    font-size: var(--text-small);
+}
+.persona-preview > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--color-select-text);
+}
+.persona-preview span {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+}
+.persona-preview span strong {
+    font-weight: var(--weight-semibold);
+}
+.persona-preview button {
+    flex: none;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--color-text);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+/* Update progress: where the task is now, and why completion may wait. */
+.workflow-now {
+    margin: 0 0 8px;
+    color: var(--color-text-soft);
+}
+.workflow-now strong {
+    color: var(--color-text);
+}
+.workflow-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--color-text-soft);
+}
+.workflow-hint svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
 }
 .review-tools-panel small {
     color: var(--color-text-soft);

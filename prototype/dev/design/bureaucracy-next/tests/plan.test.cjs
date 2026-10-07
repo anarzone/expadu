@@ -50,12 +50,25 @@ test('same-kind documents stay independently confirmed per application', () => {
     assert.equal(s.prepared, false);
     assert.equal(s.records.address.workflow, 'blocked');
 });
-test('process workflow changes consistently update overview, filtered actions and history without confirming papers', () => {
+test('progress follows the backend rules: waiting needs a submission, completion needs every step', () => {
     const s = fresh(),
         before = JSON.stringify(s.records.address.docs);
-    P.updateWorkflow(s, 'address', 'waiting', 'Waiting for a reply');
+    // Blocked can't jump to waiting; a submission comes first.
+    assert.equal(P.updateWorkflow(s, 'address', 'waiting'), false);
+    assert.equal(P.updateWorkflow(s, 'address', 'preparing'), true);
+    assert.equal(P.updateWorkflow(s, 'address', 'waiting'), false);
+    assert.equal(P.recordSubmission(s, 'address', '2026-09-05'), true);
+    assert.equal(s.records.address.workflow, 'submitted');
+    assert.equal(P.updateWorkflow(s, 'address', 'waiting'), true);
     assert.equal(P.projection(s).counts.blocked, 0);
     assert.equal(P.projection(s).counts.waiting, 2);
+    // Completion waits for the step and needs a date.
+    assert.equal(
+        P.updateWorkflow(s, 'address', 'completed', '', '2026-09-08'),
+        false,
+    );
+    assert.equal(P.toggleStep(s, 'address:0'), true);
+    assert.equal(s.records.address.workflow, 'waiting');
     assert.equal(P.updateWorkflow(s, 'address', 'completed', '', null), false);
     assert.equal(
         P.updateWorkflow(s, 'address', 'completed', '', '2026-09-08'),
@@ -69,6 +82,53 @@ test('process workflow changes consistently update overview, filtered actions an
         false,
     );
     assert.equal(JSON.stringify(s.records.address.docs), before);
+});
+test('a submission waits for the office and leaves its step open', () => {
+    const s = fresh();
+    assert.equal(P.toggleStep(s, 'blue-card:1'), false);
+    assert.equal(P.recordSubmission(s, 'blue-card', 'not a date'), false);
+    assert.equal(P.recordSubmission(s, 'blue-card', '2026-09-30'), true);
+    assert.equal(s.workflow, 'submitted');
+    const step = () =>
+        P.projection(s).actions.find((a) => a.id === 'blue-card:1').status;
+    assert.equal(step(), 'waiting');
+    assert.equal(P.toggleStep(s, 'blue-card:1'), true);
+    assert.equal(step(), 'completed');
+    assert.equal(s.workflow, 'submitted');
+    assert.equal(P.removeSubmission(s, 'blue-card'), true);
+    assert.equal(s.workflow, 'preparing');
+    assert.equal(step(), 'todo');
+});
+test('Update progress offers only the changes the backend accepts', () => {
+    const s = fresh();
+    // Plain copies: the model runs in another realm.
+    const offered = () => [
+        ...P.choices(s, 'blue-card').map((c) => `${c.value}:${c.allowed}`),
+    ];
+    assert.deepEqual(offered(), [
+        'submitted:true',
+        'action_required:true',
+        'completed:false',
+        'cancelled:true',
+    ]);
+    P.recordSubmission(s, 'blue-card', '2026-09-30');
+    assert.ok(offered().includes('waiting:true'));
+    assert.ok(!offered().some((c) => c.startsWith('preparing')));
+    // A blocked step can't be finished; blocked work can go back to preparing.
+    assert.equal(P.toggleStep(s, 'address:0'), false);
+    assert.deepEqual(
+        [...P.choices(s, 'address').map((c) => c.value)],
+        ['preparing', 'cancelled'],
+    );
+});
+test('the registration deadline is a legal deadline with its source and no calculated date', () => {
+    const s = fresh();
+    const row = P.timeline(s).find((t) => t.id === 'deadline-address');
+    assert.equal(row.kind, 'Legal deadline');
+    assert.equal(row.date, null);
+    assert.equal(row.legal.law, '§17(1) BMG');
+    assert.match(row.legal.source, /gesetze-im-internet\.de\/bmg\/__17/);
+    assert.equal(row.legal.verifiedAt, '2026-09-08');
 });
 test('unknown facts leave other processes, historical records and actions reachable', () => {
     const s = fresh();

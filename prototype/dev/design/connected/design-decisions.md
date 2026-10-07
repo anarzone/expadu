@@ -364,6 +364,16 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Paperwork follows the v2 backend rules — owner request, 7 October (in review):**
+submitting moves a task to Submitted without finishing its step; Update
+progress offers only the changes the backend accepts (waiting only after a
+submission, completion only when every step is finished, blocked steps can't
+be finished) with its labels; "I don't know" and "Skip for now" are different
+answers; the person switch lists only people you can access; Review opens a
+read-only persona preview with no reset; and Address registration shows the
+§17(1) BMG legal deadline with its source, its date unknown without a move-in
+date. Details are in `bureaucracy-next/README.md`.
+
 **Place details — owner request, 7 October (in review):** with the places
 pipeline's new tags, restaurants and fast food always show their cuisine
 ("Italian · Pizza", or "Cuisine not listed"); food places show outdoor seating
