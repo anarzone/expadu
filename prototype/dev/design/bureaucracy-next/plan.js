@@ -741,13 +741,14 @@
             : null;
     }
     // The registration date is a target to aim for, not a legal deadline
-    // (owner decision, 7 Oct 2026; backend f761736d). The reviewed card puts
-    // it two weeks after the move-in date (deadline_days 14, quoting §17
-    // BMG) and says it "is not a confirmed personal legal deadline". It needs
-    // the move-in date, which this sample doesn't record, so it stays
-    // unknown; the client never calculates it.
+    // (owner decision, 7 Oct 2026; backend f761736d); the reviewed card says
+    // it "is not a confirmed personal legal deadline". The copy carries no
+    // figure: any period a person reads must come from the card's own
+    // source-checked text, never a string here. It needs the move-in date,
+    // which this sample doesn't record, so it stays unknown; the client never
+    // calculates it.
     const registrationDeadline = {
-        rule: 'Aim to register within two weeks of moving in',
+        rule: 'Aim to register soon after moving in',
         law: '§17 BMG',
         source: 'https://www.gesetze-im-internet.de/bmg/__17.html',
         verifiedAt: '2026-09-08',

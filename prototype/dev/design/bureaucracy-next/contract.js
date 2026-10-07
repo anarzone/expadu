@@ -194,9 +194,9 @@
                     conditional: true,
                     step_id: 'core.anmeldung.complete',
                     action_id: `${p.id}:0`,
-                    // Fixture only: in the real plan this wording is in the
-                    // card's reviewed guidance ("a two-week period under
-                    // §17 BMG"), not on the row.
+                    // Fixture only: generic wording with no figure. In the
+                    // real plan the period is in the card's own
+                    // source-checked text, never on the row.
                     target: d.rule,
                 });
             }

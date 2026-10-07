@@ -45,9 +45,12 @@ What changes on screen:
   so "Visa expires tomorrow" comes from data and shows once. Since the
   owner's 7 October decision (backend f761736d) no date is a legal deadline:
   address registration is a "Target date" that "needs your move-in date",
-  and its task says "Aim to register within two weeks of moving in … it isn't
-  a confirmed legal deadline", as the reviewed card does. A target that isn't
-  anchored reads "Aim to finish by …", never "Due".
+  and its task says "Aim to register soon after moving in. The date needs
+  your move-in date; it isn't a confirmed legal deadline", as the reviewed
+  card does. UI copy carries no legal figure (no period, fee or day count):
+  a figure a person reads must come from the card's own source-checked text,
+  so it can't go stale. A target that isn't anchored reads "Aim to finish by
+  …", never "Due".
 - **Unconfirmed cards** (the backend's daily source check hasn't confirmed
   them) show in Sources & coverage as "We couldn't confirm this right now.
   Check the official page." with the official links, and nothing of their

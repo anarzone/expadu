@@ -134,7 +134,12 @@ test('the registration date is an undated target that needs the move-in date', (
     assert.equal(row.date, null);
     assert.equal(row.needed_fact, 'moved_in_at');
     assert.equal('legal_source' in row, false);
-    assert.match(row.target, /^Aim to register within two weeks/);
+    // No figure in UI copy: a period must come from the card's own text.
+    assert.equal(row.target, 'Aim to register soon after moving in');
+    assert.doesNotMatch(
+        row.target,
+        /\d|\b(one|two|three|week|weeks|days?|months?)\b/i,
+    );
     const listed = p.attention.find((t) => t.id === row.id);
     assert.equal(listed.urgency, 'date_unknown');
     assert.equal(listed.days_remaining, null);
