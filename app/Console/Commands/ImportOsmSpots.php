@@ -210,6 +210,7 @@ class ImportOsmSpots extends Command
         $skippedNoName = 0;
         $skippedDuplicate = 0;
         $skippedOutside = 0;
+        $importedGreenNames = [];
 
         foreach ($elements as $element) {
             $bar->advance();
@@ -247,6 +248,16 @@ class ImportOsmSpots extends Command
                 $skippedOutside++;
 
                 continue;
+            }
+
+            $greenName = ($element['_category'] ?? null) === 'green' ? mb_strtolower(trim($name)) : null;
+            if ($greenName !== null && isset($importedGreenNames[$greenName])) {
+                $skippedDuplicate++;
+
+                continue;
+            }
+            if ($greenName !== null) {
+                $importedGreenNames[$greenName] = true;
             }
 
             $keptTags = $this->keptTags($tags);
@@ -694,27 +705,13 @@ class ImportOsmSpots extends Command
             $unique[($element['type'] ?? 'node').'/'.($element['id'] ?? '')] ??= $element;
         }
 
-        // A forest and the reserve covering it often share a name; keep the
-        // larger green-space object so one place is not listed twice.
-        $largestGreen = [];
-        foreach ($unique as $key => $element) {
-            if (($element['_category'] ?? null) !== 'green') {
-                continue;
-            }
-            $name = mb_strtolower(trim((string) ($element['tags']['name'] ?? '')));
-            $kept = $largestGreen[$name] ?? null;
-            if ($kept !== null && $this->boundsHectares($unique[$kept]) >= $this->boundsHectares($element)) {
-                unset($unique[$key]);
+        // A forest and the reserve covering it often share a name. Offer the
+        // larger object first; the import keeps the first one inside the city.
+        $green = array_filter($unique, fn (array $element): bool => ($element['_category'] ?? null) === 'green');
+        uasort($green, fn (array $a, array $b): int => $this->boundsHectares($b) <=> $this->boundsHectares($a));
 
-                continue;
-            }
-            if ($kept !== null) {
-                unset($unique[$kept]);
-            }
-            $largestGreen[$name] = $key;
-        }
+        return [...array_values(array_diff_key($unique, $green)), ...array_values($green)];
 
-        return array_values($unique);
     }
 
     /** overpass-api.de rejects anonymous clients (406); identify the importer and POST so long queries are not URL-bound. */

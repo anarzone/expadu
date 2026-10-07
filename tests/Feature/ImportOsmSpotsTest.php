@@ -154,7 +154,7 @@ test('green spaces without a center use their bounds midpoint', function () {
         ->and($point->invoke($command, ['type' => 'way']))->toBe([0.0, 0.0]);
 });
 
-test('a forest and reserve sharing a name import once as the larger object', function () {
+test('green objects are offered largest first so a same-named fallback stays available', function () {
     $command = new ImportOsmSpots;
     $unique = new ReflectionMethod($command, 'uniqueElements');
     $box = fn (float $size): array => ['minlat' => 51.0, 'maxlat' => 51.0 + $size, 'minlon' => 6.9, 'maxlon' => 6.9 + $size];
@@ -166,7 +166,7 @@ test('a forest and reserve sharing a name import once as the larger object', fun
         ['type' => 'node', 'id' => 4, '_category' => 'cafe', 'tags' => ['name' => 'Worringer Bruch']],
     ]);
 
-    expect(array_map(fn (array $e): string => $e['type'].'/'.$e['id'], $result))->toBe(['relation/2', 'way/3', 'node/4']);
+    expect(array_map(fn (array $e): string => $e['type'].'/'.$e['id'], $result))->toBe(['node/4', 'way/3', 'relation/2', 'way/1']);
 });
 
 test('sources named as closed or administrative are not recommended', function (string $name, bool $expected) {
