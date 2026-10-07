@@ -100,6 +100,11 @@ class ImportOsmSpots extends Command
             'bakery' => "[out:json][timeout:40];nwr[\"shop\"=\"bakery\"]({$bbox});out center;",
             'coworking' => "[out:json][timeout:25];(nwr[\"amenity\"=\"coworking_space\"]({$bbox});nwr[\"office\"=\"coworking\"]({$bbox}););out center;",
             'library' => "[out:json][timeout:25];nwr[\"amenity\"=\"library\"]({$bbox});out center;",
+            // Named lakes, woods, reserves and recreation grounds that people
+            // visit but OSM does not tag as parks (Königsforst, Fühlinger See,
+            // Poller Wiesen). Bounds let greenSpaceQualifies() skip fountains,
+            // basins and tiny ponds.
+            'green' => "[out:json][timeout:90];(nwr[\"landuse\"=\"recreation_ground\"][\"name\"]({$bbox});nwr[\"leisure\"=\"nature_reserve\"][\"name\"]({$bbox});wr[\"landuse\"=\"forest\"][\"name\"]({$bbox});wr[\"natural\"=\"wood\"][\"name\"]({$bbox});wr[\"natural\"=\"water\"][\"name\"]({$bbox}););out center bb;",
         ];
 
         // Optionally re-import a subset (e.g. after a query fix) without
@@ -209,6 +214,12 @@ class ImportOsmSpots extends Command
             $bar->advance();
 
             $tags = $element['tags'] ?? [];
+
+            if (($element['_category'] ?? null) === 'green' && ! $this->greenSpaceQualifies($element)) {
+                $skippedNoName++;
+
+                continue;
+            }
 
             // Determine category from tags (query category as the hint)
             $category = $this->resolveCategory($tags, $element['_category'] ?? 'cafe');
@@ -583,6 +594,14 @@ class ImportOsmSpots extends Command
      */
     protected function resolveCategory(array $tags, string $hint): string
     {
+        if ($hint === 'green') {
+            return match (true) {
+                ($tags['natural'] ?? null) === 'water' => 'lake',
+                ($tags['landuse'] ?? null) === 'recreation_ground' => 'park',
+                default => 'nature',
+            };
+        }
+
         $amenity = $tags['amenity'] ?? '';
         $office = $tags['office'] ?? '';
 
@@ -634,6 +653,47 @@ class ImportOsmSpots extends Command
      *
      * @var array<string, string>
      */
+    /**
+     * Minimum bounding-box size in hectares per green-space kind. The box
+     * overstates irregular shapes, so the floor is deliberately generous.
+     */
+    private const GREEN_MIN_HECTARES = ['water' => 2.5, 'recreation_ground' => 1.0, 'default' => 5.0];
+
+    /** Water features and club grounds that share the tags but are not destinations. */
+    private const GREEN_NAME_EXCLUSIONS = '/brunnen|becken|sandfang|regenversickerung|absetz|rückhalte|hafen|fontäne|stele|wasserw|kanal|tennis|club|\\be\\.\\s?v\\b|bsg|hundeübung|schutzhof|innenhof/iu';
+
+    /** @param array<string, mixed> $element */
+    protected function greenSpaceQualifies(array $element): bool
+    {
+        $tags = $element['tags'] ?? [];
+        $name = trim((string) ($tags['name'] ?? ''));
+        $sourceId = ($element['type'] ?? 'node').'/'.($element['id'] ?? '');
+
+        if ($name === '' || preg_match(self::GREEN_NAME_EXCLUSIONS, $name) === 1
+            || in_array($sourceId, config('places.green_space_exclusions', []), true)) {
+            return false;
+        }
+
+        $water = $tags['water'] ?? null;
+        if (($tags['natural'] ?? null) === 'water' && $water !== null && ! in_array($water, ['lake', 'pond', 'oxbow', 'reservoir'], true)) {
+            return false;
+        }
+
+        $bounds = $element['bounds'] ?? null;
+        if (! is_array($bounds) || ! isset($bounds['minlat'], $bounds['maxlat'], $bounds['minlon'], $bounds['maxlon'])) {
+            return false;
+        }
+        $height = ((float) $bounds['maxlat'] - (float) $bounds['minlat']) * 111_320;
+        $width = ((float) $bounds['maxlon'] - (float) $bounds['minlon']) * 111_320 * cos(deg2rad((float) $bounds['minlat']));
+        $kind = match (true) {
+            ($tags['natural'] ?? null) === 'water' => 'water',
+            ($tags['landuse'] ?? null) === 'recreation_ground' => 'recreation_ground',
+            default => 'default',
+        };
+
+        return $height * $width / 10_000 >= self::GREEN_MIN_HECTARES[$kind];
+    }
+
     public const FALLBACK_LABELS = [
         'playground' => 'Spielplatz',
         'pitch' => 'Bolzplatz',

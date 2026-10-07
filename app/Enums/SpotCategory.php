@@ -14,6 +14,7 @@ enum SpotCategory: string
     case Skatepark = 'skatepark';
     case Swimming = 'swimming';
     case Lake = 'lake';
+    case Nature = 'nature';
     case DogPark = 'dog_park';
     case TableTennis = 'table_tennis';
     case Boules = 'boules';
@@ -131,7 +132,7 @@ enum SpotCategory: string
     {
         return match ($this) {
             self::Park, self::Playground, self::Pitch, self::Basketball,
-            self::Tennis, self::Skatepark, self::Lake, self::DogPark,
+            self::Tennis, self::Skatepark, self::Lake, self::Nature, self::DogPark,
             self::TableTennis, self::Boules, self::Bbq, self::Picnic,
             self::Viewpoint, self::Zoo, self::Campsite, self::Market => true,
             default => false,
@@ -150,6 +151,7 @@ enum SpotCategory: string
             self::Skatepark => '🛹',
             self::Swimming => '🏊',
             self::Lake => '🏞️',
+            self::Nature => '🌲',
             self::DogPark => '🐕',
             self::TableTennis => '🏓',
             self::Boules => '🎯',
@@ -265,6 +267,7 @@ enum SpotCategory: string
             self::Skatepark => 'Skatepark',
             self::Swimming => 'Swimming',
             self::Lake => 'Lake',
+            self::Nature => 'Woods & nature',
             self::DogPark => 'Dog park',
             self::TableTennis => 'Table tennis',
             self::Boules => 'Boules',
@@ -374,10 +377,11 @@ enum SpotCategory: string
     public function coarse(): string
     {
         return match ($this) {
-            self::Park, self::Viewpoint, self::Bbq, self::Picnic => 'park',
+            // A lake is a green destination; only swimming areas promise a swim.
+            self::Park, self::Viewpoint, self::Bbq, self::Picnic, self::Lake, self::Nature => 'park',
             self::Pitch => 'pitch',
             self::SportsCentre, self::Basketball, self::Tennis, self::TableTennis, self::Boules, self::Skatepark => 'court',
-            self::Swimming, self::Lake => 'swimming',
+            self::Swimming => 'swimming',
             self::Playground => 'playground',
             self::DogPark => 'dog_park',
             self::Museum, self::Gallery, self::Attraction, self::Zoo => 'culture',

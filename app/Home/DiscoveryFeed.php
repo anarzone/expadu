@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Cache;
  */
 class DiscoveryFeed
 {
-    private const OUTDOOR = ['park', 'playground', 'pitch', 'basketball', 'lake', 'dog_park', 'bbq', 'viewpoint', 'skatepark', 'tennis', 'table_tennis', 'boules', 'swimming'];
+    private const OUTDOOR = ['park', 'playground', 'pitch', 'basketball', 'lake', 'nature', 'dog_park', 'bbq', 'viewpoint', 'skatepark', 'tennis', 'table_tennis', 'boules', 'swimming'];
 
     /** Pull the whole light catalogue so every category can compete. */
     private const POOL = 2000;

@@ -18,7 +18,7 @@ enum Archetype: string
     case MakeADayOfIt = 'make_a_day';
     case Anchored = 'anchored';
 
-    private const HERO = ['museum', 'gallery', 'attraction', 'zoo', 'park', 'viewpoint', 'lake'];
+    private const HERO = ['museum', 'gallery', 'attraction', 'zoo', 'park', 'viewpoint', 'lake', 'nature'];
 
     private const SUPPORT = ['cafe', 'library', 'park', 'bakery'];
 
@@ -26,7 +26,7 @@ enum Archetype: string
 
     private const MEAL = ['cafe', 'restaurant', 'bakery', 'fast_food'];
 
-    private const WIND_DOWN = ['viewpoint', 'park', 'lake'];
+    private const WIND_DOWN = ['viewpoint', 'park', 'lake', 'nature'];
 
     /**
      * @param  int|null  $windowMinutes  paces Balanced: a short window gets 2

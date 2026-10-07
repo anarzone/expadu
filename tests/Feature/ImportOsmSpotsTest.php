@@ -1,6 +1,7 @@
 <?php
 
 use App\Console\Commands\ImportOsmSpots;
+use App\Enums\SpotCategory;
 
 // TODO: Re-enable these tests after fixing the OSM import command structure
 // The command was refactored to make separate API calls per category
@@ -82,4 +83,32 @@ test('source website links preserve international hostnames and paths through re
     ['https://example.com/already%20encoded', 'https://example.com/already%20encoded'],
     ['https://name:secret@example.com/', null],
     ['javascript:alert(1)', null],
+]);
+
+test('named lakes woods and recreation grounds import as green destinations', function () {
+    $command = new ImportOsmSpots;
+    $resolve = new ReflectionMethod($command, 'resolveCategory');
+
+    expect($resolve->invoke($command, ['natural' => 'water', 'water' => 'lake'], 'green'))->toBe('lake')
+        ->and($resolve->invoke($command, ['landuse' => 'forest'], 'green'))->toBe('nature')
+        ->and($resolve->invoke($command, ['leisure' => 'nature_reserve'], 'green'))->toBe('nature')
+        ->and($resolve->invoke($command, ['landuse' => 'recreation_ground'], 'green'))->toBe('park')
+        ->and(SpotCategory::Lake->coarse())->toBe('park')
+        ->and(SpotCategory::Nature->coarse())->toBe('park')
+        ->and(SpotCategory::finesForCoarse('swimming'))->toBe(['swimming']);
+});
+
+test('green spaces skip fountains basins tiny ponds and reviewed exclusions', function (array $element, bool $expected) {
+    $command = new ImportOsmSpots;
+    $qualifies = new ReflectionMethod($command, 'greenSpaceQualifies');
+
+    expect($qualifies->invoke($command, $element))->toBe($expected);
+})->with([
+    'large lake' => [['type' => 'way', 'id' => 1, 'tags' => ['name' => 'Fühlinger See', 'natural' => 'water', 'water' => 'lake'], 'bounds' => ['minlat' => 51.02, 'maxlat' => 51.04, 'minlon' => 6.88, 'maxlon' => 6.90]], true],
+    'fountain' => [['type' => 'way', 'id' => 2, 'tags' => ['name' => 'Heinzelmännchenbrunnen', 'natural' => 'water'], 'bounds' => ['minlat' => 50.9, 'maxlat' => 50.91, 'minlon' => 6.9, 'maxlon' => 6.91]], false],
+    'harbour basin' => [['type' => 'way', 'id' => 3, 'tags' => ['name' => 'Hafenbecken I', 'natural' => 'water', 'water' => 'harbour'], 'bounds' => ['minlat' => 50.9, 'maxlat' => 50.91, 'minlon' => 6.9, 'maxlon' => 6.91]], false],
+    'tiny pond' => [['type' => 'way', 'id' => 4, 'tags' => ['name' => 'Amphibienteich', 'natural' => 'water', 'water' => 'pond'], 'bounds' => ['minlat' => 50.9, 'maxlat' => 50.9005, 'minlon' => 6.9, 'maxlon' => 6.9005]], false],
+    'small wood' => [['type' => 'way', 'id' => 5, 'tags' => ['name' => 'Asien', 'landuse' => 'forest'], 'bounds' => ['minlat' => 50.9, 'maxlat' => 50.901, 'minlon' => 6.9, 'maxlon' => 6.901]], false],
+    'reviewed exclusion' => [['type' => 'way', 'id' => 1167638870, 'tags' => ['name' => 'Blackfoot Hochseilgarten', 'landuse' => 'recreation_ground'], 'bounds' => ['minlat' => 50.9, 'maxlat' => 50.91, 'minlon' => 6.9, 'maxlon' => 6.91]], false],
+    'missing bounds' => [['type' => 'way', 'id' => 6, 'tags' => ['name' => 'Königsforst', 'landuse' => 'forest']], false],
 ]);
