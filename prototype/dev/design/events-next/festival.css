@@ -408,8 +408,17 @@ body[data-page='events'] #main .festival-plan:focus-visible {
         )
     );
 }
+/* No taller than the featured poster (420px). Cards fill their column; a
+   lone card keeps its 4:5 poster shape instead of spanning the row, which
+   made it 1,700px tall on desktop. */
 .festival-card-rail .festival-card {
     min-height: 380px;
+    max-height: 420px;
+    justify-self: stretch;
+}
+.festival-card-rail > .festival-card:only-child {
+    justify-self: start;
+    width: min(100%, 336px);
 }
 .festival-card:not(.festival-card--hero) .festival-title {
     hyphens: auto;

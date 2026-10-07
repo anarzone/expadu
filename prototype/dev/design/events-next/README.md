@@ -5,6 +5,24 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Poster rows no taller than the featured poster — 7 October 2026
+
+On the sample day the featured poster takes Street culture night, so "Let the
+evening happen" held one card. It spanned the whole row and its 4:5 shape made
+it 1,701px tall at 1440px (1,181px at 1024px): nearly two screens of one
+picture. Row cards are now capped at the featured poster's 420px; a lone card
+keeps its 4:5 poster shape (336 × 420) and two to four cards fill their
+columns. Phones are unchanged (307 × 384). `tests/rail-height-browser.cjs`
+checks one to four cards at 1440, 1024 and 390px. Evidence:
+`docs/reviews/2026-10-07-app-in-colour/partb-events-*.png`.
+
+Flagged, not changed: `photos/film.webp` (Cinema under the stars, Stadtgarten)
+shows Alpine peaks and a lake behind the audience, so it reads as somewhere
+else. It's labelled as an AI illustration of the activity, but a Cologne-like
+scene would fit better: a park lawn under old trees at dusk, string lights, a
+screen showing an abstract film still, a low city skyline with no mountains or
+lake. That needs a new image with the same labelling; none is generated here.
+
 ## Quieter facts, clearer filters and messages — 7 October 2026
 
 From the owner's Events review (items 7–12):
