@@ -105,7 +105,7 @@ class ImportOsmSpots extends Command
             // visit but OSM does not tag as parks (Königsforst, Fühlinger See,
             // Poller Wiesen). Bounds let greenSpaceQualifies() skip fountains,
             // basins and tiny ponds.
-            'green' => "[out:json][timeout:90];(nwr[\"landuse\"=\"recreation_ground\"][\"name\"]({$bbox});nwr[\"leisure\"=\"nature_reserve\"][\"name\"]({$bbox});wr[\"landuse\"=\"forest\"][\"name\"]({$bbox});wr[\"natural\"=\"wood\"][\"name\"]({$bbox});wr[\"natural\"=\"water\"][\"name\"]({$bbox}););out center bb;",
+            'green' => "[out:json][timeout:90];(nwr[\"landuse\"=\"recreation_ground\"][\"name\"]({$bbox});nwr[\"leisure\"=\"nature_reserve\"][\"name\"]({$bbox});wr[\"landuse\"=\"forest\"][\"name\"]({$bbox});wr[\"natural\"=\"wood\"][\"name\"]({$bbox});wr[\"natural\"=\"water\"][\"name\"]({$bbox}););out tags bb;",
         ];
 
         // Optionally re-import a subset (e.g. after a query fix) without
@@ -235,8 +235,7 @@ class ImportOsmSpots extends Command
             }
 
             // Ways/relations carry their coordinate in `center`
-            $lat = (float) ($element['lat'] ?? $element['center']['lat'] ?? 0);
-            $lng = (float) ($element['lon'] ?? $element['center']['lon'] ?? 0);
+            [$lat, $lng] = $this->elementPoint($element);
             if (! $lat || ! $lng) {
                 $skippedNoName++;
 
@@ -654,6 +653,26 @@ class ImportOsmSpots extends Command
      *
      * @var array<string, string>
      */
+    /**
+     * Nodes carry lat/lon and ways `center`. Green-space queries request
+     * bounds for the size filter, so Overpass omits `center`; use the midpoint.
+     *
+     * @param  array<string, mixed>  $element
+     * @return array{0: float, 1: float}
+     */
+    protected function elementPoint(array $element): array
+    {
+        $bounds = $element['bounds'] ?? null;
+        $fromBounds = fn (string $axis): float => is_array($bounds) && isset($bounds["min{$axis}"], $bounds["max{$axis}"])
+            ? ((float) $bounds["min{$axis}"] + (float) $bounds["max{$axis}"]) / 2
+            : 0.0;
+
+        return [
+            (float) ($element['lat'] ?? $element['center']['lat'] ?? $fromBounds('lat')),
+            (float) ($element['lon'] ?? $element['center']['lon'] ?? $fromBounds('lon')),
+        ];
+    }
+
     /**
      * One OSM object can match several category queries, and each query may be
      * answered by a mirror with different replication state. Record it once per

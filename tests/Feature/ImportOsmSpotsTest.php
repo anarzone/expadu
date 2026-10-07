@@ -140,3 +140,16 @@ test('an object returned by several category queries is recorded once', function
     expect(array_map(fn (array $e): string => $e['type'].'/'.$e['id'].':'.$e['_category'], $result))
         ->toBe(['node/7:cafe', 'node/8:cafe', 'way/7:park']);
 });
+
+test('green spaces without a center use their bounds midpoint', function () {
+    $command = new ImportOsmSpots;
+    $point = new ReflectionMethod($command, 'elementPoint');
+
+    [$lat, $lng] = $point->invoke($command, ['type' => 'way', 'bounds' => ['minlat' => 51.0, 'maxlat' => 51.02, 'minlon' => 6.88, 'maxlon' => 6.9]]);
+
+    expect($lat)->toEqualWithDelta(51.01, 1e-9)
+        ->and($lng)->toEqualWithDelta(6.89, 1e-9)
+        ->and($point->invoke($command, ['type' => 'node', 'lat' => 50.9, 'lon' => 6.9]))->toBe([50.9, 6.9])
+        ->and($point->invoke($command, ['type' => 'way', 'center' => ['lat' => 50.91, 'lon' => 6.91]]))->toBe([50.91, 6.91])
+        ->and($point->invoke($command, ['type' => 'way']))->toBe([0.0, 0.0]);
+});
