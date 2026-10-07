@@ -19,6 +19,7 @@ use App\Models\BureaucracyAccessGrant;
 use App\Models\BureaucracyCaseQuestion;
 use App\Models\BureaucracyExtractionCandidate;
 use App\Models\BureaucracyFactConflict;
+use App\Models\BureaucracyGuardianAuthority;
 use App\Models\BureaucracyPerson;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\Task;
@@ -226,6 +227,25 @@ test('revoking guardian authority immediately clears dependent extraction candid
     $offer = app(OfferNextQuestion::class)->execute($guardian, $session, (string) Str::uuid())['question'];
     $candidate = app(ExtractForQuestion::class)->execute($guardian, $session, $offer['id'], $offer['token'], 'The selected child is planning to move', $this->acceptance);
     app(ManageDependents::class)->revoke($guardian, $authority);
+    // With no guardian left the dependent is erased, which removes the session and its candidates outright.
+    expect(BureaucracyExtractionCandidate::query()->find($candidate['candidate_id']))->toBeNull()
+        ->and($child->fresh()->record_status)->toBe('erased');
+});
+
+test('revoking one guardian authority clears dependent extraction candidates while a co-guardian keeps the record', function () {
+    config(['bureaucracy_family.guardian_policy_version' => 'synthetic-review-policy']);
+    $guardian = User::factory()->create();
+    $reviewer = User::factory()->create(['is_admin' => true]);
+    $authority = app(ManageDependents::class)->request($guardian, 'Synthetic child');
+    app(ManageDependents::class)->review($reviewer, $authority, 'synthetic-review-policy', 'synthetic-reference', now()->addMonth());
+    $child = BureaucracyPerson::query()->findOrFail($authority->person_id);
+    $other = BureaucracyGuardianAuthority::query()->create(['person_id' => $child->id, 'guardian_user_id' => User::factory()->create()->id]);
+    app(ManageDependents::class)->review($reviewer, $other, 'synthetic-review-policy', 'synthetic-reference', now()->addMonth());
+    $session = app(QuestionSessions::class)->start($guardian, $child, 'de-nrw-cologne', (string) Str::uuid());
+    $offer = app(OfferNextQuestion::class)->execute($guardian, $session, (string) Str::uuid())['question'];
+    $candidate = app(ExtractForQuestion::class)->execute($guardian, $session, $offer['id'], $offer['token'], 'The selected child is planning to move', $this->acceptance);
+    app(ManageDependents::class)->revoke($guardian, $authority);
     $stored = BureaucracyExtractionCandidate::query()->findOrFail($candidate['candidate_id']);
-    expect($stored->value)->toBeNull()->and($stored->confirmation_token)->toBeNull()->and($stored->state)->toBe('invalidated');
+    expect($stored->value)->toBeNull()->and($stored->confirmation_token)->toBeNull()->and($stored->state)->toBe('invalidated')
+        ->and($child->fresh()->record_status)->toBe('active');
 });

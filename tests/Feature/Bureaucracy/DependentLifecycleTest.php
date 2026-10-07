@@ -6,6 +6,7 @@ use App\Models\BureaucracyGuardianAuthority;
 use App\Models\BureaucracyOutboxEvent;
 use App\Models\BureaucracyPerson;
 use App\Models\User;
+use Illuminate\Console\Scheduling\Schedule;
 
 beforeEach(function () {
     config(['bureaucracy_family.guardian_policy_version' => 'synthetic-guardian-policy']);
@@ -68,4 +69,53 @@ test('deleting a guardian with an unreviewed request erases that dependent', fun
     $guardian->delete();
 
     expect($child->fresh()->record_status)->toBe('erased');
+});
+
+test('revoking the last guardian authority erases the dependent in the same change', function () {
+    $guardian = User::factory()->onboarded()->create();
+    $authority = approvedDependent($guardian, $this->reviewer);
+    $child = $authority->person;
+    seedDependentFact($child);
+
+    app(ManageDependents::class)->revoke($guardian, $authority);
+
+    expect($child->fresh()->record_status)->toBe('erased')
+        ->and(BureaucracyCaseFact::query()->where('case_id', $child->dossier->id)->count())->toBe(0);
+});
+
+test('revoking one of two guardian authorities keeps the dependent', function () {
+    $guardian = User::factory()->onboarded()->create();
+    $authority = approvedDependent($guardian, $this->reviewer);
+    coGuardian($authority->person, User::factory()->onboarded()->create(), $this->reviewer);
+
+    app(ManageDependents::class)->revoke($guardian, $authority);
+
+    expect($authority->person->fresh()->record_status)->toBe('active');
+});
+
+test('the sweep erases dependents whose authority expired or whose request was never reviewed', function () {
+    $expired = approvedDependent(User::factory()->onboarded()->create(), $this->reviewer);
+    $live = approvedDependent(User::factory()->onboarded()->create(), $this->reviewer);
+    $stale = app(ManageDependents::class)->request(User::factory()->onboarded()->create(), 'Synthetic child');
+    $fresh = app(ManageDependents::class)->request(User::factory()->onboarded()->create(), 'Synthetic child');
+    seedDependentFact($expired->person);
+    $expired->forceFill(['expires_at' => now()->subMinute()])->save();
+    $stale->forceFill(['created_at' => now()->subDays(31)])->save();
+
+    $this->artisan('bureaucracy:erase-unguarded-dependents')->assertSuccessful();
+
+    expect($expired->person->fresh()->record_status)->toBe('erased')
+        ->and(BureaucracyCaseFact::query()->where('case_id', $expired->person->dossier->id)->count())->toBe(0)
+        ->and($stale->person->fresh()->record_status)->toBe('erased')
+        ->and($live->person->fresh()->record_status)->toBe('active')
+        ->and($fresh->person->fresh()->record_status)->toBe('active');
+});
+
+test('the unguarded dependent sweep is scheduled on one server without overlap', function () {
+    $event = collect(app(Schedule::class)->events())
+        ->first(fn ($event) => str_contains($event->command ?? '', 'bureaucracy:erase-unguarded-dependents'));
+
+    expect($event)->not->toBeNull()
+        ->and($event->onOneServer)->toBeTrue()
+        ->and($event->withoutOverlapping)->toBeTrue();
 });

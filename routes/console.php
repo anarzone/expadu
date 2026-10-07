@@ -12,6 +12,7 @@ Schedule::command('bureaucracy:prune-processing')->everyFiveMinutes()->withoutOv
 Schedule::command('bureaucracy:prune-interactions')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
 Schedule::command('bureaucracy:process-erasures')->everyMinute()->withoutOverlapping()->onOneServer();
 Schedule::command('bureaucracy:process-reassessments')->everyMinute()->withoutOverlapping()->onOneServer();
+Schedule::command('bureaucracy:erase-unguarded-dependents')->hourly()->withoutOverlapping()->onOneServer();
 
 // Transit & disruptions
 Schedule::command('news:scrape')->everyFiveMinutes()->withoutOverlapping();
