@@ -144,7 +144,9 @@ test('erasing a sponsor queues the applicant before removing dependency links', 
     } else {
         app(PersonDataLifecycle::class)->erase($this->actor, $this->case->person);
     }
-    expect(BureaucracyRelationship::query()->count())->toBe(0);
+    // The applicant's own relationship row is ended, not deleted from their history.
+    expect(BureaucracyRelationship::query()->whereNull('revoked_at')->count())->toBe(0)
+        ->and(BureaucracyRelationship::query()->where('person_id', $otherCase->person_id)->count())->toBe(1);
     $event = BureaucracyOutboxEvent::query()->where('event_type', 'person.reassessment_requested')->sole();
     expect($event->aggregate_id)->toBe($otherCase->person_id)->and($event->payload)->toBe([])
         ->and(app(ProcessReassessmentOutbox::class)->process($event))->toBeTrue()

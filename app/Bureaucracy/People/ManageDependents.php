@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 final class ManageDependents
 {
-    public function __construct(private EnsureAccountHolder $holders, private ReassessmentEvents $refresh) {}
+    public function __construct(private EnsureAccountHolder $holders, private ReassessmentEvents $refresh, private PersonDataLifecycle $lifecycle) {}
 
     public function request(User $actor, string $label): BureaucracyGuardianAuthority
     {
@@ -96,6 +96,8 @@ final class ManageDependents
                 ->update(['withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null]);
             BureaucracyExtractionCandidate::query()->where('case_id', $person->dossier()->value('id'))
                 ->update(['state' => 'invalidated', 'value' => null, 'confirmation_token' => null]);
+            // Nobody could manage or erase the dossier once its last guardian is gone.
+            $this->lifecycle->eraseUnguardedDependent($person->id, keepRecentPending: true);
         });
     }
 }

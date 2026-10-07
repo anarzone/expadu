@@ -211,6 +211,15 @@ class AppServiceProvider extends ServiceProvider
                     ->response($response),
             ];
         });
+        // Bureaucracy v2 limiters are named so each budget keeps its own key: unnamed
+        // `throttle:N,M` middleware shares one per-user signature, so a stacked group
+        // limit's shorter decay would reset the hourly caps on the routes below.
+        $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
+        RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60)->by($bureaucracyKey('v2', $request)));
+        RateLimiter::for('bureaucracy-extract', fn (Request $request): Limit => Limit::perMinute(20)->by($bureaucracyKey('extract', $request)));
+        RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
+        RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
+        RateLimiter::for('privacy-processing', fn (Request $request): Limit => Limit::perMinute(60)->by('privacy-processing:'.$userOrIp($request)));
         RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
             ->by('media-validation:'.$job->asset->provider));
     }

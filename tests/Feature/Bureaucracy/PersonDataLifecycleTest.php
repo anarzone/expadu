@@ -8,13 +8,19 @@ use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\People\ManageDelegation;
 use App\Bureaucracy\People\PersonDataLifecycle;
+use App\Bureaucracy\People\RecordRelationship;
 use App\Models\Alert;
+use App\Models\BureaucracyAccessGrant;
 use App\Models\BureaucracyCaseFact;
+use App\Models\BureaucracyInvitation;
+use App\Models\BureaucracyOutboxEvent;
 use App\Models\BureaucracyPerson;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 test('only the subject can export and erase adult records and old onboarding cannot resurrect them', function () {
     $subject = User::factory()->onboarded()->create(['profile_attributes' => ['entry_mode' => 'd_visa']]);
@@ -67,3 +73,42 @@ test('an erased dossier does not recreate questions or materialise universal tas
         ->and($person->dossier->questions()->count())->toBe(0)
         ->and($person->dossier->planSnapshots()->count())->toBe(0);
 });
+
+test('erasure removes sharing links but only ends relationships another person recorded', function (bool $deleteAccount) {
+    $applicant = User::factory()->onboarded()->create();
+    $subject = User::factory()->onboarded()->create();
+    $holder = app(EnsureAccountHolder::class);
+    $applicantPerson = $holder->dossier($applicant)->person;
+    $invite = app(ManageDelegation::class)->invite($applicant, $applicantPerson->workspace, $subject->email, ['view_facts']);
+    $person = app(ManageDelegation::class)->accept($subject, $invite['token'], ['view_facts']);
+    $link = app(RecordRelationship::class)->execute($applicant, $applicantPerson, $person, 'sponsor', null, $applicantPerson->fresh()->record_version);
+    $sent = app(ManageDelegation::class)->invite($subject, $person->workspace, 'synthetic-other@example.test', ['view_plan'])['invitation'];
+    $received = app(ManageDelegation::class)->invite($applicant, $applicantPerson->workspace, $subject->email, ['view_plan'])['invitation'];
+
+    $deleteAccount ? $subject->delete() : app(PersonDataLifecycle::class)->erase($subject, $person);
+
+    expect(BureaucracyAccessGrant::query()->where('person_id', $person->id)->count())->toBe(0)
+        ->and(DB::table('bureaucracy_workspace_people')->where('person_id', $person->id)->count())->toBe(0)
+        ->and(BureaucracyInvitation::query()->where('accepted_person_id', $person->id)->count())->toBe(0)
+        ->and(BureaucracyInvitation::query()->whereKey([$sent->id, $received->id])->count())->toBe(0)
+        ->and($link->fresh())->not->toBeNull()
+        ->and($link->fresh()->revoked_at)->not->toBeNull()
+        ->and(BureaucracyOutboxEvent::query()->where('event_type', 'person.reassessment_requested')->where('aggregate_id', $applicantPerson->id)->exists())->toBeTrue();
+})->with(['erase record' => false, 'delete account' => true]);
+
+test('delivered outbox events are pruned after thirty days while pending and recent ones stay', function (string $command, string $type) {
+    $make = fn (array $attributes) => BureaucracyOutboxEvent::query()->create([
+        'event_type' => $type, 'aggregate_type' => 'person', 'aggregate_id' => 999999, 'aggregate_version' => 1,
+        'dedupe_key' => 'synthetic:'.Str::uuid(), 'payload' => [], 'available_at' => now()->addDay(), ...$attributes,
+    ]);
+    $old = $make(['delivered_at' => now()->subDays(31)]);
+    $recent = $make(['delivered_at' => now()->subDays(2)]);
+    $pending = $make([]);
+
+    $this->artisan($command);
+
+    expect($old->fresh())->toBeNull()->and($recent->fresh())->not->toBeNull()->and($pending->fresh())->not->toBeNull();
+})->with([
+    'erasures' => ['bureaucracy:process-erasures', 'person.erased'],
+    'reassessments' => ['bureaucracy:process-reassessments', 'access.changed'],
+]);
