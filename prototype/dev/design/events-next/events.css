@@ -405,7 +405,7 @@ body[data-page='events'] #main {
     border-radius: var(--radius-round);
     background: var(--cyan);
 }
-.event-controls > button:active,
+.event-control-scroller > button:active,
 .event-filter-group > button:active,
 .event-results-head > button:active,
 #event-week-toggle:active {
@@ -823,4 +823,100 @@ body[data-page='events'] #main button:focus:not(:focus-visible) {
 /* The artwork carries the colour; the shared pale canvas gives it breathing room. */
 body[data-page='events'] {
     background: var(--paper);
+}
+
+/* Compact filters: Free, Saved, Travel and Sort are icon buttons with
+   tooltips and spoken names; Category and Area are dropdowns, named and
+   marked with a chevron, so they read as filters. The search keeps the room. */
+.event-control-scroller {
+    display: contents;
+}
+#saved-events .event-control-label,
+.event-controls .event-control-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.event-controls [data-event-picker] > .event-picker-chevron {
+    width: 14px;
+    height: 14px;
+    margin-left: -1px;
+    flex-shrink: 0;
+    color: var(--color-text-soft);
+}
+@media (max-width: 999px) {
+    .event-controls {
+        display: block;
+        margin-top: 6px;
+    }
+    /* Same 8px gap as the search row, so the icon buttons line up. */
+    .event-control-scroller {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+    }
+    .event-control-scroller::-webkit-scrollbar {
+        display: none;
+    }
+    .event-control-scroller[data-more='true'] {
+        mask-image: linear-gradient(90deg, #000 calc(100% - 32px), transparent);
+    }
+    .event-control-scroller .event-category-trigger,
+    .event-control-scroller [data-event-picker='area'] {
+        flex: 0 1 auto;
+        min-width: 0;
+        padding-inline: 10px 8px;
+        gap: 5px;
+    }
+    [data-category-label],
+    .event-filter-group [data-area-label] {
+        max-width: 104px;
+    }
+    .event-travel-control {
+        margin-left: auto;
+    }
+    .event-travel-control,
+    .event-sort-control {
+        flex: 0 0 44px;
+        width: 44px;
+        padding: 0;
+    }
+}
+@media (max-width: 999px) {
+    /* A chosen value uses the cyan selection colour, like Free and Saved. */
+    .event-controls [data-event-picker][data-selected='true'] {
+        background: var(--color-select-bg);
+        box-shadow: none;
+    }
+    .event-controls [data-event-picker][aria-expanded='true'] {
+        background: var(--color-bg-hover);
+        box-shadow: none;
+    }
+}
+@media (max-width: 700px) {
+    /* On phones a chosen value replaces the icon, so the words fit. */
+    .event-control-scroller
+        [data-event-picker][data-selected='true']
+        .event-control-icon {
+        display: none;
+    }
+}
+@media (max-width: 380px) {
+    .event-control-scroller .event-category-trigger,
+    .event-control-scroller [data-event-picker='area'] {
+        padding-inline: 8px 6px;
+        gap: 4px;
+    }
+}
+@media (max-width: 359px) {
+    .event-control-scroller .event-category-trigger .event-control-icon,
+    .event-control-scroller [data-event-picker='area'] .event-control-icon {
+        display: none;
+    }
 }

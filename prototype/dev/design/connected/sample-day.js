@@ -44,7 +44,8 @@
                 area: 'Neustadt-Nord',
                 lat: 50.9445,
                 lng: 6.93694,
-                category: 'Film',
+                // Like the captured film listing, films count as Culture.
+                category: 'Culture',
                 icon: 'film',
                 color: 'blue',
                 attendancePolicy: 'fixed',

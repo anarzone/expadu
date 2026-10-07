@@ -5,6 +5,40 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Quieter facts, clearer filters and messages — 7 October 2026
+
+From the owner's Events review (items 7–12):
+
+7. **Facts without alarm.** The big yellow "Price to check" and lavender
+   "Entry: To be confirmed" tiles are gone. The sheet has one quiet list:
+   Admission, When to arrive ("By the start time", "Any time while it's open"
+   or "Not listed"), Language, Who it's for and Accessibility, with "Not listed"
+   in soft text and one line asking to check those with the organiser. The
+   reminder reads "Remind me before it starts · Reminders aren't sent in this
+   preview". Cards say "Price not listed".
+8. **No-match messages.** A search that finds nothing names the word and the
+   day ("No events match “jazz” on Wed 30 Sept"), suggests another word, and
+   offers Clear search. When the same search or filters match another day, it
+   says so and links there (for example "chess" on 30 September points to
+   8 September, which has already happened).
+9. **Featured is "Coming up".** The featured poster stays independent of the
+   chosen date and its caption now says "Coming up · sample programme, AI
+   illustrations", so it doesn't read as that day's programme.
+10. **One icon per category** on cards, chips and the event sheet (Culture is
+    always the museum icon). The sample day's film night is Culture, like the
+    captured film listing, so there's no separate Film chip.
+11. **Long German titles** wrap at whole words. Only words of 13+ letters may
+    hyphenate, keeping six letters on each side ("Feierabend-rundgang", never
+    "Fei-erabendrundgang" or "Klima-wandel").
+12. **Compact filters (owner rework).** Free, Saved, Travel and Sort are 44px
+    icon buttons with tooltips and spoken names, so the search keeps the room
+    (about 230px on a 390px phone). Category and Area are dropdowns: they name
+    their filter ("Category", "Area") until something is chosen, show a chevron,
+    and turn cyan with the chosen value (on phones the value replaces the
+    icon). Two aligned rows fit at 375px and wider; on narrower phones long
+    values shorten with an ellipsis. Desktop keeps its row, with "Area" and a
+    chevron.
+
 ## Sample day, past listings and clearer details — 7 October 2026
 
 From the owner's Events review (items 1–6):

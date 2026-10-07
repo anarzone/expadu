@@ -1472,6 +1472,14 @@
     color: var(--color-text-soft);
     font-weight: var(--weight-regular);
 }
+.event-sheet .event-know dl > div:first-child {
+    border-top: 1px solid var(--color-border);
+}
+.event-sheet .event-know p {
+    margin: -4px 0 14px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
 /* Today opens this sheet too, without the Events page styles. */
 .event-sheet .event-past-note {
     display: flex;

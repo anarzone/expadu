@@ -203,7 +203,7 @@ test('mobile category choice closes its picker, while reset preserves the date a
     h.open('category');
     h.press('reset-event-filters-mobile');
     assert.equal(panel.hidden, true);
-    assert.equal(h.get('[data-category-label]').textContent, 'All events');
+    assert.equal(h.get('[data-category-label]').textContent, 'Category');
     assert.equal(h.get('#free-only').attrs['aria-pressed'], 'false');
     assert.equal(h.get('#event-calendar-selection').textContent, 'Tue 8 Sept');
     assert.equal(h.get('[data-travel-label]').textContent, 'From Neumarkt');
@@ -370,4 +370,26 @@ test('the date picker stays within a short viewport when switching from week to 
     top = anchor.top + parseFloat(panel.style.top);
     assert.ok(top >= 16 && top + panel.scrollHeight <= 624);
     assert.equal(h.get('#event-calendar-selection').textContent, 'Tue 8 Sept');
+});
+
+test('a search with no results names the word and offers another day that has it', () => {
+    const h = setup('?date=2026-09-09');
+    const search = h.get('#event-search');
+    search.oninput({ target: { value: 'film' } });
+    const empty = h.get('#event-list').innerHTML;
+    assert.match(empty, /No events captured for this day/);
+    h.choose({ eventDate: '2026-09-08' });
+    search.oninput({ target: { value: 'jazz' } });
+    assert.match(
+        h.get('#event-list').innerHTML,
+        /No events match “jazz” on Tue 8 Sept/,
+    );
+    assert.match(h.get('#event-list').innerHTML, /Try another word/);
+    assert.match(
+        h.get('#event-list').innerHTML,
+        /id="event-empty-clear-search"/,
+    );
+    // A new word updates the message.
+    search.oninput({ target: { value: 'opera' } });
+    assert.match(h.get('#event-list').innerHTML, /No events match “opera”/);
 });

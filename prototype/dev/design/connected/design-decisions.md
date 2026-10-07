@@ -364,6 +364,16 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Events polish — owner request, 7 October (in review):** event facts are
+one quiet list (Admission, When to arrive, Language, Who it's for,
+Accessibility) with unknowns as soft "Not listed" instead of coloured tiles;
+no-match messages name the search and day and point to another day that
+matches; the featured poster is captioned "Coming up"; each category has one
+icon everywhere; long German titles wrap at whole words. Filters stay
+compact (owner rework): Free, Saved, Travel and Sort are icon buttons, the
+search keeps the room, and Category and Area are named dropdowns with a
+chevron that turn cyan when set. Details are in `events-next/README.md`.
+
 **Events on the sample day — owner request, 7 October (in review):** Events
 opens on Wednesday 30 September with the sample day's two evening events, the
 same ones Today and Composer show. The captured 8 September programme stays as

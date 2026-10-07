@@ -45,13 +45,7 @@
         return `<span class="event-control-icon" aria-hidden="true">${paths[name] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name]}</svg>` : I(name)}</span>`;
     };
     const categoryIcon = (category) =>
-        ({
-            Culture: 'museum',
-            Games: 'ball',
-            Outdoors: 'leaf',
-            Language: 'chat',
-            Film: 'film',
-        })[category] || 'grid';
+        category === 'All' ? 'grid' : V.categoryIcon(category);
     let savedFilters = {};
     try {
         savedFilters = JSON.parse(
@@ -82,6 +76,7 @@
     syncDateURL(true);
     const categories = ['All', ...new Set(catalogue.map((x) => x.category))];
     const areas = [...new Set(catalogue.map((x) => x.area))].sort();
+    const chevron = `<svg class="event-picker-chevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 10 5 5 5-5"/></svg>`;
     const picker = (id, label, body) =>
         `<section class="events-popover" id="events-${id}" aria-label="${label}" hidden><header><strong>${label}</strong><button type="button" data-close-event-picker aria-label="Close ${label.toLowerCase()}">${I('close')}</button></header>${body}</section>`;
     document.querySelector('#main').innerHTML =
@@ -95,9 +90,9 @@
           <div class="event-calendar-footer"><span id="event-calendar-selection"></span><button id="event-calendar-today">Today</button></div>
         </section>
         </aside></div><section class="event-discovery" aria-label="Find events">
-        <div class="event-gallery-head"><span id="event-day-title" class="visually-hidden"></span><div class="event-search-row"><label class="event-search">${I('search')}<input id="event-search" aria-label="Search events" placeholder="Search events" value="${E(filters.query)}"><button id="clear-event-search" type="button" aria-label="Clear search" hidden>${I('close')}</button></label><button id="free-only" aria-label="Free events only" title="Free events only" aria-pressed="false">${controlIcon('price')}<span>Free</span></button><button id="saved-events" aria-label="Saved events only" title="Saved events only" aria-pressed="false">${I('bookmark')}</button></div></div>
+        <div class="event-gallery-head"><span id="event-day-title" class="visually-hidden"></span><div class="event-search-row"><label class="event-search">${I('search')}<input id="event-search" aria-label="Search events" placeholder="Search events" value="${E(filters.query)}"><button id="clear-event-search" type="button" aria-label="Clear search" hidden>${I('close')}</button></label><button id="free-only" aria-label="Free events only" title="Free events only" aria-pressed="false">${controlIcon('price')}<span>Free</span></button><button id="saved-events" aria-label="Saved events only" title="Saved events only" aria-pressed="false">${I('bookmark')}<span class="event-control-label">Saved</span></button></div></div>
         <div class="event-categories" aria-label="Event categories">${categories.map((c) => `<button data-event-category="${c}" aria-pressed="false">${controlIcon(categoryIcon(c))}<span>${c === 'All' ? 'All events' : c}</span></button>`).join('')}</div>
-        <div class="event-controls"><button class="event-category-trigger" data-event-picker="category" aria-controls="events-category" aria-expanded="false"><span data-category-icon>${controlIcon('grid')}</span><span data-category-label>All events</span></button><div class="event-filter-group"><button data-event-picker="area" aria-controls="events-area" aria-expanded="false">${controlIcon('area')}<span data-area-label>All areas</span></button></div><button class="event-travel-control" data-event-picker="travel" aria-controls="events-travel" aria-expanded="false">${controlIcon('route')}<span data-travel-label class="visually-hidden">Travel</span></button><button class="event-sort-control" data-event-picker="sort" aria-controls="events-sort" aria-expanded="false">${controlIcon('sort')}<span data-sort-label class="visually-hidden">Soonest</span></button>
+        <div class="event-controls"><div class="event-control-scroller"><button class="event-category-trigger" data-event-picker="category" aria-controls="events-category" aria-expanded="false"><span data-category-icon>${controlIcon('grid')}</span><span data-category-label>Category</span>${chevron}</button><div class="event-filter-group"><button data-event-picker="area" aria-controls="events-area" aria-expanded="false">${controlIcon('area')}<span data-area-label>Area</span>${chevron}</button></div><button class="event-travel-control" data-event-picker="travel" aria-controls="events-travel" aria-expanded="false">${controlIcon('route')}<span data-travel-label class="event-control-label">Travel</span></button><button class="event-sort-control" data-event-picker="sort" aria-controls="events-sort" aria-expanded="false">${controlIcon('sort')}<span data-sort-label class="event-control-label">Soonest</span></button></div>
         ${picker('category', 'Event category', `<div class="events-options">${categories.map((c) => `<button data-event-category="${c}" aria-pressed="false">${controlIcon(categoryIcon(c))}<span>${c === 'All' ? 'All events' : c}</span></button>`).join('')}</div><button id="reset-event-filters-mobile" hidden>${controlIcon('reset')}<span>Reset all filters</span></button>`)}
         ${picker('area', 'Search area', `<div class="events-options"><button data-event-area="" aria-pressed="false">All areas</button>${areas.map((x) => `<button data-event-area="${E(x)}" aria-pressed="false">${E(x)}</button>`).join('')}</div>`)}
         ${picker(
@@ -272,6 +267,17 @@
                 : F.shift(calendarCursor, direction * 7);
         renderCalendar(true, direction);
     }
+    // A fade at the end of the phone filter row when more controls follow.
+    const scroller = main.querySelector('.event-control-scroller');
+    function syncScroller() {
+        if (!scroller?.scrollWidth) return;
+        scroller.dataset.more = String(
+            scroller.scrollLeft + scroller.clientWidth <
+                scroller.scrollWidth - 2,
+        );
+    }
+    scroller?.addEventListener('scroll', syncScroller, { passive: true });
+    window.addEventListener?.('resize', syncScroller);
     window.ExpaduEventWeek?.bind(weekStrip, (days) =>
         changePeriod(Math.sign(days)),
     );
@@ -310,7 +316,9 @@
             `${discover}:${place?.name || ''}:` +
             filters.date +
             ':' +
-            items.map((item) => item.occurrence || item.id).join('|');
+            items.map((item) => item.occurrence || item.id).join('|') +
+            // An empty result names the search and filters, so it follows them.
+            (items.length ? '' : JSON.stringify(filters));
         const shownAbove = discover
             ? items.filter((item) => featuredIds.includes(item.id)).length
             : 0;
@@ -346,6 +354,28 @@
                 .filter(Boolean)
                 .join(' ');
             const pastLink = pastDates.find((date) => date !== filters.date);
+            // A search or filter that finds nothing here may match another day.
+            const query = filters.query.trim();
+            const narrowed =
+                filters.category !== 'All' ||
+                filters.area ||
+                filters.free ||
+                filters.saved;
+            const savedIdeas = S.read().savedIdeas || [];
+            const otherDay = dates.find(
+                (date) =>
+                    date !== filters.date &&
+                    F.select(catalogue, { ...filters, date }, savedIdeas)
+                        .length,
+            );
+            const otherCount = otherDay
+                ? F.select(
+                      catalogue,
+                      { ...filters, date: otherDay },
+                      savedIdeas,
+                  ).length
+                : 0;
+            const noMatch = `<div class="event-empty">${I('search')}<h2>${query ? `No events match “${E(query)}”` : 'No events match your filters'}${query && narrowed ? ' with your filters' : ''} on ${E(shortDate(filters.date))}.</h2><p>${otherDay ? `${otherCount === 1 ? 'There’s one' : `There are ${otherCount}`} on ${E(longDate(otherDay))}${F.past({ date: otherDay }, today) ? ', which has already happened' : ''}.` : query ? `Try another word${narrowed ? ', or clear your filters' : ''}.` : 'Try another category or area, or clear your filters.'}</p><div class="event-empty-actions"><button class="button secondary" id="${query && !narrowed ? 'event-empty-clear-search' : 'event-empty-reset'}">${query && !narrowed ? 'Clear search' : 'Clear filters'}</button>${otherDay ? `<button type="button" class="event-text-button" data-event-date="${E(otherDay)}">See ${E(shortDate(otherDay))}</button>` : ''}</div></div>`;
             results.innerHTML = items.length
                 ? pastNote +
                   V.render(items, {
@@ -353,7 +383,9 @@
                       featured: featuredIds,
                       distance: (item) => D?.format(kilometres(item)) || '',
                   })
-                : `<div class="event-empty">${I('calendar')}<h2>${listed ? 'Nothing in this selection.' : 'No events captured for this day.'}</h2><p>${listed ? 'Try another category or clear your filters.' : E(elsewhere)}</p><div class="event-empty-actions"><button class="button secondary" id="event-empty-reset">${listed ? 'Clear filters' : `View ${E(shortDate(upcomingDate))}`}</button>${!listed && pastLink ? `<button type="button" class="event-text-button" data-event-date="${E(pastLink)}">See ${E(shortDate(pastLink))} (past)</button>` : ''}</div></div>`;
+                : listed
+                  ? noMatch
+                  : `<div class="event-empty">${I('calendar')}<h2>No events captured for this day.</h2><p>${E(elsewhere)}</p><div class="event-empty-actions"><button class="button secondary" id="event-empty-reset">View ${E(shortDate(upcomingDate))}</button>${pastLink ? `<button type="button" class="event-text-button" data-event-date="${E(pastLink)}">See ${E(shortDate(pastLink))} (past)</button>` : ''}</div></div>`;
             if (resultKey !== null)
                 window.ExpaduMotion?.run(
                     results,
@@ -378,8 +410,9 @@
             'data-selected',
             String(filters.category !== 'All'),
         );
+        // A dropdown names its filter until something is chosen.
         main.querySelector('[data-category-label]').textContent =
-            filters.category === 'All' ? 'All events' : filters.category;
+            filters.category === 'All' ? 'Category' : filters.category;
         main.querySelector('[data-event-picker="category"]').setAttribute(
             'aria-label',
             `Event category: ${filters.category === 'All' ? 'All events' : filters.category}`,
@@ -405,7 +438,7 @@
             String(filters.saved),
         );
         main.querySelector('[data-area-label]').textContent =
-            filters.area || 'All areas';
+            filters.area || 'Area';
         main.querySelector('[data-event-picker="area"]').setAttribute(
             'aria-label',
             `Search area: ${filters.area || 'All areas'}`,
@@ -437,6 +470,7 @@
             String(filters.sort !== 'Soonest'),
         );
         syncTravel();
+        syncScroller();
         const hasFilters =
             filters.category !== 'All' ||
             filters.area ||
@@ -525,7 +559,7 @@
             filters.saved = !filters.saved;
             render();
         }
-        if (b.id === 'clear-event-search') {
+        if (['clear-event-search', 'event-empty-clear-search'].includes(b.id)) {
             filters.query = '';
             main.querySelector('#event-search').value = '';
             render();

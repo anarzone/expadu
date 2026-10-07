@@ -53,7 +53,7 @@ test('Festival retains result order, independent card actions and unknown schedu
             assert.ok(html.includes(`${attr}="${id}"`));
     }
     assert.ok(html.includes('18:00 · End TBC'));
-    assert.ok(html.includes('Price to check'));
+    assert.ok(html.includes('Price not listed'));
     assert.doesNotMatch(
         html,
         /<button\b[^>]*>(?:(?!<\/button>)[\s\S])*<button\b/,

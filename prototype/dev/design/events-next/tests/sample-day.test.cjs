@@ -197,10 +197,41 @@ test('a past event keeps the same three tabs: Plan explains why, Get there gives
     // Get there starts from today's starting point.
     assert.match(sheet, /name="from"[^>]*value="Neumarkt"/);
     assert.equal(mounted.length, 0);
+    // Facts are one quiet list; unknown ones say "Not listed".
+    assert.doesNotMatch(sheet, /event-practical/);
+    assert.match(sheet, /<dt>Admission<\/dt><dd>Free<\/dd>/);
+    assert.match(
+        sheet,
+        /<dt>When to arrive<\/dt><dd class="is-unknown">Not listed/,
+    );
+    assert.match(sheet, /<dt>Who it’s for<\/dt><dd>Ages 8 and up/);
     const plan = node('[data-place-planning]').innerHTML;
     assert.match(plan, /This event has already happened/);
     assert.match(plan, /data-event-upcoming/);
     node('[data-event-upcoming]').onclick();
     assert.equal(navigation[0][0], 'events');
     assert.equal(navigation[0][1].date, '2026-09-30');
+});
+
+test('each category has one icon on cards, and unknown prices read "not listed"', () => {
+    const V = load(
+        {
+            window: { ExpaduSampleDay: sample },
+            ExpaduUI: { ...ui, icon: (name) => `<i data-icon="${name}"></i>` },
+        },
+        '../posters.js',
+        '../festival.js',
+    ).window.ExpaduEventFestival;
+    assert.equal(V.categoryIcon('Culture'), 'museum');
+    for (const id of ['kunst-machen', 'exhibition-ludwig', 'film']) {
+        const html = V.card(model.events.find((x) => x.id === id));
+        assert.match(html, /festival-category"><i data-icon="museum">/);
+    }
+    // The sample cinema counts as Culture, like the captured film listing.
+    assert.equal(sample.events[1].category, 'Culture');
+    assert.match(
+        V.card(model.events.find((x) => x.id === 'film')),
+        /Price not listed/,
+    );
+    assert.match(V.feature(catalogue), /Coming up/);
 });

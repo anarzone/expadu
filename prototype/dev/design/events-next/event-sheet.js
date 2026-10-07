@@ -50,6 +50,25 @@
         const distance = origin && D.format(D.km(origin, item));
         const fact = (label, value) =>
             `<div><dt>${label}</dt><dd${value ? '' : ' class="is-unknown"'}>${value ? E(value) : 'Not listed'}</dd></div>`;
+        // What the listing says, quietly: unknown facts read "Not listed".
+        const facts = [
+            ['Admission', item.price],
+            [
+                'When to arrive',
+                {
+                    fixed: 'By the start time',
+                    window: 'Any time while it’s open',
+                }[item.attendancePolicy],
+            ],
+            ['Language', item.language],
+            ['Who it’s for', item.ages ? `Ages ${item.ages}` : ''],
+            ['Accessibility', item.accessibility],
+        ];
+        const unlisted = facts.some(([, value]) => !value);
+        // Events share their category's icon everywhere.
+        const categoryIcon =
+            window.ExpaduEventFestival?.categoryIcon?.(item.category) ||
+            item.icon;
         const imagery = window.ExpaduEventFestival || window.ExpaduEventPosters;
         const media = window.ExpaduEventPosters.approvedMedia(item);
         const artworkCredit = media
@@ -60,7 +79,7 @@
         U.open(
             item.title,
             `<section class="place-sheet event-sheet">
-            <div class="event-ticket event-ticket-poster">${imagery.image(item, true)}<span class="event-ticket-shade" aria-hidden="true"></span><div><span class="event-cover-category">${I(item.icon)}${E(item.category)}</span><strong>${F.dateLabel(item.date, { weekday: 'short', month: 'short' })}</strong></div><div class="event-ticket-time"><strong>${E(item.start)}${item.end ? '–' + E(item.end) : ''}</strong><small>${past ? 'Already happened' : item.end ? 'Listed time' : 'End time to check'}</small></div></div>
+            <div class="event-ticket event-ticket-poster">${imagery.image(item, true)}<span class="event-ticket-shade" aria-hidden="true"></span><div><span class="event-cover-category">${I(categoryIcon)}${E(item.category)}</span><strong>${F.dateLabel(item.date, { weekday: 'short', month: 'short' })}</strong></div><div class="event-ticket-time"><strong>${E(item.start)}${item.end ? '–' + E(item.end) : ''}</strong><small>${past ? 'Already happened' : item.end ? 'Listed time' : 'End time to check'}</small></div></div>
             <nav class="place-sheet-tabs" aria-label="Event actions"><button data-event-section="about" aria-label="About" aria-pressed="true">${I('info')}<span>About</span></button><button data-event-section="plan" aria-label="Plan to go" aria-pressed="false">${I('calendar')}<span>Plan</span></button><button data-event-section="directions" aria-label="Get there" aria-pressed="false">${I('route')}<span>Get there</span></button></nav>
             <div class="place-sheet-panel" data-panel="about"><div class="place-sheet-scroll">
             ${past ? `<p class="event-past-note" role="note">${I('clock')}<span><strong>Already happened.</strong> This captured event was on ${E(F.dateLabel(item.date, { weekday: 'long' }))}, so it can’t be planned.</span></p>` : ''}
@@ -68,10 +87,9 @@
             <button class="event-venue" data-event-section="directions" aria-label="Directions to ${E(item.venue)}"><span class="event-fact-icon">${I('pin')}</span><span><strong>${E(item.venue)}</strong><small>${E(item.area)}${distance ? ` · ${E(distance)} from ${E(origin.name)}` : ''}</small></span>${I('arrow')}</button>
             ${item.description || item.about ? `<p class="event-description">${E(item.description || item.about)}</p>` : '<p class="event-description is-unknown">The captured listing has no description.</p>'}
             ${item.about && item.aboutSource ? `<p class="event-about-source">${E(item.aboutSource)}, translated${item.sourceUrl ? ` · <a href="${E(item.sourceUrl)}" target="_blank" rel="noopener">stadt-koeln.de</a>` : ''}</p>` : ''}
-            <div class="event-practical"><div class="event-fact event-fact-price">${I('ticket')}<span>Admission</span><strong>${E(item.price || 'Price to check')}</strong></div><div class="event-fact event-fact-entry">${I('clock')}<span>Entry</span><strong>${item.attendancePolicy === 'fixed' ? 'Fixed session' : item.attendancePolicy === 'window' ? 'Flexible visit' : 'To be confirmed'}</strong></div></div>
-            <section class="event-know" aria-label="Good to know"><dl>${fact('Language', item.language)}${fact('Who it’s for', item.ages ? `Ages ${item.ages}` : '')}${fact('Accessibility', item.accessibility)}</dl></section>
+            <section class="event-know" aria-label="Good to know"><dl>${facts.map(([label, value]) => fact(label, value)).join('')}</dl>${unlisted && !past ? '<p>Check anything not listed with the organiser before you go.</p>' : ''}</section>
             ${item.organiserUrl ? `<a class="event-organiser" href="${E(item.organiserUrl)}" target="_blank" rel="noopener">${I('ticket')}<span>Tickets & entry</span>${I('arrow')}</a>` : ''}
-            ${past ? '' : `<label class="event-reminder"><span class="event-fact-icon">${I('bell')}</span><span class="event-reminder-copy"><strong>Reminder</strong><small>Preview · no notification sent</small></span><input type="checkbox" aria-label="Event reminder preview" data-event-reminder ${S.read().reminders.includes(item.occurrence) ? 'checked' : ''}><span class="event-switch" aria-hidden="true"></span></label>`}
+            ${past ? '' : `<label class="event-reminder"><span class="event-fact-icon">${I('bell')}</span><span class="event-reminder-copy"><strong>Remind me before it starts</strong><small>Reminders aren’t sent in this preview</small></span><input type="checkbox" aria-label="Remind me before it starts (not sent in this preview)" data-event-reminder ${S.read().reminders.includes(item.occurrence) ? 'checked' : ''}><span class="event-switch" aria-hidden="true"></span></label>`}
             <details class="event-source place-sheet-source"><summary><span>${I('info')}Listing details <small>Sample</small></span>${I('down')}</summary><dl><div><dt>Captured</dt><dd>${E(item.captured)}</dd></div><div><dt>Availability</dt><dd>Not checked</dd></div><div><dt>Booking</dt><dd>${item.organiserUrl ? 'Check with organiser' : 'No organiser link captured'}</dd></div><div><dt>Artwork</dt><dd>${artworkCredit}</dd></div></dl></details>
             </div>${past ? '' : `<footer class="place-sheet-footer"><button class="button secondary event-icon-action" data-save-item="${E(item.id)}" title="Save for later">${I('bookmark')}<span class="visually-hidden" data-save-label>Save for later</span></button><button class="button primary" data-event-section="plan">${I('calendar')}Plan to go</button></footer>`}</div>
             <div class="place-sheet-panel" data-panel="plan" hidden><div data-place-planning></div></div>
@@ -160,7 +178,7 @@
                 weekday: 'short',
                 month: 'short',
             });
-            container.innerHTML = `<div class="place-sheet-scroll event-added" role="status" tabindex="-1"><span class="event-added-date">${dateLabel}</span><h3>${pending ? 'Added to your plan.' : 'Already in your day.'}</h3><div class="event-planned-ticket"><span class="programme-art ${E(item.color)}">${I(item.icon)}</span><div><strong>${E(selected.start)}–${E(selected.end)}</strong><p>${E(item.title)}</p><small>${E(item.venue)}${selected.endEstimated ? ' · estimated finish' : ''}</small></div></div><p>${pending ? 'It isn’t confirmed yet. Review the whole day in Composer, then confirm.' : 'Your planned attendance is kept here.'}</p><small>This does not book a ticket or reserve a place.${selected.entryUnconfirmed ? ' Entry rules still need checking.' : ''}</small><p class="selection-error" hidden role="alert"></p></div><footer class="place-sheet-footer"><button class="button secondary" data-event-remove>${I(undoAddition ? 'back' : 'trash')}${undoAddition ? 'Undo addition' : pending ? 'Remove selection' : 'Remove from day'}</button><button class="button primary" data-event-review>${I('calendar')}Review plan</button></footer>`;
+            container.innerHTML = `<div class="place-sheet-scroll event-added" role="status" tabindex="-1"><span class="event-added-date">${dateLabel}</span><h3>${pending ? 'Added to your plan.' : 'Already in your day.'}</h3><div class="event-planned-ticket"><span class="programme-art ${E(item.color)}">${I(categoryIcon)}</span><div><strong>${E(selected.start)}–${E(selected.end)}</strong><p>${E(item.title)}</p><small>${E(item.venue)}${selected.endEstimated ? ' · estimated finish' : ''}</small></div></div><p>${pending ? 'It isn’t confirmed yet. Review the whole day in Composer, then confirm.' : 'Your planned attendance is kept here.'}</p><small>This does not book a ticket or reserve a place.${selected.entryUnconfirmed ? ' Entry rules still need checking.' : ''}</small><p class="selection-error" hidden role="alert"></p></div><footer class="place-sheet-footer"><button class="button secondary" data-event-remove>${I(undoAddition ? 'back' : 'trash')}${undoAddition ? 'Undo addition' : pending ? 'Remove selection' : 'Remove from day'}</button><button class="button primary" data-event-review>${I('calendar')}Review plan</button></footer>`;
             container.querySelector('[data-event-review]').onclick = () =>
                 S.go('composer', { date: selectedDate });
             const status = container.querySelector('[role="status"]');

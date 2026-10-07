@@ -21,6 +21,15 @@
         'garden',
         'exhibition-ludwig',
     ];
+    // One icon per category, on cards, chips and the event sheet alike.
+    const categoryIcon = (category) =>
+        ({
+            Culture: 'museum',
+            Games: 'ball',
+            Outdoors: 'leaf',
+            Language: 'chat',
+            Film: 'film',
+        })[category] || 'calendar';
     // The preview's sample day (connected/sample-day.js), when loaded.
     const sampleDay = () => window.ExpaduSampleDay?.date || '';
     const past = (item) =>
@@ -79,12 +88,12 @@
             <button class="festival-open" data-detail="${id}" aria-label="${gone ? 'Past event: ' : 'Explore '}${E(item.title)}">
                 ${image(item, hero && index === 0)}
                 <span class="festival-shade" aria-hidden="true"></span>
-                <span class="festival-category">${I(item.icon || 'calendar')}<span>${E(item.category)}</span></span>
+                <span class="festival-category">${I(categoryIcon(item.category))}<span>${E(item.category)}</span></span>
                 <span class="festival-story">
                     <span class="festival-date${gone ? ' is-past' : ''}">${gone ? 'Past · ' : ''}${E(date(item))}</span>
                     <strong class="festival-title" role="heading" aria-level="${hero ? 2 : 3}"${item.titleEnglish ? ' lang="de"' : ''}>${title(item, hero)}</strong>
                     ${item.titleEnglish ? `<span class="festival-translation">${E(item.titleEnglish)}</span>` : ''}
-                    <span class="festival-facts"><span>${I('clock')}<span>${time(item)}</span></span><span>${I('pin')}<span>${E(place)}${distance ? ` · ${E(distance)}` : ''}</span></span><span>${I('ticket')}<span>${E(item.price || 'Price to check')}</span></span></span>
+                    <span class="festival-facts"><span>${I('clock')}<span>${time(item)}</span></span><span>${I('pin')}<span>${E(place)}${distance ? ` · ${E(distance)}` : ''}</span></span><span>${I('ticket')}<span>${E(item.price || 'Price not listed')}</span></span></span>
                 </span>
             </button>${gone ? '' : save(item) + plan(item)}
         </article>`;
@@ -111,7 +120,7 @@
             .join(' · ');
         return `<div class="festival-feature" role="region" aria-roledescription="carousel" aria-label="Featured sample programme, independent of date filters">
             <div class="festival-track" id="festival-track" tabindex="0" aria-label="Featured events. Swipe or use the arrow keys.">${selection.map((item, index) => card(item, index, true)).join('')}</div>
-            <div class="festival-caption"><span>Sample programme · AI illustrations</span><div class="festival-pagination"${selection.length === 1 ? ' hidden' : ''}>
+            <div class="festival-caption"><span>Coming up · sample programme, AI illustrations</span><div class="festival-pagination"${selection.length === 1 ? ' hidden' : ''}>
             <span class="festival-position" aria-live="polite" aria-atomic="true">1 / ${selection.length}</span><div class="festival-dots" role="group" aria-label="Choose featured event">${selection.map((item, index) => `<button data-festival-slide="${index}" aria-label="Show ${E(item.title)}" aria-current="${index === 0}"><span></span></button>`).join('')}</div>
             <button data-festival-step="-1" aria-label="Previous featured event" aria-controls="festival-track" disabled>${I('back')}</button><button data-festival-step="1" aria-label="Next featured event" aria-controls="festival-track">${I('arrow')}</button>
             </div></div>${credits ? `<p class="festival-credit">${credits}</p>` : ''}
@@ -459,6 +468,7 @@
     }
     window.ExpaduEventFestival = {
         past,
+        categoryIcon,
         image,
         card,
         today,

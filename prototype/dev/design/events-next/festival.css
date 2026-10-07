@@ -414,6 +414,13 @@ body[data-page='events'] #main .festival-plan:focus-visible {
 .festival-card:not(.festival-card--hero) .festival-title {
     hyphens: auto;
 }
+/* Only very long words break, and only where both parts stay readable:
+   "Feierabend-rundgang", never "Fei-erabendrundgang" or "Klima-wandel". */
+.festival-title {
+    hyphenate-limit-chars: 13 6 6;
+    -webkit-hyphenate-limit-before: 6;
+    -webkit-hyphenate-limit-after: 6;
+}
 .festival-collection + .festival-collection {
     margin-top: 36px;
 }

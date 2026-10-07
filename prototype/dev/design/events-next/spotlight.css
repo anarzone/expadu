@@ -84,7 +84,7 @@ body[data-page='events'] #main {
     margin: 0;
     gap: 8px;
 }
-.event-controls > button,
+.event-control-scroller > button,
 .event-filter-group > button {
     background: var(--event-control-rail);
 }
@@ -146,7 +146,7 @@ body[data-page='events'] #main {
         background: transparent;
         padding: 0;
     }
-    .event-controls > button,
+    .event-control-scroller > button,
     .event-filter-group > button {
         background: var(--event-control-rail);
         border-radius: var(--radius-md);
