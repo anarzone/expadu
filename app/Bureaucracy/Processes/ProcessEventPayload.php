@@ -10,15 +10,21 @@ use Illuminate\Validation\ValidationException;
 
 final class ProcessEventPayload
 {
+    /** A private free-text note; stored only inside the encrypted event payload and process state. */
+    public const NoteLength = 500;
+
     public function validate(string $type, array $payload): array
     {
         $allowed = match ($type) {
             'step_completed', 'step_reopened' => ['step_id', 'occurred_on'],
             'submission_recorded' => ['occurred_on', 'channel', 'reference'],
-            'action_required_reported', 'completion_reported', 'cancellation_reported' => ['occurred_on', 'reference'],
+            'submission_retracted' => ['event_id', 'note'],
+            'action_required_reported', 'completion_reported', 'cancellation_reported' => ['occurred_on', 'reference', 'note'],
+            'blocked_reported' => ['occurred_on', 'note'],
             'appointment_recorded' => ['appointment_id', 'starts_at', 'timezone', 'duration_minutes', 'location'],
             'appointment_cancelled' => ['appointment_id'],
-            'preparation_started', 'waiting_reported', 'process_reopened' => [],
+            'preparation_started', 'waiting_reported', 'process_reopened' => ['note'],
+            'process_untracked' => [],
             default => null,
         };
         if ($allowed === null || array_diff(array_keys($payload), $allowed) !== []) {
@@ -28,6 +34,15 @@ final class ProcessEventPayload
             if (isset($payload[$key]) && (! is_string($payload[$key]) || trim($payload[$key]) === '' || mb_strlen($payload[$key]) > $length)) {
                 throw ValidationException::withMessages(['payload.'.$key => 'Use a short non-empty reference.']);
             }
+        }
+        if (array_key_exists('note', $payload) && (! is_string($payload['note']) || trim($payload['note']) === '' || mb_strlen($payload['note']) > self::NoteLength)) {
+            throw ValidationException::withMessages(['payload.note' => 'Keep the note to '.self::NoteLength.' characters, or leave it out.']);
+        }
+        if (isset($payload['note'])) {
+            $payload['note'] = trim($payload['note']);
+        }
+        if ($type === 'submission_retracted' && (! is_int($payload['event_id'] ?? null) || $payload['event_id'] < 1)) {
+            throw ValidationException::withMessages(['payload.event_id' => 'Choose the submission report to withdraw.']);
         }
         if (in_array($type, ['step_completed', 'step_reopened'], true) && ! isset($payload['step_id'])) {
             throw ValidationException::withMessages(['payload.step_id' => 'Choose the step being updated.']);
@@ -58,15 +73,19 @@ final class ProcessEventPayload
             if ($date === false || $date->format('Y-m-d\TH:i:sP') !== $start || (new DateTimeZone($zone))->getOffset($date) !== $date->getOffset()) {
                 throw ValidationException::withMessages(['payload.starts_at' => 'That appointment time or offset is not valid in this time zone.']);
             }
-            if (! is_int($payload['duration_minutes'] ?? null) || $payload['duration_minutes'] < 1 || $payload['duration_minutes'] > 1440) {
-                throw ValidationException::withMessages(['payload.duration_minutes' => 'Enter an appointment duration between 1 and 1440 minutes.']);
+            // The key is required so an unknown length is an explicit null, never a silent default.
+            $duration = $payload['duration_minutes'] ?? null;
+            if (! array_key_exists('duration_minutes', $payload) || ($duration !== null && (! is_int($duration) || $duration < 1 || $duration > 1440))) {
+                throw ValidationException::withMessages(['payload.duration_minutes' => 'Enter the appointment length in minutes (1 to 1440), or null if you do not know it.']);
             }
             if (isset($payload['location'])) {
                 $location = $payload['location'];
-                if (! is_array($location) || array_diff(array_keys($location), ['label', 'lat', 'lng']) !== []
-                    || ! $this->coordinate($location['lat'] ?? null, 90) || ! $this->coordinate($location['lng'] ?? null, 180)
-                    || (array_key_exists('label', $location) && (! is_string($location['label']) || trim($location['label']) === '' || mb_strlen($location['label']) > 160))) {
-                    throw ValidationException::withMessages(['payload.location' => 'Choose a meeting place with a valid latitude and longitude, or leave its location unknown.']);
+                $valid = is_array($location) && array_diff(array_keys($location), ['label', 'lat', 'lng']) === []
+                    && (! array_key_exists('label', $location) || (is_string($location['label']) && trim($location['label']) !== '' && mb_strlen($location['label']) <= 160));
+                $mapped = $valid && (array_key_exists('lat', $location) || array_key_exists('lng', $location));
+                if (! $valid || ($mapped && (! $this->coordinate($location['lat'] ?? null, 90) || ! $this->coordinate($location['lng'] ?? null, 180)))
+                    || (! $mapped && ! array_key_exists('label', $location))) {
+                    throw ValidationException::withMessages(['payload.location' => 'Choose a meeting place with a valid latitude and longitude, describe it with a short label, or leave its location unknown.']);
                 }
             }
         }

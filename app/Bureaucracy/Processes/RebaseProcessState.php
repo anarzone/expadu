@@ -24,9 +24,11 @@ final class RebaseProcessState
         }
         $rebased['workflow'] = $state['workflow'];
         $rebased['completion_basis'] = $state['completion_basis'];
+        $rebased['report'] = $state['report'] ?? null;
         if ($state['workflow'] === 'completed' && array_filter($rebased['steps'], fn ($status) => $status !== 'completed') !== []) {
             $rebased['workflow'] = 'preparing';
             $rebased['completion_basis'] = null;
+            $rebased['report'] = null;
         }
 
         return $rebased;

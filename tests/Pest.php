@@ -1,5 +1,9 @@
 <?php
 
+use App\Composer\ActivePlanStore;
+use App\Composer\AppointmentRepository;
+use App\Composer\Constraints;
+use App\Composer\PrivatePlanCache;
 use App\Home\HomeContext;
 use App\Models\User;
 use App\Models\UserTask;
@@ -182,17 +186,17 @@ function homeContext(User $user, array $overrides = []): HomeContext
  * @param  array<string, mixed>  $plan
  * @return array<string, mixed> the plan as stored
  */
-function storeComposerPlan(App\Models\User $user, array $plan): array
+function storeComposerPlan(User $user, array $plan): array
 {
-    $plan['appointment_revision'] = app(App\Composer\AppointmentRepository::class)
-        ->revision($user, App\Composer\Constraints::fromArray($plan['constraints']));
-    app(App\Composer\ActivePlanStore::class)->save($user, $plan);
+    $plan['appointment_revision'] = app(AppointmentRepository::class)
+        ->revision($user, Constraints::fromArray($plan['constraints']));
+    app(ActivePlanStore::class)->save($user, $plan);
 
     return $plan;
 }
 
 /** @return array<string, mixed>|null */
-function storedComposerPlan(App\Models\User $user): ?array
+function storedComposerPlan(User $user): ?array
 {
-    return app(App\Composer\PrivatePlanCache::class)->get($user, 'plan');
+    return app(PrivatePlanCache::class)->get($user, 'plan');
 }

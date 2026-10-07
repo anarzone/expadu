@@ -44,6 +44,11 @@ final readonly class Candidate
         /** @var array<string, mixed> */
         public array $placeFacts = [],
         public ?float $distanceKmFromOrigin = null,
+        // A recorded appointment with a text-only place has no map point (lat/lng are NAN):
+        // no journey to or from it is computed or offered.
+        public bool $routable = true,
+        // A recorded appointment of unknown length: typicalDurationMin is 0, never a guessed length.
+        public bool $durationKnown = true,
     ) {}
 
     /** Earliest complete visit, retaining split and overnight source intervals. */

@@ -31,11 +31,11 @@ use App\Http\Requests\ParseComposerPromptRequest;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
+use App\Places\PlaceCapabilities;
+use App\Places\PlaceIdentity;
 use App\Privacy\ProcessingAcceptanceRules;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingPurpose;
-use App\Places\PlaceCapabilities;
-use App\Places\PlaceIdentity;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
@@ -805,6 +805,7 @@ class ComposerController extends Controller
                 break;
             }
         }
+        array_push($notices, ...Plan::appointmentNotices($plan->toArray()['slots']));
 
         // Weather no longer rides the notice pills — it's the dedicated cyan
         // line above the plan (see weatherNote()), so it isn't duplicated here.
@@ -848,11 +849,12 @@ class ComposerController extends Controller
     private function travelEstimator(User $user, float $originLat, float $originLng, array $pool): EstimatesTravel
     {
         $fallback = new TravelEstimator;
-        if ($pool === []) {
+        // No journey is computed to a text-only appointment place.
+        $candidates = array_values(array_filter($pool, fn (Candidate $c) => $c->routable));
+        if ($candidates === []) {
             return $fallback;
         }
 
-        $candidates = array_values($pool);
         $destinations = array_map(
             fn (Candidate $c) => new GeoPoint((float) $c->lat, (float) $c->lng),
             $candidates,

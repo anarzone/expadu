@@ -34,6 +34,9 @@ final class ConfirmRequirementUse
 
         return $this->scope->run($actor, $process->dossier->person, AccessScope::ManageEvidence, function ($person, $case) use ($actor, $process, $requirementId, $evidenceId, $expectedProcessVersion, $evidenceVersion, $requirementHash, $requestId): BureaucracyRequirementUse {
             $current = BureaucracyProcess::query()->whereKey($process->id)->where('case_id', $case->id)->lock('for no key update')->firstOrFail();
+            if (($current->state['workflow'] ?? null) === 'untracked') {
+                throw new ConflictHttpException('This process is no longer tracked. Start tracking it again before confirming documents for it.');
+            }
             $input = $this->inputs->for($actor, $person, $current->jurisdiction);
             $fingerprint = ProcessingConsentStore::digest([$requirementId, $evidenceId, $expectedProcessVersion, $evidenceVersion, $requirementHash]);
             $replay = BureaucracyRequirementUse::query()->where('process_id', $current->id)->where('request_id', $requestId)->first();

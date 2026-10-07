@@ -1,0 +1,114 @@
+<?php
+
+use App\Bureaucracy\Catalogue\CatalogueCompiler;
+use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
+use App\Bureaucracy\People\EnsureAccountHolder;
+use App\Models\BureaucracyProcess;
+use App\Models\Task;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+beforeEach(function () {
+    $this->travelTo('2026-09-08 10:00:00');
+    $this->actor = User::factory()->create();
+    $this->person = app(EnsureAccountHolder::class)->dossier($this->actor)->person;
+    $task = Task::factory()->approvedFixture()->create(['key' => 'fixture.workflow', 'type' => 'task', 'applies_if' => [],
+        'depends_on' => [], 'deadline_type' => 'none', 'documents_required' => [], 'how_to_steps' => [], 'links' => []])->fresh();
+    $store = app(CatalogueReleaseStore::class);
+    $release = $store->stage(app(CatalogueCompiler::class)->compile([$task], [$task->key => [
+        'process_id' => 'fixture.workflow', 'topic' => 'residence', 'kind' => 'action', 'coverage' => 'partial',
+    ]]));
+    $store->activate($release->id, null);
+    $this->planUrl = '/bureaucracy/v2/people/'.$this->person->id.'/plan?jurisdiction=de-nrw-cologne';
+    $this->actingAs($this->actor);
+    $proposal = $this->getJson($this->planUrl)->assertSuccessful()->json('processes.0');
+    $this->started = $this->postJson('/bureaucracy/v2/people/'.$this->person->id.'/processes', ['jurisdiction' => 'de-nrw-cologne',
+        'occurrence_key' => $proposal['occurrence_key'], 'review_token' => $proposal['review_token'], 'request_id' => (string) Str::uuid()])
+        ->assertSuccessful()->json();
+    $this->url = '/bureaucracy/v2/processes/'.$this->started['process_id'];
+    $this->report = function (string $event, array $payload = [], ?string $token = null) {
+        $process = $this->getJson($this->url)->assertSuccessful()->json();
+
+        return $this->postJson($this->url.'/events', ['request_id' => (string) Str::uuid(), 'expected_version' => $process['version'],
+            'review_token' => $token ?? $process['review_token'], 'event' => $event, 'payload' => $payload]);
+    };
+});
+
+test('blocked, resumed and cancelled progress keep the person\'s own note and date encrypted at rest', function () {
+    ($this->report)('blocked_reported', ['note' => 'Waiting for my landlord letter', 'occurred_on' => '2026-09-07'])->assertSuccessful();
+    $this->getJson($this->url)->assertJsonPath('state.workflow', 'blocked')
+        ->assertJsonPath('state.report', ['event' => 'blocked_reported', 'occurred_on' => '2026-09-07', 'note' => 'Waiting for my landlord letter']);
+    expect(json_encode(DB::table('bureaucracy_process_events')->get()))->not->toContain('landlord')
+        ->and(json_encode(DB::table('bureaucracy_processes')->get()))->not->toContain('landlord');
+    ($this->report)('preparation_started')->assertSuccessful();
+    ($this->report)('cancellation_reported', ['occurred_on' => '2026-09-08', 'note' => 'Moved to Berlin'], '')->assertSuccessful();
+    $this->getJson($this->url)->assertJsonPath('state.workflow', 'cancelled')->assertJsonPath('state.report.occurred_on', '2026-09-08');
+});
+
+test('invalid workflow reports are refused with a message the person can act on', function () {
+    ($this->report)('waiting_reported')->assertUnprocessable()
+        ->assertJsonPath('errors.event.0', 'Record the submission first. Waiting for the authority follows a reported submission.');
+    ($this->report)('blocked_reported', ['note' => str_repeat('a', 501)])->assertUnprocessable()->assertJsonValidationErrors('payload.note');
+    ($this->report)('blocked_reported', ['note' => '   '])->assertUnprocessable()->assertJsonValidationErrors('payload.note');
+    ($this->report)('submission_recorded', ['occurred_on' => '2026-09-08'])->assertSuccessful();
+    ($this->report)('blocked_reported')->assertUnprocessable()->assertJsonValidationErrors('event');
+    $this->getJson($this->url)->assertJsonPath('state.workflow', 'submitted');
+});
+
+test('a mistaken submission can be withdrawn while its history stays stored', function () {
+    ($this->report)('preparation_started')->assertSuccessful();
+    ($this->report)('submission_recorded', ['occurred_on' => '2026-09-08', 'channel' => 'online'])->assertSuccessful();
+    ($this->report)('waiting_reported')->assertSuccessful();
+    $row = collect($this->getJson($this->planUrl)->json('timeline'))->firstWhere('kind', 'submission_recorded');
+    expect($row['event_id'])->toBeInt()->and($row['revision_event_id'])->toBe($row['event_id'])
+        ->and($row['id'])->toEndWith('submission:'.$row['event_id']);
+    ($this->report)('submission_retracted', ['event_id' => $row['event_id'] + 1], '')->assertUnprocessable()->assertJsonValidationErrors('payload.event_id');
+    ($this->report)('submission_retracted', ['event_id' => $row['event_id'], 'note' => 'Recorded on the wrong task'], '')->assertSuccessful();
+    $this->getJson($this->url)->assertJsonPath('state.workflow', 'preparing')->assertJsonPath('state.report.event', 'submission_retracted');
+    expect(collect($this->getJson($this->planUrl)->json('timeline'))->where('kind', 'submission_recorded'))->toBeEmpty()
+        ->and(BureaucracyProcess::query()->find($this->started['process_id'])->events()->where('type', 'submission_recorded')->count())->toBe(1);
+    ($this->report)('submission_retracted', ['event_id' => $row['event_id']], '')->assertUnprocessable();
+});
+
+test('a corrected submission keeps its identity and the next correction targets the latest revision', function () {
+    ($this->report)('submission_recorded', ['occurred_on' => '2026-09-07'])->assertSuccessful();
+    $row = collect($this->getJson($this->planUrl)->json('timeline'))->firstWhere('kind', 'submission_recorded');
+    $version = $this->getJson($this->url)->json('version');
+    $this->postJson($this->url.'/events/'.$row['revision_event_id'].'/corrections', ['request_id' => (string) Str::uuid(),
+        'expected_version' => $version, 'confirmed' => true, 'payload' => ['occurred_on' => '2026-09-06']])->assertSuccessful();
+    $corrected = collect($this->getJson($this->planUrl)->json('timeline'))->firstWhere('kind', 'submission_recorded');
+    expect($corrected['event_id'])->toBe($row['event_id'])->and($corrected['revision_event_id'])->not->toBe($row['event_id'])
+        ->and($corrected['date'])->toBe('2026-09-06');
+    ($this->report)('submission_retracted', ['event_id' => $corrected['event_id']], '')->assertSuccessful();
+    $this->getJson($this->url)->assertJsonPath('state.workflow', 'not_started');
+});
+
+test('starting to track can be undone before any progress and started again from a clean slate', function () {
+    ($this->report)('process_untracked', [], '')->assertSuccessful();
+    $plan = $this->getJson($this->planUrl)->assertSuccessful();
+    expect($plan->json('processes.0.id'))->toBeNull()->and($plan->json('history'))->toBeEmpty();
+    $this->getJson($this->url)->assertNotFound();
+    $this->postJson($this->url.'/events', ['request_id' => (string) Str::uuid(), 'expected_version' => 2,
+        'review_token' => $plan->json('processes.0.review_token'), 'event' => 'preparation_started', 'payload' => []])->assertConflict();
+    $restart = $this->postJson('/bureaucracy/v2/people/'.$this->person->id.'/processes', ['jurisdiction' => 'de-nrw-cologne',
+        'occurrence_key' => $plan->json('processes.0.occurrence_key'), 'review_token' => $plan->json('processes.0.review_token'),
+        'request_id' => (string) Str::uuid()])->assertSuccessful();
+    expect($restart->json('process_id'))->toBe($this->started['process_id'])->and($restart->json('version'))->toBe(3);
+    $this->getJson($this->url)->assertSuccessful()->assertJsonPath('state.workflow', 'not_started')->assertJsonPath('state.report', null);
+    expect(BureaucracyProcess::query()->find($this->started['process_id'])->events()->orderBy('id')->pluck('type')->all())
+        ->toBe(['process_started', 'process_untracked', 'process_started']);
+});
+
+test('untracking is refused once progress was reported, so cancelling remains the honest path', function () {
+    ($this->report)('preparation_started')->assertSuccessful();
+    ($this->report)('process_untracked', [], '')->assertUnprocessable()->assertJsonValidationErrors('event');
+    $this->getJson($this->url)->assertSuccessful()->assertJsonPath('state.workflow', 'preparing');
+});
+
+test('guidance tells the UI which report finishes a step, derived from the reviewed step kind', function () {
+    $plan = $this->getJson($this->planUrl)->assertSuccessful();
+    expect($plan->json('processes.0.guidance.0.kind'))->toBe('action')
+        ->and($plan->json('processes.0.guidance.0.completion_event'))->toBe('submission_recorded')
+        ->and($plan->json('guidance.0.completion_event'))->toBe('submission_recorded');
+});

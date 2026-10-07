@@ -1,5 +1,6 @@
 <?php
 
+use App\Composer\AppointmentRepository;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanSlot;
@@ -22,7 +23,6 @@ use App\Services\VeedelDirectory;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 function identityPair(): array
@@ -250,7 +250,7 @@ test('saved Composer snapshots normalize identity without changing timing or oth
     $user = User::factory()->onboarded()->create();
     $slot = ['id' => "spot:{$alias->id}", 'name' => $alias->name, 'start_at' => now()->addHour()->toIso8601String(), 'end_at' => now()->addHours(2)->toIso8601String(), 'travel_min_from_previous' => 7];
     $plan = ['constraints' => ['window_start' => now()->toIso8601String(), 'window_end' => now()->addHours(4)->toIso8601String()], 'slots' => [$slot], 'pins' => ["spot:{$alias->id}"], 'excluded' => ["spot:{$alias->id}"], 'rejected' => [["spot:{$alias->id}", 'event:42']]];
-    $plan['appointment_revision'] = app(App\Composer\AppointmentRepository::class)->revision($user, Constraints::fromArray($plan['constraints']));
+    $plan['appointment_revision'] = app(AppointmentRepository::class)->revision($user, Constraints::fromArray($plan['constraints']));
     app(TodayPlanStore::class)->save($user, $plan, 'Saved before reconciliation');
     reconcileIdentity($alias, $canonical);
     $normalized = app(PlaceIdentity::class)->normalizePlan($plan);

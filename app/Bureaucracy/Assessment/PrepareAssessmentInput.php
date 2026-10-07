@@ -32,7 +32,9 @@ final class PrepareAssessmentInput
                 ->map(fn ($link) => $this->relationships->forApplicant($actor, $subject, $link->id, $at->toDateString()))->all();
             $catalogue = $this->catalogues->current() ?? ['release_hash' => null, 'definitions' => [], 'withdrawn' => [], 'release_state' => 'not_activated'];
 
+            // An untracked (undone) start is kept as history but reads as a proposal again.
             $processes = BureaucracyProcess::query()->where('case_id', $case->id)->where('jurisdiction', $jurisdiction)->orderBy('id')->get()
+                ->reject(fn ($process) => ($process->state['workflow'] ?? null) === 'untracked')->values()
                 ->map(fn ($process) => ['id' => $process->id, 'definition_id' => $process->definition_id, 'topic' => $process->topic,
                     'occurrence_key' => $process->occurrence_key, 'context_id' => $process->context_id,
                     'catalogue_hash' => $process->catalogue_hash, 'version' => $process->version,

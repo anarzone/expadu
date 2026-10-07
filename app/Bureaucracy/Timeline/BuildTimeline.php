@@ -72,6 +72,7 @@ final class BuildTimeline
             }
         }
         $appointments = [];
+        $withdrawn = [];
         usort($events, fn ($one, $two) => $one['id'] <=> $two['id']);
         foreach ($events as $event) {
             $payload = $event['payload'];
@@ -79,18 +80,24 @@ final class BuildTimeline
                 $id = $payload['appointment_id'];
                 $appointments[$id] = $event;
             }
+            if ($event['type'] === 'submission_retracted') {
+                $withdrawn[$payload['event_id']] = true;
+            }
         }
         foreach ($events as $event) {
             $payload = $event['payload'];
             if ($event['type'] === 'appointment_recorded' && ($appointments[$payload['appointment_id']]['id'] ?? null) === $event['id']) {
+                $location = $payload['location'] ?? null;
+                // Unknown duration and a text-only place stay unknown: null duration, routable false.
                 $rows[] = ['id' => 'appointment:'.$payload['appointment_id'], 'kind' => 'appointment', 'state' => 'recorded',
-                    'starts_at' => $payload['starts_at'], 'timezone' => $payload['timezone'], 'duration_minutes' => $payload['duration_minutes'],
-                    'location' => $payload['location'] ?? null,
+                    ...$this->identity($event), 'appointment_id' => $payload['appointment_id'],
+                    'starts_at' => $payload['starts_at'], 'timezone' => $payload['timezone'], 'duration_minutes' => $payload['duration_minutes'] ?? null,
+                    'location' => $location, 'routable' => isset($location['lat'], $location['lng']),
                     'precision' => 'instant', 'provenance' => 'user_report', 'legal_effect' => 'not_assessed'];
             }
-            $submissionDate = $event['type'] === 'submission_recorded' ? $this->date($payload['occurred_on'] ?? null, $timezone) : null;
+            $submissionDate = $event['type'] === 'submission_recorded' && ! isset($withdrawn[$event['id']]) ? $this->date($payload['occurred_on'] ?? null, $timezone) : null;
             if ($submissionDate !== null && $submissionDate->toDateString() <= $today) {
-                $rows[] = ['id' => 'submission:'.$event['id'], 'kind' => 'submission_recorded', 'date' => $payload['occurred_on'],
+                $rows[] = ['id' => 'submission:'.$event['id'], 'kind' => 'submission_recorded', ...$this->identity($event), 'date' => $payload['occurred_on'],
                     'precision' => 'calendar_date', 'timezone' => $timezone, 'state' => 'recorded',
                     'provenance' => 'user_report', 'legal_effect' => 'not_assessed'];
             }
@@ -122,6 +129,12 @@ final class BuildTimeline
         }
 
         return $documents;
+    }
+
+    /** `event_id` is the report's stable identity; corrections target its latest `revision_event_id`. */
+    private function identity(array $event): array
+    {
+        return ['event_id' => $event['id'], 'revision_event_id' => $event['revision_event_id'] ?? $event['id']];
     }
 
     private function known(array $facts, string $key): bool
