@@ -9,6 +9,8 @@
             month: 'short',
             year: 'numeric',
         });
+    // The previews' shared sample day, where a page has one.
+    const today = () => window.ExpaduSampleDay?.date || iso(new Date());
     function enhance(root = document) {
         root.querySelectorAll(
             'input[type="date"]:not([data-date-enhanced]):not([readonly])',
@@ -29,7 +31,7 @@
             panel.hidden = true;
             wrapper.append(toggle, panel);
             let month = new Date(
-                (input.value || iso(new Date())) + 'T12:00:00',
+                (input.value || today()) + 'T12:00:00',
             );
             month.setDate(1);
             function close() {
@@ -53,7 +55,7 @@
                     d.setDate(first.getDate() + i);
                     return d;
                 });
-                panel.innerHTML = `<div class="shared-calendar-head"><button type="button" data-month="-1" aria-label="Previous month">‹</button><strong>${month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</strong><button type="button" data-month="1" aria-label="Next month">›</button></div><div class="shared-calendar-week" aria-hidden="true">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((x) => `<span>${x}</span>`).join('')}</div><div class="shared-calendar-days">${cells.map((d) => `<button type="button" data-day="${iso(d)}" aria-label="${label(iso(d))}" aria-pressed="${iso(d) === input.value}" ${(input.min && iso(d) < input.min) || (input.max && iso(d) > input.max) ? 'disabled' : ''} class="${d.getMonth() !== month.getMonth() ? 'outside' : ''}">${d.getDate()}</button>`).join('')}</div><button type="button" class="shared-calendar-today" data-day="${iso(new Date())}">Today</button>`;
+                panel.innerHTML = `<div class="shared-calendar-head"><button type="button" data-month="-1" aria-label="Previous month">‹</button><strong>${month.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</strong><button type="button" data-month="1" aria-label="Next month">›</button></div><div class="shared-calendar-week" aria-hidden="true">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((x) => `<span>${x}</span>`).join('')}</div><div class="shared-calendar-days">${cells.map((d) => `<button type="button" data-day="${iso(d)}" aria-label="${label(iso(d))}" aria-pressed="${iso(d) === input.value}" ${(input.min && iso(d) < input.min) || (input.max && iso(d) > input.max) ? 'disabled' : ''} class="${d.getMonth() !== month.getMonth() ? 'outside' : ''}">${d.getDate()}</button>`).join('')}</div><button type="button" class="shared-calendar-today" data-day="${today()}">Today</button>`;
             }
             toggle.onclick = () => {
                 panel.hidden = !panel.hidden;

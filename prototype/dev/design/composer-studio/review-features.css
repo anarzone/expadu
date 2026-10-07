@@ -381,3 +381,66 @@
         max-height: calc(100dvh - var(--studio-keyboard-inset, 0px) - 24px);
     }
 }
+
+/* Phones: Quick look, Add appointment and Try Composer open as a bottom sheet
+   (full width, slides up, drag the header down to close), like Today's sheets. */
+@media (max-width: 700px) {
+    .studio .studio-detail-dialog:not(.is-hover-preview) {
+        inset: auto 0 var(--studio-keyboard-inset, 0px) 0;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        max-height: calc(100dvh - var(--studio-keyboard-inset, 0px) - 40px);
+        border: 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        padding-bottom: env(safe-area-inset-bottom);
+        animation: sheet-rise 280ms var(--ease-settle);
+    }
+    .studio .studio-detail-dialog:not(.is-hover-preview) > header {
+        position: relative;
+        padding-top: 18px;
+        touch-action: none;
+    }
+    .studio .studio-detail-dialog:not(.is-hover-preview) > header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: calc(50% - 18px);
+        width: 36px;
+        height: 4px;
+        border-radius: var(--radius-pill);
+        background: var(--color-border-strong);
+        opacity: 0.5;
+    }
+}
+@keyframes sheet-rise {
+    from {
+        transform: translateY(100%);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .studio .studio-detail-dialog {
+        animation: none;
+    }
+}
+
+/* Quick look: what the listing says, what it doesn't, and what you can do. */
+.studio .detail-fact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+    font-size: var(--text-small);
+}
+.studio .detail-fact svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-select-text);
+}
+.studio .detail-primary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-top: 14px;
+}

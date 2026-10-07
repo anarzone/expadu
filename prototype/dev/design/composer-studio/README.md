@@ -4,6 +4,39 @@ Connected to the approved Today C design, 18 September 2026. Start at `/dev/desi
 
 Open `/dev/design/composer-studio/` directly, or enter from Today. Today’s header bookmark opens Saved; the plus menu beside the Composer input contains My Plans, Saved and History. Both are panels in the same workspace; the older `/dev/design/my-plans/` links now open the corresponding panel in Composer.
 
+## Polish and fixes — 7 October
+
+Composer review items 7–16.
+
+- **New replies stay in view:** after a reply arrives, your question and the
+  reply sit just below the Composer bar; a reply too tall for both starts there,
+  so its card isn't hidden under the input.
+- **Sheets on phones:** Quick look, Add appointment and Try Composer open as a
+  bottom sheet that slides up and closes by dragging its header down, like
+  Today's sheets. Desktop keeps the compact dialog and the hover preview.
+- **Quick look:** shows the listing's facts, exactly what it doesn't say (for
+  example "Opening hours, entry and accessibility aren't in the listing"), the
+  event date in words, and Add to plan. The Map button has a pin icon.
+- **One plan, once:** while the live plan for a day is in the conversation,
+  earlier versions stay in Version history instead of repeating as "Earlier
+  plan" cards. Undo says what it undoes ("Undo confirmation" or "Undo this
+  change").
+- **My Plans:** the week marks Today; the date picker is one calendar button
+  beside the day's heading; build notes ("Weekly planning is coming later",
+  "Preview only") are gone.
+- **Loading:** "Thinking…" and Cancel share one line.
+- **Plain words:** Try Composer offers "What's on tonight", "Getting somewhere"
+  and "Registering your address"; plan changes are "Ask me first" or "Make small
+  edits for me" (button: "Edit for me"); bookings and payments "always need your
+  OK".
+- **A start screen that knows your day:** "Getting to your 14:00 Blue Card
+  appointment", "What's on tonight", "Plan my Saturday", "A little time
+  outdoors".
+- **Places:** each card names what its listing lacks instead of "Access and
+  hours to check"; the outdoors answer offers "More outdoor places".
+- **Small fixes:** Shift+Enter starts a new line; History says "1 message" and
+  dates today's conversations with the sample day.
+
 ## Helpful replies and page context — 7 October
 
 Composer review items 1–6.
@@ -49,7 +82,7 @@ Panels use a 300 ms entrance and 220 ms exit, with a short 230 ms response trans
 2. Edit the date or time, swap the park, or remove it. Confirm explicitly to put the day in My Plans.
 3. Select the input's **My Plans** control. Choose the day and **Adjust with Composer**. The panel closes onto the proposal. Try “Move the park later”. Review the old/new times before **Apply changes**.
 4. Ask “What have I planned?” to see an answer from the confirmed day. A question does not change the plan.
-5. Try **Help me plan Saturday** for an example with a fixed sample appointment. Conflicting time edits are blocked before they change the plan.
+5. Try **Plan my Saturday**: the plan keeps your Walk by the Rhine at 10:30 and adds a park around it. Conflicting time edits are blocked before they change the plan. (“Plan Saturday afternoon around my 15:00 appointment” still adds the fixed sample appointment.)
 
 ## Ongoing conversation and approvals
 

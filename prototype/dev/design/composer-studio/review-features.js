@@ -88,8 +88,10 @@
                     close();
                 }
             });
-            if (modal) dialog.showModal();
-            else {
+            if (modal) {
+                dialog.showModal();
+                sheetSwipe(dialog);
+            } else {
                 dialog.classList.add('is-hover-preview');
                 const previousFocus = document.activeElement;
                 dialog.show();
@@ -106,6 +108,31 @@
             }
             return dialog.querySelector('.detail-body');
         }
+        // On phones a modal opens as a bottom sheet; drag its header down to close.
+        function sheetSwipe(sheet) {
+            let drag = null;
+            const header = sheet.querySelector('header');
+            header.addEventListener('pointerdown', (event) => {
+                if (!matchMedia('(max-width: 700px)').matches || event.target.closest('button'))
+                    return;
+                drag = { id: event.pointerId, y: event.clientY, at: event.timeStamp, dy: 0 };
+                header.setPointerCapture(event.pointerId);
+            });
+            header.addEventListener('pointermove', (event) => {
+                if (drag?.id !== event.pointerId) return;
+                drag.dy = Math.max(0, event.clientY - drag.y);
+                sheet.style.transform = `translateY(${drag.dy}px)`;
+            });
+            const release = (event) => {
+                if (drag?.id !== event.pointerId) return;
+                const { dy, at } = drag;
+                drag = null;
+                sheet.style.transform = '';
+                if (dy > 96 || (dy > 32 && dy / Math.max(1, event.timeStamp - at) > 0.5)) close();
+            };
+            header.addEventListener('pointerup', release);
+            header.addEventListener('pointercancel', release);
+        }
         function preview(id, anchor, hover = false) {
             const item = getItem(id);
             if (!item) return;
@@ -121,7 +148,35 @@
                 if (!body.isConnected) return;
                 const scheduled =
                     item.type === 'event' || item.type === 'appointment';
-                body.innerHTML = `${item.image ? `<img class="preview-image" src="${E(item.image)}" alt="${E(item.title)}">` : ''}<div class="preview-item-icon">${I(item.icon || (scheduled ? 'calendar' : 'pin'))}</div><p class="detail-eyebrow">${E(item.type === 'event' ? 'Captured event · not a current listing' : item.type === 'appointment' ? 'Your appointment' : item.label || 'Activity')}</p><h3>${E(item.title)}</h3><p>${E(item.venue || item.location || item.area || 'Location not added')}</p>${scheduled ? `<p class="detail-time">${I('clock')}${E(item.start)}–${E(item.end)}${item.date ? ' · ' + E(item.date) : ''}</p>` : ''}<p class="detail-caution">${E(item.unknown || (item.type === 'appointment' ? 'Details entered by you.' : 'Current availability, access and travel still need checking.'))}</p><button class="studio-button light" data-full-details>Full details ${I('arrow')}</button><div class="full-item-details" hidden></div>`;
+                const id = item.type === 'event' && !String(item.id).startsWith('event:') ? 'event:' + item.id : item.id;
+                const past = item.type === 'event' && item.date < today();
+                const eyebrow =
+                    item.type === 'event'
+                        ? /sample/i.test(item.captured || '')
+                            ? 'Sample event'
+                            : `Captured listing${past ? ' · past' : ''}`
+                        : item.type === 'appointment'
+                          ? 'Your appointment'
+                          : item.label || 'Activity';
+                const current = getState();
+                const added = current.proposal?.items.some((x) => x.id === id);
+                // What the listing says, and exactly what it doesn't.
+                const gap =
+                    item.type === 'place'
+                        ? item.unknown ||
+                          'Opening hours, entry and accessibility aren’t in the listing'
+                        : item.type === 'appointment'
+                          ? 'Details entered by you'
+                          : past
+                            ? 'This listing has passed'
+                            : 'Current availability needs checking before you go';
+                const add =
+                    item.type === 'place'
+                        ? `<button class="studio-button light" data-add="${E(id)}" ${added ? 'disabled' : ''}>${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button>`
+                        : item.type === 'event' && !past
+                          ? `<button class="studio-button light" data-add-event="${E(id)}" ${added ? 'disabled' : ''}>${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button>`
+                          : '';
+                body.innerHTML = `${item.image ? `<img class="preview-image" src="${E(item.image)}" alt="${E(item.title)}">` : ''}<div class="preview-item-icon">${I(item.icon || (scheduled ? 'calendar' : 'pin'))}</div><p class="detail-eyebrow">${E(eyebrow)}</p><h3>${E(item.title)}</h3><p>${E(item.venue || item.location || item.area || 'Location not added')}${item.price ? ` · ${E(item.price)}` : ''}</p>${scheduled ? `<p class="detail-time">${I('clock')}${E(item.start)}${item.end ? `–${E(item.end)}` : ''}${item.date ? ` · ${E(eventDate(item.date))}` : ''}</p>` : ''}${item.description ? `<p>${E(item.description)}</p>` : ''}${(item.facts || []).map((fact) => `<p class="detail-fact">${I('check')}${E(fact)}</p>`).join('')}<p class="detail-caution">${E(gap)}.</p><div class="detail-primary">${add}<button class="plain-button" data-full-details>Full details ${I('arrow')}</button></div><div class="full-item-details" hidden></div>`;
                 body.querySelector('.preview-image')?.addEventListener(
                     'error',
                     (event) => event.target.remove(),
@@ -148,7 +203,7 @@
                             : `https://www.openstreetmap.org/search?query=${encodeURIComponent([item.title, item.area, item.location].filter(Boolean).join(' '))}`;
                     body.insertAdjacentHTML(
                         'beforeend',
-                        `<div class="detail-actions"><a class="plain-button" href="${E(map)}" target="_blank" rel="noopener">${I('map')}Map</a><a class="plain-button" href="${E(route.href)}">${I('route')}Directions</a></div>`,
+                        `<div class="detail-actions"><a class="plain-button" href="${E(map)}" target="_blank" rel="noopener">${I('pin')}Map</a><a class="plain-button" href="${E(route.href)}">${I('route')}Directions</a></div>`,
                     );
                 }
                 body.querySelector('[data-full-details]').addEventListener(
@@ -366,7 +421,7 @@
         }
         function examples(anchor) {
             const body = shell('Try Composer', anchor);
-            body.innerHTML = `<p>Explore a sample response without changing your typed message.</p><div class="example-actions"><button data-sample="What’s on tonight?">${I('calendar')}An event with fixed times</button><button data-sample="Help me with a journey">${I('route')}A journey request</button><button data-sample="Help me register my address">${I('document')}Reviewed bureaucracy information</button></div><p class="detail-caution">Day planning in this version · one unfinished day at a time. Weekly planning comes later.</p>`;
+            body.innerHTML = `<p>Try one of these to see what Composer can do. Your typed message stays as it is.</p><div class="example-actions"><button data-sample="What’s on tonight?">${I('calendar')}What’s on tonight</button><button data-sample="How do I get from Neumarkt to Köln Hbf?">${I('route')}Getting somewhere</button><button data-sample="Help me register my address">${I('document')}Registering your address</button></div><p class="detail-caution">Answers in this preview use sample data.</p>`;
             body.querySelectorAll('[data-sample]').forEach((button) =>
                 button.addEventListener('click', () => {
                     const text = button.dataset.sample;
@@ -382,6 +437,8 @@
             if (el.dataset.action === 'appointment') appointment(el);
             if (el.dataset.cancelDay) cancelDay(el, el.dataset.cancelDay);
             if (el.dataset.action === 'examples') examples(el);
+            if ((el.dataset.add || el.dataset.addEvent) && el.closest('.studio-detail-dialog'))
+                setTimeout(close, 0);
             if (el.dataset.addEvent) {
                 const x = eventFor(el.dataset.addEvent);
                 if (!x) return;

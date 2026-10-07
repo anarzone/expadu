@@ -871,3 +871,23 @@
     width: 13px;
     height: 13px;
 }
+
+/* "Thinking…" and its Cancel sit on one line. */
+.pending-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.pending-row .plain-button {
+    min-height: 40px;
+}
+.studio .plan-undo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+}
+.studio .plan-undo svg {
+    width: 16px;
+    height: 16px;
+}

@@ -326,7 +326,7 @@
                 .reverse()
                 .map(
                     (ch) =>
-                        `<button class="history-section" data-open-section="${E(ch.id)}" aria-current="${ch.id === state.conversation.currentId}"><strong>${E(ch.title)}</strong><small>${E(new Date(ch.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} · ${ch.entries.filter((e) => e.role === 'user').length} messages</small>${ch.summary ? `<small>${E(ch.summary.replace('Deterministic topic summary (not AI memory). ', ''))}</small>` : ''}</button>`,
+                        `<button class="history-section" data-open-section="${E(ch.id)}" aria-current="${ch.id === state.conversation.currentId}"><strong>${E(ch.title)}</strong><small>${E(new Date(ch.startedAt).toDateString() === new Date().toDateString() ? new Date(M.today() + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : new Date(ch.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} · ${((n) => `${n} message${n === 1 ? '' : 's'}`)(ch.entries.filter((e) => e.role === 'user').length)}</small>${ch.summary ? `<small>${E(ch.summary.replace('Deterministic topic summary (not AI memory). ', ''))}</small>` : ''}</button>`,
                 )
                 .join(
                     '',
@@ -501,7 +501,7 @@
                     `${state.handoffs.length} selections waiting. ${state.handoffs[0].handoffError}`;
             return;
         }
-        area.innerHTML = `<div class="studio-input-wrap"><form id="studio-form">${state.handoffs?.length ? `<div class="handoff-note" role="status"><span>${state.handoffs.length} selection${state.handoffs.length === 1 ? '' : 's'} waiting. ${E(state.handoffs[0].handoffError)}</span><button type="button" data-retry-handoff>Try adding again</button></div>` : ''}<div data-planning-context>${planningContext()}</div><div class="studio-field"><label class="sr-only" for="studio-request">${state.response ? 'Continue with Composer' : 'What can I help you with?'}</label><textarea id="studio-request" rows="1" maxlength="700" placeholder="${state.response ? 'Ask or add a detail…' : 'Ask, discover, or plan…'}">${E(state.prompt)}</textarea></div><div class="composer-tools"><details class="composer-actions"><summary aria-label="Composer actions" title="Composer actions">${I('plus')}</summary><div class="composer-actions-menu" aria-label="Composer actions"><button type="button" data-nav="plans">${I('calendar')}My Plans</button><button type="button" data-nav="saved">${I('bookmark')}Saved</button><button type="button" data-nav="history">${I('clock')}History</button><button type="button" data-action="appointment">${I('calendar')}Add appointment</button><button type="button" data-action="examples">${I('spark')}Try Composer</button><button type="button" data-action="new">${I('plus')}Start fresh</button></div></details><div class="approval-control"><button type="button" id="approval-mode" aria-label="Plan change approval: ask before changes" aria-haspopup="menu" aria-expanded="false" aria-controls="approval-menu"><span>Ask first</span>${I('down')}</button><div id="approval-menu" class="approval-menu" role="menu" aria-label="Plan change approval" hidden><p class="approval-heading">Plan changes</p><button type="button" role="menuitemradio" aria-checked="true" tabindex="-1" data-approval="ask"><span><strong>Ask before changes</strong><small>Review and apply changes yourself.</small></span>${I('check')}</button><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-approval="routine"><span><strong>Allow routine changes</strong><small>Automatically apply reversible plan edits.</small></span>${I('check')}</button><p class="approval-footnote">Bookings and payments always need approval.</p></div></div><button class="send" type="submit" aria-label="Send request" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button></div></form></div>`;
+        area.innerHTML = `<div class="studio-input-wrap"><form id="studio-form">${state.handoffs?.length ? `<div class="handoff-note" role="status"><span>${state.handoffs.length} selection${state.handoffs.length === 1 ? '' : 's'} waiting. ${E(state.handoffs[0].handoffError)}</span><button type="button" data-retry-handoff>Try adding again</button></div>` : ''}<div data-planning-context>${planningContext()}</div><div class="studio-field"><label class="sr-only" for="studio-request">${state.response ? 'Continue with Composer' : 'What can I help you with?'}</label><textarea id="studio-request" rows="1" maxlength="700" placeholder="${state.response ? 'Ask or add a detail…' : 'Ask, discover, or plan…'}">${E(state.prompt)}</textarea></div><div class="composer-tools"><details class="composer-actions"><summary aria-label="Composer actions" title="Composer actions">${I('plus')}</summary><div class="composer-actions-menu" aria-label="Composer actions"><button type="button" data-nav="plans">${I('calendar')}My Plans</button><button type="button" data-nav="saved">${I('bookmark')}Saved</button><button type="button" data-nav="history">${I('clock')}History</button><button type="button" data-action="appointment">${I('calendar')}Add appointment</button><button type="button" data-action="examples">${I('spark')}Try Composer</button><button type="button" data-action="new">${I('plus')}Start fresh</button></div></details><div class="approval-control"><button type="button" id="approval-mode" aria-label="Plan change approval: ask me first" aria-haspopup="menu" aria-expanded="false" aria-controls="approval-menu"><span>Ask first</span>${I('down')}</button><div id="approval-menu" class="approval-menu" role="menu" aria-label="Plan change approval" hidden><p class="approval-heading">Plan changes</p><button type="button" role="menuitemradio" aria-checked="true" tabindex="-1" data-approval="ask"><span><strong>Ask me first</strong><small>I’ll show each change for you to apply.</small></span>${I('check')}</button><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-approval="routine"><span><strong>Make small edits for me</strong><small>Time and place edits apply straight away. You can undo them.</small></span>${I('check')}</button><p class="approval-footnote">Bookings and payments always need your OK.</p></div></div><button class="send" type="submit" aria-label="Send request" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button></div></form></div>`;
     }
     function syncSend() {
         const field = document.querySelector('#studio-request');
@@ -521,12 +521,12 @@
         const trigger = document.querySelector('#approval-mode');
         if (!trigger) return;
         trigger.querySelector('span').textContent = routine
-            ? 'Auto-apply'
+            ? 'Edit for me'
             : 'Ask first';
         trigger.setAttribute(
             'aria-label',
             'Plan change approval: ' +
-                (routine ? 'allow routine changes' : 'ask before changes'),
+                (routine ? 'make small edits for me' : 'ask me first'),
         );
         document
             .querySelectorAll('[data-approval]')
@@ -565,13 +565,35 @@
         if (!e.target.closest('.composer-actions')) closeComposerActions();
     });
     function welcome() {
-        return `<section class="studio-welcome"><div class="welcome-symbol" aria-hidden="true">${I('spark')}</div><h1>What’s on your mind?</h1><p>A question, a little inspiration, or a day to put together.</p><div class="starter-grid"><button data-prompt="What have I planned for Saturday?">${I('calendar')}<span>What’s on my Saturday?</span>${I('arrow')}</button><button data-prompt="Find something outdoors for Saturday afternoon.">${I('leaf')}<span>A little time outdoors</span>${I('arrow')}</button><button data-prompt="Plan Saturday afternoon around my 15:00 appointment.">${I('route')}<span>Help me plan Saturday</span>${I('arrow')}</button></div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}<p class="welcome-foot">Start with one of these examples, or use your own words.</p></section>`;
+        // Starters from what Expadu knows about your day (the shared sample day).
+        const sample = window.ExpaduSampleDay;
+        const appointment =
+            state.reviewDay?.date === M.today()
+                ? (state.reviewDay.agenda || []).find(
+                      (x) => x.start >= M.nowTime() && x.journey?.from,
+                  )
+                : sample?.appointment?.start >= M.nowTime()
+                  ? sample.appointment
+                  : null;
+        const starters = [
+            appointment && [
+                'route',
+                `Getting to your ${appointment.start} ${appointment.title.replace(/ appointment$/i, '')} appointment`,
+                `How do I get from ${appointment.journey.from} to ${appointment.location} by ${appointment.start}?`,
+            ],
+            ['calendar', 'What’s on tonight', 'What’s on tonight?'],
+            ['spark', 'Plan my Saturday', 'Help me plan Saturday'],
+            ['leaf', 'A little time outdoors', 'Find something outdoors for Saturday afternoon.'],
+        ]
+            .filter(Boolean)
+            .slice(0, 4);
+        return `<section class="studio-welcome"><div class="welcome-symbol" aria-hidden="true">${I('spark')}</div><h1>What’s on your mind?</h1><p>A question, a little inspiration, or a day to put together.</p><div class="starter-grid">${starters.map(([icon, label, prompt]) => `<button data-prompt="${E(prompt)}">${I(icon)}<span>${E(label)}</span>${I('arrow')}</button>`).join('')}</div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}<p class="welcome-foot">Start with one of these, or use your own words.</p></section>`;
     }
     function card(x) {
         const kept = state.saved.includes(x.id);
         const added = !!state.proposal?.items.some((item) => item.id === x.id);
         if (x.type === 'place') {
-            return `<article class="discovery-card place-idea"><div class="place-idea-heading"><span>${I(x.icon || 'pin')}${E(x.label)}</span><button class="studio-bookmark" data-save="${E(x.id)}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button></div><div class="place-idea-content">${x.image ? `<img class="place-idea-photo" src="${E(x.image)}" alt="" loading="lazy">` : ''}<h3>${E(x.title)}</h3><p class="place-idea-area">${I('pin')}${E(x.area)}</p>${x.facts?.length ? `<p class="place-idea-fact">${E(x.facts[0])}</p>` : ''}<p class="place-idea-check">Access and hours to check</p></div><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Details ${I('arrow')}</button><button class="studio-button light ${added ? 'is-added' : ''}" data-add="${E(x.id)}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></article>`;
+            return `<article class="discovery-card place-idea"><div class="place-idea-heading"><span>${I(x.icon || 'pin')}${E(x.label)}</span><button class="studio-bookmark" data-save="${E(x.id)}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button></div><div class="place-idea-content">${x.image ? `<img class="place-idea-photo" src="${E(x.image)}" alt="" loading="lazy">` : ''}<h3>${E(x.title)}</h3><p class="place-idea-area">${I('pin')}${E(x.area)}</p>${x.facts?.length ? `<p class="place-idea-fact">${E(x.facts[0])}</p>` : ''}<p class="place-idea-check">${E(x.unknown || 'Hours and access aren’t in the listing')}</p></div><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Details ${I('arrow')}</button><button class="studio-button light ${added ? 'is-added' : ''}" data-add="${E(x.id)}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></article>`;
         }
         return `<article class="discovery-card"><div class="discovery-photo">${x.image ? `<img src="${E(x.image)}" alt="${E(x.title)}" loading="eager">` : ''}<span class="photo-fallback" aria-hidden="true">${I('leaf')}</span><span class="place-category">${E(x.label)}</span><button class="studio-bookmark" data-save="${x.id}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button><div class="photo-copy"><span>${E(x.area)}</span><h3>${E(x.title)}</h3></div></div><div class="discovery-card-body"><p>${E(x.label)} from your city’s captured listings.</p><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Preview</button><button class="studio-button light ${added ? 'is-added' : ''}" ${x.type === 'event' ? 'data-add-event' : 'data-add'}="${x.id}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></div></article>`;
     }
@@ -802,7 +824,7 @@
             x.setDate(d.getDate() + i);
             return M.iso(x);
         });
-        return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time. Weekly planning is coming later.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}"><span>${new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${planFor(date) ? 'has-plan' : ''}" aria-label="${planFor(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}Confirmed plan</span><button class="plain-button" data-revise="${p.id}">${I('spark')}Adjust with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off <span>Preview only</span></div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Unconfirmed proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}`;
+        return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}" ${date === M.today() ? 'aria-current="date" class="is-today"' : ''}><span>${date === M.today() ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${planFor(date) ? 'has-plan' : ''}" aria-label="${planFor(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}Confirmed plan</span><button class="plain-button" data-revise="${p.id}">${I('spark')}Adjust with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off</div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Unconfirmed proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}`;
     }
     const entryMarkup = new Map();
     function render() {
@@ -927,10 +949,43 @@
         });
     }
     function revealLatest() {
-        document.querySelector('.chat-feed')?.lastElementChild?.scrollIntoView({
-            block: 'start',
-            behavior: reducedMotion() ? 'instant' : 'smooth',
-        });
+        const feed = document.querySelector('.chat-feed');
+        const reply = feed?.lastElementChild;
+        if (!reply) return;
+        // Your question and the reply together when they fit; otherwise the
+        // start of the reply, so its card isn't hidden under the input.
+        const question = [...feed.querySelectorAll('.chat-user')].at(-1);
+        const top =
+            (document.querySelector('.studio-toolbar')?.getBoundingClientRect()
+                .bottom || 0) + 12;
+        const bottom =
+            document.querySelector('.studio-input-wrap')?.getBoundingClientRect()
+                .top || innerHeight;
+        const fits =
+            question &&
+            reply.getBoundingClientRect().bottom -
+                question.getBoundingClientRect().top <=
+                bottom - top;
+        const target = fits ? question : reply;
+        const behavior = reducedMotion() ? 'instant' : 'smooth';
+        const place = () => {
+            const edge =
+                (document.querySelector('.studio-toolbar')?.getBoundingClientRect()
+                    .bottom || 0) + 12;
+            const delta = target.getBoundingClientRect().top - edge;
+            if (Math.abs(delta) <= 4) return false;
+            window.scrollTo({ top: Math.max(0, scrollY + delta), behavior });
+            return true;
+        };
+        if (!place()) return;
+        // The header shrinks while the page scrolls; settle the position once.
+        const started = performance.now();
+        const settle = () => {
+            if (performance.now() - started < 1500) place();
+        };
+        if ('onscrollend' in window)
+            window.addEventListener('scrollend', settle, { once: true });
+        else setTimeout(settle, 450);
     }
     function note(text) {
         return C.append(state, 'assistant', text);
@@ -1115,6 +1170,7 @@
             pendingReply = null;
             store();
             render();
+            revealLatest();
         });
     }
     function submitNow(text, replyId) {
@@ -1574,17 +1630,28 @@
             state.conversation.activeDate = null;
             const picked = r.category
                 ? catalogue.filter((p) => p.category === r.category).slice(0, 4)
-                : catalogue.slice(0, 2);
+                : r.more
+                  ? catalogue.filter((p) => p.category !== 'Parks').slice(0, 4)
+                  : catalogue.slice(0, 2);
             const label = { Family: 'families', Sport: 'sport', Swimming: 'a swim' }[r.category];
             reply(
                 r.category
                     ? picked.length
                         ? `${picked.length === 1 ? 'One idea' : `${picked.length} ideas`} for ${label} from the sample city listings. Check access before you go.`
                         : `The sample city listings have nothing for ${label} yet.`
-                    : 'Two outdoor ideas from the sample city listings. Save one for later, or add it to your plan.',
+                    : r.more
+                      ? 'More places outside from the sample city listings: a pitch, table tennis, a playground and a lake.'
+                      : 'Two parks from the sample city listings. Save one for later, or add it to your plan.',
                 {
                     kind: 'discovery',
                     placeIds: picked.map((p) => p.id),
+                    ...(r.category || r.more
+                        ? {}
+                        : {
+                              suggestions: [
+                                  { label: 'More outdoor places', prompt: 'Show me more outdoor places' },
+                              ],
+                          }),
                 },
             );
         } else if (r.kind === 'answer') {
@@ -1843,8 +1910,8 @@
             toggleApproval(false, true);
             notify(
                 el.dataset.approval === 'routine'
-                    ? 'Routine plan edits can now apply automatically. Undo stays available.'
-                    : 'Plan changes will wait for your approval.',
+                    ? 'Small plan edits will now apply straight away. You can undo them.'
+                    : 'I’ll ask before changing your plan.',
             );
             return;
         }
@@ -2021,7 +2088,7 @@
                     return;
                 }
                 if (state.conversation.approval === 'routine') {
-                    notify('Use Undo last applied change on the plan.');
+                    notify('Use Undo on the plan.');
                     return;
                 }
                 state.proposal = old;

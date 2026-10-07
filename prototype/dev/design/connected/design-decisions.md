@@ -364,6 +364,15 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Composer polish — owner request, 7 October (in review):** new replies scroll
+into view above the input; Composer's Quick look, Add appointment and Try
+Composer are bottom sheets on phones (drag down to close); Quick look shows the
+listing's facts and exactly what it lacks, with Add to plan; earlier plan
+versions live in Version history instead of repeating in the chat; My Plans
+marks Today and has one date control; approval wording is "Ask me first" /
+"Make small edits for me"; the start screen offers starters from your day.
+Details are in `composer-studio/README.md`.
+
 **Composer helpful replies and one sample day — owner request, 7 October (in review):**
 Today and Composer share one sample day, `connected/sample-day.js` (Wednesday
 30 September 2026, 13:10, its appointment, coming plans and evening events);

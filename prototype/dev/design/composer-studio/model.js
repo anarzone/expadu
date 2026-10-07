@@ -581,6 +581,8 @@
             };
         if (/journey|route|how.*get|transport/.test(t))
             return { kind: 'journey', date, ...journeyPlaces(text) };
+        if (/\bmore (outdoor )?(places|ideas)\b/.test(t))
+            return { kind: 'discovery', date, more: true };
         const category = find(placeCategories, t);
         if (category) return { kind: 'discovery', date, category };
         if (

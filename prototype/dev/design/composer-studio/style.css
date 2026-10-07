@@ -2306,3 +2306,34 @@
 .time-editor input {
     padding-right: 12px;
 }
+
+/* My Plans: today is marked in the week; the date picker is one calendar
+   button beside the day's heading, not a second date. */
+.days button.is-today span {
+    color: var(--color-action-text);
+    font-weight: var(--weight-semibold);
+}
+.plans-date-line .date-jump {
+    position: relative;
+}
+.plans-date-line .date-jump > svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: block;
+    width: 20px;
+    height: 20px;
+    translate: -50% -50%;
+    color: var(--color-text);
+    pointer-events: none;
+    z-index: 1;
+}
+.studio .plans-date-line .shared-date-toggle {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: var(--radius-round);
+    font-size: 0;
+    color: transparent;
+}

@@ -104,7 +104,7 @@
         send.disabled = !field.value.trim();
         const current = mode();
         approval.querySelector('[data-approval-label]').textContent =
-            current === 'routine' ? 'Auto-apply' : 'Ask first';
+            current === 'routine' ? 'Edit for me' : 'Ask first';
         approval
             .querySelectorAll('[data-today-approval]')
             .forEach((button) =>

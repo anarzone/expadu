@@ -13,7 +13,7 @@
         const text = entry.text ? `<p>${E(entry.text)}</p>` : '';
         let body = text;
         if (entry.kind === 'pending')
-            body = `${ExpaduLoading.status('Thinking…')}<button class="plain-button" data-action="cancel-loading">Cancel</button>`;
+            body = `<div class="pending-row">${ExpaduLoading.status('Thinking…')}<button class="plain-button" data-action="cancel-loading">Cancel</button></div>`;
         if (entry.kind === 'cancelled' || entry.kind === 'failed')
             body += `<button class="plain-button" data-retry="${E(entry.id)}">Try again</button>`;
         if (entry.kind === 'discovery')
@@ -92,6 +92,19 @@
         )
             body +=
                 '<button class="plain-button" data-action="undo-plan">Undo cancellation</button>';
+        if (entry.kind === 'plan-history' && !ctx.historical) {
+            // Earlier versions stay in Version history; while the live plan
+            // for that day appears further down, the old card isn't repeated.
+            const section = c.chapters?.find((x) => x.id === c.currentId);
+            const entries = section?.entries || [];
+            const index = entries.findIndex((x) => x.id === entry.id);
+            if (
+                entries
+                    .slice(index + 1)
+                    .some((x) => x.kind === 'plan' && x.planDate === entry.planDate)
+            )
+                return '';
+        }
         if (entry.kind === 'plan' || entry.kind === 'plan-history') {
             const version = c.versions.find((v) => v.id === entry.versionId);
             const draft =
@@ -114,7 +127,7 @@
                 )
                 .join('')}</details>`;
             if (active) {
-                body = `<div class="chat-plan-label"><span>${I('calendar')}${E(dateLabel(entry.planDate))}</span><small>${draft ? 'Proposed changes' : 'Current plan'}</small></div><section id="studio-response" class="chat-live-plan" aria-label="Active plan">${draft ? proposal() : `<section class="timeline-paper"><div class="paper-heading"><span class="confirmed-label">${I('check')}Confirmed plan</span><button class="plain-button" data-revise="${E(confirmed.id)}">Edit plan</button></div>${timeline(confirmed)}<div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(confirmed.date)}">Cancel day</button></div><div class="travel-note">${I('route')}Travel and availability still need checking.</div></section>`}</section>${history}${!draft && c.lastApplied?.date === entry.planDate ? '<button class="plain-button plan-undo" data-action="undo-plan">Undo last applied change</button>' : ''}`;
+                body = `<div class="chat-plan-label"><span>${I('calendar')}${E(dateLabel(entry.planDate))}</span><small>${draft ? 'Proposed changes' : 'Current plan'}</small></div><section id="studio-response" class="chat-live-plan" aria-label="Active plan">${draft ? proposal() : `<section class="timeline-paper"><div class="paper-heading"><span class="confirmed-label">${I('check')}Confirmed plan</span><button class="plain-button" data-revise="${E(confirmed.id)}">Edit plan</button></div>${timeline(confirmed)}<div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(confirmed.date)}">Cancel day</button></div><div class="travel-note">${I('route')}Travel and availability still need checking.</div></section>`}</section>${history}${!draft && c.lastApplied?.date === entry.planDate ? `<button class="plain-button plan-undo" data-action="undo-plan">${I('back')}${c.lastApplied.before ? 'Undo this change' : 'Undo confirmation'}</button>` : ''}`;
             } else {
                 body = `<details class="chat-plan-reference"><summary>${I('calendar')}${entry.kind === 'plan-history' ? 'Earlier plan' : 'Plan'} for ${E(dateLabel(entry.planDate))}<span>View snapshot</span></summary>${version ? `<p class="history-readonly">${E(version.label)} · read only</p>${timeline(version.plan)}` : '<p>This draft has no activities yet.</p>'}</details>${!ctx.historical && (draft || confirmed) ? `<button class="plain-button" data-open-plan="${E(entry.planDate)}">Open current plan</button>` : ''}`;
             }
