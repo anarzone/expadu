@@ -1,12 +1,19 @@
 <?php
 
+use App\Bureaucracy\People\AccessScope;
+use App\Bureaucracy\People\ManageDelegation;
 use App\Bureaucracy\People\ManageDependents;
+use App\Bureaucracy\People\PersonAccess;
+use App\Bureaucracy\People\PersonDataLifecycle;
+use App\Models\BureaucracyAccessGrant;
 use App\Models\BureaucracyCaseFact;
 use App\Models\BureaucracyGuardianAuthority;
 use App\Models\BureaucracyOutboxEvent;
 use App\Models\BureaucracyPerson;
 use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Validation\ValidationException;
 
 beforeEach(function () {
     config(['bureaucracy_family.guardian_policy_version' => 'synthetic-guardian-policy']);
@@ -118,4 +125,29 @@ test('the unguarded dependent sweep is scheduled on one server without overlap',
     expect($event)->not->toBeNull()
         ->and($event->onOneServer)->toBeTrue()
         ->and($event->withoutOverlapping)->toBeTrue();
+});
+
+test('a co-guardian cannot strip another guardians reviewed access through grant revocation', function () {
+    $guardian = User::factory()->onboarded()->create();
+    $other = User::factory()->onboarded()->create();
+    $authority = approvedDependent($guardian, $this->reviewer);
+    coGuardian($authority->person, $other, $this->reviewer);
+    $grant = BureaucracyAccessGrant::query()->where('guardian_authority_id', $authority->id)->sole();
+
+    $this->actingAs($other)->deleteJson('/bureaucracy/v2/grants/'.$grant->id)->assertUnprocessable();
+    expect(fn () => app(ManageDelegation::class)->revoke($guardian, $grant))->toThrow(ValidationException::class);
+
+    expect($grant->fresh()->revoked_at)->toBeNull()
+        ->and(app(PersonAccess::class)->allows($guardian, $authority->person, AccessScope::ViewFacts))->toBeTrue();
+});
+
+test('exporting a dependent requires view access as well as guardian authority', function () {
+    $guardian = User::factory()->onboarded()->create();
+    $child = approvedDependent($guardian, $this->reviewer)->person;
+    expect(app(PersonDataLifecycle::class)->export($guardian, $child)['person']['id'])->toBe($child->id);
+
+    BureaucracyAccessGrant::query()->where('person_id', $child->id)->update(['revoked_at' => now()]);
+
+    expect(app(PersonAccess::class)->canManage($guardian, $child))->toBeTrue()
+        ->and(fn () => app(PersonDataLifecycle::class)->export($guardian, $child))->toThrow(AuthorizationException::class);
 });

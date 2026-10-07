@@ -125,6 +125,10 @@ final class ManageDelegation
             if ($current->revoked_at !== null) {
                 return;
             }
+            if ($current->authority_basis === 'reviewed_guardian') {
+                // A guardian's own access follows their reviewed authority; a co-guardian must not strip it.
+                throw ValidationException::withMessages(['grant' => 'Guardian access ends only when the guardian authority is revoked.']);
+            }
             $current->update(['revoked_at' => now()->utc(), 'version' => $current->version + 1]);
             $person->increment('record_version');
             $this->refresh->accessChanged($person);

@@ -33,6 +33,9 @@ final class PersonDataLifecycle
             User::query()->whereKey($actor->id)->lockForUpdate()->firstOrFail();
             $current = BureaucracyPerson::query()->whereKey($person->id)->lockForUpdate()->firstOrFail();
             $this->authorize($actor, $current);
+            if (! $this->access->allows($actor, $current, AccessScope::ViewFacts)) {
+                throw new AuthorizationException;
+            }
             $case = $current->dossier()->lockForUpdate()->first();
 
             return [
