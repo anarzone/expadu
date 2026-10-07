@@ -418,6 +418,7 @@ jobs:
             sleep 5
             docker exec staging-app php artisan migrate --force
             docker exec staging-app php artisan bureaucracy:import-tasks --retire-missing
+            docker exec staging-app php artisan bureaucracy:verify-sources
             docker exec staging-app php artisan bureaucracy:compile-catalogue --deploy
             docker exec staging-app php artisan bureaucracy:migrate-dossiers --apply --all
 
@@ -444,5 +445,6 @@ jobs:
             sleep 5
             docker exec "$APP_CONTAINER" php artisan migrate --force
             docker exec "$APP_CONTAINER" php artisan bureaucracy:import-tasks --retire-missing
+            docker exec "$APP_CONTAINER" php artisan bureaucracy:verify-sources
             docker exec "$APP_CONTAINER" php artisan bureaucracy:compile-catalogue --deploy
             docker exec "$APP_CONTAINER" php artisan bureaucracy:migrate-dossiers --apply --all

@@ -10,16 +10,27 @@ things that are specific to this codebase and expensive to rediscover.
 
 **Bureaucracy is legal guidance. Being wrong costs someone their residence status.**
 
-- Never invent a fee, deadline, or `§`. Every figure comes from an official source
-  (stadt-koeln.de, BAMF, make-it-in-germany.com, gesetze-im-internet.de) with a `verified_at` date.
+- Never invent a fee, deadline, or `§`. Every figure comes from an official source on an
+  allow-listed host (`config/bureaucracy_sources.php`) with a `verified_at` date.
 - A rule only reaches users when `review_status = approved` **and** it passes `RuleSourcePolicy`:
   jurisdiction, reviewer, verified date, an unexpired `review_due_at`, and ≥1 legal source on an
   allow-listed HTTPS host. `Task::authoritative()` is the gate — never bypass it.
+- **Cards are checked by machine, not signed off by a person** (owner decision, 7 Oct 2026).
+  A `quote_checked` card (`reviewed_by: automated_source_check`) carries `claims`: each ties a
+  piece of card text to the exact sentence on its official page. The import rejects a card if any
+  figure on it is unquoted or differs from its quote. `bureaucracy:verify-sources` re-reads the
+  pages daily and at deploy; only a passing check gives the card its `verified_at` and
+  `review_due_at`, and a failed check withdraws it at once (users see "check the official page").
+  Never author those dates on a `quote_checked` card, and never weaken `ClaimCheck`.
+- AI may write and update cards only in this checked form. Prose without figures is not
+  machine-verifiable, so keep it to what the quoted sources say.
+- People are contacted only through `bureaucracy_escalations`: a failed check on a high-stakes card
+  (residence, dated deadlines, money, urgent) or a plan the app cannot answer. High severity
+  reaches the owner through Sentry, once per opening. Escalations never carry personal data.
+- Cards still stamped by a person (`expadu_content_owner`) keep the human path unchanged.
 - The catalogue is authored in `database/seeders/data/bureaucracy/*.yaml` and compiled by
   `php artisan bureaucracy:import-tasks`. Volatile figures live in `config/bureaucracy_figures.php`.
-- **AI never authors user-facing bureaucracy content.** It may extract facts against a tool schema
-  (user confirms) or draft gap notes for a human. `docs/bureaucracy-gaps/` drafts are never imported
-  as-is.
+  Adding a source host is a policy decision: record who decided it next to the host.
 - Showing nothing beats guessing. Partial coverage is a designed state, not a bug.
 
 **Media is rights-gated the same way.** `PublishedMediaSelector` serves only

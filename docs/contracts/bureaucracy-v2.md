@@ -539,6 +539,33 @@ Translation, email writing, tax preparation, upload and OCR remain
 `available: false, reason: not_implemented`. Future-feature cards must say so and
 must not accept sensitive text/files as if those services work.
 
+## Automatically checked cards
+
+Most catalogue cards are checked by machine instead of being signed off by a person
+(`source_verification: quote_checked`, `reviewed_by: automated_source_check`). Each
+card's `claims` quote the official sentence behind every figure it shows.
+`bureaucracy:verify-sources` re-reads those pages daily (05:15 Europe/Berlin) and at
+deploy:
+
+- **Pass**: the card is publishable for 30 days, renewed when fewer than 14 remain.
+  Its `verified_at` is the first day this exact content passed.
+- **Fail** (a quote has gone, or the page returns 404/410): the card is withdrawn at
+  once and the failure is escalated.
+- **Unreachable** (timeout, server error, bot check): nothing changes; the last pass
+  runs out if the page stays unreachable.
+
+A card that is not currently confirmed never shows its guidance. It appears in
+`coverage.units` with `state: "unconfirmed"`, its `title`, and
+`source_urls.legal` (allow-listed official pages only). Show it as: “We couldn't
+confirm this right now. Check the official page.” with those links. Do not show
+its steps, documents or dates. In a compiled release the inventory status of such
+a card is `source_unconfirmed`.
+
+Escalations (`bureaucracy_escalations`) record failed checks and plans the app
+cannot answer (`no_verified_answer` per process, `empty_plan` per jurisdiction).
+They hold no personal data. High-severity items reach the owner through Sentry,
+once each time an item opens.
+
 ## Errors and remaining integration work
 
 Treat 401/419 as authentication/session recovery, 403/404 as inaccessible records,
