@@ -26,6 +26,7 @@ use App\Http\Controllers\Bureaucracy\V2\EvidenceController;
 use App\Http\Controllers\Bureaucracy\V2\EvidenceSharingController;
 use App\Http\Controllers\Bureaucracy\V2\FactConflictController;
 use App\Http\Controllers\Bureaucracy\V2\FactExtractionController;
+use App\Http\Controllers\Bureaucracy\V2\FactSchemaController;
 use App\Http\Controllers\Bureaucracy\V2\OnboardingDraftController;
 use App\Http\Controllers\Bureaucracy\V2\PeopleController;
 use App\Http\Controllers\Bureaucracy\V2\PersonDataController;
@@ -183,6 +184,8 @@ $appRoutes = function () use ($appDomain) {
             Route::get('people/{person}', [PeopleController::class, 'show'])->name('people.show');
             Route::get('people/{person}/sharing', [DelegationController::class, 'index'])->name('people.sharing');
             Route::get('people/{person}/facts', [PersonFactController::class, 'index'])->name('facts.index');
+            Route::get('facts/schema', FactSchemaController::class)->name('facts.schema');
+            Route::get('people/{person}/facts/{key}/history', [PersonFactController::class, 'history'])->where('key', '[a-z][a-z0-9_]*')->name('facts.history');
             Route::get('people/{person}/fact-conflicts', [FactConflictController::class, 'index'])->name('fact-conflicts.index');
             Route::post('people/{person}/fact-conflicts/{key}/resolve', [FactConflictController::class, 'resolve'])->name('fact-conflicts.resolve');
             Route::put('people/{person}/facts/{key}', [PersonFactController::class, 'change'])->name('facts.change');
