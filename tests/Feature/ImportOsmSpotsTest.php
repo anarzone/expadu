@@ -125,3 +125,18 @@ test('overpass requests identify the importer so the main endpoint accepts them'
         && $request->hasHeader('User-Agent', ImportOsmSpots::USER_AGENT)
         && $request['data'] === '[out:json];node(1);out;');
 });
+
+test('an object returned by several category queries is recorded once', function () {
+    $command = new ImportOsmSpots;
+    $unique = new ReflectionMethod($command, 'uniqueElements');
+
+    $result = $unique->invoke($command, [
+        ['type' => 'node', 'id' => 7, '_category' => 'cafe', 'tags' => ['name' => 'Kaffee', 'opening_hours' => 'Mo-Fr 08:00-18:00']],
+        ['type' => 'node', 'id' => 8, '_category' => 'cafe', 'tags' => ['name' => 'Other']],
+        ['type' => 'node', 'id' => 7, '_category' => 'restaurant', 'tags' => ['name' => 'Kaffee', 'opening_hours' => 'Mo-Sa 08:00-18:00']],
+        ['type' => 'way', 'id' => 7, '_category' => 'park', 'tags' => ['name' => 'Same id, different type']],
+    ]);
+
+    expect(array_map(fn (array $e): string => $e['type'].'/'.$e['id'].':'.$e['_category'], $result))
+        ->toBe(['node/7:cafe', 'node/8:cafe', 'way/7:park']);
+});

@@ -123,9 +123,9 @@ class ImportOsmSpots extends Command
         // Mirrors in preference order — the big city-wide leisure queries
         // get rate-limited on a single endpoint, so fall through on failure.
         $mirrors = [
-            'https://overpass.kumi.systems/api/interpreter',
             'https://overpass-api.de/api/interpreter',
             'https://overpass.private.coffee/api/interpreter',
+            'https://overpass.kumi.systems/api/interpreter',
         ];
 
         $allElements = [];
@@ -199,7 +199,7 @@ class ImportOsmSpots extends Command
             return self::FAILURE;
         }
 
-        $elements = $response->json('elements', []);
+        $elements = $this->uniqueElements($response->json('elements', []));
 
         $this->info('  Received '.count($elements).' elements from Overpass');
 
@@ -654,6 +654,24 @@ class ImportOsmSpots extends Command
      *
      * @var array<string, string>
      */
+    /**
+     * One OSM object can match several category queries, and each query may be
+     * answered by a mirror with different replication state. Record it once per
+     * run, keeping the first query's category hint.
+     *
+     * @param  list<array<string, mixed>>  $elements
+     * @return list<array<string, mixed>>
+     */
+    protected function uniqueElements(array $elements): array
+    {
+        $unique = [];
+        foreach ($elements as $element) {
+            $unique[($element['type'] ?? 'node').'/'.($element['id'] ?? '')] ??= $element;
+        }
+
+        return array_values($unique);
+    }
+
     /** overpass-api.de rejects anonymous clients (406); identify the importer and POST so long queries are not URL-bound. */
     protected function overpass(string $mirror, string $query): Response
     {
