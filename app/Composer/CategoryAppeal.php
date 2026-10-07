@@ -14,7 +14,7 @@ final class CategoryAppeal
 {
     /** Things to actively do. */
     public const ACTIVITY = [
-        'playground', 'park', 'lake', 'pitch', 'basketball', 'swimming',
+        'playground', 'park', 'lake', 'nature', 'pitch', 'basketball', 'swimming',
         'skatepark', 'tennis', 'table_tennis', 'dog_park', 'bbq', 'boules',
         'viewpoint',
     ];

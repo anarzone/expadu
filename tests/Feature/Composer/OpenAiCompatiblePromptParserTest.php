@@ -151,3 +151,22 @@ test('the model parser retains explicit activity requirements even when the mode
         ->and($result->plan->radiusKm)->toBe(2.0)
         ->and($result->plan->budget)->toBe('free');
 });
+
+test('the model parser retains everyday category families and specific venue types', function () {
+    $now = CarbonImmutable::parse('2026-10-01 09:00', 'Europe/Berlin');
+    $categories = ['shopping', 'services', 'health', 'community', 'stay', 'fitness', 'pharmacy', 'hairdresser'];
+    fakeToolCall(['intent' => 'plan_day', 'window_start' => $now->addHour()->toIso8601String(), 'window_end' => $now->addHours(6)->toIso8601String(), 'categories' => [...$categories, 'invented_place_type']]);
+    $result = llmParser()->parse('find nearby everyday places', llmProfile(), $now);
+    expect($result->plan->categories)->toBe($categories);
+});
+
+test('the model receives the complete supported venue category vocabulary', function () {
+    $now = CarbonImmutable::parse('2026-10-01 09:00', 'Europe/Berlin');
+    fakeToolCall(['intent' => 'plan_day', 'window_start' => $now->addHour()->toIso8601String(), 'window_end' => $now->addHours(6)->toIso8601String(), 'categories' => ['pharmacy']]);
+    llmParser()->parse('recommend a nearby pharmacy', llmProfile(), $now);
+    Http::assertSent(function ($request) {
+        $values = $request['tools'][0]['function']['parameters']['properties']['categories']['items']['enum'] ?? [];
+
+        return in_array('shopping', $values, true) && in_array('pharmacy', $values, true) && in_array('hairdresser', $values, true);
+    });
+});

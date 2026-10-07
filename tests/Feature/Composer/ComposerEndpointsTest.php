@@ -1067,3 +1067,14 @@ test('a pre-release Today snapshot without constraints is not trusted as a curre
     expect(app(TodayPlanStore::class)->get($user))->toBeNull();
     expect(Cache::get('composer:today:'.$user->id)['slots'][0]['id'])->toBe('spot:'.$place->id);
 });
+
+test('compose accepts everyday category families and returns their native facets', function (string $fine, string $coarse) {
+    $this->actingAs(composerUser());
+    Spot::factory()->create(['category' => $fine, 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.924]);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', ['constraints' => ['window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(6)->toIso8601String(), 'areas' => [], 'categories' => [$coarse]]])->assertSuccessful();
+    expect(collect($response->json('facets.categories'))->firstWhere('value', $coarse))->not->toBeNull();
+})->with([
+    ['supermarket', 'shopping'], ['hairdresser', 'services'], ['pharmacy', 'health'],
+    ['community_centre', 'community'], ['hotel', 'stay'], ['fitness_centre', 'fitness'],
+]);

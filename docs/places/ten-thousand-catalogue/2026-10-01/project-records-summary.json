@@ -1,0 +1,51 @@
+{
+  "status": "passed",
+  "tickets": [
+    {
+      "ticket": "EXP-69",
+      "id": "f86787e7-a0e6-4cb9-971c-6c7205d8aeac",
+      "name": "Preserve place names location evidence and practical facts",
+      "updated_at": "2026-10-01T19:42:37.048776Z",
+      "state": "In Progress",
+      "original_history_preserved": true,
+      "read_back_verified": true,
+      "description_chars": 97318
+    },
+    {
+      "ticket": "EXP-72",
+      "id": "8b28e050-bd90-496c-8119-d43f29909c2a",
+      "name": "Validate a 100 destination staging catalogue pilot",
+      "updated_at": "2026-10-01T19:42:43.705192Z",
+      "state": "In Progress",
+      "original_history_preserved": true,
+      "read_back_verified": true,
+      "description_chars": 96448
+    }
+  ],
+  "work_logs": [
+    {
+      "page_id": 33,
+      "name": "EXP-69 \u2014 Preserve place names location evidence and practical facts",
+      "url": "https://docs.anar.to/books/work-log/page/exp-69-preserve-place-names-location-evidence-and-practical-facts",
+      "updated_at": "2026-10-01T19:43:42.000000Z",
+      "original_history_preserved": true,
+      "read_back_verified": true,
+      "one_terminal_newline_normalized": true,
+      "content_chars": 104609
+    },
+    {
+      "page_id": 36,
+      "name": "EXP-72 \u2014 Validate a 100 destination staging catalogue pilot",
+      "url": "https://docs.anar.to/books/work-log/page/exp-72-validate-a-100-destination-staging-catalogue-pilot",
+      "updated_at": "2026-10-01T19:45:39.000000Z",
+      "original_history_preserved": true,
+      "read_back_verified": true,
+      "one_terminal_newline_normalized": true,
+      "content_chars": 106954
+    }
+  ],
+  "all_four_records_read_back_verified": true,
+  "original_history_preserved": true,
+  "broader_tickets_remain_in_progress": true,
+  "live_application_data_changed": false
+}

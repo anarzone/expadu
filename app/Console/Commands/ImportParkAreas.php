@@ -96,7 +96,10 @@ class ImportParkAreas extends Command
     {
         foreach (self::MIRRORS as $mirror) {
             try {
-                $response = Http::timeout(120)->get($mirror, ['data' => $query]);
+                $response = Http::timeout(120)
+                    ->withUserAgent(ImportOsmSpots::USER_AGENT)
+                    ->asForm()
+                    ->post($mirror, ['data' => $query]);
 
                 if ($response->successful()) {
                     return $response->json('elements', []);

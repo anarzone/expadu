@@ -1,0 +1,74 @@
+{
+  "checked_at": "2026-10-01T12:47:46.692071+00:00",
+  "latest_cohort_checked_at": "2026-10-01T12:50:01.230875+00:00",
+  "selection_sha256": "e6f3b14cf2abecdb7b8d0060c3f227247cd5c09fc1a52a21353fd293c1ce622d",
+  "requested": 8117,
+  "matching_source_objects": 8100,
+  "refusal_reasons": {
+    "source_missing_or_hidden": 1,
+    "source_tags_changed": 16,
+    "source_point_moved": 1
+  },
+  "geometry_nodes": 29577,
+  "cohorts": [
+    {
+      "path": "source-cohort-00.json",
+      "sha256": "311d1920c713eed9cd2b899c996fac95598996dfa5a9a30dd289deba04ca0900",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-01.json",
+      "sha256": "62d0d9c958647cd3fa9ddbf6e8faa17387f888819c33dc40a646ab6a7b20196b",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-02.json",
+      "sha256": "5615abcbce46cab65f9ca9fa09a8e1602360fdbc3a462c4323b7b1ce7e623577",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-03.json",
+      "sha256": "5d9ee27e8ae9f9384c34de2c8ef997a2b3d7fb784863dc5ae7337669f92a55af",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-04.json",
+      "sha256": "eeee05e62986ecf04bd69075c8322e9c48b84549e2ad90e05e5fe99ec624c418",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-05.json",
+      "sha256": "1e8888fe55c43761c05eb187bb62cc428155acf6551d8066514c7360efc99d70",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-06.json",
+      "sha256": "2da4580dc962f7f7534eadfb8a9daf241d26be5115d677ad1eb907f6d606e63c",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-07.json",
+      "sha256": "5b43b88fc1778b598b1e655512d5431a15a8a60c11570f33d1c53cff3d8150b3",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-08.json",
+      "sha256": "9136021f8a582b2e64f9b0659a27f436ec2ec7bf5e1230fceb67ae21e24a97dd",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-09.json",
+      "sha256": "ee754278ac47d35e0ad5f50524e50f788be5602f95eccc743ab393d24ac1683e",
+      "records": 750
+    },
+    {
+      "path": "source-cohort-10.json",
+      "sha256": "4ca8830b61c15d74d08d607d5bc53cb3aacb3704c5e0f2a58603523d07679ffc",
+      "records": 617
+    }
+  ],
+  "contributor_identities_retained": false,
+  "source": "https://api.openstreetmap.org/api/0.6",
+  "source_proof_sha256": "510b6c6cf7f6d8e2497cf79418465927ad03e30613532c2c48faa32c217f1180",
+  "remote_changed": false
+}

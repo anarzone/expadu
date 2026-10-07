@@ -45,3 +45,7 @@ public/maps/*.pmtiles
 
 # Playwright local screenshot artifacts
 tests/Browser/.artifacts/
+
+# Python helper bytecode
+__pycache__/
+*.py[cod]

@@ -192,3 +192,36 @@ test('a nearby football request uses structured activity retrieval without a tim
         ->and($result->plan->activities)->toBe(['soccer'])
         ->and($result->plan->radiusKm)->toBe(3.0);
 });
+
+test('everyday requests select a precise supported venue category', function (string $query, string $fine) {
+    $result = parsePrompt('recommend '.$query.' nearby');
+    expect($result->intent)->toBe(PromptIntent::PlanDay)
+        ->and($result->plan->categories)->toBe([$fine]);
+})->with([
+    ['pharmacies', 'pharmacy'], ['supermarkets', 'supermarket'], ['hairdressers', 'hairdresser'],
+    ['gyms', 'fitness_centre'], ['banks', 'bank'], ['post offices', 'post_office'],
+    ['bookshops', 'bookshop'], ['clothes shops', 'clothes'], ['theatres', 'theatre'],
+]);
+
+test('specific compound venue requests exclude overlapping categories', function (string $query, string $fine) {
+    $result = parsePrompt('recommend '.$query.' tomorrow');
+
+    expect($result->plan->categories)->toBe([$fine]);
+})->with([
+    ['veterinary clinics', 'veterinary'], ['sports shops', 'sports_shop'],
+    ['art shops', 'art_shop'], ['coffee and tea shops', 'coffee_tea_shop'],
+    ['shopping centres', 'shopping_centre'], ['community centres', 'community_centre'],
+    ['fitness centres', 'fitness_centre'], ['drinks shops', 'drinks_shop'],
+    ['dog parks', 'dog_park'],
+]);
+
+test('specific compound venues preserve separately requested categories', function (string $query, array $categories) {
+    $result = parsePrompt('recommend '.$query.' tomorrow');
+
+    expect($result->plan->categories)->toEqualCanonicalizing($categories);
+})->with([
+    ['a veterinary clinic and a clinic', ['veterinary', 'clinic']],
+    ['a coffee and tea shop and a cafe', ['coffee_tea_shop', 'cafe']],
+    ['an art shop and an art exhibition', ['art_shop', 'culture']],
+    ['a sports shop and somewhere to play sports', ['sports_shop', 'pitch', 'basketball', 'tennis', 'table_tennis', 'skatepark', 'boules']],
+]);

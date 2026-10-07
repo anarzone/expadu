@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\SpotCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Spot;
 use App\Places\DestinationGrouping;
@@ -33,7 +34,7 @@ class SpotSearchController extends Controller
         $userLng = $home?->lng ? (float) $home->lng : 6.9603;
 
         $grouping = app(DestinationGrouping::class);
-        $query = $grouping->eligible(Spot::query())
+        $query = $grouping->eligible(Spot::query(), SpotCategory::tryFrom((string) $request->query('category'))?->isActivityFacility() ?? false)
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->where('lat', '>=', $request->query('sw_lat'))
