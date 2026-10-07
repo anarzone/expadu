@@ -53,9 +53,11 @@ final class Figures
         $number = '\d+(?:[.,]\d+)*';
         $words = implode('|', array_map(fn ($word) => preg_quote($word, '/'), array_keys(self::words())));
         $money = '(?:€|eur\b|euro\b|euros\b)';
+        // Amounts may group thousands with a space, as German law pages do ("25 000 Euro").
+        $amount = '\d{1,3}(?:[ \x{00A0}]\d{3})+(?:[.,]\d{1,2})?|'.$number;
 
-        $take("/(*UCP){$money}\s?({$number})|({$number})\s?{$money}/u", fn ($m) => ['kind' => 'money', 'value' => self::amount($m[1][0] !== '' ? $m[1][0] : $m[2][0])]);
-        $take('/(*UCP)§§?\s*(\d+[a-z]?)\b(?:\s*\(\d+[a-z]?\))*(?:\s*(?:abs\.|absatz)\s*\d+)?(?:\s*(?:satz|nr\.|nummer)\s*\d+)*/u',
+        $take("/(*UCP){$money}\s?({$amount})|({$amount})\s?{$money}/u", fn ($m) => ['kind' => 'money', 'value' => self::amount($m[1][0] !== '' ? $m[1][0] : $m[2][0])]);
+        $take('/(*UCP)(?:§§?|\bsections?\s)\s*(\d+[a-z]?)\b(?:\s*\(\d+[a-z]?\))*(?:\s*(?:abs\.|absatz)\s*\d+)?(?:\s*(?:satz|nr\.|nummer)\s*\d+)*/u',
             fn ($m) => ['kind' => 'section', 'value' => $m[1][0]]);
         $take("/(*UCP)\b({$number}|{$words}|an|a)(?:\s+|-)(working[\s-]days?|business[\s-]days?|werktag(?:e|en|es)?|arbeitstag(?:e|en|es)?|days?|tag(?:e|en|es)?|weeks?|woche(?:n)?|fortnights?|months?|monat(?:e|en|s)?|years?|jahr(?:e|en|es)?|hours?|stunde(?:n)?)\b/u",
             fn ($m) => self::duration($m[1][0], $m[2][0]));
