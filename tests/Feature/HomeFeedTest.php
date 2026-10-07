@@ -4,6 +4,7 @@ uses()->group('slow');
 
 use App\Bureaucracy\Processes\ReconcileProcesses;
 use App\Bureaucracy\Processes\RecordProcessEvent;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -79,7 +80,7 @@ test('one read-only page load assesses the bureaucracy plan once', function () {
     $this->actingAs($user);
 
     DB::enableQueryLog();
-    $this->get(route('dashboard'), ['X-Inertia' => 'true', 'X-Inertia-Partial-Component' => 'dashboard', 'X-Inertia-Partial-Data' => 'tiles,bureaucracyBadge'])->assertSuccessful();
+    $this->get(route('dashboard'), ['X-Inertia' => 'true', 'X-Inertia-Version' => (string) app(HandleInertiaRequests::class)->version(request()), 'X-Inertia-Partial-Component' => 'dashboard', 'X-Inertia-Partial-Data' => 'tiles,bureaucracyBadge'])->assertSuccessful();
     $assessments = collect(DB::getQueryLog())
         ->filter(fn ($query) => str_contains($query['query'], 'bureaucracy_catalogue_pointers'))->count();
     DB::disableQueryLog();
