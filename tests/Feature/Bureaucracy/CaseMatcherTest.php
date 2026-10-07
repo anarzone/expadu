@@ -201,6 +201,7 @@ test('composer routes informational phases and exposes fact-date deadlines', fun
 
     $case = task5MatcherCase([
         'case_goal' => 'settlement_permit',
+        'current_residence_title' => 'blue_card',
         'residence_title_expires_at' => '2026-09-01',
     ]);
     $sections = app(CasePlanComposer::class)->compose($case, app(CaseMatcher::class)->match($case));

@@ -68,7 +68,11 @@ final class WriteFactAssertion
             if ($case->fact_version !== $expectedRevision) {
                 throw new ConflictHttpException('The record changed while you were answering. Refresh before saving.');
             }
-            if ($correctsId === null && $effectiveFrom !== null) {
+            // Re-confirming the same answer for the same period (typically after its
+            // reconfirmation window lapsed) renews it; it is not a new change.
+            $reconfirms = $correctsId === null && $prior !== null && $prior->value === $normalized
+                && ($prior->answer_state ?? 'value') === $answerState && $prior->effective_from?->toDateString() === $effectiveFrom;
+            if ($correctsId === null && $effectiveFrom !== null && ! $reconfirms) {
                 $history = $case->facts()->where('key', $key)->whereIn('state', ['confirmed', 'historical'])->whereNull('superseded_at')->get()->reject(FactSourceTrust::isSynthetic(...));
                 if ($history->contains(fn ($record) => ($record->effective_from !== null && $record->effective_from->toDateString() >= $effectiveFrom)
                     || ($record->effective_until !== null && $record->effective_until->toDateString() > $effectiveFrom))) {
@@ -85,8 +89,6 @@ final class WriteFactAssertion
                 $this->validator->validateContext($values);
             }
             $this->validateAffectedPeriod($case, $key, $normalized, $answerState, $effectiveFrom, $isHistoricalCorrection ? $prior->effective_until?->toDateString() : null);
-            $reconfirms = $correctsId === null && $prior !== null && $prior->value === $normalized
-                && ($prior->answer_state ?? 'value') === $answerState && $prior->effective_from?->toDateString() === $effectiveFrom;
             $operation = $correctsId !== null ? 'correction' : ($prior === null || $reconfirms ? 'assertion' : 'change');
             $fact = $case->facts()->create([
                 'key' => $key, 'value' => $normalized, 'answer_state' => $answerState,
@@ -104,6 +106,10 @@ final class WriteFactAssertion
             if ($prior !== null) {
                 if ($correctsId !== null) {
                     $prior->update(['state' => 'superseded', 'superseded_at' => now()]);
+                } elseif ($reconfirms) {
+                    foreach ($current as $previous) {
+                        $previous->update(['state' => 'superseded', 'superseded_at' => now()]);
+                    }
                 } else {
                     // A real change closes every duplicate/expired current assertion, not merely the first row.
                     $history = app(PreserveFactHistory::class)->beforeClosing($current, $effectiveFrom);

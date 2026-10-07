@@ -90,8 +90,9 @@ test('reconfirming an untrusted stored value records the new confirmation instea
     expect($confirmed->id)->not->toBe($guess->id)
         ->and($confirmed->source)->toBe('manual')
         ->and($confirmed->recorded_by)->toBe($actor->id)
-        ->and($guess->fresh()->state)->toBe('historical')
-        ->and($guess->fresh()->end_date_unknown)->toBeTrue()
+        // Same value, same (unknown) period: the confirmation replaces the guess
+        // rather than inventing an ended period for it.
+        ->and($guess->fresh()->state)->toBe('superseded')
         ->and($again->id)->toBe($confirmed->id)
         ->and($case->fresh()->fact_version)->toBe(2)
         ->and(app(ConfirmedFactView::class)->forCase($case, now()->toDateString())['values']['citizenship_group'])->toBe('non_eu');

@@ -142,3 +142,22 @@ test('a current title conflict does not erase an undisputed earlier visa period'
     expect($view->forCase($case, '2023-01-01')['values']['current_residence_title'])->toBe('national_d_visa')
         ->and($view->forCase($case, now()->toDateString())['states']['current_residence_title'])->toBe('conflict');
 });
+
+test('an answer whose reconfirmation lapsed can be renewed with its own period', function () {
+    $this->travelTo(now()->setDate(2026, 9, 8)->startOfDay());
+    $actor = User::factory()->onboarded()->create();
+    $case = app(EnsureAccountHolder::class)->dossier($actor);
+    $person = $case->person;
+    $change = app(RecordFactChange::class);
+    $first = $change->execute($actor, $person, 'current_residence_title', 'blue_card', '2025-03-01', 1);
+    $first->forceFill(['reconfirm_at' => now()->subDay()])->save();
+    expect(app(ConfirmedFactView::class)->forCase($case->fresh(), now()->toDateString())['values']['current_residence_title'] ?? null)->toBeNull();
+
+    $renewed = $change->execute($actor, $person, 'current_residence_title', 'blue_card', '2025-03-01', 2);
+
+    expect($renewed->id)->not->toBe($first->id)
+        ->and($renewed->effective_from->toDateString())->toBe('2025-03-01')
+        ->and($first->fresh()->state)->toBe('superseded')
+        ->and(app(ConfirmedFactView::class)->forCase($case->fresh(), now()->toDateString())['values']['current_residence_title'])->toBe('blue_card')
+        ->and(app(ConfirmedFactView::class)->forCase($case->fresh(), '2025-06-01')['values']['current_residence_title'])->toBe('blue_card');
+});

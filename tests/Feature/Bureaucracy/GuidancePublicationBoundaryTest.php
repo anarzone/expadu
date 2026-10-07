@@ -373,12 +373,12 @@ test('case-plan deadlines use the same undisputed facts and title meaning as the
 
 test('a snapshot cannot reuse an old deadline after explicit compatibility inputs change', function () {
     $user = publicationBoundaryUser();
-    $user->update(['profile_attributes' => ['residence_title_expires_at' => '2026-09-10']]);
+    $user->update(['profile_attributes' => ['current_residence_title' => 'blue_card', 'residence_title_expires_at' => '2026-09-10']]);
     $case = BureaucracyCase::factory()->for($user)->create();
     publicationBoundaryRule(['deadline_type' => 'fact_date', 'deadline_fact_key' => 'residence_title_expires_at']);
     $snapshots = app(PlanSnapshotStore::class);
     $before = $snapshots->store($case);
-    $user->update(['profile_attributes' => ['residence_title_expires_at' => '2027-09-10']]);
+    $user->update(['profile_attributes' => ['current_residence_title' => 'blue_card', 'residence_title_expires_at' => '2027-09-10']]);
     $after = $snapshots->store($case);
 
     expect($after->id)->not->toBe($before->id)
