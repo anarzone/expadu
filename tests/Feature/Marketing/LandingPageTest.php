@@ -1,51 +1,120 @@
 <?php
 
-use App\Models\Spot;
 use App\Models\User;
 
-test('the landing page renders the approved newcomer narrative with live proof', function () {
-    Spot::factory()->count(3)->create();
-
+test('the landing page tells the sample day from daylight to the next morning', function () {
     $response = $this->get('/');
 
     $response->assertOk();
-    $response->assertSee('Tell Expadu your day. It plans the rest.');
-    $response->assertSee('Your situation, deadlines, ticket, weather and location become one useful next step');
-    $response->assertSee('official-source guides');
-    $response->assertSee('3 places');
+    $response->assertSeeInOrder([
+        'Your',
+        'joined up.',
+        'nine open tabs.',
+        'One Wednesday in Cologne.',
+        'Ask in your own words.',
+        'the good part.',
+        'Built in Cologne, by an expat who had to figure it out first.',
+        'Honest by design.',
+        'Questions before you sleep on it.',
+        'sooner.',
+    ]);
     $response->assertSee('Start free');
-    $response->assertSee('AI plans the shape. Verified data supplies the facts.');
+    $response->assertSee('Log in');
+    $response->assertSee(route('register'), escape: false);
     $response->assertSee(route('tools.index'), escape: false);
     $response->assertSee(route('blog.index'), escape: false);
     $response->assertSee(route('impressum'));
     $response->assertSee(route('datenschutz'));
 });
 
-test('the landing page server-renders every interactive product proof surface', function () {
+test('the landing page labels every product shot as sample content', function () {
     $response = $this->get('/');
 
     $response->assertOk();
-    $response->assertSee('id="marketing-demo-data"', escape: false);
-    $response->assertSee('id="personaRow"', escape: false);
-    $response->assertSee('id="chipRow"', escape: false);
-    $response->assertSee('id="plan"', escape: false);
-    $response->assertSee('id="docList"', escape: false);
-    $response->assertSee('id="board"', escape: false);
-    $response->assertSee('Demo data.', escape: false);
+    $response->assertSee('Sample day');
+    $response->assertSee('Illustration · sample event');
+    $response->assertSee('Illustrative map, not to scale · sample day');
+    $response->assertSee('Sample checklist, not legal advice.');
+    $response->assertSee('event pictures and the map are illustrations');
+    $response->assertSee('Place data © OpenStreetMap contributors.');
 });
 
-test('landing content stays visible when reveal animations are unavailable', function () {
+test('the sample checklist uses the reviewed Blue Card catalogue wording', function () {
+    $response = $this->get('/');
+
+    $response->assertOk();
+    $response->assertSee('Valid passport and national D visa');
+    $response->assertSee('Employment contract or binding job offer covering at least six months');
+    $response->assertSee('Qualification evidence and recognition evidence where required');
+    $response->assertSee('Health-insurance evidence');
+    $response->assertSee('Professional licence for a regulated profession, where applicable');
+    $response->assertSee('Verification recorded 3 Aug 2026 · version 2026-08-03.1');
+    $response->assertDontSee('reviewed by people');
+});
+
+test('the composer sample conversation renders every answer server-side', function () {
+    $response = $this->get('/');
+
+    $response->assertOk();
+
+    foreach (range(0, 4) as $index) {
+        $response->assertSee('data-q="'.$index.'"', escape: false);
+        $response->assertSee('data-a="'.$index.'"', escape: false);
+    }
+
+    // Only the first answer is visible before the script runs.
+    $response->assertSee('data-a="0" data-on="1"', escape: false);
+    $response->assertSee('data-a="4" data-on="0"', escape: false);
+});
+
+test('the join form posts to the real city waitlist', function () {
+    $response = $this->get('/');
+
+    $response->assertOk();
+    $response->assertSee('id="waitlistForm"', escape: false);
+    $response->assertSee('action="'.route('waitlist.store').'"', escape: false);
+    $response->assertSee('name="source" value="landing-join"', escape: false);
+    $response->assertSee('class="waitlist-msg"', escape: false);
+});
+
+test('landing content stays visible when motion is unavailable', function () {
     $css = file_get_contents(resource_path('css/marketing-landing.css'));
     $script = file_get_contents(resource_path('js/marketing-landing.ts'));
 
-    expect($css)
-        ->toMatch('/\.landing-v2 \.reveal\s*\{[^}]*opacity:\s*1;/s')
-        ->toMatch('/\.landing-v2\.reveal-enabled \.reveal\s*\{[^}]*opacity:\s*0;/s')
+    // Every hidden "not yet revealed" state is gated on the opt-in attribute.
+    $hiddenStates = collect(preg_split('/\R/', $css))
+        ->filter(fn (string $line): bool => str_contains($line, ':not([data-in])'));
+
+    expect($hiddenStates)->not->toBeEmpty()
+        ->and($hiddenStates->every(fn (string $line): bool => str_starts_with(trim($line), "html[data-xv-anim='on'] .xv")))->toBeTrue()
+        ->and($css)->toContain('@media (prefers-reduced-motion: reduce)')
         ->and($script)
-        ->toContain("if (!('IntersectionObserver' in window))")
-        ->toContain("document.body.classList.add('reveal-enabled')")
-        ->toContain('window.setTimeout')
-        ->toContain("revealElements.forEach((element) => element.classList.add('in'))");
+        ->toContain("html.dataset.xvReady = '1'")
+        ->toContain('delete html.dataset.xvAnim');
+
+    // The head guard opts in before first paint and gives up if the script never starts.
+    $response = $this->get('/');
+
+    $response->assertOk();
+    $response->assertSee("html.setAttribute('data-xv-anim', 'on')", escape: false);
+    $response->assertSee("if (!html.hasAttribute('data-xv-ready')) html.removeAttribute('data-xv-anim');", escape: false);
+});
+
+test('the landing page uses its own header and footer', function () {
+    $response = $this->get('/');
+
+    $response->assertOk();
+    $response->assertSee('class="xv-footer"', escape: false);
+    $response->assertDontSee('<nav class="site">', escape: false);
+    $response->assertDontSee('<footer class="site">', escape: false);
+});
+
+test('other marketing pages keep the shared header and footer', function () {
+    $response = $this->get(route('impressum'));
+
+    $response->assertOk();
+    $response->assertSee('<nav class="site">', escape: false);
+    $response->assertSee('<footer class="site">', escape: false);
 });
 
 test('the landing page links its free tools and cornerstone guides through named routes', function () {
