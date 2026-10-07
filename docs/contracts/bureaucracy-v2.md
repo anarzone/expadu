@@ -408,7 +408,7 @@ backend never defaults it.
 | `completion_reported` | `{occurred_on?, reference?, note?}` | `preparing`, `submitted`, `waiting_authority`, `action_required`, and only when every step is `completed` | `completed`, `completion_basis: user_report` |
 | `cancellation_reported` | `{occurred_on?, reference?, note?}` | every open state except `untracked` | `cancelled` |
 | `process_reopened` | `{note?}` | `completed`, `cancelled` | `preparing` |
-| `process_untracked` | `{}` | `not_started`, with no completed step and no event other than `process_started`/`process_untracked`, requirement confirmation or evidence share | `untracked` |
+| `process_untracked` | `{}` | `not_started`, with no completed step, no event other than `process_started`/`process_untracked`, and no requirement confirmation or evidence share (same rule as `untrackable`) | `untracked` |
 | `appointment_recorded` | see below | any state except `untracked` | workflow unchanged |
 | `appointment_cancelled` | `{appointment_id}` | any state except `untracked`; the appointment must currently be recorded | workflow unchanged |
 
