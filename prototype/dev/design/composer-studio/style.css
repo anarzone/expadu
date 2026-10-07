@@ -1568,6 +1568,23 @@
     background: var(--color-select-bg);
     cursor: default;
 }
+/* Add to plan is the answer's main action: orange, like Today's add
+   (colour roles). Once added it is a state, so Added stays cyan. */
+.studio-button.light:is([data-add], [data-add-event]):not(
+        :disabled,
+        .is-added,
+        [aria-disabled='true']
+    ) {
+    color: var(--color-text-on-action);
+    background: var(--color-action);
+}
+.studio-button.light:is([data-add], [data-add-event]):not(
+        :disabled,
+        .is-added,
+        [aria-disabled='true']
+    ):hover {
+    background: var(--color-action-hover);
+}
 .panel-top h2 {
     font-size: var(--text-section);
     margin: 0;

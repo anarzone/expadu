@@ -4,6 +4,18 @@ Connected to the approved Today C design, 18 September 2026. Start at `/dev/desi
 
 Open `/dev/design/composer-studio/` directly, or enter from Today. Today’s header bookmark opens Saved; the plus menu beside the Composer input contains My Plans, Saved and History. Both are panels in the same workspace; the older `/dev/design/my-plans/` links now open the corresponding panel in Composer.
 
+## Add to plan is orange — 7 October
+
+Owner request: **Add to plan** on event, place and preview cards is the
+answer's main action, so it uses the action orange (`--color-action`, white
+text 5.4:1) like Today's add button. **Added** is a state and stays cyan. This
+replaces the cyan Add to plan from "Shared palette and fixes" below. Evidence:
+`docs/reviews/2026-10-07-app-in-colour/partb-composer-add-to-plan-*.png`.
+
+Also fixed: an ordinary "from A to B" journey question (including the first
+starter, "Getting to your 14:00 Blue Card appointment") failed with "Cannot
+read properties of undefined". `tests/journey-browser.cjs` covers it.
+
 ## Hand-offs from other pages — 7 October
 
 - **What you asked is in view.** Anything a page hands over (Travel's trip
