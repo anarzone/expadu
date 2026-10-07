@@ -10,7 +10,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
-#[Signature('bureaucracy:migrate-dossiers {--dry-run : Read-only rehearsal (the default)} {--apply : Explicitly attach account-holder dossiers; no progress transfer} {--after=0 : Resume after this account ID} {--limit=100 : Maximum accounts in this batch (1-500)}')]
+#[Signature('bureaucracy:migrate-dossiers {--dry-run : Read-only rehearsal (the default)} {--apply : Explicitly attach account-holder dossiers; no progress transfer} {--after=0 : Resume after this account ID} {--limit=100 : Maximum accounts in this batch (1-500)} {--all : Keep going batch by batch until every account is processed}')]
 #[Description('Rehearse or attach existing account holders without rewriting answers or transferring saved progress')]
 class MigrateDossiersCommand extends Command
 {
@@ -24,28 +24,31 @@ class MigrateDossiersCommand extends Command
             return self::FAILURE;
         }
         $summary = ['mode' => $this->option('apply') ? 'apply' : 'dry_run', 'accounts' => 0, 'statuses' => [], 'next_cursor' => $after];
-        foreach (User::query()->where('id', '>', $after)->orderBy('id')->limit($limit)->get() as $user) {
-            $review = $planner->for($user);
-            if ($this->option('apply') && $review['status'] === 'identity_mismatch') {
-                $this->line(json_encode($summary, JSON_THROW_ON_ERROR));
-                $this->error('An account identity needs review. No records in that account were changed. Resume from the reported cursor after resolving it.');
-
-                return self::FAILURE;
-            }
-            if ($this->option('apply') && in_array($review['status'], ['ready', 'already_linked'], true)) {
-                try {
-                    $review = $backfill->execute($user, $review['fingerprint']);
-                } catch (ConflictHttpException) {
+        do {
+            $batch = User::query()->where('id', '>', $summary['next_cursor'])->orderBy('id')->limit($limit)->get();
+            foreach ($batch as $user) {
+                $review = $planner->for($user);
+                if ($this->option('apply') && $review['status'] === 'identity_mismatch') {
                     $this->line(json_encode($summary, JSON_THROW_ON_ERROR));
-                    $this->error('An account changed during this batch. Rehearse again and resume from the reported cursor.');
+                    $this->error('An account identity needs review. No records in that account were changed. Resume from the reported cursor after resolving it.');
 
                     return self::FAILURE;
                 }
+                if ($this->option('apply') && in_array($review['status'], ['ready', 'already_linked'], true)) {
+                    try {
+                        $review = $backfill->execute($user, $review['fingerprint']);
+                    } catch (ConflictHttpException) {
+                        $this->line(json_encode($summary, JSON_THROW_ON_ERROR));
+                        $this->error('An account changed during this batch. Rehearse again and resume from the reported cursor.');
+
+                        return self::FAILURE;
+                    }
+                }
+                $summary['accounts']++;
+                $summary['statuses'][$review['status']] = ($summary['statuses'][$review['status']] ?? 0) + 1;
+                $summary['next_cursor'] = $user->id;
             }
-            $summary['accounts']++;
-            $summary['statuses'][$review['status']] = ($summary['statuses'][$review['status']] ?? 0) + 1;
-            $summary['next_cursor'] = $user->id;
-        }
+        } while ($this->option('all') && $batch->count() === $limit);
         $this->line(json_encode($summary, JSON_THROW_ON_ERROR));
 
         return self::SUCCESS;
