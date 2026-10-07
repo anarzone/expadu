@@ -189,3 +189,85 @@ test('pending answers say Thinking and keep the cancel action available', () => 
     assert.match(html, /role="status"/);
     assert.match(html, /data-action="cancel-loading"/);
 });
+
+test('answers lead with a short verdict, then their own block', () => {
+    const ctx = context();
+    ctx.escape = (x) => String(x).replace(/</g, '&lt;');
+    const trip = render(
+        {
+            id: 't',
+            role: 'assistant',
+            kind: 'trip',
+            title: 'Leave now — it’s 13:10.',
+            text: 'Take line 4 at 13:14.',
+            trip: {
+                steps: [
+                    { mode: 'walk', label: 'Walk to Neumarkt', value: '4 min' },
+                    {
+                        mode: 'transit',
+                        line: '4',
+                        label: 'Neumarkt → Wiener Platz',
+                        value: '13:14 → 13:42',
+                    },
+                ],
+                note: 'I picked the 13:14.',
+                href: '../departures-next/?from=Neumarkt',
+            },
+        },
+        ctx,
+    );
+    assert.match(
+        trip,
+        /<h3 class="chat-answer-title">Leave now — it’s 13:10\.<\/h3><p>Take line 4/,
+    );
+    assert.match(trip, /class="answer-block answer-trip"/);
+    assert.match(
+        trip,
+        /aria-label="Line 4">4<\/span><span>Neumarkt → Wiener Platz<\/span><b>13:14 → 13:42<\/b>/,
+    );
+    assert.match(trip, /Open in Travel/);
+    assert.match(trip, /Scheduled sample times, not live/);
+
+    const checklist = render(
+        {
+            id: 'c',
+            role: 'assistant',
+            kind: 'checklist',
+            title: '1 of 5 documents marked ready.',
+            record: {
+                title: 'EU Blue Card',
+                prepared: 1,
+                total: 5,
+                href: '../bureaucracy-next/',
+            },
+        },
+        ctx,
+    );
+    assert.match(
+        checklist,
+        /answer-checklist" href="\.\.\/bureaucracy-next\/"/,
+    );
+    assert.match(checklist, /EU Blue Card · your records/);
+    assert.match(checklist, /width:20%/);
+
+    const facts = render(
+        {
+            id: 'f',
+            role: 'assistant',
+            kind: 'facts',
+            title: 'Not listed.',
+            facts: [
+                { label: 'Accessibility', value: 'Not listed', known: false },
+                { label: 'Starts', value: 'Today 20:00', known: true },
+            ],
+        },
+        ctx,
+    );
+    assert.match(facts, /<dd class="is-unknown">Not listed<\/dd>/);
+    assert.match(facts, /<dt>Starts<\/dt><dd>Today 20:00<\/dd>/);
+    // Titles are escaped like any answer text.
+    assert.match(
+        render({ id: 'x', role: 'assistant', title: '<b>' }, ctx),
+        /&lt;b>/,
+    );
+});

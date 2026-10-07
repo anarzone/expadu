@@ -18,21 +18,36 @@ const url = 'http://127.0.0.1:8765/dev/design/composer-studio/';
         await page.reload({ waitUntil: 'networkidle' });
         const feed = () => page.locator('.chat-feed').innerText();
 
-        await page.locator('.starter-grid button').first().click();
+        // The first starter is the appointment's trip, answered step by step.
+        await page.locator('.starter-card').first().click();
         await page.waitForTimeout(1500);
-        assert.match(
-            await feed(),
-            /How do I get from Neumarkt to Mülheim by 14:00\?/,
-        );
+        assert.match(await feed(), /When should I leave for my 14:00\?/);
         assert.doesNotMatch(await feed(), /Cannot read properties|Try again/);
-        assert.match(await feed(), /Neumarkt → Mülheim/);
+        assert.equal(
+            await page.locator('.chat-answer-title').last().innerText(),
+            'Leave now — it’s 13:10.',
+        );
+        assert.equal(await page.locator('.answer-trip li').count(), 3);
+        assert.match(await feed(), /Take line 4 at 13:14 from Neumarkt/);
 
-        await page.fill('#studio-request', 'When should I leave for my 14:00?');
+        // A typed "from A to B" for the same trip gets the same answer, and
+        // another trip still answers instead of failing.
+        await page.fill(
+            '#studio-request',
+            'How do I get from Neumarkt to Mülheim by 14:00?',
+        );
+        await page.press('#studio-request', 'Enter');
+        await page.waitForTimeout(1500);
+        assert.equal(await page.locator('.answer-trip').count(), 2);
+        await page.fill(
+            '#studio-request',
+            'How do I get from Neumarkt to Ehrenfeld?',
+        );
         await page.press('#studio-request', 'Enter');
         await page.waitForTimeout(1500);
         assert.match(
             await feed(),
-            /Leave now — it’s 13:10\. Take line 4 at 13:14/,
+            /Here’s your journey from Neumarkt to Ehrenfeld/,
         );
         assert.deepEqual(errors, []);
         console.log('journey-browser: ok');

@@ -425,7 +425,12 @@
                         const source = /sample/i.test(x.captured || '')
                             ? 'Sample event'
                             : `Captured listing · ${E(x.captured || '')}`;
-                        return `<section class="service-card"><span class="service-type">${I('calendar')}${source}${past ? ' · past' : ''}</span><button class="service-title" data-preview="${E(id)}">${E(x.title)}</button><p>${E(x.venue)}${x.price ? ` · ${E(x.price)}` : ''}</p><div class="service-time">${I('clock')}${E(eventDate(x.date))} · ${E(x.start)}${x.end ? `–${E(x.end)}` : ''} <span>Fixed time</span></div>${past ? '<p class="detail-caution">This listing has passed. It’s shown for reference only.</p>' : ''}<div class="service-actions"><button class="plain-button" data-preview="${E(id)}">Preview event</button>${past ? '' : `<button class="studio-button light" data-add-event="${E(id)}" ${added ? 'disabled' : ''}>${added ? 'Added' : 'Add to plan'} ${I(added ? 'check' : 'plus')}</button>`}</div></section>`;
+                        // The Events poster: an AI illustration of the
+                        // activity, labelled, with the date stamp.
+                        const art = x.illustration || x.id;
+                        const day = new Date(`${x.date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                        const poster = `<div class="event-answer-poster"><img src="../events-next/photos/${E(art)}.webp" alt="" loading="lazy" onerror="this.closest('.event-answer-poster').remove()"><span class="poster-label">AI illustration · sample</span><span class="poster-stamp">${E(x.date === today() ? 'Today' : day)} ${E(x.start)}</span></div>`;
+                        return `<section class="service-card event-answer">${poster}<span class="service-type">${I('calendar')}${source}${past ? ' · past' : ''}</span><button class="service-title" data-preview="${E(id)}">${E(x.title)}</button><p>${E(x.venue)}${x.price ? ` · ${E(x.price)}` : ''}</p><div class="service-time">${I('clock')}${E(eventDate(x.date))} · ${E(x.start)}${x.end ? `–${E(x.end)}` : ''} <span>Fixed time</span></div>${past ? '<p class="detail-caution">This listing has passed. It’s shown for reference only.</p>' : ''}<div class="service-actions"><button class="plain-button" data-preview="${E(id)}">Preview event</button>${past ? '' : `<button class="studio-button light" data-add-event="${E(id)}" ${added ? 'disabled' : ''}>${added ? 'Added' : 'Add to plan'} ${I(added ? 'check' : 'plus')}</button>`}</div></section>`;
                     })
                     .join('');
             }

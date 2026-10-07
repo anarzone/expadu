@@ -486,6 +486,21 @@
             return null;
         return { from: j.from, to: j.to, arriveBy: a.start, appointmentId: a.id };
     }
+    // "From Neumarkt to Mülheim by 14:00" is the appointment's own trip too.
+    function appointmentTrip(places) {
+        const a = root.ExpaduSampleDay?.appointment;
+        const j = a?.journey;
+        const same = (x, y) =>
+            !!x && !!y && x.trim().toLowerCase() === y.trim().toLowerCase();
+        if (
+            j &&
+            same(places.from, j.from) &&
+            (same(places.to, j.to) || same(places.to, a.location)) &&
+            (!places.arriveBy || places.arriveBy === a.start)
+        )
+            return { ...places, arriveBy: a.start, appointmentId: a.id };
+        return places;
+    }
     function journeyPlaces(text) {
         const sentence =
             text
@@ -595,11 +610,22 @@
         // Getting somewhere, or planning a day, comes before paperwork words:
         // "How do I get to my Blue Card appointment?" is a journey question.
         if (
-            /\b(how (do|can|should) i get to|get there|directions to|journey to|route to|faster way|quicker way|another route)\b/.test(
+            /\b(how (do|can|should) i get (to|from)|get there|directions to|journey to|route to|faster way|quicker way|another route)\b/.test(
                 t,
             )
         )
-            return { kind: 'journey', date, ...journeyPlaces(text) };
+            return { kind: 'journey', date, ...appointmentTrip(journeyPlaces(text)) };
+        // Step-free access and the like: answered from the listing, or "Not
+        // listed". Comes before event words ("Is the cinema step-free?").
+        if (/\b(step-?free|wheelchair|accessib(le|ility)|lifts?|elevators?|stairs)\b/.test(t))
+            return { kind: 'access', date, about: t };
+        // What to bring: your own checklist's progress, not guidance.
+        if (
+            /\bwhat (do|should) i (need to )?bring\b|\bwhat to bring\b|\bbring to my\b|\bdocuments? (do i need|are ready|ready)\b/.test(
+                t,
+            )
+        )
+            return { kind: 'checklist', date };
         // Questions about your plans answer from them; they never change them.
         if (
             /\b(when|what time)\b.*\b(my|next)\b.*\b(appointment|plan|class)\b|\bnext (appointment|plan)\b|\bwhat('s| is)( on)? my (day|plan|schedule)\b/.test(

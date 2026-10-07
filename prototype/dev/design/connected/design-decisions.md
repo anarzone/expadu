@@ -375,6 +375,20 @@ conversation. "When should I leave for my 14:00?" answers from the
 appointment's trip with Today's rule. Today's departures board shows the stop
 at the sample day's clock, like Travel's timetable.
 
+**Composer: rich answers, coloured starters and Your day — owner request, 7 October (in review):**
+from the App in colour concept. On desktop, Your day sits beside the
+conversation (the tram to take now, the appointment, today's plan, the visa
+deadline from your records, the area after the appointment, tonight, coming
+up); tapping one asks about it, and it hides while My Plans, Saved or History
+is open. Phones show the day's facts as one row above the starters. Starters
+use their section's colour and only appear for what the day has. Answers lead
+with a short verdict, then their own block: the appointment trip as steps
+with Open in Travel; your own checklist's ready count linked to Paperwork
+(no guidance); event posters (labelled AI illustrations); step-free access
+from the event's or venue's listing, otherwise "Not listed". Composer keeps
+the cream palette. The records now live in `connected/sample-day.js` for
+Today and Composer. Details are in `composer-studio/README.md`.
+
 **Travel review fixes and one timetable — owner request, 7 October (in review):**
 the Timetable tab is the Neumarkt station board; Neumarkt is one stop that
 opens on the sample day with its line 4 and offers the 4 October capture as the

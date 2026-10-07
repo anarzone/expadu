@@ -25,18 +25,27 @@ test('everyday questions reach a helpful reply instead of the fallback', () => {
     assert.equal(ask('hi').kind, 'help');
     assert.equal(ask('hello xyz').kind, 'clarify');
     const tonight = ask('Any concerts tonight?');
-    assert.deepEqual([tonight.kind, tonight.topic, tonight.evening], ['event', 'music', true]);
+    assert.deepEqual(
+        [tonight.kind, tonight.topic, tonight.evening],
+        ['event', 'music', true],
+    );
     assert.equal(ask('What’s on this weekend?').days, 2);
     assert.equal(ask('Any exhibitions this week?').days, 7);
     assert.equal(ask('Plan a rainy Sunday').kind, 'indoor');
     assert.deepEqual(
-        [ask('I need a doctor who speaks English').kind, ask('I need a doctor who speaks English').service],
+        [
+            ask('I need a doctor who speaks English').kind,
+            ask('I need a doctor who speaks English').service,
+        ],
         ['service', 'doctors'],
     );
     assert.equal(ask('Something fun with kids on Saturday').category, 'Family');
     // Cafés are real sample places now; Wi-Fi isn't recorded, so Composer says so.
     const cafe = ask('Find a café where I can work for a few hours');
-    assert.deepEqual([cafe.kind, cafe.place, cafe.wifi], ['nearby', 'cafe', true]);
+    assert.deepEqual(
+        [cafe.kind, cafe.place, cafe.wifi],
+        ['nearby', 'cafe', true],
+    );
 });
 
 test('a question about your plans never becomes a plan request', () => {
@@ -47,25 +56,54 @@ test('a question about your plans never becomes a plan request', () => {
 });
 
 test('journey questions keep the places and arrival time you give', () => {
-    assert.deepEqual(copy(ask('How do I get to Köln Hbf?')), { kind: 'journey', date: '2026-10-03', to: 'Köln Hbf' });
+    assert.deepEqual(copy(ask('How do I get to Köln Hbf?')), {
+        kind: 'journey',
+        date: '2026-10-03',
+        to: 'Köln Hbf',
+    });
     const both = ask('How do I get from Neumarkt to Mülheim by 14:00?');
-    assert.deepEqual([both.from, both.to, both.arriveBy], ['Neumarkt', 'Mülheim', '14:00']);
+    assert.deepEqual(
+        [both.from, both.to, both.arriveBy],
+        ['Neumarkt', 'Mülheim', '14:00'],
+    );
     assert.equal(ask('Is there a faster way?').kind, 'journey');
     assert.equal(ask('How do I get a Blue Card?').kind, 'bureaucracy');
 });
 
 test('plans you mention are kept, and today starts after the current time', () => {
     assert.deepEqual(
-        copy(M.mentionedPlans('Help me plan Thursday 1 October. I already have Language class in Ehrenfeld at 18:00 and Dinner with Sam at 20:00.')),
+        copy(
+            M.mentionedPlans(
+                'Help me plan Thursday 1 October. I already have Language class in Ehrenfeld at 18:00 and Dinner with Sam at 20:00.',
+            ),
+        ),
         [
-            { title: 'Language class', location: 'Ehrenfeld', start: '18:00', end: '19:00' },
-            { title: 'Dinner with Sam', location: '', start: '20:00', end: '21:00' },
+            {
+                title: 'Language class',
+                location: 'Ehrenfeld',
+                start: '18:00',
+                end: '19:00',
+            },
+            {
+                title: 'Dinner with Sam',
+                location: '',
+                start: '20:00',
+                end: '21:00',
+            },
         ],
     );
     const s = M.fresh();
     s.reviewDay = {
         date: '2026-09-30',
-        agenda: [{ id: 'a', title: 'Blue Card appointment', start: '14:00', end: '14:30', fixed: true }],
+        agenda: [
+            {
+                id: 'a',
+                title: 'Blue Card appointment',
+                start: '14:00',
+                end: '14:30',
+                fixed: true,
+            },
+        ],
     };
     M.propose(s, ['walk'], '2026-09-30');
     assert.deepEqual(
@@ -93,7 +131,10 @@ test('everyday places near a point: kind, where, and today unless a day is named
     assert.equal(ask('café near Neumarkt on Saturday').date, '2026-10-03');
     // A park with no place stays general discovery; paperwork stays paperwork.
     assert.equal(ask('find a park').kind, 'discovery');
-    assert.equal(ask('Help me with my Blue Card paperwork').kind, 'bureaucracy');
+    assert.equal(
+        ask('Help me with my Blue Card paperwork').kind,
+        'bureaucracy',
+    );
     assert.equal(ask('something for kids on Saturday').kind, 'discovery');
 });
 
@@ -108,18 +149,59 @@ test('“When should I leave for my 14:00?” is the appointment’s trip', () =
         'today-review-appointment',
     );
     // Another time isn't the appointment.
-    assert.equal(ask('When should I leave for my 18:00?').appointmentId, undefined);
+    assert.equal(
+        ask('When should I leave for my 18:00?').appointmentId,
+        undefined,
+    );
 });
 test('green spaces and fast food are nearby kinds; green needs a place, like parks', () => {
     const green = ask('Somewhere green near my appointment?');
-    assert.deepEqual(
-        copy([green.kind, green.place, green.near]),
-        ['nearby', 'green', 'wiener-platz'],
-    );
+    assert.deepEqual(copy([green.kind, green.place, green.near]), [
+        'nearby',
+        'green',
+        'wiener-platz',
+    ]);
     assert.equal(ask('woods near Ehrenfeld').place, 'green');
     assert.notEqual(ask('somewhere green this weekend').kind, 'nearby');
     const bite = ask('A quick bite near Wiener Platz after my appointment');
     assert.deepEqual(copy([bite.place, bite.after]), ['fastfood', true]);
     assert.equal(ask('Döner near Neumarkt').place, 'fastfood');
     assert.equal(ask('a library near Neumarkt with wifi').wifi, true);
+});
+
+test('the appointment trip is recognised however it is asked', () => {
+    const leave = ask('When should I leave for my 14:00?');
+    assert.deepEqual(
+        [leave.kind, leave.appointmentId],
+        ['journey', 'today-review-appointment'],
+    );
+    // The first starter's wording names the appointment's own trip.
+    const typed = ask('How do I get from Neumarkt to Mülheim by 14:00?');
+    assert.deepEqual(
+        [typed.kind, typed.from, typed.to, typed.arriveBy, typed.appointmentId],
+        ['journey', 'Neumarkt', 'Mülheim', '14:00', 'today-review-appointment'],
+    );
+    // Another trip stays an ordinary journey question.
+    assert.equal(
+        ask('How do I get from Neumarkt to Ehrenfeld?').appointmentId,
+        undefined,
+    );
+    assert.equal(
+        ask('How do I get from Neumarkt to Mülheim by 16:00?').appointmentId,
+        undefined,
+    );
+});
+
+test('what to bring answers from your checklist; access questions from listings', () => {
+    assert.equal(ask('What do I need to bring at 14:00?').kind, 'checklist');
+    assert.equal(
+        ask('What should I bring to my Blue Card appointment?').kind,
+        'checklist',
+    );
+    // Paperwork questions without "bring" still go to the reviewed records.
+    assert.equal(ask('How do I get a Blue Card?').kind, 'bureaucracy');
+    const access = ask('Is the cinema step-free?');
+    assert.equal(access.kind, 'access');
+    assert.match(access.about, /cinema/);
+    assert.equal(ask('Is Stadtgarten wheelchair accessible?').kind, 'access');
 });

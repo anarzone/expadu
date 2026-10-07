@@ -10,8 +10,34 @@
             dateLabel,
         } = ctx;
         const c = s.conversation;
-        const text = entry.text ? `<p>${E(entry.text)}</p>` : '';
+        // A short verdict first ("Leave now — it’s 13:10."), then the detail.
+        const title = entry.title
+            ? `<h3 class="chat-answer-title">${E(entry.title)}</h3>`
+            : '';
+        const text = title + (entry.text ? `<p>${E(entry.text)}</p>` : '');
         let body = text;
+        // The appointment's trip, step by step, in Travel's colour.
+        if (entry.kind === 'trip' && entry.trip?.steps?.length)
+            body += `<div class="answer-block answer-trip"><ol>${entry.trip.steps
+                .map(
+                    (x) =>
+                        `<li>${x.line ? `<span class="answer-line" aria-label="Line ${E(x.line)}">${E(x.line)}</span>` : I(x.mode === 'walk' ? 'walk' : 'train')}<span>${E(x.label)}</span><b>${E(x.value)}</b></li>`,
+                )
+                .join('')}</ol>${entry.trip.note ? `<p class="answer-note">${E(entry.trip.note)}</p>` : ''}<div class="answer-actions">${entry.trip.href ? `<a class="answer-button" href="${E(entry.trip.href)}">Open in Travel${I('arrow')}</a>` : ''}<span>Scheduled sample times, not live</span></div></div>`;
+        // Your own checklist's progress, linked to Paperwork. Not guidance.
+        if (entry.kind === 'checklist' && entry.record) {
+            const r = entry.record;
+            const share = r.total ? Math.round((r.prepared / r.total) * 100) : 0;
+            body += `<a class="answer-block answer-checklist" href="${E(r.href || '#')}"><span class="answer-tile">${I('document')}</span><span><small>${E(r.title)} · your records</small><strong>${E(`${r.prepared} of ${r.total} ready`)}</strong><span class="answer-progress" aria-hidden="true"><i style="width:${share}%"></i></span></span>${I('arrow')}</a>`;
+        }
+        // What a listing does and doesn't say.
+        if (entry.kind === 'facts' && entry.facts?.length)
+            body += `<dl class="answer-facts">${entry.facts
+                .map(
+                    (x) =>
+                        `<div><dt>${E(x.label)}</dt><dd${x.known ? '' : ' class="is-unknown"'}>${E(x.value)}</dd></div>`,
+                )
+                .join('')}</dl>`;
         if (entry.kind === 'pending')
             body = `<div class="pending-row">${ExpaduLoading.status('Thinking…')}<button class="plain-button" data-action="cancel-loading">Cancel</button></div>`;
         if (entry.kind === 'cancelled' || entry.kind === 'failed')

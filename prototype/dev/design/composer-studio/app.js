@@ -117,10 +117,89 @@
             prompt: 'Help me settle in: which paperwork should I sort out first?',
         },
     ];
+    // The person's own Paperwork records (connected/sample-day.js).
+    const records = () => window.ExpaduSampleDay?.records || [];
+    const paperworkHref = (id) =>
+        `${ExpaduStore.routes.bureaucracy}?scenario=existing&person=self&view=detail&process=${encodeURIComponent(id)}`;
+    const countWord = (n) =>
+        ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'][n] ||
+        String(n);
     const allEvents = () => [
         ...(window.ExpaduSampleDay?.events || []),
         ...ExpaduModel.events,
     ];
+    const clockMins = (time) => +time.slice(0, 2) * 60 + +time.slice(3, 5);
+    const clockText = (n) =>
+        `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+    // The appointment's trip by Today's rule: official appointments want ten
+    // minutes in hand, other plans five; an earlier service of the same
+    // journey is offered when it is still reachable.
+    function appointmentTrip(appointment) {
+        const j = appointment?.journey;
+        if (!j) return null;
+        const option = (o) => ({
+            depart: o.depart,
+            arrive: o.arrive,
+            leave: clockMins(o.depart) - (j.accessWalkMinutes || 0),
+            there: clockMins(o.arrive) + (j.walkMinutes || 0),
+        });
+        const planned = option(j);
+        const earlier = j.earlier ? option(j.earlier) : null;
+        const spare = (o) => clockMins(appointment.start) - o.there;
+        const margin = appointment.kind === 'official' ? 10 : 5;
+        const now = clockMins(M.nowTime());
+        const best =
+            spare(planned) < margin && earlier && earlier.leave >= now ? earlier : planned;
+        return { journey: j, planned, earlier, best, spare, margin, leaveNow: best.leave <= now };
+    }
+    // What Composer knows about today: the shared sample day, your records
+    // and the plans made here. Starters, Your day and answers all read this.
+    function todayContext() {
+        const sample = window.ExpaduSampleDay;
+        const today = M.today(),
+            now = M.nowTime();
+        const appointment =
+            state.reviewDay?.date === today
+                ? (state.reviewDay.agenda || []).find((x) => x.start >= now && x.journey?.from)
+                : sample?.date === today && sample.appointment?.start >= now
+                  ? sample.appointment
+                  : null;
+        const trip = appointment ? appointmentTrip(appointment) : null;
+        const record = appointment && records().find((x) => x.id === appointment.process);
+        const soon = M.addDays(today, 3);
+        const deadlines = records().filter(
+            (x) => x.deadline && x.deadline >= today && x.deadline <= soon && !x.submitted,
+        );
+        const tonight = allEvents()
+            .filter((x) => x.date === today && (x.start || '') >= '17:00')
+            .sort((a, b) => a.start.localeCompare(b.start));
+        const plan = state.proposal?.date === today ? state.proposal : planFor(today);
+        const planned = (plan?.items || [])
+            .filter((x) => x.start)
+            .map((x) => ({ ...x, proposed: plan === state.proposal }))
+            .sort((a, b) => a.start.localeCompare(b.start));
+        const upcoming = [
+            ...state.plans
+                .filter((p) => p.date > today)
+                .flatMap((p) => p.items.map((x) => ({ ...x, date: p.date }))),
+            ...(sample?.upcoming || []).filter((x) => x.date > today),
+        ]
+            .filter((x) => x.start)
+            .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`))
+            .slice(0, 2);
+        // The nearest café to the appointment, for its map picture.
+        const P = window.ExpaduPlaces;
+        const anchor = P?.anchors?.['wiener-platz'];
+        const cafe =
+            appointment && anchor && P.near
+                ? P.near(anchor, {
+                      kinds: ['cafe'],
+                      limit: 1,
+                      at: { date: today, time: appointment.end || appointment.start },
+                  })[0]?.place
+                : null;
+        return { today, now, appointment, trip, record, deadlines, tonight, planned, upcoming, anchor, cafe };
+    }
     const eventById = (id) =>
         allEvents().find((x) => x.id === String(id).replace(/^event:/, ''));
     // Plans you already have on a date: Today's day, the sample day's coming
@@ -571,30 +650,123 @@
         if (!e.target.closest('.approval-control')) toggleApproval(false);
         if (!e.target.closest('.composer-actions')) closeComposerActions();
     });
+    const mapPicture = (place) =>
+        place ? `<img src="../connected/place-maps/${E(place.id)}.png" alt="" loading="lazy" onerror="this.remove()">` : '';
+    const weekday = (date) =>
+        new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long' });
+    const stamp = (date) =>
+        new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const relativeDay = (date, today) =>
+        date === today
+            ? 'Today'
+            : date === M.addDays(today, 1)
+              ? 'Tomorrow'
+              : new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
     function welcome() {
-        // Starters from what Expadu knows about your day (the shared sample day).
-        const sample = window.ExpaduSampleDay;
-        const appointment =
-            state.reviewDay?.date === M.today()
-                ? (state.reviewDay.agenda || []).find(
-                      (x) => x.start >= M.nowTime() && x.journey?.from,
-                  )
-                : sample?.appointment?.start >= M.nowTime()
-                  ? sample.appointment
-                  : null;
-        const starters = [
-            appointment && [
-                'route',
-                `Getting to your ${appointment.start} ${appointment.title.replace(/ appointment$/i, '')} appointment`,
-                `How do I get from ${appointment.journey.from} to ${appointment.location} by ${appointment.start}?`,
-            ],
-            ['calendar', 'What’s on tonight', 'What’s on tonight?'],
+        // Starters from what Expadu knows about your day, each in the colour
+        // of the section it leads to. Only what the day actually has.
+        const x = todayContext();
+        const a = x.appointment;
+        const cards = [
+            a?.journey && {
+                kind: 'travel',
+                tag: 'Travel',
+                icon: 'route',
+                label: `When should I leave for my ${a.start}?`,
+                detail: `${a.journey.from} → ${a.location} · line ${a.journey.line}`,
+            },
+            x.record?.total && {
+                kind: 'paperwork',
+                tag: 'Paperwork',
+                icon: 'document',
+                label: `What do I need to bring at ${a.start}?`,
+                detail: `${x.record.prepared} of ${x.record.total} documents marked ready`,
+            },
+            x.tonight.length && {
+                kind: 'events',
+                tag: 'Events',
+                icon: 'calendar',
+                label: 'What’s on tonight?',
+                detail: `${x.tonight.length === 1 ? 'One sample event' : `${x.tonight.length} sample events`} from ${x.tonight[0].start}`,
+                stamp: stamp(x.today),
+            },
+            a && x.anchor && {
+                kind: 'nearby',
+                tag: 'Nearby',
+                icon: 'pin',
+                label: 'Is there a café near my appointment?',
+                detail: `Around ${x.anchor.name}`,
+                picture: mapPicture(x.cafe),
+            },
+        ].filter(Boolean);
+        const chips = [
             ['spark', 'Plan my Saturday', 'Help me plan Saturday'],
             ['leaf', 'A little time outdoors', 'Find something outdoors for Saturday afternoon.'],
-        ]
-            .filter(Boolean)
-            .slice(0, 4);
-        return `<section class="studio-welcome"><div class="welcome-symbol" aria-hidden="true">${I('spark')}</div><h1>What’s on your mind?</h1><p>A question, a little inspiration, or a day to put together.</p><div class="starter-grid">${starters.map(([icon, label, prompt]) => `<button data-prompt="${E(prompt)}">${I(icon)}<span>${E(label)}</span>${I('arrow')}</button>`).join('')}</div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}<p class="welcome-foot">Start with one of these, or use your own words.</p></section>`;
+            ...(cards.length < 2 ? [['calendar', 'What’s on this weekend', 'What’s on this weekend?']] : []),
+        ];
+        const starterCards = cards.length
+            ? `<div class="starter-cards">${cards
+                  .map(
+                      (c) =>
+                          `<button class="starter-card starter-${c.kind}" data-prompt="${E(c.label)}">${c.picture || ''}<span class="starter-tag">${I(c.icon)}${E(c.tag)}</span>${c.stamp ? `<span class="starter-stamp" aria-hidden="true">${E(c.stamp)}</span>` : ''}<strong>${E(c.label)}</strong><small>${E(c.detail)}</small></button>`,
+                  )
+                  .join('')}</div>`
+            : '';
+        return `<section class="studio-welcome${cards.length ? ' has-starter-cards' : ''}">${cards.length ? '' : `<div class="welcome-symbol" aria-hidden="true">${I('spark')}</div>`}${dayRow(x)}<h1>What’s on your mind?</h1><p>Ask in your own words. Composer knows your plan and says “Not listed” instead of guessing.</p>${starterCards}<div class="starter-chips" role="group" aria-label="More to ask">${chips
+            .map(([icon, label, prompt]) => `<button class="starter-chip" data-prompt="${E(prompt)}">${I(icon)}<span>${E(label)}</span></button>`)
+            .join('')}</div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}</section>`;
+    }
+    // Phones: the day's facts in one scrolling row above the starters.
+    function dayRow(x) {
+        const items = [
+            ...(x.appointment
+                ? [`<a class="day-chip" href="${E(ExpaduStore.routes.today)}"><span class="day-chip-tile is-paper">${I('document')}</span><span><small>${E(x.appointment.start)} · in your plan</small><strong>${E(x.appointment.title)}</strong></span></a>`]
+                : []),
+            ...x.deadlines.map(
+                (d) =>
+                    `<a class="day-chip" href="${E(paperworkHref(d.id))}"><span class="day-chip-tile is-attention">${I('clock')}</span><span><small>${E(relativeDay(d.deadline, x.today))} · your records</small><strong>${E(d.deadlineLabel)}</strong></span></a>`,
+            ),
+            ...x.upcoming.map(
+                (u) =>
+                    `<button class="day-chip" data-nav="plans"><span class="day-chip-tile">${I('calendar')}</span><span><small>${E(relativeDay(u.date, x.today))} · ${E(u.start)}</small><strong>${E(u.title)}</strong></span></button>`,
+            ),
+        ];
+        return items.length
+            ? `<div class="day-row" role="group" aria-label="Your day">${items.join('')}</div>`
+            : '';
+    }
+    // Desktop: what Composer plans with, beside the conversation. Each item
+    // asks about itself or opens its record.
+    function dayPanel() {
+        const x = todayContext();
+        const a = x.appointment;
+        const rows = [];
+        if (a && x.trip)
+            rows.push(
+                `<button class="day-item" data-prompt="When should I leave for my ${E(a.start)}?"><span class="day-item-tile is-travel">${I('train')}</span><span><small>${x.trip.leaveNow ? 'Now' : `By ${clockText(x.trip.best.leave)}`} · leave for ${E(a.start)}</small><strong>Line ${E(x.trip.journey.line)} at ${E(x.trip.best.depart)} from ${E(x.trip.journey.from)}</strong></span></button>`,
+            );
+        if (a)
+            rows.push(
+                `<button class="day-item" data-prompt="${E(x.record?.total ? `What do I need to bring at ${a.start}?` : `When should I leave for my ${a.start}?`)}"><span class="day-item-tile is-paper">${I('document')}</span><span><small>${E(a.start)} · in your plan</small><strong>${E(a.title)}, ${E(a.location)}</strong></span></button>`,
+            );
+        for (const item of x.planned.filter((p) => p.id !== a?.id))
+            rows.push(
+                `<button class="day-item" data-open-plan="${E(x.today)}"><span class="day-item-tile">${I('calendar')}</span><span><small>${E(item.start)} · ${item.proposed ? 'proposed' : 'in your plan'}</small><strong>${E(item.title)}</strong></span></button>`,
+            );
+        for (const d of x.deadlines)
+            rows.push(
+                `<a class="day-item" href="${E(paperworkHref(d.id))}"><span class="day-item-tile is-attention">${I('clock')}</span><span><small>${E(relativeDay(d.deadline, x.today))} · your records</small><strong>${E(d.deadlineLabel)}</strong></span></a>`,
+            );
+        if (a && x.anchor)
+            rows.push(
+                `<button class="day-item" data-prompt="Is there a café near my appointment?"><span class="day-item-tile is-map">${mapPicture(x.cafe) || I('pin')}</span><span><small>After ${E(a.end || a.start)}</small><strong>Near ${E(x.anchor.name)}</strong></span></button>`,
+            );
+        if (x.tonight.length)
+            rows.push(
+                `<button class="day-item" data-prompt="What’s on tonight?"><span class="day-item-tile is-events">${I('calendar')}</span><span><small>Tonight · sample programme</small><strong>${x.tonight.length === 1 ? 'One event' : `${x.tonight.length} events`} from ${E(x.tonight[0].start)}</strong></span></button>`,
+            );
+        if (!rows.length && !x.upcoming.length) return '';
+        return `<h2 id="composer-day-title">Your ${E(weekday(x.today))}</h2><p class="composer-day-note">${E(shortDate(x.today))} · ${E(x.now)} · Sample day. Composer plans around this; tap one to ask.</p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${x.upcoming.length ? `<div class="day-later"><p>Coming up</p>${x.upcoming.map((u) => `<button data-nav="plans"><strong>${E(relativeDay(u.date, x.today))}</strong> · ${E(u.title)}, ${E(u.start)}</button>`).join('')}</div>` : ''}<nav class="day-tools" aria-label="Your Composer"><button data-nav="plans">${I('calendar')}My Plans</button><button data-nav="saved">${I('bookmark')}Saved${state.saved.length ? ` · ${state.saved.length}` : ''}</button><button data-nav="history">${I('clock')}History</button></nav>`;
     }
     // Places near a point (connected/places.js) use the shared photo-free
     // card with Composer's own Quick look, Save and Add handlers.
@@ -858,6 +1030,7 @@
         return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}" ${date === M.today() ? 'aria-current="date" class="is-today"' : ''}><span>${date === M.today() ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${planFor(date) ? 'has-plan' : ''}" aria-label="${planFor(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}Confirmed plan</span><button class="plain-button" data-revise="${p.id}">${I('spark')}Adjust with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off</div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Unconfirmed proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}`;
     }
     const entryMarkup = new Map();
+    const dayMarkup = new WeakMap();
     function render() {
         const main = document.querySelector('#main');
         const chapter = C.current(state);
@@ -873,6 +1046,21 @@
             main.dataset.chapter = chapter.id;
             entryMarkup.clear();
         }
+        let day = main.querySelector('.composer-day');
+        if (!day) {
+            day = document.createElement('aside');
+            day.className = 'composer-day';
+            day.setAttribute('aria-labelledby', 'composer-day-title');
+            main.prepend(day);
+        }
+        // Rebuilt only when what it shows changes, so focus isn't lost.
+        const dayHtml = dayPanel();
+        if (dayMarkup.get(day) !== dayHtml) {
+            day.innerHTML = dayHtml;
+            dayMarkup.set(day, dayHtml);
+        }
+        day.hidden = !dayHtml;
+        document.body.classList.toggle('has-composer-day', !!dayHtml);
         const feed = main.querySelector('.chat-feed');
         const empty = feed.querySelector('.studio-welcome');
         if (!chapter.entries.length) {
@@ -1433,8 +1621,11 @@
                   : `${shortDate(r.date)}, ${time}`;
             const where = `${from?.name || 'there'}${r.near === 'neumarkt' && !/neumarkt/i.test(text) ? ', where you are now' : ''}`;
             const lead = found.length
-                ? `${found.length === 1 ? `One ${one}` : `${found.length} ${many}`} near ${where}${r.open ? `, listed as open ${when}` : ''}. Nearest first.`
+                ? `Nearest first${r.open ? `, listed as open ${when}` : ''}.`
                 : `I don’t have ${many}${r.open ? ` listed as open ${when}` : ''} near ${where} in the sample places.`;
+            const title = found.length
+                ? `${found.length === 1 ? `One ${one}` : `${countWord(found.length)} ${many}`} near ${where}.`
+                : 'None listed nearby.';
             // Wi-Fi is only recorded for some libraries.
             const wifi = found.filter(({ place: p }) => p.kind === 'library' && P.wifiText(p) === 'Yes');
             const names = (list) => list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list.at(-1)}` : list[0];
@@ -1460,6 +1651,7 @@
             const map = P && from ? `${P.mapLink(mapKind, from)}&time=${time}${r.open ? '&open=1' : ''}` : '';
             reply([lead, ...notes].join(' '), {
                 kind: 'nearby',
+                title,
                 placeIds: found.map(({ place: p }) => p.id),
                 near: r.near,
                 // Not `at`: chat entries already use it for their timestamp.
@@ -1523,9 +1715,13 @@
             else
                 reply(
                     topic && !matching.length
-                        ? `I don’t see ${topic[1]} ${when} in the sample programme. This is what’s on:`
-                        : `${shown.length === 1 ? 'One sample event' : `${shown.length} sample events`} ${when}:`,
-                    { kind: 'event', eventIds: shown.map((x) => 'event:' + x.id) },
+                        ? `I don’t see ${topic[1]} ${when} in the sample programme. This is what’s on.`
+                        : 'From the sample programme. Adding one to your plan isn’t a booking.',
+                    {
+                        kind: 'event',
+                        title: `${shown.length === 1 ? 'One sample event' : `${countWord(shown.length)} sample events`} ${when}.`,
+                        eventIds: shown.map((x) => 'event:' + x.id),
+                    },
                 );
             return;
         }
@@ -1546,23 +1742,33 @@
             // (official appointments want ten minutes in hand).
             const appointment = r.appointmentId && window.ExpaduSampleDay?.appointment;
             if (appointment && appointment.id === r.appointmentId && appointment.journey) {
-                const j = appointment.journey;
-                const mins = (time) => +time.slice(0, 2) * 60 + +time.slice(3);
-                const hhmm = (n) => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
-                const option = (o) => ({
-                    depart: o.depart,
-                    leave: mins(o.depart) - (j.accessWalkMinutes || 0),
-                    there: mins(o.arrive) + (j.walkMinutes || 0),
-                });
-                const planned = option(j);
-                const earlier = j.earlier ? option(j.earlier) : null;
-                const spare = (o) => mins(appointment.start) - o.there;
-                const margin = appointment.kind === 'official' ? 10 : 5;
-                const best = spare(planned) < margin && earlier && earlier.leave >= mins(M.nowTime()) ? earlier : planned;
-                const leaveText = best.leave <= mins(M.nowTime()) ? `Leave now — it’s ${M.nowTime()}.` : `Leave by ${hhmm(best.leave)}.`;
+                const { journey: j, planned, best, spare, margin, leaveNow } = appointmentTrip(appointment);
+                const hhmm = clockText;
+                const leaveText = leaveNow ? `Leave now — it’s ${M.nowTime()}.` : `Leave by ${hhmm(best.leave)}.`;
+                const stop = j.alightStop || to;
                 reply(
-                    `${leaveText} Take line ${j.line} at ${best.depart} from ${from} and you’re at your appointment by ${hhmm(best.there)}, with ${spare(best)} min to spare.${best !== planned ? ` The ${planned.depart} in your plan leaves only ${spare(planned)} min.` : ''} Scheduled sample times, not live.`,
-                    { kind: 'journey', journey: { from, to, arriveBy } },
+                    `Take line ${j.line} at ${best.depart} from ${from} and you’re at your appointment by ${hhmm(best.there)}, with ${spare(best)} min to spare.`,
+                    {
+                        kind: 'trip',
+                        title: leaveText,
+                        journey: { from, to, arriveBy },
+                        trip: {
+                            steps: [
+                                ...(j.accessWalkMinutes
+                                    ? [{ mode: 'walk', label: `Walk to ${from}`, value: `${j.accessWalkMinutes} min` }]
+                                    : []),
+                                { mode: 'transit', line: j.line, label: `${from} → ${stop}`, value: `${best.depart} → ${best.arrive}` },
+                                ...(j.walkMinutes
+                                    ? [{ mode: 'walk', label: 'Walk to the appointment', value: `${j.walkMinutes} min` }]
+                                    : []),
+                            ],
+                            note:
+                                best !== planned
+                                    ? `I picked the ${best.depart}: the ${planned.depart} in your plan leaves only ${spare(planned)} min, and ${appointment.kind === 'official' ? 'official appointments need' : 'plans need'} ${margin}.`
+                                    : '',
+                            href: `${ExpaduStore.routes.departures}?${new URLSearchParams({ from, to, date: M.today(), arrive: appointment.start })}`,
+                        },
+                    },
                 );
                 return;
             }
@@ -1580,6 +1786,76 @@
                         : 'Where are you heading? Your plan stays as it is.',
                     { kind: 'journey', journeyDraft: { from, to } },
                 );
+            return;
+        }
+        if (r.kind === 'checklist') {
+            // Your own checklist's progress, from your records. Composer
+            // doesn't say what the office requires.
+            const appointment = window.ExpaduSampleDay?.appointment;
+            const record =
+                records().find((x) => x.id === appointment?.process) || records()[0];
+            if (record?.total) {
+                state.conversation.activeDate = null;
+                const forAppointment =
+                    record.id === appointment?.process && appointment.start >= M.nowTime();
+                reply(
+                    'That’s from your own checklist. I can’t give verified guidance on what the office requires; the checklist and its official sources are in Paperwork.',
+                    {
+                        kind: 'checklist',
+                        title: `${forAppointment ? `For your ${appointment.start}: ` : ''}${record.prepared} of ${record.total} documents marked ready.`,
+                        record: {
+                            id: record.id,
+                            title: record.title,
+                            prepared: record.prepared,
+                            total: record.total,
+                            href: paperworkHref(record.id),
+                        },
+                    },
+                );
+                return;
+            }
+            r = { ...r, kind: 'bureaucracy' };
+        }
+        if (r.kind === 'access') {
+            // Step-free access as the listing records it: the event's own,
+            // or its venue's (connected/places.js), never a guess.
+            state.conversation.activeDate = null;
+            const upcoming = allEvents().filter((x) => x.date >= M.today());
+            const about = r.about || '';
+            const event =
+                upcoming.find((x) => about.includes(x.title.toLowerCase())) ||
+                upcoming.find((x) => x.venue && about.includes(x.venue.toLowerCase())) ||
+                (/\b(cinema|film|movie)\b/.test(about) &&
+                    upcoming.find((x) => /cinema|film/i.test(`${x.title} ${x.icon || ''}`))) ||
+                (/\b(tonight|evening|event)\b/.test(about) &&
+                    upcoming.find((x) => x.date === M.today() && (x.start || '') >= '17:00'));
+            if (!event) {
+                reply(
+                    'Step-free access is only recorded for some places and events. Tell me which one you mean and I’ll check its listing.',
+                    { title: 'Which place do you mean?', suggestions: [{ label: 'What’s on tonight?', prompt: 'What’s on tonight?' }] },
+                );
+                return;
+            }
+            const venue = window.ExpaduPlaces?.venue?.(event.venue);
+            const venueAccess = venue?.wheelchair
+                ? `${window.ExpaduPlaces.wheelchairText[venue.wheelchair]} (venue listing)`
+                : '';
+            const access = event.accessibility || venueAccess;
+            reply(
+                access
+                    ? `That’s what ${event.accessibility ? 'the event’s' : `${event.venue}’s`} listing records. It’s worth checking with the organiser before you go.`
+                    : `Neither ${event.title} nor ${event.venue}’s listing records step-free access, so I won’t guess. It’s worth asking the organiser before you go.`,
+                {
+                    kind: 'facts',
+                    title: access ? `${access.replace(/ \(venue listing\)$/, '')}.` : 'Not listed.',
+                    eventId: event.id,
+                    facts: [
+                        { label: 'Accessibility', value: access || 'Not listed', known: !!access },
+                        { label: 'Admission', value: event.price || 'Not listed', known: !!event.price },
+                        { label: 'Starts', value: `${event.date === M.today() ? 'Today' : shortDate(event.date)} ${event.start}`, known: true },
+                    ],
+                },
+            );
             return;
         }
         if (r.kind === 'bureaucracy') {

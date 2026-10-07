@@ -4,6 +4,43 @@ Connected to the approved Today C design, 18 September 2026. Start at `/dev/desi
 
 Open `/dev/design/composer-studio/` directly, or enter from Today. Today’s header bookmark opens Saved; the plus menu beside the Composer input contains My Plans, Saved and History. Both are panels in the same workspace; the older `/dev/design/my-plans/` links now open the corresponding panel in Composer.
 
+## Rich answers, coloured starters and Your day — 7 October
+
+Owner request, after the App in colour redesign concept: build its Composer
+ideas into Composer and round them out.
+
+- **Your day.** On desktop a panel beside the conversation lists what Composer
+  plans with: the tram to take now (Today's 10-minute rule), the 14:00
+  appointment, anything added to today's plan or proposal, the visa deadline
+  from your records, the area around the appointment after it ends, tonight's
+  sample events and the next plans. Tapping one asks about it; the deadline
+  opens Paperwork. It hides while My Plans, Saved or History is open. Phones
+  show the day's facts as one scrolling row above the starters.
+- **Starters in their section's colour**, only for what the day has: Travel
+  (when to leave), Paperwork (what to bring, with your ready count), Events
+  (tonight, with the date stamp) and Nearby (a café near the appointment, with
+  its map picture), plus Plan my Saturday and A little time outdoors.
+- **Answers lead with a short verdict**, then their own block:
+  - the appointment trip: "Leave now — it’s 13:10.", the walk, line 4 and the
+    walk as steps in cyan, why the 13:14 and not the 13:24, Open in Travel.
+    "How do I get from Neumarkt to Mülheim by 14:00?" is the same trip now;
+  - what to bring: "For your 14:00: 1 of 5 documents marked ready." from your
+    own records, linked to the checklist in Paperwork, with no guidance on
+    what the office requires;
+  - events: the Events poster (AI illustration, labelled) with the date stamp;
+  - nearby places: "Three cafés near Wiener Platz, Mülheim.";
+  - step-free access: what the event's or venue's listing records (the same
+    rule as the Events sheet), otherwise "Not listed." with the facts that are
+    and aren't known.
+- The event time row and "Fixed time" are ink and neutral; lavender stays
+  Paperwork's.
+
+The person's records (ready count, visa date) moved into
+`connected/sample-day.js` so Today and Composer read the same ones; Today is
+pixel-identical. Tests: `tests/requests.test.cjs`,
+`tests/conversation-view.test.cjs`, `tests/journey-browser.cjs`. Screenshots:
+`docs/reviews/2026-10-07-app-in-colour/composer-built-*.png`.
+
 ## Add to plan is orange — 7 October
 
 Owner request: **Add to plan** on event, place and preview cards is the

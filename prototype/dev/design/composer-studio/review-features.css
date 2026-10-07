@@ -259,13 +259,15 @@
     flex-wrap: wrap;
     gap: 6px;
     font-size: var(--text-small);
-    color: var(--color-paper-text);
+    color: var(--color-text);
     margin: 16px 0;
 }
+/* A fixed start is a plain fact; lavender belongs to Paperwork. */
 .studio .service-time span {
-    background: var(--color-paper-bg-quiet);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    padding: 3px 7px;
+    padding: 2px 7px;
+    color: var(--color-text-soft);
     font-size: var(--text-micro);
 }
 .studio .service-unavailable {
