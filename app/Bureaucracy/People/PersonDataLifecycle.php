@@ -92,47 +92,86 @@ final class PersonDataLifecycle
                 return;
             }
             $this->authorize($actor, $current);
-            $case = BureaucracyCase::query()->where('person_id', $current->id)->lockForUpdate()->first();
-            $this->refresh->beforeErasure($current);
-            if ($case !== null) {
-                if ($case->user_id !== null) {
-                    $subject = User::query()->findOrFail($case->user_id);
-                    $this->legacyUsage->preserve($subject, [$case->id]);
-                }
-                BureaucracyProcessingConsent::query()->where('case_id', $case->id)->update([
-                    'withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null,
-                ]);
-                $case->conflicts()->delete();
-                $case->facts()->delete();
-                $case->questions()->delete();
-                $case->planSnapshots()->delete();
-                $case->messages()->delete();
-                BureaucracyQuestionSession::query()->where('case_id', $case->id)->delete();
-                BureaucracyProcess::query()->where('case_id', $case->id)->delete();
-                $case->update(['status' => 'erased', 'fact_version' => $case->fact_version + 1]);
-            }
-            $current->grants()->update(['revoked_at' => now()->utc()]);
-            BureaucracyOnboardingDraft::query()->where('person_id', $current->id)->delete();
-            BureaucracyEvidenceItem::query()->where('person_id', $current->id)->delete();
-            BureaucracyRelationship::query()->where('person_id', $current->id)->orWhere('related_person_id', $current->id)->delete();
-            if ($current->account_user_id !== null) {
-                $subject = User::query()->findOrFail($current->account_user_id);
-                $keys = $this->registry->all()->keys()->all();
-                $subject->update(['profile_attributes' => array_diff_key($subject->profile_attributes ?? [], array_flip($keys))]);
-                $subject->attributeChanges()->whereIn('attribute', $keys)->delete();
-                $subject->userTasks()->delete();
-                Alert::query()->where('user_id', $subject->id)
-                    ->where(fn ($query) => $query->where('category', 'bureaucracy')->orWhereNotNull('guidance_reference'))->delete();
-                $subject->notifications()->whereIn('type', [
-                    BureaucracyDeadlineNotification::class,
-                    PermanentResidencyEligibleNotification::class,
-                ])->delete();
-            }
-            $current->update(['display_label' => null, 'record_status' => 'erased', 'record_version' => $current->record_version + 1, 'erased_at' => now()->utc()]);
-            BureaucracyGuardianAuthority::query()->where('person_id', $current->id)
-                ->update(['status' => 'revoked', 'revoked_at' => now()->utc(), 'evidence_reference' => null]);
-            $this->recordErasure($current, $current->account_user_id);
+            $this->purge($current);
         });
+    }
+
+    /**
+     * Dependents for which this guardian holds any authority record, captured before an
+     * account deletion cascades those records away.
+     *
+     * @return list<int>
+     */
+    public function dependentsGuardedBy(int $guardianUserId): array
+    {
+        return BureaucracyGuardianAuthority::query()->where('guardian_user_id', $guardianUserId)
+            ->whereIn('person_id', BureaucracyPerson::query()->where('kind', 'dependent')->whereNull('account_user_id')
+                ->where('record_status', 'active')->select('id'))
+            ->distinct()->pluck('person_id')->map(fn ($id) => (int) $id)->values()->all();
+    }
+
+    /**
+     * Erase a dependent dossier that nobody can manage any more. A dependent is kept while
+     * any guardian holds an approved, unrevoked, unexpired authority; with $keepRecentPending
+     * an unreviewed request younger than the pending window also keeps it.
+     */
+    public function eraseUnguardedDependent(int $personId, bool $keepRecentPending = false): bool
+    {
+        return DB::transaction(function () use ($personId, $keepRecentPending): bool {
+            $current = BureaucracyPerson::query()->whereKey($personId)->where('kind', 'dependent')->whereNull('account_user_id')
+                ->where('record_status', 'active')->lockForUpdate()->first();
+            if ($current === null || $this->access->hasLiveGuardian($current, $keepRecentPending)) {
+                return false;
+            }
+            $this->purge($current);
+
+            return true;
+        });
+    }
+
+    /** Must run inside the caller's transaction with the person row locked. */
+    private function purge(BureaucracyPerson $current): void
+    {
+        $case = BureaucracyCase::query()->where('person_id', $current->id)->lockForUpdate()->first();
+        $this->refresh->beforeErasure($current);
+        if ($case !== null) {
+            if ($case->user_id !== null) {
+                $subject = User::query()->findOrFail($case->user_id);
+                $this->legacyUsage->preserve($subject, [$case->id]);
+            }
+            BureaucracyProcessingConsent::query()->where('case_id', $case->id)->update([
+                'withdrawn_at' => now()->utc(), 'state' => 'withdrawn', 'result' => null,
+            ]);
+            $case->conflicts()->delete();
+            $case->facts()->delete();
+            $case->questions()->delete();
+            $case->planSnapshots()->delete();
+            $case->messages()->delete();
+            BureaucracyQuestionSession::query()->where('case_id', $case->id)->delete();
+            BureaucracyProcess::query()->where('case_id', $case->id)->delete();
+            $case->update(['status' => 'erased', 'fact_version' => $case->fact_version + 1]);
+        }
+        $current->grants()->update(['revoked_at' => now()->utc()]);
+        BureaucracyOnboardingDraft::query()->where('person_id', $current->id)->delete();
+        BureaucracyEvidenceItem::query()->where('person_id', $current->id)->delete();
+        BureaucracyRelationship::query()->where('person_id', $current->id)->orWhere('related_person_id', $current->id)->delete();
+        if ($current->account_user_id !== null) {
+            $subject = User::query()->findOrFail($current->account_user_id);
+            $keys = $this->registry->all()->keys()->all();
+            $subject->update(['profile_attributes' => array_diff_key($subject->profile_attributes ?? [], array_flip($keys))]);
+            $subject->attributeChanges()->whereIn('attribute', $keys)->delete();
+            $subject->userTasks()->delete();
+            Alert::query()->where('user_id', $subject->id)
+                ->where(fn ($query) => $query->where('category', 'bureaucracy')->orWhereNotNull('guidance_reference'))->delete();
+            $subject->notifications()->whereIn('type', [
+                BureaucracyDeadlineNotification::class,
+                PermanentResidencyEligibleNotification::class,
+            ])->delete();
+        }
+        $current->update(['display_label' => null, 'record_status' => 'erased', 'record_version' => $current->record_version + 1, 'erased_at' => now()->utc()]);
+        BureaucracyGuardianAuthority::query()->where('person_id', $current->id)
+            ->update(['status' => 'revoked', 'revoked_at' => now()->utc(), 'evidence_reference' => null]);
+        $this->recordErasure($current, $current->account_user_id);
     }
 
     private function authorize(User $actor, BureaucracyPerson $person): void

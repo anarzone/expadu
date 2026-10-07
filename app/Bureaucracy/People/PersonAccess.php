@@ -82,6 +82,23 @@ final class PersonAccess
             ->where('expires_at', '>', now()->utc())->first();
     }
 
+    /**
+     * Whether anyone can still look after this dependent: an approved, unrevoked, unexpired
+     * guardian authority (policy-version drift alone does not orphan a record, since staff can
+     * re-review it) or, when $includeRecentPending, an unreviewed request inside the pending window.
+     */
+    public function hasLiveGuardian(BureaucracyPerson $person, bool $includeRecentPending = false): bool
+    {
+        return BureaucracyGuardianAuthority::query()->where('person_id', $person->id)->whereNull('revoked_at')
+            ->where(function ($query) use ($includeRecentPending): void {
+                $query->where(fn ($approved) => $approved->where('status', 'approved')->where('expires_at', '>', now()->utc()));
+                if ($includeRecentPending) {
+                    $query->orWhere(fn ($pending) => $pending->where('status', 'pending')
+                        ->where('created_at', '>', now()->utc()->subDays(max(1, (int) config('bureaucracy_family.pending_guardian_days', 30)))));
+                }
+            })->exists();
+    }
+
     private function current(User $actor, BureaucracyPerson $person): ?BureaucracyPerson
     {
         if (! User::query()->whereKey($actor->id)->whereNotNull('email_verified_at')->exists()) {
