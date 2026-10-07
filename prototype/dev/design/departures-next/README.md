@@ -11,6 +11,16 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The captured example says it's from late at night — 7 October 2026
+
+Travel opens on the sample day at 13:10, but "Explore a captured example"
+lists 23:37–00:01 trams. There is no daytime capture of that trip, so the
+times stay as captured and the line under the heading now says why, beside
+them: "Köln Neumarkt → Museum Ludwig · captured Mon 7 Sept at 23:37. These
+are that night's times, not today's." It reads the capture's own date and
+clock (`JourneyModel.capture`). Evidence:
+`docs/reviews/2026-10-07-app-in-colour/partb-travel-captured-*.png`.
+
 ## One timetable and the review fixes — 7 October 2026 (in review)
 
 From the owner's Travel review (items 3 and 5–16):

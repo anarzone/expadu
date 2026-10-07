@@ -675,6 +675,11 @@ function renderSampleRoutes() {
     const routes = J.routes
         .filter((route) => route.mode === state.routeMode)
         .slice(0, 3);
+    // The capture is from late at night; say so up front, beside the times,
+    // rather than only in the footnote below them.
+    const endpoints = $('.sample-endpoints');
+    if (endpoints && J.capture)
+        endpoints.textContent = `${J.capture.from} → ${J.capture.to} · captured ${boardDateLabel(J.capture.date)} at ${J.capture.time}. These are that night’s times, not today’s.`;
     $('#sample-routes').innerHTML = routes
         .map((route) => option(route, routes, true))
         .join('');
