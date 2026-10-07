@@ -64,7 +64,8 @@ body[data-page='around-here'] #main {
 .around-filters::-webkit-scrollbar {
     display: none;
 }
-.around-filters button {
+.around-filters button,
+.around-open-toggle {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -79,13 +80,21 @@ body[data-page='around-here'] #main {
     font-size: var(--text-small);
     white-space: nowrap;
 }
-.around-filters button[aria-pressed='true'] {
+.around-filters button[aria-pressed='true'],
+.around-open-toggle[aria-pressed='true'] {
     color: var(--color-select-text);
     background: var(--color-select-bg);
     font-weight: var(--weight-semibold);
 }
+/* "Open at" filters the list, so it sits with the count above it. */
+.around-list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
 .around-open-toggle {
-    margin-left: 6px;
+    flex-shrink: 0;
 }
 .around-body {
     display: grid;
@@ -200,6 +209,7 @@ body[data-page='around-here'] #main {
 }
 @media (prefers-reduced-motion: no-preference) {
     .around-filters button,
+    .around-open-toggle,
     .around-marker {
         transition:
             background 160ms ease,

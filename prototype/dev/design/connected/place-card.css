@@ -75,6 +75,7 @@
     display: flex;
     align-items: center;
     gap: 5px;
+    min-width: 0;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
@@ -110,7 +111,19 @@
 .place-hours.is-unknown {
     color: var(--color-text-soft);
 }
-.place-access {
+.place-access,
+.place-detail {
+    color: var(--color-text-soft);
+}
+/* Cuisine sits on the kind line; "not listed" reads quieter than a value. */
+.place-cuisine {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.place-cuisine.is-unknown {
     color: var(--color-text-soft);
 }
 .nearby-place-actions {

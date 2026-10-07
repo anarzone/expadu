@@ -532,6 +532,9 @@
         ['grocery', /\b(grocer(y|ies)|supermarkets?|food shop)\b/],
         ['playground', /\bplaygrounds?\b/],
         ['library', /\b(librar(y|ies)|bibliothek)\b/],
+        ['fastfood', /\b(fast food|takeaway|take-away|imbiss|quick bite|d(ö|o)ner|kebab)\b/],
+        // Parks plus woods, lakes and nature areas.
+        ['green', /\b(somewhere green|green spaces?|woods?|forest|nature)\b/],
         ['restaurant', /\b(restaurants?|dinner|lunch|(somewhere|place|bite) to eat)\b/],
         ['park', /\bparks?\b/],
     ];
@@ -548,7 +551,7 @@
         if (!place) return null;
         const near = find(nearbyAnchors, t);
         // A park without a place stays general discovery ("a park to walk").
-        if (place === 'park' && !near) return null;
+        if ((place === 'park' || place === 'green') && !near) return null;
         return {
             kind: 'nearby',
             date,

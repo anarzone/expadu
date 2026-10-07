@@ -96,3 +96,17 @@ test('everyday places near a point: kind, where, and today unless a day is named
     assert.equal(ask('Help me with my Blue Card paperwork').kind, 'bureaucracy');
     assert.equal(ask('something for kids on Saturday').kind, 'discovery');
 });
+
+test('green spaces and fast food are nearby kinds; green needs a place, like parks', () => {
+    const green = ask('Somewhere green near my appointment?');
+    assert.deepEqual(
+        copy([green.kind, green.place, green.near]),
+        ['nearby', 'green', 'wiener-platz'],
+    );
+    assert.equal(ask('woods near Ehrenfeld').place, 'green');
+    assert.notEqual(ask('somewhere green this weekend').kind, 'nearby');
+    const bite = ask('A quick bite near Wiener Platz after my appointment');
+    assert.deepEqual(copy([bite.place, bite.after]), ['fastfood', true]);
+    assert.equal(ask('Döner near Neumarkt').place, 'fastfood');
+    assert.equal(ask('a library near Neumarkt with wifi').wifi, true);
+});

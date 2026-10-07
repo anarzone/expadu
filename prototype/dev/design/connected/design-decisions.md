@@ -364,6 +364,16 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Place details — owner request, 7 October (in review):** with the places
+pipeline's new tags, restaurants and fast food always show their cuisine
+("Italian · Pizza", or "Cuisine not listed"); food places show outdoor seating
+and one diet chip only when recorded, never implying "no"; libraries show
+Wi-Fi when recorded; and sheets say "Sources disagree" when they do. Woods,
+lakes and nature areas join parks as "Parks & nature" with "about" distances
+and no hours or address slot. Composer answers "somewhere green" and "a quick
+bite" nearby. Sample data: 59 places from the 7 October local export. Details
+are in `around-here/README.md`.
+
 **Travel on the sample day — owner request, 7 October (in review):** Travel
 opens on Wednesday 30 September, 13:10, with the trip Today shows. "Your next
 trip" leads the planner with the tram to take now: Today's rule for official

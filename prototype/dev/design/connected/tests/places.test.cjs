@@ -153,3 +153,130 @@ test('event venues link to their place by name, exact names first', () => {
         /^\.\.\/around-here\/\?kind=pharmacy&near=wiener-platz$/,
     );
 });
+
+const known = (value) => ({ value, status: 'known' });
+test('restaurants always carry cuisine; other food facts show only when recorded', () => {
+    const dinner = place({
+        kind: 'restaurant',
+        label: 'Restaurant',
+        practical: {
+            cuisine: known('italian;pizza;coffee_shop;burger'),
+            outdoor_seating: known('yes'),
+            'diet:vegetarian': known('yes'),
+            'diet:vegan': known('limited'),
+            'diet:halal': known('no'),
+        },
+    });
+    const card = P.card(dinner, { at: wednesday('13:10') });
+    assert.match(
+        card,
+        /Restaurant<span class="place-cuisine">· Italian · Pizza · Coffee</,
+    );
+    assert.match(card, /Outdoor seating/);
+    // One diet chip on the card; every option in the facts list.
+    assert.match(card, /Vegetarian options/);
+    assert.doesNotMatch(card, /Some vegan options/);
+    assert.match(P.facts(dinner), /Vegetarian options · Some vegan options/);
+    const both = place({
+        practical: {
+            'diet:vegetarian': known('yes'),
+            'diet:vegan': known('yes'),
+        },
+    });
+    assert.match(P.card(both), /Vegetarian &amp; vegan options/);
+    assert.doesNotMatch(card, /halal/i);
+    const plain = P.card(place({ kind: 'restaurant', label: 'Restaurant' }));
+    assert.match(
+        plain,
+        /class="place-cuisine is-unknown">· Cuisine not listed/,
+    );
+    assert.doesNotMatch(plain, /Outdoor seating|options/);
+    // A café keeps its kind line; a missing tag never reads as "no".
+    const cafe = P.card(place({ practical: { outdoor_seating: known('no') } }));
+    assert.doesNotMatch(cafe, /place-cuisine|Outdoor seating/);
+    const disputed = P.card(
+        place({
+            kind: 'fastfood',
+            label: 'Fast food',
+            practical: { cuisine: { value: 'kebab', status: 'conflicting' } },
+        }),
+    );
+    assert.match(disputed, /Cuisine: sources disagree/);
+});
+
+test('the facts list names food details, Not listed and Sources disagree', () => {
+    const dinner = P.facts(
+        place({
+            kind: 'restaurant',
+            practical: {
+                cuisine: known('vietnamese'),
+                outdoor_seating: { value: 'yes', status: 'conflicting' },
+                'diet:vegan': known('no'),
+            },
+        }),
+    );
+    assert.match(dinner, /<dt>Cuisine<\/dt><dd>Vietnamese/);
+    assert.match(
+        dinner,
+        /<dt>Outdoor seating<\/dt><dd class="is-unknown">Sources disagree/,
+    );
+    assert.match(dinner, /<dt>Diet<\/dt><dd>No vegan options/);
+    const bakery = P.facts(place({ kind: 'bakery' }));
+    assert.doesNotMatch(bakery, /<dt>Cuisine/);
+    assert.match(
+        bakery,
+        /<dt>Outdoor seating<\/dt><dd class="is-unknown">Not listed/,
+    );
+    assert.doesNotMatch(P.facts(place({ kind: 'pharmacy' })), /Diet|Wi-Fi/);
+});
+
+test('Wi-Fi shows for libraries only, and only when recorded', () => {
+    const library = (value) =>
+        place({
+            kind: 'library',
+            label: 'Library',
+            practical: value ? { internet_access: known(value) } : {},
+        });
+    assert.match(P.card(library('wlan')), /Wi-Fi/);
+    assert.match(P.card(library('terminal')), /Public computers/);
+    assert.doesNotMatch(P.card(library('no')), /Wi-Fi/);
+    assert.match(P.facts(library('no')), /<dt>Wi-Fi<\/dt><dd>No</);
+    assert.match(
+        P.facts(library(null)),
+        /<dt>Wi-Fi<\/dt><dd class="is-unknown">Not listed/,
+    );
+    const cafe = place({ practical: { internet_access: known('wlan') } });
+    assert.doesNotMatch(P.card(cafe) + P.facts(cafe), /Wi-Fi/);
+});
+
+test('woods and nature areas have no hours or address slot and say about', () => {
+    const wood = place({
+        kind: 'nature',
+        label: 'Woods & nature',
+        point: 'area',
+        hours: { raw: null, week: null },
+    });
+    const card = P.card(wood, {
+        from: P.anchors['wiener-platz'],
+        at: wednesday('13:10'),
+    });
+    assert.doesNotMatch(card, /Hours not listed|place-hours/);
+    assert.match(card, /about /);
+    const facts = P.facts(wood, { at: wednesday('13:10') });
+    assert.doesNotMatch(facts, /<dt>Today|<dt>Address/);
+    assert.match(facts, /<dt>Access/);
+    assert.match(facts, /point and distances are approximate/);
+});
+
+test('outdoor seating keeps where it is, and repeated cuisines collapse', () => {
+    const garden = place({
+        kind: 'restaurant',
+        practical: {
+            outdoor_seating: known('garden'),
+            cuisine: known('italian;italian_pizza;pizza;german'),
+        },
+    });
+    assert.match(P.card(garden), /Outdoor seating/);
+    assert.match(P.facts(garden), /<dt>Outdoor seating<\/dt><dd>Yes, garden/);
+    assert.equal(P.cuisine(garden), 'Italian · Pizza · German');
+});

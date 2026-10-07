@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Pick a small set of real places around the sample day for the mocks.
 
-Reads Expadu's local catalogue export (12,292 entries, 1 October 2026; private,
-not committed) and writes `connected/sample-places.js`: the nearest places of
-each kind around the sample day's anchors (Neumarkt, the appointment at Wiener
-Platz in Mülheim, Rheinauhafen, Stadtgarten, Ehrenfeld) plus the Events venues.
+Reads Expadu's local catalogue export (12,409 entries, 7 October 2026, with
+cuisine, outdoor seating, diet and Wi-Fi tags and the woods, lakes and nature
+areas; private, not committed) and writes `connected/sample-places.js`: the
+nearest places of each kind around the sample day's anchors (Neumarkt, the
+appointment at Wiener Platz in Mülheim, Rheinauhafen, Stadtgarten, Ehrenfeld)
+plus the Events venues and a few named libraries and green destinations.
 
 Place data © OpenStreetMap contributors (ODbL). Facts keep their status: a
 value the source doesn't record stays null ("not listed"); nothing is guessed.
@@ -18,8 +20,8 @@ from pathlib import Path
 
 design = Path(__file__).resolve().parent.parent
 source = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(
-    design, '../../../storage/app/private/places-local/2026-10-01/'
-    'ten-thousand-catalogue/candidate-places.jsonl').resolve()
+    design, '../../../storage/app/private/places-local/2026-10-07/'
+    'refreshed-catalogue/candidate-places.jsonl').resolve()
 
 # Points the sample day refers to. Neumarkt is Travel's captured stop; the
 # others are venue points from the same local catalogue.
@@ -36,23 +38,35 @@ kinds = {
     'bakery': {'Bakery'},
     'grocery': {'Supermarket', 'Convenience shop', 'Drugstore'},
     'playground': {'Playground'},
-    'park': {'Park'},
+    # Lakes count as parks; woods and reserves are their own kind.
+    'park': {'Park', 'Lake'},
+    'nature': {'Woods & nature'},
     'library': {'Library'},
     'restaurant': {'Restaurant'},
+    'fastfood': {'Fast food'},
 }
 # How many of each kind around each anchor.
 wanted = {
     'neumarkt': {'pharmacy': 3, 'cafe': 3, 'bakery': 2, 'grocery': 3,
-                 'playground': 1},
+                 'playground': 1, 'fastfood': 1, 'park': 1},
     'wiener-platz': {'pharmacy': 3, 'cafe': 3, 'bakery': 2, 'grocery': 2,
-                     'playground': 2, 'park': 2, 'library': 1},
-    'rheinauhafen': {'restaurant': 3, 'cafe': 2, 'playground': 1, 'park': 1},
+                     'playground': 2, 'park': 2, 'library': 1, 'fastfood': 3,
+                     'nature': 1},
+    'rheinauhafen': {'restaurant': 3, 'cafe': 2, 'playground': 1, 'park': 1,
+                     'nature': 1},
     'stadtgarten': {'restaurant': 3, 'cafe': 1, 'park': 1},
-    'ehrenfeld': {'cafe': 2, 'library': 1},
+    'ehrenfeld': {'cafe': 2, 'library': 1, 'park': 1},
 }
-# Named places: the central library (by Neumarkt) and the Events venues.
+# Named places: the central library (by Neumarkt), the Events venues, the
+# newly listed branch libraries and some green destinations.
 venues = ['Interim der Zentralbibliothek', 'Flora', 'Museum Ludwig',
-          'Stadtteilbibliothek Chorweiler', 'Waldlabor']
+          'Stadtteilbibliothek Chorweiler', 'Waldlabor',
+          'Stadtteilbibliothek Nippes',
+          'Königsforst', 'Decksteiner Weiher', 'Poller Wiesen']
+# Food, drink and library details the cards may show (connected/places.js).
+practical_keys = ['cuisine', 'outdoor_seating', 'internet_access',
+                  'diet:vegetarian', 'diet:vegan', 'diet:halal',
+                  'diet:kosher', 'diet:gluten_free']
 
 
 def km(a, b):
@@ -115,6 +129,13 @@ def compact(record):
         'website': fact(f['contact'].get('website')),
         'phone': fact(f['contact'].get('phone')),
         'wheelchair': fact(practical.get('wheelchair')),
+        # Recorded or disputed only; a missing tag stays out ("not listed").
+        'practical': {
+            key: {'value': practical[key].get('value'),
+                  'status': practical[key]['status']}
+            for key in practical_keys
+            if (practical.get(key) or {}).get('status') in ('known', 'conflicting')
+        },
         'access': fact(f.get('access')) if fact(f.get('access')) != 'unknown' else None,
         'fee': fact(f.get('fee')) if fact(f.get('fee')) != 'unknown' else None,
         'source': {
@@ -152,6 +173,7 @@ for anchor, counts in wanted.items():
             taken += 1
 for name in venues:
     match = next((r for r in records if r['place']['name'].startswith(name)
+                  and r['place']['recommendation_status'] == 'available'
                   and r['place']['id'] not in seen), None)
     if match:
         seen.add(match['place']['id'])
@@ -160,7 +182,7 @@ for name in venues:
 body = json.dumps(chosen, ensure_ascii=False, indent=1)
 out = design / 'connected/sample-places.js'
 out.write_text(f"""/* Real places around the sample day, picked by tools/sample-places.py from
-   Expadu's local catalogue export of 1 October 2026 (not deployed). Place data
+   Expadu's local catalogue export of 7 October 2026 (not deployed). Place data
    © OpenStreetMap contributors (ODbL). A fact the source doesn't record is null
    and shows as "not listed"; nothing here is guessed. Generated: do not edit. */
 (function (root) {{
@@ -178,4 +200,5 @@ print(f'{len(chosen)} places → {out.relative_to(design)}')
 for kind in sorted({p['kind'] for p in chosen}):
     group = [p for p in chosen if p['kind'] == kind]
     print(f"  {kind}: {len(group)}, hours known {sum(1 for p in group if p['hours']['week'])}, "
-          f"wheelchair {sum(1 for p in group if p['wheelchair'])}, photos {sum(1 for p in group if p['photo'])}")
+          f"wheelchair {sum(1 for p in group if p['wheelchair'])}, photos {sum(1 for p in group if p['photo'])}, "
+          f"details {sum(1 for p in group if p['practical'])}")

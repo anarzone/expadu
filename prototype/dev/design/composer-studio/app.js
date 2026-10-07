@@ -1419,8 +1419,10 @@
                 r.date === M.today() && !!end && (r.after || /appointment|blue card/i.test(text));
             const time = afterAppointment ? end : r.date === M.today() ? M.nowTime() : '12:00';
             const at = { date: r.date, time };
-            const kind = P?.kinds[r.place];
-            const found = P && from ? P.near(from, { kinds: [r.place], limit: 3, at, open: r.open }) : [];
+            // "Somewhere green" covers parks and woods, lakes and nature areas.
+            const green = r.place === 'green';
+            const kind = green ? { many: 'Green spaces', one: 'Green space' } : P?.kinds[r.place];
+            const found = P && from ? P.near(from, { kinds: green ? ['park', 'nature'] : [r.place], limit: 3, at, open: r.open }) : [];
             const many = (kind?.many || 'places').toLowerCase();
             const one = (kind?.one || 'place').toLowerCase();
             const when = r.date === M.today() ? `at ${time}` : `on ${shortDate(r.date)} at ${time}`;
@@ -1433,15 +1435,29 @@
             const lead = found.length
                 ? `${found.length === 1 ? `One ${one}` : `${found.length} ${many}`} near ${where}${r.open ? `, listed as open ${when}` : ''}. Nearest first.`
                 : `I don’t have ${many}${r.open ? ` listed as open ${when}` : ''} near ${where} in the sample places.`;
+            // Wi-Fi is only recorded for some libraries.
+            const wifi = found.filter(({ place: p }) => p.kind === 'library' && P.wifiText(p) === 'Yes');
+            const names = (list) => list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list.at(-1)}` : list[0];
             const notes = [
                 found.some(({ place: p }) => p.hours?.week)
                     ? `Opening times are the listed ones for ${listedFor}, not a live check.`
-                    : found.length
+                    : found.length && !green
                       ? 'Their opening times aren’t listed.'
                       : '',
-                r.wifi ? 'Wi-Fi isn’t recorded in these listings yet, so ask the café.' : '',
+                green && found.some(({ place: p }) => p.point === 'area')
+                    ? 'Large areas are measured to their middle, so distances are approximate.'
+                    : '',
+                r.wifi
+                    ? r.place === 'library'
+                        ? wifi.length
+                            ? `Wi-Fi is listed for ${names(wifi.map(({ place: p }) => p.name))}${wifi.length < found.length ? '; it isn’t recorded for the others' : ''}.`
+                            : 'Wi-Fi isn’t recorded for these libraries, so ask at the desk.'
+                        : 'Wi-Fi isn’t recorded in these listings yet, so ask the café.'
+                    : '',
             ].filter(Boolean);
-            const map = P && from ? `${P.mapLink(r.place, from)}&time=${time}${r.open ? '&open=1' : ''}` : '';
+            const mapKinds = [...new Set(found.map(({ place: p }) => p.kind))];
+            const mapKind = green ? (mapKinds.length === 1 ? mapKinds[0] : 'green') : r.place;
+            const map = P && from ? `${P.mapLink(mapKind, from)}&time=${time}${r.open ? '&open=1' : ''}` : '';
             reply([lead, ...notes].join(' '), {
                 kind: 'nearby',
                 placeIds: found.map(({ place: p }) => p.id),

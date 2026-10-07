@@ -34,12 +34,29 @@
         }) ||
         custom ||
         P.anchors.neumarkt;
-    let kind = P.kinds[params.get('kind')] ? params.get('kind') : '';
+    // Parks, lakes and woods share one chip: "somewhere green".
+    const groups = {
+        green: { kinds: ['park', 'nature'], many: 'Parks & nature' },
+    };
+    const groupOf = (key) =>
+        Object.keys(groups).find((id) => groups[id].kinds.includes(key)) || key;
+    let kind = groups[params.get('kind')]
+        ? params.get('kind')
+        : P.kinds[params.get('kind')]
+          ? groupOf(params.get('kind'))
+          : '';
     let openOnly = params.get('open') === '1';
     let selected = null;
-    const kindList = Object.keys(P.kinds).filter((key) =>
-        P.all.some((place) => place.kind === key),
-    );
+    const kindList = [
+        ...new Set(
+            Object.keys(P.kinds)
+                .filter((key) => P.all.some((place) => place.kind === key))
+                .map(groupOf),
+        ),
+    ];
+    const kindsOf = (key) => groups[key]?.kinds || [key];
+    const chipName = (key) =>
+        groups[key]?.many || P.kinds[key].chip || P.kinds[key].many;
     const time = at.time;
     const dayLabel = new Date(`${at.date}T12:00:00`).toLocaleDateString(
         'en-GB',
@@ -55,11 +72,10 @@
         <header class="around-head">${back}<div><h1>Around ${E(from.name)}</h1><p>Sample places · listed hours for ${E(dayLabel)}, ${E(time)}</p></div></header>
         <div class="around-filters" role="group" aria-label="Kind of place">
             <button type="button" data-around-kind="" aria-pressed="${!kind}">All</button>
-            ${kindList.map((key) => `<button type="button" data-around-kind="${key}" aria-pressed="${kind === key}">${P.icon(key)}<span>${E(P.kinds[key].many)}</span></button>`).join('')}
-            <button type="button" class="around-open-toggle" data-around-open aria-pressed="${openOnly}" title="Only places whose listed hours include ${E(time)}">${P.icon('clock')}<span>Open at ${E(time)}</span></button>
+            ${kindList.map((key) => `<button type="button" data-around-kind="${key}" aria-pressed="${kind === key}">${P.icon(kindsOf(key)[0])}<span>${E(chipName(key))}</span></button>`).join('')}
         </div>
         <div class="around-body">
-            <section class="around-list" aria-label="Places"><p class="around-count" role="status"></p><div class="around-results"></div><p class="place-map-credit">Place data and maps © OpenStreetMap contributors · OpenFreeMap. Straight-line distances from ${E(from.name)}.</p></section>
+            <section class="around-list" aria-label="Places"><div class="around-list-head"><p class="around-count" role="status"></p><button type="button" class="around-open-toggle" data-around-open aria-pressed="${openOnly}" title="Only places whose listed hours include ${E(time)}">${P.icon('clock')}<span>Open at ${E(time)}</span></button></div><div class="around-results"></div><p class="place-map-credit">Place data and maps © OpenStreetMap contributors · OpenFreeMap. Straight-line distances from ${E(from.name)}.</p></section>
             <div class="around-map" aria-label="Map of these places"><div class="around-map-canvas"></div><p class="around-map-fallback" hidden>${I('pin')}<span>Map unavailable. The list still works.</span></p></div>
         </div>
     </div>`;
@@ -69,7 +85,7 @@
         markers = [];
     function current() {
         const list = P.near(from, {
-            kinds: kind ? [kind] : null,
+            kinds: kind ? kindsOf(kind) : null,
             limit: 12,
             at,
             open: openOnly,
@@ -85,7 +101,11 @@
     }
     function render() {
         const list = current();
-        const label = kind ? P.kinds[kind].many.toLowerCase() : 'places';
+        const label = groups[kind]
+            ? 'green spaces'
+            : kind
+              ? P.kinds[kind].many.toLowerCase()
+              : 'places';
         const nearby = list.filter(({ km }) => km <= 2).length;
         count.textContent = list.length
             ? `${nearby || 'No'} ${nearby === 1 ? label.replace(/ies$/, 'y').replace(/s$/, '') : label} within 2 km${openOnly ? `, listed as open at ${time}` : ''}`
