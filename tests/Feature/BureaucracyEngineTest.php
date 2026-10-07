@@ -193,6 +193,7 @@ test('fact-date deadlines use the exact registered fact date and pause when it i
     ]);
 
     expect($renewal->computeDeadlineFor($user, [
+        'current_residence_title' => 'blue_card',
         'residence_title_expires_at' => '2027-03-18',
     ])?->toDateString())->toBe('2027-03-18')
         ->and($renewal->computeDeadlineFor($user, []))->toBeNull()
@@ -627,6 +628,7 @@ test('user:reset-journey cannot pretend a dossier is reset by clearing only the 
 
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
+        'is_eu' => false,
         'bureaucracy_path' => 'non_eu_employee_blue_card',
         'profile_attributes' => ['license_country' => 'other', 'child_born_at' => '2026-05-01'],
     ]);
