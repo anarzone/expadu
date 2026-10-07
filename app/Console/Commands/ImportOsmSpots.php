@@ -12,6 +12,7 @@ use App\Places\RecordPlaceObservation;
 use App\Services\OpeningHoursParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -135,7 +136,7 @@ class ImportOsmSpots extends Command
 
             foreach ($mirrors as $mirror) {
                 try {
-                    $response = Http::timeout(90)->get($mirror, ['data' => $query]);
+                    $response = $this->overpass($mirror, $query);
 
                     if ($response->successful()) {
                         $payload = $response->json();
@@ -653,6 +654,12 @@ class ImportOsmSpots extends Command
      *
      * @var array<string, string>
      */
+    /** overpass-api.de rejects anonymous clients (406); identify the importer and POST so long queries are not URL-bound. */
+    protected function overpass(string $mirror, string $query): Response
+    {
+        return Http::timeout(90)->withUserAgent(self::USER_AGENT)->asForm()->post($mirror, ['data' => $query]);
+    }
+
     /**
      * Minimum bounding-box size in hectares per green-space kind. The box
      * overstates irregular shapes, so the floor is deliberately generous.
@@ -693,6 +700,8 @@ class ImportOsmSpots extends Command
 
         return $height * $width / 10_000 >= self::GREEN_MIN_HECTARES[$kind];
     }
+
+    public const USER_AGENT = 'Expadu/1.0 (places import; +https://expadu.com)';
 
     public const FALLBACK_LABELS = [
         'playground' => 'Spielplatz',

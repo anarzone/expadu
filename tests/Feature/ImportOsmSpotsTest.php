@@ -2,6 +2,8 @@
 
 use App\Console\Commands\ImportOsmSpots;
 use App\Enums\SpotCategory;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 
 // TODO: Re-enable these tests after fixing the OSM import command structure
 // The command was refactored to make separate API calls per category
@@ -112,3 +114,14 @@ test('green spaces skip fountains basins tiny ponds and reviewed exclusions', fu
     'reviewed exclusion' => [['type' => 'way', 'id' => 1167638870, 'tags' => ['name' => 'Blackfoot Hochseilgarten', 'landuse' => 'recreation_ground'], 'bounds' => ['minlat' => 50.9, 'maxlat' => 50.91, 'minlon' => 6.9, 'maxlon' => 6.91]], false],
     'missing bounds' => [['type' => 'way', 'id' => 6, 'tags' => ['name' => 'Königsforst', 'landuse' => 'forest']], false],
 ]);
+
+test('overpass requests identify the importer so the main endpoint accepts them', function () {
+    Http::fake(['*' => Http::response(['elements' => []])]);
+    $command = new ImportOsmSpots;
+
+    (new ReflectionMethod($command, 'overpass'))->invoke($command, 'https://overpass-api.de/api/interpreter', '[out:json];node(1);out;');
+
+    Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+        && $request->hasHeader('User-Agent', ImportOsmSpots::USER_AGENT)
+        && $request['data'] === '[out:json];node(1);out;');
+});
