@@ -22,7 +22,11 @@ final class QuestionPreview
             ->where('jurisdiction', $input->jurisdiction)->where('expires_at', '>', $input->at->utc())->latest('id')->first();
         $deferred = $session?->deferred ?? [];
         $remaining = array_values(array_filter($candidates, fn ($candidate) => ($deferred[$candidate['fact_key']] ?? null) !== $candidate['deferral_token']));
-        $base = ['session_id' => $session?->id, 'remaining_information_count' => count($remaining), 'question' => null];
+        $stillDeferred = array_values(array_map(fn ($candidate) => $candidate['fact_key'], array_filter($candidates,
+            fn ($candidate) => ($deferred[$candidate['fact_key']] ?? null) === $candidate['deferral_token'])));
+        $base = ['session_id' => $session?->id, 'remaining_information_count' => count($remaining), 'question' => null,
+            'entry_state' => $session === null ? 'none' : 'in_progress',
+            'deferred' => $stillDeferred, 'candidates_count' => count($candidates)];
         $offer = $session?->questions()->whereNull('answered_at')->latest('id')->first();
         $next = $remaining[0] ?? null;
         if ($offer !== null && $offer->offer_expires_at?->greaterThan($input->at)) {
@@ -37,7 +41,7 @@ final class QuestionPreview
         }
 
         if (! isset($next['id']) && ($session?->status === 'paused' || ($session?->consecutive_offers ?? 0) >= config('bureaucracy_questions.consecutive_offers'))) {
-            return [...$base, 'status' => 'paused', 'can_resume' => true];
+            return [...$base, 'status' => 'paused', 'entry_state' => 'paused', 'can_resume' => true];
         }
 
         return [...$base, 'status' => $next === null ? 'no_more_questions' : (isset($next['id']) ? 'offered' : 'preview'), 'question' => $next];

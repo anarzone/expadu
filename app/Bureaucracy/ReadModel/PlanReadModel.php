@@ -85,7 +85,8 @@ final class PlanReadModel
             $paperwork = in_array(AccessScope::ManageEvidence->value, $scopes, true)
                 ? $this->paperwork->for($actor, $person, $input) : ['available' => false, 'reason' => 'permission_required'];
             $question = in_array(AccessScope::EditFacts->value, $scopes, true)
-                ? $this->questions->for($actor, $caseId, $input) : ['status' => 'permission_required', 'question' => null];
+                ? $this->questions->for($actor, $caseId, $input)
+                : ['status' => 'permission_required', 'question' => null, 'entry_state' => null, 'deferred' => [], 'candidates_count' => null];
             $order = new CatalogueOrder($input->catalogue);
             $details = new ProcessDetails;
             $requirements = $paperwork['requirements'] ?? null;
@@ -103,7 +104,7 @@ final class PlanReadModel
             $coverage = ['state' => ! array_key_exists($jurisdiction, config('bureaucracy_catalogue.jurisdictions')) ? 'outside_coverage'
                 : (($input->catalogue['release_hash'] ?? null) === null ? 'not_activated' : 'partial'),
                 'processes' => array_map(fn ($row) => array_intersect_key($row, array_flip(['definition_id', 'relevance', 'coverage'])), $assessment['processes']),
-                'withdrawn' => $assessment['withdrawn']];
+                'withdrawn' => $assessment['withdrawn'], 'units' => (new CoverageUnits)->for($input)];
             $revision = $this->revisions->for(['actor_id' => $actor->id, 'person_id' => $person->id,
                 'authority' => $this->access->authorityToken($actor, $person), 'person_version' => $person->record_version,
                 'assessment' => $assessment['input_revision'], 'protocol' => app(QuestionProtocol::class)->version(),
