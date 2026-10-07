@@ -129,8 +129,9 @@ decorative loops. One band per page, no animated art.
 **Owner review, 7 October:** the Today redesign is not taken. The current
 Today is better; this version rearranged the same blocks, and its day
 timeline is close to the timeline direction rejected on 2 October. Today
-keeps its approved two-column layout. The Composer redesign has ideas to use;
-which ones is being decided. The files stay here for reference.
+keeps its approved two-column layout. The Composer redesign's rich answers,
+coloured starters and Your day panel are built into `composer-studio` and
+approved for implementation (7 October). The files stay here for reference.
 
 The colour pass above keeps the approved layouts. This goes further: new
 compositions for Today and Composer, as standalone mock pages in `redesign/`.
@@ -179,6 +180,9 @@ paperwork, amber attention). The tram that leads follows decision 4 (the
 13:14 here; `?tram=planned` shows the alternative).
 
 ## Today: the shape of your day (one new idea on the current layout, 7 October)
+
+**Owner review, 7 October: not taken.** Today stays exactly as approved; no
+Today redesign is being pursued. The files stay here for reference only.
 
 The owner kept Today's layout and asked for one original idea. `today-ribbon.js`
 (with `today-ribbon.css`) adds it to the approved Today page in the viewer

@@ -375,7 +375,7 @@ conversation. "When should I leave for my 14:00?" answers from the
 appointment's trip with Today's rule. Today's departures board shows the stop
 at the sample day's clock, like Travel's timetable.
 
-**Composer: rich answers, coloured starters and Your day — owner request, 7 October (in review):**
+**Composer: rich answers, coloured starters and Your day — owner request, approved for implementation 7 October 2026:**
 from the App in colour concept. On desktop, Your day sits beside the
 conversation (the tram to take now, the appointment, today's plan, the visa
 deadline from your records, the area after the appointment, tonight, coming
