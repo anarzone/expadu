@@ -21,30 +21,11 @@ test.use({ serviceWorkers: 'block' });
 async function switchPersona(
     page: Page,
     persona: string,
-    resetTasks = false,
+    _resetTasks = false,
 ): Promise<void> {
-    await page.goto('/bureaucracy');
+    // QA personas are a read-only preview; the account is never rewritten.
+    await page.goto(`/bureaucracy/demo?persona=${encodeURIComponent(persona)}`);
     await page.waitForLoadState('networkidle');
-
-    const opener = page.getByTitle('Open the QA persona switcher');
-
-    if (await opener.isVisible()) {
-        await opener.click();
-    }
-
-    const select = page.getByTitle(
-        'Switch the current account to a different persona',
-    );
-
-    if ((await select.inputValue()) !== persona) {
-        await select.selectOption(persona);
-        await page.waitForLoadState('networkidle');
-    }
-
-    if (resetTasks) {
-        await page.getByRole('button', { name: 'Reset tasks' }).click();
-        await page.waitForLoadState('networkidle');
-    }
 }
 
 /**

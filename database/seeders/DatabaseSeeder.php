@@ -19,7 +19,10 @@ class DatabaseSeeder extends Seeder
         // truth — the importer compiles + upserts them (idempotent). The
         // legacy TaskSeeder is gone; it kept recreating keyless pre-v2 rows
         // on every container start, racing the deploy-time prune.
-        Artisan::call('bureaucracy:import-tasks', ['--prune' => true]);
+        Artisan::call('bureaucracy:import-tasks', ['--retire-missing' => true]);
+        // v2 consumers read only an activated catalogue release; without this a
+        // freshly seeded environment shows an empty plan everywhere.
+        Artisan::call('bureaucracy:compile-catalogue', ['--deploy' => true]);
 
         // System user for scraped content attribution
         User::firstOrCreate(
