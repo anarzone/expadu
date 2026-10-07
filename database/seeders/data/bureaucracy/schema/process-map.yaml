@@ -1,7 +1,10 @@
 # Structural mapping only. This does not approve prose or declare complete eligibility.
 version: '2026-09-08.1'
 entries:
-  core.anmeldung: {process_id: address.registration, topic: address, kind: preparation, coverage: partial, occurrence_fact: moved_in_at}
+  # §17(1) BMG: register 'innerhalb von zwei Wochen nach dem Einzug' — a legal
+  # deadline, not a suggestion. Bound to the reviewed content version and source.
+  core.anmeldung: {process_id: address.registration, topic: address, kind: preparation, coverage: partial, occurrence_fact: moved_in_at,
+    temporal_policy: {kind: legal_due, version: bmg-17-1.2026-10-07, content_version: '2026-09-08.1', reviewed_by: owner_authorised_source_review, verified_at: '2026-09-08', source_url: 'https://www.gesetze-im-internet.de/bmg/__17.html'}}
   core.steuer_id: {process_id: tax.identification, topic: tax, kind: preparation, coverage: partial}
   core.health_insurance: {process_id: health.coverage, topic: health, kind: preparation, coverage: partial}
   core.bank_account: {process_id: banking.account, topic: money, kind: preparation, coverage: partial}
