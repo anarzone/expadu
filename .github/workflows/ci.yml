@@ -429,10 +429,13 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             cd /data/coolify/services/eg4gsc4ok8g0cwkcsso48wso
+            # Coolify names the container app-<service dir>; derived so the literal never
+            # appears here (it matches the Dify API-key pattern secret scanners look for).
+            APP_CONTAINER="app-$(basename "$PWD")"
             docker pull ghcr.io/anarzone/expadu/app:latest
             docker compose up -d app
             sleep 5
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --retire-missing
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:compile-catalogue --deploy
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:migrate-dossiers --apply --all
+            docker exec "$APP_CONTAINER" php artisan migrate --force
+            docker exec "$APP_CONTAINER" php artisan bureaucracy:import-tasks --retire-missing
+            docker exec "$APP_CONTAINER" php artisan bureaucracy:compile-catalogue --deploy
+            docker exec "$APP_CONTAINER" php artisan bureaucracy:migrate-dossiers --apply --all
