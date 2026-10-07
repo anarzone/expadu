@@ -189,3 +189,22 @@ test('a matching satisfied alternative does not interview for other unfinished a
     expect($result['processes'][0]['variants'][0]['actionable'])->toBeTrue()
         ->and($result['question_dependencies'])->toBe([]);
 });
+
+test('a critical obligation outranks a lower-urgency route that matches the goal', function () {
+    $renewal = [...assessmentVariant('renewal', [['current_residence_title' => 'family_reunification', 'marital_household_continues' => true]]), 'urgency' => 'critical'];
+    $settlement = [...assessmentVariant('settlement', [['case_goal' => 'settlement_permit', 'current_residence_title' => 'family_reunification', 'family_residence_permit_held_since' => ['at_least_months_ago' => 36]]]), 'urgency' => 'medium'];
+    $result = (new AssessPerson)->assess(assessmentInput([$settlement, $renewal], ['current_residence_title' => 'family_reunification'], goal: 'settlement_permit'))->toArray();
+
+    expect(array_column($result['processes'], 'definition_id'))->toBe(['renewal', 'settlement']);
+    $questions = $result['question_dependencies'];
+    $priorityOf = fn (string $key) => max(array_column(array_filter($questions, fn ($q) => ($q['fact_key'] ?? null) === $key), 'priority') ?: [0]);
+    expect($priorityOf('marital_household_continues'))->toBeGreaterThan($priorityOf('family_residence_permit_held_since'));
+});
+
+test('a goal match on a route that can no longer apply does not lift its priority', function () {
+    $closed = [...assessmentVariant('closed', [['case_goal' => 'settlement_permit', 'current_residence_title' => 'blue_card']]), 'urgency' => 'low'];
+    $open = [...assessmentVariant('open', [['current_residence_title' => 'family_reunification']]), 'urgency' => 'low'];
+    $result = (new AssessPerson)->assess(assessmentInput([$closed, $open], ['current_residence_title' => 'family_reunification'], goal: 'settlement_permit'))->toArray();
+
+    expect(array_column($result['processes'], 'definition_id'))->toBe(['open', 'closed']);
+});

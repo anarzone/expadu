@@ -174,3 +174,25 @@ function homeContext(User $user, array $overrides = []): HomeContext
         bureaucracyPlan: $overrides['bureaucracyPlan'] ?? null,
     );
 }
+
+/**
+ * Seed the active Composer plan through the real encrypted store, stamped with
+ * the user's current appointment revision so it passes the freshness check.
+ *
+ * @param  array<string, mixed>  $plan
+ * @return array<string, mixed> the plan as stored
+ */
+function storeComposerPlan(App\Models\User $user, array $plan): array
+{
+    $plan['appointment_revision'] = app(App\Composer\AppointmentRepository::class)
+        ->revision($user, App\Composer\Constraints::fromArray($plan['constraints']));
+    app(App\Composer\ActivePlanStore::class)->save($user, $plan);
+
+    return $plan;
+}
+
+/** @return array<string, mixed>|null */
+function storedComposerPlan(App\Models\User $user): ?array
+{
+    return app(App\Composer\PrivatePlanCache::class)->get($user, 'plan');
+}

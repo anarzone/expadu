@@ -7,7 +7,11 @@ use App\Bureaucracy\Catalogue\CatalogueHash;
 /** Deterministic decision core: no container, database, network, AI, or implicit clock. */
 final class AssessPerson
 {
-    public const DecisionVersion = '2026-09-08.intent-alternatives.1';
+    public const DecisionVersion = '2026-10-07.urgency-first.1';
+
+    private const GoalBonus = 50;
+
+    private const AnchorBonus = 75;
 
     private const OrientationKeys = ['citizenship_group', 'purpose', 'current_residence_title', 'entry_mode', 'sponsor', 'permit_track', 'business_kind'];
 
@@ -54,16 +58,18 @@ final class AssessPerson
                         }
                     }
                 }
+                // A goal only breaks ties inside an urgency tier, and only for a
+                // route that can still apply. It never outranks legal urgency.
                 $matchesGoal = false;
-                foreach ($conditions as $group) {
-                    if (isset($group['case_goal']) && $input->goal !== null) {
+                foreach ($conditions as $index => $group) {
+                    if (isset($group['case_goal']) && $input->goal !== null && $criteria['alternatives'][$index]['status'] !== 'unmet') {
                         $matchesGoal = $matchesGoal || $evaluator->condition('case_goal', $group['case_goal'], ['values' => ['case_goal' => $input->goal]], $input->at) === CriterionResult::Met;
                     }
                 }
-                $rank = ($matchesGoal ? 100 : 0) + match ($variant['urgency'] ?? 'medium') {
-                    'critical' => 40, 'high' => 30, 'medium' => 20, default => 10
-                };
-                $priority = max($priority, $rank);
+                $rank = self::urgencyRank($variant['urgency'] ?? 'medium') + ($matchesGoal ? self::GoalBonus : 0);
+                if ($criteria['status'] !== 'unmet') {
+                    $priority = max($priority, $rank);
+                }
                 $complete = $variant['coverage'] === 'complete' && ! empty($variant['coverage_review']['criterion_keys']) && ! empty($variant['coverage_review']['source_review_reference']);
                 $assessment = match ($criteria['status']) {
                     'unknown' => 'needs_information',
@@ -84,7 +90,7 @@ final class AssessPerson
                 }
                 $anchor = (new TemporalDependencies)->anchorKey($variant, $facts);
                 if ($criteria['status'] === 'met' && $anchor !== null && $evaluator->condition($anchor, ['present' => true], $facts, $input->at)->unresolved()) {
-                    $dependencies->add($anchor, $definition['id'], $variant['id'], $rank + 200);
+                    $dependencies->add($anchor, $definition['id'], $variant['id'], $rank + self::AnchorBonus);
                 }
                 $variants[] = [...$variant, 'assessment' => $assessment, 'criteria' => $criteria['criteria'],
                     'alternatives' => $criteria['alternatives'], 'missing_facts' => $criteria['missing'],
@@ -105,6 +111,14 @@ final class AssessPerson
             'input_revision' => CatalogueHash::of(['decision_version' => self::DecisionVersion, 'facts' => $input->facts, 'relationships' => $input->relationships, 'processes' => $input->processes,
                 'catalogue' => $input->catalogue, 'date' => $input->at->toDateString(), 'jurisdiction' => $input->jurisdiction, 'goal' => $input->goal]),
             'processes' => $results, 'question_dependencies' => $dependencies->toArray(), 'withdrawn' => $input->catalogue['withdrawn'] ?? []]);
+    }
+
+    /** Urgency tiers are 100 apart so goal and anchor bonuses can never cross a tier. */
+    public static function urgencyRank(string $urgency): int
+    {
+        return match ($urgency) {
+            'critical' => 400, 'high' => 300, 'medium' => 200, default => 100,
+        };
     }
 
     private function current(array $variant, AssessmentInput $input): bool

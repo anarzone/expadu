@@ -5,9 +5,13 @@ namespace App\Home;
 use App\Composer\CategoryAppeal;
 use App\Enums\EventCategory;
 use App\Enums\SpotFeedbackState;
+use App\Media\PublishedMediaSelector;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
+use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
+use App\Places\PlaceIdentity;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Services\NearbyPlaces;
@@ -119,6 +123,29 @@ class DiscoveryFeed
             $this->newRail($scored, $homeAreas, $rain, $shown),
             $this->paperworkRail($context),
         ]));
+
+        $ids = collect($rails)->flatMap(fn (array $rail) => $rail['cards'])
+            ->where('kind', 'spot')->map(fn (array $card): int => (int) substr($card['id'], 5))->unique()->all();
+        $spots = Spot::query()->whereIn('id', $ids)
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])->get()->keyBy('id');
+        $selector = app(PublishedMediaSelector::class);
+        foreach ($rails as &$rail) {
+            foreach ($rail['cards'] as &$card) {
+                if (($card['kind'] ?? null) !== 'spot') {
+                    continue;
+                }
+                $spot = $spots->get((int) substr($card['id'], 5));
+                if ($spot !== null) {
+                    $media = $selector->select($spot, 'hero');
+                    $card['photo_url'] = $media?->remote_url;
+                    $card['photo_attribution'] = $media?->attribution;
+                    $card['photo_source_url'] = $media?->source_page_url;
+                    $card['photo_license_url'] = $media?->license_url;
+                }
+            }
+            unset($card);
+        }
+        unset($rail);
 
         return $rails;
     }
@@ -308,8 +335,10 @@ class DiscoveryFeed
                 'kind' => 'spot',
                 'href' => null,
                 'reason' => $reason,
-                'photo_url' => $x['spot']->photo_url,
-                'photo_attribution' => $x['spot']->photo_attribution,
+                'photo_url' => null,
+                'photo_attribution' => null,
+                'photo_source_url' => null,
+                'photo_license_url' => null,
             ];
         }
 
@@ -347,6 +376,8 @@ class DiscoveryFeed
                     'reason' => $e->starts_at->format('H:i'),
                     'photo_url' => $photo['url'],
                     'photo_attribution' => $photo['attribution'],
+                    'photo_source_url' => $photo['source_url'],
+                    'photo_license_url' => $photo['license_url'],
                 ];
             })->all());
     }
@@ -398,13 +429,13 @@ class DiscoveryFeed
         // Cache plain rows (not Eloquent models) and re-hydrate — serialising
         // a model collection is fragile across cache drivers (it can come back
         // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
-        $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating', 'photo_url', 'photo_attribution'];
+        $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating'];
+        $cacheKey = self::SCAN_CACHE_KEY.':identity:'.app(PlaceIdentity::class)->revision().':grouping:'.app(DestinationGrouping::class)->revision().':facts:'.app(PlaceFacts::class)->revision();
 
         // No origin (GPS declined, nothing remembered): the old global, lowest-id
         // pool, cached once for everyone.
         if ($originLat === null || $originLng === null) {
-            $rows = Cache::remember(self::SCAN_CACHE_KEY, self::SCAN_TTL, fn () => Spot::query()
-                ->recommendationEligible()
+            $rows = Cache::remember($cacheKey, self::SCAN_TTL, fn () => app(DestinationGrouping::class)->general(Spot::query())
                 ->select($columns)
                 ->whereNotNull('lat')
                 ->whereNotNull('lng')
@@ -413,7 +444,10 @@ class DiscoveryFeed
                 ->get()
                 ->toArray());
 
-            return Spot::hydrate($rows);
+            $spots = Spot::hydrate($rows);
+            app(PlaceFacts::class)->project($spots);
+
+            return $spots;
         }
 
         // Nearest-first to the user, cached per ~1km cell (rounded so nearby
@@ -423,12 +457,15 @@ class DiscoveryFeed
         $cellLng = round($originLng, 2);
 
         $rows = Cache::remember(
-            self::SCAN_CACHE_KEY.":{$cellLat},{$cellLng}",
+            $cacheKey.":{$cellLat},{$cellLng}",
             self::SCAN_TTL,
             fn () => $this->nearby->nearest($cellLat, $cellLng, self::POOL, null, $columns)->toArray(),
         );
 
-        return Spot::hydrate($rows);
+        $spots = Spot::hydrate($rows);
+        app(PlaceFacts::class)->project($spots);
+
+        return $spots;
     }
 
     private function category(Spot $spot): string
@@ -459,13 +496,9 @@ class DiscoveryFeed
      */
     private function hiddenSpotIds(int $userId): array
     {
-        return SpotFeedback::query()
-            ->where('user_id', $userId)
-            ->whereIn('state', array_map(
-                fn (SpotFeedbackState $state) => $state->value,
-                SpotFeedbackState::hiddenFromDiscovery(),
-            ))
-            ->pluck('spot_id')
+        return SpotFeedback::effectiveForUser($userId)
+            ->filter(fn (SpotFeedback $feedback) => in_array($feedback->state, SpotFeedbackState::hiddenFromDiscovery(), true))
+            ->keys()
             ->flip()
             ->all();
     }

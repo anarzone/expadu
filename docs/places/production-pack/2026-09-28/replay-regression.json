@@ -1,0 +1,13 @@
+{
+  "reproduced": true,
+  "records": 4651,
+  "replay_updates": 773,
+  "dirty_fields": {
+    "lat": 500,
+    "lng": 755
+  },
+  "changed_tables": {
+    "spots": 773
+  },
+  "root_cause": "Full-precision area centres repeatedly differ from decimal(10,7) storage. Stored columns must be rounded while source observations retain full precision."
+}

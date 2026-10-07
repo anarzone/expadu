@@ -1,0 +1,45 @@
+{
+  "full_fast_suite": {
+    "passed": 1678,
+    "skipped": 1,
+    "assertions": 7012,
+    "duration_seconds": 322.47,
+    "parallel_workers": 10
+  },
+  "focused_suite": {
+    "passed": 374,
+    "assertions": 1600
+  },
+  "final_saved_plan_suite": {
+    "passed": 77,
+    "assertions": 348
+  },
+  "suites_overlap": true,
+  "typescript": "passed",
+  "scoped_eslint_prettier": "passed",
+  "frontend_build": "passed_with_existing_font_warnings",
+  "secret_scan": {
+    "passed": true,
+    "confirmed_secrets": 0,
+    "exact_checksum_false_positive_documented": true
+  },
+  "runtime": {
+    "php": "8.4.23",
+    "node": "22.23.1"
+  },
+  "test_environment_fix": {
+    "problem": "Dedicated runner Redis base 15 plus worker offset requested DB 17; client stayed in DB 0, losing worker isolation.",
+    "verified_before": {
+      "configured": 17,
+      "connected": 0
+    },
+    "verified_after": {
+      "configured": 2,
+      "connected": 2
+    },
+    "parallel_runner_base": 0,
+    "application_code_changed_for_this_fix": false
+  },
+  "staging_changed": false,
+  "production_changed": false
+}

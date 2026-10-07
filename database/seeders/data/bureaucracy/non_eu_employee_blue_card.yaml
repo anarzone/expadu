@@ -224,7 +224,8 @@ tasks:
     type: info
     coverage_scope: universal
     applies_if_mode: explicit
-    applies_if: {}
+    applies_if:
+      citizenship_group: non_eu
     description: |
       Expadu does not have a reviewed case rule for every residence title. Check the
       exact legal basis printed on the card or visa and confirm the route with the
@@ -238,9 +239,9 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: owner_authorised_source_review
-    content_version: 2026-09-08.1
+    content_version: 2026-10-07.1
     source_verification: dual_source
     verified_at: '2026-09-08'
     legal_sources:
-      - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: primary, label: '§4 AufenthG — Erfordernis eines Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__4.html'}
       - {kind: implementation, label: 'Stadt Köln · Ausländeramt contact', url: 'https://www.stadt-koeln.de/service/adressen/auslaenderamt'}

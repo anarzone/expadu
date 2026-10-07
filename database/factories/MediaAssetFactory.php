@@ -38,7 +38,11 @@ class MediaAssetFactory extends Factory
             'health_status' => 'active',
             'license_code' => 'CC BY 4.0',
             'license_url' => 'https://creativecommons.org/licenses/by/4.0/',
+            'source_page_url' => fake()->url(),
+            'attribution' => 'Photo by Example · CC BY 4.0',
             'last_verified_at' => now(),
+            'next_validation_at' => now()->utc()->addDays(7),
+            'last_validation_outcome' => 'active',
         ]);
     }
 }

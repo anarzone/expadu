@@ -1,0 +1,22 @@
+{
+  "reviewer": "exp69_laravel_patterns",
+  "recorded_at": "2026-09-29T13:19:03.330929+00:00",
+  "source_commit": "ce0d579642581d053ef0a9625875711f813fe724",
+  "disposition": "Adopt the fix; no correctness or semantic blocker",
+  "basis": [
+    "1684 tests and7039 assertions",
+    "Exact expanded access-ID and9API payload parity",
+    "Exact rollback and cleanup",
+    "Staging listing p95 470/487ms versus1055/1694ms",
+    "Same durable local SQL results in144/149ms versus7698/6589ms"
+  ],
+  "narrow_tradeoff": "Root allowed-ID materialization adds about37\u201355ms median per evaluation; synthetic keyed p95126.9ms on staging. There is no matching production whereKey-exists call. Food-place detail does not invoke this policy, so detail timing difference does not establish a policy regression.",
+  "follow_up_paths": [
+    "CandidateRepository::byIds evaluates eligibility then groupIds again per batch",
+    "Composer compose/swap can hydrate pins multiple times",
+    "spotCandidates initial hint scan plus two eligibility evaluations per64-ID batch",
+    "PlaceContextController and SpotSearchController can stack eligible with general/components"
+  ],
+  "composer_latency_measured_by_this_release": false,
+  "scope": "Performance follow-up retained; does not waive free/access/media coverage or data-import recovery gates"
+}

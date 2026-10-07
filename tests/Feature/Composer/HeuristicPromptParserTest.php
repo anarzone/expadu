@@ -178,3 +178,17 @@ test('an explicit evening still composes tonight when asked late, keeping the ac
         ->and($result->plan->windowStart->isSameDay($now))->toBeTrue()
         ->and($result->plan->windowMinutes())->toBeGreaterThanOrEqual(180);
 });
+
+test('free football nearby preserves the sport and search radius', function () {
+    $result = parsePrompt('recommend free football nearby tomorrow afternoon within 2 km');
+    expect($result->plan->activities)->toBe(['soccer'])
+        ->and($result->plan->radiusKm)->toBe(2.0)
+        ->and($result->plan->budget)->toBe('free');
+});
+
+test('a nearby football request uses structured activity retrieval without a time phrase', function () {
+    $result = parsePrompt('nearby football');
+    expect($result->intent)->toBe(PromptIntent::PlanDay)
+        ->and($result->plan->activities)->toBe(['soccer'])
+        ->and($result->plan->radiusKm)->toBe(3.0);
+});

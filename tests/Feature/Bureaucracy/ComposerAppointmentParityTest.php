@@ -133,7 +133,7 @@ test('changed appointments invalidate active plans and return an explicit review
 test('a new appointment invalidates a saved leisure plan too', function () {
     $plan = ['constraints' => $this->constraints->toArray(),
         'appointment_revision' => app(AppointmentRepository::class)->revision($this->actor, $this->constraints),
-        'slots' => [['id' => 'spot:1', 'type' => 'spot', 'name' => 'Synthetic walk']]];
+        'slots' => [['id' => 'event:1', 'type' => 'event', 'name' => 'Synthetic concert']]];
     $today = app(TodayPlanStore::class);
     $today->save($this->actor, $plan, null);
     expect($today->get($this->actor)['state'])->toBe('current');

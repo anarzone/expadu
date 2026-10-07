@@ -1,0 +1,29 @@
+{
+    "verified_at": "2026-09-28T19:37:02+00:00",
+    "scope": "local public-data database after cancelled football experiment",
+    "tables": {
+        "spots": {
+            "rows": 9928,
+            "matches_frozen_baseline": true
+        },
+        "veedels": {
+            "rows": 86,
+            "matches_frozen_baseline": true
+        },
+        "place_fact_observations": {
+            "rows": 4085,
+            "matches_frozen_baseline": true
+        },
+        "place_fact_corrections": {
+            "rows": 0,
+            "matches_frozen_baseline": true
+        },
+        "place_fact_revisions": {
+            "rows": 1,
+            "matches_frozen_baseline": true
+        }
+    },
+    "database_writes": false,
+    "staging_queried": false,
+    "users_remaining": 0
+}

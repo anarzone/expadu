@@ -55,7 +55,7 @@ class HeuristicPromptParser implements ParsesPrompt
     /** Planning phrasings that imply "compose my time" even without a clock word. */
     private const PLANNING_VERBS = [
         'plan my', 'plan a', 'plan our', 'what should i do', 'what to do',
-        'something to do', 'fill my day', 'keep me busy', 'day out', 'free ',
+        'something to do', 'fill my day', 'keep me busy', 'day out', 'free ', 'recommend', 'where can i play',
     ];
 
     /** Synonym → canonical category from the closed activity vocabulary. */
@@ -100,7 +100,8 @@ class HeuristicPromptParser implements ParsesPrompt
         $hasTime = $this->containsWord($t, self::TIME_WORDS)
             || $this->containsAny($t, self::PLANNING_VERBS);
 
-        if ($hasTime) {
+        $placeRequest = $this->explicitPlaceRequirements($t);
+        if ($hasTime || ($placeRequest['activities'] !== [] && $placeRequest['radius_km'] !== null)) {
             return new ParsedPrompt(
                 PromptIntent::PlanDay,
                 plan: $this->buildConstraints($t, $profile, $now),
@@ -124,10 +125,38 @@ class HeuristicPromptParser implements ParsesPrompt
                 categories: $this->extractCategories($t),
                 companions: $this->extractCompanions($t),
                 budget: $this->extractBudget($t),
+                activities: $this->explicitPlaceRequirements($t)['activities'],
+                radiusKm: $this->explicitPlaceRequirements($t)['radius_km'],
             ),
             $profile,
             $now,
         );
+    }
+
+    /** Explicit requirements also constrain the model parser's output. */
+    public function explicitPlaceRequirements(string $text): array
+    {
+        $text = mb_strtolower($text);
+        $activities = [];
+        foreach ([
+            'soccer' => ['football', 'soccer', 'fußball', 'fussball'],
+            'basketball' => ['basketball'], 'table_tennis' => ['table tennis', 'tischtennis'],
+            'tennis' => ['tennis'], 'boules' => ['boules', 'bocce', 'pétanque'],
+            'skateboard' => ['skateboard', 'skateboarding'], 'swimming' => ['swimming'],
+            'volleyball' => ['volleyball'], 'badminton' => ['badminton'],
+        ] as $activity => $words) {
+            if ($this->containsWord($text, $words) && ! ($activity === 'tennis' && str_contains($text, 'table tennis'))) {
+                $activities[] = $activity;
+            }
+        }
+        $radius = null;
+        if (preg_match('/\bwithin\s+(\d+(?:[.,]\d+)?)\s*(km|kilomet(?:er|re)s?|m|met(?:er|re)s?)\b/u', $text, $match)) {
+            $radius = min(50.0, (float) str_replace(',', '.', $match[1]) / (str_starts_with($match[2], 'k') ? 1 : 1000));
+        } elseif ($this->containsAny($text, ['nearby', 'near me', 'close to me'])) {
+            $radius = (float) config('composer.nearby_radius_km');
+        }
+
+        return ['activities' => $activities, 'radius_km' => $radius, 'budget' => $this->extractBudget($text)];
     }
 
     private function resolveDay(string $t, CarbonImmutable $now): CarbonImmutable
@@ -255,7 +284,8 @@ class HeuristicPromptParser implements ParsesPrompt
     private function extractBudget(string $t): ?string
     {
         // Deliberately NOT the bare word "free" — "free Saturday" is time, not money.
-        if (str_contains($t, 'for free') || str_contains($t, 'free entry')
+        if (preg_match('/\bfree\s+(football|soccer|basketball|tennis|table tennis|courts?|pitches?|places?|entry|admission|activities)\b/u', $t)
+            || str_contains($t, 'for free') || str_contains($t, 'free entry')
             || str_contains($t, 'free admission') || str_contains($t, 'no cost')
             || str_contains($t, 'gratis')) {
             return 'free';

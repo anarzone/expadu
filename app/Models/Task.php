@@ -165,10 +165,15 @@ class Task extends Model
         }
 
         $attributes ??= app(PathGenerator::class)->profileFor($user)->attributes;
+        // The confirmed arrival answer, never the raw profile column it may have outlived.
+        $arrival = CalendarDate::historical($attributes['arrival_date'] ?? null);
 
         if ($this->deadline_type === DeadlineType::FactDate) {
+            // A title expiry only means something once we know which title it
+            // belongs to: an unknown title may be an unlimited settlement permit.
+            $title = $attributes['current_residence_title'] ?? null;
             if ($this->deadline_fact_key === 'residence_title_expires_at'
-                && in_array($attributes['current_residence_title'] ?? null, ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown'], true)) {
+                && ($title === null || in_array($title, ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown'], true))) {
                 return null;
             }
             $factDate = is_string($this->deadline_fact_key)
@@ -187,13 +192,13 @@ class Task extends Model
         }
 
         return match ($this->deadline_type) {
-            DeadlineType::DaysSinceArrival => CalendarDate::historical($user->arrival_date?->toDateString())?->addDays($this->deadline_days),
+            DeadlineType::DaysSinceArrival => $arrival?->copy()->addDays($this->deadline_days),
             // A missing anchor is unknown, not proof that an obligation is paused.
             DeadlineType::DaysSinceMoveIn => CalendarDate::historical($attributes['moved_in_at'] ?? null)
                 ?->addDays($this->deadline_days),
             // Only an explicitly recorded entry mode selects the authored rule's window.
             DeadlineType::PermitWindow => match ($attributes['entry_mode'] ?? null) {
-                'visa_free' => CalendarDate::historical($user->arrival_date?->toDateString())?->addDays($this->deadline_days),
+                'visa_free' => $arrival?->copy()->addDays($this->deadline_days),
                 default => null,
             },
             // Life-event tasks anchor on the recorded event date.

@@ -9,6 +9,7 @@ use App\Privacy\ExternalProcessingGate;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingPermit;
 use App\Privacy\ProcessingPurpose;
+use App\Places\PlaceCapabilities;
 use App\Profile\Profile;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
@@ -46,6 +47,8 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
                     'window_end' => ['type' => 'string', 'description' => 'plan_day only: ISO 8601 local datetime the free time ends'],
                     'areas' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'Cologne Veedel names mentioned, empty if none'],
                     'categories' => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'activity categories: park, cafe, library, restaurant, bar, playground, pitch, basketball, lake, swimming, culture, event'],
+                    'activities' => ['type' => 'array', 'items' => ['type' => 'string', 'enum' => PlaceCapabilities::ACTIVITIES], 'description' => 'Explicit sports only; football means soccer. Never infer capability from pitch category.'],
+                    'radius_km' => ['type' => ['number', 'null'], 'minimum' => 0.1, 'maximum' => 50, 'description' => 'Explicit maximum distance from the chosen starting point in kilometres.'],
                     'companions' => ['type' => ['string', 'null'], 'enum' => ['alone', 'partner', 'friends', 'kids', null]],
                     'budget' => ['type' => ['string', 'null'], 'enum' => ['free', 'low', 'normal', null]],
                     'query' => ['type' => ['string', 'null'], 'description' => 'normalized search text for find / bureaucracy_q / take_me_there'],
@@ -104,6 +107,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
             }
 
             $args = $this->arguments($body);
+            $explicit = $this->fallback->explicitPlaceRequirements($text);
             $intent = PromptIntent::tryFrom((string) ($args['intent'] ?? '')) ?? PromptIntent::Find;
 
             if ($intent === PromptIntent::PlanDay && isset($args['window_start'], $args['window_end'])) {
@@ -115,10 +119,17 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
                         areas: $this->normaliseAreas($args['areas'] ?? []),
                         categories: $this->normaliseCategories($args['categories'] ?? []),
                         companions: $this->allowedString($args['companions'] ?? null, ['alone', 'partner', 'friends', 'kids']),
-                        budget: $this->allowedString($args['budget'] ?? null, ['free', 'low', 'normal']),
+                        budget: $explicit['budget'] ?? $this->allowedString($args['budget'] ?? null, ['free', 'low', 'normal']),
+                        activities: $explicit['activities'] !== [] ? $explicit['activities'] : collect(is_array($args['activities'] ?? null) ? $args['activities'] : [])
+                            ->filter(fn ($value): bool => is_string($value) && in_array($value, PlaceCapabilities::ACTIVITIES, true))->unique()->values()->all(),
+                        radiusKm: $explicit['radius_km'] ?? (is_numeric($args['radius_km'] ?? null) && $args['radius_km'] >= 0.1 && $args['radius_km'] <= 50 ? (float) $args['radius_km'] : null),
                     ), $profile, $now),
                     source: 'llm',
                 );
+            }
+
+            if ($explicit['activities'] !== [] && ($explicit['budget'] !== null || $explicit['radius_km'] !== null) && $intent === PromptIntent::Find) {
+                return $this->fallback->parse($text, $profile, $now);
             }
 
             return new ParsedPrompt($intent, query: $args['query'] ?? $text, source: 'llm');
@@ -186,6 +197,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
             ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
             'court',
             'culture',
+            'food_drink',
             'event',
         ];
 

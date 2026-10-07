@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use App\Enums\SpotCategory;
 use App\Media\CaptureMediaCandidate;
 use App\Media\CommonsPhotoResolver;
+use App\Media\MediaAcquisitionScheduler;
+use App\Media\ScheduledMediaAcquisition;
 use App\Models\Spot;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -40,14 +42,16 @@ class FetchSpotPhotos extends Command
         parent::__construct();
     }
 
-    public function handle(CaptureMediaCandidate $captureMediaCandidate): int
-    {
+    public function handle(
+        CaptureMediaCandidate $captureMediaCandidate,
+        MediaAcquisitionScheduler $scheduler,
+    ): int {
         $linked = Spot::query()
             ->whereIn('category', SpotCategory::placesFines())
             ->whereNotNull('tags')
             ->when(! $this->option('force'), fn ($query) => $query->whereDoesntHave(
-                'mediaAttachments.mediaAsset',
-                fn ($asset) => $asset->where('provider', 'wikimedia-commons')->published(),
+                'mediaAttachments',
+                fn ($attachment) => $attachment->publishable('wikimedia-commons'),
             ))
             ->get()
             ->filter(fn (Spot $spot) => ! empty($spot->tags['wikidata'])
@@ -57,14 +61,29 @@ class FetchSpotPhotos extends Command
         $this->info("Resolving photos for {$linked->count()} linked place(s)...");
 
         // spot id => Commons file name
-        $files = $this->filesFromCommonsTags($linked)
-            + $this->filesFromWikidata($linked)
-            + $this->filesFromWikipedia($linked);
+        $commonsFiles = $this->filesFromCommonsTags($linked);
+        $wikidataFiles = $this->filesFromWikidata($linked);
+        $wikipediaFiles = $this->filesFromWikipedia(
+            $linked,
+            array_keys($commonsFiles + $wikidataFiles),
+        );
+        $files = $commonsFiles + $wikidataFiles + $wikipediaFiles;
+        $matchSources = collect($files)->mapWithKeys(fn (string $_file, int $spotId): array => [
+            $spotId => array_key_exists($spotId, $commonsFiles)
+                ? 'osm_wikimedia_commons_tag'
+                : (array_key_exists($spotId, $wikidataFiles)
+                    ? 'osm_wikidata_p18'
+                    : 'osm_wikipedia_pageimage'),
+        ])->all();
 
-        $saved = $this->save($linked, $files, $captureMediaCandidate);
+        $saved = $this->save($linked, $files, $captureMediaCandidate, $matchSources)['count'];
         $this->info("Linked photos saved: {$saved}.");
 
-        $saved += $this->geosearchPass($captureMediaCandidate);
+        $saved += $this->geosearchPass(
+            $captureMediaCandidate,
+            $scheduler,
+            $linked->pluck('id')->map(fn ($id): int => (int) $id)->all(),
+        );
 
         $this->info("Photos saved (total): {$saved}.");
 
@@ -75,42 +94,102 @@ class FetchSpotPhotos extends Command
      * Backfill large outdoor places that have no wikidata/wikipedia link by
      * asking Commons for the nearest geotagged photo.
      */
-    private function geosearchPass(CaptureMediaCandidate $captureMediaCandidate): int
-    {
+    private function geosearchPass(
+        CaptureMediaCandidate $captureMediaCandidate,
+        MediaAcquisitionScheduler $scheduler,
+        array $linkedSpotIds,
+    ): int {
         $limit = (int) $this->option('geo');
         if ($limit <= 0) {
             return 0;
         }
 
-        $spots = Spot::query()
+        $query = Spot::query()
+            ->canonical()
             ->whereIn('category', self::GEOSEARCH_CATEGORIES)
-            ->when(! $this->option('force'), fn ($q) => $q->whereNull('photo_url'))
+            ->when($linkedSpotIds !== [], fn ($query) => $query->whereNotIn('id', $linkedSpotIds))
             ->when(! $this->option('force'), fn ($query) => $query->whereDoesntHave(
-                'mediaAttachments.mediaAsset',
-                fn ($asset) => $asset->where('provider', 'wikimedia-commons')->published(),
+                'mediaAttachments',
+                fn ($attachment) => $attachment->publishable('wikimedia-commons'),
             ))
             ->whereNotNull('lat')
-            ->whereNotNull('lng')
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+            ->whereNotNull('lng');
+
+        $scheduled = $scheduler->select(
+            $query,
+            'wikimedia-commons',
+            'spot_geosearch',
+            $limit,
+            fn (Spot $spot): array => [
+                'name' => $spot->name,
+                'category' => $spot->category?->value ?? (string) $spot->category,
+                'lat' => $spot->lat,
+                'lng' => $spot->lng,
+                'radius_metres' => CommonsPhotoResolver::GEOSEARCH_RADIUS_M,
+            ],
+            (bool) $this->option('force'),
+        );
+        $spots = $scheduled->map(fn (ScheduledMediaAcquisition $item) => $item->target);
 
         $this->info("Geosearching photos for {$spots->count()} unlinked outdoor place(s)...");
 
         $files = [];
-        foreach ($spots as $spot) {
+        $scheduledBySpot = $scheduled->keyBy(fn (ScheduledMediaAcquisition $item) => $item->target->getKey());
+        foreach ($scheduledBySpot as $spotId => $item) {
+            $spot = $item->target;
+            $error = null;
             $file = $this->resolver->geoSearchFile(
                 (float) $spot->lat,
                 (float) $spot->lng,
                 (string) $spot->name,
-                fn (string $error) => $this->warn("  geosearch failed for spot {$spot->id}: {$error}"),
+                function (string $message) use ($spot, &$error): void {
+                    $error = $message;
+                    $this->warn("  geosearch failed for spot {$spot->id}: {$message}");
+                },
             );
             if ($file !== null) {
                 $files[$spot->id] = $file;
+            } else {
+                $scheduler->record(
+                    $item,
+                    $error === null ? 'no_result' : (str_contains($error, '429') ? 'rate_limited' : 'failed'),
+                    errorCode: $error === null ? null : 'provider_request_failed',
+                    retryAfterSeconds: $scheduler->retryAfterSeconds($error),
+                    metadata: $error === null ? null : ['message' => mb_substr($error, 0, 500)],
+                );
             }
         }
 
-        return $this->save($spots, $files, $captureMediaCandidate);
+        $result = $this->save(
+            $spots,
+            $files,
+            $captureMediaCandidate,
+            array_fill_keys(array_keys($files), 'commons_geosearch'),
+        );
+        foreach ($files as $spotId => $file) {
+            $item = $scheduledBySpot->get($spotId);
+            if (! $item instanceof ScheduledMediaAcquisition) {
+                continue;
+            }
+            $assetId = $result['captured'][$spotId] ?? null;
+            $providerError = $result['provider_error'];
+            $scheduler->record(
+                $item,
+                $assetId !== null ? 'captured' : ($providerError !== null && str_contains($providerError, '429') ? 'rate_limited' : 'failed'),
+                errorCode: $assetId === null ? ($providerError === null ? 'metadata_or_candidate_unavailable' : 'provider_request_failed') : null,
+                candidateCount: 1,
+                selectedAssetIds: $assetId === null ? [] : [$assetId],
+                retryAfterSeconds: $scheduler->retryAfterSeconds($providerError),
+                metadata: ['commons_file' => $file],
+            );
+        }
+
+        $this->line(json_encode(
+            ['acquisition_summary' => $scheduler->summary($scheduled)],
+            JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        ));
+
+        return $result['count'];
     }
 
     /**
@@ -119,18 +198,27 @@ class FetchSpotPhotos extends Command
      * @param  Collection<int, Spot>  $spots
      * @param  array<int, string>  $files  spot id => Commons file name
      */
-    private function save($spots, array $files, CaptureMediaCandidate $captureMediaCandidate): int
-    {
+    private function save(
+        $spots,
+        array $files,
+        CaptureMediaCandidate $captureMediaCandidate,
+        array $matchSources,
+    ): array {
         if ($files === []) {
-            return 0;
+            return ['count' => 0, 'captured' => [], 'provider_error' => null];
         }
 
+        $providerError = null;
         $meta = $this->resolver->commonsMetadata(
             array_unique(array_values($files)),
-            fn (string $error) => $this->warn("  {$error}"),
+            function (string $error) use (&$providerError): void {
+                $providerError = $error;
+                $this->warn("  {$error}");
+            },
         );
 
         $saved = 0;
+        $captured = [];
         foreach ($files as $spotId => $file) {
             $spot = $spots->firstWhere('id', $spotId);
             if (! $spot) {
@@ -143,9 +231,23 @@ class FetchSpotPhotos extends Command
             }
 
             $canonicalFile = str_replace(' ', '_', trim($file));
-            $attachment = $captureMediaCandidate->execute($spot, $this->resolver->candidate($canonicalFile, $metadata));
+            $match = $this->matchEvidence(
+                $spot,
+                $canonicalFile,
+                $matchSources[$spotId] ?? 'commons_geosearch',
+            );
+            $attachment = $captureMediaCandidate->execute($spot, $this->resolver->candidate(
+                $canonicalFile,
+                $metadata,
+                $match['status'],
+                $match['method'],
+                $match['evidence'],
+            ));
 
             $asset = $attachment?->mediaAsset;
+            if ($attachment !== null) {
+                $captured[$spotId] = $attachment->media_asset_id;
+            }
             if ($attachment !== null && ($spot->photo_url !== null || $spot->photo_attribution !== null)) {
                 $spot->update([
                     'photo_url' => null,
@@ -158,7 +260,68 @@ class FetchSpotPhotos extends Command
             }
         }
 
-        return $saved;
+        return ['count' => $saved, 'captured' => $captured, 'provider_error' => $providerError];
+    }
+
+    /** @return array{status: string, method: string, evidence: array<string, mixed>} */
+    private function matchEvidence(Spot $spot, string $canonicalFile, string $source): array
+    {
+        $commonsTag = trim((string) ($spot->tags['wikimedia_commons'] ?? ''));
+        if ($source === 'osm_wikimedia_commons_tag'
+            && preg_match('/^File:(?<filename>.+)$/iu', $commonsTag, $match) === 1
+            && str_replace(' ', '_', trim($match['filename'])) === $canonicalFile) {
+            return [
+                'status' => 'accepted',
+                'method' => 'osm_wikimedia_commons_tag',
+                'evidence' => [
+                    'source' => 'osm',
+                    'source_id' => $spot->source_id,
+                    'tag' => $commonsTag,
+                    'commons_file' => $canonicalFile,
+                ],
+            ];
+        }
+
+        $wikidata = trim((string) ($spot->tags['wikidata'] ?? ''));
+        if ($source === 'osm_wikidata_p18' && preg_match('/^Q\d+$/D', $wikidata) === 1) {
+            return [
+                'status' => 'accepted',
+                'method' => 'osm_wikidata_p18',
+                'evidence' => [
+                    'source' => 'osm',
+                    'source_id' => $spot->source_id,
+                    'wikidata' => $wikidata,
+                    'claim' => 'P18',
+                    'commons_file' => $canonicalFile,
+                ],
+            ];
+        }
+
+        $wikipedia = trim((string) ($spot->tags['wikipedia'] ?? ''));
+        if ($source === 'osm_wikipedia_pageimage' && preg_match('/^[a-z]{2,3}:.+$/u', $wikipedia) === 1) {
+            return [
+                'status' => 'accepted',
+                'method' => 'osm_wikipedia_pageimage',
+                'evidence' => [
+                    'source' => 'osm',
+                    'source_id' => $spot->source_id,
+                    'wikipedia' => $wikipedia,
+                    'commons_file' => $canonicalFile,
+                ],
+            ];
+        }
+
+        return [
+            'status' => 'pending',
+            'method' => 'commons_geosearch',
+            'evidence' => [
+                'name' => $spot->name,
+                'lat' => $spot->lat,
+                'lng' => $spot->lng,
+                'radius_metres' => CommonsPhotoResolver::GEOSEARCH_RADIUS_M,
+                'commons_file' => $canonicalFile,
+            ],
+        ];
     }
 
     /**
@@ -199,14 +362,19 @@ class FetchSpotPhotos extends Command
         $files = [];
         foreach (array_chunk($byQid->keys()->all(), CommonsPhotoResolver::BATCH) as $chunk) {
             try {
-                $entities = Http::withUserAgent(CommonsPhotoResolver::USER_AGENT)->timeout(30)
+                $response = Http::withUserAgent(CommonsPhotoResolver::USER_AGENT)->timeout(30)
                     ->get('https://www.wikidata.org/w/api.php', [
                         'action' => 'wbgetentities',
                         'ids' => implode('|', $chunk),
                         'props' => 'claims',
                         'format' => 'json',
-                    ])
-                    ->json('entities', []);
+                    ]);
+                if (! $response->successful()) {
+                    $this->warn('  wikidata batch failed: '.CommonsPhotoResolver::httpError($response));
+
+                    continue;
+                }
+                $entities = $response->json('entities', []);
             } catch (\Exception $e) {
                 $this->warn("  wikidata batch failed: {$e->getMessage()}");
 
@@ -227,18 +395,20 @@ class FetchSpotPhotos extends Command
     }
 
     /**
-     * Page images for spots that only carry a wikipedia=lang:Title tag.
+     * Page images for unresolved spots carrying a wikipedia=lang:Title tag.
      *
      * @param  Collection<int, Spot>  $spots
+     * @param  list<int>  $resolvedSpotIds
      * @return array<int, string>
      */
-    private function filesFromWikipedia($spots): array
+    private function filesFromWikipedia($spots, array $resolvedSpotIds): array
     {
         // lang => [title => spot id]
         $byLang = [];
+        $resolved = array_fill_keys($resolvedSpotIds, true);
         foreach ($spots as $spot) {
-            if (! empty($spot->tags['wikidata'])) {
-                continue; // wikidata path already covers it
+            if (isset($resolved[$spot->id])) {
+                continue;
             }
             if (preg_match('/^([a-z]{2,3}):(.+)$/u', $spot->tags['wikipedia'] ?? '', $m)) {
                 $byLang[$m[1]][$m[2]] = $spot->id;
@@ -249,7 +419,7 @@ class FetchSpotPhotos extends Command
         foreach ($byLang as $lang => $titles) {
             foreach (array_chunk(array_keys($titles), CommonsPhotoResolver::BATCH) as $chunk) {
                 try {
-                    $query = Http::withUserAgent(CommonsPhotoResolver::USER_AGENT)->timeout(30)
+                    $response = Http::withUserAgent(CommonsPhotoResolver::USER_AGENT)->timeout(30)
                         ->get("https://{$lang}.wikipedia.org/w/api.php", [
                             'action' => 'query',
                             'titles' => implode('|', $chunk),
@@ -257,8 +427,13 @@ class FetchSpotPhotos extends Command
                             'piprop' => 'name',
                             'redirects' => 1,
                             'format' => 'json',
-                        ])
-                        ->json('query', []);
+                        ]);
+                    if (! $response->successful()) {
+                        $this->warn("  {$lang}.wikipedia batch failed: ".CommonsPhotoResolver::httpError($response));
+
+                        continue;
+                    }
+                    $query = $response->json('query', []);
                 } catch (\Exception $e) {
                     $this->warn("  {$lang}.wikipedia batch failed: {$e->getMessage()}");
 

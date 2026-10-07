@@ -1,0 +1,221 @@
+diff --git a/app/Console/Commands/ImportOsmSpots.php b/app/Console/Commands/ImportOsmSpots.php
+index 64bb5a71..d421d73a 100644
+--- a/app/Console/Commands/ImportOsmSpots.php
++++ b/app/Console/Commands/ImportOsmSpots.php
+@@ -55,10 +55,20 @@ public function handle(
+ 
+         $this->info('Querying Overpass API for Cologne spots...');
+ 
+-        // Fetch each category separately. Food and leisure cover the city;
+-        // work/study retain their existing central-area import scope.
+-        $bbox = '50.83,6.77,51.09,7.16'; // all of Cologne
+-        $innerBbox = '50.92,6.92,50.96,6.97'; // existing work/study scope
++        // Derive acquisition bounds from the same official polygons used
++        // for acceptance; a hand-written rectangle can omit edge locations.
++        $bounds = DB::table('veedels')
++            ->whereIn('name', $officialVeedels)
++            ->whereNotNull('boundary')
++            ->selectRaw('ST_YMin(ST_Extent(boundary)) AS south, ST_XMin(ST_Extent(boundary)) AS west, ST_YMax(ST_Extent(boundary)) AS north, ST_XMax(ST_Extent(boundary)) AS east')
++            ->first();
++        $coordinates = [$bounds?->south, $bounds?->west, $bounds?->north, $bounds?->east];
++        if (in_array(null, $coordinates, true)) {
++            $this->error('Official Veedel polygons must have a usable geographic extent.');
++
++            return self::FAILURE;
++        }
++        $bbox = implode(',', $coordinates);
+         $queries = [
+             'park' => "[out:json][timeout:40];nwr[\"leisure\"=\"park\"][\"name\"]({$bbox});out center;",
+             // No `out` limit on playground/pitch: Cologne has ~2,300 playgrounds
+@@ -80,15 +90,15 @@ public function handle(
+             'swimming' => "[out:json][timeout:40];(nwr[\"leisure\"=\"swimming_area\"]({$bbox});nwr[\"leisure\"=\"sports_centre\"][\"sport\"=\"swimming\"]({$bbox}););out center;",
+             'museum' => "[out:json][timeout:40];nwr[\"tourism\"=\"museum\"][\"name\"]({$bbox});out center;",
+             'gallery' => "[out:json][timeout:40];nwr[\"tourism\"=\"gallery\"][\"name\"]({$bbox});out center;",
+-            'attraction' => "[out:json][timeout:40];nwr[\"tourism\"=\"attraction\"][\"name\"]({$bbox});out center 200;",
++            'attraction' => "[out:json][timeout:40];nwr[\"tourism\"=\"attraction\"][\"name\"]({$bbox});out center;",
+             'zoo' => "[out:json][timeout:40];nwr[\"tourism\"=\"zoo\"][\"name\"]({$bbox});out center;",
+             'cafe' => "[out:json][timeout:40];nwr[\"amenity\"=\"cafe\"]({$bbox});out center;",
+             'restaurant' => "[out:json][timeout:40];nwr[\"amenity\"=\"restaurant\"]({$bbox});out center;",
+             'fast_food' => "[out:json][timeout:40];nwr[\"amenity\"=\"fast_food\"]({$bbox});out center;",
+             'bar' => "[out:json][timeout:40];nwr[\"amenity\"=\"bar\"]({$bbox});out center;",
+             'bakery' => "[out:json][timeout:40];nwr[\"shop\"=\"bakery\"]({$bbox});out center;",
+-            'coworking' => "[out:json][timeout:25];(node[\"amenity\"=\"coworking_space\"]({$innerBbox});node[\"office\"=\"coworking\"]({$innerBbox}););out body;",
+-            'library' => "[out:json][timeout:25];node[\"amenity\"=\"library\"]({$innerBbox});out body;",
++            'coworking' => "[out:json][timeout:25];(nwr[\"amenity\"=\"coworking_space\"]({$bbox});nwr[\"office\"=\"coworking\"]({$bbox}););out center;",
++            'library' => "[out:json][timeout:25];nwr[\"amenity\"=\"library\"]({$bbox});out center;",
+         ];
+ 
+         // Optionally re-import a subset (e.g. after a query fix) without
+@@ -422,24 +432,21 @@ private function isRecommendationDestination(string $category, string $name): bo
+     }
+ 
+     /**
+-     * OSM tags worth keeping — they feed the place detail's facts/chips;
+-     * wikidata/wikipedia link to Commons photos (spots:fetch-photos).
+-     */
+-    private const KEPT_TAG_KEYS = [
+-        'surface', 'lit', 'covered', 'indoor', 'access', 'access:conditional', 'fee', 'opening_hours',
+-        'sport', 'hoops', 'wheelchair', 'drinking_water', 'barrier',
+-        // Photo links resolved later by spots:fetch-photos. wikimedia_commons
+-        // and image are mapper-provided photos of the place itself.
+-        'wikidata', 'wikipedia', 'wikimedia_commons', 'image',
+-    ];
+-
+-    /**
+-     * @param  array<string, string>  $tags
++     * Keep valid source facts so refreshes retain practical details and conditions.
++     *
++     * @param  array<string, mixed>  $tags
+      * @return array<string, string>
+      */
+     protected function keptTags(array $tags): array
+     {
+-        return array_intersect_key($tags, array_flip(self::KEPT_TAG_KEYS));
++        return array_filter(
++            $tags,
++            static fn (mixed $value, mixed $key): bool => is_string($key)
++                && $key !== ''
++                && is_string($value)
++                && trim($value) !== '',
++            ARRAY_FILTER_USE_BOTH,
++        );
+     }
+ 
+     /**
+@@ -544,9 +551,20 @@ private function httpUrlTag(mixed $value): ?string
+             return null;
+         }
+ 
+-        $scheme = mb_strtolower((string) parse_url($url, PHP_URL_SCHEME));
++        if (preg_match('~^(https?)://([^/?#]+)(.*)$~iuD', $url, $parts) !== 1
++            || preg_match('~^(\[[0-9a-f:.]+\]|[^:@]+)(:\d+)?$~iuD', $parts[2], $authority) !== 1) {
++            return null;
++        }
++        $host = str_starts_with($authority[1], '[')
++            ? $authority[1]
++            : idn_to_ascii($authority[1], IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
++        if ($host === false) {
++            return null;
++        }
++        $suffix = preg_replace_callback('/[^\x21-\x7e]+/u', static fn (array $match): string => rawurlencode($match[0]), $parts[3]);
++        $url = $suffix === null ? null : mb_strtolower($parts[1]).'://'.$host.($authority[2] ?? '').$suffix;
+ 
+-        return in_array($scheme, ['http', 'https'], true) && filter_var($url, FILTER_VALIDATE_URL) !== false
++        return $url !== null && mb_strlen($url) <= 500 && filter_var($url, FILTER_VALIDATE_URL) !== false
+             ? $url
+             : null;
+     }
+diff --git a/tests/Feature/ImportOsmSpotsTest.php b/tests/Feature/ImportOsmSpotsTest.php
+index c0aebf79..23b6279d 100644
+--- a/tests/Feature/ImportOsmSpotsTest.php
++++ b/tests/Feature/ImportOsmSpotsTest.php
+@@ -46,3 +46,40 @@
+         'name:signed' => 'yes',
+     ]))->toBe(['Rabinplatz', 'Yitzhak Rabin Square', 'Trg Jicaka Rabina']);
+ });
++
++test('practical source facts survive the OSM import tag projection', function () {
++    $command = new ImportOsmSpots;
++    $method = new ReflectionMethod($command, 'keptTags');
++    $facts = [
++        'name' => 'Example sports cafe',
++        'cuisine' => 'vegetarian',
++        'reservation' => 'required',
++        'fee' => 'no',
++        'fee:conditional' => 'yes @ (Sa-Su)',
++        'charge' => '5 EUR',
++        'membership' => 'yes',
++        'access:conditional' => 'private @ (22:00-06:00)',
++        'wheelchair' => 'limited',
++        'diet:vegan' => 'yes',
++        'takeaway' => 'yes',
++        'addr:street' => 'Example street',
++        'check_date' => '2026-09-28',
++    ];
++
++    $kept = $method->invoke($command, [...$facts, 'invalid_nested' => ['yes'], 'invalid_bool' => true, 'empty' => '   ']);
++
++    expect($kept)->toBe($facts);
++});
++
++test('source website links preserve international hostnames and paths through refresh', function (?string $source, ?string $expected) {
++    $command = new ImportOsmSpots;
++    $method = new ReflectionMethod($command, 'httpUrlTag');
++
++    expect($method->invoke($command, $source))->toBe($expected);
++})->with([
++    ['https://café.de/straße', 'https://xn--caf-dma.de/stra%C3%9Fe'],
++    ['https://example.com/bäckerei?q=köln', 'https://example.com/b%C3%A4ckerei?q=k%C3%B6ln'],
++    ['https://example.com/already%20encoded', 'https://example.com/already%20encoded'],
++    ['https://name:secret@example.com/', null],
++    ['javascript:alert(1)', null],
++]);
+diff --git a/tests/Feature/Places/PlaceImportIntegrityTest.php b/tests/Feature/Places/PlaceImportIntegrityTest.php
+index 838466e6..6593b6f9 100644
+--- a/tests/Feature/Places/PlaceImportIntegrityTest.php
++++ b/tests/Feature/Places/PlaceImportIntegrityTest.php
+@@ -522,7 +522,7 @@ function seedTestVeedelBoundary(): void
+         return str_contains($query, 'nwr[')
+             && str_contains($query, '"'.$key.'"')
+             && str_contains($query, $value)
+-            && str_contains($query, '(50.83,6.77,51.09,7.16)')
++            && str_contains($query, '(50.9,6.9,52.01,8.01)')
+             && str_contains($query, 'out center');
+     });
+     $venues = Spot::query()->where('source', 'osm')->where('category', $category)->get();
+@@ -539,6 +539,8 @@ function seedTestVeedelBoundary(): void
+     ['fast_food', 'amenity', 'fast_food'],
+     ['bar', 'amenity', 'bar'],
+     ['bakery', 'shop', 'bakery'],
++    ['library', 'amenity', 'library'],
++    ['coworking', 'office', 'coworking'],
+ ]);
+ 
+ test('overlapping cafe bakery tags keep their category and refresh ownership across partial imports', function () {
+@@ -557,3 +559,46 @@ function seedTestVeedelBoundary(): void
+     }
+     expect(Spot::query()->where('source', 'osm')->count())->toBe(1);
+ });
++
++test('attraction refreshes retain records beyond the former source response cap', function () {
++    seedTestVeedelBoundary();
++    $elements = array_map(static fn (int $id): array => [
++        'type' => 'node', 'id' => $id, 'lat' => 50.98, 'lon' => 6.95,
++        'tags' => ['name' => 'Attraction '.$id, 'tourism' => 'attraction'],
++    ], range(1, 205));
++    Http::fake(function ($request) use ($elements) {
++        $rows = preg_match('/out center\\s+(\\d+)/', $request['data'], $match) === 1
++            ? array_slice($elements, 0, (int) $match[1])
++            : $elements;
++
++        return Http::response(['elements' => $rows]);
++    });
++
++    $this->artisan('osm:import --only=attraction')->assertSuccessful();
++
++    expect(Spot::query()->where('source', 'osm')->where('category', 'attraction')->count())->toBe(205)
++        ->and(PlaceFactObservation::query()->where('provider', 'osm')->count())->toBe(205);
++});
++
++test('source acquisition includes accepted locations beyond the former eastern rectangle', function () {
++    seedTestVeedelBoundary();
++    Queue::fake();
++    $veedel = DB::table('veedels')->orderBy('id')->value('id');
++    DB::statement('UPDATE veedels SET boundary = ST_Multi(ST_GeomFromText(?, 4326)) WHERE id = ?', [
++        'POLYGON((6.90 50.85, 7.1621 50.85, 7.1621 51.00, 6.90 51.00, 6.90 50.85))', $veedel,
++    ]);
++    Http::fake(function ($request) {
++        preg_match('/\\(([-0-9.,]+)\\)/', $request['data'], $match);
++        $bounds = isset($match[1]) ? array_map('floatval', explode(',', $match[1])) : [];
++        $covered = count($bounds) === 4 && $bounds[0] <= 50.8685084 && $bounds[3] >= 7.1607594;
++
++        return Http::response(['elements' => $covered ? [[
++            'type' => 'node', 'id' => 2301210583, 'lat' => 50.8685084, 'lon' => 7.1607594,
++            'tags' => ['name' => 'Eastern viewpoint', 'tourism' => 'viewpoint'],
++        ]] : []]);
++    });
++
++    $this->artisan('osm:import --only=viewpoint')->assertSuccessful();
++    expect(Spot::query()->where('source_id', 'node/2301210583')->first())
++        ->not->toBeNull()->is_active->toBeTrue();
++});

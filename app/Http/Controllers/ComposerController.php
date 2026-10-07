@@ -34,6 +34,8 @@ use App\Models\UserPlace;
 use App\Privacy\ProcessingAcceptanceRules;
 use App\Privacy\ProcessingConsentStore;
 use App\Privacy\ProcessingPurpose;
+use App\Places\PlaceCapabilities;
+use App\Places\PlaceIdentity;
 use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Profile\ProfileEngine;
@@ -48,6 +50,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -142,6 +145,7 @@ class ComposerController extends Controller
             ...array_map(fn (SpotCategory $category): string => $category->value, SpotCategory::cases()),
             'court',
             'culture',
+            'food_drink',
             'event',
         ];
 
@@ -153,6 +157,9 @@ class ComposerController extends Controller
             'constraints.areas.*' => ['string', Rule::in($areas)],
             'constraints.categories' => ['array'],
             'constraints.categories.*' => ['string', Rule::in($categories)],
+            'constraints.activities' => ['array', 'max:10'],
+            'constraints.activities.*' => ['string', Rule::in(PlaceCapabilities::ACTIVITIES)],
+            'constraints.radius_km' => ['nullable', 'numeric', 'between:0.1,50'],
             'constraints.companions' => ['nullable', Rule::in(['alone', 'partner', 'friends', 'kids'])],
             'constraints.budget' => ['nullable', Rule::in(['free', 'low', 'normal'])],
             'constraints.archetype' => ['nullable', 'string'],
@@ -190,8 +197,17 @@ class ComposerController extends Controller
 
         // "Locked" picks from the result page are kept across recomposes —
         // mechanically identical to home-feed pins, so they merge.
-        $pins = array_values(array_unique([...($validated['pins'] ?? []), ...($validated['locked'] ?? [])]));
-        $excluded = array_values($validated['excluded'] ?? []);
+        $pins = app(PlaceIdentity::class)->candidateIds([...($validated['pins'] ?? []), ...($validated['locked'] ?? [])]);
+        $excluded = app(PlaceIdentity::class)->candidateIds($validated['excluded'] ?? []);
+        $spotPins = array_values(array_filter(array_diff($pins, $excluded), fn (string $id): bool => str_starts_with($id, 'spot:')));
+        $pinCandidates = $candidates->byIds($spotPins, $constraints->windowStart);
+        $availablePins = array_map(fn (Candidate $candidate): string => $candidate->id, $pinCandidates);
+        if (collect($pinCandidates)->contains(fn (Candidate $candidate): bool => ! $filter->matchesBudget($constraints, $candidate))) {
+            throw ValidationException::withMessages(['pins' => 'A pinned place does not have a verified price within your budget. Remove it or change your budget.']);
+        }
+        if (array_diff($spotPins, $availablePins) !== []) {
+            return response()->json(['message' => 'A pinned place is no longer available. Remove it or choose another place.'], 422);
+        }
 
         // The plan's start: the shared origin (explicit pick / live / confirmed
         // / recent ping), else the area being planned, else the user's
@@ -199,6 +215,9 @@ class ComposerController extends Controller
         // place they last set themselves — not a guessed home.
         $locations = app(UserLocationService::class);
         $originContext = $locations->context($user, $request, $constraints->areas[0] ?? ($user->veedel ?: null));
+        if ($constraints->radiusKm !== null && ! $originContext->hasOrigin()) {
+            throw ValidationException::withMessages(['origin' => 'Choose a starting point so nearby places can be checked.']);
+        }
         [$originLat, $originLng] = $originContext->hasOrigin()
             ? [$originContext->lat, $originContext->lng]
             : [50.9375, 6.9603];
@@ -222,7 +241,7 @@ class ComposerController extends Controller
             : null;
 
         // The candidate pool, nearest-per-category to where the day starts.
-        $rawPool = $candidates->candidatesFor($constraints, $originLat, $originLng);
+        $rawPool = $candidates->candidatesFor($this->itineraryConstraints($constraints, $this->soloCategory($constraints)), $originLat, $originLng);
 
         // A single chosen activity ("Pitches") shapes the day differently from a
         // broad prompt: the activity is the day's ANCHOR, not its whole content —
@@ -260,9 +279,12 @@ class ComposerController extends Controller
             llmRankWeights: $candidateRanker->rank($constraints, $rankable, $llmPreferences, $rankingPermit),
         );
         $pinned = collect([
-            ...$candidates->byIds($pins, $constraints->windowStart),
+            ...$candidates->byIds($pins, $constraints->windowStart, $originLat, $originLng),
             ...collect($rawPool)->filter(fn (Candidate $candidate): bool => in_array($candidate->id, $pins, true))->all(),
         ])->unique(fn (Candidate $candidate): string => $candidate->id)->values()->all();
+        if (collect($pinned)->contains(fn (Candidate $candidate): bool => ! $filter->matchesDiscovery($constraints, $candidate))) {
+            throw ValidationException::withMessages(['pins' => 'A pinned place no longer meets your activity, access, distance or budget requirements. Remove it or change your filters.']);
+        }
         $pool = collect([...$appointmentSnapshot['candidates'], ...$pinned, ...$feasible])
             ->reject(fn (Candidate $c) => ! $c->isAppointment() && in_array($c->id, $excluded, true))
             ->unique(fn (Candidate $c) => $c->id)
@@ -365,7 +387,7 @@ class ComposerController extends Controller
      */
     private function itineraryConstraints(Constraints $constraints, ?string $soloCategory): Constraints
     {
-        if ($soloCategory === null) {
+        if ($soloCategory === null || $constraints->activities !== []) {
             return $constraints;
         }
 
@@ -377,8 +399,7 @@ class ComposerController extends Controller
 
     /**
      * Feasible itinerary candidates, with the solo-activity widening applied.
-     * Never dead-ends: drops the category filter, then budget, until something
-     * survives, flagging the plan relaxed so the response can say so honestly.
+     * Explicit constraints are retained even when no verified option matches.
      *
      * @param  list<Candidate>  $rawPool
      * @return array{0: list<Candidate>, 1: bool} [feasible, relaxed]
@@ -390,13 +411,6 @@ class ComposerController extends Controller
         $feasible = $filter->filter($base, $rawPool);
         if ($feasible !== []) {
             return [$feasible, false];
-        }
-
-        foreach ([$base->withoutCategories(), $base->withoutBudget(), $base->withoutBudget()->withoutCategories()] as $relaxed) {
-            $feasible = $filter->filter($relaxed, $rawPool);
-            if ($feasible !== []) {
-                return [$feasible, true];
-            }
         }
 
         return [[], false];
@@ -500,11 +514,16 @@ class ComposerController extends Controller
             return response()->json(['message' => 'No active plan — compose one first.'], 404);
         }
 
+        $stored = app(PlaceIdentity::class)->normalizePlan($stored);
         $pins = $stored['pins'] ?? [];
         $excluded = $stored['excluded'] ?? [];
         $storedConstraints = Constraints::fromArray($stored['constraints']);
         $appointmentPool = $appointments->within($user, $storedConstraints);
-        $plan = $this->hydratePlan($stored, $candidates, $appointmentPool, $candidates->byIds($pins, $storedConstraints->windowStart));
+        try {
+            $plan = $this->hydratePlan($stored, $candidates, $appointmentPool, $candidates->byIds($pins, $storedConstraints->windowStart));
+        } catch (\DomainException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 409);
+        }
         $slotIndex = (int) $validated['slot'];
         $rejected = $stored['rejected'][$slotIndex] ?? [];
 
@@ -546,7 +565,7 @@ class ComposerController extends Controller
         // Same origin + the same solo-activity widening the compose used, so a
         // complement slot finds another complement, not only the activity.
         $swapConstraints = $this->itineraryConstraints($plan->constraints, $this->soloCategory($plan->constraints));
-        $feasible = collect($filter->filter($swapConstraints, $candidates->candidatesFor($plan->constraints, $originLat, $originLng)))
+        $feasible = collect($filter->filter($swapConstraints, $candidates->candidatesFor($swapConstraints, $originLat, $originLng)))
             ->reject(fn (Candidate $c) => in_array($c->id, $excluded, true))
             ->values()
             ->all();
@@ -601,7 +620,7 @@ class ComposerController extends Controller
      * "Save to Today": pin the live plan (already cached) to the Today screen,
      * carrying the original prompt so "Open in Day Composer" can reopen it.
      */
-    public function save(Request $request, TodayPlanStore $today): JsonResponse
+    public function save(Request $request, TodayPlanStore $today, CandidateRepository $candidates, AppointmentRepository $appointments): JsonResponse
     {
         $validated = $request->validate([
             'prompt' => ['nullable', 'string', 'max:500'],
@@ -617,8 +636,9 @@ class ComposerController extends Controller
             return response()->json(['message' => 'No plan to save — compose one first.'], 404);
         }
 
+        $stored = app(PlaceIdentity::class)->normalizePlan($stored);
         if (is_array($validated['keep'] ?? null)) {
-            $keep = $validated['keep'];
+            $keep = app(PlaceIdentity::class)->candidateIds($validated['keep']);
             foreach ($stored['slots'] as $slot) {
                 if (($slot['is_appointment'] ?? false) && ! in_array($slot['id'], $keep, true)) {
                     return response()->json(['message' => 'A recorded appointment cannot be removed from the itinerary. Review it in Bureaucracy or change the planning time.'], 422);
@@ -634,6 +654,13 @@ class ComposerController extends Controller
             }
         }
 
+        try {
+            $constraints = Constraints::fromArray($stored['constraints']);
+            $fresh = $this->hydratePlan($stored, $candidates, $appointments->within($request->user(), $constraints));
+            $stored['slots'] = $fresh->toArray()['slots'];
+        } catch (\DomainException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 409);
+        }
         $today->save($request->user(), $stored, $validated['prompt'] ?? null);
 
         return response()->json(['saved' => true]);
@@ -754,6 +781,14 @@ class ComposerController extends Controller
     {
         $notices = [];
 
+        if ($constraints->radiusKm !== null) {
+            $notices[] = ['type' => 'info', 'text' => 'Within '.$constraints->radiusKm.' km of your starting point, measured in a straight line.'];
+        }
+
+        if ($plan->slots === []) {
+            $notices[] = ['type' => 'info', 'text' => 'No verified places match these requirements. Try a different area or change your filters.'];
+        }
+
         // The plan was widened beyond the exact filters (a shaped day with no
         // matching picks, or an over-tight combination) — say so honestly.
         if ($poolRelaxed || $plan->relaxed) {
@@ -861,19 +896,21 @@ class ComposerController extends Controller
         $constraints = Constraints::fromArray($stored['constraints']);
         // Refresh from the same local pool the plan was composed against.
         [$originLat, $originLng] = $stored['origin'] ?? [50.9375, 6.9603];
-        $pool = collect([...$candidates->candidatesFor($constraints, $originLat, $originLng), ...$appointmentPool, ...$pinnedPool])->keyBy('id');
+        $storedPool = $candidates->byIds(array_column($stored['slots'], 'id'), $constraints->windowStart, $originLat, $originLng);
+        $pool = collect([...$candidates->candidatesFor($constraints, $originLat, $originLng), ...$appointmentPool, ...$pinnedPool, ...$storedPool])->keyBy('id');
 
         $slots = [];
         foreach ($stored['slots'] as $slotData) {
             $candidate = $pool->get($slotData['id']);
-            if ($candidate === null) {
-                continue; // venue vanished between compose and swap
+            if ($candidate === null || (! $candidate->isAppointment() && (! app(FeasibilityFilter::class)->matchesDiscovery($constraints, $candidate) || ! $candidate->coversVisit(CarbonImmutable::parse($slotData['start_at']), CarbonImmutable::parse($slotData['end_at']))))) {
+                throw new \DomainException('A place or appointment in this plan is no longer available. Recompose the plan before swapping.');
             }
             $slots[] = new PlanSlot(
                 candidate: $candidate,
                 startAt: CarbonImmutable::parse($slotData['start_at']),
                 endAt: CarbonImmutable::parse($slotData['end_at']),
                 travelMinFromPrevious: (int) $slotData['travel_min_from_previous'],
+                why: $slotData['why'] ?? null,
             );
         }
 

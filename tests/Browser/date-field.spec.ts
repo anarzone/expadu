@@ -286,9 +286,10 @@ test.describe.serial('Date field', () => {
         const grid = page.getByRole('grid');
         await expect(grid).toBeVisible();
 
-        await grid.getByText('15', { exact: true }).click();
+        // Arrival is capped at today; the first is selectable all month.
+        await grid.getByText('1', { exact: true }).click();
 
-        expect(await shown(page, ARRIVAL)).toMatch(/^15\.\d{2}\.\d{4}$/);
+        expect(await shown(page, ARRIVAL)).toMatch(/^01\.\d{2}\.\d{4}$/);
     });
 
     test('the calendar opens on the date already typed', async ({ page }) => {
