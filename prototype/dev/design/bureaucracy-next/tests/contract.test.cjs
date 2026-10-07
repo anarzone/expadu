@@ -403,3 +403,34 @@ test('an unconfirmed card shows only its title and official page, nothing of its
         false,
     );
 });
+
+test('each task carries its own name and whether its start can still be undone', () => {
+    const p = plan(fresh());
+    assert.deepEqual(
+        p.processes.map((x) => x.title),
+        [
+            'EU Blue Card',
+            'Address registration',
+            'Health insurance',
+            'Bank account',
+        ],
+    );
+    // Names, not the first step's heading.
+    assert.notEqual(
+        proc(p, 'address').title,
+        proc(p, 'address').steps[0].title,
+    );
+    assert.equal(p.history[0].title, 'Tax ID');
+    // A proposal and work in progress can't be untracked.
+    assert.ok(p.processes.every((x) => x.untrackable === false));
+    const s = fresh();
+    P.start(s, 'bank');
+    assert.equal(proc(plan(s), 'bank').untrackable, true);
+    // Confirming a document for the task is progress too.
+    assert.equal(P.documentAction(s, 'bank', 0, 'confirm'), true);
+    assert.equal(proc(plan(s), 'bank').untrackable, false);
+    assert.match(
+        P.event(s, 'bank', 'process_untracked').error,
+        /already has progress/,
+    );
+});

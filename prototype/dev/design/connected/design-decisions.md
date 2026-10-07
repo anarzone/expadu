@@ -403,9 +403,9 @@ reported hold-up before a submission, "the office needs something" after one,
 withdrawing a submission, undoing "Track task", optional notes and dates).
 Appointments keep an unknown length as unknown and a text-only place as not
 routable. Today's and Composer's Paperwork lines read the same plan through
-`BureaucracyContract.records()`. Process headings keep the short sample names
-until the owner chooses between them and the backend's `title`/`topic_label`.
-Details are in `bureaucracy-next/README.md`.
+`BureaucracyContract.records()`. Task names are the backend's own process
+titles (EU Blue Card, Address registration…), and Undo after Start tracking
+follows its `untrackable` flag. Details are in `bureaucracy-next/README.md`.
 
 **Travel review fixes and one timetable — owner request, 7 October (in review):**
 the Timetable tab is the Neumarkt station board; Neumarkt is one stop that

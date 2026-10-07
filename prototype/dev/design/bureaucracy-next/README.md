@@ -72,15 +72,19 @@ what you mark here (Composer's "what to bring" answer and Your day's
 deadline, Today's Paperwork lines). With nothing saved they match the sample
 day exactly.
 
-Still open (owner or backend): the backend's process `title` is its first
-step's title, which repeats that step, so the cards keep the short names (EU
-Blue Card, Address registration…) until the owner chooses between them and
-`topic_label` (unreviewed navigation copy); "Add a task" has no backend
-entity; the document English names, the links between tasks, a reviewed
-process title and an explicit "can still be untracked" flag are next on the
-backend side. The backend catalogue has grown to about 46 cards in 30
-processes (Blue Card first application now has four steps); this preview
-keeps its historical sample of two Blue Card steps and three other tasks. Tests: `tests/contract.test.cjs` (17), `tests/plan.test.cjs`.
+Task names are the backend's own process titles (`processes[].title`, from
+its `process-titles.yaml` since f7e6f117): EU Blue Card, Address
+registration, Health insurance, Bank account and Tax ID (the retained record
+was "Tax identification number"). Step headings stay the steps' own. "Undo"
+after Start tracking follows the plan's `untrackable` flag, which confirming
+a document for the task also ends.
+
+Still open: "Add a task" has no backend entity; the document English names
+and the links between tasks are next on the backend side. The backend
+catalogue has grown to about 46 cards in 30 processes (Blue Card first
+application now has four steps); this preview keeps its historical sample of
+two Blue Card steps and three other tasks. Tests: `tests/contract.test.cjs`
+(18), `tests/plan.test.cjs`.
 
 ## Aligned with the v2 backend rules — 7 October 2026 (in review)
 

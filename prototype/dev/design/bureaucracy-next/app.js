@@ -135,9 +135,10 @@
         plan.processes.find((p) => p.occurrence_key === key);
     const stepOf = (plan, id) =>
         plan.processes.flatMap((p) => p.steps).find((s) => s.id === id);
-    // The short names this preview uses for its sample tasks (UI copy until
-    // the owner chooses between them and the backend's title/topic_label).
+    // A task's own name: the plan's processes[].title (the backend's
+    // reviewed process names), else the sample record's.
     const nameOf = (key) =>
+        C.titleOf(key) ||
         P.process(state, key)?.name ||
         state.history?.find((h) => h.id === key)?.name ||
         '';
@@ -266,7 +267,7 @@
         return `<span class="state-badge ${kind}">${E(text)}</span>`;
     }
     function scope(p = current()) {
-        return `<div class="scope-summary">${E(names[state.person])}${p ? ' · ' + E(p.name) : ''}</div>`;
+        return `<div class="scope-summary">${E(names[state.person])}${p ? ' · ' + E(nameOf(p.id)) : ''}</div>`;
     }
     function viewMarkup() {
         if (!B.canEdit(state))
@@ -317,7 +318,9 @@
         ].map((el) => el.dataset.paperRow);
         const allowed = B.canEdit(state);
         const heading =
-            state.view === 'detail' && current() ? current().name : 'Paperwork';
+            state.view === 'detail' && current()
+                ? nameOf(current().id)
+                : 'Paperwork';
         const persona = personas.find(([id]) => id === state.preview);
         document.querySelector('#main').innerHTML =
             `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>Read-only. Your own plan isn’t changed.</span><button data-preview-exit>Back to your plan</button></div>` : ''}<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
@@ -582,7 +585,7 @@
                 .filter((p) => p.started && !P.terminal(p))
                 .map(
                     (p) =>
-                        `<button class="person-option" data-appointment-for="${p.id}">${I(p.icon)}<strong>${E(p.name)}</strong>${I('arrow')}</button>`,
+                        `<button class="person-option" data-appointment-for="${p.id}">${I(p.icon)}<strong>${E(nameOf(p.id))}</strong>${I('arrow')}</button>`,
                 )
                 .join(''),
         );
@@ -731,14 +734,8 @@
             targetStep?.sources.legal[0]?.url ||
             targetStep?.sources.official[0]?.url ||
             '';
-        // Undo "Track task" until there's progress (process_untracked).
-        const undo =
-            tracked &&
-            c.state.workflow === 'not_started' &&
-            !c.state.report &&
-            c.progress.completed === 0 &&
-            !appointment &&
-            P.untrackable(state, key);
+        // Undo "Track task" while the plan says it can still be undone.
+        const undo = tracked && c.untrackable;
         const linked = appointment
             ? BureaucracyPlanning.linked(
                   S.studio(),

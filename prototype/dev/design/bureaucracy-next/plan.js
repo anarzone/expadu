@@ -491,6 +491,9 @@
     }
     // "Track task" can be undone until there's progress: no report, no
     // finished step and no appointment.
+    // The backend's rule (processes[].untrackable): started, not_started,
+    // no finished step, no report or appointment, and no document
+    // confirmed for the task.
     function untrackable(s, id) {
         const p = process(s, id);
         if (!p?.started || p.workflow !== 'not_started') return false;
@@ -498,7 +501,12 @@
         const r = holder(s, id);
         const stepDone =
             id === 'blue-card' ? s.prepared || s.submitDone : r.done;
-        return !stepDone && !r.reports?.length && !p.appointment;
+        return (
+            !stepDone &&
+            !r.reports?.length &&
+            !p.appointment &&
+            !r.requirementConfirmed
+        );
     }
     const eventFor = {
         preparing: 'preparation_started',
@@ -642,8 +650,17 @@
     function documentAction(s, id, index, action) {
         const p = process(s, id);
         if (!p?.started || terminal(p)) return false;
-        if (id === 'blue-card') return B.documentAction(s, index, action);
-        const docs = s.records[id].docs;
+        const done =
+            id === 'blue-card'
+                ? B.documentAction(s, index, action)
+                : changeDocument(s.records[id].docs, index, action);
+        // Confirming a requirement for the task is a process event: the
+        // start can't be undone after it.
+        if (done && action === 'confirm')
+            holder(s, id).requirementConfirmed = true;
+        return done;
+    }
+    function changeDocument(docs, index, action) {
         if (!Number.isInteger(index) || index < 0 || index >= docs.length)
             return false;
         if (action === 'have') docs[index] = 'reported_available';

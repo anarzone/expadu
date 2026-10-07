@@ -29,6 +29,17 @@
     // Catalogue step kinds (process-map.yaml): an "action" step is the
     // submission, so its completion event is submission_recorded.
     const actionSteps = ['case.bc.first_application.submit'];
+    // Each process's own short name (schema/process-titles.yaml,
+    // processes[].title since f7e6f117). Names only, no figures.
+    const processTitles = {
+        'address.registration': 'Address registration',
+        'banking.account': 'Bank account',
+        'health.coverage': 'Health insurance',
+        'residence.blue_card.first': 'EU Blue Card',
+        'tax.identification': 'Tax ID',
+    };
+    // processes[].title for one of this sample's occurrences.
+    const titleOf = (key) => processTitles[definitions[key]?.id] || null;
     // config('bureaucracy_catalogue.topic_labels'): plain navigation copy,
     // not reviewed yet; the owner can rename them.
     const topicLabels = {
@@ -339,7 +350,9 @@
             occurrence_key: p.id,
             definition_id: definition.id,
             version: p.started ? (p.reports || []).length + 1 : 0,
-            title: steps[0]?.title || null,
+            // The process's own name; older releases fell back to the
+            // first step's title.
+            title: processTitles[definition.id] || steps[0]?.title || null,
             topic: definition.topic,
             topic_label: topicLabels[definition.topic],
             state: {
@@ -356,6 +369,9 @@
             closed_on: closed ? p.closedOn || null : null,
             closed_event_id: closed ? report?.id || null : null,
             blocking_reason: blocking,
+            // Whether "Track task" can still be undone (process_untracked);
+            // never for a proposal.
+            untrackable: p.started ? P.untrackable(s, p.id) : false,
             steps,
             progress: {
                 completed: steps.filter((x) => x.status === 'completed').length,
@@ -594,8 +610,9 @@
                 id: h.id,
                 occurrence_key: h.id,
                 definition_id: definitions[h.id]?.id || null,
-                title: r?.title || null,
+                title: titleOf(h.id) || r?.title || null,
                 topic_label: topicLabels[definitions[h.id]?.topic] || null,
+                untrackable: false,
                 state: { workflow: h.workflow, report: null },
                 is_closed: true,
                 closed_on: h.closedOn || null,
@@ -712,5 +729,5 @@
             })
             .filter(Boolean);
     }
-    root.BureaucracyContract = { plan, facts, records, topicLabels };
+    root.BureaucracyContract = { plan, facts, records, titleOf, topicLabels };
 })(globalThis);
