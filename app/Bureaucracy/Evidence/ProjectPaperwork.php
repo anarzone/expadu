@@ -40,14 +40,14 @@ final class ProjectPaperwork
                     $share = $selected !== null && $selected->person_id !== $person->id ? $this->evidenceAccess->shareFor($selected, $processId, $requirement['id'], $requirement['semantic_hash']) : null;
                     $permitted = $selected !== null && ($selected->person_id === $person->id || $share !== null);
                     $readiness = 'missing';
-                    $suggestions = $requirement['evidence_kind'] === null ? [] : $ownItems->filter(fn ($item) => $this->evidenceAccess->usable($item, $input->at->toDateString(), $requirement['evidence_kind']))->pluck('id')->all();
+                    $suggestions = $ownItems->filter(fn ($item) => $this->evidenceAccess->suggests($item, $input->at->toDateString(), $requirement['id'], $requirement['evidence_kind']))->values()->pluck('id')->all();
                     if ($processId !== null) {
                         $sharedIds = BureaucracyEvidenceShare::query()->where('process_id', $processId)->where('requirement_id', $requirement['id'])
                             ->where('requirement_hash', $requirement['semantic_hash'])->whereNull('revoked_at')->where('expires_at', '>', $input->at)->pluck('evidence_id');
                         foreach (BureaucracyEvidenceItem::query()->whereIn('id', $sharedIds)->where('status', 'active')->orderBy('id')->sharedLock()->get() as $sharedItem) {
                             if ($this->evidenceAccess->shareFor($sharedItem, $processId, $requirement['id'], $requirement['semantic_hash']) !== null) {
                                 $inventory[$sharedItem->id] = $this->item($sharedItem);
-                                if ($this->evidenceAccess->usable($sharedItem, $input->at->toDateString(), $requirement['evidence_kind'])) {
+                                if ($this->evidenceAccess->fits($sharedItem, $input->at->toDateString(), $requirement['id'], $requirement['evidence_kind'])) {
                                     $suggestions[] = $sharedItem->id;
                                 }
                             }
@@ -56,7 +56,7 @@ final class ProjectPaperwork
                     }
                     if ($use !== null) {
                         $readiness = $permitted && $use->share_id === $share?->id && $selected->version === $use->evidence_version && $use->requirement_hash === $requirement['semantic_hash']
-                            && $requirement['applicability'] === 'required' && $this->evidenceAccess->usable($selected, $input->at->toDateString(), $requirement['evidence_kind'])
+                            && $requirement['applicability'] === 'required' && $this->evidenceAccess->fits($selected, $input->at->toDateString(), $requirement['id'], $requirement['evidence_kind'])
                             ? 'confirmed_for_use' : 'needs_reconfirmation';
                     } elseif ($suggestions !== []) {
                         $readiness = 'reported_available';

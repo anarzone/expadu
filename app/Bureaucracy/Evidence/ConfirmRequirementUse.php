@@ -59,7 +59,7 @@ final class ConfirmRequirementUse
             if ($requirement === null || ! hash_equals($requirement['semantic_hash'], $requirementHash)) {
                 throw new ConflictHttpException('This document requirement changed or is no longer available.');
             }
-            if ($requirement['applicability'] !== 'required' || ! $this->evidenceAccess->usable($item, $input->at->toDateString(), $requirement['evidence_kind'])) {
+            if ($requirement['applicability'] !== 'required' || ! $this->evidenceAccess->fits($item, $input->at->toDateString(), $requirementId, $requirement['evidence_kind'])) {
                 throw ValidationException::withMessages(['evidence' => 'Clarify this requirement and check that the document is available and current first.']);
             }
             BureaucracyRequirementUse::query()->where('process_id', $current->id)->where('requirement_id', $requirementId)

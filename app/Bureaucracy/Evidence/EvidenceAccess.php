@@ -29,6 +29,23 @@ final class EvidenceAccess
             });
     }
 
+    /**
+     * Usable for one requirement: the document kind matches the reviewed evidence kind, or the person
+     * explicitly attached the item to that requirement. Neither is a confirmation of use.
+     */
+    public function fits(BureaucracyEvidenceItem $item, string $today, string $requirementId, ?string $kind): bool
+    {
+        return $this->usable($item, $today, null)
+            && ($kind === null || ($item->details['kind'] ?? null) === $kind || in_array($requirementId, $item->details['requirement_refs'] ?? [], true));
+    }
+
+    /** Explicitly attached by the person, or a reviewed evidence-kind match: worth suggesting. */
+    public function suggests(BureaucracyEvidenceItem $item, string $today, string $requirementId, ?string $kind): bool
+    {
+        return $this->usable($item, $today, null)
+            && (($kind !== null && ($item->details['kind'] ?? null) === $kind) || in_array($requirementId, $item->details['requirement_refs'] ?? [], true));
+    }
+
     public function usable(BureaucracyEvidenceItem $item, string $today, ?string $kind): bool
     {
         $details = $item->details;
