@@ -265,16 +265,19 @@ test('onboarding fails with unknown veedel', function () {
     $response->assertSessionHasErrors('veedel');
 });
 
-test('onboarding can be skipped without manufacturing answers or completion', function () {
+test('onboarding fails without required fields', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);
 
     $response = $this->post(route('onboarding.complete'), []);
 
-    $response->assertSessionHasNoErrors()->assertRedirect(route('bureaucracy'));
-    expect($user->fresh()->bureaucracyCase->facts()->count())->toBe(0)
-        ->and($user->fresh()->bureaucracy_path)->toBeNull()
-        ->and(app(AccountHolderPlan::class)->for($user->fresh())['coverage']['state'])->toBe('outside_coverage');
+    // Exactly three: situation picks the branch, veedel drives places,
+    // commute and alerts, and the arrival answer anchors every
+    // days_since_arrival deadline. Everything else is deferrable.
+    $response->assertSessionHasErrors(['situation', 'veedel', 'arrival_planned']);
+    $response->assertSessionDoesntHaveErrors(['address_registration_status', 'entry_mode']);
+    expect($user->fresh()->onboarded_at)->toBeNull()
+        ->and($user->fresh()->bureaucracyCase?->facts()->count() ?? 0)->toBe(0);
 });
 
 test('onboarding fails with future arrival date', function () {

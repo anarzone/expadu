@@ -7,7 +7,7 @@ use App\Models\Task;
 use App\Models\User;
 
 /**
- * All bureaucracy basics are skippable under the accepted replacement contract.
+ * Situation, Veedel and arrival are required; every other bureaucracy answer is skippable.
  * Exercise the canonical account API without inventing a branch or reapproving
  * legacy prose. The imported clock is not promoted to a reviewed legal deadline.
  */
@@ -51,16 +51,27 @@ it('completes with only the basic answers supplied', function () {
         ->and($user->veedel)->toBe('Altstadt-Nord');
 });
 
-it('accepts a skipped basic answer without inventing a fact', function (string $field) {
+it('requires the three core answers every feature depends on', function (string $field) {
+    [$user, $response] = completeOnboarding([$field => null]);
+
+    $response->assertSessionHasErrors($field);
+    expect($user->onboarded_at)->toBeNull();
+})->with(['situation', 'veedel', 'arrival_planned']);
+
+it('requires an arrival date once the person says they have arrived', function () {
+    [$user, $response] = completeOnboarding(['arrival_planned' => false, 'arrival_date' => null]);
+
+    $response->assertSessionHasErrors('arrival_date');
+    expect($user->onboarded_at)->toBeNull();
+});
+
+it('accepts every optional bureaucracy answer skipped without inventing a fact', function (string $field) {
     [$user, $response] = completeOnboarding([$field => null]);
 
     $response->assertSessionHasNoErrors();
-    expect($user->onboarded_at)->not->toBeNull();
-    $fact = ['situation' => 'purpose', 'arrival_planned' => 'arrival_planned'][$field] ?? null;
-    if ($fact !== null) {
-        expect(app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString())['values'])->not->toHaveKey($fact);
-    }
-})->with(['situation', 'veedel', 'arrival_planned']);
+    expect($user->onboarded_at)->not->toBeNull()
+        ->and(app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString())['values'])->not->toHaveKey($field);
+})->with(['is_eu', 'entry_mode', 'current_residence_title', 'case_goal', 'moved_in_at', 'registration_status']);
 
 it('records a skipped answer as unanswered rather than guessing it', function () {
     [$user] = completeOnboarding();

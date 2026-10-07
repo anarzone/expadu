@@ -21,10 +21,13 @@ class OnboardingRequest extends FormRequest
     {
         $registry = app(FactRegistry::class);
         $rules = [
-            'situation' => ['nullable', Rule::in(array_column(Situation::cases(), 'value'))],
+            // The three answers every feature depends on stay required: situation
+            // picks the plan, Veedel drives places/commute/alerts, arrival anchors
+            // every arrival-relative date. Everything else is skippable.
+            'situation' => ['required', Rule::in(array_column(Situation::cases(), 'value'))],
             'is_eu' => ['nullable', 'boolean'],
-            'arrival_planned' => ['nullable', 'boolean'],
-            'veedel' => ['nullable', 'string', Rule::in(collect(config('veedels', []))->flatten()->all())],
+            'arrival_planned' => ['required', 'boolean'],
+            'veedel' => ['required', 'string', Rule::in(collect(config('veedels', []))->flatten()->all())],
             'german_level' => ['nullable', Rule::in(array_column(GermanLevel::cases(), 'value'))],
             'documented_german_level' => ['nullable', Rule::in($registry->definition('german_level')->options)],
             'has_deutschlandticket' => ['nullable', 'boolean'],
@@ -44,6 +47,7 @@ class OnboardingRequest extends FormRequest
             }
         }
         $rules['arrival_date'][] = Rule::prohibitedIf(fn () => $this->boolean('arrival_planned'));
+        $rules['arrival_date'][] = Rule::requiredIf(fn () => $this->has('arrival_planned') && ! $this->boolean('arrival_planned'));
         $rules['moved_in_at'][] = Rule::prohibitedIf(fn () => $this->boolean('arrival_planned'));
         $rules['residence_title_expires_at'][] = Rule::prohibitedIf(fn () => in_array($this->input('current_residence_title'),
             ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown'], true));
