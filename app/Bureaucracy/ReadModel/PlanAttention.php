@@ -8,7 +8,11 @@ use Carbon\CarbonImmutable;
 /** Product attention windows, not extra legal rules or deadline calculations. */
 final class PlanAttention
 {
-    public function for(?array $plan): array
+    /**
+     * Dated rows inside the product windows. With $includeUndated, open-step deadlines whose date is
+     * still unknown are listed too (date null, urgency date_unknown, needed_fact) instead of guessed.
+     */
+    public function for(?array $plan, bool $includeUndated = false): array
     {
         if ($plan === null) {
             return [];
@@ -32,6 +36,11 @@ final class PlanAttention
                 }
             }
             $date = $appointment ? ($event['starts_at'] ?? null) : ($event['date'] ?? null);
+            if ($includeUndated && ! $appointment && $kind !== 'document_expiry' && $event['state'] === 'date_unknown' && ($event['needed_fact'] ?? null) !== null) {
+                $result[] = $this->undated($plan, $event, $rule);
+
+                continue;
+            }
             if ($date === null || ! in_array($event['state'], ['dated', 'recorded'], true)) {
                 continue;
             }
@@ -59,11 +68,42 @@ final class PlanAttention
                 'source_rule_id' => $rule['id'] ?? null, 'source_hash' => $rule['source_hash'] ?? null,
                 'action' => ['type' => $appointment ? 'view_appointment' : ($kind === 'document_expiry' ? 'review_details' : 'open_process'), 'person_id' => $plan['person_id'],
                     'process_id' => $event['process_id'] ?? null, 'occurrence_key' => $event['occurrence_key'] ?? null, 'event_id' => $event['id']]];
-            $result[] = [...$row, 'event_revision' => ProcessingConsentStore::digest($row), 'assessment_revision' => $plan['assessment_revision']];
+            // Reminder references digest the original row; the additive fields below keep that revision stable.
+            $result[] = [...$row, 'event_revision' => ProcessingConsentStore::digest($row), 'assessment_revision' => $plan['assessment_revision'],
+                ...$this->links($event)];
         }
-        usort($result, fn ($a, $b) => $a['days_remaining'] <=> $b['days_remaining'] ?: strcmp($a['id'], $b['id']));
+        usort($result, fn ($a, $b) => ($a['days_remaining'] ?? PHP_INT_MAX) <=> ($b['days_remaining'] ?? PHP_INT_MAX) ?: strcmp($a['id'], $b['id']));
 
         return $result;
+    }
+
+    /** Attention rows due today or within the next seven calendar days in the jurisdiction's time zone. */
+    public function comingUp(array $attention): array
+    {
+        return array_values(array_filter($attention, fn ($row) => $row['days_remaining'] !== null && $row['days_remaining'] >= 0 && $row['days_remaining'] <= 7));
+    }
+
+    private function undated(array $plan, array $event, array $rule): array
+    {
+        $row = ['id' => $event['id'], 'person_id' => $plan['person_id'], 'jurisdiction' => $plan['jurisdiction'],
+            'process_id' => $event['process_id'] ?? null, 'occurrence_key' => $event['occurrence_key'] ?? null,
+            'kind' => $event['kind'], 'date' => null, 'timezone' => $event['timezone'], 'days_remaining' => null, 'urgency' => 'date_unknown',
+            'title' => $rule['title'], 'label' => null, 'source_rule_id' => $rule['id'], 'source_hash' => $rule['source_hash'],
+            'action' => ['type' => 'open_process', 'person_id' => $plan['person_id'], 'process_id' => $event['process_id'] ?? null,
+                'occurrence_key' => $event['occurrence_key'] ?? null, 'event_id' => $event['id']]];
+
+        return [...$row, 'event_revision' => ProcessingConsentStore::digest($row), 'assessment_revision' => $plan['assessment_revision'], ...$this->links($event)];
+    }
+
+    /** Typed facts copied from the timeline row; nothing here is recalculated. */
+    private function links(array $event): array
+    {
+        return ['state' => $event['state'], 'needed_fact' => $event['needed_fact'] ?? null, 'overdue' => $event['overdue'] ?? false,
+            'conditional' => $event['conditional'] ?? false, 'action_id' => $event['action_id'] ?? null, 'step_id' => $event['step_id'] ?? null,
+            'anchor_fact' => $event['anchor_fact'] ?? null, 'anchor_event_id' => $event['anchor_event_id'] ?? null,
+            'legal_effect' => $event['legal_effect'] ?? null, 'provenance' => $event['provenance'] ?? null,
+            'fact_key' => $event['fact_key'] ?? null, 'document' => $event['document'] ?? null,
+            'starts_at' => $event['starts_at'] ?? null, 'duration_minutes' => $event['duration_minutes'] ?? null, 'location' => $event['location'] ?? null];
     }
 
     public function count(?array $plan): int

@@ -112,7 +112,7 @@ final class PlanReadModel
                 'provider_version' => ProcessingPurpose::FactExtraction->providerVersion(), 'ai_available' => ProcessingPurpose::FactExtraction->available(),
                 'sharing_notice' => config('bureaucracy_family.sharing_notice_version'), 'next_boundary' => $nextTime]);
 
-            return ['schema_version' => 'bureaucracy.plan.1', 'person_id' => $person->id, 'jurisdiction' => $jurisdiction,
+            $plan = ['schema_version' => 'bureaucracy.plan.1', 'person_id' => $person->id, 'jurisdiction' => $jurisdiction,
                 'assessment_revision' => $revision, 'evaluated_at' => $input->at->toIso8601String(), 'next_reassessment_at' => $nextTime,
                 'overview' => ['next_actions' => array_slice($next, 0, 3), 'question' => $question['question'], 'remaining_action_count' => max(0, count($next) - 3)],
                 'questions' => $question, 'actions' => $next, 'processes' => $processes, 'history' => $history,
@@ -121,6 +121,9 @@ final class PlanReadModel
                 'progress' => $progress, 'timeline' => $timeline, 'coverage' => $coverage, 'paperwork' => $paperwork, 'scopes' => $scopes,
                 'ai' => ['available' => in_array(AccessScope::RequestAi->value, $scopes, true) && in_array(AccessScope::EditFacts->value, $scopes, true)
                     && ProcessingPurpose::FactExtraction->available(), 'consent_scope' => 'single_request', 'confirmation_required' => true]];
+            $attention = app(PlanAttention::class)->for($plan, includeUndated: true);
+
+            return [...$plan, 'attention' => $attention, 'coming_up' => app(PlanAttention::class)->comingUp($attention)];
         });
     }
 
@@ -168,6 +171,15 @@ final class PlanReadModel
                 }
             }
         }
+
+        // Name the recorded expiry row whose date anchors a step's date, so no consumer has to infer the link.
+        $expiries = array_column(array_filter($rows, fn ($row) => $row['kind'] === 'document_expiry'), 'id', 'fact_key');
+        foreach ($rows as &$row) {
+            if (isset($row['anchor_fact'])) {
+                $row['anchor_event_id'] = $expiries[$row['anchor_fact']] ?? null;
+            }
+        }
+        unset($row);
 
         return $rows;
     }

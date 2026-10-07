@@ -57,17 +57,18 @@ final class BuildTimeline
                 if ($row['date'] !== null) {
                     $row['state'] = 'dated';
                     $row['needed_fact'] = null;
+                    $row['anchor_fact'] = $anchor;
                     $row['overdue'] = $row['date'] < $today;
                 }
             }
             $rows[] = (new TemporalEvent($row))->toArray();
         }
-        if ($this->known($facts, 'residence_card_expires_at')) {
-            $date = $this->date($facts['values']['residence_card_expires_at'], $timezone);
+        foreach ($this->recordedExpiries($facts) as $key => [$id, $document]) {
+            $date = $this->date($facts['values'][$key], $timezone);
             if ($date !== null) {
-                $rows[] = ['id' => 'residence-card.expiry', 'kind' => 'document_expiry', 'date' => $date->toDateString(),
+                $rows[] = ['id' => $id, 'kind' => 'document_expiry', 'date' => $date->toDateString(),
                     'precision' => 'calendar_date', 'timezone' => $timezone, 'state' => 'dated', 'overdue' => $date->toDateString() < $today,
-                    'provenance' => 'confirmed_fact', 'legal_effect' => 'not_assessed'];
+                    'provenance' => 'confirmed_fact', 'legal_effect' => 'not_assessed', 'fact_key' => $key, 'document' => $document];
             }
         }
         $appointments = [];
@@ -96,6 +97,31 @@ final class BuildTimeline
         }
 
         return $rows;
+    }
+
+    /**
+     * Personal recorded expiry dates, not legal deadlines. A visa or residence-title date is shown
+     * only while the confirmed current title is one it can belong to: never for an unknown title,
+     * and never for a settlement (unlimited) title, whose old date would read as an end of status.
+     *
+     * @return array<string, array{string, string}>
+     */
+    private function recordedExpiries(array $facts): array
+    {
+        $title = $this->known($facts, 'current_residence_title') ? $facts['values']['current_residence_title'] : null;
+        $limited = $title !== null && ! in_array($title, ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown'], true);
+        $documents = [];
+        if ($title === 'national_d_visa' && $this->known($facts, 'visa_expires_at')) {
+            $documents['visa_expires_at'] = ['visa.expiry', 'visa'];
+        }
+        if ($limited && $this->known($facts, 'residence_title_expires_at')) {
+            $documents['residence_title_expires_at'] = ['residence-title.expiry', 'residence_title'];
+        }
+        if ($this->known($facts, 'residence_card_expires_at')) {
+            $documents['residence_card_expires_at'] = ['residence-card.expiry', 'residence_card'];
+        }
+
+        return $documents;
     }
 
     private function known(array $facts, string $key): bool

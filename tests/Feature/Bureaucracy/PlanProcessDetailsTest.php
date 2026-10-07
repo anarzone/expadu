@@ -107,3 +107,46 @@ test('reviewed step positions must be positive and unique within a process', fun
     'zero' => [[0, 2]],
     'not an integer' => [['1', 2]],
 ]);
+
+test('a recorded D-visa expiry is its own personal date row and is linked from the action deadline it anchors', function () {
+    app(RecordFactChange::class)->execute($this->actor, $this->case->person, 'current_residence_title', 'national_d_visa', null, 2);
+    app(RecordFactChange::class)->execute($this->actor, $this->case->person, 'visa_expires_at', now()->addDay()->toDateString(), null, 3);
+    $plan = ($this->read)();
+    $expiry = collect($plan['timeline'])->firstWhere('kind', 'document_expiry');
+    expect($expiry)->toMatchArray(['id' => 'visa.expiry', 'fact_key' => 'visa_expires_at', 'document' => 'visa', 'date' => now()->addDay()->toDateString(),
+        'legal_effect' => 'not_assessed', 'provenance' => 'confirmed_fact']);
+    $action = collect($plan['actions'])->firstWhere('step_id', 'fixture.flow.alpha-submit.complete')
+        ?? collect($plan['processes'][0]['steps'])->firstWhere('step_id', 'fixture.flow.alpha-submit.complete');
+    expect($action['dates'][0])->toMatchArray(['anchor_fact' => 'visa_expires_at', 'anchor_event_id' => 'visa.expiry', 'action_id' => $action['id']]);
+    $attention = collect($plan['attention']);
+    expect($attention->firstWhere('kind', 'document_expiry'))->toMatchArray(['id' => 'visa.expiry', 'days_remaining' => 1, 'legal_effect' => 'not_assessed', 'state' => 'dated'])
+        ->and($attention->firstWhere('action_id', $action['id']))->toMatchArray(['kind' => 'preparation_target', 'days_remaining' => 1, 'anchor_event_id' => 'visa.expiry'])
+        ->and(array_column($plan['coming_up'], 'id'))->toEqualCanonicalizing(array_column($plan['attention'], 'id'));
+});
+
+test('coming up keeps only the next seven days and unknown dates stay unknown in attention', function () {
+    app(RecordFactChange::class)->execute($this->actor, $this->case->person, 'current_residence_title', 'national_d_visa', null, 2);
+    $undated = ($this->read)();
+    $row = collect($undated['attention'])->firstWhere('kind', 'preparation_target');
+    expect($row)->toMatchArray(['date' => null, 'days_remaining' => null, 'urgency' => 'date_unknown', 'state' => 'date_unknown', 'needed_fact' => 'visa_expires_at'])
+        ->and($undated['coming_up'])->toBeEmpty();
+    app(RecordFactChange::class)->execute($this->actor, $this->case->person, 'visa_expires_at', now()->addDays(10)->toDateString(), null, 3);
+    $later = ($this->read)();
+    expect(collect($later['attention'])->pluck('days_remaining')->unique()->values()->all())->toBe([10])->and($later['coming_up'])->toBeEmpty();
+});
+
+test('recorded title expiry dates are not shown for an unknown or settlement title', function (?string $title, string $fact, array $expected) {
+    $revision = 2;
+    if ($title !== null) {
+        app(RecordFactChange::class)->execute($this->actor, $this->case->person, 'current_residence_title', $title, null, $revision++);
+    }
+    app(RecordFactChange::class)->execute($this->actor, $this->case->person, $fact, now()->addMonths(3)->toDateString(), null, $revision);
+    $rows = collect(($this->read)()['timeline'])->where('kind', 'document_expiry')->pluck('id')->values()->all();
+    expect($rows)->toBe($expected);
+})->with([
+    'visa with unknown title' => [null, 'visa_expires_at', []],
+    'visa after a later title' => ['blue_card', 'visa_expires_at', []],
+    'limited residence title' => ['blue_card', 'residence_title_expires_at', ['residence-title.expiry']],
+    'settlement title' => ['settlement_permit_9', 'residence_title_expires_at', []],
+    'unknown residence title' => [null, 'residence_title_expires_at', []],
+]);

@@ -19,7 +19,10 @@
         "coverage": "array",
         "paperwork": "array",
         "scopes": "array",
-        "ai": "array"
+        "ai": "array",
+        "history_count": "integer",
+        "attention": "array",
+        "coming_up": "array"
     },
     "coverage_states": ["partial", "not_activated", "outside_coverage"],
     "progress_buckets": ["todo", "blocked", "waiting", "completed"],
