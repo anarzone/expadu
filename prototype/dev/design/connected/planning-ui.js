@@ -711,7 +711,10 @@
     const entries = () => [
         ...M.places,
         ...(window.ExpaduEventCatalogue?.() || M.events),
+        // Sample places around the day (connected/places.js), where loaded.
+        ...(window.ExpaduPlaces?.all.map(window.ExpaduPlaces.item) || []),
     ];
+    const find = (id) => entries().find((x) => x.id === id) || null;
     document.addEventListener('click', (e) => {
         const b = e.target.closest('[data-plan-item],[data-save-item]');
         if (!b) return;
@@ -751,6 +754,6 @@
     }
     window.addEventListener('expadu:change', refresh);
     window.addEventListener('storage', refresh);
-    window.ExpaduPlanning = { open, mount, refresh };
+    window.ExpaduPlanning = { open, mount, refresh, find };
     refresh();
 })();

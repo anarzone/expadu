@@ -47,9 +47,58 @@
                         <div id="departure-board-rows">${boardRows()}</div><span id="stop-feedback" class="sr-only" role="status"></span>
                     </div></details></section>`;
             }
+            // Everyday places listed as open near your next plan, when it
+            // ends: pharmacies, bakeries, cafés and groceries with known hours
+            // (connected/places.js). Nothing shows without listed hours.
+            const anchorFor = {
+                mülheim: 'wiener-platz',
+                neumarkt: 'neumarkt',
+                ehrenfeld: 'ehrenfeld',
+                rheinauhafen: 'rheinauhafen',
+                stadtgarten: 'stadtgarten',
+            };
+            function nearbyPlaces() {
+                const P = root.ExpaduPlaces,
+                    day = getDay();
+                if (!P || !day) return null;
+                const minutes = root.TodayNext.minutes;
+                const now = minutes(day.time);
+                const plan = day.agenda.find(
+                    (item) =>
+                        !item.completed &&
+                        anchorFor[String(item.location || '').toLowerCase()] &&
+                        minutes(item.end || item.start) >= now,
+                );
+                if (!plan) return null;
+                const from = P.anchors[anchorFor[plan.location.toLowerCase()]];
+                const time =
+                    plan.end && minutes(plan.end) > now ? plan.end : day.time;
+                const at = { date: day.date, time };
+                const picks = ['bakery', 'cafe', 'pharmacy', 'grocery']
+                    .map(
+                        (kind) =>
+                            P.near(from, {
+                                kinds: [kind],
+                                limit: 1,
+                                at,
+                                open: true,
+                            })[0],
+                    )
+                    .filter((pick) => pick && pick.km <= 1)
+                    .slice(0, 3);
+                if (!picks.length) return null;
+                return {
+                    plan,
+                    html: `<div class="around-places"><p class="around-places-title">Open near ${E(from.name.split(',')[0])} at ${E(time)}<small>Listed hours</small></p>${picks.map(({ place }) => P.card(place, { from, at, variant: 'line' })).join('')}<a class="around-places-map" href="${E(`${P.mapLink('', from)}&time=${time}`)}">${I('pin')}More nearby on the map</a></div>`,
+                };
+            }
             function around(content) {
                 const suggestion = C.around(getDay(), content.saved);
-                if (!suggestion) return '';
+                const places = nearbyPlaces();
+                if (!suggestion)
+                    return places
+                        ? `<section class="around-plan" aria-labelledby="around-plan-title"><div class="around-heading"><h3 id="around-plan-title">Near ${E(places.plan.title)}</h3><small>Sample places</small></div><p class="around-context">Today · ${E(places.plan.start)}–${E(places.plan.end)}</p>${places.html}</section>`
+                        : '';
                 const { item, anchor, saved: kept } = suggestion;
                 const key = E(root.TodayContinuity.key(item));
                 const open = kept
@@ -63,7 +112,7 @@
                         ? 'Today'
                         : shortDate(anchor.date);
                 return `<section class="around-plan" aria-labelledby="around-plan-title"><div class="around-heading"><h3 id="around-plan-title">Also in ${E(anchor.location)}</h3><small>${kept ? 'From your saved ideas' : 'Sample idea'}</small></div>
-                    <p class="around-context">${E(dayLabel)} · ${E(anchor.title)}</p><div class="around-item"><button class="around-open" ${open}>${item.type === 'event' ? `<img src="../events-next/photos/${E(item.illustration || 'garden')}.webp" alt="" width="48" height="48" loading="lazy">` : `<span class="around-symbol">${I('pin')}</span>`}<span><strong>${E(item.title)}</strong><small>${item.type === 'event' ? `${E(item.start)}–${E(item.end || 'end TBC')}` : 'No time set'} · ${E(item.area)}</small></span></button><button class="icon-button" ${plan} aria-label="Plan ${E(item.title)}">${I('plus')}</button></div></section>`;
+                    <p class="around-context">${E(dayLabel)} · ${E(anchor.title)}</p><div class="around-item"><button class="around-open" ${open}>${item.type === 'event' ? `<img src="../events-next/photos/${E(item.illustration || 'garden')}.webp" alt="" width="48" height="48" loading="lazy">` : `<span class="around-symbol">${I('pin')}</span>`}<span><strong>${E(item.title)}</strong><small>${item.type === 'event' ? `${E(item.start)}–${E(item.end || 'end TBC')}` : 'No time set'} · ${E(item.area)}</small></span></button><button class="icon-button" ${plan} aria-label="Plan ${E(item.title)}">${I('plus')}</button></div>${places ? places.html : ''}</section>`;
             }
             function compactEvents(items) {
                 if (!items.length) return '';
@@ -154,6 +203,17 @@
                     ).focus({ preventScroll: true });
             }
             main.addEventListener('click', (event) => {
+                const place = event.target.closest('[data-place-open]');
+                if (place && root.ExpaduPlaces && root.ExpaduPlaceSheet) {
+                    const found = root.ExpaduPlaces.byId(
+                        place.dataset.placeOpen,
+                    );
+                    if (found)
+                        root.ExpaduPlaceSheet.open(
+                            root.ExpaduPlaces.item(found),
+                        );
+                    return;
+                }
                 const trigger = event.target.closest('[data-stop-trigger]');
                 if (trigger) {
                     setMenu(

@@ -34,8 +34,9 @@ test('everyday questions reach a helpful reply instead of the fallback', () => {
         ['service', 'doctors'],
     );
     assert.equal(ask('Something fun with kids on Saturday').category, 'Family');
+    // Cafés are real sample places now; Wi-Fi isn't recorded, so Composer says so.
     const cafe = ask('Find a café where I can work for a few hours');
-    assert.deepEqual([cafe.kind, cafe.topic], ['unavailable', 'listing']);
+    assert.deepEqual([cafe.kind, cafe.place, cafe.wifi], ['nearby', 'cafe', true]);
 });
 
 test('a question about your plans never becomes a plan request', () => {
@@ -76,3 +77,22 @@ test('plans you mention are kept, and today starts after the current time', () =
 function copy(value) {
     return JSON.parse(JSON.stringify(value));
 }
+
+test('everyday places near a point: kind, where, and today unless a day is named', () => {
+    const pharmacy = ask('Is there a pharmacy near my Blue Card appointment?');
+    assert.equal(pharmacy.kind, 'nearby');
+    assert.equal(pharmacy.place, 'pharmacy');
+    assert.equal(pharmacy.near, 'wiener-platz');
+    assert.equal(pharmacy.date, '2026-09-30');
+    const cafe = ask('Find a café near Neumarkt that is open now');
+    assert.equal(cafe.place, 'cafe');
+    assert.equal(cafe.open, true);
+    assert.equal(ask('somewhere to eat near Rheinauhafen').place, 'restaurant');
+    assert.equal(ask('bakery after my appointment').after, true);
+    assert.equal(ask('Where can I work from a café with wifi?').wifi, true);
+    assert.equal(ask('café near Neumarkt on Saturday').date, '2026-10-03');
+    // A park with no place stays general discovery; paperwork stays paperwork.
+    assert.equal(ask('find a park').kind, 'discovery');
+    assert.equal(ask('Help me with my Blue Card paperwork').kind, 'bureaucracy');
+    assert.equal(ask('something for kids on Saturday').kind, 'discovery');
+});

@@ -124,9 +124,11 @@
                 ? [{ start: '15:00', end: '15:30' }]
                 : [];
         for (const id of additions) {
-            const source = root.ExpaduModel?.places.find(
-                (place) => place.id === id && place.type === 'place',
-            );
+            const sample = root.ExpaduPlaces?.byId(id);
+            const source =
+                root.ExpaduModel?.places.find(
+                    (place) => place.id === id && place.type === 'place',
+                ) || (sample ? root.ExpaduPlaces.item(sample) : null);
             const title = titles[id] || source?.title;
             if (!title || draft.items.some((x) => x.id === id)) continue;
             const preferred = draft.items.some((x) => !x.fixed)
@@ -522,6 +524,41 @@
         ['Swimming', /\b(swim|swimming|lake|bathing)\b/],
     ];
     const find = (list, t) => list.find(([, pattern]) => pattern.test(t))?.[0] || null;
+    // Everyday places near a point (connected/places.js): the kind asked for.
+    const nearbyKinds = [
+        ['pharmacy', /\b(pharmac(y|ies)|apotheke|chemist)\b/],
+        ['bakery', /\b(baker(y|ies)|bread|croissants?)\b/],
+        ['cafe', /\b(cafes?|coffee)\b/],
+        ['grocery', /\b(grocer(y|ies)|supermarkets?|food shop)\b/],
+        ['playground', /\bplaygrounds?\b/],
+        ['library', /\b(librar(y|ies)|bibliothek)\b/],
+        ['restaurant', /\b(restaurants?|dinner|lunch|(somewhere|place|bite) to eat)\b/],
+        ['park', /\bparks?\b/],
+    ];
+    // Where "near" means. Before the appointment you're at Neumarkt.
+    const nearbyAnchors = [
+        ['wiener-platz', /\b(appointment|blue card|mulheim|muelheim|mülheim|wiener platz)\b/],
+        ['rheinauhafen', /\brheinauhafen\b/],
+        ['stadtgarten', /\bstadtgarten\b/],
+        ['ehrenfeld', /\behrenfeld\b/],
+        ['neumarkt', /\bneumarkt\b/],
+    ];
+    function nearby(t, date) {
+        const place = find(nearbyKinds, t);
+        if (!place) return null;
+        const near = find(nearbyAnchors, t);
+        // A park without a place stays general discovery ("a park to walk").
+        if (place === 'park' && !near) return null;
+        return {
+            kind: 'nearby',
+            date,
+            place,
+            near: near || 'neumarkt',
+            open: /\b(open|still open|open now)\b/.test(t),
+            after: /\bafter (my |the )?(blue card )?appointment\b/.test(t),
+            wifi: /\b(wi-?fi|laptop|work from|(can|to) work)\b/.test(t),
+        };
+    }
     function respond(text, s) {
         // Curly apostrophes and accents read the same as typed ones.
         const t = text
@@ -559,6 +596,9 @@
                 date,
                 appointment: /around (my|an?|the) .*appointment/.test(t),
             };
+        // "Near my appointment" or "open now" means today unless a day is named.
+        const places = nearby(t, requestDate(text, { ...s, date: today() }));
+        if (places) return places;
         if (
             /visa|register|registration|anmeldung|permit|bureaucracy|blue card|paperwork|settle in/.test(
                 t,

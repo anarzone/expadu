@@ -432,8 +432,12 @@
         if (data.todaySave) toggleSave(eventById(data.todaySave));
         if (
             data.saveItem &&
-            ![...ExpaduModel.places, ...ExpaduModel.events].some(
-                (record) => record.id === data.saveItem,
+            // The shared planning handler owns the records it knows.
+            !(
+                window.ExpaduPlanning?.find?.(data.saveItem) ||
+                [...ExpaduModel.places, ...ExpaduModel.events].some(
+                    (record) => record.id === data.saveItem,
+                )
             )
         ) {
             const record = [

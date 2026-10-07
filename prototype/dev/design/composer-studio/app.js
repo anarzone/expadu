@@ -146,6 +146,7 @@
     }
     const place = (id) =>
         catalogue.find((x) => x.id === id) ||
+        (window.ExpaduPlaces?.byId(id) ? ExpaduPlaces.item(ExpaduPlaces.byId(id)) : null) ||
         ExpaduModel.events
             .map((x) => ({ ...x, id: 'event:' + x.id, label: 'Event' }))
             .find((x) => x.id === id);
@@ -474,6 +475,12 @@
             )?.items.some((x) => x.id === button.dataset.add);
             button.setAttribute('aria-disabled', String(added));
             button.classList.toggle('is-added', added);
+            // Place cards have an icon-only button with its own label.
+            if (button.classList.contains('nearby-place-plan')) {
+                button.innerHTML = ExpaduPlaces.icon(added ? 'check' : 'plus');
+                button.setAttribute('aria-label', added ? 'Added to your plan' : 'Add to a plan');
+                return;
+            }
             button.innerHTML = added
                 ? `Added ${I('check')}`
                 : `Add to plan ${I('plus')}`;
@@ -589,9 +596,33 @@
             .slice(0, 4);
         return `<section class="studio-welcome"><div class="welcome-symbol" aria-hidden="true">${I('spark')}</div><h1>What’s on your mind?</h1><p>A question, a little inspiration, or a day to put together.</p><div class="starter-grid">${starters.map(([icon, label, prompt]) => `<button data-prompt="${E(prompt)}">${I(icon)}<span>${E(label)}</span>${I('arrow')}</button>`).join('')}</div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}<p class="welcome-foot">Start with one of these, or use your own words.</p></section>`;
     }
+    // Places near a point (connected/places.js) use the shared photo-free
+    // card with Composer's own Quick look, Save and Add handlers.
+    const composerPlace = { open: 'data-preview', save: 'data-save', plan: 'data-add' };
+    function nearbyCards(entry) {
+        const P = window.ExpaduPlaces;
+        if (!P) return '';
+        const from = P.anchors[entry.near];
+        const cards = (entry.placeIds || [])
+            .map(P.byId)
+            .filter(Boolean)
+            .map((p) =>
+                P.card(p, {
+                    from,
+                    at: entry.listedAt,
+                    attrs: composerPlace,
+                    saved: state.saved.includes(p.id),
+                    added: !!state.proposal?.items.some((item) => item.id === p.id),
+                }),
+            )
+            .join('');
+        return `${cards ? `<div class="place-answer">${cards}</div>` : ''}${entry.map ? `<a class="plain-button place-answer-map" href="${E(entry.map)}">${I('pin')}Show on map${I('arrow')}</a>` : ''}`;
+    }
     function card(x) {
         const kept = state.saved.includes(x.id);
         const added = !!state.proposal?.items.some((item) => item.id === x.id);
+        if (x.place && window.ExpaduPlaces)
+            return ExpaduPlaces.card(x.place, { attrs: composerPlace, saved: kept, added });
         if (x.type === 'place') {
             return `<article class="discovery-card place-idea"><div class="place-idea-heading"><span>${I(x.icon || 'pin')}${E(x.label)}</span><button class="studio-bookmark" data-save="${E(x.id)}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button></div><div class="place-idea-content">${x.image ? `<img class="place-idea-photo" src="${E(x.image)}" alt="" loading="lazy">` : ''}<h3>${E(x.title)}</h3><p class="place-idea-area">${I('pin')}${E(x.area)}</p>${x.facts?.length ? `<p class="place-idea-fact">${E(x.facts[0])}</p>` : ''}<p class="place-idea-check">${E(x.unknown || 'Hours and access aren’t in the listing')}</p></div><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Details ${I('arrow')}</button><button class="studio-button light ${added ? 'is-added' : ''}" data-add="${E(x.id)}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></article>`;
         }
@@ -859,6 +890,7 @@
                     dateLabel: shortDate,
                     place,
                     serviceCard: features.serviceCard,
+                    nearby: nearbyCards,
                 });
                 if (entryMarkup.get(entry.id) === html) continue;
                 const existing = feed.querySelector(
@@ -1373,6 +1405,51 @@
                 `For rain I’d look indoors, but the sample listings here only have parks, sport pitches, a playground and a lake. Nothing changed for ${longDate(r.date)}.`,
                 { suggestions: [everyday[0], { label: 'My saved ideas', nav: 'saved' }] },
             );
+            return;
+        }
+        if (r.kind === 'nearby') {
+            // Real places near a point, nearest first, from the sample catalogue.
+            // Adding one plans it for the day the answer is about.
+            state.conversation.activeDate = r.date;
+            const P = window.ExpaduPlaces;
+            const from = P?.anchors[r.near];
+            const end = window.ExpaduSampleDay?.appointment?.end;
+            // Around the appointment means when it ends; otherwise now.
+            const afterAppointment =
+                r.date === M.today() && !!end && (r.after || /appointment|blue card/i.test(text));
+            const time = afterAppointment ? end : r.date === M.today() ? M.nowTime() : '12:00';
+            const at = { date: r.date, time };
+            const kind = P?.kinds[r.place];
+            const found = P && from ? P.near(from, { kinds: [r.place], limit: 3, at, open: r.open }) : [];
+            const many = (kind?.many || 'places').toLowerCase();
+            const one = (kind?.one || 'place').toLowerCase();
+            const when = r.date === M.today() ? `at ${time}` : `on ${shortDate(r.date)} at ${time}`;
+            const listedFor = afterAppointment
+                ? `${time}, when your appointment ends`
+                : r.date === M.today()
+                  ? time
+                  : `${shortDate(r.date)}, ${time}`;
+            const where = `${from?.name || 'there'}${r.near === 'neumarkt' && !/neumarkt/i.test(text) ? ', where you are now' : ''}`;
+            const lead = found.length
+                ? `${found.length === 1 ? `One ${one}` : `${found.length} ${many}`} near ${where}${r.open ? `, listed as open ${when}` : ''}. Nearest first.`
+                : `I don’t have ${many}${r.open ? ` listed as open ${when}` : ''} near ${where} in the sample places.`;
+            const notes = [
+                found.some(({ place: p }) => p.hours?.week)
+                    ? `Opening times are the listed ones for ${listedFor}, not a live check.`
+                    : found.length
+                      ? 'Their opening times aren’t listed.'
+                      : '',
+                r.wifi ? 'Wi-Fi isn’t recorded in these listings yet, so ask the café.' : '',
+            ].filter(Boolean);
+            const map = P && from ? `${P.mapLink(r.place, from)}&time=${time}${r.open ? '&open=1' : ''}` : '';
+            reply([lead, ...notes].join(' '), {
+                kind: 'nearby',
+                placeIds: found.map(({ place: p }) => p.id),
+                near: r.near,
+                // Not `at`: chat entries already use it for their timestamp.
+                listedAt: at,
+                map,
+            });
             return;
         }
         if (r.kind === 'service') {
@@ -2049,6 +2126,27 @@
                 const added = state.proposal.items.find(
                     (item) => item.id === id,
                 );
+                // A place from a "near …" answer starts at the time that
+                // answer was about ("after my appointment" means 14:30).
+                const answer = state.conversation.chapters
+                    .flatMap((chapter) => chapter.entries)
+                    .filter(
+                        (entry) =>
+                            entry.kind === 'nearby' &&
+                            entry.placeIds?.includes(id) &&
+                            entry.listedAt?.date === state.proposal.date,
+                    )
+                    .at(-1);
+                const wanted = answer?.listedAt.time;
+                if (wanted && wanted > added.start) {
+                    const [h, m] = wanted.split(':').map(Number);
+                    const until = `${String(Math.min(23, h + 1)).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    try {
+                        M.setTime(state, id, wanted, until);
+                    } catch {
+                        /* Keep the free slot propose found. */
+                    }
+                }
                 changed(
                     `${place(id).title} added at ${added.start}–${added.end}`,
                 );

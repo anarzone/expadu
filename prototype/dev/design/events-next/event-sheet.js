@@ -50,6 +50,12 @@
         const distance = origin && D.format(D.km(origin, item));
         const fact = (label, value) =>
             `<div><dt>${label}</dt><dd${value ? '' : ' class="is-unknown"'}>${value ? E(value) : 'Not listed'}</dd></div>`;
+        // The venue's own listing (connected/places.js) can say whether it
+        // is step-free; the event listing rarely does.
+        const venuePlace = window.ExpaduPlaces?.venue(item.venue);
+        const venueAccess = venuePlace?.wheelchair
+            ? `${window.ExpaduPlaces.wheelchairText[venuePlace.wheelchair]} (venue listing)`
+            : '';
         // What the listing says, quietly: unknown facts read "Not listed".
         const facts = [
             ['Admission', item.price],
@@ -62,7 +68,7 @@
             ],
             ['Language', item.language],
             ['Who it’s for', item.ages ? `Ages ${item.ages}` : ''],
-            ['Accessibility', item.accessibility],
+            ['Accessibility', item.accessibility || venueAccess],
         ];
         const unlisted = facts.some(([, value]) => !value);
         // Events share their category's icon everywhere.

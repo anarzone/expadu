@@ -619,3 +619,36 @@
         animation: none;
     }
 }
+
+/* Everyday places listed as open near the next plan (connected/places.js). */
+.today-reference .around-places {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+}
+.today-reference .around-places-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 2px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .around-places-title small {
+    font-size: var(--text-micro);
+    font-weight: var(--weight-regular);
+    color: var(--muted);
+}
+.today-reference .around-places-map {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    font-size: var(--text-small);
+    color: var(--ink);
+}
+.today-reference .around-places-map svg {
+    width: 16px;
+    height: 16px;
+}

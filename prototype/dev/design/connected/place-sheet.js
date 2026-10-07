@@ -26,6 +26,14 @@
             : `<a class="place-photo-credit" href="${E(safeURL(item.source))}" target="_blank" rel="noopener">Photo: ${E(item.credit)}</a>`;
     }
     function about(item) {
+        // A catalogue place: what the listing records, "Not listed" for the
+        // rest, and where it comes from (connected/places.js).
+        if (item.place && window.ExpaduPlaces) {
+            const day = window.ExpaduSampleDay;
+            return window.ExpaduPlaces.facts(item.place, {
+                at: day ? { date: day.date, time: day.time } : null,
+            });
+        }
         if (!item.sourceId)
             return `<h3>A spot for your next ${item.label === 'Park' ? 'breather' : item.label === 'Playground' ? 'family outing' : 'outing'}.</h3><p>${E(item.label)} in ${E(item.area)}. Save it for later, or find a little room for it in your day.</p>${(item.facts || []).length ? `<ul>${item.facts.map((x) => `<li>${E(x)}</li>`).join('')}</ul>` : ''}<aside class="place-about-note"><div><h4>Before you go</h4><span>To check</span></div><p>${E(item.unknown || 'Opening hours and access still need checking.')}</p><small>Listing captured ${E(item.captured)}. Details may have changed.</small></aside>`;
         const website = safeURL(item.website),
@@ -37,7 +45,7 @@
         U.open(
             item.title,
             `<section class="place-preview place-sheet">
-            <div class="place-sheet-hero ${item.image ? '' : 'no-media'}">${item.image ? `<img src="${E(item.image)}" alt="${E(item.title)}">` : ''}<div><span>${E(item.label)}</span><strong>${E(item.area || item.postcode || item.location || '')}</strong><a href="${E(mapURL(item))}" target="_blank" rel="noopener">View on map ↗</a></div></div>
+            <div class="place-sheet-hero ${item.image || item.place ? '' : 'no-media'}${item.place && !item.image ? ' is-map' : ''}">${item.image ? `<img src="${E(item.image)}" alt="${E(item.title)}">` : item.place ? `<img src="../connected/place-maps/${E(item.id)}.png" alt="Map around ${E(item.title)}">` : ''}<div><span>${E(item.label)}</span><strong>${E(item.area || item.postcode || item.location || '')}</strong><a href="${E(mapURL(item))}" target="_blank" rel="noopener">View on map ↗</a></div></div>
             <nav class="place-sheet-tabs" aria-label="Place actions"><button type="button" data-section="about" aria-pressed="true">About</button><button type="button" data-section="plan" aria-pressed="false">Plan a visit</button><button type="button" data-section="directions" aria-pressed="false">Get there</button></nav>
             <div class="place-sheet-panel" data-panel="about">${about(item)}${photoCredit(item)}<div class="place-sheet-footer"><button class="button secondary" data-save-item="${E(item.id)}" aria-pressed="false"><span data-save-label>Save for later</span></button><button class="button primary" data-section="plan">Plan a visit</button></div></div>
             <div class="place-sheet-panel" data-panel="plan" hidden><div class="place-section-heading"><div><h3>A little time here.</h3><p>Choose when it fits your day.</p></div></div><div data-place-planning></div></div>

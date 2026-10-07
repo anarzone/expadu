@@ -29,9 +29,14 @@
                 day: 'numeric',
                 month: 'short',
             });
+        const samplePlace = (id) => {
+            const place = root.ExpaduPlaces?.byId(id);
+            return place ? root.ExpaduPlaces.item(place) : null;
+        };
         const getItem = (id) =>
             catalogue.find((x) => x.id === id) ||
             eventFor(id) ||
+            samplePlace(id) ||
             getState().proposal?.items.find((x) => x.id === id) ||
             getState()
                 .plans.flatMap((p) => p.items)
@@ -146,6 +151,34 @@
             body.innerHTML = ExpaduLoading.status('Loading item…');
             loadTimer = setTimeout(() => {
                 if (!body.isConnected) return;
+                // A catalogue place: its map, what the listing records and
+                // "Not listed" for the rest (connected/places.js).
+                if (item.place && root.ExpaduPlaces) {
+                    const P = root.ExpaduPlaces;
+                    const added = getState().proposal?.items.some(
+                        (x) => x.id === item.id,
+                    );
+                    const route = new URL(
+                        ExpaduStore.routes.departures,
+                        document.baseURI,
+                    );
+                    route.searchParams.set('to', item.title);
+                    route.searchParams.set('context', item.id);
+                    route.searchParams.set('lat', item.lat);
+                    route.searchParams.set('lng', item.lng);
+                    const nearby = P.mapLink(item.place.kind, {
+                        id: item.id,
+                        name: item.title,
+                        lat: item.lat,
+                        lng: item.lng,
+                    });
+                    body.innerHTML = `<img class="preview-image preview-map" src="../connected/place-maps/${E(item.id)}.png" alt="Map around ${E(item.title)}"><p class="detail-eyebrow">${E(item.label)} · ${E(item.area)}</p><h3>${E(item.title)}</h3>${P.facts(item.place, { at: { date: today(), time: M.nowTime?.() || '12:00' } })}<div class="detail-primary"><button class="studio-button light" data-add="${E(item.id)}" ${added ? 'disabled' : ''}>${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button><a class="plain-button" href="${E(nearby)}">${I('pin')}Nearby on map</a><a class="plain-button" href="${E(route.href)}">${I('route')}Directions</a></div>`;
+                    body.querySelector('.preview-map')?.addEventListener(
+                        'error',
+                        (event) => event.target.remove(),
+                    );
+                    return;
+                }
                 const scheduled =
                     item.type === 'event' || item.type === 'appointment';
                 const id = item.type === 'event' && !String(item.id).startsWith('event:') ? 'event:' + item.id : item.id;

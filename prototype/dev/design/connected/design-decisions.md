@@ -364,6 +364,17 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Places as a layer — owner request, 7 October (in review):** following the
+places data review, places stay out of the navigation and appear where a need
+comes up: Composer answers "near" questions with up to three real places and
+Show on map; Today lists everyday places listed as open when the next plan
+ends; the Events sheet takes accessibility from the venue's listing; and an
+"around here" view lists one kind near a point beside a map. Cards are
+photo-free: a map picture, the kind, name, area, straight-line distance, listed
+hours and wheelchair access only when recorded; unknowns read "Not listed" and
+listed hours are never a live check. Sample data: 47 real places from the local
+catalogue export (OpenStreetMap). Details are in `around-here/README.md`.
+
 **Events polish — owner request, 7 October (in review):** event facts are
 one quiet list (Admission, When to arrive, Language, Who it's for,
 Accessibility) with unknowns as soft "Not listed" instead of coloured tiles;

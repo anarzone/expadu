@@ -18,6 +18,8 @@
             body += `<button class="plain-button" data-retry="${E(entry.id)}">Try again</button>`;
         if (entry.kind === 'discovery')
             body += `<div class="discovery-grid">${(entry.placeIds || []).map(ctx.place).filter(Boolean).map(card).join('')}</div>`;
+        if (entry.kind === 'nearby')
+            body += ctx.nearby ? ctx.nearby(entry) : '';
         if (['event', 'journey', 'bureaucracy'].includes(entry.kind))
             body += ctx.serviceCard ? ctx.serviceCard(entry) : '';
         if (entry.kind === 'department-context' && entry.context) {
