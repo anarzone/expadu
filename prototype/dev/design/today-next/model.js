@@ -51,21 +51,10 @@
             removed: [],
             events: clone(events),
             highlight: null,
+            // The person's records from the shared sample day (Composer
+            // reads the same ones), plus a process not started yet.
             paperwork: [
-                {
-                    id: 'blue-card',
-                    title: 'EU Blue Card',
-                    prepared: 1,
-                    total: 5,
-                    nextAction: 'Review your documents',
-                    // Matches the Paperwork preview's sample record.
-                    deadline: '2026-10-01',
-                    deadlineLabel: 'D visa expires',
-                    deadlineAction:
-                        'Submit the Blue Card application before your D visa expires',
-                    deadlineShort: 'Submit your Blue Card application',
-                    submitted: false,
-                },
+                ...clone(sample.records || []),
                 { id: 'address', title: 'City registration' },
             ],
         };

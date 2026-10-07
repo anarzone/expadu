@@ -91,6 +91,25 @@
                 delay: 0,
             },
         },
+        // The person's own Paperwork records, as the Paperwork preview's
+        // sample shows them: the checklist's ready count and their own visa
+        // date (never a computed legal deadline). Today and Composer read
+        // them from here.
+        records: [
+            {
+                id: 'blue-card',
+                title: 'EU Blue Card',
+                prepared: 1,
+                total: 5,
+                nextAction: 'Review your documents',
+                deadline: '2026-10-01',
+                deadlineLabel: 'D visa expires',
+                deadlineAction:
+                    'Submit the Blue Card application before your D visa expires',
+                deadlineShort: 'Submit your Blue Card application',
+                submitted: false,
+            },
+        ],
         upcoming: [
             {
                 id: 'today-review-next-class',
