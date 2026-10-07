@@ -73,15 +73,19 @@ final class ProcessEventPayload
             if ($date === false || $date->format('Y-m-d\TH:i:sP') !== $start || (new DateTimeZone($zone))->getOffset($date) !== $date->getOffset()) {
                 throw ValidationException::withMessages(['payload.starts_at' => 'That appointment time or offset is not valid in this time zone.']);
             }
-            if (! is_int($payload['duration_minutes'] ?? null) || $payload['duration_minutes'] < 1 || $payload['duration_minutes'] > 1440) {
-                throw ValidationException::withMessages(['payload.duration_minutes' => 'Enter an appointment duration between 1 and 1440 minutes.']);
+            // The key is required so an unknown length is an explicit null, never a silent default.
+            $duration = $payload['duration_minutes'] ?? null;
+            if (! array_key_exists('duration_minutes', $payload) || ($duration !== null && (! is_int($duration) || $duration < 1 || $duration > 1440))) {
+                throw ValidationException::withMessages(['payload.duration_minutes' => 'Enter the appointment length in minutes (1 to 1440), or null if you do not know it.']);
             }
             if (isset($payload['location'])) {
                 $location = $payload['location'];
-                if (! is_array($location) || array_diff(array_keys($location), ['label', 'lat', 'lng']) !== []
-                    || ! $this->coordinate($location['lat'] ?? null, 90) || ! $this->coordinate($location['lng'] ?? null, 180)
-                    || (array_key_exists('label', $location) && (! is_string($location['label']) || trim($location['label']) === '' || mb_strlen($location['label']) > 160))) {
-                    throw ValidationException::withMessages(['payload.location' => 'Choose a meeting place with a valid latitude and longitude, or leave its location unknown.']);
+                $valid = is_array($location) && array_diff(array_keys($location), ['label', 'lat', 'lng']) === []
+                    && (! array_key_exists('label', $location) || (is_string($location['label']) && trim($location['label']) !== '' && mb_strlen($location['label']) <= 160));
+                $mapped = $valid && (array_key_exists('lat', $location) || array_key_exists('lng', $location));
+                if (! $valid || ($mapped && (! $this->coordinate($location['lat'] ?? null, 90) || ! $this->coordinate($location['lng'] ?? null, 180)))
+                    || (! $mapped && ! array_key_exists('label', $location))) {
+                    throw ValidationException::withMessages(['payload.location' => 'Choose a meeting place with a valid latitude and longitude, describe it with a short label, or leave its location unknown.']);
                 }
             }
         }

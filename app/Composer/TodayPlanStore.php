@@ -99,19 +99,22 @@ class TodayPlanStore
                 if ($candidate === null || (! app(FeasibilityFilter::class)->matchesDiscovery($constraints, $candidate) || ! $candidate->coversVisit(CarbonImmutable::parse($slot['start_at']), CarbonImmutable::parse($slot['end_at'])))) {
                     return null;
                 }
-                $data['slots'][$index] = (new PlanSlot(
+                $fresh = (new PlanSlot(
                     $candidate, CarbonImmutable::parse($slot['start_at']), CarbonImmutable::parse($slot['end_at']),
                     (int) $slot['travel_min_from_previous'], $slot['why'] ?? null,
                 ))->toArray();
+                // Keep the plan-level leg flags: no journey next to an unroutable appointment.
+                $fresh = [...$fresh, 'travel_known' => $slot['travel_known'] ?? true, 'may_overlap_previous' => $slot['may_overlap_previous'] ?? false];
+                $data['slots'][$index] = $fresh['travel_known'] ? $fresh : [...$fresh, 'travel_min_from_previous' => null, 'leave_by' => null];
             }
         }
 
         return [
             'state' => 'current',
             'schedule_feasible' => $data['schedule_feasible'] ?? true,
-            'notices' => ($data['schedule_feasible'] ?? true) ? [] : [[
+            'notices' => [...(($data['schedule_feasible'] ?? true) ? [] : [[
                 'code' => 'appointment_conflict', 'text' => 'Your recorded appointments overlap or cannot all be reached in time. Review the timings before following this plan.',
-            ]],
+            ]]), ...Plan::appointmentNotices($data['slots'])],
             'weekday' => $weekday,
             'prompt' => is_string($data['prompt'] ?? null) ? $data['prompt'] : null,
             'slots' => array_values($data['slots']),
