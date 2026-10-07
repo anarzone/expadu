@@ -1,14 +1,52 @@
 // Run with: node prototype/dev/design/composer-studio/tests/connected-browser.cjs
+// (needs `python3 prototype/serve.py` on port 8765).
+// Today and Composer share one workspace, on phone and desktop: a saved idea
+// shows in Saved, a planned event opens its day for review, confirming it
+// lands in My Plans, and a request sent from Today is answered once, in view
+// below the earlier conversation, and never resent on reload.
 const { chromium, expect } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const base = 'http://127.0.0.1:8765/dev/design/';
-const state = (p) =>
-    p.evaluate(() =>
+const today = base + 'today-next/brief/';
+const state = (page) =>
+    page.evaluate(() =>
         JSON.parse(localStorage.getItem('expadu-composer-studio-v1')),
     );
-const top = async (p) => {
-    await p.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    await p.waitForTimeout(400);
+const entries = async (page) =>
+    ((await state(page))?.conversation?.chapters || []).flatMap(
+        (chapter) => chapter.entries,
+    );
+const asked = async (page, text) =>
+    (await entries(page)).filter(
+        (entry) => entry.role === 'user' && entry.text === text,
+    ).length;
+// The newest entry sits between the toolbar and the request field.
+const latestInView = (page) =>
+    page.evaluate(() => {
+        const last = [...document.querySelectorAll('[data-chat-entry]')].at(-1);
+        if (!last) return false;
+        const rect = last.getBoundingClientRect();
+        const top =
+            document.querySelector('.studio-toolbar')?.getBoundingClientRect()
+                .bottom || 0;
+        const bottom =
+            document
+                .querySelector('.studio-input-wrap')
+                ?.getBoundingClientRect().top || innerHeight;
+        return rect.bottom > top + 20 && rect.top < bottom - 20;
+    });
+const noOverflow = (page) =>
+    page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+// Today's Composer dock keeps My Plans, Saved and History in its menu.
+// (#included-ideas also opens plans, for selections waiting for review.)
+const openPanel = async (page, panel) => {
+    await page.locator('.composer-launcher').click();
+    await page
+        .locator(
+            `#composer-tray [data-composer-panel="${panel}"]:not(#included-ideas)`,
+        )
+        .evaluate((button) => button.click());
+    await page.waitForURL(`**/composer-studio/**#${panel}`);
 };
 (async () => {
     const browser = await chromium.launch();
@@ -21,102 +59,84 @@ const top = async (p) => {
                 page = await context.newPage(),
                 errors = [];
             page.on('pageerror', (e) => errors.push(e.message));
-            await page.goto(base + 'today-c/', {
-                waitUntil: 'domcontentloaded',
+            await page.goto(today, { waitUntil: 'networkidle' });
+            await page.evaluate(() => {
+                localStorage.clear();
+                sessionStorage.clear();
             });
-            await page.locator('[data-board-keep="walk"]').first().click();
-            await top(page);
-            await page.locator('.day-button').click();
-            await page.waitForURL('**/composer-studio/#saved');
-            await expect(
-                page.locator('#workspace-panel [data-save="walk"]'),
-            ).toHaveAttribute('aria-pressed', 'true');
-            await page.locator('#workspace-panel [data-save="walk"]').click();
-            await page.goto(base + 'today-c/', {
-                waitUntil: 'domcontentloaded',
+            await page.reload({ waitUntil: 'networkidle' });
+            assert.ok(await noOverflow(page), `Today overflows at ${width}px`);
+
+            // A saved idea is in Composer's Saved.
+            const save = page.getByRole('button', {
+                name: 'Save Street culture night',
             });
-            await expect(
-                page.locator('[data-board-keep="walk"]').first(),
-            ).toHaveAttribute('aria-pressed', 'false');
-            await page.locator('[data-board-plan="walk"]').first().click();
-            assert.match(page.url(), /today-c/);
-            await page.locator('[data-board-plan="greenbelt"]:visible').click();
-            assert.match(page.url(), /today-c/);
-            await page.locator('#saved-strip button').click();
-            await page.waitForURL('**/composer-studio/');
-            assert.equal((await state(page)).proposal.items.length, 2);
-            await expect(page.locator('[data-action="confirm"]')).toBeVisible();
-            await page.locator('[data-action="confirm"]').click();
+            await save.click();
+            await expect(save).toHaveAttribute('aria-pressed', 'true');
+            await openPanel(page, 'saved');
+            await expect(page.locator('#workspace-panel')).toContainText(
+                'Street culture night',
+            );
+
+            // Planning an event opens its day for review; confirming it
+            // makes it the day's plan, which My Plans then holds.
+            await page.goto(today, { waitUntil: 'networkidle' });
+            await page
+                .getByRole('button', {
+                    name: 'Plan to go to Street culture night',
+                })
+                .click();
+            await page.locator('[data-panel="plan"] button.primary').click();
+            await page.locator('[data-event-review]').click();
+            await page.waitForURL('**/composer-studio/?date=2026-09-30');
+            const proposal = (await state(page)).proposal;
+            assert.equal(proposal.date, '2026-09-30');
+            assert.ok(
+                proposal.items.some((item) =>
+                    /Street culture night/.test(item.title),
+                ),
+            );
+            await page.locator('[data-action="confirm"]').last().click();
             await expect
                 .poll(async () => (await state(page)).plans.length)
                 .toBe(1);
-            const date = (await state(page)).plans[0].date;
-            await page.goto(base + 'today-c/', {
-                waitUntil: 'domcontentloaded',
-            });
-            await expect(page.locator('#saved-strip')).toContainText(
-                'Your confirmed plan',
+            assert.equal((await state(page)).plans[0].date, '2026-09-30');
+            await page.goto(today, { waitUntil: 'networkidle' });
+            await openPanel(page, 'plans');
+            await expect(page.locator('#workspace-panel')).toContainText(
+                'Street culture night',
             );
-            await page.locator('#saved-strip button').click();
-            await page.waitForURL('**/composer-studio/?date=*');
-            assert.equal((await state(page)).date, date);
-            await expect(
-                page.locator('.confirmed-label').first(),
-            ).toContainText('Confirmed plan');
-            await page.goto(base + 'today-c/', {
-                waitUntil: 'domcontentloaded',
-            });
+
+            // A request from Today is answered once, in view, and a reload
+            // doesn't send it again.
+            const request = 'Is there a café near my appointment?';
+            await page.goto(today, { waitUntil: 'networkidle' });
+            await page.locator('.composer-launcher').click();
+            await page.locator('#request').fill(request);
             await page
-                .locator('#request')
-                .fill('Find something outdoors for Saturday afternoon.');
-            await page.locator('#compose-form button[type="submit"]').click();
+                .locator('#compose-form')
+                .evaluate((form) => form.requestSubmit());
             await page.waitForURL('**/composer-studio/?compose=1');
-            await expect(page.locator('.chat-feed')).toContainText(
-                'Find something outdoors for Saturday afternoon.',
-            );
             await expect
-                .poll(
-                    async () =>
-                        (await state(page)).conversation.chapters
-                            .flatMap((c) => c.entries)
-                            .filter((e) => e.kind === 'pending').length,
+                .poll(async () =>
+                    (await entries(page)).some((e) => e.kind === 'pending'),
                 )
-                .toBe(0);
-            const count = (await state(page)).conversation.chapters
-                .flatMap((c) => c.entries)
-                .filter(
-                    (e) =>
-                        e.role === 'user' &&
-                        e.text ===
-                            'Find something outdoors for Saturday afternoon.',
-                ).length;
-            assert.equal(count, 1);
-            await page.reload({ waitUntil: 'domcontentloaded' });
+                .toBe(false);
+            await expect(
+                page.locator('[data-chat-entry]').last(),
+            ).toContainText('cafés near Wiener Platz');
+            await expect.poll(() => latestInView(page)).toBe(true);
+            assert.equal(await asked(page, request), 1);
+            await page.reload({ waitUntil: 'networkidle' });
             await expect(page.locator('.chat-feed')).toBeVisible();
-            assert.equal(
-                (await state(page)).conversation.chapters
-                    .flatMap((c) => c.entries)
-                    .filter(
-                        (e) =>
-                            e.role === 'user' &&
-                            e.text ===
-                                'Find something outdoors for Saturday afternoon.',
-                    ).length,
-                1,
-            );
+            assert.equal(await asked(page, request), 1);
             assert.ok(
-                await page.evaluate(
-                    () =>
-                        document.documentElement.scrollWidth <= innerWidth + 1,
-                ),
+                await noOverflow(page),
+                `Composer overflows at ${width}px`,
             );
-            await page.screenshot({
-                path: `/tmp/composer-connected-${width}.png`,
-                fullPage: true,
-            });
             assert.deepEqual(errors, []);
             console.log(
-                `PASS ${width}px: bookmarks, multiple selections, confirmation, exact-day return, one-time prompt, persistence and no overflow/errors`,
+                `PASS ${width}px: saved idea, event review and confirmation, My Plans, one-time request in view, no overflow or errors`,
             );
             await context.close();
         }

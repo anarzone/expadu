@@ -2,62 +2,19 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
-        <meta
-            name="viewport"
-            content="width=device-width,initial-scale=1,viewport-fit=cover"
-        />
-        <meta name="color-scheme" content="light" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Expadu — My Plans</title>
-        <link rel="stylesheet" href="../connected/style.css?v=cc9941eb1796" />
-        <link rel="stylesheet" href="../connected/shell-review.css?v=f06ba9e90e95" />
-        <link rel="stylesheet" href="../connected/menu-colors.css?v=80281d6d2c46" />
-        <link rel="stylesheet" href="../connected/location-popover.css?v=848f7280e0f4" />
-        <link rel="stylesheet" href="../composer-studio/style.css?v=d6aed9807fe1" />
-        <link rel="stylesheet" href="../connected/loading.css?v=c24091022641" />
-        <link
-            rel="stylesheet"
-            href="../composer-studio/conversation.css?v=cb25e811e498"
-        />
-        <script defer src="../connected/loading.js?v=8b4f4c45be2b"></script>
-        <script defer src="../connected/icons.js?v=685f482a1088"></script>
-        <script defer src="../connected/model.js?v=b727e359c259"></script>
-        <script
-            defer
-            src="../composer-studio/model.js?v=13dabf4a1758"
-        ></script>
-        <script
-            defer
-            src="../composer-studio/navigation.js?v=e90d9697c643"
-        ></script>
-        <script
-            defer
-            src="../composer-studio/wheel-motion.js?v=c203940ffe0e"
-        ></script>
-        <script
-            defer
-            src="../composer-studio/conversation.js?v=f94658526dae"
-        ></script>
-        <script
-            defer
-            src="../composer-studio/conversation-actions.js?v=5f73b51a5e52"
-        ></script>
-        <script
-            defer
-            src="../composer-studio/conversation-view.js?v=3aa6cdd9b94b"
-        ></script>
-        <script
-            defer
-            src="../composer-studio/app.js?v=16f7c3fce63b"
-        ></script>
-        <script defer src="../connected/scroll-header.js?v=ed8ba32a8253"></script>
-        <script defer src="../connected/location-popover.js?v=cca96c19fb5a"></script>
+        <!-- My Plans is a panel in Composer; keep old links working. A copy of
+             Composer's page here fell out of step with its scripts. -->
+        <script>
+            location.replace(
+                '../composer-studio/' +
+                    location.search +
+                    (location.hash || '#plans'),
+            );
+        </script>
     </head>
-    <body class="shell-review studio" data-view="plans">
-        <a class="studio-skip" href="#main">Skip to content</a>
-        <div id="shell"></div>
-        <main id="main"></main>
-        <div id="input-area"></div>
-        <div id="studio-toast" role="status" hidden></div>
-        <div id="storage-note" role="alert" hidden></div>
+    <body>
+        <p>My Plans is now part of <a href="../composer-studio/#plans">Composer</a>.</p>
     </body>
 </html>

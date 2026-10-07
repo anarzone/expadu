@@ -2564,13 +2564,25 @@
     display: none;
 }
 @media (min-width: 1000px) {
-    body.has-composer-day:not(.has-panel) #main {
-        max-width: none;
-        margin-left: 344px;
-        margin-right: 24px;
+    /* The conversation starts 24px past Your day (its left edge plus its
+       296px width) and fits the width that is left, so it never runs off
+       the right edge on smaller desktops or under the panel on wide ones. */
+    body.has-composer-day:not(.has-panel) {
+        --composer-day-edge: calc(max(24px, (100% - 1512px) / 2) + 320px);
     }
+    body.has-composer-day:not(.has-panel) #main {
+        width: min(1080px, calc(100% - var(--composer-day-edge) - 24px));
+        max-width: none;
+        margin-left: var(--composer-day-edge);
+        margin-right: auto;
+    }
+    /* The request field centres on the conversation column. */
     body.has-composer-day:not(.has-panel) .studio-input-wrap {
-        padding-left: 344px;
+        padding-left: var(--composer-day-edge);
+        padding-right: max(
+            24px,
+            calc(100% - var(--composer-day-edge) - 1080px)
+        );
     }
     body:not(.has-panel) .composer-day:not([hidden]) {
         position: fixed;

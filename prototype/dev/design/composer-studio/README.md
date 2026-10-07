@@ -41,6 +41,28 @@ pixel-identical. Tests: `tests/requests.test.cjs`,
 `tests/conversation-view.test.cjs`, `tests/journey-browser.cjs`. Screenshots:
 `docs/reviews/2026-10-07-app-in-colour/composer-built-*.png`.
 
+### Follow-ups — 8 October
+
+- **Your day fits every desktop width.** From 1000 to 1439 px the
+  conversation ran 120–265 px off the right edge beside Your day, and on wide
+  screens Your day sat under the conversation's toolbar. The conversation now
+  starts 24 px past Your day and fills the width that is left (up to 1080 px);
+  the request field centres on it. Checked at 1000, 1100, 1280, 1440 and
+  1920 px.
+- **Saved shows the sample day's events.** An event saved on Today, such as
+  Street culture night, counted as "1 idea" in Saved with an empty list.
+- **`/dev/design/my-plans/` opens Composer's My Plans** (or the panel in its
+  link). The old copy of Composer's page there had fallen out of step with its
+  scripts and failed with "ExpaduStore is not defined".
+- **Browser checks for today's pages.** `tests/connected-browser.cjs` covers
+  Today and Composer at 390 and 1280 px: Saved, an event's review and
+  confirmation, My Plans, a request answered once and in view, no overflow.
+  `tests/department-browser.cjs` covers Events, Paperwork, Travel and Services
+  hand-offs landing in view below an older conversation, and a route that
+  waits while another day's proposal is open, then joins its appointment once
+  that proposal is confirmed. The earlier versions used Today C and Places
+  controls that no longer exist.
+
 ## Add to plan is orange — 7 October
 
 Owner request: **Add to plan** on event, place and preview cards is the

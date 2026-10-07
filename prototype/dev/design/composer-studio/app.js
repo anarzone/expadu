@@ -226,7 +226,8 @@
     const place = (id) =>
         catalogue.find((x) => x.id === id) ||
         (window.ExpaduPlaces?.byId(id) ? ExpaduPlaces.item(ExpaduPlaces.byId(id)) : null) ||
-        ExpaduModel.events
+        // Today saves the sample day's events too, not only listed ones.
+        [...(window.ExpaduSampleDay?.events || []), ...ExpaduModel.events]
             .map((x) => ({ ...x, id: 'event:' + x.id, label: 'Event' }))
             .find((x) => x.id === id);
     const planFor = (date) => state.plans.find((p) => p.date === date);
