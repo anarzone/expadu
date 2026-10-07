@@ -29,6 +29,23 @@ the 14:00 appointment, its leave-by and Add a plan, and Composer shows all
 starters above the input. Text pairs on the bands and tiles are 4.5:1 or more
 (table in the concept README).
 
+## Redesign — Today and Composer (not approved)
+
+Standalone mock pages, `prototype/dev/design/connected/concepts/app-in-colour-2026-10-07/redesign/`.
+
+| Screen | Files |
+| --- | --- |
+| Today 1440 (first screen, full page) | `redesign-today-1440.png`, `redesign-today-1440-full.png` |
+| Today 390 (first screen, full page) | `redesign-today-390.png`, `redesign-today-390-full.png` |
+| Today, other bands | `redesign-today-1440-evening.png`, `redesign-today-390-evening.png`, `redesign-today-390-night.png` |
+| Today with the planned 13:24 leading | `redesign-today-1440-planned-tram.png` |
+| Composer start 1440 / 390 | `redesign-composer-1440.png`, `redesign-composer-390.png` |
+| Composer answers | `redesign-composer-chat-1440.png`, `redesign-composer-chat-1440-full.png` (all five), `redesign-composer-chat-390.png`, `redesign-composer-chat-390-tonight.png` |
+
+Checks: no sideways scroll at 390; Today's 14:00, Leave now and Journey
+details fit the first 844px; Composer's starters and input fit the first
+screen (884px page, the chips row sits just above the input).
+
 ## Part B — fixes to the current pages (committed)
 
 | Fix | Evidence |

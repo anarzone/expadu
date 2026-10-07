@@ -154,6 +154,10 @@
         <main class="stage" id="stage"></main>
         <script>
             (() => {
+                // [label, approved page, redesign page]. Without a redesign
+                // page, "Concept" is the approved page with colour.js added.
+                const redesign =
+                    '/dev/design/connected/concepts/app-in-colour-2026-10-07/redesign/';
                 const pages = {
                     today: ['Today', '/dev/design/today-next/brief/'],
                     composer: ['Composer', '/dev/design/composer-studio/'],
@@ -161,6 +165,16 @@
                     services: ['Services', '/dev/design/services-next/'],
                     events: ['Events', '/dev/design/events-next/'],
                     travel: ['Travel', '/dev/design/departures-next/'],
+                    'today-redesign': [
+                        'Today redesign',
+                        '/dev/design/today-next/brief/',
+                        redesign + 'today.html',
+                    ],
+                    'composer-redesign': [
+                        'Composer redesign',
+                        '/dev/design/composer-studio/',
+                        redesign + 'composer.html',
+                    ],
                 };
                 const choices = {
                     page: Object.entries(pages).map(([id, [label]]) => [
@@ -197,7 +211,12 @@
                         params.get('width') ||
                         (innerWidth < 1100 ? 'phone' : 'desktop'),
                     time: params.get('time') || 'sample',
-                    display: params.get('display') || 'geist',
+                    // The redesign is drawn with Bricolage titles.
+                    display:
+                        params.get('display') ||
+                        (pages[params.get('page')]?.[2]
+                            ? 'bricolage'
+                            : 'geist'),
                 };
                 const stage = document.getElementById('stage');
 
@@ -228,8 +247,18 @@
                     wrap.className = 'frame';
                     const f = document.createElement('iframe');
                     f.title = `${pages[state.page][0]} · ${label}`;
-                    f.src = pages[state.page][1];
-                    if (concept) f.addEventListener('load', () => inject(f));
+                    const [, approved, redesigned] = pages[state.page];
+                    if (concept && redesigned) {
+                        // The redesign pages read time and font from the URL.
+                        f.src = `${redesigned}?${new URLSearchParams({
+                            time: state.time,
+                            display: state.display,
+                        })}`;
+                    } else {
+                        f.src = approved;
+                        if (concept)
+                            f.addEventListener('load', () => inject(f));
+                    }
                     const caption = document.createElement('span');
                     caption.textContent = label;
                     wrap.append(f, caption);

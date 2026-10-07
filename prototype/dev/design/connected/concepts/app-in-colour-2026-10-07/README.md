@@ -123,3 +123,51 @@ decorative loops. One band per page, no animated art.
   used for chips or badges.
 - Evening dusk is also the Events colour. On Today it only fills the band in
   the evening, so it reads as the time of day.
+
+## Redesign: Today and Composer (owner request, 7 October)
+
+The colour pass above keeps the approved layouts. This goes further: new
+compositions for Today and Composer, as standalone mock pages in `redesign/`.
+They use the approved header (a copy of the prerendered block, with absolute
+links), `tokens.css`, Geist, Bricolage and the sample day's content only.
+Nothing in them is connected; buttons are for review.
+
+- Today: `redesign/today.html`. Composer: `redesign/composer.html`
+  (`?state=chat&answer=leave|bring|near|tonight|stepfree|all`).
+- Both are in the viewer as "Today redesign" and "Composer redesign", beside
+  the approved page. `?time=` changes Today's band, `?display=geist` drops
+  Bricolage and `?tram=planned` leads with the planned 13:24 instead.
+
+**Today is your Wednesday, not a dashboard.** The time-of-day band holds the
+greeting, the sample forecast and the visa deadline. The next plan comes
+first, as one card across the band: 14:00 in large type, the appointment and
+place, what to bring, and the trip beside it ("Leave now", the three steps,
+"At your appointment 13:48 · 12 min to spare", and the planned 13:24 noted).
+Below, the rest of the day is a timeline with large times, like the marketing
+page's "One Wednesday": 14:30, places listed as open near Wiener Platz (map
+pictures, listed hours); 15:00, Language café; 17:00, the riverside walk and
+chess; 18:30, tonight's two posters; then Add a plan, the section's one
+orange action. Ideas say "Idea · sample", and the page says nothing else is
+in the plan; it never says you're free. A side column holds Paperwork
+(lavender), Getting around (cyan), Coming up, Need a hand? (sage) and the
+city links. Phones show the greeting, deadline, 14:00 and its trip with
+Journey details in the first 844px; the timeline and side cards follow.
+
+**Composer sits beside your day.** On desktop, "Your Wednesday" on the left
+lists what Composer plans with (the trip to take now, the 14:00 appointment,
+the visa deadline, near Wiener Platz after 14:30, tonight's events, coming
+up); tapping one asks about it. The conversation is on a white stage: "What's
+on your mind?" with four starters in their section's colour (Travel cyan,
+Paperwork lavender, Events dusk with the date stamp, Nearby with a map
+picture) and chips. Answers are rich cards with a large one-line verdict:
+the trip steps in cyan with Open in Travel; your checklist ("1 of 5 marked
+ready", your own records, no legal guidance); three pharmacies with map
+pictures and listed hours; the two posters with orange Add to plan; and
+"Not listed." with the facts that are and aren't known. On phones your day
+becomes a scrolling row of context above the chat.
+
+Kept from the approved pages: the big 14:00, the Events posters and marker
+lettering, the trip card's content, the honest sample labels and the colour
+roles (one orange main action, cyan selection and travel, lavender
+paperwork, amber attention). The tram that leads follows decision 4 (the
+13:14 here; `?tram=planned` shows the alternative).
