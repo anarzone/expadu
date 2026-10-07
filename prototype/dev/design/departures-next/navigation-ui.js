@@ -45,8 +45,10 @@
                 : mode;
     const iconButton = (name, label, action, extra = '') =>
         `<button class="nav-icon-button" data-nav="${action}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
+    // Each route keeps its own sample: the capture or the sample day.
+    const trip = () => J.tripOf?.(route) || J.capture;
     const localDate = () =>
-        new Date(`${J.capture.date}T12:00:00`).toLocaleDateString('en-GB', {
+        new Date(`${trip().date}T12:00:00`).toLocaleDateString('en-GB', {
             day: 'numeric',
             month: 'short',
             year: 'numeric',
@@ -56,7 +58,7 @@
         active = {
             ...active,
             step: progress.index,
-            title: J.capture.to,
+            title: trip().place,
             instruction: progress.step.title,
             mode: route.mode,
         };
@@ -86,7 +88,7 @@
     function open(value, autoStart = false, restoration = null) {
         const found =
             typeof value === 'string'
-                ? J.routes.find((item) => item.id === value)
+                ? (J.all || J.routes).find((item) => item.id === value)
                 : value;
         if (!found) return;
         if (document.querySelector('#sheet')?.open) {
@@ -115,7 +117,7 @@
         confirmation = '';
         dialog.classList.remove('is-expanded', 'is-closing');
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${iconButton('back', 'Back to journeys', 'close')}<div><small>Journey preview · ${localDate()}</small><h1 id="nav-title">${safe(J.capture.to)}</h1></div><div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="map" aria-pressed="false">${icon('map')}Map</button><button data-nav-view="steps" aria-pressed="false">${icon('route')}Steps</button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            <header class="nav-topbar">${iconButton('back', 'Back to journeys', 'close')}<div><small>Journey preview · ${localDate()}</small><h1 id="nav-title">${safe(trip().place)}</h1></div><div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="map" aria-pressed="false">${icon('map')}Map</button><button data-nav-view="steps" aria-pressed="false">${icon('route')}Steps</button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
             <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
                 <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
                 <p class="nav-map-caption">Illustrative connections · not street directions</p>
@@ -285,7 +287,7 @@
             : `${route.depart} – ${route.arrive}`;
         const secondary = running
             ? p.step.detail
-            : `Neumarkt to ${J.capture.to}`;
+            : `${trip().from.replace(/^Köln\s+/, '')} to ${trip().place}`;
         const nextDay = route.arrive < route.depart ? ' · next day' : '';
         const walking = running ? p.walkingRemaining : route.walking;
         const movement =
@@ -300,7 +302,7 @@
             <div class="nav-facts">${running && p.complete ? '' : `<span>${icon('clock')}<strong>${running ? p.remaining : route.duration}</strong> min${running ? ' left' : ''}</span>`}${movement ? `<span>${movement}</span>` : ''}<span>${running && p.complete ? 'Arrived' : 'Arrive'} <strong>${route.arrive}</strong>${nextDay}</span></div>
             ${running ? `<div class="nav-progress" role="progressbar" aria-label="Preview steps completed" aria-valuemin="0" aria-valuemax="${p.total - 1}" aria-valuenow="${p.index}"><span style="width:${(p.index / (p.total - 1)) * 100}%"></span></div><p class="nav-next">${p.next ? `<span>Then</span> ${safe(p.next.title)}` : 'End of this sample journey.'}</p>` : ''}
             <p class="nav-guidance-note">Sample steps · advance manually</p>
-        </div><div id="nav-expanded" class="nav-expanded" ${mobile() && !expanded && journeyView === 'map' ? 'inert' : ''}><div class="nav-detail-scroll"><div class="nav-itinerary-label"><strong>Whole journey</strong><small>${localDate()} · Sample</small></div>${timeline()}${route.delayed ? `<p class="nav-preview-note">${icon('info')}Delay flagged in this capture. Current status is unknown.</p>` : ''}<p class="nav-preview-note">${icon('info')}Times and steps are from a saved capture. Advance the preview yourself; live guidance is not connected.</p>
+        </div><div id="nav-expanded" class="nav-expanded" ${mobile() && !expanded && journeyView === 'map' ? 'inert' : ''}><div class="nav-detail-scroll"><div class="nav-itinerary-label"><strong>Whole journey</strong><small>${localDate()} · Sample</small></div>${timeline()}${route.delayed ? `<p class="nav-preview-note">${icon('info')}Delay flagged in this capture. Current status is unknown.</p>` : ''}<p class="nav-preview-note">${icon('info')}${trip().id === 'day' ? 'Scheduled sample times; no stops between were recorded.' : 'Times and steps are from a saved capture.'} Advance the preview yourself; live guidance is not connected.</p>
         </div></div>
         <footer class="nav-footer">${
             confirmation

@@ -2,8 +2,9 @@
    13:10, Cologne. Today and Composer read it instead of the real clock, so a
    plan made on Today is "today" in Composer too. Everything here is fictional
    review data: no live listings, bookings or legal claims. Events opens on this
-   day too; its captured 8 September listings are shown as past. Travel's
-   captures keep their own dates. */
+   day too; its captured 8 September listings are shown as past. Travel opens
+   on it with the appointment trip below; its older captures keep their own
+   dates. */
 (function (root) {
     root.ExpaduSampleDay = {
         date: '2026-09-30',
@@ -71,6 +72,11 @@
                 from: 'Neumarkt',
                 to: 'Mülheim',
                 line: '4',
+                // Line 4's Mülheim direction in the Neumarkt capture of
+                // 4 October; Wiener Platz is the appointment area Composer
+                // and the place layer use.
+                towards: 'Schlebusch',
+                alightStop: 'Wiener Platz',
                 depart: '13:24',
                 arrive: '13:52',
                 expectedDepart: '13:24',

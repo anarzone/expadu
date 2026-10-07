@@ -8,6 +8,7 @@ function workspace(
     desktop = false,
     station = false,
     capture = false,
+    sampleDay = false,
 ) {
     const elements = new Map();
     const listeners = new Map();
@@ -89,6 +90,7 @@ function workspace(
     });
     context.window = context;
     for (const file of [
+        ...(sampleDay ? ['../connected/sample-day.js'] : []),
         'departure-data.js',
         'journeys.js',
         ...(capture ? ['station-data.js'] : []),
@@ -1046,4 +1048,63 @@ test('ArrowUp from the filter close button reaches the last choice', () => {
     close.focus();
     w.emit('keydown', { key: 'ArrowUp', target: close, preventDefault() {} });
     assert.equal(w.run('document.activeElement'), choices[2]);
+});
+
+test('on the sample day the planner leads with the appointment trip and Today’s timing rule', () => {
+    const w = workspace('', false, false, false, true);
+    w.run('renderNextTrip();');
+    const card = w.element('#next-trip');
+    assert.equal(card.hidden, false);
+    assert.match(card.innerHTML, /Leave now/);
+    assert.match(card.innerHTML, /Departs<\/small><time>13:14/);
+    assert.match(card.innerHTML, /at your appointment 13:48 · 12 min to spare/);
+    assert.match(
+        card.innerHTML,
+        /The 13:24 in your plan leaves only 2 min to spare/,
+    );
+    assert.equal(w.run('state.stop'), 'neumarkt');
+    assert.equal(w.run('state.date'), '2026-09-30');
+});
+
+test('opening the next trip compares both trams against the 14:00 start', () => {
+    const w = workspace('', false, false, false, true);
+    w.run('closeSheet = done => done?.(); openNextTrip();');
+    assert.equal(w.element('#from').value, 'Neumarkt');
+    assert.equal(w.element('#to').value, 'Mülheim');
+    assert.equal(w.run('state.schedule'), 'arrive');
+    assert.equal(w.run('state.time'), '14:00');
+    const results = w.element('#results').innerHTML;
+    assert.match(results, /2 sample routes/);
+    assert.match(results, /<span class="status-tag">12 min to spare/);
+    assert.match(
+        results,
+        /<span class="status-tag warning">Only 2 min to spare/,
+    );
+    assert.match(results, /In your plan · No changes/);
+    assert.match(results, /Sample day · scheduled times/);
+    assert.doesNotMatch(results, /7 Sep 2026|aria-label="next day"/);
+    w.run('state.routeMode = "bike"; renderResults();');
+    assert.match(
+        w.element('#results').innerHTML,
+        /No cycling route in this sample[\s\S]*data-route-mode="transit"/,
+    );
+});
+
+test('the sample-day timetable says it only holds the trip’s line', () => {
+    const w = workspace('', false, false, false, true);
+    w.run('renderDepartures();');
+    assert.equal(w.element('#board-meta').textContent, 'Sample day · not live');
+    assert.equal(
+        w.element('#board-filter-summary').textContent,
+        '2 sample departures',
+    );
+    const cards = w.element('#departure-cards').innerHTML;
+    assert.match(cards, /Only line 4, for your appointment trip/);
+    assert.match(cards, /data-action="timetable-capture"/);
+    w.run('action("timetable-capture", $("#timetable-capture-trigger"));');
+    assert.equal(w.run('state.boardDate'), '2026-09-07');
+    assert.match(
+        w.element('#board-filter-summary').textContent,
+        /5 captured departures/,
+    );
 });

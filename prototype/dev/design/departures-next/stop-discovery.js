@@ -193,7 +193,8 @@
                     : stop.mode === 'bus'
                       ? 'Bus'
                       : 'Tram';
-            const date = stop.capture?.date;
+            // A stop on the sample day opens on it (timetable.js).
+            const date = stop.sampleDay?.date || stop.capture?.date;
             const captured = /^\d{4}-\d{2}-\d{2}$/.test(date || '')
                 ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
                       day: 'numeric',
@@ -201,7 +202,7 @@
                       timeZone: 'UTC',
                   })
                 : '';
-            return `${mode}${stop.lines.length ? ` · ${stop.lines.join(', ')}` : ''}${captured ? ` · ${captured} sample` : ''}`;
+            return `${mode}${stop.lines.length ? ` · ${stop.lines.join(', ')}` : ''}${captured ? ` · ${captured} sample${stop.sampleDay ? ' day' : ''}` : ''}`;
         }
         function render() {
             if (destroyed) return;

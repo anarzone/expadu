@@ -11,11 +11,12 @@
         <link rel="stylesheet" href="./style.css?v=48cebd18de23" />
         <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
         <script defer src="./departure-data.js?v=05fcba8c8280"></script>
-        <script defer src="./journeys.js?v=d0b524f02554"></script>
-        <script defer src="./timetable.js?v=29338b324c13"></script>
+        <script defer src="../connected/sample-day.js?v=026fcb4cc1eb"></script>
+        <script defer src="./journeys.js?v=954d22c70453"></script>
+        <script defer src="./timetable.js?v=50148a9e01f5"></script>
         <script defer src="../connected/icons.js?v=685f482a1088"></script>
         <script defer src="./icons.js?v=9339c39515e5"></script>
-        <script defer src="./journey-ui.js?v=0087a8e75992"></script>
+        <script defer src="./journey-ui.js?v=0231b7fa4a9e"></script>
         <link
             rel="stylesheet"
             href="../connected/date-control.css?v=af988dcad8c6"
@@ -36,10 +37,10 @@
             defer
             src="../connected/time-control.js?v=255f0aaf235a"
         ></script>
-        <script defer src="./app.js?v=711943f2b330"></script>
+        <script defer src="./app.js?v=ddfce645ac03"></script>
         <script defer src="../connected/model.js?v=b727e359c259"></script>
         <script defer src="../connected/store.js?v=3078f6a2275c"></script>
-        <script defer src="../connected/bridge.js?v=6be558a44fd8"></script>
+        <script defer src="../connected/bridge.js?v=e351cb308817"></script>
         <link
             rel="stylesheet"
             href="../connected/shell-review.css?v=f06ba9e90e95"
@@ -94,9 +95,9 @@
             src="../connected/journey-session.js?v=208026dd621f"
         ></script>
         <link rel="stylesheet" href="./navigation.css?v=a4d49d2fc9b3" />
-        <script defer src="./navigation-model.js?v=3cf11dfe3de1"></script>
-        <script defer src="./route-map.js?v=e7364a3f805e"></script>
-        <script defer src="./navigation-ui.js?v=4563f00e31d5"></script>
+        <script defer src="./navigation-model.js?v=a3221f86a2f6"></script>
+        <script defer src="./route-map.js?v=47b95c03eea1"></script>
+        <script defer src="./navigation-ui.js?v=dfee438ee677"></script>
         <link
             rel="stylesheet"
             href="../connected/today-palette.css?v=0fcb87eb7f09"
@@ -106,7 +107,7 @@
             href="../connected/today-header.css?v=c1792fee5d7f"
         />
         <link rel="stylesheet" href="./soft-palette.css?v=b5854d636286" />
-        <link rel="stylesheet" href="./workspace.css?v=f6b6548e62e1" />
+        <link rel="stylesheet" href="./workspace.css?v=134becde1a97" />
     </head>
     <body
         class="shell-review departures-page today-palette today-header travel-palette"
@@ -353,6 +354,12 @@
                 </button>
             </div>
             <div id="journey-view">
+                <section
+                    id="next-trip"
+                    class="next-trip"
+                    aria-labelledby="next-trip-title"
+                    hidden
+                ></section>
                 <div class="journey-intro-grid">
                     <section class="journey-desk" aria-label="Plan a journey">
                         <button
@@ -603,7 +610,7 @@
                             aria-labelledby="sample-title"
                         >
                             <div class="section-heading">
-                                <h2 id="sample-title">Explore sample routes</h2>
+                                <h2 id="sample-title">Explore a captured example</h2>
                             </div>
                             <p class="sample-endpoints">
                                 Köln Neumarkt → Museum Ludwig

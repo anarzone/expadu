@@ -32,6 +32,11 @@
         {
             ...J.capture.boardingStop,
             capture: { date: J.capture.date, time: J.capture.time },
+            // On the sample day this stop opens at its clock, with only the
+            // appointment trip's departures (connected/sample-day.js).
+            ...(J.day
+                ? { sampleDay: { date: J.day.date, time: J.day.time } }
+                : {}),
         },
         ...(stationCapture ? [stationCapture.stop] : []),
     ];
@@ -48,11 +53,12 @@
             };
         }),
     );
-    for (const route of J.routes) {
+    for (const route of J.all || J.routes) {
+        const trip = J.tripOf?.(route) || J.capture;
         for (const leg of route.legs.filter(
             (item) => item.mode === 'transit',
         )) {
-            const date = dateAtClock(J.capture.date, J.capture.time, leg.time);
+            const date = dateAtClock(trip.date, trip.time, leg.time);
             entries.push({
                 id: `${route.id}:${date}:${leg.time}`,
                 serviceId: `route:${route.id}`,
@@ -63,6 +69,7 @@
                 time: leg.time,
                 routeId: route.id,
                 delayed: route.delayed,
+                ...(route.trip === 'day' ? { sampleDay: true } : {}),
             });
         }
     }

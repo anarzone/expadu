@@ -24,16 +24,37 @@
             : 'Choose date';
         return `${state.schedule === 'arrive' ? 'Arrive by' : 'Depart at'} ${date}, ${state.time}`;
     }
-    function emptyReason(state, capture) {
+    // `trip` is the sample the request matches; `modes` lists the travel
+    // modes that sample has at all.
+    function emptyReason(state, trip, modes = null) {
+        const next = new Date(Date.parse(`${trip.date}T12:00:00Z`) + 864e5)
+            .toISOString()
+            .slice(0, 10);
+        const day = new Intl.DateTimeFormat('en-GB', {
+            ...(trip.id === 'day' ? { weekday: 'long' } : {}),
+            day: 'numeric',
+            month: 'long',
+            ...(trip.id === 'day' ? {} : { year: 'numeric' }),
+        }).format(new Date(trip.date + 'T12:00:00'));
         if (
             state.schedule !== 'now' &&
-            state.date !== capture.date &&
-            state.date !== '2026-09-08'
+            state.date !== trip.date &&
+            state.date !== next
         )
             return {
                 title: 'No live routes connected yet',
-                text: 'This preview has journeys from 7 September 2026. Keep your date and send this request to Composer, or explore the sample separately.',
+                text:
+                    trip.id === 'day'
+                        ? `This preview has this trip on ${day}, the sample day. Keep your date and send this request to Composer.`
+                        : `This preview has journeys from ${day}. Keep your date and send this request to Composer, or explore the sample separately.`,
                 reset: false,
+            };
+        if (modes && !modes.includes(state.routeMode))
+            return {
+                title: `No ${state.routeMode === 'bike' ? 'cycling' : 'walking'} route in this sample`,
+                text: 'Only the tram journey is in the sample for this trip. Live routing isn’t connected in this preview.',
+                reset: false,
+                mode: 'transit',
             };
         return {
             title: 'No routes match these choices',

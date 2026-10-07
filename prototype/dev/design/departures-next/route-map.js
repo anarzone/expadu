@@ -149,12 +149,12 @@
                         unique.add(step.place);
                         const button = document.createElement('button');
                         button.type = 'button';
-                        button.className = `nav-map-stop ${step.place === 'ludwig' ? 'destination' : ''} ${step.place === 'dom' ? 'label-above' : ''}`;
+                        button.className = `nav-map-stop ${step.destination ? 'destination' : ''} ${step.place === 'dom' ? 'label-above' : ''}`;
                         button.setAttribute(
                             'aria-label',
                             `Show ${step.placeName} in itinerary`,
                         );
-                        button.innerHTML = `<span class="nav-stop-dot">${root.ExpaduIcon(step.place === 'ludwig' ? 'pin' : 'train')}</span><span class="nav-stop-label"></span>`;
+                        button.innerHTML = `<span class="nav-stop-dot">${root.ExpaduIcon(step.destination ? 'pin' : 'train')}</span><span class="nav-stop-label"></span>`;
                         button.querySelector('.nav-stop-label').textContent =
                             step.placeName;
                         button.onclick = (event) => {

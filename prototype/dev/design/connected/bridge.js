@@ -225,20 +225,29 @@
             if (typeof hideSuggestions === 'function') hideSuggestions();
         }
         syncControls();
+        const routes = J.all || J.routes;
         if (
             params.get('route') &&
-            J.routes.some((r) => r.id === params.get('route'))
+            routes.some((r) => r.id === params.get('route'))
         ) {
-            from.value = J.capture.from;
-            to.value = J.capture.to;
-            state.selected = params.get('route');
-            state.routeMode = J.routes.find(
-                (r) => r.id === state.selected,
-            ).mode;
+            const r = routes.find((item) => item.id === params.get('route'));
+            const trip = J.tripOf?.(r) || J.capture;
+            from.value = trip.from;
+            to.value = trip.to;
+            state.selected = r.id;
+            state.routeMode = r.mode;
             state.more = true;
             renderResults();
-        }
+        } else if (
+            destination &&
+            J.tripFor?.(from.value, to.value) &&
+            typeof searchJourney === 'function'
+        )
+            // A hand-off for a trip in the sample opens on its options.
+            searchJourney();
         handoff = function () {
+            // Read the address now: Travel can open a plan's trip in place.
+            const params = new URLSearchParams(location.search);
             const origin = from.value.trim(),
                 destination = to.value.trim();
             if (!destination) {
@@ -300,8 +309,10 @@
             const r =
                 typeof window.ExpaduTravelRoute === 'function'
                     ? window.ExpaduTravelRoute(id)
-                    : J.routes.find((route) => route.id === id);
+                    : (J.all || J.routes).find((route) => route.id === id);
             if (!r || r.id !== id) return false;
+            const params = new URLSearchParams(location.search);
+            const trip = J.tripOf?.(r) || J.capture;
             S.update((s) => {
                 const journey = {
                     id: r.id,
@@ -309,13 +320,13 @@
                     activityId: params.get('activity') || null,
                     planDate: params.get('planDate') || null,
                     targetStart: params.get('arrive') || null,
-                    targetLocation: destination || null,
+                    targetLocation: params.get('to') || null,
                     previousEnd: params.get('previousEnd') || null,
                     previousId: params.get('previousId') || null,
-                    title: 'Journey to ' + J.capture.to,
-                    from: J.capture.from,
-                    to: J.capture.to,
-                    date: J.capture.date,
+                    title: 'Journey to ' + trip.to,
+                    from: trip.from,
+                    to: trip.to,
+                    date: trip.date,
                     depart: r.depart,
                     arrive: r.arrive,
                     mode: r.mode,

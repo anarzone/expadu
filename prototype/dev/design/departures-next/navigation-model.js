@@ -2,6 +2,8 @@
    Neumarkt / Heumarkt: en.wikipedia.org/wiki/{Neumarkt,Heumarkt}_station
    Appellhofplatz / Dom: wikidata.org/wiki/{Q962522,Q1521670}
    Museum Ludwig: existing catalogue osm:node/633480736.
+   Wiener Platz: the sample day's appointment area, from the place layer's
+   anchor (connected/sample-places.js); the appointment has no exact address.
    Coordinates checked 2026-09-29. Lines below only connect known places. */
 (function (root) {
     const J = root.JourneyModel;
@@ -14,14 +16,23 @@
         },
         dom: { name: 'Dom / Hbf', point: [6.958611, 50.941694] },
         ludwig: { name: 'Museum Ludwig', point: [6.9600217, 50.9408347] },
+        wienerplatz: { name: 'Wiener Platz', point: [7.0048, 50.96103] },
     };
+    const tripOf = (route) => J.tripOf?.(route) || J.capture;
     function steps(route) {
+        const day = tripOf(route).id === 'day';
         const alight = route.legs.find((leg) => leg.mode === 'transit')?.stop;
-        const stop = alight?.includes('Heumarkt') ? 'heumarkt' : 'dom';
+        const stop = day
+            ? 'wienerplatz'
+            : alight?.includes('Heumarkt')
+              ? 'heumarkt'
+              : 'dom';
+        // The appointment is shown at its area: the stop it's walked to from.
+        const destination = day ? stop : 'ludwig';
         return J.tripSteps(route).map((step, index) => {
             const place =
                 step.mode === 'arrive'
-                    ? 'ludwig'
+                    ? destination
                     : step.mode === 'ride'
                       ? 'appellhofplatz'
                       : step.mode === 'alight' ||
@@ -31,6 +42,7 @@
             return {
                 ...step,
                 place,
+                destination: place === destination,
                 point: places[place].point,
                 placeName: places[place].name,
             };
@@ -62,7 +74,7 @@
                 if (next.mode === 'alight') break;
             }
         }
-        const arrival = new Date(`${J.capture.date}T12:00:00Z`);
+        const arrival = new Date(`${tripOf(route).date}T12:00:00Z`);
         if (route.arrive < route.depart)
             arrival.setUTCDate(arrival.getUTCDate() + 1);
         const walkingRemaining = list
@@ -74,7 +86,8 @@
                     (item.mode === 'walk' && next
                         ? Math.max(
                               0,
-                              J.timeline(next.time) - J.timeline(item.time),
+                              J.timeline(next.time, tripOf(route)) -
+                                  J.timeline(item.time, tripOf(route)),
                           )
                         : 0)
                 );
@@ -89,13 +102,16 @@
             walkingRemaining,
             remaining: Math.max(
                 0,
-                J.timeline(route.arrive) - J.timeline(step.time),
+                J.timeline(route.arrive, tripOf(route)) -
+                    J.timeline(step.time, tripOf(route)),
             ),
             arrivalDate: arrival.toISOString().slice(0, 10),
         };
     }
     function routeFor(record) {
-        const original = J.routes.find((item) => item.id === record?.routeId);
+        const original = (J.all || J.routes).find(
+            (item) => item.id === record?.routeId,
+        );
         if (!original) return null;
         if (record.boardingStop == null) return original;
         const route = J.fromStop(original, record.boardingStop);

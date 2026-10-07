@@ -8,6 +8,43 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Sample day — 7 October 2026 (in review)
+
+Travel opens on the shared sample day (`connected/sample-day.js`): Wednesday 30
+September 2026, 13:10, the day Today, Composer, Events and Paperwork show.
+
+- **Your next trip** leads the planner (on desktop, across both columns): the
+  14:00 Blue Card appointment in Mülheim, the tram to take and when to leave.
+  Today's rule decides it: an official appointment needs ten minutes in hand,
+  so the planned 13:24 (two minutes to spare) gives way to the 13:14 (leave
+  now, twelve minutes). **See both trams** opens them the way Today's hand-off
+  does.
+- Today's hand-off (`?from=Neumarkt&to=Mülheim&date=2026-09-30&arrive=14:00&activity=…`)
+  and a typed Neumarkt → Mülheim open straight on the options: "12 min to
+  spare" and "In your plan · … Only 2 min to spare". Mülheim is a suggested
+  destination. Cycle and Walk say the sample only has the tram.
+- Journey details, the map preview (Neumarkt to the Wiener Platz area,
+  illustrative), saved journeys, the resume bar and Composer hand-offs use the
+  trip's own date and place.
+- **Timetable** opens at Köln Neumarkt on the sample day. Only the trip's line
+  4 departures (13:14 and 13:24, towards Schlebusch) are in the sample; the
+  board says so and links to the stop's 7 September capture.
+- Data: the trip comes from `connected/sample-day.js` (line, times, walks; the
+  direction from the 4 October Neumarkt capture; Wiener Platz from the place
+  layer). No stops between Neumarkt and Wiener Platz are recorded, so none are
+  shown. Without the sample day loaded, Travel behaves as before.
+- The 7 September routes stay as **Explore a captured example** with their own
+  date and clock ("Captured clock · 7 Sep, 23:37"). Other pages that read them
+  (Today, Events, place sheets) are unchanged. The station board study
+  (`station.html`) keeps its 4 October capture.
+
+Verification: Travel 133, connected 159, Events 53, Composer 112, Today 44,
+Today C 56, Paperwork 65 and Places 14 tests pass. Browser checks at 360, 390,
+800 and 1440px cover the first screen, See both trams, Today's hand-off, details,
+the map preview and its resume bar, the timetable and its capture link, Mülheim
+suggestions, Cycle, saving and the Composer hand-off. Every other page's default
+view is pixel-identical.
+
 ## Station-wide board — 4 October 2026
 
 Review `station.html?view=timetable`. Following the staging API/data audit, this

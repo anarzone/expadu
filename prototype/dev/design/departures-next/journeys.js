@@ -1,6 +1,8 @@
 'use strict';
 // Public route results and steps read from staging's rendered UI on 7 Sep 2026.
 // Clock frozen at 23:37. No personal addresses, ticket ownership or GPS copied.
+// When the shared sample day loads first (connected/sample-day.js), its
+// appointment trip is a second sample with its own date: Wed 30 Sep, 13:10.
 globalThis.JourneyModel = (() => {
     const capture = {
         date: '2026-09-07',
@@ -30,6 +32,7 @@ globalThis.JourneyModel = (() => {
         delayed = false,
     ) => ({
         id,
+        trip: 'capture',
         line,
         depart,
         arrive,
@@ -139,6 +142,7 @@ globalThis.JourneyModel = (() => {
         ),
         {
             id: 'bike',
+            trip: 'capture',
             mode: 'bike',
             depart: '23:37',
             arrive: '23:42',
@@ -158,6 +162,7 @@ globalThis.JourneyModel = (() => {
         },
         {
             id: 'walk',
+            trip: 'capture',
             mode: 'walk',
             depart: '23:37',
             arrive: '23:59',
@@ -180,7 +185,112 @@ globalThis.JourneyModel = (() => {
         const [h, m] = time.split(':').map(Number);
         return h * 60 + m;
     };
-    const timeline = (time) => minutes(time) + (time < capture.time ? 1440 : 0);
+    const clock = (value) =>
+        `${String(Math.floor(value / 60) % 24).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+    const nextDate = (date) =>
+        new Date(Date.parse(`${date}T12:00:00Z`) + 86400000)
+            .toISOString()
+            .slice(0, 10);
+    // The appointment trip Today shows: the planned tram and the earlier one
+    // it suggests. Scheduled sample times, no intermediate stops recorded.
+    const sample = globalThis.ExpaduSampleDay;
+    const plan = sample?.appointment;
+    const planned = plan?.journey;
+    const trips = {
+        capture: {
+            id: 'capture',
+            date: capture.date,
+            time: capture.time,
+            from: capture.from,
+            to: capture.to,
+            place: capture.to,
+            boardingStop: capture.boardingStop,
+        },
+        day: planned
+            ? {
+                  id: 'day',
+                  date: sample.date,
+                  time: sample.time,
+                  from: planned.from,
+                  to: planned.to,
+                  place: plan.title,
+                  start: plan.start,
+                  kind: plan.kind,
+                  activityId: plan.id,
+                  alightStop: planned.alightStop || planned.to,
+                  boardingStop: capture.boardingStop,
+              }
+            : null,
+    };
+    function dayRoute(depart, arrive, inPlan) {
+        const walkIn = planned.accessWalkMinutes ?? 0,
+            walkOut = planned.walkMinutes ?? 0;
+        const leave = clock(minutes(depart) - walkIn),
+            reach = clock(minutes(arrive) + walkOut);
+        return {
+            id: `day-${depart.replace(':', '')}`,
+            trip: 'day',
+            line: planned.line,
+            depart: leave,
+            arrive: reach,
+            duration: minutes(reach) - minutes(leave),
+            walking: walkIn + walkOut,
+            changes: 0,
+            mode: 'transit',
+            delayed: false,
+            inPlan,
+            legs: [
+                {
+                    mode: 'walk',
+                    title: `Walk to ${capture.boardingStop.name}`,
+                    detail: `${walkIn} min on foot`,
+                    time: leave,
+                    duration: walkIn,
+                },
+                {
+                    mode: 'transit',
+                    boardStop: capture.boardingStop.id,
+                    title: `Take line ${planned.line}`,
+                    detail: planned.towards
+                        ? `Towards ${planned.towards}`
+                        : `Line ${planned.line}`,
+                    time: depart,
+                    duration: minutes(arrive) - minutes(depart),
+                    stop: trips.day.alightStop,
+                    alight: arrive,
+                    intermediate: [],
+                },
+                {
+                    mode: 'walk',
+                    title: 'Walk to your appointment',
+                    detail: `${walkOut} min on foot`,
+                    time: arrive,
+                    duration: walkOut,
+                },
+            ].filter((leg) => leg.mode === 'transit' || leg.duration > 0),
+        };
+    }
+    const dayRoutes = planned
+        ? [
+              ...(planned.earlier
+                  ? [
+                        dayRoute(
+                            planned.earlier.depart,
+                            planned.earlier.arrive,
+                            false,
+                        ),
+                    ]
+                  : []),
+              dayRoute(planned.depart, planned.arrive, true),
+          ]
+        : [];
+    const all = [...routes, ...dayRoutes];
+    const route = (id) => all.find((item) => item.id === id);
+    const tripOf = (value) =>
+        trips[(typeof value === 'string' ? route(value) : value)?.trip] ||
+        trips.capture;
+    const timeline = (time, trip = trips.capture) =>
+        minutes(time) + (time < trip.time ? 1440 : 0);
     const normal = (s) =>
         s
             .trim()
@@ -188,6 +298,16 @@ globalThis.JourneyModel = (() => {
             .replace(/^köln\s+/, '');
     const matches = (from, to) =>
         normal(from) === 'neumarkt' && normal(to) === 'museum ludwig';
+    // Which sample a typed request asks for, if any.
+    function tripFor(from, to) {
+        if (matches(from, to)) return 'capture';
+        const day = trips.day;
+        return day &&
+            normal(from) === normal(day.from) &&
+            [day.to, day.alightStop].some((name) => normal(to) === normal(name))
+            ? 'day'
+            : null;
+    }
     function fromStop(route, stopId) {
         if (!route || !stopId) return route;
         const boarding = route.legs.findIndex(
@@ -211,23 +331,25 @@ globalThis.JourneyModel = (() => {
         };
     }
     function filtered(options = {}) {
+        const trip = trips[options.trip] || trips.capture;
         const {
             mode = 'transit',
             sort = 'arrival',
             schedule = 'now',
-            date = capture.date,
-            time = capture.time,
+            date = trip.date,
+            time = trip.time,
             maxWalk = 60,
             avoidDelays = false,
             direct = false,
             boardingStop,
         } = options;
         const day =
-            date === capture.date ? 0 : date === '2026-09-08' ? 1440 : null;
+            date === trip.date ? 0 : date === nextDate(trip.date) ? 1440 : null;
         if (day === null || (schedule !== 'now' && !/^\d{2}:\d{2}$/.test(time)))
             return [];
         const target = day + minutes(time);
-        return routes
+        const at = (value) => timeline(value, trip);
+        return (trip.id === 'day' ? dayRoutes : routes)
             .map((route) => fromStop(route, boardingStop))
             .filter(
                 (r) =>
@@ -237,8 +359,8 @@ globalThis.JourneyModel = (() => {
                     (!direct || r.changes === 0) &&
                     (schedule === 'now' ||
                         (schedule === 'arrive'
-                            ? timeline(r.arrive) <= target
-                            : timeline(r.depart) >= target)),
+                            ? at(r.arrive) <= target
+                            : at(r.depart) >= target)),
             )
             .sort(
                 (a, b) =>
@@ -248,10 +370,11 @@ globalThis.JourneyModel = (() => {
                           ? a.walking - b.walking
                           : sort === 'changes'
                             ? a.changes - b.changes
-                            : 0) || timeline(a.arrive) - timeline(b.arrive),
+                            : 0) || at(a.arrive) - at(b.arrive),
             );
     }
     function tripSteps(route) {
+        const trip = tripOf(route);
         const steps = route.legs.flatMap((l) =>
             l.mode === 'transit'
                 ? [
@@ -274,8 +397,10 @@ globalThis.JourneyModel = (() => {
         return [
             ...steps,
             {
-                title: 'Museum Ludwig',
-                detail: 'You’ve arrived',
+                title: trip.place,
+                detail: trip.start
+                    ? `Starts at ${trip.start}`
+                    : 'You’ve arrived',
                 time: route.arrive,
                 mode: 'arrive',
             },
@@ -284,6 +409,13 @@ globalThis.JourneyModel = (() => {
     return {
         capture,
         routes,
+        day: trips.day,
+        dayRoutes,
+        all,
+        trips,
+        route,
+        tripOf,
+        tripFor,
         filtered,
         matches,
         timeline,

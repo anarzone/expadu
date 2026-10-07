@@ -8,7 +8,7 @@ const state = {
     view: 'journey',
     stop:
         window.StationCapture?.stop.id ||
-        (window.StationBoard ? 'all' : 'mitte'),
+        (window.StationBoard ? 'all' : J.day?.boardingStop.id || 'mitte'),
     stationView: 'list',
     stationMapLine: null,
     stationPointId: null,
@@ -35,8 +35,9 @@ const state = {
     routeMode: 'transit',
     sort: 'arrival',
     schedule: 'now',
-    date: J.capture.date,
-    time: J.capture.time,
+    // The planner's clock: the shared sample day when it loads.
+    date: (J.day || J.capture).date,
+    time: (J.day || J.capture).time,
     maxWalk: 60,
     avoidDelays: false,
     direct: false,
@@ -55,6 +56,39 @@ const sheet = $('#sheet'),
     to = $('#to'),
     request = $('#request');
 const desktopPlanner = matchMedia('(min-width: 1000px)');
+const home = J.day || J.capture;
+const allRoutes = J.all || J.routes;
+const findRoute = (id) => allRoutes.find((route) => route.id === id);
+// Each route keeps its own sample date: the capture or the sample day.
+const tripOf = (route) => J.tripOf?.(route) || J.capture;
+const minutesOf = (time) => {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+};
+const sourceNote = (route) =>
+    tripOf(route).id === 'day'
+        ? 'Sample day · scheduled times'
+        : '7 Sep 2026 capture';
+const placeName = (name) => name.replace(/^Köln\s+/, '');
+// Which sample the typed request matches, if any.
+const requestTrip = () =>
+    J.tripFor
+        ? J.tripFor(from.value, to.value)
+        : J.matches(from.value, to.value)
+          ? 'capture'
+          : null;
+function routeList(tripId = requestTrip()) {
+    if (!tripId) return [];
+    const trip = J.trips?.[tripId] || J.capture;
+    return J.filtered({
+        ...state,
+        ...(state.schedule === 'now'
+            ? { date: trip.date, time: trip.time }
+            : {}),
+        mode: state.routeMode,
+        trip: tripId,
+    });
+}
 try {
     state.composerHelpDismissed =
         sessionStorage.getItem('expadu.travel.composer-help-dismissed') === '1';
@@ -63,10 +97,7 @@ try {
 }
 const currentRoute = (id) =>
     window.JourneyNavigation?.currentRoute?.(id) ||
-    J.fromStop(
-        J.routes.find((route) => route.id === id),
-        state.boardingStop,
-    );
+    J.fromStop(findRoute(id), state.boardingStop);
 window.ExpaduTravelRoute = currentRoute;
 let saved = [];
 try {
@@ -74,7 +105,7 @@ try {
         JSON.parse(
             localStorage.getItem('expadu-departures-next-saved') || '[]',
         ),
-        J.routes,
+        allRoutes,
     );
 } catch {
     /* Session-only saving remains available. */
@@ -100,8 +131,8 @@ const routeName = (route) =>
         : route.mode === 'bike'
           ? 'Cycle'
           : 'Walk';
-const overnight = (time) =>
-    time < J.capture.time ? '<sup aria-label="next day">+1</sup>' : '';
+const overnight = (time, trip = J.capture) =>
+    time < trip.time ? '<sup aria-label="next day">+1</sup>' : '';
 const animate = (element, direction = 0) =>
     window.ExpaduMotion?.reveal(element, direction);
 const drawIcons = (root = document) =>
@@ -296,11 +327,7 @@ function composerRouteChoice() {
     const choice = state.composerRoute;
     if (!choice) return null;
     const available =
-        state.results &&
-        J.matches(from.value, to.value) &&
-        J.filtered({ ...state, mode: state.routeMode }).some(
-            (route) => route.id === choice.id,
-        );
+        state.results && routeList().some((route) => route.id === choice.id);
     if (choice.request !== composerRequestKey() || !available) {
         state.composerRoute = null;
         return null;
@@ -364,7 +391,7 @@ function showSchedule(anchor) {
             )
             .join(
                 '',
-            )}</div><input type="hidden" id="schedule-mode" value="${state.schedule}"><div id="scheduled-fields" ${state.schedule === 'now' ? 'hidden' : ''}><label for="travel-date">Date</label><input type="date" id="travel-date" value="${safe(state.date)}"><label for="travel-time">Time</label><input type="text" id="travel-time" name="start" data-time-input inputmode="numeric" value="${safe(state.time)}" placeholder="HH:MM" maxlength="5" aria-label="Travel time" autocomplete="off"></div><p id="schedule-error" class="form-error" role="alert" hidden></p><div class="popover-footer"><small>Sample clock · 7 Sep, 23:37</small><button class="text-action" type="submit">Done</button></div></form>`,
+            )}</div><input type="hidden" id="schedule-mode" value="${state.schedule}"><div id="scheduled-fields" ${state.schedule === 'now' ? 'hidden' : ''}><label for="travel-date">Date</label><input type="date" id="travel-date" value="${safe(state.date)}"><label for="travel-time">Time</label><input type="text" id="travel-time" name="start" data-time-input inputmode="numeric" value="${safe(state.time)}" placeholder="HH:MM" maxlength="5" aria-label="Travel time" autocomplete="off"></div><p id="schedule-error" class="form-error" role="alert" hidden></p><div class="popover-footer"><small>${requestTrip() === 'capture' || !J.day ? 'Captured clock · 7 Sep, 23:37' : `Sample day · ${boardDateLabel(J.day.date)}, ${J.day.time}`}</small><button class="text-action" type="submit">Done</button></div></form>`,
         anchor,
         'schedule',
     );
@@ -413,6 +440,15 @@ const searchPlaces = [
         detail: 'Tram stop',
         icon: 'train',
     },
+    ...(J.day
+        ? [
+              {
+                  name: J.day.to,
+                  detail: `${J.day.place} · ${J.day.start}`,
+                  icon: 'calendar',
+              },
+          ]
+        : []),
     {
         name: 'Museum Ludwig',
         detail: 'Museum',
@@ -466,8 +502,8 @@ function resetFilters() {
         routeMode: 'transit',
         sort: 'arrival',
         schedule: 'now',
-        date: J.capture.date,
-        time: J.capture.time,
+        date: home.date,
+        time: home.time,
         maxWalk: 60,
         avoidDelays: false,
         direct: false,
@@ -485,7 +521,7 @@ function resetFilters() {
 }
 function example(routeId = null) {
     if (
-        state.date !== J.capture.date ||
+        state.schedule !== 'now' ||
         ((from.value.trim() || to.value.trim()) &&
             !J.matches(from.value, to.value))
     )
@@ -530,6 +566,8 @@ function renderPlanner() {
         `Edit journey from ${from.value} to ${to.value}`,
     );
     $('#journey-start').hidden = state.results;
+    const nextTrip = $('#next-trip');
+    if (nextTrip) nextTrip.hidden = state.results || !J.day;
 }
 function plannerControl(selector) {
     return $(
@@ -572,6 +610,13 @@ function routeTag(route, list) {
     if (route.delayed)
         return '<span class="status-tag warning">Delay in capture</span>';
     if (route.mode !== 'transit') return '';
+    const trip = tripOf(route);
+    if (trip.start) {
+        // Today's rule: official appointments need ten minutes in hand.
+        const spare = minutesOf(trip.start) - minutesOf(route.arrive);
+        const tight = spare < (trip.kind === 'official' ? 10 : 5);
+        return `<span class="status-tag${tight ? ' warning' : ''}">${tight ? 'Only ' : ''}${spare} min to spare</span>`;
+    }
     const earliest = [...list].sort(
         (a, b) => J.timeline(a.arrive) - J.timeline(b.arrive),
     )[0];
@@ -583,17 +628,19 @@ function routeTag(route, list) {
 }
 function option(route, list, preview = false) {
     const expanded = !preview && state.expanded === route.id;
-    const caption =
+    const trip = tripOf(route);
+    const caption = `${route.inPlan ? 'In your plan · ' : ''}${
         route.mode === 'transit'
             ? `${route.changes ? route.changes + ' changes' : 'No changes'} · ${route.walking} min walking`
             : route.mode === 'bike'
               ? 'By bike'
-              : 'On foot';
-    return `<article class="route-option" aria-label="${routeName(route)}, ${route.duration} minutes, arriving ${route.arrive}${route.arrive < J.capture.time ? ' next day' : ''}">
-        <div class="option-top"><div class="option-summary"><div class="route-clock">${route.depart}<span class="time-connector" aria-label="to"></span>${route.arrive}${overnight(route.arrive)}<span class="route-duration">${route.duration} min</span></div><p class="option-caption">${caption}</p></div><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}">${icon('bookmark')}</button></div>
+              : 'On foot'
+    }`;
+    return `<article class="route-option" aria-label="${routeName(route)}, ${route.duration} minutes, arriving ${route.arrive}${route.arrive < trip.time ? ' next day' : ''}">
+        <div class="option-top"><div class="option-summary"><div class="route-clock">${route.depart}<span class="time-connector" aria-label="to"></span>${route.arrive}${overnight(route.arrive, trip)}<span class="route-duration">${route.duration} min</span></div><p class="option-caption">${caption}</p></div><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}">${icon('bookmark')}</button></div>
         ${ribbon(route)}
         <div class="option-foot"><button class="details-toggle" ${preview ? `data-example-route="${route.id}" aria-label="Explore sample ${routeName(route)} journey details"` : `data-route-details="${route.id}" aria-expanded="${expanded}" aria-controls="route-disclosure-${route.id}"`}>Journey details ${icon('down')}</button>${routeTag(route, list)}</div>
-        ${preview ? '' : `<div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="inline-itinerary">${stepsMarkup(route)}${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}<p class="route-note">7 Sep 2026 capture · ${route.mode === 'transit' ? 'Check current departures before travelling.' : 'Street directions weren’t captured.'}</p><div class="inline-route-actions"><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div></div></div></div>`}
+        ${preview ? '' : `<div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="inline-itinerary">${stepsMarkup(route)}${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}<p class="route-note">${sourceNote(route)} · ${route.mode === 'transit' ? 'Check current departures before travelling.' : 'Street directions weren’t captured.'}</p><div class="inline-route-actions"><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div></div></div></div>`}
     </article>`;
 }
 function renderSampleRoutes() {
@@ -604,8 +651,64 @@ function renderSampleRoutes() {
         .map((route) => option(route, routes, true))
         .join('');
 }
+// The sample day's appointment trip leads the planner: the tram to take now,
+// with Today's rule for tight official appointments.
+function renderNextTrip() {
+    const panel = $('#next-trip');
+    const trip = J.day;
+    if (!panel) return;
+    panel.hidden = !trip || state.results;
+    if (!trip) return;
+    const spare = (route) => minutesOf(trip.start) - minutesOf(route.arrive);
+    const margin = trip.kind === 'official' ? 10 : 5;
+    const planned = J.dayRoutes.find((route) => route.inPlan);
+    const earlier = J.dayRoutes.find((route) => !route.inPlan);
+    const best = spare(planned) < margin && earlier ? earlier : planned;
+    const tram = (route) => route.legs.find((leg) => leg.mode === 'transit');
+    const leaveIn = minutesOf(best.depart) - minutesOf(trip.time);
+    const walk = best.legs.at(-1).mode === 'walk' ? best.legs.at(-1) : null;
+    panel.innerHTML = `<div class="next-trip-head"><h2 id="next-trip-title">Your next trip</h2><span>Sample day · ${trip.time}</span></div>
+        <p class="next-trip-plan"><time>${trip.start}</time><span><strong>${safe(trip.place)}</strong><small>${safe(trip.to)}</small></span></p>
+        <div class="next-trip-route"><p class="next-trip-leave"><strong>${leaveIn <= 0 ? 'Leave now' : `Leave by ${best.depart}`}</strong>${leaveIn > 0 ? `<span>in ${leaveIn} min</span>` : ''}</p>
+            <p class="next-trip-name"><span class="line-badge tram">${icon('train')}<strong>${safe(best.line)}</strong></span>${safe(placeName(trip.from))} → ${safe(tram(best).stop)}</p>
+            <p class="next-trip-times"><span><small>Departs</small><time>${tram(best).time}</time></span><span class="next-trip-track" aria-hidden="true"></span><span><small>At stop</small><time>${tram(best).alight}</time></span></p>
+            <small>${walk ? `${walk.duration} min walk · ` : ''}at your appointment ${best.arrive} · ${spare(best)} min to spare</small></div>
+        ${best !== planned ? `<p class="next-trip-advice">The ${tram(planned).time} in your plan leaves only ${spare(planned)} min to spare.</p>` : ''}
+        <button type="button" class="next-trip-action" data-action="next-trip">See both trams${icon('arrow')}</button>`;
+}
+// Opens the appointment trip as Today hands it over, without a page load.
+function openNextTrip() {
+    const trip = J.day;
+    if (!trip) return;
+    try {
+        const url = new URL(location.href);
+        Object.entries({
+            from: trip.from,
+            to: trip.to,
+            date: trip.date,
+            arrive: trip.start,
+            activity: trip.activityId,
+            planDate: trip.date,
+        }).forEach(([key, value]) => url.searchParams.set(key, value));
+        history.replaceState(history.state, '', url);
+    } catch {
+        /* The trip still opens; Composer just won't see the plan link. */
+    }
+    if (from.value.trim() || to.value.trim())
+        previousRequest = captureRequest();
+    from.value = trip.from;
+    to.value = trip.to;
+    resetFilters();
+    Object.assign(state, {
+        schedule: 'arrive',
+        date: trip.date,
+        time: trip.start,
+    });
+    syncControls();
+    searchJourney();
+}
 function toggleRouteDetails(id) {
-    if (!J.routes.some((route) => route.id === id)) return;
+    if (!findRoute(id)) return;
     state.expanded = state.expanded === id ? null : id;
     if (state.expanded) state.selected = id;
     if (state.expanded) rememberComposerRoute(id);
@@ -618,15 +721,17 @@ function toggleRouteDetails(id) {
     });
 }
 function stepsMarkup(route) {
+    const trip = tripOf(route);
     return `<ol class="route-steps">${J.tripSteps(route)
         .map(
             (step) =>
-                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small>${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
+                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time, trip)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small>${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
         )
         .join('')}</ol>`;
 }
 function details(route) {
-    return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>Museum Ludwig</h2></div><div class="journey-timeband"><span><small>Leave Neumarkt</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < J.capture.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>7 Sep 2026 · 23:37 capture. ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'Saved journey' : 'Save journey'}">${icon('bookmark')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
+    const trip = tripOf(route);
+    return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>${safe(trip.place)}</h2></div><div class="journey-timeband"><span><small>Leave ${safe(placeName(trip.from))}</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < trip.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>${trip.id === 'day' ? 'Sample day, scheduled times.' : '7 Sep 2026 · 23:37 capture.'} ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'Saved journey' : 'Save journey'}">${icon('bookmark')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
 }
 function renderResults() {
     state.results = true;
@@ -634,8 +739,10 @@ function renderResults() {
     setView('journey');
     renderPlanner();
     $('#results').hidden = false;
-    const matched = J.matches(from.value, to.value),
-        list = matched ? J.filtered({ ...state, mode: state.routeMode }) : [];
+    const tripId = requestTrip(),
+        matched = !!tripId,
+        trip = J.trips?.[tripId] || J.capture,
+        list = routeList(tripId);
     if (!list.some((route) => route.id === state.selected))
         state.selected = list[0]?.id || null;
     if (!list.some((route) => route.id === state.expanded))
@@ -650,7 +757,13 @@ function renderResults() {
     const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? 'Your options' : 'Your journey'}</h2><div class="results-heading"><span>${list.length ? `${list.length} sample ${list.length === 1 ? 'route' : 'routes'}` : 'Route request'}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
     const toolbar = `<div class="results-tools"><div class="segmented route-modes" role="group" aria-label="Travel mode">${modeButtons()}</div><div class="result-utilities"><button class="quiet-button" data-action="schedule" aria-expanded="false" aria-haspopup="dialog">${icon('clock')}<span>${safe(scheduleLabel())}</span>${icon('down')}</button><div><button class="icon-button ${preferenceCount() ? 'has-preferences' : ''}" data-action="preferences" aria-label="Journey preferences${preferenceCount() ? ', ' + preferenceCount() + ' active' : ''}" title="Journey preferences" aria-expanded="false" aria-haspopup="dialog">${icon('sliders')}</button></div></div></div>`;
     const empty = matched
-        ? U.emptyReason(state, J.capture)
+        ? U.emptyReason(state, trip, [
+              ...new Set(
+                  (tripId === 'day' ? J.dayRoutes : J.routes).map(
+                      (route) => route.mode,
+                  ),
+              ),
+          ])
         : {
               title: 'No route available for this request',
               text: 'Live route search isn’t connected in this preview. You can edit your trip or explore the captured sample routes.',
@@ -658,9 +771,9 @@ function renderResults() {
           };
     const contents = list.length
         ? `<div class="route-workspace"><div class="route-options">${(state.more ? list : list.slice(0, 3)).map((route) => option(route, list)).join('')}${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}</div></div>`
-        : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : '<button class="quiet-button" data-action="example">Explore sample routes</button>'}</div></div>`;
+        : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : '<button class="quiet-button" data-action="example">Explore sample routes</button>'}</div></div>`;
     const captureNote = list.length
-        ? `<p class="sample-footnote">${icon('info')}<span>7 Sep 2026 capture · No live travel status.</span></p>`
+        ? `<p class="sample-footnote">${icon('info')}<span>${sourceNote(list[0])} · No live travel status.</span></p>`
         : '';
     $('#results').innerHTML =
         restore + header + toolbar + contents + captureNote;
@@ -670,10 +783,7 @@ function selectedRoute(id, boardingOrigin = undefined) {
     const route =
         boardingOrigin === undefined
             ? currentRoute(id)
-            : J.fromStop(
-                  J.routes.find((item) => item.id === id),
-                  boardingOrigin,
-              );
+            : J.fromStop(findRoute(id), boardingOrigin);
     if (!route) return;
     boardingReturn = null;
     state.boardRoute = null;
@@ -737,10 +847,11 @@ function saveRoute(id) {
 function savedBody() {
     if (!saved.length)
         return `<div class="saved-empty"><span class="empty-symbol">${icon('bookmark')}</span><h3>Keep a route for later</h3><p>Save a journey from its details. It’ll be here when you come back.</p><button class="primary" data-action="example">Explore sample routes${icon('arrow')}</button></div>`;
-    return `<p class="sheet-caption">Saved on this device · captured journeys</p><div class="saved-list">${saved
+    return `<p class="sheet-caption">Saved on this device · sample journeys</p><div class="saved-list">${saved
         .map((id) => {
-            const route = J.routes.find((item) => item.id === id);
-            return `<div class="saved-row"><button data-saved="${id}"><span class="saved-mode">${icon(routeIcon(route))}${route.line || ''}</span><span><strong>Museum Ludwig</strong><small>From Neumarkt · ${route.duration} min</small><small>7 Sep 2026 · ${route.depart}–${route.arrive}${route.arrive < J.capture.time ? ' (+1 day)' : ''}</small></span>${icon('chevron')}</button><button class="icon-button is-saved" data-save="${id}" aria-label="Unsave ${routeName(route)} journey">${icon('bookmark')}</button>${window.StationBoard ? `<button type="button" class="saved-repeat text-action" data-repeat-route="${id}">Plan this trip again</button>` : ''}</div>`;
+            const route = findRoute(id),
+                trip = tripOf(route);
+            return `<div class="saved-row"><button data-saved="${id}"><span class="saved-mode">${icon(routeIcon(route))}${route.line || ''}</span><span><strong>${safe(trip.place)}</strong><small>From ${safe(placeName(trip.from))} · ${route.duration} min</small><small>${trip.id === 'day' ? `Sample day · ${boardDateLabel(trip.date)}` : '7 Sep 2026'} · ${route.depart}–${route.arrive}${route.arrive < trip.time ? ' (+1 day)' : ''}</small></span>${icon('chevron')}</button><button class="icon-button is-saved" data-save="${id}" aria-label="Unsave ${routeName(route)} journey">${icon('bookmark')}</button>${window.StationBoard ? `<button type="button" class="saved-repeat text-action" data-repeat-route="${id}">Plan this trip again</button>` : ''}</div>`;
         })
         .join('')}</div>`;
 }
@@ -753,17 +864,23 @@ function renderSavedBody() {
 function openSaved() {
     openSheet('Saved journeys', savedBody(), 'saved');
 }
-function repeatJourney(id, now = new Date()) {
-    const route = J.routes.find((item) => item.id === id);
+// A repeat starts from the planner's clock (the sample day) unless a time is given.
+function repeatJourney(id, now = null) {
+    const route = findRoute(id);
     if (!route) return;
+    const trip = tripOf(route);
     closeSheet(() => {
         previousRequest = captureRequest();
         resetFilters();
-        from.value = J.capture.from;
-        to.value = J.capture.to;
+        from.value = trip.from;
+        to.value = trip.to;
         Object.assign(state, {
-            date: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
-            time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+            date: now
+                ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+                : home.date,
+            time: now
+                ? `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+                : home.time,
             schedule: 'depart',
             routeMode: route.mode,
             selected: null,
@@ -848,20 +965,35 @@ function departureTypes() {
         )
         .join('');
 }
+// A stop on the sample day opens at its clock; other stops at their capture.
+const stopNow = (stop) => stop.sampleDay || stop.capture;
 function timetableClock() {
     const stop = timetableStop();
     return state.boardMode === 'now'
-        ? stop.capture
+        ? stopNow(stop)
         : { date: state.boardDate, time: state.boardTime };
 }
 function timetableNow() {
     const stop = timetableStop();
     Object.assign(state, {
         boardMode: 'now',
-        boardDate: stop.capture.date,
-        boardTime: stop.capture.time,
+        boardDate: stopNow(stop).date,
+        boardTime: stopNow(stop).time,
         boardLimit: 10,
     });
+}
+// The sample day only holds the appointment trip's departures; say so.
+function sampleDayScope(stop, clock) {
+    if (!stop.sampleDay || clock.date !== stop.sampleDay.date) return '';
+    const lines = [
+        ...new Set(
+            T.entries
+                .filter((entry) => entry.stopId === stop.id && entry.sampleDay)
+                .map((entry) => entry.line),
+        ),
+    ];
+    if (!lines.length) return '';
+    return `<div class="timetable-scope">${icon('info')}<p>Only line ${lines.join(', ')}, for your appointment trip, is in the sample day. Other services at ${safe(stop.name)} weren’t captured for ${boardDateLabel(clock.date)}.</p><button type="button" class="quiet-button" data-action="timetable-capture">See the ${boardDateLabel(stop.capture.date)} capture</button></div>`;
 }
 function boardFilters() {
     const entries = scopeEntries();
@@ -1144,7 +1276,9 @@ function renderDepartures() {
         `${boardDateLabel(clock.date)} · ${clock.time}`;
     $('#board-meta').textContent = stop.capture.estimated
         ? 'Saved estimates · not live'
-        : 'Sample timetable · not live';
+        : stop.sampleDay && clock.date === stop.sampleDay.date
+          ? 'Sample day · not live'
+          : 'Sample timetable · not live';
     boardFilters();
     const filters = {
         line: state.boardLine,
@@ -1182,17 +1316,18 @@ function renderDepartures() {
     );
     renderStationMap();
     $('#board-filter-summary').textContent =
-        `${page.total} captured ${page.total === 1 ? 'departure' : 'departures'}`;
+        `${page.total} ${stop.sampleDay && clock.date === stop.sampleDay.date ? 'sample' : 'captured'} ${page.total === 1 ? 'departure' : 'departures'}`;
     if (window.StationBoard && page.rows.length) {
-        $('#departure-cards').innerHTML = StationBoard.render({
-            page,
-            stop,
-            clock,
-            expanded: state.boardExpanded,
-            selected: state.boardSelected,
-            desktop: desktopPlanner.matches,
-            detail: departureContent,
-        });
+        $('#departure-cards').innerHTML =
+            StationBoard.render({
+                page,
+                stop,
+                clock,
+                expanded: state.boardExpanded,
+                selected: state.boardSelected,
+                desktop: desktopPlanner.matches,
+                detail: departureContent,
+            }) + sampleDayScope(stop, clock);
         return;
     }
     let lastDate = clock.date;
@@ -1216,7 +1351,8 @@ function renderDepartures() {
               .join('') +
           (page.total > page.rows.length
               ? `<button class="quiet-button timetable-more" data-action="more-departures">More departures${icon('down')}</button>`
-              : '')
+              : '') +
+          sampleDayScope(stop, clock)
         : state.boardStatus !== 'all' ||
             state.boardLine !== 'all' ||
             state.boardDirection !== 'all'
@@ -1227,7 +1363,7 @@ function showTimetableTime(anchor) {
     const clock = timetableClock();
     openPopover(
         'Timetable time',
-        `<form id="timetable-time-form"><div class="segmented schedule-modes" role="group" aria-label="Timetable time"><button type="button" data-board-mode="now" aria-pressed="${state.boardMode === 'now'}">Captured time</button><button type="button" data-board-mode="date" aria-pressed="${state.boardMode !== 'now'}">Choose time</button></div><input type="hidden" id="board-mode" value="${state.boardMode}"><div id="board-time-fields" ${state.boardMode === 'now' ? 'hidden' : ''}><label for="board-date">Date</label><input type="date" id="board-date" value="${clock.date}"><label for="board-time">From</label><input type="text" id="board-time" name="start" data-time-input inputmode="numeric" value="${clock.time}" placeholder="HH:MM" maxlength="5" aria-label="Timetable starting time" autocomplete="off"></div><p id="board-error" class="form-error" role="alert" hidden></p><div class="popover-footer"><small>Captured on ${boardDateLabel(timetableStop().capture.date, true)}. Not live.</small><button class="text-action" type="submit">Show departures</button></div></form>`,
+        `<form id="timetable-time-form"><div class="segmented schedule-modes" role="group" aria-label="Timetable time"><button type="button" data-board-mode="now" aria-pressed="${state.boardMode === 'now'}">${timetableStop().sampleDay ? 'Sample day' : 'Captured time'}</button><button type="button" data-board-mode="date" aria-pressed="${state.boardMode !== 'now'}">Choose time</button></div><input type="hidden" id="board-mode" value="${state.boardMode}"><div id="board-time-fields" ${state.boardMode === 'now' ? 'hidden' : ''}><label for="board-date">Date</label><input type="date" id="board-date" value="${clock.date}"><label for="board-time">From</label><input type="text" id="board-time" name="start" data-time-input inputmode="numeric" value="${clock.time}" placeholder="HH:MM" maxlength="5" aria-label="Timetable starting time" autocomplete="off"></div><p id="board-error" class="form-error" role="alert" hidden></p><div class="popover-footer"><small>${timetableStop().sampleDay ? `Sample day: ${boardDateLabel(timetableStop().sampleDay.date, true)}` : `Captured on ${boardDateLabel(timetableStop().capture.date, true)}`}. Not live.</small><button class="text-action" type="submit">Show departures</button></div></form>`,
         anchor,
         'timetable-time',
     );
@@ -1317,8 +1453,8 @@ function openBoardingStop(button, restorePreview = null) {
         Object.assign(state, {
             boardMode: 'date',
             boardDate: T.dateAtClock(
-                J.capture.date,
-                J.capture.time,
+                tripOf(routeId).date,
+                tripOf(routeId).time,
                 button.dataset.boardTime,
             ),
             boardTime: button.dataset.boardTime,
@@ -1453,7 +1589,7 @@ function simulate(id) {
     if (state.active && state.active !== id) {
         openSheet(
             'Switch journey preview?',
-            `<div class="saved-empty"><span class="empty-symbol">${icon('route')}</span><p>Your current preview is at step ${state.step + 1}. Switch to ${routeName(J.routes.find((route) => route.id === id))}?</p><div class="empty-actions"><button class="primary" data-replace="${id}">Switch preview</button><button class="quiet-button" data-action="resume">Keep current preview</button></div></div>`,
+            `<div class="saved-empty"><span class="empty-symbol">${icon('route')}</span><p>Your current preview is at step ${state.step + 1}. Switch to ${routeName(findRoute(id))}?</p><div class="empty-actions"><button class="primary" data-replace="${id}">Switch preview</button><button class="quiet-button" data-action="resume">Keep current preview</button></div></div>`,
             'replace',
         );
         return;
@@ -1468,10 +1604,11 @@ function renderSimulation() {
     const route = currentRoute(state.active);
     if (!route) return;
     const steps = J.tripSteps(route),
-        step = steps[state.step];
+        step = steps[state.step],
+        trip = tripOf(route);
     openSheet(
         'Journey preview',
-        `<div class="simulation"><div class="preview-status"><span class="sample-tag">Preview only</span><span>${state.step + 1} of ${steps.length}</span></div><div class="step-progress" role="progressbar" aria-label="Journey preview progress" aria-valuenow="${state.step + 1}" aria-valuemin="1" aria-valuemax="${steps.length}">${steps.map((_, i) => `<span class="${i <= state.step ? 'complete' : ''}"></span>`).join('')}</div><div class="simulation-symbol">${icon(step.mode === 'transit' || step.mode === 'alight' ? 'train' : step.mode === 'arrive' ? 'pin' : step.mode === 'ride' ? 'route' : step.mode)}</div><time>${step.time}${overnight(step.time)}</time><h2>${safe(step.title)}</h2><p>${safe(step.detail)}</p><div class="preview-next">${state.step < steps.length - 1 ? `<small>Then</small><strong>${safe(steps[state.step + 1].title)}</strong>` : '<strong>End of the sample journey</strong>'}</div><p class="route-note">${icon('info')}<span>Advance the steps yourself. No location tracking or live guidance.</span></p></div><div class="detail-footer preview-footer"><button class="icon-button" data-action="previous-step" aria-label="Previous step" ${state.step === 0 ? 'disabled' : ''}>${icon('back')}</button><button class="quiet-button" data-action="end-trip">End preview</button><button class="primary" data-action="${state.step === steps.length - 1 ? 'end-trip' : 'next-step'}">${state.step === steps.length - 1 ? 'Finish' : 'Next step'}${icon('arrow')}</button></div>`,
+        `<div class="simulation"><div class="preview-status"><span class="sample-tag">Preview only</span><span>${state.step + 1} of ${steps.length}</span></div><div class="step-progress" role="progressbar" aria-label="Journey preview progress" aria-valuenow="${state.step + 1}" aria-valuemin="1" aria-valuemax="${steps.length}">${steps.map((_, i) => `<span class="${i <= state.step ? 'complete' : ''}"></span>`).join('')}</div><div class="simulation-symbol">${icon(step.mode === 'transit' || step.mode === 'alight' ? 'train' : step.mode === 'arrive' ? 'pin' : step.mode === 'ride' ? 'route' : step.mode)}</div><time>${step.time}${overnight(step.time, trip)}</time><h2>${safe(step.title)}</h2><p>${safe(step.detail)}</p><div class="preview-next">${state.step < steps.length - 1 ? `<small>Then</small><strong>${safe(steps[state.step + 1].title)}</strong>` : '<strong>End of the sample journey</strong>'}</div><p class="route-note">${icon('info')}<span>Advance the steps yourself. No location tracking or live guidance.</span></p></div><div class="detail-footer preview-footer"><button class="icon-button" data-action="previous-step" aria-label="Previous step" ${state.step === 0 ? 'disabled' : ''}>${icon('back')}</button><button class="quiet-button" data-action="end-trip">End preview</button><button class="primary" data-action="${state.step === steps.length - 1 ? 'end-trip' : 'next-step'}">${state.step === steps.length - 1 ? 'Finish' : 'Next step'}${icon('arrow')}</button></div>`,
         'preview',
     );
     $('#active-trip').hidden = false;
@@ -1565,6 +1702,18 @@ function action(name, button) {
         state.boardLimit = 10;
         renderDepartures();
         $('[data-action="board-filters"]').focus({ preventScroll: true });
+    } else if (name === 'next-trip') openNextTrip();
+    else if (name === 'timetable-capture') {
+        const stop = timetableStop();
+        Object.assign(state, {
+            boardMode: 'date',
+            boardDate: stop.capture.date,
+            boardTime: stop.capture.time,
+            boardLimit: 10,
+        });
+        renderDepartures();
+        animate($('#departure-cards'));
+        $('[data-action="timetable-time"]').focus({ preventScroll: true });
     } else if (name === 'timetable-time') showTimetableTime(button);
     else if (name === 'earlier-departures') moveTimetable(-60, button);
     else if (name === 'later-departures') moveTimetable(60, button);
@@ -1630,7 +1779,7 @@ function action(name, button) {
     else if (name === 'about')
         openSheet(
             'About these samples',
-            `<div class="about-samples"><p>Explore the journey flow with captured Cologne transport information.</p>${window.StationCapture ? `<div class="network-notice">${icon('train')}<div><strong>Neumarkt station board</strong><p>${boardDateLabel(StationCapture.stop.capture.date, true)}, ${StationCapture.stop.capture.time}</p><small>Saved staging estimates and KVB stop locations. Individual platforms weren’t provided.</small></div></div>` : ''}<div class="network-notice">${icon('train')}<div><strong>Stop departures</strong><p>7 September 2026, 23:15</p><small>Merkenich Mitte and Merkenich.</small></div></div><div class="network-notice">${icon('route')}<div><strong>Journey options</strong><p>7 September 2026, 23:37</p><small>Neumarkt to Museum Ludwig.</small></div></div><button class="quiet-button" data-action="notices">Historical network examples</button><p class="route-note">${icon('info')}<span>Times don’t refresh. Live search, GPS, fares and tickets aren’t connected. Saving keeps a sample on this device.</span></p></div>`,
+            `<div class="about-samples"><p>Explore the journey flow with captured Cologne transport information.</p>${J.day ? `<div class="network-notice">${icon('calendar')}<div><strong>Sample day</strong><p>${boardDateLabel(J.day.date, true)}, ${J.day.time}</p><small>${safe(placeName(J.day.from))} to ${safe(J.day.to)} for the ${safe(J.day.place)}: line ${safe(J.dayRoutes[0].line)} at ${J.dayRoutes.map((route) => route.legs.find((leg) => leg.mode === 'transit').time).join(' or ')}. Scheduled sample times, shared with Today.</small></div></div>` : ''}${window.StationCapture ? `<div class="network-notice">${icon('train')}<div><strong>Neumarkt station board</strong><p>${boardDateLabel(StationCapture.stop.capture.date, true)}, ${StationCapture.stop.capture.time}</p><small>Saved staging estimates and KVB stop locations. Individual platforms weren’t provided.</small></div></div>` : ''}<div class="network-notice">${icon('train')}<div><strong>Stop departures</strong><p>7 September 2026, 23:15</p><small>Merkenich Mitte and Merkenich.</small></div></div><div class="network-notice">${icon('route')}<div><strong>Journey options</strong><p>7 September 2026, 23:37</p><small>Neumarkt to Museum Ludwig.</small></div></div><button class="quiet-button" data-action="notices">Historical network examples</button><p class="route-note">${icon('info')}<span>Times don’t refresh. Live search, GPS, fares and tickets aren’t connected. Saving keeps a sample on this device.</span></p></div>`,
             'about',
         );
     else if (name === 'account')
@@ -1711,10 +1860,12 @@ document.addEventListener('click', (event) => {
         const id = button.dataset.saved;
         closeSheet(() => {
             if (from.value || to.value) previousRequest = captureRequest();
-            from.value = J.capture.from;
-            to.value = J.capture.to;
+            const route = findRoute(id),
+                trip = tripOf(route);
+            from.value = trip.from;
+            to.value = trip.to;
             resetFilters();
-            state.routeMode = J.routes.find((route) => route.id === id).mode;
+            state.routeMode = route.mode;
             state.selected = id;
             state.more = true;
             state.editing = false;
@@ -1849,8 +2000,8 @@ document.addEventListener('submit', (event) => {
         }
         Object.assign(state, {
             schedule: mode,
-            date: mode === 'now' ? J.capture.date : date,
-            time: mode === 'now' ? J.capture.time : time,
+            date: mode === 'now' ? home.date : date,
+            time: mode === 'now' ? home.time : time,
         });
         closePopover(true);
         syncControls();
@@ -2025,6 +2176,7 @@ syncControls();
 renderDepartures();
 savedCount();
 renderSampleRoutes();
+renderNextTrip();
 // A Today shortcut opens the existing board without manufacturing current times.
 const todayEntry = new URLSearchParams(location.search);
 if (todayEntry.get('view') === 'timetable') {

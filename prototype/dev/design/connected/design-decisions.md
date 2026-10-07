@@ -364,6 +364,21 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Travel on the sample day — owner request, 7 October (in review):** Travel
+opens on Wednesday 30 September, 13:10, with the trip Today shows. "Your next
+trip" leads the planner with the tram to take now: Today's rule for official
+appointments (ten minutes in hand) picks the 13:14 over the planned 13:24, and
+See both trams compares them. Today's hand-off and a typed Neumarkt → Mülheim
+open straight on both options ("12 min to spare", "Only 2 min to spare");
+Mülheim is a suggested destination and Cycle/Walk say they aren't in the
+sample. Details, preview, saved journeys and Composer hand-offs keep the trip's
+date and place. The timetable opens at Köln Neumarkt on the sample day with
+only line 4, says so and links to the stop's 7 September capture. The trip is
+scheduled sample data from `connected/sample-day.js`; the 7 September routes
+stay as a captured example with their date, so other pages are unchanged. The
+station board study keeps its 4 October capture. Details are in
+`departures-next/README.md`.
+
 **Paperwork on the sample day — owner request, 7 October (in review):**
 Paperwork opens on the Blue Card plan Today shows, with Today's 14:00
 appointment and the sample day's dates (fresh start stays under Review). The
