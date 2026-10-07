@@ -902,6 +902,14 @@ body[data-page='bureaucracy'] #main {
     font-size: var(--text-small);
     color: var(--muted);
 }
+/* Why the registry asks it, in its own words. */
+.question-why {
+    margin: 4px 0 0;
+    max-width: 52ch;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
 .question-card .actions {
     margin: 0;
 }
@@ -2336,6 +2344,22 @@ body[data-page='bureaucracy'] .sr-only {
     width: 16px;
     height: 16px;
     margin-top: 2px;
+}
+/* The backend's refusal (errors.event[0]), shown as it is. */
+.form-error {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-conflict-border);
+    border-radius: var(--radius-md);
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+/* "Tracking started · Undo": the undo sits at the end of the note. */
+.process-note .plain-button {
+    margin-left: auto;
+    min-height: 44px;
 }
 .review-tools-panel small {
     color: var(--color-text-soft);

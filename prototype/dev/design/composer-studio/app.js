@@ -117,8 +117,12 @@
             prompt: 'Help me settle in: which paperwork should I sort out first?',
         },
     ];
-    // The person's own Paperwork records (connected/sample-day.js).
-    const records = () => window.ExpaduSampleDay?.records || [];
+    // The person's own Paperwork records, from the plan Paperwork keeps
+    // (bureaucracy-next/contract.js), so the checklist answer and Your day's
+    // deadline follow what you mark there. The sample day's fixture if
+    // Paperwork's scripts aren't loaded.
+    const records = () =>
+        window.BureaucracyContract?.records() || window.ExpaduSampleDay?.records || [];
     const paperworkHref = (id) =>
         `${ExpaduStore.routes.bureaucracy}?scenario=existing&person=self&view=detail&process=${encodeURIComponent(id)}`;
     const countWord = (n) =>

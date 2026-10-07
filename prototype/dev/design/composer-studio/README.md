@@ -62,6 +62,11 @@ pixel-identical. Tests: `tests/requests.test.cjs`,
   waits while another day's proposal is open, then joins its appointment once
   that proposal is confirmed. The earlier versions used Today C and Places
   controls that no longer exist.
+- **Your records follow Paperwork.** The checklist answer ("1 of 5 documents
+  marked ready") and Your day's visa deadline read Paperwork's plan through
+  `BureaucracyContract.records()` (`bureaucracy-next/contract.js`), so marking
+  a document ready or recording the submission there shows here. Without
+  Paperwork's saved state they are the sample day's values.
 
 ## Add to plan is orange — 7 October
 

@@ -4,9 +4,20 @@
     function sampleAppointment() {
         const day = root.ExpaduSampleDay;
         const a = day?.appointment;
-        return a?.process === 'blue-card'
-            ? { date: day.date, time: a.start, location: a.location }
-            : null;
+        if (a?.process !== 'blue-card') return null;
+        const minutes = (t) => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+        return {
+            id: 'sample-appointment',
+            date: day.date,
+            time: a.start,
+            location: a.location,
+            // Its recorded length and place, as the backend keeps them.
+            duration: a.end ? minutes(a.end) - minutes(a.start) : null,
+            ...(Number.isFinite(a.coordinates?.lat) &&
+            Number.isFinite(a.coordinates?.lng)
+                ? { lat: a.coordinates.lat, lng: a.coordinates.lng }
+                : {}),
+        };
     }
     const fresh = () => ({
         person: 'self',
@@ -127,6 +138,7 @@
     }
     root.BureaucracyPreview = {
         fresh,
+        sampleAppointment,
         sampleFacts,
         blank,
         canEdit,

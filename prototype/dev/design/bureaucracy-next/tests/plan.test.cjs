@@ -38,7 +38,9 @@ test('opening a proposed process and its paperwork does not start it or mark doc
     assert.equal(P.documentAction(s, 'bank', 0, 'confirm'), false);
     assert.equal(P.start(s, 'bank'), true);
     assert.equal(P.start(s, 'bank'), false);
-    assert.equal(s.records.bank.workflow, 'preparing');
+    // Tracking a task reports nothing (the backend's start does not report
+    // preparation), so it is still "Not started".
+    assert.equal(s.records.bank.workflow, 'not_started');
 });
 test('same-kind documents stay independently confirmed per application', () => {
     const s = fresh();
@@ -62,18 +64,23 @@ test('progress follows the backend rules: waiting needs a submission, completion
     assert.equal(P.updateWorkflow(s, 'address', 'waiting'), true);
     assert.equal(P.projection(s).counts.blocked, 0);
     assert.equal(P.projection(s).counts.waiting, 2);
-    // Completion waits for the step and needs a date.
+    // Completion waits for the step. Its date is optional but never later
+    // than today.
     assert.equal(
         P.updateWorkflow(s, 'address', 'completed', '', '2026-09-08'),
         false,
     );
     assert.equal(P.toggleStep(s, 'address:0'), true);
     assert.equal(s.records.address.workflow, 'waiting');
-    assert.equal(P.updateWorkflow(s, 'address', 'completed', '', null), false);
+    assert.equal(
+        P.updateWorkflow(s, 'address', 'completed', '', '2999-01-01'),
+        false,
+    );
     assert.equal(
         P.updateWorkflow(s, 'address', 'completed', '', '2026-09-08'),
         true,
     );
+    assert.equal(s.records.address.closedOn, '2026-09-08');
     const p = P.projection(s);
     assert.equal(p.history.length, 2);
     assert.equal(p.counts.completed, 1);
@@ -95,9 +102,12 @@ test('a submission waits for the office and leaves its step open', () => {
     assert.equal(P.toggleStep(s, 'blue-card:1'), true);
     assert.equal(step(), 'completed');
     assert.equal(s.workflow, 'submitted');
+    // Withdrawing the submission (submission_retracted) replays the
+    // reports without it; step states don't change.
     assert.equal(P.removeSubmission(s, 'blue-card'), true);
     assert.equal(s.workflow, 'preparing');
-    assert.equal(step(), 'todo');
+    assert.equal(s.submission, null);
+    assert.equal(step(), 'completed');
 });
 test('Update progress offers only the changes the backend accepts', () => {
     const s = fresh();
@@ -105,21 +115,27 @@ test('Update progress offers only the changes the backend accepts', () => {
     const offered = () => [
         ...P.choices(s, 'blue-card').map((c) => `${c.value}:${c.allowed}`),
     ];
+    // Before a submission, a hold-up is "blocked"; "the office needs
+    // something" comes after one.
     assert.deepEqual(offered(), [
+        'blocked:true',
         'submitted:true',
-        'action_required:true',
         'completed:false',
         'cancelled:true',
     ]);
     P.recordSubmission(s, 'blue-card', '2026-09-30');
     assert.ok(offered().includes('waiting:true'));
+    assert.ok(offered().includes('action_required:true'));
     assert.ok(!offered().some((c) => c.startsWith('preparing')));
-    // A blocked step can't be finished; blocked work can go back to preparing.
-    assert.equal(P.toggleStep(s, 'address:0'), false);
+    assert.ok(!offered().some((c) => c.startsWith('blocked')));
+    // Blocked work can go back to preparing or record a submission. A
+    // reported hold-up doesn't block its steps, and the task stays blocked.
     assert.deepEqual(
         [...P.choices(s, 'address').map((c) => c.value)],
-        ['preparing', 'cancelled'],
+        ['preparing', 'submitted', 'cancelled'],
     );
+    assert.equal(P.toggleStep(s, 'address:0'), true);
+    assert.equal(s.records.address.workflow, 'blocked');
 });
 test('the registration deadline is a legal deadline with its source and no calculated date', () => {
     const s = fresh();

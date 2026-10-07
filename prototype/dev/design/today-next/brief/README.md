@@ -5,6 +5,12 @@ restores the composition in the owner's screenshot, also saved at
 [`../review/continuity-desktop.png`](../review/continuity-desktop.png).
 The daily brief and its timeline-only correction were rejected.
 
+**8 October, your Paperwork records:** the visa deadline and "What to bring ·
+EU Blue Card · 1 of 5 documents ready" read Paperwork's plan
+(`BureaucracyContract.records()`), so they change when you mark a document
+ready or record the submission in Paperwork. With nothing saved there, the
+page is pixel-identical.
+
 **7 October, one trip story:** the journey card, its "Get off at" step and the
 journey sheet name the tram stops ("Line 4 · Neumarkt → Wiener Platz"), as
 Travel does; the appointment itself is still in Mülheim. Which tram leads

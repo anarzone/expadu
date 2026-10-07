@@ -1,6 +1,7 @@
 (function () {
     const B = BureaucracyPreview,
         P = BureaucracyPlan,
+        C = BureaucracyContract,
         G = BureaucracyOrientation,
         J = BureaucracySituation,
         JU = BureaucracySituationUI,
@@ -30,27 +31,36 @@
     if (J.applies(state)) J.state(state);
     save();
     const names = Object.fromEntries(H.roster.map((p) => [p.id, p.name]));
+    // The contract's readiness values; there is no "unknown".
     const ready = {
         missing: 'Not ready yet',
         reported_available: 'You have it · check for this task',
         confirmed_for_use: 'Ready for this task',
         needs_reconfirmation: 'Check again',
-        unknown: 'Not checked yet',
     };
-    // The backend's reported workflow: action_required, submitted and
-    // waiting_authority ("waiting" here).
+    // The backend's workflow (plan.processes[].state.workflow).
     const workflow = {
         not_started: 'Not started',
         preparing: 'Preparing',
         blocked: 'Blocked',
         action_required: 'Needs your action',
         submitted: 'Submitted',
-        waiting: 'Waiting for the office',
+        waiting_authority: 'Waiting for the office',
         completed: 'Completion recorded',
         cancelled: 'Cancelled',
     };
     const tone = (w) =>
-        ({ submitted: 'waiting', action_required: 'blocked' })[w] || w;
+        ({
+            submitted: 'waiting',
+            waiting_authority: 'waiting',
+            action_required: 'blocked',
+        })[w] || w;
+    // What a fact is called when a date waits for it (UI copy; the registry
+    // has no display labels).
+    const factLabels = {
+        moved_in_at: 'your move-in date',
+        visa_expires_at: 'your visa expiry',
+    };
     const date = (d) =>
         B.validDate(d)
             ? new Intl.DateTimeFormat('en-GB', {
@@ -90,19 +100,39 @@
         const r = soon(d);
         return r?.label ? `${r.label} · ${date(d)}` : date(d);
     };
-    // The Blue Card submission step is the one the visa expiry is about.
-    const dueStep = (a) =>
-        a.process === 'blue-card' &&
-        a.record === 1 &&
-        !state.submission &&
-        soon(state.expiry);
-    const dueChip = (a) => {
-        const r = dueStep(a);
-        return r
-            ? `<span class="due-chip${r.days <= 1 ? ' is-urgent' : ''}">${I('calendar')}Visa expires ${r.days === 0 ? 'today' : r.days === 1 ? 'tomorrow' : 'on ' + r.label}</span>`
-            : '';
+    // "today", "tomorrow", "on Friday" or "on 7 Oct" from a day count.
+    const onDay = (days, d) =>
+        days === 0
+            ? 'today'
+            : days === 1
+              ? 'tomorrow'
+              : days > 1 && days < 7
+                ? 'on ' + relative(d).label
+                : 'on ' + date(d);
+    // A step's own dated deadline, when it's this week: "Visa expires
+    // tomorrow" when it's anchored to the visa's recorded expiry. Only while
+    // the step is still to do (a recorded submission waits instead).
+    const dueChip = (plan, step) => {
+        if (step?.status !== 'todo') return '';
+        const row = plan.coming_up.find(
+            (x) => x.action_id === step.id && x.kind === 'legal_due',
+        );
+        if (!row) return '';
+        const anchor = plan.timeline.find((x) => x.id === row.anchor_event_id);
+        return `<span class="due-chip${row.days_remaining <= 1 ? ' is-urgent' : ''}">${I('calendar')}${anchor?.document === 'visa' ? 'Visa expires' : 'Due'} ${onDay(row.days_remaining, row.date)}</span>`;
     };
     const current = () => P.process(state, state.process);
+    // The contract's view of a task, by its occurrence key.
+    const contractProcess = (plan, key) =>
+        plan.processes.find((p) => p.occurrence_key === key);
+    const stepOf = (plan, id) =>
+        plan.processes.flatMap((p) => p.steps).find((s) => s.id === id);
+    // The short names this preview uses for its sample tasks (UI copy until
+    // the owner chooses between them and the backend's title/topic_label).
+    const nameOf = (key) =>
+        P.process(state, key)?.name ||
+        state.history?.find((h) => h.id === key)?.name ||
+        '';
     // The sample day's appointment is already in Today's plan.
     const onToday = (a) => {
         const day = window.ExpaduSampleDay;
@@ -235,27 +265,24 @@
             return H.info(state)?.record !== undefined
                 ? BureaucracyFamilyUI.render(state, R)
                 : noAccess();
-        const plan = P.projection(state);
+        const plan = C.plan(state);
+        plan.open = plan.processes.filter((p) => !p.is_closed);
         if (J.applies(state) && state.view === 'overview')
             return (
                 JU.page(state) +
-                (plan.processes.length ? overview(plan) : '') +
+                (plan.open.length ? overview(plan) : '') +
                 JU.topics(state)
             );
-        if (
-            J.applies(state) &&
-            state.view === 'paperwork' &&
-            !plan.processes.length
-        )
+        if (J.applies(state) && state.view === 'paperwork' && !plan.open.length)
             return `<section class="situation-summary"><h2>Your documents will live here.</h2><p class="muted">Choose a task to start keeping track of what you have.</p></section>${JU.topics(state)}`;
         return state.view === 'paperwork'
-            ? paperwork()
+            ? paperwork(plan)
             : state.view === 'actions'
               ? allActions(plan)
               : state.view === 'history'
                 ? historyView(plan)
                 : state.view === 'detail'
-                  ? detail()
+                  ? detail(plan)
                   : state.view === 'request'
                     ? requestView()
                     : overview(plan);
@@ -370,70 +397,141 @@
     function back() {
         return `<button class="view-back" data-view="overview">${I('back')}Your overview</button>`;
     }
-    function actionRow(a) {
-        return `<article class="overview-action"><span class="topic-icon ${a.tone}">${I(a.icon)}</span><div><div class="action-meta">${E(a.name)}${badge(P.statuses[a.status], a.status)}</div><h3><button data-open-action="${E(a.id)}">${E(R[a.record].title)}</button></h3>${dueChip(a)}</div><button class="icon-button" data-open-action="${E(a.id)}" aria-label="Open ${E(R[a.record].title)}">${I('arrow')}</button></article>`;
+    // One step of a task, with its task's name and icon.
+    function actionRow(plan, step) {
+        const key = step.id.split(':')[0],
+            local = P.process(state, key);
+        return `<article class="overview-action"><span class="topic-icon ${local?.tone || ''}">${I(local?.icon || 'document')}</span><div><div class="action-meta">${E(nameOf(key))}${badge(P.statuses[step.status], step.status)}</div><h3><button data-open-action="${E(step.id)}">${E(step.title)}</button></h3>${dueChip(plan, step)}</div><button class="icon-button" data-open-action="${E(step.id)}" aria-label="Open ${E(step.title)}">${I('arrow')}</button></article>`;
     }
-    // Recorded dates this week, above everything else on the overview.
-    function comingUp() {
-        const rows = P.timeline(state).filter((t) => soon(t.date));
+    // A step deadline anchored to a recorded expiry in the same list is
+    // that date; it shows once, as the expiry.
+    const folded = (rows) =>
+        rows.filter(
+            (row) =>
+                !(
+                    row.kind === 'legal_due' &&
+                    row.anchor_event_id &&
+                    rows.some((x) => x.id === row.anchor_event_id)
+                ),
+        );
+    // The task a person-level date belongs to: the step deadline it anchors.
+    const anchoredTo = (plan, row) =>
+        row.occurrence_key ||
+        plan.timeline.find((x) => x.anchor_event_id === row.id)
+            ?.occurrence_key ||
+        null;
+    const clock = (row) => row.starts_at?.slice(11, 16) || '';
+    // plan.coming_up: today and the next seven days, above everything else.
+    function comingUp(plan) {
+        const rows = folded(plan.coming_up);
         if (!rows.length) return '';
         return `<section class="coming-up-dates" aria-label="Coming up">${rows
             .map((t) => {
-                const r = soon(t.date);
-                const expiry = t.id === 'expiry';
-                return `<button class="coming-row${expiry && r.days <= 1 ? ' is-urgent' : ''}" data-process="${E(t.process)}"><span class="coming-when"><strong>${E(r.label || date(t.date))}</strong>${t.time ? `<small>${E(t.time)}</small>` : `<small>${E(date(t.date))}</small>`}</span><span class="coming-what"><strong>${expiry ? 'Your D visa expires' : t.kind === 'Appointment' ? `${E(t.name)} appointment` : E(t.kind)}</strong><small>${E(expiry ? t.name : t.location || 'Location not recorded')}</small></span>${I('arrow')}</button>`;
+                const key = anchoredTo(plan, t),
+                    expiry = t.kind === 'document_expiry',
+                    urgent = t.kind !== 'appointment' && t.days_remaining <= 1;
+                const what = expiry
+                    ? t.document === 'visa'
+                        ? 'Your D visa expires'
+                        : 'Document expiry'
+                    : t.kind === 'appointment'
+                      ? `${nameOf(key)} appointment`
+                      : stepOf(plan, t.action_id)?.title || 'Deadline';
+                const where = expiry
+                    ? nameOf(key)
+                    : t.kind === 'appointment'
+                      ? t.location?.label || 'Location not recorded'
+                      : nameOf(key);
+                const open = key
+                    ? `data-process="${E(key)}"`
+                    : 'data-case="expiry"';
+                return `<button class="coming-row${urgent ? ' is-urgent' : ''}" ${open}><span class="coming-when"><strong>${E(relative(t.date).label || date(t.date))}</strong><small>${E(t.kind === 'appointment' ? clock(t) : date(t.date))}</small></span><span class="coming-what"><strong>${E(what)}</strong><small>${E(where)}</small></span>${I('arrow')}</button>`;
             })
             .join('')}</section>`;
     }
     function overview(plan) {
-        return `${comingUp()}${J.applies(state) ? '' : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question()}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.total}${I('arrow')}</button></div>${
-            plan.next.length
-                ? [...plan.next]
-                      .sort(
-                          (a, b) => (dueStep(b) ? 1 : 0) - (dueStep(a) ? 1 : 0),
-                      )
-                      .map(actionRow)
-                      .join('')
+        const next = plan.overview.next_actions.map((a) => stepOf(plan, a.id));
+        return `${comingUp(plan)}${J.applies(state) ? '' : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question(plan)}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.progress.total}${I('arrow')}</button></div>${
+            next.length
+                ? next.map((step) => actionRow(plan, step)).join('')
                 : '<div class="honest-empty"><h3>No next actions right now</h3><p>Your waiting work and process history are still here.</p></div>'
         }<div class="plan-states" aria-label="Action progress">${Object.entries(
             P.statuses,
         )
             .map(
                 ([id, label]) =>
-                    `<button data-filter="${id}" class="${id}"><strong>${plan.counts[id]}</strong><span>${label}</span></button>`,
+                    `<button data-filter="${id}" class="${id}"><strong>${plan.progress[id].count}</strong><span>${label}</span></button>`,
             )
             .join(
                 '',
-            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.processes.length + state.custom.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history.length}">${I('clock')}</button><button class="icon-button" data-case="add-process" aria-label="Add a task">${I('plus')}</button></div></div><div class="process-grid">${plan.processes.map((p) => processCard(p, plan)).join('')}${state.custom.map((p) => `<button class="process-summary" data-request="${E(p.id)}"><span class="topic-icon">${I('document')}</span><span class="process-card-copy"><strong>${E(p.name)}</strong><small>Guidance not connected</small></span>${I('arrow')}</button>`).join('')}</div></section></div>${dates()}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
+            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length + state.custom.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button><button class="icon-button" data-case="add-process" aria-label="Add a task">${I('plus')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}${state.custom.map((p) => `<button class="process-summary" data-request="${E(p.id)}"><span class="topic-icon">${I('document')}</span><span class="process-card-copy"><strong>${E(p.name)}</strong><small>Guidance not connected</small></span>${I('arrow')}</button>`).join('')}</div></section></div>${dates(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
     }
-    function processCard(p, plan) {
-        const a = plan.actions.filter((x) => x.process === p.id),
-            done = a.filter((x) => x.status === 'completed').length;
-        return `<button class="process-summary" data-process="${p.id}"><span class="topic-icon ${p.tone}">${I(p.icon)}</span><span class="process-card-copy"><strong>${E(p.name)}</strong><small>${p.note ? E(p.note) : !p.started ? 'Explore before you start' : done + ' of ' + a.length + ' steps done'}</small></span><span class="process-card-status">${badge(workflow[p.workflow], tone(p.workflow))}${I('arrow')}</span></button>`;
+    // Your own note first, then what your own paperwork is missing; never
+    // a legal reason.
+    function processCard(p) {
+        const key = p.occurrence_key,
+            local = P.process(state, key),
+            note = p.state.report?.note,
+            reason = p.blocking_reason;
+        return `<button class="process-summary" data-process="${E(key)}"><span class="topic-icon ${local?.tone || ''}">${I(local?.icon || 'document')}</span><span class="process-card-copy"><strong>${E(nameOf(key))}</strong><small>${note ? E(note) : reason ? `Not ready yet: ${E(reason.label)}` : p.id === null ? 'Explore before you start' : `${p.progress.completed} of ${p.progress.total} steps done`}</small></span><span class="process-card-status">${badge(workflow[p.state.workflow], tone(p.state.workflow))}${I('arrow')}</span></button>`;
     }
-    // "I don't know" is an answer (unknown); "Skip for now" leaves the
-    // question for later. They're different, as in the backend.
-    function question() {
-        if (state.expiry !== null) return '';
-        if (state.expiryUnknown)
+    // plan.questions: the server's question, in the registry's words.
+    // "I don't know" is an answer (unknown); "Skip for now" defers it.
+    // They're different, as in the backend.
+    function question(plan) {
+        const q = plan.questions;
+        if (C.facts(state).states.visa_expires_at === 'unknown')
             return `<div class="deferred-question"><span>${I('info')}You don’t know your visa expiry yet</span><button data-case="expiry">Add it when you know</button></div>`;
-        if (state.questionSkipped)
+        if (q.deferred.includes('visa_expires_at'))
             return `<div class="deferred-question"><span>${I('info')}Visa expiry left for later</span><button data-case="expiry">Answer when ready</button></div>`;
-        return `<section class="question-card" aria-label="One question"><div><span class="question-context">For your EU Blue Card process</span><h3>What expiry date is on your D visa?</h3></div><div class="actions">${button('Enter date', 'expiry')}${button('I don’t know', 'expiry-unknown')}${button('Skip for now', 'skip')}</div></section>`;
+        if (!q.question) return '';
+        const forTask = q.question.process_ids?.[0];
+        return `<section class="question-card" aria-label="One question"><div>${forTask ? `<span class="question-context">For your ${E(nameOf(forTask))} process</span>` : ''}<h3>${E(q.question.question)}</h3><p class="question-why">${E(q.question.why)}</p></div><div class="actions">${button('Enter date', 'expiry')}${q.question.can_answer_unknown ? button('I don’t know', 'expiry-unknown') : ''}${q.question.can_skip ? button('Skip for now', 'skip') : ''}</div></section>`;
     }
-    function dates() {
-        const rows = P.timeline(state);
-        return `<section class="overview-dates" aria-labelledby="dates-heading"><div class="case-section-head"><h2 id="dates-heading">Dates & appointments</h2><button class="icon-button" data-case="choose-appointment" aria-label="Record an appointment">${I('plus')}</button></div><div class="date-grid">${rows.map((t) => `<button class="timeline-row" data-timeline="${E(t.id)}" data-for="${t.process}"><span class="timeline-icon">${I(t.icon)}</span><span><strong>${E(t.kind)}</strong><small>${E(t.name)}</small></span><span class="timeline-date${t.id === 'expiry' && soon(t.date)?.days <= 1 ? ' is-urgent' : ''}">${soon(t.date)?.label ? `<em>${E(soon(t.date).label)}</em>` : ''}${t.legal && !t.date ? `Needs ${E(t.legal.needs)}<small>${E(t.legal.law)}</small>` : date(t.date)}${t.time ? '<small>' + E(t.time) + '</small>' : ''}</span>${I(t.legal ? 'arrow' : 'pencil')}</button>`).join('') || '<p class="muted">Your recorded dates will appear here.</p>'}</div></section>`;
+    const kindLabels = {
+        document_expiry: 'Document expiry',
+        legal_due: 'Legal deadline',
+        preparation_target: 'Preparation target',
+        authority_follow_up: 'Follow-up',
+        appointment: 'Appointment',
+        submission_recorded: 'Submission recorded',
+    };
+    // plan.timeline, soonest first; dates still unknown stay listed with
+    // what they need.
+    function dates(plan) {
+        const rows = folded(plan.timeline).sort((a, b) =>
+            (a.date || '9999').localeCompare(b.date || '9999'),
+        );
+        return `<section class="overview-dates" aria-labelledby="dates-heading"><div class="case-section-head"><h2 id="dates-heading">Dates & appointments</h2><button class="icon-button" data-case="choose-appointment" aria-label="Record an appointment">${I('plus')}</button></div><div class="date-grid">${
+            rows
+                .map((t) => {
+                    const key = anchoredTo(plan, t),
+                        r = soon(t.date),
+                        legal = t.kind === 'legal_due';
+                    return `<button class="timeline-row" data-timeline="${E(t.kind)}" data-for="${E(key || '')}"><span class="timeline-icon">${I(t.kind === 'submission_recorded' ? 'check' : t.kind === 'document_expiry' ? 'document' : 'calendar')}</span><span><strong>${E(kindLabels[t.kind])}</strong><small>${E(nameOf(key))}</small></span><span class="timeline-date${t.kind === 'document_expiry' && r?.days <= 1 ? ' is-urgent' : ''}">${r?.label ? `<em>${E(r.label)}</em>` : ''}${t.state === 'date_unknown' ? `Needs ${E(factLabels[t.needed_fact] || 'more information')}${t.legal_source?.label ? `<small>${E(t.legal_source.label)}</small>` : ''}` : date(t.date)}${t.kind === 'appointment' ? '<small>' + E(clock(t)) + '</small>' : ''}</span>${I(legal ? 'arrow' : 'pencil')}</button>`;
+                })
+                .join('') ||
+            '<p class="muted">Your recorded dates will appear here.</p>'
+        }</div></section>`;
     }
     function allActions(plan) {
-        const list = plan.actions.filter(
+        const steps = plan.open
+            .flatMap((p) => p.steps)
+            .filter((x) => x.status !== 'cancelled');
+        const list = steps.filter(
             (a) =>
                 state.actionFilter === 'all' || a.status === state.actionFilter,
         );
-        return `${back()}<div class="section-line"><h2 id="view-heading" tabindex="-1">All actions</h2><span class="muted">${list.length} ${list.length === 1 ? 'action' : 'actions'}</span></div><div class="action-filters" aria-label="Filter actions">${[['all', 'All', plan.total], ...Object.entries(P.statuses).map(([k, v]) => [k, v, plan.counts[k]])].map(([k, v, n]) => `<button data-filter="${k}" aria-pressed="${state.actionFilter === k}">${v} <span>${n}</span></button>`).join('')}</div><section class="action-list">${list.length ? list.map(actionRow).join('') : `<div class="honest-empty"><h3>No actions in this view</h3><button data-filter="all">Show all actions ${I('arrow')}</button></div>`}</section>`;
+        return `${back()}<div class="section-line"><h2 id="view-heading" tabindex="-1">All actions</h2><span class="muted">${list.length} ${list.length === 1 ? 'action' : 'actions'}</span></div><div class="action-filters" aria-label="Filter actions">${[['all', 'All', plan.progress.total], ...Object.entries(P.statuses).map(([k, v]) => [k, v, plan.progress[k].count])].map(([k, v, n]) => `<button data-filter="${k}" aria-pressed="${state.actionFilter === k}">${v} <span>${n}</span></button>`).join('')}</div><section class="action-list">${list.length ? list.map((step) => actionRow(plan, step)).join('') : `<div class="honest-empty"><h3>No actions in this view</h3><button data-filter="all">Show all actions ${I('arrow')}</button></div>`}</section>`;
     }
+    // Retained history and closed tasks: plan.history_count of them.
+    const closedOf = (plan) => [
+        ...plan.history,
+        ...plan.processes.filter((p) => p.is_closed),
+    ];
     function historyView(plan) {
-        return `${back()}<div class="section-line"><h2 id="view-heading" tabindex="-1">Your history</h2><span class="muted">${plan.history.length} records</span></div><section class="history-list">${plan.history.map((p) => `<button class="history-row" data-history="${p.id}"><span class="topic-icon green">${I(p.icon || 'document')}</span><span><strong>${E(p.name)}</strong><small>${p.workflow === 'cancelled' ? 'Cancellation recorded' : 'Completion recorded'} · ${date(p.closedOn)}</small></span>${I('arrow')}</button>`).join('') || '<div class="honest-empty">No historical records yet.</div>'}</section><p class="date-separation">Records of your reports. These do not establish an authority decision.</p>`;
+        const rows = closedOf(plan);
+        return `${back()}<div class="section-line"><h2 id="view-heading" tabindex="-1">Your history</h2><span class="muted">${plan.history_count} records</span></div><section class="history-list">${rows.map((p) => `<button class="history-row" data-history="${E(p.occurrence_key)}"><span class="topic-icon green">${I(P.process(state, p.occurrence_key)?.icon || 'document')}</span><span><strong>${E(nameOf(p.occurrence_key))}</strong><small>${p.state.workflow === 'cancelled' ? 'Cancellation recorded' : 'Completion recorded'} · ${p.closed_on ? date(p.closed_on) : 'date not given'}</small></span>${I('arrow')}</button>`).join('') || '<div class="honest-empty">No historical records yet.</div>'}</section><p class="date-separation">Records of your reports. These do not establish an authority decision.</p>`;
     }
     function linkedAppointmentNotice(p) {
         const id =
@@ -570,74 +668,114 @@
             refreshGuideEntry();
         } catch {}
     });
-    function stepContent(p, a) {
-        const guide = P.guide(state, a.id, R);
-        const editable = p.started && !P.terminal(p);
-        const papers = guide.primary === 'documents';
-        const submitStep = a.process === 'blue-card' && a.record === 1;
+    const lower = (text) => text.charAt(0).toLowerCase() + text.slice(1);
+    // One step from plan.processes[].steps: its reviewed copy, its own
+    // documents and what you can record for it.
+    function stepContent(c, step) {
+        const key = c.occurrence_key;
+        const editable = c.id !== null && !c.is_closed;
+        const papers = step.requirements?.total > 0;
+        const open = step.first_open_requirement;
+        const submitStep = step.completion_event === 'submission_recorded';
+        const submission =
+            c.state.workflow !== 'not_started' &&
+            P.process(state, key)?.submission;
+        const note = c.state.report?.note;
         const text =
-            a.status === 'completed'
+            step.status === 'completed'
                 ? 'You marked this step done. You can review it or change that below.'
-                : a.status === 'blocked'
-                  ? `This step is blocked${p.note ? `: ${p.note.charAt(0).toLowerCase()}${p.note.slice(1)}` : ''}. You can finish it once that’s sorted.`
-                  : submitStep && p.submission
-                    ? `You recorded your submission on ${date(p.submission)}. The task waits for the office; mark this step finished when you hear back.`
-                    : a.status === 'waiting'
-                      ? 'This task is with the office. Review your checklist or update your progress when something changes.'
-                      : papers
-                        ? 'Check what you have. Mark each document ready only for this task.'
-                        : 'Read the official information, then update your own checklist here.';
-        return `<div class="step-guide"><p>${text}</p><div class="step-main-actions">${papers ? `<button class="button primary" data-paper-for="${p.id}" ${guide.document ? `data-paper-focus="${p.id}:${guide.document.index}"` : ''}>${I('document')}${guide.document ? 'Check documents' : 'Review documents'}<span class="step-count">${guide.ready}/${guide.total}</span></button>` : `<a class="button primary" href="${E(R[a.record].source)}" target="_blank" rel="noopener">${I('arrow')}Read official information</a>`}<button class="step-help" data-help-step="${a.id}">${I('spark')}Help with this step</button></div>${papers && guide.document && a.status !== 'completed' ? `<div class="step-document-preview">${I('document')}<div><small>${/where|if |applicable/i.test(guide.document.label) ? 'May be needed · check this document' : 'First document to check'}</small><strong>${E(guide.document.label)}</strong></div></div>` : ''}</div>${R[a.record].description ? `<details class="step-guidance"><summary>About this step ${I('down')}</summary><p class="review-copy">${E(R[a.record].description)}</p><small>Historical information · current guidance needs checking</small></details>` : ''}${editable ? `<div class="step-actions"><button class="plain-button" data-plan-step="${E(a.id)}">${I('clock')}${BureaucracyPlanning.linked(S.studio(), 'bureaucracy-preparation-' + a.id) ? 'View planned time' : 'Set aside time'}</button>${submitStep && !p.submission ? button('I’ve submitted it', 'submission') : a.status === 'blocked' ? '' : `<button class="plain-button" data-toggle-step="${a.id}">${I(a.status === 'completed' ? 'back' : 'check')}${a.status === 'completed' ? 'Reopen step' : 'I’ve finished this step'}</button>`}</div><p class="step-record-note">${I('info')}Your checklist only. Nothing is sent or submitted.</p>` : ''}`;
+                : submitStep && submission
+                  ? `You recorded your submission on ${date(submission)}. The task waits for the office; mark this step finished when you hear back.`
+                  : step.status === 'waiting'
+                    ? 'This task is with the office. Review your checklist or update your progress when something changes.'
+                    : `${c.state.workflow === 'blocked' ? `You reported a hold-up${note ? `: ${E(lower(note))}` : ''}. ` : ''}${papers ? 'Check what you have. Mark each document ready only for this task.' : 'Read the official information, then update your own checklist here.'}`;
+        const official = step.sources.official[0]?.url;
+        return `<div class="step-guide"><p>${text}</p><div class="step-main-actions">${papers ? `<button class="button primary" data-paper-for="${E(key)}" ${open ? `data-paper-focus="${E(key)}:${open.index}"` : ''}>${I('document')}${open ? 'Check documents' : 'Review documents'}<span class="step-count">${step.requirements.ready}/${step.requirements.total}</span></button>` : official ? `<a class="button primary" href="${E(official)}" target="_blank" rel="noopener">${I('arrow')}Read official information</a>` : ''}<button class="step-help" data-help-step="${E(step.id)}">${I('spark')}Help with this step</button></div>${papers && open && step.status !== 'completed' ? `<div class="step-document-preview">${I('document')}<div><small>${open.conditional ? 'May be needed · check this document' : 'First document to check'}</small><strong>${E(open.label)}</strong></div></div>` : ''}</div>${step.description ? `<details class="step-guidance"><summary>About this step ${I('down')}</summary><p class="review-copy">${E(step.description)}</p><small>Historical information · current guidance needs checking</small></details>` : ''}${editable ? `<div class="step-actions"><button class="plain-button" data-plan-step="${E(step.id)}">${I('clock')}${BureaucracyPlanning.linked(S.studio(), 'bureaucracy-preparation-' + step.id) ? 'View planned time' : 'Set aside time'}</button>${submitStep && !submission && step.status !== 'completed' ? button('I’ve submitted it', 'submission') : step.status === 'blocked' ? '' : `<button class="plain-button" data-toggle-step="${E(step.id)}">${I(step.status === 'completed' ? 'back' : 'check')}${step.status === 'completed' ? 'Reopen step' : 'I’ve finished this step'}</button>`}</div><p class="step-record-note">${I('info')}Your checklist only. Nothing is sent or submitted.</p>` : ''}`;
     }
-    function detail() {
-        const p = current();
-        if (!p)
+    const durationText = (minutes) =>
+        minutes === null
+            ? 'End time not known'
+            : minutes < 60
+              ? `${minutes} min`
+              : `${minutes / 60 === Math.round(minutes / 60) ? minutes / 60 : (minutes / 60).toFixed(1)} ${minutes === 60 ? 'hour' : 'hours'}`;
+    function detail(plan) {
+        const p = current(),
+            c = p && contractProcess(plan, p.id);
+        if (!p || !c)
             return `${back()}<div class="honest-empty"><h2 id="view-heading" tabindex="-1">This process is unavailable</h2><p>Choose another process from your overview.</p></div>`;
-        const acts = P.projection(state).actions.filter(
-                (a) => a.process === p.id,
-            ),
-            done = acts.filter((a) => a.status === 'completed').length;
-        const selected =
-            acts.find((a) => a.id === state.step) ||
-            acts.find((a) => a.status === 'todo') ||
-            acts[0];
-        const linked = p.appointment
+        const key = c.occurrence_key,
+            steps = c.steps,
+            selected =
+                steps.find((x) => x.id === state.step) ||
+                steps.find((x) => x.status === 'todo') ||
+                steps[0];
+        const tracked = c.id !== null && !c.is_closed;
+        const rows = plan.timeline.filter((t) => t.occurrence_key === key);
+        const appointment = rows.find((t) => t.kind === 'appointment'),
+            submission = rows.find((t) => t.kind === 'submission_recorded'),
+            deadline = rows.find(
+                (t) => t.kind === 'legal_due' && t.state === 'date_unknown',
+            );
+        // Undo "Track task" until there's progress (process_untracked).
+        const undo =
+            tracked &&
+            c.state.workflow === 'not_started' &&
+            !c.state.report &&
+            c.progress.completed === 0 &&
+            !appointment &&
+            P.untrackable(state, key);
+        const linked = appointment
             ? BureaucracyPlanning.linked(
                   S.studio(),
-                  P.appointmentForComposer(state, p.id)?.id,
+                  P.appointmentForComposer(state, key)?.id,
               )
             : null;
-        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(p.name)} progress</h2>${badge(workflow[p.workflow], tone(p.workflow))}</div>${p.started && !P.terminal(p) ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${!p.started ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${p.note ? `<p class="process-note">${I(p.workflow === 'waiting' ? 'clock' : 'info')}${E(p.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${done}/${acts.length} done</span></div>${acts.map((a) => `<details class="process-step" data-step="${E(a.id)}" ${a.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${a.status}">${I(a.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(R[a.record].title)}</strong><small>${E(P.statuses[a.status])}</small>${dueChip(a)}</span>${I('down')}</summary><div class="step-content">${stepContent(p, a)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${p.id}">${I('document')}<span>Documents<small>${P.documents(state, p.id).filter((d) => d === 'confirmed_for_use').length} marked ready</small></span>${I('arrow')}</button><button data-source-for="${p.id}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${P.timeline(state).find((t) => t.legal && t.process === p.id) ? `<a href="${E(P.registrationDeadline.source)}" target="_blank" rel="noopener">${I('calendar')}<span>Legal deadline<small>${E(P.registrationDeadline.rule)} · ${E(P.registrationDeadline.law)}. The date needs ${E(P.registrationDeadline.needs)}.</small></span>${I('arrow')}</a>` : ''}${p.id === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${p.id === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${p.started && !P.terminal(p) ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${p.appointment ? 'Edit' : 'Record'} appointment">${I(p.appointment ? 'pencil' : 'plus')}</button></div>${p.appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(p.appointment.date))} · ${E(p.appointment.time)}</strong><small>${E(p.appointment.location || 'Location not recorded')}</small></div>${onToday(p.appointment) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${p.submission ? date(p.submission) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${p.submission ? 'Review' : 'Record'} submission">${I(p.submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
+        const local = {
+            date: appointment?.date,
+            time: clock(appointment || {}),
+        };
+        const ready = steps.reduce(
+            (n, x) => n + (x.requirements?.ready || 0),
+            0,
+        );
+        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(nameOf(key))} progress</h2>${badge(workflow[c.state.workflow], tone(c.state.workflow))}</div>${tracked ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${c.id === null ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${undo ? `<p class="process-note">${I('info')}<span>Tracking started. Nothing is reported yet.</span><button class="plain-button" data-case="untrack">Undo</button></p>` : ''}${c.state.report?.note ? `<p class="process-note">${I(c.state.workflow === 'waiting_authority' ? 'clock' : 'info')}${E(c.state.report.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${c.progress.completed}/${c.progress.total} done</span></div>${steps.map((x) => `<details class="process-step" data-step="${E(x.id)}" ${x.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${x.status}">${I(x.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(x.title)}</strong><small>${E(P.statuses[x.status] || '')}</small>${dueChip(plan, x)}</span>${I('down')}</summary><div class="step-content">${stepContent(c, x)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${E(key)}">${I('document')}<span>Documents<small>${ready} marked ready</small></span>${I('arrow')}</button><button data-source-for="${E(key)}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${deadline?.legal_source ? `<a href="${E(deadline.legal_source.url)}" target="_blank" rel="noopener">${I('calendar')}<span>Legal deadline<small>${E(deadline.rule)} · ${E(deadline.legal_source.label)}. The date needs ${E(factLabels[deadline.needed_fact] || 'more information')}.</small></span>${I('arrow')}</a>` : ''}${key === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${key === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${tracked ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${appointment ? 'Edit' : 'Record'} appointment">${I(appointment ? 'pencil' : 'plus')}</button></div>${appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(appointment.date))} · ${E(clock(appointment))}</strong><small>${E(appointment.location?.label || 'Location not recorded')} · ${E(durationText(appointment.duration_minutes))}</small>${appointment.location && !appointment.routable ? `<small>Saved as text, so no journey can be planned to it yet.</small>` : ''}</div>${onToday(local) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${submission ? date(submission.date) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${submission ? 'Review' : 'Record'} submission">${I(submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
     }
-    function docsFor(p) {
-        return p.records
-            .flatMap((n) => R[n].documents)
-            .map((label, i) => ({
-                label,
-                index: i,
-                state: P.documents(state, p.id)[i] || 'unknown',
-                conditional: /where|if |applicable/i.test(label),
+    // plan.paperwork.requirements for one task. Applicability and readiness
+    // come from the plan; "I have this" and "Ready for this task" are
+    // separate, and only a required document can be confirmed for use.
+    function docsFor(plan, key) {
+        return (plan.paperwork.requirements || [])
+            .filter(
+                (r) =>
+                    r.occurrence_key === key &&
+                    r.applicability !== 'not_required',
+            )
+            .map((r) => ({
+                ...r,
+                conditional: r.applicability !== 'required',
             }));
     }
-    function paperwork() {
-        const all = P.processes(state).filter((p) => !P.terminal(p)),
+    function paperwork(plan) {
+        const all = plan.open,
             ps =
                 state.paperFilter === 'all'
                     ? all
-                    : all.filter((p) => p.id === state.paperFilter);
-        return `<div class="paperwork-heading"><div><h2 id="view-heading" tabindex="-1">Your paperwork</h2><p>Your document checklist. Nothing is uploaded or sent.</p></div><label class="paperwork-select"><span class="sr-only">Process</span><select id="paperwork-process" aria-label="Filter paperwork by task"><option value="all">All tasks</option>${all.map((p) => `<option value="${p.id}" ${state.paperFilter === p.id ? 'selected' : ''}>${E(p.name)}</option>`).join('')}</select></label></div><div class="paperwork-groups">${ps
-            .map(
-                (p) =>
-                    `<section class="paperwork-group"><div class="case-section-head"><button class="paper-process-link" data-process="${p.id}">${I(p.icon)}<h3>${E(p.name)}</h3>${I('arrow')}</button><span>${docsFor(p).filter((d) => d.state === 'confirmed_for_use').length}/${docsFor(p).length}</span></div>${
-                        docsFor(p)
-                            .map(
-                                (d) =>
-                                    `<details class="document-row" data-paper-row="${p.id}:${d.index}"><summary><span class="document-symbol ${d.state === 'confirmed_for_use' ? 'confirmed' : ''}">${I(d.state === 'confirmed_for_use' ? 'check' : 'document')}</span><span><strong>${E(d.label)}</strong><small>${E(ready[d.state])}${d.conditional ? ' · May be needed' : ''}</small></span>${I('down')}</summary><div class="document-actions"><p>${d.conditional ? 'Whether you need this depends on your situation. ' : ''}You are updating your checklist for ${E(p.name)}. This is not an official document check.</p>${!p.started ? `<button class="button secondary" data-start-paper="${p.id}">${I('plus')}Start tracking this task</button>` : `${['missing', 'unknown'].includes(d.state) ? `<button class="button secondary" data-doc-action="${p.id}:${d.index}|have">${I('document')}I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.state) ? `<button class="button primary" data-doc-action="${p.id}:${d.index}|confirm">${I('check')}Ready for this task</button>` : `<span class="document-confirmed">${I('check')}Marked ready by you</span>`}<button class="plain-button" data-doc-action="${p.id}:${d.index}|missing">Not ready yet</button>`}<button class="document-info" data-source-for="${p.id}">${I('info')}Check official source</button></div></details>`,
-                            )
-                            .join('') ||
-                        '<p>No document requirements in this sample record.</p>'
-                    }</section>`,
-            )
+                    : all.filter((p) => p.occurrence_key === state.paperFilter);
+        return `<div class="paperwork-heading"><div><h2 id="view-heading" tabindex="-1">Your paperwork</h2><p>Your document checklist. Nothing is uploaded or sent.</p></div><label class="paperwork-select"><span class="sr-only">Process</span><select id="paperwork-process" aria-label="Filter paperwork by task"><option value="all">All tasks</option>${all.map((p) => `<option value="${E(p.occurrence_key)}" ${state.paperFilter === p.occurrence_key ? 'selected' : ''}>${E(nameOf(p.occurrence_key))}</option>`).join('')}</select></label></div><div class="paperwork-groups">${ps
+            .map((p) => {
+                const key = p.occurrence_key,
+                    name = nameOf(key),
+                    docs = docsFor(plan, key);
+                return `<section class="paperwork-group"><div class="case-section-head"><button class="paper-process-link" data-process="${E(key)}">${I(P.process(state, key)?.icon || 'document')}<h3>${E(name)}</h3>${I('arrow')}</button><span>${docs.filter((d) => d.readiness === 'confirmed_for_use').length}/${docs.length}</span></div>${
+                    docs
+                        .map((d) => {
+                            const token = `${key}:${d.index}`;
+                            return `<details class="document-row" data-paper-row="${E(token)}"><summary><span class="document-symbol ${d.readiness === 'confirmed_for_use' ? 'confirmed' : ''}">${I(d.readiness === 'confirmed_for_use' ? 'check' : 'document')}</span><span><strong>${E(d.label)}</strong><small>${E(ready[d.readiness])}${d.conditional ? ' · May be needed' : ''}</small></span>${I('down')}</summary><div class="document-actions"><p>${d.conditional ? 'Whether you need this depends on your situation. ' : ''}You are updating your checklist for ${E(name)}. This is not an official document check.</p>${p.id === null ? `<button class="button secondary" data-start-paper="${E(key)}">${I('plus')}Start tracking this task</button>` : `${d.readiness === 'missing' ? `<button class="button secondary" data-doc-action="${E(token)}|have">${I('document')}I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.readiness) && !d.conditional ? `<button class="button primary" data-doc-action="${E(token)}|confirm">${I('check')}Ready for this task</button>` : d.readiness === 'confirmed_for_use' ? `<span class="document-confirmed">${I('check')}Marked ready by you</span>` : ''}<button class="plain-button" data-doc-action="${E(token)}|missing">Not ready yet</button>`}<button class="document-info" data-source-for="${E(key)}">${I('info')}Check official source</button></div></details>`;
+                        })
+                        .join('') ||
+                    '<p>No document requirements in this sample record.</p>'
+                }</section>`;
+            })
             .join(
                 '',
             )}</div><p class="date-separation">${I('info')}“Ready” means you have checked it for this task. No files are uploaded or sent.</p>`;
@@ -649,16 +787,29 @@
         const p = state.custom.find((x) => x.id === state.process);
         return `${back()}<section class="access-blank"><div class="status-illustration peach">${I('document')}</div><h2 id="view-heading" tabindex="-1">${E(p?.name || 'Your request')}</h2><p>No reviewed guidance is connected to this request. Your other processes remain available.</p>${button('Remove this request', 'remove-request')}</section>`;
     }
+    // What each reviewed unit covers (plan.coverage.units). None of these
+    // states means you are eligible or that every case is covered.
+    const coverageLabels = {
+        complete: 'Reviewed criteria',
+        partial: 'Preparation guidance only',
+        not_covered: 'Outside its review window',
+        withdrawn: 'Withdrawn',
+    };
     function sources(pid = state.process) {
-        const p = P.process(state, pid),
-            records = p ? p.records : [0, 1, 2, 3, 4, 5];
+        const plan = C.plan(state),
+            p = P.process(state, pid),
+            c = p && contractProcess(plan, p.id),
+            ids = c ? c.steps.map((x) => x.guidance_id) : null,
+            units = plan.coverage.units.filter(
+                (u) => !ids || ids.includes(u.unit_id),
+            );
         U.open(
             'Source and coverage',
-            `${p ? scope(p) : ''}<p>Historical catalogue copy. Current publication validity and personal applicability are not established by this preview.</p>${records
-                .map((i) => {
-                    const r = R[i];
-                    return `<section class="source-record"><h3>${E(r.title)}</h3><small>Verification recorded ${date(r.verifiedAt)} · ${E(r.version)}</small><div class="source-links"><a href="${E(r.source)}" target="_blank" rel="noopener">Official source ↗</a>${r.law !== r.source ? `<a href="${E(r.law)}" target="_blank" rel="noopener">Legal source ↗</a>` : ''}</div></section>`;
-                })
+            `${p ? scope(p) : ''}<p>Historical catalogue copy. Current publication validity and personal applicability are not established by this preview.</p>${units
+                .map(
+                    (u) =>
+                        `<section class="source-record"><h3>${E(u.title || 'Withdrawn guidance')}</h3><small>${E(coverageLabels[u.state])} · verification recorded ${date(u.verified_at)} · ${E(u.content_version)}</small><div class="source-links">${u.source_urls.official.map((url) => `<a href="${E(url)}" target="_blank" rel="noopener">Official source ↗</a>`).join('')}${u.source_urls.legal.map((url) => `<a href="${E(url)}" target="_blank" rel="noopener">Legal source ↗</a>`).join('')}</div></section>`,
+                )
                 .join(
                     '',
                 )}<p class="date-separation">Rules, applicability and legal dates will come from the reviewed backend. Missing coverage is not a completed plan.</p>`,
@@ -695,42 +846,62 @@
             a = p.appointment;
         openEditor(
             'Record an appointment',
-            `${scope(p)}<form id="appointment-form"><div class="form-grid"><label class="form-field">Date<input type="date" name="date" value="${a?.date || ''}" required></label><label class="form-field">Time<input data-time-input role="combobox" aria-controls="time-options" aria-haspopup="dialog" aria-expanded="false" inputmode="numeric" maxlength="5" name="time" value="${a?.time || ''}" placeholder="Time" required></label><label class="form-field form-wide">Location <span class="muted">Optional</span><input name="location" maxlength="140" value="${E(a?.location || '')}" placeholder="Office or meeting location"></label></div><p>This records an appointment you already have. It does not book one.</p><div class="actions"><button class="button primary" type="submit">Keep appointment</button>${a ? button('Remove record', 'remove-appointment') : ''}</div></form>`,
+            `${scope(p)}<form id="appointment-form"><div class="form-grid"><label class="form-field">Date<input type="date" name="date" value="${a?.date || ''}" required></label><label class="form-field">Time<input data-time-input role="combobox" aria-controls="time-options" aria-haspopup="dialog" aria-expanded="false" inputmode="numeric" maxlength="5" name="time" value="${a?.time || ''}" placeholder="Time" required></label><label class="form-field">How long<select name="duration"><option value="" ${a && !Number.isInteger(a.duration) ? 'selected' : ''}>Not known</option>${P.durations.map((m) => `<option value="${m}" ${a?.duration === m ? 'selected' : ''}>${E(durationText(m))}</option>`).join('')}</select></label><label class="form-field form-wide">Location <span class="muted">Optional</span><input name="location" maxlength="140" value="${E(a?.location || '')}" placeholder="Office or meeting location"></label></div><p>This records an appointment you already have. It does not book one. An end time you don’t know stays unknown.</p><div class="actions"><button class="button primary" type="submit">Keep appointment</button>${a ? button('Remove record', 'remove-appointment') : ''}</div></form>`,
         );
     }
     function submission() {
         const p = current();
         openEditor(
             'Record a submission',
-            `${scope(p)}<form id="submission-form"><label class="form-field">Date submitted<input type="date" name="date" value="${p.submission || ''}" required></label><p>Only record an application you have already sent. This saves the date in Expadu; it does not submit an application.</p><div class="actions"><button class="button primary" type="submit">Record submission</button>${p.submission ? button('Remove record', 'remove-submission') : ''}</div></form>`,
+            `${scope(p)}<form id="submission-form"><label class="form-field">Date submitted<input type="date" name="date" value="${p.submission || ''}" max="${P.today()}" required></label><p>Only record an application you have already sent. This saves the date in Expadu; it does not submit an application.</p><p class="form-error" role="alert" hidden></p><div class="actions"><button class="button primary" type="submit">Record submission</button>${p.submission ? button('Remove record', 'remove-submission') : ''}</div></form>`,
         );
     }
     function step(id) {
-        const a = P.projection(state).actions.find((a) => a.id === id);
-        if (a) go('detail', a.process, id);
+        const found = stepOf(C.plan(state), id);
+        if (found) go('detail', id.split(':')[0], id);
     }
     function reviewDoc(token) {
         const [id, n] = token.split(':'),
             p = P.process(state, id),
-            d = docsFor(p)[+n];
+            d = docsFor(C.plan(state), id).find((x) => x.index === +n);
+        if (!p || !d) return;
         state.process = id;
         U.open(
             'Review this document',
-            `${scope(p)}<h3>${E(d.label)}</h3><p>${E(ready[d.state])}${d.conditional ? ' · Conditional in source' : ''}</p>${!p.started ? `<p>Start this process before confirming a document.</p>${button('Start this process', 'start', 'primary')}` : `<div class="actions">${['missing', 'unknown'].includes(d.state) ? `<button class="button primary" data-doc-action="${token}|have">I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.state) ? `<button class="button primary" data-doc-action="${token}|confirm">Ready for this task</button>` : ''}<button class="button secondary" data-doc-action="${token}|missing">I don’t have it ready</button></div>`}`,
+            `${scope(p)}<h3>${E(d.label)}</h3><p>${E(ready[d.readiness])}${d.conditional ? ' · Conditional in source' : ''}</p>${!p.started ? `<p>Start this process before confirming a document.</p>${button('Start this process', 'start', 'primary')}` : `<div class="actions">${d.readiness === 'missing' ? `<button class="button primary" data-doc-action="${E(token)}|have">I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.readiness) && !d.conditional ? `<button class="button primary" data-doc-action="${E(token)}|confirm">Ready for this task</button>` : ''}<button class="button secondary" data-doc-action="${E(token)}|missing">I don’t have it ready</button></div>`}`,
         );
     }
-    // Only the changes the backend accepts from here. Completion needs every
-    // step finished first; "waiting" needs a submission.
+    // Only the changes the backend accepts from here (P.choices). "Blocked"
+    // before a submission, "the office needs something" after one; waiting
+    // needs a submission and completion every step.
     const changeLabels = {
         preparing: 'Back to preparing',
+        blocked: 'Something is holding me up',
         submitted: 'I’ve submitted it',
         waiting: 'Waiting for the office',
         action_required: 'The office needs something from me',
         completed: 'Completed',
         cancelled: 'Cancelled',
     };
+    // The date and note fields follow the chosen change's payload.
+    function syncWorkflowFields(form) {
+        const p = current(),
+            choice = P.choices(state, p.id).find(
+                (o) => o.value === form.workflow.value,
+            );
+        const field = form.querySelector('#closed-date-field'),
+            input = field.querySelector('input');
+        field.hidden = !choice?.date;
+        input.required = choice?.date === 'required';
+        field.querySelector('[data-date-label]').textContent =
+            choice?.value === 'submitted'
+                ? 'Date submitted'
+                : 'Date (optional)';
+        form.querySelector('#workflow-note-field').hidden = !choice?.note;
+    }
     function statusDialog() {
         const p = current();
+        const c = contractProcess(C.plan(state), p.id);
         const options = P.choices(state, p.id);
         const usable = options.filter((o) => o.allowed);
         const openSteps = options.some(
@@ -738,12 +909,25 @@
         );
         openEditor(
             'Update progress',
-            `${scope(p)}<p class="workflow-now">Now: <strong>${E(workflow[p.workflow])}</strong></p>${
+            `${scope(p)}<p class="workflow-now">Now: <strong>${E(workflow[c.state.workflow])}</strong></p>${
                 usable.length
-                    ? `<form id="workflow-form"><label class="form-field">Change to<select name="workflow" id="workflow-choice">${usable.map((o) => `<option value="${o.value}">${E(changeLabels[o.value])}</option>`).join('')}</select></label><label class="form-field" id="closed-date-field" ${['submitted', 'completed', 'cancelled'].includes(usable[0].value) ? '' : 'hidden'}><span data-date-label>${usable[0].value === 'submitted' ? 'Date submitted' : 'Date recorded'}</span><input type="date" name="closedOn" ${['submitted', 'completed', 'cancelled'].includes(usable[0].value) ? 'required' : ''}></label>${openSteps ? `<p class="workflow-hint">${I('info')}To record completion, mark each step finished first.</p>` : ''}<p>This updates your progress in Expadu. It does not send documents or change anything with the authority.</p><button class="button primary" type="submit">Save progress</button></form>`
+                    ? `<form id="workflow-form"><label class="form-field">Change to<select name="workflow" id="workflow-choice">${usable.map((o) => `<option value="${o.value}">${E(changeLabels[o.value])}</option>`).join('')}</select></label><label class="form-field" id="closed-date-field"><span data-date-label></span><input type="date" name="closedOn" max="${P.today()}"></label><label class="form-field" id="workflow-note-field">Note <span class="muted">Optional</span><textarea name="note" maxlength="500" rows="2" placeholder="What’s happening, in your words"></textarea></label>${openSteps ? `<p class="workflow-hint">${I('info')}To record completion, mark each step finished first.</p>` : ''}<p>This updates your progress in Expadu. It does not send documents or change anything with the authority.</p><p class="form-error" role="alert" hidden></p><button class="button primary" type="submit">Save progress</button></form>`
                     : '<p>Nothing to change from here yet.</p>'
             }`,
         );
+        const form = document.querySelector('#workflow-form');
+        if (form) syncWorkflowFields(form);
+    }
+    // The refusal the backend sends (errors.event[0]), shown as it is.
+    function refuse(form, message) {
+        const box = form.querySelector('.form-error');
+        if (!box) {
+            U.toast(message);
+            return;
+        }
+        box.textContent = message;
+        box.hidden = false;
+        box.focus?.();
     }
     document.addEventListener('change', (e) => {
         if (!e.target.matches('[data-family-access]')) return;
@@ -890,9 +1074,7 @@
         }
         if (!B.canEdit(state)) return;
         if (b.dataset.helpStep) {
-            const a = P.projection(state).actions.find(
-                (a) => a.id === b.dataset.helpStep,
-            );
+            const a = stepOf(C.plan(state), b.dataset.helpStep);
             if (a) {
                 // Preserve the exact return step without sending facts, documents or dates.
                 state.step = a.id;
@@ -971,35 +1153,46 @@
             return;
         }
         if (b.dataset.toggleStep) {
-            if (!P.toggleStep(state, b.dataset.toggleStep)) return;
+            const id = b.dataset.toggleStep;
+            if (!P.toggleStep(state, id)) return;
             U.close();
             persist();
             document
-                .querySelector(`[data-toggle-step="${CSS.escape(a.id)}"]`)
+                .querySelector(`[data-toggle-step="${CSS.escape(id)}"]`)
                 ?.focus({ preventScroll: true });
             U.toast('Checklist updated. Nothing was sent or submitted.');
             return;
         }
         if (b.dataset.history) {
-            const p = P.projection(state).history.find(
-                (p) => p.id === b.dataset.history,
-            );
+            const plan = C.plan(state),
+                key = b.dataset.history,
+                p = closedOf(plan).find((x) => x.occurrence_key === key);
+            if (!p) return;
+            const local = state.history.find((h) => h.id === key);
+            const official =
+                local?.record !== undefined ? R[local.record]?.source : null;
             U.open(
-                p.name,
-                `<dl class="facts"><div><dt>Record</dt><dd>${p.workflow === 'cancelled' ? 'Cancellation reported' : 'Completion reported'}</dd></div><div><dt>Date</dt><dd>${date(p.closedOn)}</dd></div></dl><p>Retained sample history. This is a user report, not an authority decision.</p>${p.record !== undefined ? `<a class="button secondary" href="${R[p.record].source}" target="_blank" rel="noopener">Official source</a>` : `<button class="button secondary" data-process="${p.id}">View process record</button>`}`,
+                nameOf(key),
+                `<dl class="facts"><div><dt>Record</dt><dd>${p.state.workflow === 'cancelled' ? 'Cancellation reported' : 'Completion reported'}</dd></div><div><dt>Date</dt><dd>${p.closed_on ? date(p.closed_on) : 'Not given'}</dd></div></dl><p>Retained sample history. This is a user report, not an authority decision.</p>${official ? `<a class="button secondary" href="${E(official)}" target="_blank" rel="noopener">Official source</a>` : `<button class="button secondary" data-process="${E(key)}">View process record</button>`}`,
             );
             return;
         }
         if (b.dataset.timeline) {
-            state.process = b.dataset.for;
-            if (b.dataset.timeline.startsWith('deadline-')) {
-                go('detail', b.dataset.for);
-                return;
+            const kind = b.dataset.timeline;
+            if (b.dataset.for) state.process = b.dataset.for;
+            if (kind === 'document_expiry') expiry();
+            else if (kind === 'appointment') appointment();
+            else if (kind === 'submission_recorded') submission();
+            else go('detail', b.dataset.for);
+            return;
+        }
+        if (action === 'untrack') {
+            const result = P.event(state, state.process, 'process_untracked');
+            if (result.error) U.toast(result.error);
+            else {
+                persist();
+                U.toast('Tracking undone. Nothing was kept for this task.');
             }
-            if (b.dataset.timeline === 'expiry') expiry();
-            else if (b.dataset.timeline.startsWith('appointment'))
-                appointment();
-            else submission();
             return;
         }
         if (b.dataset.appointmentFor) {
@@ -1043,10 +1236,14 @@
             return;
         }
         if (action === 'start') {
-            if (P.start(state, state.process)) {
+            const key = state.process;
+            if (P.start(state, key)) {
                 U.close();
                 persist();
-                U.toast('Tracking started. Nothing has been submitted.');
+                // process_untracked undoes a start before any progress.
+                U.toast('Tracking started. Nothing has been submitted.', () => {
+                    if (P.event(state, key, 'process_untracked').ok) persist();
+                });
             }
             return;
         }
@@ -1083,10 +1280,10 @@
             action === 'confirm-remove-appointment' ||
             action === 'confirm-remove-submission'
         ) {
+            // submission_retracted / appointment_cancelled.
             if (action === 'confirm-remove-submission')
                 P.removeSubmission(state, state.process);
-            else if (state.process === 'blue-card') state.appointment = null;
-            else state.records[state.process].appointment = null;
+            else P.cancelAppointment(state, state.process);
             U.close();
             persist();
             return;
@@ -1101,18 +1298,8 @@
             state.paperFilter = e.target.value;
             persist();
         }
-        if (e.target.id === 'workflow-choice') {
-            const yes = ['submitted', 'completed', 'cancelled'].includes(
-                    e.target.value,
-                ),
-                field = document.querySelector('#closed-date-field');
-            field.hidden = !yes;
-            field.querySelector('input').required = yes;
-            field.querySelector('[data-date-label]').textContent =
-                e.target.value === 'submitted'
-                    ? 'Date submitted'
-                    : 'Date recorded';
-        }
+        if (e.target.id === 'workflow-choice')
+            syncWorkflowFields(e.target.form);
     });
     document.addEventListener('submit', (e) => {
         if (
@@ -1136,33 +1323,46 @@
             return;
         }
         if (e.target.id === 'submission-form') {
+            const existing = P.process(state, state.process)?.submission;
             if (!P.recordSubmission(state, state.process, d.date)) {
-                U.toast(
-                    B.validDate(d.date)
-                        ? 'This task can’t record a submission from its current progress.'
-                        : 'Choose the date you submitted it.',
+                const result = existing
+                    ? null
+                    : P.event(state, state.process, 'submission_recorded', {
+                          occurred_on: d.date,
+                      });
+                refuse(
+                    e.target,
+                    result?.error ||
+                        (B.validDate(d.date)
+                            ? 'Choose a date on or before today.'
+                            : 'Choose the date you submitted it.'),
                 );
                 return;
             }
-            U.toast('Submission recorded. The task now waits for the office.');
-        }
-        if (
-            e.target.id === 'workflow-form' &&
-            !P.updateWorkflow(
-                state,
-                state.process,
-                d.workflow,
-                '',
-                d.closedOn || null,
-            )
-        ) {
             U.toast(
-                d.workflow === 'completed' &&
-                    !P.stepsDone(state, P.process(state, state.process))
-                    ? 'Confirm the individual steps before completing this task.'
-                    : 'Choose a date for this change.',
+                existing
+                    ? 'Submission date corrected.'
+                    : 'Submission recorded. The task now waits for the office.',
             );
-            return;
+        }
+        if (e.target.id === 'workflow-form') {
+            const choice = P.choices(state, state.process).find(
+                (o) => o.value === d.workflow,
+            );
+            const result = choice
+                ? P.event(state, state.process, choice.event, {
+                      ...(choice.date && d.closedOn
+                          ? { occurred_on: d.closedOn }
+                          : {}),
+                      ...(choice.note && d.note?.trim()
+                          ? { note: d.note }
+                          : {}),
+                  })
+                : { error: 'Choose a change from the list.' };
+            if (result.error) {
+                refuse(e.target, result.error);
+                return;
+            }
         }
         if (e.target.id === 'process-form') {
             if (!d.name.trim()) return;

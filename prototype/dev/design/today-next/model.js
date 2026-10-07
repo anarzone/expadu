@@ -51,10 +51,13 @@
             removed: [],
             events: clone(events),
             highlight: null,
-            // The person's records from the shared sample day (Composer
-            // reads the same ones), plus a process not started yet.
+            // The person's records as Paperwork keeps them (Composer reads
+            // the same), or the shared sample day's when Paperwork's
+            // scripts aren't loaded; plus a process not started yet.
             paperwork: [
-                ...clone(sample.records || []),
+                ...clone(
+                    root.BureaucracyContract?.records() || sample.records || [],
+                ),
                 { id: 'address', title: 'City registration' },
             ],
         };

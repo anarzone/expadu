@@ -64,6 +64,10 @@
             start: '14:00',
             end: '14:30',
             planStatus: 'Confirmed',
+            // Where it is: Wiener Platz, the appointment area (the place
+            // layer's anchor in sample-places.js). Paperwork's record keeps
+            // this point, so the appointment can be routed to.
+            coordinates: { lat: 50.96103, lng: 7.0048 },
             // Recorded from Paperwork, so Today can show what to bring.
             process: 'blue-card',
             kind: 'official',

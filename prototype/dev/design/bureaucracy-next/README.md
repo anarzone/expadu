@@ -4,6 +4,70 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## Reads the v2 plan contract — 8 October 2026 (in review)
+
+The Bürokratiekarten session's updated contract (`docs/contracts/bureaucracy-v2.md`
+in the `bureaucracy-backend-v2` worktree, 199b76d5; not on staging) now
+supplies everything Paperwork used to work out for itself. `contract.js`
+projects the sample records into that shape (`bureaucracy.plan.1`), following
+the backend's read model, and the page reads only that: next actions, progress
+counts, steps, documents, the timeline, attention and coverage. `plan.js`
+plays the backend: the person's reports are kept in order and the workflow is
+replayed from them, like `POST /processes/{id}/events`. Sample data only.
+
+What changes on screen:
+
+- **Next steps follow the backend's order:** earliest step deadline first,
+  undated ones after, untouched. The sample shows the Blue Card submission
+  (due with the visa, 1 Oct), its preparation, then address registration.
+- **A hold-up you report blocks the task, not its steps.** The counts are
+  steps (4 to do, 0 blocked, 1 waiting), and a step can still be finished
+  while its task is on hold; the task stays Blocked. Only an unfinished
+  earlier step would block a step, and none of these have one.
+- **Update progress offers the contract's moves.** "Something is holding me
+  up" before a submission, "The office needs something from me" after one;
+  waiting needs a submission; completion needs every step. An optional note
+  (up to 500 characters) goes with most changes, and closing dates are
+  optional, never later than today. A refused change shows the backend's
+  message as it is, in the form.
+- **Withdrawing a submission** (`submission_retracted`) replays your reports
+  without it: a "waiting" that only followed it drops out. Step states stay.
+- **Start tracking reports nothing** (Not started), and **Undo** takes it
+  back until there's progress (`process_untracked`).
+- **Appointments keep their length and place.** "How long" may be Not known
+  ("End time not known", never assumed); a place typed as text is kept but
+  "no journey can be planned to it yet". The sample appointment keeps its
+  30 minutes and the Wiener Platz point.
+- **Dates come from the timeline.** The visa expiry is a personal date
+  (`document_expiry`, not a legal claim); the submission deadline is anchored
+  to it, so "Visa expires tomorrow" comes from data and shows once. The
+  registration deadline stays undated: "Needs your move-in date · §17(1) BMG".
+- **The question is the registry's:** "When does your entry visa expire?"
+  with why it's asked. Skip defers it; "I don't know" answers it.
+- **Documents:** readiness has no "unknown" (it reads Not ready yet), "May be
+  needed" comes from applicability data, and only a required document can be
+  marked ready for a task. The step's first document to check is the first
+  one not yet ready, as the backend picks it.
+- **Sources & coverage** lists each reviewed unit with its state
+  ("Preparation guidance only"), never "everything covered".
+- Health insurance's sample "waiting" now has the submission it needs
+  (24 Sept, sample).
+- Fixed: "I've finished this step" saved but then failed before its
+  confirmation.
+
+Today and Composer read the same records through `BureaucracyContract.records()`:
+the ready count, the visa date and whether a submission is recorded follow
+what you mark here (Composer's "what to bring" answer and Your day's
+deadline, Today's Paperwork lines). With nothing saved they match the sample
+day exactly.
+
+Still open (owner or backend): the backend's process `title` is its first
+step's title, which repeats that step, so the cards keep the short names (EU
+Blue Card, Address registration…) until the owner chooses between them and
+`topic_label` (unreviewed navigation copy); "Add a task" has no backend
+entity; the document English names and the links between tasks are next on
+the backend side. Tests: `tests/contract.test.cjs` (16), `tests/plan.test.cjs`.
+
 ## Aligned with the v2 backend rules — 7 October 2026 (in review)
 
 From the Bürokratiekarten session's mapping (`docs/contracts/paperwork-ui-mapping.md`
