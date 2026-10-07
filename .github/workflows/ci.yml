@@ -411,6 +411,8 @@ jobs:
             sleep 5
             docker exec staging-app php artisan migrate --force
             docker exec staging-app php artisan bureaucracy:import-tasks --retire-missing
+            docker exec staging-app php artisan bureaucracy:compile-catalogue --deploy
+            docker exec staging-app php artisan bureaucracy:migrate-dossiers --apply --all
 
   deploy-production:
     name: Deploy to Production
@@ -432,3 +434,5 @@ jobs:
             sleep 5
             docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force
             docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --retire-missing
+            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:compile-catalogue --deploy
+            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:migrate-dossiers --apply --all

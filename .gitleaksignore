@@ -1,2 +1,5 @@
 # Verified SHA-256 of the frozen public before-api.json file, not a credential.
 docs/places/production-pack/2026-09-28/package-verification.json:generic-api-key:10
+# Coolify-generated production container name (app-<id>), not a Dify API key.
+.github/workflows/ci.yml:dify-api-key:437
+.github/workflows/ci.yml:dify-api-key:438
