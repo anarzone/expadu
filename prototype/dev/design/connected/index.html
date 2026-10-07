@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Expadu — Connected design collection</title>
+        <link rel="stylesheet" href="./style.css?v=cc9941eb1796" />
+        <script defer src="./model.js?v=dabdd8ed7179"></script>
+        <script defer src="./store.js?v=3078f6a2275c"></script>
+        <script defer src="./icons.js?v=685f482a1088"></script>
+        <script defer src="./ui.js?v=588c949853ac"></script>
+        <style>
+            .collection {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 22px;
+            }
+            .collection a {
+                min-height: 240px;
+                border-radius: 26px;
+                padding: 28px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                position: relative;
+            }
+            .collection a > svg {
+                width: 35px;
+                height: 35px;
+                margin-bottom: 35px;
+            }
+            .collection h2 {
+                font-size: 28px;
+            }
+            .collection p {
+                font-size: 14px;
+                margin-top: 10px;
+                max-width: 28ch;
+            }
+            .collection .corner {
+                position: absolute;
+                right: 26px;
+                top: 27px;
+            }
+            .collection .corner svg {
+                width: 25px;
+            }
+            .collection small {
+                margin-top: 20px;
+            }
+            .collection .ink {
+                background: #211d15;
+                color: #fff;
+            }
+            .collection .ink small {
+                color: #d6dfdf;
+            }
+            @media (max-width: 850px) {
+                .collection {
+                    grid-template-columns: 1fr 1fr;
+                }
+            }
+            @media (max-width: 500px) {
+                .collection {
+                    grid-template-columns: 1fr;
+                }
+                .collection a {
+                    min-height: 210px;
+                }
+            }
+        </style>
+    </head>
+    <body data-page="collection">
+        <div id="shell"></div>
+        <main>
+            <div class="page-title">
+                <div>
+                    <p class="eyebrow">Design collection</p>
+                    <h1>One Expadu. A day that connects.</h1>
+                </div>
+            </div>
+            <div class="collection" id="collection"></div>
+            <p class="muted" style="margin-top: 28px">
+                These previews keep choices locally. Live recommendations,
+                bookings and bureaucracy backend actions are not connected.
+            </p>
+        </main>
+        <script defer src="./collection.js?v=aa67580fa8d0"></script>
+    </body>
+</html>

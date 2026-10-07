@@ -1,0 +1,141 @@
+@import url('../connected/tokens.css');
+/* Station preview only. Keep the accepted Travel palette and desktop layout. */
+body[data-timetable-design='station'] .station-map-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 40px;
+    margin-bottom: 4px;
+}
+body[data-timetable-design='station'] .station-map-toolbar > strong {
+    font-size: var(--text-control);
+    line-height: 1.3;
+}
+body[data-timetable-design='station'] .station-map-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 6px 10px;
+    color: var(--teal);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+body[data-timetable-design='station'] .station-map-toggle svg {
+    width: 16px;
+    height: 16px;
+}
+body[data-timetable-design='station'] .station-service-summary {
+    display: block;
+    width: 100%;
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--ink);
+    text-align: left;
+    line-height: 1.4;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+body[data-timetable-design='station'] .station-service-summary strong {
+    font-size: var(--text-control);
+}
+body[data-timetable-design='station'] .station-service-summary small {
+    display: block;
+    margin-top: 3px;
+    color: var(--ink-soft);
+    font-size: var(--text-micro);
+}
+body[data-timetable-design='station'] .station-service-summary[hidden] {
+    display: none;
+}
+body[data-timetable-design='station'] .station-map-toggle:focus-visible,
+body[data-timetable-design='station'] .station-service-summary:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 3px;
+}
+body[data-timetable-design='station'] .station-map-toggle:active,
+body[data-timetable-design='station'] .station-service-summary:active {
+    background: var(--blue);
+}
+@media (max-width: 999px) {
+    body[data-timetable-design='station'] .station-map-panel {
+        --station-map-height: 156px;
+    }
+    body[data-timetable-design='station'] .station-map-panel.is-expanded {
+        --station-map-height: min(52svh, 390px);
+    }
+    body[data-timetable-design='station'] .station-map-toggle {
+        display: inline-flex;
+    }
+    body[data-timetable-design='station'] .station-map-context {
+        padding-bottom: 6px;
+        font-size: var(--text-micro);
+    }
+    body[data-timetable-design='station'] .station-map-caption {
+        margin-top: 6px;
+        font-size: var(--text-micro);
+        line-height: 1.4;
+    }
+    body[data-timetable-design='station'] .station-map-canvas {
+        border-radius: var(--radius-md);
+    }
+    body[data-timetable-design='station']
+        .station-map-panel:not(.is-expanded)
+        .station-map-detail {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+        margin-top: 4px;
+        padding: 0 8px;
+        border: 0;
+        background: transparent;
+    }
+    body[data-timetable-design='station']
+        .station-map-panel:not(.is-expanded)
+        .station-map-detail[hidden] {
+        display: none;
+    }
+    body[data-timetable-design='station']
+        .station-map-panel:not(.is-expanded)
+        .station-map-detail-heading
+        strong {
+        font-size: var(--text-caption);
+    }
+    body[data-timetable-design='station']
+        .station-map-panel:not(.is-expanded)
+        .station-map-detail
+        > span {
+        margin-top: -7px;
+        padding-bottom: 5px;
+        font-size: var(--text-micro);
+        pointer-events: none;
+    }
+    body[data-timetable-design='station']
+        .station-map-panel:not(.is-expanded)
+        .station-map-detail
+        .station-map-lines,
+    body[data-timetable-design='station']
+        .station-map-panel:not(.is-expanded)
+        .station-map-detail
+        p,
+    body[data-timetable-design='station']
+        .station-map-panel:not(.is-expanded)
+        .station-stop-map:has(.station-map-detail:not([hidden]))
+        .station-map-caption {
+        display: none;
+    }
+    body[data-timetable-design='station'] .station-map-fallback {
+        padding: 8px 10px;
+        overscroll-behavior: contain;
+    }
+}

@@ -1,0 +1,1269 @@
+@import url('../connected/tokens.css');
+/* Approved White & Lagoon composition: one canvas, planner beside route options. */
+body.travel-palette.departures-page main {
+    max-width: 1120px;
+}
+body.travel-palette .page-navigation {
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+    gap: 12px;
+}
+body.travel-palette .view-switch {
+    padding: 0;
+    gap: 22px;
+    border-radius: 0;
+    background: transparent;
+}
+body.travel-palette .view-switch button {
+    position: relative;
+    min-height: 48px;
+    padding: 8px 0 14px;
+    border-radius: 0;
+    background: transparent;
+    font-weight: var(--weight-medium);
+}
+body.travel-palette .view-switch button::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 3px;
+    border-radius: var(--radius-sm);
+    background: var(--teal);
+    transform: scaleX(0);
+    transition: transform 220ms var(--ease);
+    transform-origin: left;
+}
+body.travel-palette .view-switch button[aria-pressed='true'] {
+    background: transparent;
+    color: var(--teal);
+    box-shadow: none;
+}
+body.travel-palette .view-switch button[aria-pressed='true']::after {
+    transform: scaleX(1);
+}
+body.travel-palette :is(#journey-view, #departures) {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+}
+body.travel-palette .journey-intro-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+    margin: 0;
+}
+body.travel-palette .journey-desk {
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+}
+body.travel-palette #journey-form {
+    display: block;
+}
+body.travel-palette #journey-form[hidden] {
+    display: none;
+}
+body.travel-palette .planner-heading {
+    font-size: var(--text-title-sm);
+    letter-spacing: -0.45px;
+    margin-bottom: 18px;
+}
+body.travel-palette .journey-fields {
+    padding-right: 44px;
+}
+body.travel-palette .field {
+    padding-block: 12px;
+}
+body.travel-palette .field label {
+    font-size: var(--text-caption);
+}
+body.travel-palette .field input {
+    font-size: var(--text-section);
+}
+body.travel-palette .suggestions {
+    top: calc(100% - 1px);
+    left: 0;
+    right: 0;
+    padding: 6px 0;
+    border: 1px solid var(--line);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    background: var(--surface);
+    box-shadow: 0 10px 22px #211d1512;
+    max-height: min(300px, 45dvh);
+    overscroll-behavior: contain;
+}
+body.travel-palette .journey-fields:has(> .suggestions:not([hidden])) {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+body.travel-palette .suggestions button {
+    min-height: 48px;
+    padding: 10px 12px;
+    gap: 12px;
+    border-radius: 0;
+}
+body.travel-palette .suggestions button > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+}
+body.travel-palette .suggestion-copy {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: baseline;
+    gap: 6px;
+}
+body.travel-palette .suggestions :is(strong, small) {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: var(--text-control);
+    font-weight: var(--weight-regular);
+    line-height: 22px;
+}
+body.travel-palette .suggestions strong {
+    flex: 0 1 auto;
+}
+body.travel-palette .suggestions small {
+    flex: 1 3 auto;
+    margin: 0;
+}
+body.travel-palette .suggestion-note {
+    display: block;
+    padding: 5px 12px 2px;
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+body.travel-palette .suggestions button:is(:hover, :active) {
+    background-color: var(--paper);
+}
+body.travel-palette .suggestions button:focus-visible {
+    background-color: var(--blue);
+    outline: none;
+}
+body.travel-palette .planner-controls {
+    margin-top: 14px;
+}
+body.travel-palette .route-modes {
+    min-width: 0;
+    padding: 0;
+    gap: 4px;
+}
+body.travel-palette .route-modes button {
+    min-height: 44px;
+    font-size: var(--text-small);
+    padding-inline: 10px;
+}
+body.travel-palette .journey-utilities {
+    margin-top: 12px;
+}
+body.travel-palette .find-routes {
+    margin-top: 10px;
+    min-height: 46px;
+    justify-content: center;
+    border-radius: var(--radius-md);
+}
+body.travel-palette .travel-composer-helper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    margin-top: 12px;
+    padding: 0 4px 0 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: var(--text-small);
+}
+body.travel-palette .travel-composer-helper[hidden] {
+    display: none;
+}
+body.travel-palette .travel-composer-helper > button:first-child {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    min-width: 0;
+    padding: 6px 2px;
+    text-align: left;
+    flex: 1;
+}
+body.travel-palette
+    .travel-composer-helper
+    > button:first-child
+    > span:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 8px;
+    row-gap: 2px;
+    line-height: 1.4;
+}
+body.travel-palette .travel-composer-helper strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    color: var(--teal);
+}
+body.travel-palette .travel-composer-helper svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+}
+body.travel-palette .travel-composer-helper .icon-button {
+    width: 44px;
+    min-height: 44px;
+    flex: none;
+    color: var(--muted);
+}
+body.travel-palette .travel-composer-helper button:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+body.travel-palette .travel-composer-helper button:active {
+    color: var(--teal);
+}
+body.travel-palette .journey-results {
+    min-width: 0;
+    border-top: 1px solid var(--line);
+    padding-top: 22px;
+}
+body.travel-palette .journey-start {
+    padding: 0;
+}
+body.travel-palette :is(.section-heading, .results-top) {
+    margin-bottom: 12px;
+}
+body.travel-palette :is(.section-heading h2, .results-top h2) {
+    font-size: var(--text-title-sm);
+    letter-spacing: -0.45px;
+}
+body.travel-palette .sample-endpoints {
+    margin: 6px 0 14px;
+    color: var(--muted);
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+body.travel-palette .sample-footnote {
+    margin: 12px 0 0;
+    font-size: var(--text-caption);
+}
+body.travel-palette .journey-summary {
+    background: var(--surface-quiet);
+    padding: 10px 12px;
+    min-height: 64px;
+    border-radius: var(--radius-md);
+}
+body.travel-palette .summary-edit {
+    width: 44px;
+    height: 44px;
+    background: transparent;
+}
+body.travel-palette .results-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+body.travel-palette .results-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+body.travel-palette .results-heading .icon-button {
+    width: 40px;
+    min-width: 40px;
+    height: 44px;
+}
+body.travel-palette .results-heading > span {
+    color: var(--muted);
+    font-size: var(--text-caption);
+}
+body.travel-palette .results-tools {
+    margin-bottom: 10px;
+}
+body.travel-palette
+    .journey-intro-grid:has(.journey-desk:not(.is-compact))
+    .results-tools {
+    display: none;
+}
+body.travel-palette .route-workspace {
+    display: block;
+}
+body.travel-palette .route-options {
+    gap: 0;
+}
+body.travel-palette .route-option {
+    padding: 16px 0 5px;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--line);
+}
+body.travel-palette .route-option:hover {
+    background: transparent;
+    box-shadow: none;
+}
+body.travel-palette .option-top {
+    align-items: flex-start;
+    gap: 6px;
+}
+body.travel-palette .option-summary {
+    min-width: 0;
+}
+body.travel-palette .route-clock {
+    font-size: var(--text-title);
+    gap: 10px;
+    flex-wrap: wrap;
+}
+body.travel-palette .route-duration {
+    font-size: var(--text-small);
+    font-weight: var(--weight-regular);
+    letter-spacing: 0;
+    color: var(--muted);
+    white-space: nowrap;
+}
+body.travel-palette .time-connector {
+    display: inline-block;
+    width: 20px;
+    height: 1px;
+    background: var(--muted);
+}
+body.travel-palette .option-caption {
+    margin-top: 6px;
+    font-size: var(--text-caption);
+    color: var(--muted);
+    line-height: 1.4;
+}
+body.travel-palette .route-option .save-route {
+    flex: none;
+    background: transparent;
+    color: var(--muted);
+    width: 44px;
+    height: 44px;
+    margin-top: -8px;
+}
+body.travel-palette .route-option .save-route.is-saved {
+    color: var(--teal);
+    background: var(--blue);
+}
+body.travel-palette .route-option .save-route.is-saved svg {
+    fill: currentColor;
+}
+body.travel-palette .leg-ribbon {
+    align-items: center;
+    gap: 10px;
+    height: 30px;
+    margin: 15px 0 8px;
+}
+body.travel-palette .leg-piece {
+    flex: none;
+    min-width: 0;
+    padding: 0;
+    color: var(--muted);
+    background: transparent;
+}
+body.travel-palette .leg-piece.transit {
+    background: var(--blue);
+    color: var(--teal);
+    padding: 6px 10px;
+    min-width: 52px;
+    font-size: var(--text-control);
+}
+body.travel-palette .leg-piece.bike {
+    background: var(--blue);
+    color: var(--teal);
+    padding: 6px 10px;
+}
+@keyframes travel-connection {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+body.travel-palette .leg-connection {
+    flex: 1;
+    height: 1px;
+    min-width: 12px;
+    background: var(--line);
+    position: relative;
+    transform-origin: left;
+    animation: travel-connection 320ms var(--ease) both;
+}
+body.travel-palette .leg-connection::after {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-top: 1px solid var(--teal);
+    border-right: 1px solid var(--teal);
+    position: absolute;
+    right: 0;
+    top: -2px;
+    rotate: 45deg;
+}
+body.travel-palette .option-foot {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+}
+body.travel-palette .details-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 6px 0;
+    color: var(--teal);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+}
+body.travel-palette .details-toggle svg {
+    height: 14px;
+    width: 14px;
+    transition: rotate 220ms var(--ease);
+}
+body.travel-palette .details-toggle[aria-expanded='true'] svg {
+    rotate: 180deg;
+}
+body.travel-palette .route-disclosure {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 220ms var(--ease),
+        opacity 180ms ease;
+}
+body.travel-palette .route-disclosure[aria-hidden='false'] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+body.travel-palette .route-disclosure-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+body.travel-palette .inline-itinerary {
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    background: var(--surface-quiet);
+}
+body.travel-palette .inline-itinerary .route-step {
+    min-height: 60px;
+    padding-block: 6px 10px;
+    gap: 8px;
+}
+body.travel-palette .inline-itinerary .route-step:not(:last-child)::before {
+    left: 63px;
+}
+body.travel-palette .inline-itinerary .route-step strong {
+    font-size: var(--text-small);
+}
+body.travel-palette .inline-itinerary .route-step small {
+    font-size: var(--text-caption);
+}
+body.travel-palette .inline-itinerary .route-note {
+    font-size: var(--text-micro);
+    margin-block: 6px 12px;
+}
+body.travel-palette .inline-route-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+body.travel-palette .inline-route-actions .quiet-button {
+    color: var(--teal);
+    font-size: var(--text-small);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+}
+body.travel-palette .inline-route-actions .primary {
+    font-size: var(--text-small);
+    border-radius: var(--radius-md);
+    padding-inline: 12px;
+}
+body.travel-palette .more-routes {
+    margin-top: 10px;
+    color: var(--teal);
+}
+body.travel-palette .result-empty {
+    background: var(--surface-quiet);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    min-height: 0;
+}
+body.travel-palette .result-empty h3 {
+    font-size: var(--text-title-sm);
+}
+body.travel-palette .result-empty p {
+    font-size: var(--text-control);
+}
+body.travel-palette .journey-timeband {
+    background: var(--surface-quiet);
+}
+/* The stop, context and departures form one readable board. */
+body.travel-palette #departures {
+    display: block;
+    max-width: 900px;
+    margin-inline: auto;
+}
+body.travel-palette #departures[hidden] {
+    display: none;
+}
+body.travel-palette .timetable-context {
+    padding: 0;
+    border: 0;
+}
+body.travel-palette .stop-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 8px;
+}
+body.travel-palette .stop-selector {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    gap: 10px;
+    padding: 0;
+}
+body.travel-palette .stop-selector > span:nth-child(2) {
+    min-width: 0;
+}
+body.travel-palette .stop-selector small {
+    margin-bottom: 2px;
+    font-size: var(--text-micro);
+}
+body.travel-palette .stop-selector strong {
+    display: block;
+    font-size: var(--text-title);
+    line-height: 1.25;
+    overflow-wrap: normal;
+}
+body.travel-palette .stop-selector > [data-icon] {
+    flex: none;
+}
+body.travel-palette .stop-symbol {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+}
+body.travel-palette .board-plan {
+    flex: none;
+    color: var(--action);
+    padding-inline: 8px;
+    font-size: var(--text-small);
+}
+body.travel-palette .timetable-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    margin: 0 0 8px;
+}
+body.travel-palette .timetable-toolbar > button {
+    min-height: 44px;
+    padding-inline: 0 8px;
+    gap: 7px;
+}
+body.travel-palette .timetable-toolbar > button > span:nth-child(2) {
+    font-size: var(--text-small);
+}
+body.travel-palette .timetable-paging {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+}
+body.travel-palette .timetable-paging button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    gap: 5px;
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+body.travel-palette .timetable-paging svg {
+    width: 14px;
+    height: 14px;
+}
+body.travel-palette .board-meta {
+    display: block;
+    margin: 0;
+    font-size: var(--text-micro);
+    line-height: 1.4;
+    color: var(--muted);
+}
+body.travel-palette .timetable-context > .board-meta {
+    margin: -6px 0 10px;
+}
+body.travel-palette #board-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    margin: 0 0 8px;
+}
+body.travel-palette .board-filterbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-basis: 100%;
+    min-width: 0;
+    min-height: 44px;
+    margin-bottom: 6px;
+}
+body.travel-palette .board-types {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    overflow-x: auto;
+}
+body.travel-palette .board-filter-toggle,
+body.travel-palette .board-types button {
+    flex: none;
+}
+body.travel-palette :is(.board-types button, .board-filter-toggle) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: var(--radius-pill);
+    color: var(--ink-soft);
+    font-size: var(--text-small);
+    transition:
+        background-color 140ms ease,
+        color 140ms ease;
+}
+body.travel-palette :is(.board-types button, .board-filter-toggle) svg {
+    width: 18px;
+    height: 18px;
+}
+body.travel-palette .board-types [aria-pressed='true'],
+body.travel-palette .board-filter-toggle[aria-expanded='true'] {
+    color: var(--teal);
+    background: var(--blue);
+}
+body.travel-palette :is(.board-types button, .board-filter-toggle):active {
+    background: var(--blue);
+}
+body.travel-palette
+    :is(.board-types button, .board-filter-toggle):focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+}
+body.travel-palette .board-filter-count {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    font-size: var(--text-micro);
+    border-radius: var(--radius-round);
+    color: var(--surface);
+    background: var(--teal);
+}
+body.travel-palette #board-filters .board-clear {
+    min-height: 44px;
+    font-size: var(--text-small);
+    padding: 8px;
+}
+body.travel-palette #board-filters:empty,
+body.travel-palette #board-filters[hidden],
+body.travel-palette #board-filters [hidden] {
+    display: none;
+}
+body.travel-palette #board-filters :is(.board-filter, .board-status-filter) {
+    min-width: 0;
+    max-width: 100%;
+}
+body.travel-palette .board-filter-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background-color: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--text-small);
+    line-height: 1.4;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background-color 140ms ease,
+        border-color 140ms ease,
+        color 140ms ease;
+}
+body.travel-palette .board-filter-label {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+body.travel-palette .board-filter-trigger [data-icon] {
+    display: inline-flex;
+    flex: none;
+}
+body.travel-palette .board-filter-trigger svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--muted);
+}
+body.travel-palette .board-filter-trigger[aria-expanded='true'] {
+    border-color: var(--teal);
+    color: var(--teal);
+}
+body.travel-palette .board-filter-trigger[aria-expanded='true'] svg {
+    color: currentColor;
+}
+body.travel-palette .board-filter-trigger:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+}
+body.travel-palette #journey-popover[data-kind^='board-filter-'] {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: min(320px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow:
+        0 8px 28px color-mix(in srgb, var(--ink) 9%, transparent),
+        0 2px 6px color-mix(in srgb, var(--ink) 4%, transparent);
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .popover-heading {
+    flex-shrink: 0;
+    min-height: 44px;
+    margin: 0 0 6px;
+    padding-left: 8px;
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .popover-heading
+    h2 {
+    font-size: var(--text-body);
+    letter-spacing: -0.2px;
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .popover-heading
+    .icon-button {
+    width: 44px;
+    min-height: 44px;
+    margin: 0;
+}
+body.travel-palette #journey-popover[data-kind^='board-filter-'][hidden] {
+    display: none;
+}
+body.travel-palette #journey-popover[data-kind^='board-filter-'] #popover-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: grid;
+    gap: 2px;
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .board-filter-option {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    font-size: var(--text-control);
+    font-weight: var(--weight-regular);
+    line-height: 1.4;
+    transition:
+        background-color 140ms ease,
+        color 140ms ease;
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .board-filter-option
+    > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .board-filter-option
+    > svg {
+    grid-column: 2;
+    width: 18px;
+    height: 18px;
+    color: var(--teal);
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .board-filter-option[aria-pressed='false']
+    > svg {
+    visibility: hidden;
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .board-filter-option[aria-pressed='true'] {
+    background: var(--blue);
+    color: var(--teal);
+}
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .board-filter-option:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
+}
+body.travel-palette .board-filter-trigger:active,
+body.travel-palette
+    #journey-popover[data-kind^='board-filter-']
+    .board-filter-option:active {
+    background: var(--cyan-hover);
+    color: var(--teal);
+}
+body.travel-palette #board-filter-summary {
+    color: var(--muted);
+    font-size: var(--text-caption);
+    line-height: 1.5;
+    margin: 0 0 8px;
+}
+body.travel-palette .timetable-columns,
+body.travel-palette .timetable-row {
+    display: grid;
+    grid-template-columns: 46px minmax(0, 1fr) 64px 14px;
+    align-items: center;
+    gap: 12px;
+    padding-inline: 12px;
+}
+body.travel-palette .timetable-columns {
+    padding-block: 7px;
+    color: var(--muted);
+    font-size: var(--text-micro);
+    border-bottom: 1px solid var(--line);
+}
+body.travel-palette .timetable-columns > :nth-child(3) {
+    text-align: right;
+}
+body.travel-palette .timetable-list,
+body.travel-palette .timetable-day {
+    background: transparent;
+    border-radius: 0;
+}
+body.travel-palette .timetable-entry {
+    border-bottom: 1px solid var(--line);
+}
+body.travel-palette .timetable-row {
+    position: relative;
+    min-height: 62px;
+    padding-block: 12px;
+    border: 0;
+    transition: background-color 140ms ease;
+}
+body.travel-palette .timetable-row.next-departure::before,
+body.travel-palette .next-departure > .timetable-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 3px;
+    border-radius: var(--radius-sm);
+    background: var(--teal);
+}
+body.travel-palette .timetable-row[aria-expanded='true'],
+body.travel-palette .timetable-row:active {
+    background-color: var(--blue);
+}
+body.travel-palette .timetable-destination > strong {
+    font-size: var(--text-body);
+    line-height: 1.35;
+    overflow-wrap: normal;
+}
+body.travel-palette .timetable-destination > small {
+    font-size: var(--text-micro);
+    line-height: 1.4;
+}
+body.travel-palette .timetable-row > svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 160ms ease;
+}
+body.travel-palette .timetable-row[aria-expanded='true'] > svg {
+    transform: rotate(180deg);
+}
+body.travel-palette .timetable-row time {
+    font-size: var(--text-section);
+}
+body.travel-palette .timetable-day {
+    padding: 13px 12px 8px;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+}
+body.travel-palette .departure-inline {
+    padding: 4px 38px 16px 70px;
+    background: var(--surface);
+    animation: departure-reveal 150ms ease-out;
+}
+body.travel-palette .departure-inline[hidden] {
+    display: none;
+}
+body.travel-palette .departure-inline .departure-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin: 10px 0;
+    font-size: var(--text-caption);
+}
+body.travel-palette .departure-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin: 12px 0;
+    padding: 9px 11px;
+    border-radius: var(--radius-sm);
+    background: #fff3db;
+    color: #805717;
+    font-size: var(--text-caption);
+    line-height: 1.5;
+}
+body.travel-palette .departure-warning svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+}
+body.travel-palette .departure-inline .route-note {
+    margin: 10px 0;
+    font-size: var(--text-caption);
+}
+body.travel-palette .departure-inline-action {
+    margin-top: 4px;
+    min-height: 44px;
+    color: var(--action);
+}
+body.travel-palette .board-bottom {
+    margin: 12px 0 0;
+    gap: 4px 12px;
+}
+body.travel-palette .board-bottom > span {
+    font-size: var(--text-micro);
+    line-height: 1.5;
+}
+body.travel-palette .departure-detail .departure-stop-route {
+    margin-block: 12px;
+    padding: 12px;
+}
+body.travel-palette .departure-detail .departure-facts {
+    margin: 12px 0;
+    gap: 7px;
+}
+body.travel-palette .departure-detail h3 {
+    margin: 16px 0 8px;
+    font-size: var(--text-control);
+}
+body.travel-palette .departure-detail .scheduled-list {
+    gap: 4px;
+}
+body.travel-palette .departure-detail .scheduled-list > button {
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+}
+@keyframes departure-reveal {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+@media (min-width: 1000px) {
+    body.travel-palette .timetable-context {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: 4px 16px;
+        margin-bottom: 8px;
+    }
+    body.travel-palette .timetable-context .stop-heading {
+        grid-column: 1 / -1;
+        margin-bottom: 4px;
+    }
+    body.travel-palette .timetable-toolbar {
+        display: contents;
+    }
+    body.travel-palette .timetable-toolbar > button {
+        grid-row: 2;
+        grid-column: 1;
+    }
+    body.travel-palette .board-filterbar {
+        grid-row: 2;
+        grid-column: 2;
+        margin: 0;
+    }
+    body.travel-palette #board-filters {
+        grid-row: 3;
+        grid-column: 1 / -1;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0;
+    }
+    body.travel-palette .timetable-paging {
+        grid-row: 2;
+        grid-column: 3;
+    }
+    body.travel-palette .timetable-toolbar .board-meta {
+        grid-column: 1 / -1;
+        font-size: var(--text-caption);
+    }
+    body.travel-palette .journey-intro-grid {
+        grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.5fr);
+        gap: 36px;
+    }
+    body.travel-palette .journey-results {
+        border-top: 0;
+        border-left: 1px solid var(--line);
+        padding: 0 0 0 36px;
+    }
+    body.travel-palette .results-tools {
+        display: none;
+    }
+}
+@media (max-width: 999px) {
+    body.travel-palette[data-view='stop'] .page-heading {
+        margin-bottom: 0;
+    }
+    body.travel-palette[data-view='stop'] .page-navigation {
+        margin-bottom: 12px;
+    }
+    body.travel-palette .page-navigation {
+        margin-bottom: 20px;
+    }
+    body.travel-palette .journey-intro-grid {
+        gap: 18px;
+    }
+    body.travel-palette .journey-results {
+        padding-top: 16px;
+    }
+    body.travel-palette .planner-heading {
+        font-size: var(--text-section);
+        margin-bottom: 12px;
+    }
+    body.travel-palette .route-clock {
+        font-size: var(--text-title-sm);
+        gap: 8px;
+    }
+    body.travel-palette .route-option {
+        padding-top: 14px;
+    }
+    body.travel-palette .leg-ribbon {
+        margin-block: 12px 4px;
+    }
+    body.travel-palette .inline-itinerary {
+        padding: 12px;
+    }
+    body.travel-palette .journey-summary > span:not(.summary-edit) {
+        display: block;
+    }
+    body.travel-palette .journey-summary small {
+        font-size: var(--text-caption);
+    }
+    body.travel-palette .journey-summary small::after {
+        content: none;
+    }
+    body.travel-palette .journey-summary strong {
+        margin-top: 3px;
+    }
+    body.travel-palette #departures .stop-heading {
+        gap: 8px;
+        margin-bottom: 0;
+    }
+    body.travel-palette #departures .stop-selector {
+        gap: 8px;
+        min-height: 44px;
+    }
+    body.travel-palette #departures .stop-selector strong {
+        font-size: var(--text-title-sm);
+    }
+    body.travel-palette #departures .stop-symbol {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+    }
+    body.travel-palette #departures .board-plan {
+        padding-inline: 4px;
+        font-size: var(--text-caption);
+    }
+    body.travel-palette #departures .timetable-toolbar {
+        gap: 0 4px;
+        margin-bottom: 4px;
+    }
+    body.travel-palette #departures .board-meta {
+        font-size: var(--text-caption);
+    }
+    body.travel-palette #departures .timetable-context > .board-meta {
+        margin-top: -4px;
+        margin-bottom: 6px;
+    }
+    body.travel-palette #board-filters {
+        gap: 6px 10px;
+        margin-bottom: 4px;
+    }
+    body.travel-palette .timetable-columns,
+    body.travel-palette .timetable-row {
+        grid-template-columns: 42px minmax(0, 1fr) 52px 12px;
+        gap: 8px;
+        padding-inline: 6px;
+    }
+    body.travel-palette .timetable-columns {
+        display: none;
+    }
+    body.travel-palette .timetable-row {
+        min-height: 56px;
+        padding-block: 10px;
+    }
+    body.travel-palette .timetable-row .line-badge {
+        width: 42px;
+    }
+    body.travel-palette .timetable-destination > strong {
+        font-size: var(--text-control);
+    }
+    body.travel-palette .timetable-row time {
+        font-size: var(--text-section);
+    }
+    body.travel-palette .timetable-day {
+        padding-inline: 6px;
+    }
+    body.travel-palette .departure-inline {
+        padding: 4px 26px 12px 56px;
+    }
+}
+@media (max-width: 359px) {
+    body.travel-palette #departures .stop-selector strong {
+        font-size: var(--text-section);
+    }
+    body.travel-palette #departures .board-plan {
+        max-width: 78px;
+        white-space: normal;
+        line-height: 1.3;
+    }
+    body.travel-palette #departures .timetable-toolbar > button {
+        gap: 5px;
+        padding-right: 0;
+    }
+    body.travel-palette
+        #departures
+        .timetable-toolbar
+        > button
+        > span:nth-child(2) {
+        font-size: var(--text-caption);
+    }
+    body.travel-palette #departures .timetable-paging button {
+        gap: 3px;
+        padding-inline: 5px;
+        font-size: var(--text-micro);
+    }
+    body.travel-palette .timetable-destination > strong {
+        font-size: var(--text-small);
+    }
+    body.travel-palette #board-filters {
+        gap: 4px 8px;
+    }
+    body.travel-palette .board-filter-trigger {
+        gap: 6px;
+        padding-inline: 8px;
+        font-size: var(--text-caption);
+    }
+}
+@media (hover: hover) {
+    body.travel-palette .board-filter-trigger:hover,
+    body.travel-palette
+        #journey-popover[data-kind^='board-filter-']
+        .board-filter-option:not([aria-pressed='true']):hover {
+        background-color: var(--surface-hover);
+    }
+    body.travel-palette .timetable-row:hover {
+        background-color: var(--surface);
+    }
+    body.travel-palette .timetable-row[aria-expanded='true']:hover {
+        background-color: var(--blue);
+    }
+    body.travel-palette .details-toggle:hover {
+        color: var(--ink);
+    }
+    body.travel-palette .planner-help button:hover {
+        text-decoration: underline;
+    }
+    body.travel-palette .view-switch button:hover {
+        background: transparent;
+        color: var(--teal);
+    }
+}
+body.travel-palette .details-toggle:active {
+    opacity: 0.65;
+}
+@media (prefers-reduced-motion: reduce) {
+    body.travel-palette .board-filter-trigger,
+    body.travel-palette
+        #journey-popover[data-kind^='board-filter-']
+        .board-filter-option {
+        transition: none;
+    }
+    body.travel-palette :is(.board-types button, .board-filter-toggle) {
+        transition: none;
+    }
+    body.travel-palette .departure-inline {
+        animation: none;
+    }
+    body.travel-palette .timetable-row,
+    body.travel-palette .timetable-row > svg {
+        transition: none;
+    }
+    body.travel-palette .leg-connection {
+        animation: none;
+    }
+    body.travel-palette
+        :is(
+            .route-disclosure,
+            .details-toggle svg,
+            .view-switch button::after
+        ) {
+        transition: none;
+    }
+}
+@media (max-width: 700px) {
+    body.travel-palette :is(.board-types button, .board-filter-toggle) {
+        gap: 4px;
+        padding-inline: 8px;
+    }
+}

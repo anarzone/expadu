@@ -1,0 +1,690 @@
+@import url('../connected/tokens.css');
+/* Concept B: one photographic surface, poster lettering and compact actions. */
+@font-face {
+    font-family: 'Festival Marker';
+    src: url('./fonts/PermanentMarker-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+body[data-page='events'] #main {
+    max-width: 1440px;
+    padding-top: 22px;
+}
+.events-page-heading {
+    margin-bottom: 18px;
+}
+.events-page-heading h1 {
+    font-size: clamp(var(--text-title), 2.6vw, var(--text-display-sm));
+    letter-spacing: -1px;
+    max-width: none;
+}
+#event-featured {
+    margin-bottom: 26px;
+}
+.festival-feature {
+    --festival-lavender: #d6b2ff;
+    --festival-yellow: #ffe363;
+    min-width: 0;
+}
+.festival-track {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    border-radius: var(--radius-xl);
+}
+.festival-track::-webkit-scrollbar,
+.festival-card-rail::-webkit-scrollbar {
+    display: none;
+}
+.festival-card {
+    --festival-lavender: #d6b2ff;
+    --festival-yellow: #ffe363;
+    min-width: 0;
+    position: relative;
+    isolation: isolate;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    color: white;
+    background: #13353b;
+    aspect-ratio: 4 / 5;
+    scroll-snap-align: start;
+}
+.festival-card--hero {
+    flex: 0 0 calc(100% - 68px);
+    aspect-ratio: auto;
+    height: clamp(430px, 42vw, 540px);
+}
+.festival-card svg,
+.festival-pagination svg,
+.festival-collection h2 svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.festival-open {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border-radius: inherit;
+    color: inherit;
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+}
+.festival-card .event-poster-image {
+    position: absolute;
+    inset: 0;
+    object-position: center;
+}
+.festival-card[data-event-card='kunst-machen'] .event-poster-image {
+    object-position: 63% center;
+}
+.festival-shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        180deg,
+        #0815211f 0%,
+        transparent 30%,
+        #07172755 48%,
+        #061525e8 100%
+    );
+}
+.festival-card--hero .festival-shade {
+    background:
+        linear-gradient(0deg, #041524e6 0%, #0615286b 36%, transparent 80%),
+        linear-gradient(90deg, #07152a78, transparent 75%);
+}
+.festival-category {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+    border-radius: var(--radius-xl);
+    font-size: var(--text-caption);
+    line-height: 1;
+    background: #0a202a8c;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+.festival-category svg {
+    width: 16px;
+    height: 16px;
+}
+.festival-story {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+    inset: auto 22px 24px;
+    pointer-events: none;
+}
+.festival-date {
+    display: inline-block;
+    padding: 5px 11px 6px;
+    background: var(--festival-yellow);
+    color: #171b28;
+    border-radius: var(--radius-sm);
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.4px;
+    transform: rotate(-4deg);
+    box-shadow: 0 3px 9px #10192d10;
+}
+.festival-title {
+    display: block;
+    max-width: 100%;
+    font-size: clamp(25px, 2.5vw, 34px);
+    line-height: 1.06;
+    letter-spacing: -0.9px;
+    font-weight: var(--weight-bold);
+    text-wrap: balance;
+    overflow-wrap: break-word;
+}
+.festival-card--hero .festival-story {
+    inset: auto 38px 34px;
+    gap: 22px;
+}
+.festival-card--hero .festival-date {
+    font-family: 'Festival Marker', Geist, sans-serif;
+    font-weight: var(--weight-regular);
+    font-size: clamp(22px, 2.5vw, 32px);
+    padding: 4px 14px 7px;
+    text-transform: uppercase;
+}
+.festival-card--hero .festival-title {
+    width: 100%;
+    font-family: 'Festival Marker', Geist, sans-serif;
+    font-weight: var(--weight-regular);
+    font-size: clamp(38px, 5.4vw, 74px);
+    line-height: 1.08;
+    letter-spacing: -1.8px;
+    max-width: 850px;
+    text-wrap: balance;
+    text-shadow: 0 2px 20px #06152724;
+    hyphens: auto;
+}
+.festival-track[data-dragging='true'] {
+    scroll-snap-type: none;
+    cursor: grabbing;
+}
+.festival-track .festival-open {
+    user-select: none;
+    -webkit-user-select: none;
+}
+.festival-track .event-poster-image {
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+.festival-card--hero[data-event-card='kunst-machen'] .festival-title {
+    max-width: 800px;
+    font-size: clamp(52px, 6.7vw, 94px);
+}
+.festival-title em {
+    display: block;
+    width: fit-content;
+    position: relative;
+    font-style: normal;
+    color: var(--festival-lavender);
+    padding-bottom: 9px;
+}
+.festival-title em::after {
+    content: '';
+    position: absolute;
+    left: 2%;
+    right: 3%;
+    bottom: 2px;
+    height: 7px;
+    background: currentColor;
+    opacity: 0.85;
+    transform: rotate(-2deg);
+    clip-path: polygon(0 60%, 25% 27%, 98% 0, 100% 46%, 51% 90%, 8% 100%);
+}
+.festival-facts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: calc(100% - 52px);
+    font-size: var(--text-small);
+    line-height: 1.35;
+    font-weight: var(--weight-medium);
+    color: #f5f7ff;
+}
+.festival-facts > span {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    min-width: 0;
+}
+.festival-facts svg {
+    width: 17px;
+    height: 17px;
+    margin-top: 1px;
+}
+.festival-card--hero .festival-facts {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    font-size: var(--text-body);
+}
+.festival-card--hero .festival-facts svg {
+    width: 20px;
+    height: 20px;
+    margin-top: 0;
+}
+.festival-save,
+.festival-plan {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-round);
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        transform 180ms ease,
+        background 180ms ease;
+}
+.festival-save {
+    top: 14px;
+    right: 14px;
+    background: rgb(255 255 255 / 44%);
+    color: #142131;
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    box-shadow:
+        inset 0 0 0 1px #ffffff38,
+        0 3px 12px #1024310a;
+}
+.festival-save[aria-pressed='true'] {
+    background: rgb(188 240 243 / 70%);
+    color: #164c5b;
+}
+.festival-save[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.festival-plan {
+    right: 18px;
+    bottom: 22px;
+    background: var(--action);
+    color: white;
+}
+.festival-card--hero .festival-plan {
+    width: 60px;
+    height: 60px;
+    right: 28px;
+    bottom: 28px;
+}
+.festival-card--hero .festival-save {
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+}
+.festival-card--hero .festival-plan svg {
+    width: 28px;
+    height: 28px;
+}
+.festival-save:active,
+.festival-plan:active {
+    transform: scale(0.94);
+}
+.festival-open:active .event-poster-image {
+    filter: brightness(0.93);
+}
+body[data-page='events'] #main .festival-open:focus-visible {
+    outline: 3px solid var(--cyan);
+    outline-offset: -5px;
+}
+body[data-page='events'] #main .festival-save:focus-visible,
+body[data-page='events'] #main .festival-plan:focus-visible {
+    outline: 2px solid white;
+    outline-offset: 3px;
+}
+.festival-caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 48px;
+}
+.festival-caption > span {
+    color: var(--muted);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+}
+.festival-pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.festival-position {
+    font-size: var(--text-micro);
+    min-width: 32px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+.festival-dots {
+    display: flex;
+}
+.festival-dots button {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 44px;
+    padding: 0;
+}
+.festival-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-sm);
+    background: #cbdade;
+    transition:
+        width 200ms ease,
+        background 200ms ease;
+}
+.festival-dots [aria-current='true'] span {
+    width: 18px;
+    background: #8050d3;
+}
+.festival-pagination > button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-round);
+    padding: 0;
+    color: var(--ink);
+}
+.festival-pagination > button:disabled {
+    opacity: 0.3;
+}
+.festival-pagination > button:not(:disabled):active {
+    background: var(--blue);
+}
+.festival-grid,
+.festival-card-rail {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+}
+.festival-card-rail {
+    /* As many columns as --festival-columns allows, but never narrower than
+       260px: narrow desktops get fewer columns without an extra breakpoint. */
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(
+            max(
+                260px,
+                calc(
+                    (100% - (var(--festival-columns, 3) - 1) * 22px) /
+                        var(--festival-columns, 3)
+                )
+            ),
+            1fr
+        )
+    );
+}
+.festival-card-rail .festival-card {
+    min-height: 380px;
+}
+.festival-card:not(.festival-card--hero) .festival-title {
+    hyphens: auto;
+}
+.festival-collection + .festival-collection {
+    margin-top: 36px;
+}
+.festival-collection h2 {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 16px;
+    font-size: var(--text-title);
+    font-weight: var(--weight-semibold);
+    letter-spacing: -0.6px;
+}
+.festival-collection h2 svg {
+    color: #8050d3;
+}
+.festival-credit {
+    margin: 22px 0 0;
+    color: var(--muted);
+    font-size: var(--text-caption);
+    line-height: 1.5;
+}
+.festival-credit a {
+    text-decoration: underline;
+}
+.event-browse-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 4px 0 16px;
+}
+.event-browse-heading h2 {
+    margin: 0;
+    font-size: var(--text-title);
+    font-weight: var(--weight-semibold);
+    letter-spacing: -0.6px;
+}
+.event-browse-heading .event-calendar {
+    margin: 0;
+}
+.event-calendar[data-open='true'],
+.events-popover {
+    z-index: 45;
+}
+.event-browse-heading #event-calendar-toggle {
+    font-size: var(--text-control);
+    padding: 0 12px;
+}
+.event-browse-heading #event-calendar-toggle > svg:first-child {
+    display: block;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .festival-card .event-poster-image {
+        transition:
+            transform 600ms cubic-bezier(0.2, 0.6, 0.3, 1),
+            filter 180ms ease;
+    }
+    .festival-open:hover .event-poster-image {
+        transform: scale(1.025);
+    }
+    .festival-save:hover {
+        transform: translateY(-2px);
+    }
+    .festival-save:not([aria-pressed='true']):hover {
+        background: rgb(255 255 255 / 52%);
+    }
+    .festival-plan:hover {
+        background: #ff4c0c;
+        transform: translateY(-2px);
+    }
+    .festival-pagination > button:not(:disabled):hover {
+        background: var(--blue);
+    }
+}
+@media (max-width: 999px) {
+    .festival-card--hero {
+        flex-basis: calc(100% - 44px);
+        height: 480px;
+    }
+    .festival-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+    .festival-card-rail {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        scroll-snap-type: x mandatory;
+        overscroll-behavior-x: contain;
+        border-radius: var(--radius-xl);
+    }
+    .festival-card-rail > .festival-card {
+        flex: 0 0 calc(50% - 24px);
+    }
+    .festival-card--hero .festival-story {
+        inset-inline: 26px;
+    }
+    .festival-card--hero .festival-title {
+        font-size: 44px;
+    }
+    .festival-card--hero[data-event-card='kunst-machen'] .festival-title {
+        font-size: 68px;
+    }
+}
+@media (max-width: 700px) {
+    body[data-page='events'] #main {
+        padding-top: 16px;
+    }
+    .events-page-heading {
+        margin-bottom: 14px;
+    }
+    .events-page-heading h1 {
+        font-size: var(--text-title);
+        line-height: 1.12;
+        max-width: 330px;
+        letter-spacing: -0.75px;
+    }
+    #event-featured {
+        margin-bottom: 16px;
+    }
+    .festival-track {
+        gap: 12px;
+        border-radius: var(--radius-xl);
+    }
+    .festival-card--hero {
+        flex-basis: calc(100% - 24px);
+        height: clamp(320px, calc(100svh - 270px), 446px);
+        border-radius: var(--radius-xl);
+    }
+    .festival-card--hero .festival-category {
+        top: 14px;
+        left: 14px;
+    }
+    .festival-card--hero .festival-save {
+        top: 12px;
+        right: 12px;
+        width: 44px;
+        height: 44px;
+    }
+    .festival-card--hero .festival-story {
+        inset: auto 20px 22px;
+        gap: 14px;
+    }
+    .festival-card--hero .festival-date {
+        font-size: 21px;
+        padding: 3px 10px 5px;
+    }
+    .festival-card--hero .festival-title {
+        font-size: 33px;
+        letter-spacing: -0.7px;
+    }
+    .festival-card--hero[data-event-card='kunst-machen'] .festival-title {
+        font-size: clamp(34px, 10.7vw, 55px);
+    }
+    .festival-title em {
+        padding-bottom: 6px;
+    }
+    .festival-title em::after {
+        height: 5px;
+        bottom: 0;
+    }
+    .festival-card--hero .festival-facts {
+        flex-direction: column;
+        gap: 7px;
+        font-size: var(--text-small);
+        width: calc(100% - 48px);
+    }
+    .festival-card--hero .festival-facts svg {
+        width: 18px;
+        height: 18px;
+    }
+    .festival-card--hero .festival-plan {
+        width: 50px;
+        height: 50px;
+        right: 16px;
+        bottom: 20px;
+    }
+    .festival-card--hero .festival-plan svg {
+        width: 25px;
+        height: 25px;
+    }
+    .festival-card--hero .festival-shade {
+        background: linear-gradient(
+            0deg,
+            #041524ef 0%,
+            #061528b0 35%,
+            #07152a18 67%,
+            transparent 80%
+        );
+    }
+    .festival-caption {
+        min-height: 46px;
+    }
+    .festival-caption > span {
+        max-width: 160px;
+        font-size: var(--text-micro);
+    }
+    .festival-position {
+        display: none;
+    }
+    .festival-pagination {
+        gap: 0;
+    }
+    .festival-pagination > button {
+        width: 36px;
+        height: 44px;
+    }
+    .festival-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    .festival-card-rail {
+        gap: 12px;
+    }
+    .festival-card-rail > .festival-card {
+        flex-basis: calc(100% - 28px);
+    }
+    .festival-card:not(.festival-card--hero) {
+        aspect-ratio: 4 / 5;
+        min-height: 360px;
+        max-height: 470px;
+    }
+    .festival-title {
+        font-size: 29px;
+    }
+    .festival-collection h2,
+    .event-browse-heading h2 {
+        font-size: var(--text-title-sm);
+    }
+    .festival-collection + .festival-collection {
+        margin-top: 28px;
+    }
+    .event-browse-heading {
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .event-browse-heading #event-calendar-toggle {
+        padding: 0 10px;
+        font-size: var(--text-small);
+    }
+    .festival-credit {
+        font-size: var(--text-micro);
+    }
+}
+@media (max-width: 359px) {
+    .events-page-heading h1 {
+        font-size: var(--text-title);
+    }
+    .festival-card--hero {
+        height: clamp(320px, calc(100svh - 270px), 430px);
+    }
+    .festival-card--hero .festival-story {
+        inset-inline: 16px;
+    }
+    .festival-card--hero .festival-title {
+        font-size: 29px;
+    }
+    .festival-caption > span {
+        max-width: 120px;
+    }
+    .festival-pagination > button {
+        width: 32px;
+    }
+    .festival-dots button {
+        width: 22px;
+    }
+    .festival-title {
+        font-size: 26px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .festival-card *,
+    .festival-pagination * {
+        transition: none !important;
+        animation: none !important;
+        scroll-behavior: auto;
+    }
+}

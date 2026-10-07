@@ -1,0 +1,96 @@
+(function (root) {
+    const J = root.BureaucracySituation,
+        D = root.BureaucracyDetails,
+        G = root.BureaucracyOrientation;
+    const E = (v) =>
+        String(v ?? '').replace(
+            /[&<>"']/g,
+            (c) =>
+                ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[c],
+        );
+    const I = (n) => root.ExpaduIcon(n);
+    const button = (label, action, icon = '', primary = false) =>
+        `<button type="button" class="${primary ? 'orientation-primary' : 'orientation-secondary'}" data-situation="${action}">${icon ? I(icon) : ''}${label}</button>`;
+    const shortDate = (value) =>
+        value
+            ? new Date(value).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+              })
+            : 'Not checked yet';
+    function facts(s, compact = false) {
+        const r = G.hydrate(s).details,
+            j = J.state(s);
+        const keys = compact
+            ? J.core
+            : [...new Set([...J.questions(s), ...j.review])];
+        return `<div class="situation-facts">${keys
+            .map((key) => {
+                const f = D.field(key),
+                    fact = r.facts[key],
+                    review = j.review.includes(key);
+                return `<div class="situation-fact ${review ? 'needs-review' : ''}"><button type="button" data-situation-edit="${key}"><span class="situation-symbol">${I(f.icon)}</span><span><small>${E(f.label)}</small><strong>${E(D.label(key, fact?.value))}</strong></span>${I(fact ? 'pencil' : 'plus')}</button>${review ? `<div class="situation-fact-review"><span>Check after your change</span>${fact ? `<button type="button" data-situation-keep="${key}">Still correct</button>` : ''}</div>` : ''}</div>`;
+            })
+            .join('')}</div>`;
+    }
+    function intro() {
+        return `<section class="situation-welcome"><div class="situation-welcome-copy"><span class="situation-emblem">${I('document')}</span><h2>A little clarity.<br>One step at a time.</h2><p>Find your next steps, keep documents together and remember important dates.</p><div class="situation-benefits"><span>${I('arrow')}Next steps</span><span>${I('document')}Documents</span><span>${I('calendar')}Dates</span></div></div><div class="situation-start"><p>A few questions to find your starting point. Skip anything you’re unsure about.</p>${button('Get started', 'start', 'arrow', true)}${button('Browse first', 'browse', 'grid')}${button('Start in Composer', 'composer-start', 'chat')}</div></section>`;
+    }
+    function summary(s) {
+        const j = J.state(s),
+            status = J.status(s);
+        return `<section class="situation-summary"><div class="situation-section-head"><div><h2>Your situation</h2><p>${j.lastChecked ? 'Last checked ' + shortDate(j.lastChecked) : 'A starting point, at your pace.'}</p></div><span class="situation-status ${status}">${I(status === 'review' ? 'info' : status === 'current' ? 'check' : 'document')}${{ review: 'Needs review', incomplete: 'Some details missing', check: 'Time to check', current: 'Answers checked' }[status]}</span></div>${j.notice ? `<p class="situation-notice" role="status">${I('check')}${E(j.notice)}</p>` : ''}${status === 'check' ? `<div class="situation-checkin"><strong>Anything changed since your last visit?</strong><p>Work, home, residence or family — a quick check keeps this useful.</p><div>${button('Nothing changed', 'unchanged', 'check')}${button('Something changed', 'changes', 'pencil')}</div></div>` : ''}${facts(s)}<div class="situation-summary-actions">${status !== 'check' ? button('Something changed', 'changes', 'pencil') : ''}${J.questions(s).some((k) => !G.hydrate(s).details.facts[k]) ? button('Continue questions', 'start', 'arrow') : ''}</div>${j.review.length ? `<p class="situation-note">${I('info')}Your previous answers are kept until you confirm an update. Your tracked tasks may also need a review.</p>` : ''}${j.changes.length ? `<details class="situation-history"><summary>${I('clock')}Reported changes ${I('down')}</summary>${j.changes.map((c) => `<div><strong>${I(J.changes[c.kind].icon)}${E(J.changes[c.kind].label)}</strong><small>${c.effectiveFrom ? 'From ' + shortDate(c.effectiveFrom) : 'Reported ' + shortDate(c.reportedAt)}</small></div>`).join('')}</details>` : ''}${root.BureaucracyDetailsUI.history(G.hydrate(s).details)}</section>`;
+    }
+    function topics(s) {
+        const items = [
+            ['address', 'pin', 2],
+            ['health', 'health', 3],
+            ['bank', 'bank', 4],
+            ['blue-card', 'document', 0],
+        ];
+        return `<section class="situation-topics"><div class="situation-section-head"><div><h2>Explore a topic</h2><p>Choose what you want to keep track of.</p></div></div><div class="situation-topic-grid">${items.map(([id, icon, index]) => `<article><span class="situation-symbol">${I(icon)}</span><strong>${E({ address: 'Address registration', health: 'Health insurance', bank: 'Bank account', 'blue-card': 'EU Blue Card' }[id])}</strong><div><a href="${E(root.BureaucracySource[index].source)}" target="_blank" rel="noopener">Official information ${I('arrow')}</a><button type="button" data-situation-topic="${id}" ${s.tracked?.includes(id) ? 'disabled' : ''}>${I(s.tracked?.includes(id) ? 'check' : 'plus')}${s.tracked?.includes(id) ? 'Tracking' : 'Track task'}</button></div></article>`).join('')}</div><p class="situation-note">Sample catalogue · current guidance needs checking. Exploring a topic does not mean it applies to you.</p></section>`;
+    }
+    function page(s) {
+        return G.hydrate(s).started ? summary(s) : intro();
+    }
+    function guide(s) {
+        const j = J.state(s),
+            r = G.hydrate(s).details;
+        if (j.stage === 'question')
+            return `<div class="situation-progress"><span>${j.origin === 'starter' ? 'Your starting point' : 'Review an answer'}</span>${j.origin === 'starter' ? `<span>${Math.min(j.batch + 1, 3)} of 3</span>` : ''}</div>${root.BureaucracyDetailsUI.markup(
+                r,
+                'You',
+                { bodyOnly: true, initial: j.origin === 'starter' },
+            )}`;
+        if (j.stage === 'checkpoint')
+            return `<span class="situation-emblem small">${I('check')}</span><h2>A starting point for you.</h2><p class="orientation-intro">Here’s what you’ve shared. You can use the page now and add more when you need to.</p>${facts(s, true)}<div class="orientation-actions">${J.questions(s).some((k) => !r.facts[k]) ? button('Continue with details', 'start', '') : ''}${button('See my overview', 'overview', 'arrow', true)}</div><p class="situation-note">Your answers help choose the next questions. They do not establish eligibility.</p>`;
+        if (j.stage === 'change-picker')
+            return `<h2>What’s changed?</h2><p class="orientation-intro">Choose one to review. Your saved answers stay as they are until you confirm.</p><div class="situation-change-grid">${Object.entries(
+                J.changes,
+            )
+                .map(
+                    ([key, c]) =>
+                        `<button type="button" data-situation-change="${key}"><span class="situation-symbol">${I(c.icon)}</span><span><small>${c.group}</small><strong>${c.label}</strong></span>${I('arrow')}</button>`,
+                )
+                .join(
+                    '',
+                )}</div><div class="orientation-actions">${button('Back to my situation', 'summary', 'back')}</div>`;
+        if (j.stage === 'change-review') {
+            const draft = j.changeDraft,
+                c = J.changes[draft.kind];
+            return `<h2>Record this change?</h2><p class="orientation-intro">Your existing answers stay available for review.</p><div class="situation-change-card">${I(c.icon)}<div><small>${E(c.group)}</small><strong>${E(c.label)}</strong></div></div><label class="details-date">When did this happen? <small>Optional</small><input type="date" data-situation-date value="${E(draft.effectiveFrom || '')}"></label><p class="situation-note">After confirmation, we’ll highlight related answers for you to check. No permit status or task will change automatically.</p><div class="orientation-actions">${button('Cancel', 'cancel-change')}${button('Confirm change', 'confirm-change', 'check', true)}</div>`;
+        }
+        return (
+            summary(s) +
+            `<div class="orientation-actions">${button('Back to overview', 'overview', 'back')}</div>`
+        );
+    }
+    root.BureaucracySituationUI = { page, guide, topics };
+})(globalThis);

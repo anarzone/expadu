@@ -1,0 +1,137 @@
+/* Place ideas remain useful with or without a photograph. */
+.today-c .slide-card .place-suggestion {
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 64px;
+    background: white;
+    color: var(--ink);
+    text-align: left;
+}
+.today-c .place-suggestion > .suggestion-photo {
+    position: static;
+    flex: 0 0 44%;
+    height: 44%;
+    width: 100%;
+    min-height: 0;
+    object-fit: cover;
+}
+.suggestion-copy {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 9px;
+    padding: 18px 24px 4px;
+}
+.suggestion-kind,
+.suggestion-area {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--muted);
+}
+.suggestion-kind svg,
+.suggestion-area svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+}
+.suggestion-copy > strong {
+    font-size: clamp(22px, 2.6vw, 34px);
+    line-height: 1.12;
+    letter-spacing: -0.7px;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+.suggestion-fact,
+.suggestion-check {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--muted);
+}
+.today-c .place-suggestion.without-photo {
+    background: #e4f3f6;
+}
+.without-photo .suggestion-copy {
+    padding-top: 60px;
+}
+.without-photo .suggestion-kind {
+    color: var(--ink);
+    margin-bottom: 12px;
+}
+.without-photo .suggestion-kind svg {
+    width: 32px;
+    height: 32px;
+}
+.today-c .place-suggestion ~ .slide-plan {
+    color: var(--action);
+}
+.today-c .place-suggestion ~ .slide-keep {
+    color: var(--ink);
+    background: rgb(255 255 255 / 92%);
+    border-radius: 50%;
+}
+.today-c .place-suggestion ~ .slide-keep::before {
+    display: none;
+}
+.today-c .place-suggestion ~ .slide-keep svg {
+    filter: none;
+}
+.today-c .place-suggestion:focus-visible {
+    outline: 2px solid var(--shell-focus);
+    outline-offset: -3px;
+}
+@media (max-width: 650px) {
+    .today-c .slide-card .place-suggestion {
+        padding-bottom: 52px;
+    }
+    .today-c .place-suggestion > .suggestion-photo {
+        height: 78px;
+        flex-basis: 78px;
+    }
+    .suggestion-copy {
+        gap: 5px;
+        padding: 10px 14px 0;
+    }
+    .suggestion-copy > strong {
+        font-size: clamp(15px, 4.3vw, 17px);
+        letter-spacing: -0.4px;
+    }
+    .suggestion-kind,
+    .suggestion-area {
+        font-size: 11px;
+        gap: 5px;
+    }
+    .suggestion-kind svg,
+    .suggestion-area svg {
+        width: 14px;
+        height: 14px;
+    }
+    .with-photo .suggestion-check {
+        display: none;
+    }
+    .without-photo .suggestion-copy {
+        padding-top: 42px;
+        justify-content: flex-start;
+    }
+    .without-photo .suggestion-kind {
+        margin-bottom: 3px;
+    }
+    .without-photo .suggestion-kind svg {
+        width: 20px;
+        height: 20px;
+    }
+    .suggestion-fact,
+    .suggestion-check {
+        font-size: 11px;
+    }
+    .today-c .place-suggestion ~ .slide-keep {
+        top: 4px;
+        right: 5px;
+    }
+}

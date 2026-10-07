@@ -1,0 +1,15 @@
+/* Shared dimensions for Places and Events discovery controls. */
+body[data-page='places'],
+body[data-page='events'] {
+    --discovery-target: 44px;
+    --discovery-icon: 20px;
+    --discovery-label: 12px;
+    --discovery-field-text: 16px;
+    --discovery-menu-width: 320px;
+}
+@media (min-width: 1000px) {
+    body[data-page='places'],
+    body[data-page='events'] {
+        --discovery-label: 13px;
+    }
+}

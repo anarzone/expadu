@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <base href="../" />
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Expadu — Your daily brief</title>
+        <link rel="stylesheet" href="../connected/style.css" />
+        <link rel="stylesheet" href="../connected/discovery.css" />
+        <link rel="stylesheet" href="../connected/place-sheet.css" />
+        <link rel="stylesheet" href="../events-next/event-sheet.css" />
+        <link rel="stylesheet" href="../events-next/posters.css" />
+        <link rel="stylesheet" href="../connected/date-control.css" />
+        <link rel="stylesheet" href="../connected/time-control.css" />
+        <link rel="stylesheet" href="../connected/motion.css" />
+        <link rel="stylesheet" href="../today-c/composer-controls.css" />
+        <link rel="stylesheet" href="../connected/composer-entry.css" />
+        <link rel="stylesheet" href="./style.css?v=419bacd2c080" />
+        <link rel="stylesheet" href="./brief/style.css?v=1" />
+        <script defer src="../connected/motion.js"></script>
+        <script defer src="../connected/model.js"></script>
+        <script defer src="./tests/fixtures/memory.js"></script>
+        <script defer src="../connected/store.js?v=3078f6a2275c"></script>
+        <script defer src="../connected/icons.js"></script>
+        <script defer src="../connected/ui.js"></script>
+        <script defer src="../events-next/event-model.js"></script>
+        <script defer src="../events-next/posters.js"></script>
+        <script defer src="../events-next/festival.js"></script>
+        <script defer src="../connected/handoffs.js?v=22a268356e84"></script>
+        <script defer src="../connected/day-actions.js?v=0b96c92b87af"></script>
+        <script defer src="../connected/day-swipe.js"></script>
+        <script defer src="../connected/visit-timeline.js"></script>
+        <script defer src="../connected/date-control.js"></script>
+        <script defer src="../composer-studio/wheel-motion.js"></script>
+        <script defer src="../connected/time-control.js"></script>
+        <script defer src="../departures-next/journeys.js"></script>
+        <script defer src="../connected/journey-preview.js"></script>
+        <script defer src="../connected/planning-ui.js"></script>
+        <script defer src="../connected/place-sheet.js"></script>
+        <script defer src="../events-next/event-sheet.js?v=6d69886831be"></script>
+        <script defer src="../connected/composer-entry.js"></script>
+        <script defer src="../today-c/composer-controls.js"></script>
+        <script defer src="./icons.js"></script>
+        <script defer src="./model.js"></script>
+        <script defer src="./continuity.js?v=340ec4f1bbab"></script>
+        <script defer src="./brief/presentation.js?v=1"></script>
+        <script defer src="./brief/app.js?v=1"></script>
+        <script>
+            window.addEventListener('load', () => {
+                const links = document.querySelectorAll(
+                    'a[href^="tests/fixtures/continuity.html"]',
+                );
+                links.forEach((link) => {
+                    link.href = link
+                        .getAttribute('href')
+                        .replace(
+                            'tests/fixtures/continuity.html',
+                            'brief/test.html',
+                        );
+                });
+            });
+        </script>
+    </head>
+    <body class="today-next today-brief" data-page="today">
+        <a href="#main" class="skip-link">Skip to your day</a>
+        <div id="page-scroll">
+            <div class="review-bar" hidden>
+                <span>Preview</span>
+                <label
+                    ><span class="sr-only">Sample scenario</span
+                    ><select id="scenario">
+                        <option value="everyday">Everyday</option>
+                        <option value="quiet">Quiet day</option>
+                        <option value="busy">Busy day</option>
+                        <option value="delay">Route delay</option>
+                        <option value="event">Important event</option>
+                        <option value="competing">Delay + event</option>
+                        <option value="unavailable">Travel unavailable</option>
+                    </select></label
+                >
+            </div>
+            <div id="shell"></div>
+            <main id="main" tabindex="-1"></main>
+            <footer class="preview-foot">
+                <span>Sample data · AI event illustrations</span>
+                <a href="./">Previous layout</a>
+            </footer>
+        </div>
+        <noscript
+            >This interactive preview needs JavaScript.
+            <a
+                href="../connected/concepts/today-modern-2026-09-30/comparison.html"
+                >View the design boards</a
+            >.</noscript
+        >
+    </body>
+</html>

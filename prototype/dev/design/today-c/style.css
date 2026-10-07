@@ -1,0 +1,964 @@
+/* C combines the selected A structure with B's discovery and composing surfaces. */
+:root {
+    --ink: #211d15;
+    --muted: #526e78;
+    --paper: #f6fafb;
+    --line: #d4e2e7;
+    --cyan: #05badd;
+    --orange: #ff3902;
+    --action: #d9340a;
+}
+body {
+    background: var(--paper);
+}
+.preview-bar {
+    background: #eaf3f5;
+    color: #506f79;
+    height: 30px;
+}
+.preview-bar > div {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+.preview-bar a {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+}
+.app-header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    max-width: 1240px;
+    padding: 20px 32px 14px;
+    gap: 20px;
+}
+.brand {
+    font-size: 29px;
+    letter-spacing: -1px;
+    justify-self: start;
+}
+.brand > svg {
+    width: 40px;
+    height: 35px;
+}
+.header-actions {
+    justify-self: end;
+    gap: 20px;
+}
+.account-button {
+    display: block;
+    width: 43px;
+    height: 43px;
+    background: transparent;
+    border: 1px solid #c7dce4;
+    color: #3c6472;
+    font-size: 14px;
+}
+.day-button {
+    font-size: 14px;
+    color: #3d535b;
+    gap: 8px;
+}
+.location-button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 16px;
+    min-height: 44px;
+    border: 1px solid #c9dfe7;
+    border-radius: 11px;
+    color: #24778a;
+    font-size: 14px;
+    justify-self: center;
+}
+.location-button svg {
+    width: 19px;
+    height: 19px;
+}
+.location-button > span:last-child svg {
+    width: 13px;
+    height: 13px;
+}
+.location-button:hover {
+    background: #eaf4f7;
+}
+.page {
+    max-width: 1176px;
+    margin: 0 auto;
+    padding-top: 12px;
+    padding-bottom: calc(var(--tray-height) + 35px);
+}
+.welcome-row {
+    margin: 6px 0 17px;
+    gap: 28px;
+}
+.welcome-copy > p {
+    font-size: 13px;
+    color: #617c85;
+    margin-bottom: 9px;
+}
+.welcome-copy h1 {
+    font-size: 39px;
+    line-height: 1.12;
+    letter-spacing: -1.5px;
+    font-weight: 600;
+}
+.weather-button {
+    gap: 13px;
+    padding: 9px 0;
+    flex-direction: row;
+}
+.weather-button strong {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+}
+.weather-button small {
+    display: block;
+    font-size: 12px;
+    color: #67838b;
+}
+.weather-sun svg {
+    width: 36px;
+    height: 36px;
+    color: #a57b19;
+}
+.service-nav {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    padding: 0 0 15px;
+    border-bottom: 1px solid #c9dfe6;
+    margin-bottom: 22px;
+}
+.service-nav button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    border-radius: 13px;
+    padding: 12px 8px 10px;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+.service-nav button > span {
+    display: grid;
+    place-items: center;
+}
+.service-nav svg {
+    width: 25px;
+    height: 25px;
+    stroke-width: 1.7;
+}
+.service-nav strong {
+    font-size: 14px;
+    font-weight: 600;
+}
+.service-nav button:nth-child(1) > span {
+    color: #26665d;
+}
+.service-nav button:nth-child(2) > span {
+    color: #aa421b;
+}
+.service-nav button:nth-child(3) > span {
+    color: #91631e;
+}
+.service-nav button:nth-child(4) > span {
+    color: #16718b;
+}
+.service-nav button:nth-child(5) > span {
+    color: #4c6884;
+}
+.service-nav button:hover {
+    background: #fff;
+    box-shadow: 0 2px 10px #19374506;
+}
+.service-nav button:active {
+    background: #def4f9;
+}
+.section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 14px;
+}
+.section-heading h2 {
+    font-size: 23px;
+    letter-spacing: -0.65px;
+    line-height: 1.2;
+    font-weight: 600;
+}
+.section-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    margin-right: 7px;
+    flex-shrink: 0;
+}
+.clarity {
+    margin-bottom: 24px;
+}
+.clarity-panel {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    background: #fff;
+    border: 1px solid #cfdee4;
+    border-radius: 21px;
+    overflow: hidden;
+}
+.clarity-item {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 22px 12px;
+    min-width: 0;
+}
+.clarity-item + .clarity-item {
+    border-left: 1px solid #e1e8eb;
+}
+.clarity-item h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #3f6573;
+    margin-bottom: 12px;
+}
+.clarity-item h3 svg {
+    width: 23px;
+    height: 23px;
+}
+.paperwork h3 svg {
+    color: #956424;
+}
+.connections h3 svg {
+    color: #2c6a7a;
+}
+.forecast h3 svg {
+    color: #97731d;
+}
+.clarity-context {
+    font-size: 12px;
+    color: #526e78;
+    margin: -4px 0 10px;
+    line-height: 1.35;
+}
+.route-form label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 9px;
+}
+.route-form input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1px solid #b7cfd8;
+    border-radius: 12px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 16px;
+}
+.route-form input:focus-visible {
+    outline: 2px solid #126c80;
+    outline-offset: 2px;
+}
+.route-form input[aria-invalid='true'] {
+    border-color: #ac3216;
+}
+.route-error {
+    margin-top: 10px;
+    color: #ac3216;
+    font-size: 13px;
+    line-height: 1.4;
+}
+.clarity-data {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 12px;
+}
+.clarity-data strong {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.18;
+    letter-spacing: -0.55px;
+}
+.clarity-data > span {
+    font-size: 12px;
+    color: #627982;
+    line-height: 1.4;
+}
+.clarity-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 9px;
+    width: 100%;
+    margin-top: auto;
+    border-top: 1px solid #e7edef;
+    min-height: 44px;
+    padding: 10px 0 3px;
+    text-align: left;
+    font-size: 14px;
+    color: #2d7283;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        color 220ms ease,
+        background-color 220ms ease,
+        transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.clarity-action svg {
+    width: 17px;
+    height: 17px;
+    color: var(--action);
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.clarity-action:focus-visible {
+    color: var(--action);
+    outline: 2px solid var(--action);
+    outline-offset: -3px;
+}
+.clarity-action:focus-visible svg {
+    transform: translateX(3px);
+}
+.clarity-action:active {
+    transform: scale(0.96);
+}
+@media (hover: hover) and (pointer: fine) {
+    .clarity-action:hover {
+        color: var(--action);
+    }
+    .clarity-action:hover svg {
+        transform: translateX(3px);
+    }
+}
+.clarity-item > small {
+    font-size: 11px;
+    line-height: 1.4;
+    color: #607984;
+    margin-top: 4px;
+}
+#saved-strip {
+    background: #e4f5f9;
+    border-color: #c6e1e9;
+    padding: 11px 18px;
+    margin-bottom: 26px;
+}
+#saved-strip strong {
+    font-size: 15px;
+}
+.journey-card {
+    background: #fff;
+    box-shadow:
+        inset 0 0 0 1px var(--line),
+        inset 5px 0 0 var(--cyan);
+}
+.journey-content {
+    display: flex !important;
+    flex-direction: column;
+}
+.journey-content .card-topline {
+    width: 100%;
+    color: #285765;
+    font-size: 12px;
+}
+.journey-content .card-topline > span:first-child > span {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--cyan);
+    color: #193e48;
+}
+.journey-content .setup-title {
+    margin: 8px 0 10px;
+}
+.journey-content .ticket-footer {
+    width: 100%;
+    margin-top: auto;
+    font-size: 12px;
+    border-color: #b8d7de;
+    color: #285765;
+}
+.board-card .card-footline {
+    font-size: 13px;
+}
+@media (max-width: 760px) {
+    .board-card .card-footline {
+        font-size: 12px;
+    }
+}
+.page-footer {
+    margin-top: 14px;
+}
+.photo-credits {
+    font-size: 10px;
+    color: #607982;
+    gap: 5px 12px;
+    line-height: 1.5;
+}
+.composer-tray {
+    max-width: 850px;
+    border-radius: 22px;
+    padding: 9px;
+    background: #f1f8fa;
+    border: 1px solid #bfdce3;
+    box-shadow:
+        0 8px 28px #163e4324,
+        inset 0 1px 0 #ffffffb3;
+}
+.composer-form {
+    gap: 13px;
+}
+.composer-label {
+    padding-left: 9px;
+    gap: 8px;
+    color: #214a56;
+}
+.composer-label svg {
+    color: #067e98;
+}
+/* Transparency belongs to the surround, never the controls or their text. */
+@supports (
+    (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))
+) {
+    .composer-tray {
+        background: rgb(245 251 252 / 68%);
+        -webkit-backdrop-filter: blur(20px) saturate(1.2);
+        backdrop-filter: blur(20px) saturate(1.2);
+    }
+}
+@media (prefers-reduced-transparency: reduce) {
+    .composer-tray {
+        background: #f1f8fa;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+}
+.composer-entry {
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 0 0 1px #23495514;
+}
+.compose-button {
+    background: var(--action);
+}
+.composer-workspace,
+.detail-sheet {
+    background: #f8fbfc;
+}
+.request-echo {
+    background: #e0f4f9;
+}
+.workspace-header,
+.refine-form {
+    background: #fff;
+}
+@media (max-width: 1240px) {
+    .page {
+        margin-inline: 32px;
+    }
+    .welcome-copy h1 {
+        font-size: 37px;
+    }
+    .clarity-data strong {
+        font-size: 20px;
+    }
+}
+@media (max-width: 1000px) {
+    .app-header {
+        padding-block: 18px 12px;
+    }
+    .page {
+        padding-top: 12px;
+    }
+    .welcome-copy h1 {
+        font-size: 33px;
+    }
+    .clarity-item {
+        padding: 16px 17px 12px;
+    }
+    .clarity-item h3 {
+        font-size: 13px;
+        gap: 7px;
+    }
+    .clarity-data strong {
+        font-size: 20px;
+    }
+    .clarity-action {
+        font-size: 13px;
+    }
+}
+@media (max-width: 760px) {
+    .app-header {
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        padding: 17px 20px 12px;
+    }
+    .brand {
+        font-size: 25px;
+    }
+    .brand > svg {
+        width: 35px;
+        height: 31px;
+    }
+    .header-actions {
+        gap: 13px;
+    }
+    .day-button {
+        font-size: 12px;
+    }
+    .account-button {
+        width: 37px;
+        height: 37px;
+        font-size: 12px;
+    }
+    .location-button {
+        grid-row: 2;
+        grid-column: 1/-1;
+        min-height: 38px;
+        padding: 7px 11px;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+    .location-button svg {
+        width: 16px;
+        height: 16px;
+    }
+    .page {
+        margin-inline: 20px;
+        padding-top: 9px;
+    }
+    .welcome-row {
+        margin: 8px 0 15px;
+        gap: 12px;
+    }
+    .welcome-copy h1 {
+        font-size: 30px;
+        max-width: 290px;
+        letter-spacing: -1px;
+        line-height: 1.13;
+    }
+    .welcome-copy > p {
+        font-size: 11px;
+        margin-bottom: 7px;
+    }
+    .weather-button {
+        flex-direction: column;
+        gap: 4px;
+        min-width: 58px;
+        text-align: center;
+    }
+    .weather-button strong {
+        font-size: 12px;
+        letter-spacing: 0;
+    }
+    .weather-button small {
+        font-size: 11px;
+        margin-top: 3px;
+    }
+    .weather-sun svg {
+        width: 29px;
+        height: 29px;
+    }
+    .service-nav {
+        gap: 3px;
+        padding: 0 0 13px;
+        margin-bottom: 23px;
+    }
+    .service-nav button {
+        gap: 9px;
+        padding: 13px 0 10px;
+        border-radius: 10px;
+    }
+    .service-nav svg {
+        width: 23px;
+        height: 23px;
+    }
+    .service-nav {
+        grid-template-columns: repeat(5, max-content);
+        justify-content: space-between;
+        gap: 4px;
+    }
+    .service-nav button {
+        min-width: 44px;
+    }
+    .service-nav strong {
+        font-size: 12px;
+        line-height: 1.3;
+        font-weight: 500;
+    }
+    .section-heading {
+        margin-bottom: 14px;
+        gap: 12px;
+    }
+    .section-heading h2 {
+        font-size: 21px;
+        letter-spacing: -0.6px;
+    }
+    .section-dot {
+        width: 5px;
+        height: 5px;
+    }
+    .clarity {
+        margin-bottom: 27px;
+    }
+    .clarity-panel {
+        grid-template-columns: 1fr;
+        border-radius: 18px;
+    }
+    .clarity-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        column-gap: 12px;
+        padding: 16px 18px 14px;
+        min-height: 0;
+    }
+    .clarity-item + .clarity-item {
+        border-left: 0;
+        border-top: 1px solid #dfe8ec;
+    }
+    .clarity-item h3 {
+        grid-column: 1/-1;
+        font-size: 12px;
+        margin-bottom: 9px;
+        gap: 8px;
+    }
+    .clarity-item h3 svg {
+        width: 19px;
+        height: 19px;
+    }
+    .clarity-data {
+        margin: 0;
+        gap: 5px;
+    }
+    .clarity-data strong {
+        font-size: 18px;
+        letter-spacing: -0.4px;
+    }
+    .clarity-data > span {
+        font-size: 11px;
+    }
+    .clarity-action {
+        width: 44px;
+        min-height: 44px;
+        border: 0;
+        margin: 0;
+        align-self: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--orange) 7%, white);
+        font-size: 0;
+        padding: 11px;
+    }
+    .clarity-action svg {
+        width: 19px;
+        height: 19px;
+    }
+    .clarity-action:is(:focus-visible, :active) {
+        background: color-mix(in srgb, var(--orange) 15%, white);
+    }
+    @media (hover: hover) and (pointer: fine) {
+        .clarity-action:hover {
+            background: color-mix(in srgb, var(--orange) 15%, white);
+        }
+    }
+    .clarity-context {
+        grid-column: 1/-1;
+        margin-top: -2px;
+        margin-bottom: 10px;
+    }
+    .clarity-item > small {
+        grid-column: 1/-1;
+        font-size: 11px;
+        margin-top: 9px;
+    }
+    .composer-label {
+        padding-left: 2px;
+    }
+    .composer-label > span:last-child {
+        display: none;
+    }
+    .composer-form {
+        gap: 7px;
+    }
+    .composer-tray {
+        width: calc(100% - 24px);
+        padding: 8px;
+        border-radius: 19px;
+    }
+    .composer-entry {
+        padding-left: 10px;
+    }
+    .photo-credits {
+        font-size: 11px;
+    }
+    #saved-strip {
+        padding: 11px 14px;
+        margin-bottom: 24px;
+    }
+    #saved-strip strong {
+        font-size: 13px;
+    }
+}
+@media (max-width: 380px) {
+    .app-header {
+        padding-inline: 16px;
+    }
+    .page {
+        margin-inline: 16px;
+    }
+    .brand {
+        font-size: 23px;
+    }
+    .brand > svg {
+        width: 32px;
+    }
+    .header-actions {
+        gap: 9px;
+    }
+    .day-button > span:nth-child(2) {
+        display: none;
+    }
+    .welcome-copy h1 {
+        font-size: 27px;
+        letter-spacing: -0.8px;
+    }
+    .welcome-copy > p {
+        font-size: 10px;
+    }
+    .weather-button {
+        min-width: 48px;
+    }
+    .service-nav {
+        margin-inline: -16px;
+        padding-inline: 7px;
+        gap: 4px;
+    }
+    .service-nav svg {
+        width: 22px;
+        height: 22px;
+    }
+    .clarity-item {
+        padding: 14px 15px;
+    }
+    .clarity-data strong {
+        font-size: 17px;
+    }
+    .section-heading h2 {
+        font-size: 19px;
+    }
+    .preview-bar {
+        padding-inline: 16px;
+        font-size: 8px;
+        gap: 8px;
+    }
+    .preview-bar > div {
+        gap: 9px;
+    }
+    .preview-bar a {
+        font-size: 8px;
+    }
+    .preview-bar > span {
+        gap: 5px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .service-nav button,
+    .clarity-action,
+    .clarity-action svg {
+        transition: none;
+    }
+    .clarity-action:is(:hover, :focus-visible, :active),
+    .clarity-action:is(:hover, :focus-visible) svg {
+        transform: none;
+    }
+}
+/* Populated overview uses the same explicit demo figures as the selected reference. */
+.clarity-item {
+    min-height: 205px;
+}
+.clarity-item h3 > svg {
+    flex-shrink: 0;
+}
+.clarity-data {
+    min-height: 70px;
+}
+.c-progress {
+    display: flex;
+    gap: 7px;
+    margin-top: 7px;
+}
+.c-progress > span {
+    height: 6px;
+    flex: 1;
+    background: #e8f0f3;
+    border-radius: 6px;
+}
+.c-progress > .done {
+    background: #ff3902;
+}
+.c-departure {
+    display: flex;
+    gap: 11px;
+    align-items: center;
+    min-width: 0;
+}
+.c-departure + .c-departure {
+    margin-top: 5px;
+}
+.c-line {
+    display: grid;
+    place-items: center;
+    width: 27px;
+    height: 27px;
+    background: var(--cyan);
+    color: #235363;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.c-departure:nth-child(2) .c-line {
+    background: #eaf1f7;
+    color: #426579;
+}
+.c-departure > span:nth-child(2) {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    color: #3c6170;
+}
+.c-departure > strong {
+    font-size: 25px;
+    font-weight: 600;
+    color: #294f5c;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+}
+.c-departure strong small {
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+}
+.c-forecast {
+    display: flex;
+    justify-content: space-around;
+    gap: 15px;
+    width: 100%;
+}
+.c-forecast > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+.c-forecast > div > span {
+    font-size: 12px;
+    color: #647f89;
+}
+.c-forecast svg {
+    height: 23px;
+    width: 23px;
+    color: #a47b19;
+}
+.c-forecast strong {
+    font-size: 25px;
+    font-weight: 600;
+    color: #2b5260;
+}
+.c-departures-sheet .c-departure {
+    padding: 16px 0;
+}
+.c-departures-sheet .c-departure + .c-departure {
+    border-top: 1px solid var(--line);
+}
+.weather-button strong {
+    font-size: 29px;
+}
+.weather-button small {
+    font-size: 12px;
+}
+@media (max-width: 1000px) {
+    .clarity-data > strong {
+        font-size: 20px;
+    }
+    .c-departure {
+        gap: 7px;
+    }
+    .c-departure > span:nth-child(2) {
+        font-size: 13px;
+    }
+}
+@media (max-width: 760px) {
+    .clarity-item {
+        min-height: 0;
+    }
+    .clarity-data {
+        min-height: 0;
+        gap: 7px;
+    }
+    .clarity-item.forecast .clarity-data {
+        min-width: 0;
+    }
+    .clarity-data > strong {
+        font-size: 19px;
+    }
+    .c-departure > span:nth-child(2) {
+        font-size: 13px;
+    }
+    .c-departure > strong {
+        font-size: 20px;
+    }
+    .c-line {
+        height: 24px;
+        width: 24px;
+        font-size: 10px;
+    }
+    .c-forecast {
+        gap: 9px;
+        justify-content: space-between;
+    }
+    .c-forecast > div > span {
+        font-size: 12px;
+    }
+    .c-forecast svg {
+        width: 21px;
+        height: 21px;
+    }
+    .c-forecast strong {
+        font-size: 21px;
+    }
+    .weather-button strong {
+        font-size: 24px;
+    }
+    .weather-button small {
+        font-size: 11px;
+    }
+    .c-progress {
+        margin-top: 4px;
+    }
+}
+@media (max-width: 380px) {
+    .clarity-data > strong {
+        font-size: 17px;
+    }
+    .c-departure > span:nth-child(2) {
+        font-size: 12px;
+    }
+    .c-forecast strong {
+        font-size: 19px;
+    }
+    .c-departure > strong {
+        font-size: 19px;
+    }
+}

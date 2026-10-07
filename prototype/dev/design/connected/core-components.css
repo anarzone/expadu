@@ -1,0 +1,196 @@
+/* Core components shared by the Today mock and the design guide: status pills,
+   the journey card and the outline/text actions. Loaded before each page's own
+   stylesheet so page-specific overrides keep working. Uses connected/tokens.css. */
+@import url('./tokens.css');
+.status-pill {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    background: var(--surface-inset);
+    color: var(--ink-soft);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-caption);
+    line-height: 1.5;
+    padding: 3px 9px;
+    font-weight: var(--weight-semibold);
+}
+.status-pill.warning {
+    color: #694207;
+    background: #ffe49a;
+}
+.status-pill.sample {
+    color: #68488e;
+    background: #efe7fb;
+}
+
+.route-summary {
+    width: 100%;
+    text-align: left;
+    display: block;
+    background: var(--blue);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    min-width: 0;
+}
+.route-summary:hover {
+    background: var(--cyan-hover);
+}
+.route-caption {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: var(--text-small);
+    margin-bottom: 9px;
+}
+.route-caption strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+}
+.route-caption .status-pill {
+    font-size: var(--text-micro);
+}
+.route-times {
+    display: grid;
+    grid-template-columns: 24px auto minmax(22px, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+.route-times > svg {
+    color: var(--teal);
+}
+.route-time {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+.route-time small {
+    font-size: var(--text-caption);
+    margin-bottom: 3px;
+}
+.route-time b {
+    font-size: var(--text-title);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.6px;
+}
+.route-time del {
+    color: var(--muted);
+    font-size: var(--text-caption);
+    margin: 2px 0;
+}
+.route-connector {
+    height: 1px;
+    background: var(--teal);
+    position: relative;
+    margin: 8px 3px 0;
+}
+.route-connector::before,
+.route-connector::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radius-round);
+    top: -2.5px;
+    background: var(--teal);
+}
+.route-connector::before {
+    left: 0;
+}
+.route-connector::after {
+    right: 0;
+}
+.route-connector i {
+    position: absolute;
+    right: 30%;
+    top: -3px;
+    width: 7px;
+    height: 7px;
+    border-right: 1.5px solid var(--teal);
+    border-top: 1.5px solid var(--teal);
+    transform: rotate(45deg);
+}
+.route-foot {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.route-foot strong {
+    font-weight: var(--weight-semibold);
+}
+.route-unknown {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 50px;
+}
+.route-unknown > svg {
+    color: var(--teal);
+}
+.route-unknown span {
+    display: grid;
+    gap: 3px;
+}
+.route-unknown small {
+    font-size: var(--text-caption);
+}
+.recovery-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 12px;
+    padding-top: 12px;
+    position: relative;
+}
+.recovery-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--line), transparent);
+}
+.outline-action {
+    min-height: 44px;
+    padding: 8px 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid var(--action);
+    border-radius: var(--radius-xl);
+    color: var(--action-ink);
+    background: var(--surface);
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+}
+.outline-action:is(:hover, [aria-expanded='true']) {
+    background: #fff4ec;
+}
+.outline-action.contextual {
+    width: 44px;
+    padding: 10px;
+}
+.inline-alternatives {
+    padding: 12px 0 0;
+    color: var(--muted);
+    font-size: var(--text-small);
+}
+.inline-alternatives p {
+    margin-bottom: 8px;
+}
+.text-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 2px;
+    min-height: 44px;
+    color: var(--action-ink);
+    font-size: var(--text-body);
+    font-weight: var(--weight-medium);
+}

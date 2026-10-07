@@ -1,0 +1,67 @@
+@import url('tokens.css');
+/* Pages loading this entry use the shared tray. Keep legacy bootstrap markup
+   hidden from the first paint, before deferred Composer scripts replace it. */
+#dock,
+.composer-dock {
+    display: none !important;
+}
+
+.department-composer #composer-tray {
+    position: fixed;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 40;
+    color: var(--color-text-soft, #426871);
+    box-sizing: border-box;
+}
+.department-composer #composer-tray button,
+.department-composer #composer-tray summary {
+    font: inherit;
+    cursor: pointer;
+}
+.department-composer #composer-tray svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+.department-composer #request {
+    width: 100%;
+    resize: none;
+    background: transparent;
+    box-sizing: border-box;
+    color: var(--color-text, #213b42);
+}
+.department-composer #included-ideas {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--text-small);
+    border: 0;
+}
+.department-composer #included-ideas[hidden] {
+    display: none;
+}
+.department-composer main {
+    padding-bottom: 90px;
+}
+.department-return {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin: 0 0 8px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-md);
+    color: var(--teal, #326b7b);
+    background: transparent;
+    font: inherit;
+    font-size: var(--text-small);
+    cursor: pointer;
+}
+.department-return svg {
+    width: 18px;
+    height: 18px;
+}
+.department-return:hover {
+    background: var(--color-bg-quiet, #e9f2f4);
+}

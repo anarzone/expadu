@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Today — Expadu design comparison</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #edf0f2; color: #202b33; font: 16px/1.5 ui-sans-serif, system-ui, sans-serif; }
+    header { background: #fff; border-bottom: 1px solid #cdd4da; padding: 24px 32px; }
+    .heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+    h1 { margin: 0; font-size: 25px; letter-spacing: -.6px; font-weight: 650; }
+    header p { color: #4e5e6a; max-width: 75ch; margin: 8px 0 20px; }
+    .label { color: #4e5e6a; font-size: 13px; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .views { display: flex; flex-wrap: wrap; gap: 6px; }
+    button, .full-size { font: inherit; font-size: 14px; font-weight: 600; }
+    button { background: #fff; color: #263b49; border: 1px solid #a8b5bf; border-radius: 7px; padding: 10px 15px; cursor: pointer; min-height: 44px; }
+    button[aria-pressed="true"] { color: #fff; border-color: #263b49; background: #263b49; }
+    button:hover { border-color: #263b49; }
+    :focus-visible { outline: 3px solid #2b66c4; outline-offset: 4px; }
+    .zoom { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; padding: 10px 0; cursor: pointer; }
+    input { width: 18px; height: 18px; accent-color: #263b49; }
+    main { padding: 26px 24px 40px; }
+    .comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+    .comparison.single { grid-template-columns: minmax(0, 1fr); max-width: 1600px; margin-inline: auto; }
+    article { min-width: 0; }
+    article[hidden] { display: none; }
+    .caption { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 0 2px 15px; }
+    h2 { margin: 0 0 4px; font-size: 18px; font-weight: 650; }
+    .caption p { font-size: 14px; margin: 0; color: #4e5e6a; max-width: 58ch; }
+    .full-size { flex-shrink: 0; color: #244f74; text-underline-offset: 3px; padding: 3px 0; }
+    .canvas { border: 1px solid #cdd4da; background: #fff; border-radius: 9px; overflow: auto; }
+    img { display: block; width: 100%; height: auto; }
+    .actual-size img { width: 1448px; max-width: none; }
+    footer { padding: 0 26px 28px; color: #4e5e6a; font-size: 13px; }
+    footer p { margin: 0; max-width: 100ch; }
+    @media (max-width: 900px) {
+      header { padding: 20px; }
+      .heading { align-items: flex-start; flex-direction: column; gap: 2px; }
+      main { padding: 22px 16px; }
+      .comparison { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+      .caption { gap: 10px; }
+      h1 { font-size: 23px; }
+      .caption p { max-width: 42ch; }
+      footer { padding-inline: 20px; }
+    }
+    @media (max-width: 420px) { .caption { flex-direction: column; gap: 6px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="heading"><h1>Two directions for Today</h1><span class="label">Expadu · Design exploration</span></div>
+    <p>The same core content and layout, with two visual identities. Compare the overall feel, then open either mockup to inspect the details.</p>
+    <div class="toolbar">
+      <div class="views" role="group" aria-label="Choose mockups to view">
+        <button type="button" data-view="both" aria-pressed="true">Compare both</button>
+        <button type="button" data-view="a" aria-pressed="false">A · Refined familiar</button>
+        <button type="button" data-view="b" aria-pressed="false">B · Fresh direction</button>
+      </div>
+      <label class="zoom"><input type="checkbox" id="actual-size"> Actual size</label>
+    </div>
+  </header>
+  <main>
+    <div class="comparison" id="comparison">
+      <article id="concept-a" aria-labelledby="title-a">
+        <div class="caption">
+          <div><h2 id="title-a">A · Refined familiar</h2><p>Warm paper, expressive serif type, orange actions. A clearer and more consistent version of the current identity.</p></div>
+          <a class="full-size" href="today-refined.png" target="_blank" rel="noopener">Open image<span class="label"> ↗</span></a>
+        </div>
+        <div class="canvas" tabindex="0" role="region" aria-label="Refined familiar mockup; scroll horizontally when actual size is enabled"><img src="today-refined.png" width="1448" height="1086" alt="Refined Expadu Today desktop mockup with cream background, serif heading, orange planning button, paperwork checklist, place suggestions, and weather and travel information."></div>
+      </article>
+      <article id="concept-b" aria-labelledby="title-b">
+        <div class="caption">
+          <div><h2 id="title-b">B · Fresh direction</h2><p>Rounded sans type, violet and mint, and a little Cologne character. Friendly, content first, and lightly playful.</p></div>
+          <a class="full-size" href="today-fresh.png" target="_blank" rel="noopener">Open image<span class="label"> ↗</span></a>
+        </div>
+        <div class="canvas" tabindex="0" role="region" aria-label="Fresh direction mockup; scroll horizontally when actual size is enabled"><img src="today-fresh.png" width="1448" height="1086" alt="Fresh Expadu Today desktop mockup with white and mint surfaces, rounded sans typography, violet planning button, a small Cologne illustration, paperwork checklist, place suggestions, and weather and travel information."></div>
+      </article>
+    </div>
+  </main>
+  <footer><p>Static visual concepts with sample content. Illustrations represent categories, not verified photographs of the named places. These mockups do not change the working app.</p></footer>
+  <script>
+    const comparison = document.querySelector('#comparison');
+    const controls = [...document.querySelectorAll('[data-view]')];
+    const concepts = { a: document.querySelector('#concept-a'), b: document.querySelector('#concept-b') };
+    function setView(view) {
+      const chosen = ['a', 'b'].includes(view) ? view : 'both';
+      for (const button of controls) button.setAttribute('aria-pressed', String(button.dataset.view === chosen));
+      for (const [key, concept] of Object.entries(concepts)) concept.hidden = chosen !== 'both' && chosen !== key;
+      comparison.classList.toggle('single', chosen !== 'both');
+    }
+    for (const button of controls) button.addEventListener('click', () => { location.hash = button.dataset.view; });
+    window.addEventListener('hashchange', () => setView(location.hash.slice(1)));
+    document.querySelector('#actual-size').addEventListener('change', (event) => comparison.classList.toggle('actual-size', event.target.checked));
+    setView(location.hash.slice(1));
+  </script>
+</body>
+</html>

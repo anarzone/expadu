@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <base href="../../" />
+        <script src="../connected/tests/fixtures/memory.js"></script>
+        <script src="./tests/fixtures/day-state.js"></script>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Expadu — Today, together</title>
+        <link rel="stylesheet" href="./base.css?v=99c606b57914" />
+        <link rel="stylesheet" href="./style.css?v=f6314b5d530f" />
+        <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
+        <script defer src="./model.js?v=7ecc65efad2e"></script>
+        <script defer src="./app.js?v=0e6b6b812d10"></script>
+        <script defer src="./overview.js?v=ce736a7ed574"></script>
+        <script defer src="../connected/model.js?v=dabdd8ed7179"></script>
+        <script defer src="../connected/store.js?v=3078f6a2275c"></script>
+        <script defer src="../connected/bridge.js?v=8a54948577e5"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/shell-review.css?v=159bcdf45f0d"
+        />
+        <script defer src="../connected/icons.js?v=685f482a1088"></script>
+        <script defer src="../connected/ui.js?v=588c949853ac"></script>
+        <link rel="stylesheet" href="./shared-sheet.css?v=7d6f2d7e09e4" />
+        <link
+            rel="stylesheet"
+            href="../connected/place-sheet.css?v=9fecee061d26"
+        />
+        <link
+            rel="stylesheet"
+            href="../events-next/event-sheet.css?v=54990fe7babe"
+        />
+        <script
+            defer
+            src="../events-next/event-model.js?v=3a10a9fc8bef"
+        ></script>
+        <script defer src="../events-next/posters.js?v=0508f3324c8a"></script>
+        <script defer src="../events-next/festival.js?v=bb8d5331743a"></script>
+        <script
+            defer
+            src="../departures-next/journeys.js?v=d0b524f02554"
+        ></script>
+        <script
+            defer
+            src="../connected/journey-preview.js?v=30eeda5bd380"
+        ></script>
+        <script defer src="../connected/day-actions.js?v=0b96c92b87af"></script>
+        <script defer src="../connected/day-swipe.js?v=93f6b73bb816"></script>
+        <script
+            defer
+            src="../connected/visit-timeline.js?v=2ab6dbc3b38d"
+        ></script>
+        <script
+            defer
+            src="../bureaucracy-next/source-data.js?v=f6a2e48db68d"
+        ></script>
+        <script
+            defer
+            src="../bureaucracy-next/model.js?v=3a6377c7037f"
+        ></script>
+        <script defer src="../bureaucracy-next/plan.js?v=7b3232720a2e"></script>
+        <script defer src="./slides-model.js?v=52de2a118c0a"></script>
+        <script defer src="../connected/handoffs.js?v=22a268356e84"></script>
+        <script defer src="../connected/planning-ui.js?v=756eb5728e40"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/discovery.css?v=b72cbd4ccef6"
+        />
+        <script
+            defer
+            src="../events-next/event-sheet.js?v=6d69886831be"
+        ></script>
+        <script defer src="../connected/place-sheet.js?v=5db064f7c473"></script>
+        <script defer src="./slides.js?v=81324ef77f46"></script>
+        <link rel="stylesheet" href="./slides.css?v=2e7d9f04ced1" />
+        <script
+            defer
+            src="../connected/scroll-header.js?v=ed8ba32a8253"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/location-popover.css?v=62bbac630642"
+        />
+        <script
+            defer
+            src="../connected/location-popover.js?v=374ae6bc5997"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/menu-colors.css?v=80281d6d2c46"
+        />
+        <link rel="stylesheet" href="./composer-controls.css?v=fea6bccd88f9" />
+        <script defer src="./composer-controls.js?v=28a523bb58a5"></script>
+        <link rel="stylesheet" href="./welcome.css?v=effa58f012d3" />
+        <script defer src="./welcome.js?v=95dd7dfae2af"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/date-control.css?v=4b7e0249842c"
+        />
+        <script
+            defer
+            src="../connected/date-control.js?v=f68610b210d4"
+        ></script>
+        <script
+            defer
+            src="../composer-studio/wheel-motion.js?v=c203940ffe0e"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/time-control.css?v=a705dda86460"
+        />
+        <script
+            defer
+            src="../connected/time-control.js?v=255f0aaf235a"
+        ></script>
+        <link rel="stylesheet" href="../connected/motion.css?v=2a54464bcba6" />
+        <link
+            rel="stylesheet"
+            href="../connected/journey-session.css?v=2dced2dc3206"
+        />
+        <script
+            defer
+            src="../connected/journey-session.js?v=208026dd621f"
+        ></script>
+        <script defer src="./day-brief-model.js?v=508e24723d57"></script>
+        <script defer src="./overview-sync.js?v=1ade94a8a476"></script>
+        <link rel="stylesheet" href="./mobile-refinement.css?v=7142c9a9a62f" />
+        <link
+            rel="stylesheet"
+            href="../events-next/posters.css?v=75525815c18b"
+        />
+        <link
+            rel="stylesheet"
+            href="../events-next/festival.css?v=ff20d2fc910d"
+        />
+        <link rel="stylesheet" href="./event-board.css?v=88717bed33ac" />
+        <link rel="stylesheet" href="./day-brief.css?v=46f0ea7e79c4" />
+    </head>
+    <body class="shell-review today-c">
+        <div id="home">
+            <header class="app-header">
+                <a class="brand" href="./" aria-label="Expadu home"
+                    ><svg viewBox="13 22 74 60" aria-hidden="true">
+                        <g transform="translate(2.45 2.05)">
+                            <circle cx="20.5" cy="50" r="6" fill="#05badd" />
+                            <rect
+                                x="30"
+                                y="24"
+                                width="13"
+                                height="52"
+                                rx="6"
+                                fill="currentColor"
+                            />
+                            <rect
+                                x="46"
+                                y="24"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-7 46 30)"
+                            />
+                            <rect
+                                x="46"
+                                y="43.5"
+                                width="25"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-4 46 50)"
+                            />
+                            <rect
+                                x="46"
+                                y="63"
+                                width="34"
+                                height="13"
+                                rx="6"
+                                fill="#ff3902"
+                                transform="rotate(-2 46 69)"
+                            />
+                        </g></svg
+                    >Expadu</a
+                >
+                <div class="header-context">
+                    <button class="location-button" data-action="location">
+                        <span data-icon="pin"></span>Cologne<span
+                            data-icon="down"
+                        ></span></button
+                    ><button class="weather-button" data-action="weather">
+                        <span class="weather-sun" data-icon="sun"></span
+                        ><span
+                            ><strong>Weather</strong
+                            ><small>Unavailable</small></span
+                        >
+                    </button>
+                </div>
+                <div class="header-actions">
+                    <button
+                        class="day-button"
+                        data-action="plan"
+                        aria-label="Saved ideas"
+                    >
+                        <span data-icon="bookmark"></span><span>Saved</span
+                        ><b class="day-count" hidden>0</b></button
+                    ><button
+                        class="account-button"
+                        data-action="account"
+                        aria-label="Your account"
+                    >
+                        A
+                    </button>
+                </div>
+            </header>
+            <nav class="service-nav" aria-label="Main navigation">
+                <a
+                    class="today-link"
+                    data-page="today"
+                    href="../today-c/"
+                    aria-current="page"
+                    ><svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" /></svg
+                    ><span>Today</span></a
+                >
+                <button data-action="events" data-page="events">
+                    <span data-icon="calendar"></span
+                    ><strong>Events</strong></button
+                ><button data-action="paperwork" data-page="bureaucracy">
+                    <span data-icon="document"></span
+                    ><strong>Bureaucracy</strong></button
+                ><button data-action="journey" data-page="departures">
+                    <span data-icon="train"></span
+                    ><strong>Departures</strong></button
+                ><button data-action="services" data-page="services">
+                    <span data-icon="grid"></span><strong>Services</strong>
+                </button>
+            </nav>
+            <main class="page">
+                <section class="welcome-row" aria-labelledby="greeting">
+                    <div class="welcome-copy">
+                        <h1 id="greeting">
+                            Good afternoon, Anar<span class="orange-period"
+                                >.</span
+                            >
+                        </h1>
+                        <p id="day-date">Fri, 26 June</p>
+                    </div>
+                </section>
+
+                <section
+                    id="today-next"
+                    class="today-next"
+                    aria-label="Your next action"
+                    hidden
+                ></section>
+                <section class="clarity" aria-labelledby="clarity-title">
+                    <div class="section-heading">
+                        <h2 id="clarity-title">
+                            A little clarity for your day
+                        </h2>
+                        <span class="section-dot" aria-hidden="true"></span>
+                    </div>
+                    <div class="clarity-panel">
+                        <article
+                            id="today-paperwork"
+                            class="clarity-item paperwork"
+                        ></article>
+                        <article
+                            id="today-connections"
+                            class="clarity-item connections"
+                        ></article>
+                        <article
+                            id="today-forecast"
+                            class="clarity-item forecast"
+                        ></article>
+                    </div>
+                </section>
+                <section
+                    id="saved-strip"
+                    aria-label="Your saved day"
+                    hidden
+                ></section>
+                <aside
+                    id="optional-welcome"
+                    class="optional-welcome"
+                    aria-label="Welcome to Expadu"
+                    hidden
+                ></aside>
+                <section
+                    class="daily-board"
+                    aria-label="Your day and useful next steps"
+                >
+                    <article class="board-card journey-card">
+                        <button
+                            class="journey-content"
+                            data-action="journey-prompt"
+                        >
+                            <span class="card-topline"
+                                ><span
+                                    ><span data-icon="train"></span
+                                    >Journey</span
+                                ><span data-icon="arrow"></span
+                            ></span>
+                            <strong class="setup-title"
+                                >Where are you heading?</strong
+                            >
+                            <span class="ticket-footer"
+                                ><span>Plan a route</span
+                                ><span data-icon="arrow"></span
+                            ></span>
+                        </button>
+                    </article>
+                    <article class="board-card music-card">
+                        <button class="music-content" data-action="plan">
+                            <span class="card-topline"
+                                ><span>Your day</span
+                                ><span
+                                    class="music-symbol"
+                                    data-icon="calendar"
+                                ></span
+                            ></span>
+                            <strong id="board-plan-title"
+                                >Open your plan</strong
+                            >
+                            <span class="card-footline"
+                                ><span id="board-plan-note">Open Composer</span
+                                ><span data-icon="arrow"></span
+                            ></span>
+                        </button>
+                    </article>
+                    <article
+                        id="today-paperwork-card"
+                        class="board-card paperwork-card"
+                    ></article>
+                    <div class="today-board-discovery">
+                        <div class="today-discovery-heading">
+                            <span>Events</span>
+                            <a
+                                href="../events-next/?discover=1&amp;date=2026-09-08"
+                                aria-label="Explore all events"
+                                ><span data-icon="arrow"></span
+                            ></a>
+                        </div>
+                        <div
+                            class="today-event-rail"
+                            tabindex="0"
+                            aria-label="Events. Swipe, drag or use the arrow keys."
+                        ></div>
+                    </div>
+                </section>
+                <footer class="page-footer">
+                    <span>Captured events · sample overview</span
+                    ><button data-action="about">
+                        About this preview<span data-icon="arrow"></span>
+                    </button>
+                </footer>
+                <p class="event-board-credit">
+                    Original event illustrations · Sample programme, 8 September
+                    2026
+                </p>
+            </main>
+        </div>
+        <div class="composer-tray" id="composer-tray">
+            <button
+                type="button"
+                class="composer-launcher"
+                aria-label="Open Composer"
+                aria-expanded="false"
+                aria-controls="compose-form"
+                title="Composer"
+            >
+                <span data-icon="spark"></span>
+            </button>
+            <button
+                type="button"
+                class="composer-dismiss"
+                aria-label="Close Composer"
+                title="Close Composer"
+            >
+                <span data-icon="close"></span>
+            </button>
+            <button
+                class="included-ideas"
+                id="included-ideas"
+                data-action="plan"
+                hidden
+            >
+                <span data-icon="bookmark"></span
+                ><span id="included-label"></span
+                ><span data-icon="arrow"></span>
+            </button>
+            <form id="compose-form" class="composer-form">
+                <div class="composer-entry">
+                    <textarea
+                        id="request"
+                        rows="1"
+                        maxlength="700"
+                        aria-label="Your request to Composer"
+                        placeholder="Ask, discover, or plan…"
+                    ></textarea>
+                </div>
+                <div class="today-composer-tools">
+                    <details class="today-composer-actions">
+                        <summary aria-label="Composer actions">
+                            <span data-icon="plus"></span>
+                        </summary>
+                        <div
+                            class="today-control-menu"
+                            aria-label="Composer actions"
+                        >
+                            <button type="button" data-composer-panel="plans">
+                                <span data-icon="calendar"></span>My Plans
+                            </button>
+                            <button type="button" data-composer-panel="saved">
+                                <span data-icon="bookmark"></span>Saved
+                            </button>
+                            <button type="button" data-composer-panel="history">
+                                <span data-icon="clock"></span>History
+                            </button>
+                            <button
+                                type="button"
+                                data-composer-action="appointment"
+                            >
+                                <span data-icon="calendar"></span>Add
+                                appointment
+                            </button>
+                            <button
+                                type="button"
+                                data-composer-action="examples"
+                            >
+                                <span data-icon="spark"></span>Try Composer
+                            </button>
+                            <button type="button" data-composer-action="new">
+                                <span data-icon="plus"></span>Start fresh
+                            </button>
+                        </div>
+                    </details>
+                    <details class="today-approval">
+                        <summary aria-label="Plan change approval">
+                            <span data-approval-label>Ask first</span
+                            ><span data-icon="down"></span>
+                        </summary>
+                        <div
+                            class="today-control-menu"
+                            role="menu"
+                            aria-label="Plan change approval"
+                        >
+                            <button
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked="true"
+                                data-today-approval="ask"
+                            >
+                                <span
+                                    ><strong>Ask before changes</strong
+                                    ><small
+                                        >Review and apply changes
+                                        yourself.</small
+                                    ></span
+                                ><span data-icon="check"></span>
+                            </button>
+                            <button
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked="false"
+                                data-today-approval="routine"
+                            >
+                                <span
+                                    ><strong>Allow routine changes</strong
+                                    ><small
+                                        >Automatically apply reversible plan
+                                        edits.</small
+                                    ></span
+                                ><span data-icon="check"></span>
+                            </button>
+                            <p>Bookings and payments always need approval.</p>
+                        </div>
+                    </details>
+                    <button
+                        class="compose-button"
+                        type="submit"
+                        aria-label="Send request"
+                        disabled
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M12 19V5m-7 7 7-7 7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <dialog
+            id="composer"
+            class="composer-workspace"
+            aria-labelledby="composer-title"
+        >
+            <header class="workspace-header">
+                <button class="plain-button" data-action="close-composer">
+                    <span data-icon="back"></span>Today
+                </button>
+                <h2 id="composer-title">
+                    <span data-icon="spark"></span>Composer
+                </h2>
+                <button class="plain-button" data-action="plan">
+                    <span data-icon="bookmark"></span>My day
+                </button>
+            </header>
+            <div id="workspace-scroll">
+                <div id="response" aria-live="polite"></div>
+            </div>
+            <form id="refine-form" class="refine-form">
+                <label class="sr-only" for="refine-request"
+                    >Edit your request</label
+                ><textarea
+                    id="refine-request"
+                    rows="1"
+                    maxlength="700"
+                    placeholder="Change your request…"
+                ></textarea
+                ><button
+                    class="compose-button"
+                    type="submit"
+                    aria-label="Compose again"
+                >
+                    <span data-icon="arrow"></span>
+                </button>
+            </form>
+        </dialog>
+        <dialog id="sheet" class="detail-sheet" aria-labelledby="sheet-title">
+            <header class="sheet-header">
+                <h2 id="sheet-title"></h2>
+                <button
+                    class="icon-button"
+                    data-action="close-sheet"
+                    aria-label="Close details"
+                >
+                    <span data-icon="close"></span>
+                </button>
+            </header>
+            <div id="sheet-content"></div>
+        </dialog>
+        <div class="toast" role="status" id="toast">
+            <span id="toast-icon" aria-hidden="true" hidden></span>
+            <span id="toast-text"></span><button id="undo" hidden>Undo</button>
+        </div>
+    </body>
+</html>

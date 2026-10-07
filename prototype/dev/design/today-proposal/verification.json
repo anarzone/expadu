@@ -1,0 +1,452 @@
+{
+  "date": "2026-09-30",
+  "checks": [
+    "everyday desktop: no page overflow",
+    "everyday desktop: first main action fits",
+    "everyday desktop: action has touch height",
+    "everyday desktop: all three events appear once",
+    "everyday desktop: correct overview lead",
+    "everyday mobile: no page overflow",
+    "everyday mobile: first main action fits",
+    "everyday mobile: action has touch height",
+    "everyday mobile: all three events appear once",
+    "everyday mobile: correct overview lead",
+    "everyday 320: no page overflow",
+    "everyday 320: first main action fits",
+    "everyday 320: action has touch height",
+    "everyday 320: all three events appear once",
+    "everyday 320: correct overview lead",
+    "everyday tablet: no page overflow",
+    "everyday tablet: first main action fits",
+    "everyday tablet: action has touch height",
+    "everyday tablet: all three events appear once",
+    "everyday tablet: correct overview lead",
+    "event desktop: no page overflow",
+    "event desktop: first main action fits",
+    "event desktop: action has touch height",
+    "event desktop: all three events appear once",
+    "event desktop: correct overview lead",
+    "event mobile: no page overflow",
+    "event mobile: first main action fits",
+    "event mobile: action has touch height",
+    "event mobile: all three events appear once",
+    "event mobile: correct overview lead",
+    "Event phone: next personal action remains in first screen",
+    "event 320: no page overflow",
+    "event 320: first main action fits",
+    "event 320: action has touch height",
+    "event 320: all three events appear once",
+    "event 320: correct overview lead",
+    "event tablet: no page overflow",
+    "event tablet: first main action fits",
+    "event tablet: action has touch height",
+    "event tablet: all three events appear once",
+    "event tablet: correct overview lead",
+    "delay desktop: no page overflow",
+    "delay desktop: first main action fits",
+    "delay desktop: action has touch height",
+    "delay desktop: all three events appear once",
+    "delay desktop: correct overview lead",
+    "delay mobile: no page overflow",
+    "delay mobile: first main action fits",
+    "delay mobile: action has touch height",
+    "delay mobile: all three events appear once",
+    "delay mobile: correct overview lead",
+    "delay 320: no page overflow",
+    "delay 320: first main action fits",
+    "delay 320: action has touch height",
+    "delay 320: all three events appear once",
+    "delay 320: correct overview lead",
+    "delay tablet: no page overflow",
+    "delay tablet: first main action fits",
+    "delay tablet: action has touch height",
+    "delay tablet: all three events appear once",
+    "delay tablet: correct overview lead",
+    "Save creates only a saved idea",
+    "Save leaves confirmed activity intact",
+    "Plan opens an explicit proposal",
+    "Event context is exact",
+    "Existing conversation is present",
+    "Closing nested context restores original focus",
+    "Paperwork opens the exact process",
+    "Paperwork shows real sample progress",
+    "Paperwork context survives the handoff",
+    "Composer preserves the edited draft",
+    "Paperwork return keeps focus on original process",
+    "Second process opens directly",
+    "Keyboard reveals next event",
+    "Removal reveal does not delete",
+    "Removal offers Undo",
+    "Undo restores the activity",
+    "Saved idea survives another local action",
+    "Empty agenda keeps useful content",
+    "Affected route is in Composer context",
+    "Delay times reach the editable request surface",
+    "Review switcher reveals event pair",
+    "Review switcher reveals delay pair",
+    "No browser or asset errors"
+  ],
+  "measurements": [
+    {
+      "view": "everyday",
+      "size": "desktop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "firstAction": {
+        "top": 429.171875,
+        "bottom": 473.171875,
+        "width": 105.96875,
+        "height": 44
+      },
+      "plansAction": {
+        "top": 429.171875,
+        "bottom": 473.171875,
+        "width": 105.96875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role plans-role",
+        "overview-role connections-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1158
+    },
+    {
+      "view": "everyday",
+      "size": "mobile",
+      "width": 390,
+      "scrollWidth": 390,
+      "firstAction": {
+        "top": 306.484375,
+        "bottom": 350.484375,
+        "width": 93.671875,
+        "height": 44
+      },
+      "plansAction": {
+        "top": 306.484375,
+        "bottom": 350.484375,
+        "width": 93.671875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role plans-role",
+        "overview-role connections-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1652
+    },
+    {
+      "view": "everyday",
+      "size": "320",
+      "width": 320,
+      "scrollWidth": 320,
+      "firstAction": {
+        "top": 301.890625,
+        "bottom": 345.890625,
+        "width": 85.359375,
+        "height": 44
+      },
+      "plansAction": {
+        "top": 301.890625,
+        "bottom": 345.890625,
+        "width": 85.359375,
+        "height": 44
+      },
+      "roles": [
+        "overview-role plans-role",
+        "overview-role connections-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1662
+    },
+    {
+      "view": "everyday",
+      "size": "tablet",
+      "width": 820,
+      "scrollWidth": 820,
+      "firstAction": {
+        "top": 429.171875,
+        "bottom": 473.171875,
+        "width": 105.96875,
+        "height": 44
+      },
+      "plansAction": {
+        "top": 429.171875,
+        "bottom": 473.171875,
+        "width": 105.96875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role plans-role",
+        "overview-role connections-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1371
+    },
+    {
+      "view": "event",
+      "size": "desktop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "firstAction": {
+        "top": 684.21875,
+        "bottom": 730.21875,
+        "width": 82,
+        "height": 46
+      },
+      "plansAction": {
+        "top": 335.796875,
+        "bottom": 379.796875,
+        "width": 105.96875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role plans-role",
+        "overview-role connections-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1294
+    },
+    {
+      "view": "event",
+      "size": "mobile",
+      "width": 390,
+      "scrollWidth": 390,
+      "firstAction": {
+        "top": 458.984375,
+        "bottom": 504.984375,
+        "width": 79.578125,
+        "height": 46
+      },
+      "plansAction": {
+        "top": 668.484375,
+        "bottom": 712.484375,
+        "width": 93.671875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role plans-role",
+        "overview-role connections-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1974
+    },
+    {
+      "view": "event",
+      "size": "320",
+      "width": 320,
+      "scrollWidth": 320,
+      "firstAction": {
+        "top": 446.390625,
+        "bottom": 492.390625,
+        "width": 69,
+        "height": 46
+      },
+      "plansAction": {
+        "top": 655.890625,
+        "bottom": 699.890625,
+        "width": 85.359375,
+        "height": 44
+      },
+      "roles": [
+        "overview-role plans-role",
+        "overview-role connections-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 2003
+    },
+    {
+      "view": "event",
+      "size": "tablet",
+      "width": 820,
+      "scrollWidth": 820,
+      "firstAction": {
+        "top": 668.390625,
+        "bottom": 714.390625,
+        "width": 44,
+        "height": 46
+      },
+      "plansAction": {
+        "top": 398.71875,
+        "bottom": 442.71875,
+        "width": 105.96875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role plans-role",
+        "overview-role connections-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1394
+    },
+    {
+      "view": "delay",
+      "size": "desktop",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "firstAction": {
+        "top": 559.609375,
+        "bottom": 603.609375,
+        "width": 146.3125,
+        "height": 44
+      },
+      "plansAction": {
+        "top": 429.171875,
+        "bottom": 473.171875,
+        "width": 105.96875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role connections-role delay-role",
+        "overview-role plans-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1303
+    },
+    {
+      "view": "delay",
+      "size": "mobile",
+      "width": 390,
+      "scrollWidth": 390,
+      "firstAction": {
+        "top": 494.84375,
+        "bottom": 538.84375,
+        "width": 129.375,
+        "height": 44
+      },
+      "plansAction": {
+        "top": 648.34375,
+        "bottom": 692.34375,
+        "width": 93.671875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role connections-role delay-role",
+        "overview-role plans-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1884
+    },
+    {
+      "view": "delay",
+      "size": "320",
+      "width": 320,
+      "scrollWidth": 320,
+      "firstAction": {
+        "top": 483.265625,
+        "bottom": 527.265625,
+        "width": 116.421875,
+        "height": 44
+      },
+      "plansAction": {
+        "top": 634.765625,
+        "bottom": 678.765625,
+        "width": 85.359375,
+        "height": 44
+      },
+      "roles": [
+        "overview-role connections-role delay-role",
+        "overview-role plans-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1877
+    },
+    {
+      "view": "delay",
+      "size": "tablet",
+      "width": 820,
+      "scrollWidth": 820,
+      "firstAction": {
+        "top": 559.609375,
+        "bottom": 603.609375,
+        "width": 146.3125,
+        "height": 44
+      },
+      "plansAction": {
+        "top": 429.171875,
+        "bottom": 473.171875,
+        "width": 105.96875,
+        "height": 44
+      },
+      "roles": [
+        "overview-role connections-role delay-role",
+        "overview-role plans-role",
+        "overview-role paperwork-role",
+        "overview-role weather-role"
+      ],
+      "events": [
+        "art",
+        "film",
+        "forest"
+      ],
+      "mainHeight": 1456
+    }
+  ],
+  "errors": []
+}

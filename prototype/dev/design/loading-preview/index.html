@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Expadu — Loading motion</title>
+        <link rel="stylesheet" href="../connected/style.css?v=cc9941eb1796" />
+        <link rel="stylesheet" href="../connected/loading.css?v=c24091022641" />
+        <script src="../connected/loading.js?v=8b4f4c45be2b"></script>
+        <style>
+            body {
+                background: #f6fafb;
+                color: #211d15;
+                padding: 32px 20px;
+            }
+            main {
+                max-width: 900px;
+                margin: auto;
+            }
+            h1 {
+                font-size: 32px;
+                margin: 20px 0 12px;
+            }
+            p {
+                color: #5d7278;
+                line-height: 1.5;
+            }
+            a {
+                color: #396570;
+            }
+            section {
+                margin: 32px 0;
+                padding: 24px;
+                background: #fff;
+                border-radius: 22px;
+            }
+            h2 {
+                font-size: 17px;
+                margin: 0 0 22px;
+            }
+            .variants {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 24px;
+                flex-wrap: wrap;
+            }
+            .sample-button {
+                background: #d9340a;
+                color: white;
+                border: 0;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                padding: 13px 18px;
+                font: inherit;
+            }
+            .expadu-loading-page {
+                min-height: 170px;
+            }
+            .caption {
+                font-size: 12px;
+                margin-top: 18px;
+            }
+            button {
+                cursor: default;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <a href="../composer-studio/">← Back to Composer</a>
+            <h1>A little motion, while you wait.</h1>
+            <p>
+                Shared loading samples for Expadu. These examples keep running
+                so you can inspect the motion.
+            </p>
+            <section>
+                <h2>Small actions and updates</h2>
+                <div class="variants">
+                    <div id="status"></div>
+                    <button
+                        class="sample-button expadu-loading-button"
+                        disabled
+                        id="button"
+                        aria-label="Example: saving"
+                    ></button>
+                </div>
+            </section>
+            <section>
+                <h2>Content taking shape</h2>
+                <div id="skeleton"></div>
+            </section>
+            <section>
+                <h2>First app load</h2>
+                <div class="expadu-loading-page" id="first"></div>
+            </section>
+            <p class="caption">
+                Reduced-motion preferences show the static spark and status.
+                Instant actions skip the indicator; normal navigation keeps
+                existing content visible.
+            </p>
+        </main>
+        <script>
+            document.querySelector('#status').innerHTML =
+                ExpaduLoading.status('Finding places…');
+            document.querySelector('#button').innerHTML =
+                ExpaduLoading.spark() + 'Saving…';
+            document.querySelector('#skeleton').innerHTML =
+                ExpaduLoading.skeleton('list');
+            document.querySelector('#first').innerHTML =
+                ExpaduLoading.spark() + '<p>Getting things ready…</p>';
+        </script>
+    </body>
+</html>

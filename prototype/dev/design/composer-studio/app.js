@@ -1,0 +1,2077 @@
+(function () {
+    'use strict';
+    const C = StudioConversation,
+        A = StudioConversationActions.create(StudioModel, C);
+    const M = StudioModel,
+        I = ExpaduIcon,
+        catalogue = ExpaduModel.places;
+    const KEY = 'expadu-composer-studio-v1';
+    const E = (x) =>
+        String(x ?? '').replace(
+            /[&<>"']/g,
+            (c) =>
+                ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[c],
+        );
+    let state = M.fresh(),
+        persistent = true,
+        lastStoredWorkspace = null,
+        workspaceNotice = '',
+        view = 'composer',
+        savedView = location.hash === '#saved',
+        timer,
+        undo;
+    try {
+        lastStoredWorkspace = localStorage.getItem(KEY);
+        const s = JSON.parse(lastStoredWorkspace);
+        if (
+            s?.version === 1 &&
+            Array.isArray(s.saved) &&
+            Array.isArray(s.plans)
+        )
+            state = s;
+    } catch {
+        persistent = false;
+    }
+    // Department selections carry their source record; keep it available after navigation.
+    const department = ExpaduStore.read();
+    const carriedPlaces = [
+        ...(department.savedIdeas || []),
+        ...(department.draft || []),
+        ...(state.proposal?.items || []),
+        ...state.plans.flatMap((plan) => plan.items || []),
+    ];
+    for (const item of carriedPlaces) {
+        if (
+            item?.type === 'place' &&
+            typeof item.id === 'string' &&
+            typeof item.title === 'string' &&
+            item.title.trim() &&
+            !catalogue.some((place) => place.id === item.id)
+        )
+            catalogue.push(ExpaduModel.clone(item));
+    }
+    C.ensure(state);
+    for (const chapter of state.conversation.chapters)
+        for (const entry of chapter.entries)
+            if (entry.kind === 'pending') {
+                entry.kind = 'cancelled';
+                entry.text = 'This request was interrupted. You can try again.';
+            }
+    let pendingReply = null;
+    let replacement = null;
+    let panel = null,
+        returnScroll = 0,
+        returnDate = null,
+        returnFocus = null,
+        panelAnimation = null;
+    const initialPanel =
+        location.hash === '#history'
+            ? 'history'
+            : location.hash === '#saved'
+              ? 'saved'
+              : location.hash === '#plans' ||
+                  location.pathname.includes('/my-plans')
+                ? 'plans'
+                : null;
+    const reducedMotion = () =>
+        matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const longDate = (date) =>
+        new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+        });
+    const shortDate = (date) =>
+        new Date(date + 'T12:00:00').toLocaleDateString('en-GB', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+        });
+    const place = (id) =>
+        catalogue.find((x) => x.id === id) ||
+        ExpaduModel.events
+            .map((x) => ({ ...x, id: 'event:' + x.id, label: 'Event' }))
+            .find((x) => x.id === id);
+    const planFor = (date) => state.plans.find((p) => p.date === date);
+    const ordered = (p) =>
+        [...p.items].sort((a, b) => a.start.localeCompare(b.start));
+    function syncStorageNotice() {
+        const note = document.querySelector('#storage-note');
+        note.hidden = persistent && !workspaceNotice;
+        note.textContent = persistent
+            ? workspaceNotice
+            : 'Changes are only kept while this page stays open. Your browser could not save this preview.';
+    }
+    function refreshWorkspace() {
+        const saved = localStorage.getItem(KEY);
+        if (saved === lastStoredWorkspace) return false;
+        const latest = saved === null ? M.fresh() : JSON.parse(saved);
+        if (
+            latest?.version !== 1 ||
+            !Array.isArray(latest.saved) ||
+            !Array.isArray(latest.plans)
+        )
+            throw Error('The updated workspace could not be read.');
+        const field = document.querySelector('#studio-request');
+        const prompt = field?.value ?? state.prompt;
+        state = latest;
+        if (prompt?.trim()) state.prompt = prompt;
+        C.ensure(state);
+        lastStoredWorkspace = saved;
+        if (loadingJob) cancelLoading(true);
+        pendingReply = null;
+        undo = null;
+        replacement = null;
+        entryMarkup.clear();
+        const main = document.querySelector('#main');
+        if (main) main.dataset.chapter = '';
+        if (field) field.value = state.prompt || '';
+        workspaceNotice =
+            'Your day changed on another page. Review the latest plan before making changes. Your unfinished message is kept.';
+        render();
+        syncStorageNotice();
+        return true;
+    }
+    function writeShared(shared) {
+        try {
+            if (refreshWorkspace()) return false;
+            const saved = ExpaduStore.write(shared);
+            // This shared write synchronizes bookmarks in this same workspace.
+            // Remember our own write so it is not mistaken for another page.
+            lastStoredWorkspace = localStorage.getItem(KEY);
+            return saved;
+        } catch {
+            persistent = false;
+            syncStorageNotice();
+            return false;
+        }
+    }
+    function store() {
+        try {
+            // A storage event can arrive after the user's next input. Compare at
+            // the write boundary as well, before either shared store is changed.
+            if (refreshWorkspace()) return false;
+            ExpaduStore.update((s) => {
+                StudioIntegration.clearCancelledHandoffs(state, s);
+                s.approvalMode = state.conversation.approval;
+                s.savedIdeas = state.saved
+                    .map(place)
+                    .filter(Boolean)
+                    .map((x) =>
+                        x.type === 'event'
+                            ? { ...x, id: x.id.replace(/^event:/, '') }
+                            : x,
+                    );
+            });
+            const saved = JSON.stringify(state);
+            localStorage.setItem(KEY, saved);
+            lastStoredWorkspace = saved;
+            workspaceNotice = '';
+            persistent = ExpaduStore.isPersistent();
+        } catch {
+            persistent = false;
+        }
+        syncStorageNotice();
+        return persistent;
+    }
+    function notify(message, action) {
+        if (workspaceNotice) {
+            message = workspaceNotice;
+            action = null;
+        }
+        const t = document.querySelector('#studio-toast');
+        clearTimeout(timer);
+        undo = action;
+        t.innerHTML = `${I('check')}<span>${E(message)}</span>${action ? '<button data-action="undo">Undo</button>' : ''}<a href="../my-plans/#saved" data-nav="saved">Saved ideas</a>`;
+        if (!/saved|bookmark/i.test(message)) t.querySelector('a').remove();
+        t.hidden = false;
+        window.ExpaduMotion?.reveal(t);
+        const hide = () => {
+            if (t.matches(':hover') || t.contains(document.activeElement))
+                timer = setTimeout(hide, 1000);
+            else t.hidden = true;
+        };
+        timer = setTimeout(hide, 5000);
+    }
+    const logo =
+        '<svg viewBox="13 22 74 60" aria-hidden="true"> <g transform="translate(2.45 2.05)"> <circle cx="20.5" cy="50" r="6" fill="#05badd" /> <rect x="30" y="24" width="13" height="52" rx="6" fill="currentColor" /> <rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)" /> <rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)" /> <rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)" /> </g></svg>';
+    const nav = [
+        ['today-c', 'home', 'Today'],
+        ['events-next', 'calendar', 'Events'],
+        ['bureaucracy-next', 'document', 'Bureaucracy'],
+        ['departures-next', 'train', 'Departures'],
+        ['services-next', 'grid', 'Services'],
+    ];
+    if (!document.querySelector('#shell [data-static-header]'))
+        document.querySelector('#shell').innerHTML =
+            `<header class="app-header"><a href="../today-c/" class="brand" aria-label="Expadu home">${logo}Expadu</a><div class="header-context"><button class="city">${I('pin')}Cologne${I('down')}</button><span class="header-weather" role="img" aria-label="Sample weather, 21 degrees">${I('sun')}<strong>21°</strong></span></div><a class="my-day" href="#saved" data-nav="saved" aria-label="Open saved ideas">${I('bookmark')}<span>Saved</span><b class="header-saved-count" hidden></b></a></header><nav class="service-nav" aria-label="Main navigation">${nav.map(([path, icon, label]) => `<a data-page="${path.replace(/-(next|c)$/, '')}" href="../${path}/">${I(icon)}<span>${label}</span></a>`).join('')}</nav>`;
+    function navBar() {
+        return `<div class="studio-toolbar"><span class="workspace-name">${I('spark')}Composer</span><button type="button" class="composer-minimize" data-minimize-composer aria-label="Minimize Composer" title="Minimize Composer">${I('down')}<span>Minimize</span></button></div>`;
+    }
+    let minimizing = false;
+    function minimizeComposer() {
+        if (minimizing) return;
+        if (loadingJob) {
+            loadingJob.afterComplete = minimizeComposer;
+            return;
+        }
+        state.prompt = document.querySelector('#studio-request')?.value || '';
+        if (!store()) return;
+        minimizing = true;
+        document.activeElement?.blur();
+        const leave = () => ExpaduStore.minimizeComposer();
+        if (reducedMotion()) {
+            leave();
+            return;
+        }
+        document.body.classList.add('is-minimizing');
+        const animations = ['#main', '.studio-input-wrap'].map(
+            (selector) =>
+                document.querySelector(selector).animate(
+                    [
+                        { opacity: 1, transform: 'translateY(0) scale(1)' },
+                        {
+                            opacity: 0,
+                            transform: 'translateY(18px) scale(.97)',
+                        },
+                    ],
+                    {
+                        duration: 220,
+                        easing: 'cubic-bezier(.4,0,1,1)',
+                        fill: 'forwards',
+                    },
+                ).finished,
+        );
+        Promise.allSettled(animations).then(leave);
+    }
+    function syncSaved() {
+        const badge = document.querySelector('.header-saved-count');
+        badge.textContent = state.saved.length || '';
+        badge.hidden = !state.saved.length;
+        document.querySelectorAll('[data-save]').forEach((button) => {
+            const saved = state.saved.includes(button.dataset.save);
+            button.setAttribute('aria-pressed', String(saved));
+            button.setAttribute(
+                'aria-label',
+                `${saved ? 'Unsave' : 'Save'} ${place(button.dataset.save).title}`,
+            );
+        });
+    }
+    function renderPanel() {
+        if (panel === 'replace') {
+            renderReplacement();
+            return;
+        }
+        const drawer = document.querySelector('#workspace-panel');
+        if (panel === 'history') {
+            drawer.innerHTML = `<header class="panel-top"><button data-action="close-panel" aria-label="Back to Composer">${I('back')}Composer</button><h2>Conversation history</h2></header><div class="panel-body"><p class="history-intro">Reopen an earlier section to read or continue it. Starting fresh keeps your plans, saved ideas and original messages.</p>${state.conversation.chapters
+                .slice()
+                .reverse()
+                .map(
+                    (ch) =>
+                        `<button class="history-section" data-open-section="${E(ch.id)}" aria-current="${ch.id === state.conversation.currentId}"><strong>${E(ch.title)}</strong><small>${E(new Date(ch.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} · ${ch.entries.filter((e) => e.role === 'user').length} messages</small>${ch.summary ? `<small>${E(ch.summary.replace('Deterministic topic summary (not AI memory). ', ''))}</small>` : ''}</button>`,
+                )
+                .join(
+                    '',
+                )}<p class="history-intro">Sample responses · history stays in this browser. Summaries list recent topics; they do not replace your original messages.</p></div>`;
+            return;
+        }
+        const scroll = drawer?.querySelector('.panel-body')?.scrollTop || 0;
+        const active = drawer.contains(document.activeElement)
+            ? document.activeElement
+            : null;
+        const focusSelector = active?.dataset.date
+            ? `[data-date="${active.dataset.date}"]`
+            : active?.dataset.dayStep
+              ? `[data-day-step="${active.dataset.dayStep}"]`
+              : active?.id === 'plan-date'
+                ? '#plan-date'
+                : '[data-action="close-panel"]';
+        drawer.innerHTML = `<header class="panel-top"><button data-action="close-panel" aria-label="Back to Composer">${I('back')}<span>Composer</span></button><h2>${panel === 'saved' ? 'Saved ideas' : 'My Plans'}</h2></header><div class="panel-selection" data-planning-context>${savedView ? planningContext() : ''}</div><div class="panel-body">${plansPage()}</div>`;
+        drawer.querySelector('.panel-body').scrollTop = scroll;
+        if (active)
+            drawer.querySelector(focusSelector)?.focus({ preventScroll: true });
+        syncSaved();
+    }
+    function panelAccessibility() {
+        const mobile = matchMedia('(max-width: 999px)').matches;
+        const focusedPanel = mobile || panel === 'replace';
+        document.querySelector('#main').inert = !!panel && focusedPanel;
+        document.querySelector('#shell').inert = !!panel && focusedPanel;
+        document.querySelector('#input-area').inert = !!panel && focusedPanel;
+        const drawer = document.querySelector('#workspace-panel');
+        if (drawer) {
+            drawer.setAttribute(
+                'aria-label',
+                panel === 'replace'
+                    ? 'Choose a replacement place'
+                    : 'Your collection',
+            );
+            drawer.setAttribute(
+                'role',
+                focusedPanel ? 'dialog' : 'complementary',
+            );
+            if (focusedPanel && panel)
+                drawer.setAttribute('aria-modal', 'true');
+            else drawer.removeAttribute('aria-modal');
+        }
+    }
+    function openPanel(target, writeHistory = true) {
+        if (!panel) {
+            returnScroll = window.scrollY;
+            returnDate = state.date;
+            returnFocus = document.activeElement;
+        }
+        panelAnimation?.cancel();
+        panel = target;
+        document.title =
+            'Expadu — ' +
+            ({
+                saved: 'Saved ideas',
+                plans: 'My Plans',
+                replace: 'Replace a place',
+                history: 'History',
+            }[target] || 'Composer');
+        savedView = target === 'saved';
+        document.body.classList.toggle('has-replacement', target === 'replace');
+        let drawer = document.querySelector('#workspace-panel');
+        if (!drawer) {
+            drawer = document.createElement('aside');
+            drawer.id = 'workspace-panel';
+            drawer.setAttribute('aria-label', 'Your collection');
+            document.body.append(drawer);
+        }
+        drawer.hidden = false;
+        drawer.inert = false;
+        document.body.classList.add('has-panel');
+        renderPanel();
+        panelAccessibility();
+        if (writeHistory)
+            history.pushState(
+                { studioPanel: true },
+                '',
+                StudioNavigation.panelUrl(location.href, target),
+            );
+        if (!reducedMotion())
+            panelAnimation = drawer.animate(
+                [
+                    { transform: 'translateX(100%)', opacity: 0.6 },
+                    { transform: 'translateX(0)', opacity: 1 },
+                ],
+                { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' },
+            );
+        drawer
+            .querySelector('[data-action="close-panel"]')
+            .focus({ preventScroll: true });
+    }
+    function closePanel(restore = true, writeHistory = true) {
+        if (!panel) return;
+        panelAnimation?.cancel();
+        const drawer = document.querySelector('#workspace-panel');
+        panel = null;
+        document.title = 'Expadu — Composer';
+        savedView = false;
+        if (restore && returnDate) state.date = returnDate;
+        document.body.classList.remove('has-panel', 'has-replacement');
+        panelAccessibility();
+        if (writeHistory)
+            history.replaceState(
+                {},
+                '',
+                StudioNavigation.panelUrl(location.href),
+            );
+        if (!reducedMotion()) {
+            panelAnimation = drawer.animate(
+                [
+                    { transform: 'translateX(0)', opacity: 1 },
+                    { transform: 'translateX(100%)', opacity: 0 },
+                ],
+                { duration: 220, easing: 'cubic-bezier(.4,0,1,1)' },
+            );
+            panelAnimation.onfinish = () => {
+                if (!panel) drawer.hidden = true;
+            };
+        } else drawer.hidden = true;
+        drawer.inert = true;
+        if (restore) {
+            window.scrollTo({ top: returnScroll, behavior: 'instant' });
+            if (returnFocus?.isConnected)
+                returnFocus.focus({ preventScroll: true });
+        }
+        syncSaved();
+        store();
+    }
+    function planningContext() {
+        const date = state.conversation.activeDate;
+        const p =
+            (state.proposal?.date === date ? state.proposal : planFor(date)) ||
+            state.proposal;
+        if (!p) return '';
+        return `<div class="input-context">${I('calendar')}<span><strong>${E(shortDate(p.date))}</strong><small>${p === state.proposal ? 'Unconfirmed proposal' : 'Confirmed plan'}</small></span><button type="button" data-open-plan="${E(p.date)}">${date === p.date ? 'View plan' : 'Resume plan'}</button></div>`;
+    }
+    function syncPlanning() {
+        document.querySelectorAll('[data-add]').forEach((button) => {
+            const added = !!(
+                state.proposal ||
+                planFor(state.conversation.activeDate || state.date)
+            )?.items.some((x) => x.id === button.dataset.add);
+            button.setAttribute('aria-disabled', String(added));
+            button.classList.toggle('is-added', added);
+            button.innerHTML = added
+                ? `Added ${I('check')}`
+                : `Add to plan ${I('plus')}`;
+        });
+        document
+            .querySelectorAll('[data-planning-context]')
+            .forEach((context) => {
+                context.innerHTML =
+                    context.closest('#workspace-panel') && !savedView
+                        ? ''
+                        : planningContext();
+            });
+    }
+    function input() {
+        const area = document.querySelector('#input-area');
+        if (view !== 'composer') {
+            area.innerHTML = '';
+            return;
+        }
+        if (area.querySelector('#studio-form')) {
+            const oldNotice = area.querySelector('.handoff-note');
+            if (!state.handoffs?.length) oldNotice?.remove();
+            else if (oldNotice)
+                oldNotice.querySelector('span').textContent =
+                    `${state.handoffs.length} selections waiting. ${state.handoffs[0].handoffError}`;
+            return;
+        }
+        area.innerHTML = `<div class="studio-input-wrap"><form id="studio-form">${state.handoffs?.length ? `<div class="handoff-note" role="status"><span>${state.handoffs.length} selection${state.handoffs.length === 1 ? '' : 's'} waiting. ${E(state.handoffs[0].handoffError)}</span><button type="button" data-retry-handoff>Try adding again</button></div>` : ''}<div data-planning-context>${planningContext()}</div><div class="studio-field"><label class="sr-only" for="studio-request">${state.response ? 'Continue with Composer' : 'What can I help you with?'}</label><textarea id="studio-request" rows="1" maxlength="700" placeholder="${state.response ? 'Ask or add a detail…' : 'Ask, discover, or plan…'}">${E(state.prompt)}</textarea></div><div class="composer-tools"><details class="composer-actions"><summary aria-label="Composer actions" title="Composer actions">${I('plus')}</summary><div class="composer-actions-menu" aria-label="Composer actions"><button type="button" data-nav="plans">${I('calendar')}My Plans</button><button type="button" data-nav="saved">${I('bookmark')}Saved</button><button type="button" data-nav="history">${I('clock')}History</button><button type="button" data-action="appointment">${I('calendar')}Add appointment</button><button type="button" data-action="examples">${I('spark')}Try Composer</button><button type="button" data-action="new">${I('plus')}Start fresh</button></div></details><div class="approval-control"><button type="button" id="approval-mode" aria-label="Plan change approval: ask before changes" aria-haspopup="menu" aria-expanded="false" aria-controls="approval-menu"><span>Ask first</span>${I('down')}</button><div id="approval-menu" class="approval-menu" role="menu" aria-label="Plan change approval" hidden><p class="approval-heading">Plan changes</p><button type="button" role="menuitemradio" aria-checked="true" tabindex="-1" data-approval="ask"><span><strong>Ask before changes</strong><small>Review and apply changes yourself.</small></span>${I('check')}</button><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-approval="routine"><span><strong>Allow routine changes</strong><small>Automatically apply reversible plan edits.</small></span>${I('check')}</button><p class="approval-footnote">Bookings and payments always need approval.</p></div></div><button class="send" type="submit" aria-label="Send request" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button></div></form></div>`;
+    }
+    function syncSend() {
+        const field = document.querySelector('#studio-request');
+        const send = document.querySelector('#studio-form .send');
+        if (field && send)
+            send.disabled = field.readOnly || !field.value.trim();
+    }
+    function closeComposerActions(restoreFocus = false) {
+        const actions = document.querySelector('.composer-actions');
+        if (!actions?.open) return;
+        actions.open = false;
+        if (restoreFocus)
+            actions.querySelector('summary').focus({ preventScroll: true });
+    }
+    function syncApproval() {
+        const routine = state.conversation.approval === 'routine';
+        const trigger = document.querySelector('#approval-mode');
+        if (!trigger) return;
+        trigger.querySelector('span').textContent = routine
+            ? 'Auto-apply'
+            : 'Ask first';
+        trigger.setAttribute(
+            'aria-label',
+            'Plan change approval: ' +
+                (routine ? 'allow routine changes' : 'ask before changes'),
+        );
+        document
+            .querySelectorAll('[data-approval]')
+            .forEach((button) =>
+                button.setAttribute(
+                    'aria-checked',
+                    String(
+                        button.dataset.approval === state.conversation.approval,
+                    ),
+                ),
+            );
+    }
+    function toggleApproval(open, restoreFocus = false) {
+        const menu = document.querySelector('#approval-menu');
+        if (!menu) return;
+        menu.hidden = !open;
+        document
+            .querySelector('#approval-mode')
+            .setAttribute('aria-expanded', String(open));
+        if (open) closeComposerActions();
+        if (open)
+            menu.querySelector('[aria-checked="true"]').focus({
+                preventScroll: true,
+            });
+        else if (restoreFocus)
+            document
+                .querySelector('#approval-mode')
+                .focus({ preventScroll: true });
+    }
+    document.addEventListener('pointerdown', (e) => {
+        if (!e.target.closest('.approval-control')) toggleApproval(false);
+        if (!e.target.closest('.composer-actions')) closeComposerActions();
+    });
+    document.addEventListener('focusin', (e) => {
+        if (!e.target.closest('.approval-control')) toggleApproval(false);
+        if (!e.target.closest('.composer-actions')) closeComposerActions();
+    });
+    function welcome() {
+        return `<section class="studio-welcome"><div class="welcome-symbol" aria-hidden="true">${I('spark')}</div><h1>What’s on your mind?</h1><p>A question, a little inspiration, or a day to put together.</p><div class="starter-grid"><button data-prompt="What have I planned for Saturday?">${I('calendar')}<span>What’s on my Saturday?</span>${I('arrow')}</button><button data-prompt="Find something outdoors for Saturday afternoon.">${I('leaf')}<span>A little time outdoors</span>${I('arrow')}</button><button data-prompt="Plan Saturday afternoon around my 15:00 appointment.">${I('route')}<span>Help me plan Saturday</span>${I('arrow')}</button></div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}<p class="welcome-foot">Start with one of these examples, or use your own words.</p></section>`;
+    }
+    function card(x) {
+        const kept = state.saved.includes(x.id);
+        const added = !!state.proposal?.items.some((item) => item.id === x.id);
+        if (x.type === 'place') {
+            return `<article class="discovery-card place-idea"><div class="place-idea-heading"><span>${I(x.icon || 'pin')}${E(x.label)}</span><button class="studio-bookmark" data-save="${E(x.id)}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button></div><div class="place-idea-content">${x.image ? `<img class="place-idea-photo" src="${E(x.image)}" alt="" loading="lazy">` : ''}<h3>${E(x.title)}</h3><p class="place-idea-area">${I('pin')}${E(x.area)}</p>${x.facts?.length ? `<p class="place-idea-fact">${E(x.facts[0])}</p>` : ''}<p class="place-idea-check">Access and hours to check</p></div><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Details ${I('arrow')}</button><button class="studio-button light ${added ? 'is-added' : ''}" data-add="${E(x.id)}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></article>`;
+        }
+        return `<article class="discovery-card"><div class="discovery-photo">${x.image ? `<img src="${E(x.image)}" alt="${E(x.title)}" loading="eager">` : ''}<span class="photo-fallback" aria-hidden="true">${I('leaf')}</span><span class="place-category">${E(x.label)}</span><button class="studio-bookmark" data-save="${x.id}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button><div class="photo-copy"><span>${E(x.area)}</span><h3>${E(x.title)}</h3></div></div><div class="discovery-card-body"><p>${E(x.label)} from your city’s captured listings.</p><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Preview</button><button class="studio-button light ${added ? 'is-added' : ''}" ${x.type === 'event' ? 'data-add-event' : 'data-add'}="${x.id}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></div></article>`;
+    }
+    document.addEventListener(
+        'error',
+        (event) => {
+            if (event.target.matches?.('.place-idea-photo'))
+                event.target.remove();
+        },
+        true,
+    );
+    function timeEditor(x) {
+        return `<details class="time-editor"><summary>${I('pencil')}Edit time</summary><form data-time-form="${x.id}" novalidate><label>From<input type="text" inputmode="numeric" name="start" value="${x.start}" maxlength="5" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="time-options" aria-haspopup="dialog" aria-describedby="time-error-${x.id}" aria-label="Start time, 24-hour format">${I('down')}</label><span class="time-separator" aria-hidden="true">–</span><label>Until<input type="text" inputmode="numeric" name="end" value="${x.end}" maxlength="5" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="time-options" aria-haspopup="dialog" aria-describedby="time-error-${x.id}" aria-label="End time, 24-hour format">${I('down')}</label><button class="time-save" type="submit" aria-label="Save time" title="Save time">${I('check')}</button><p class="time-error" id="time-error-${x.id}" role="alert" hidden></p></form></details>`;
+    }
+    function replacementFilters() {
+        const categories = [...new Set(catalogue.map((x) => x.category))];
+        return `<div class="replacement-filters" aria-label="Filter replacement places"><button data-replacement-filter="saved" aria-pressed="${replacement.filter === 'saved'}">${I('bookmark')}Saved</button><button data-action="toggle-replacement-categories" aria-expanded="${!!replacement.categoryOpen}" aria-controls="replacement-categories" class="${replacement.category ? 'has-category' : ''}">Category · ${E(replacement.category || 'Any')}${I('down')}</button></div><div id="replacement-categories" class="replacement-categories" role="group" aria-label="Place category" ${replacement.categoryOpen ? '' : 'hidden'}>${['', ...categories].map((category) => `<button data-replacement-category="${E(category)}" aria-pressed="${replacement.category === category}">${E(category || 'Any')}${replacement.category === category ? I('check') : ''}</button>`).join('')}</div>`;
+    }
+    function syncReplacementFilters() {
+        document.querySelector('#replacement-filter-controls').innerHTML =
+            replacementFilters();
+    }
+    function renderReplacement() {
+        const plan = replacement && A.replacementPlan(state, replacement);
+        const item = plan?.items.find((x) => x.id === replacement.itemId);
+        if (!item) {
+            closePanel();
+            return;
+        }
+        const drawer = document.querySelector('#workspace-panel');
+        drawer.innerHTML = `<header class="panel-top"><button data-action="close-panel" aria-label="Back to Composer">${I('back')}<span>Composer</span></button><h2>Replace a place</h2></header><div class="replacement-context"><span>Replacing</span><h3>${E(item.title)}</h3><p>${I('calendar')}${E(shortDate(plan.date))}<span>${E(item.start)}–${E(item.end)}</span></p></div><div class="replacement-tools"><label class="replacement-search">${I('search')}<input id="replacement-search" type="search" placeholder="Search places, activities or areas" aria-label="Search replacement places" value="${E(replacement.query)}"></label><div id="replacement-filter-controls">${replacementFilters()}</div></div><div class="panel-body replacement-body"><p class="replacement-guidance">Sample places. Travel and current availability still need checking.</p><div id="replacement-results"></div><p id="replacement-result-status" class="sr-only" role="status"></p></div><footer class="replacement-footer"><div id="replacement-selection">Choose a place to continue</div><button class="studio-button primary" data-action="apply-replacement" disabled>Use this place</button></footer>`;
+        renderReplacementResults();
+    }
+    function renderReplacementResults() {
+        if (panel !== 'replace') return;
+        const query = replacement.query.trim();
+        const options = M.filterReplacementPlaces(
+            catalogue,
+            A.replacementPlan(state, replacement),
+            state.saved,
+            {
+                query,
+                category: replacement.category,
+                savedOnly: replacement.filter === 'saved',
+            },
+        );
+        if (!options.some((x) => x.id === replacement.selected))
+            replacement.selected = null;
+        document.querySelector('#replacement-results').innerHTML =
+            options.length
+                ? options
+                      .map(
+                          (x) =>
+                              `<button class="replacement-card" data-select-replacement="${x.id}" aria-pressed="${replacement.selected === x.id}"><span class="replacement-media ${E(x.color)}">${x.image ? `<img src="${E(x.image)}" alt="" loading="lazy">` : ''}${I(x.icon || 'pin')}</span><span class="replacement-copy"><small>${E(x.label)} · ${E(x.area)}</small><strong>${E(x.title)}</strong><span>${E(x.facts?.[0] || (x.label === 'Park' ? 'A park from the captured city listings.' : 'From the captured city listings.'))}</span></span><span class="replacement-check" aria-hidden="true">${I('check')}</span></button>`,
+                      )
+                      .join('')
+                : `<div class="replacement-empty">${I(replacement.filter === 'saved' ? 'bookmark' : 'search')}<h3>${query || replacement.category ? 'No matching places' : 'No saved alternatives yet'}</h3><p>${query || replacement.category ? 'Try another search or category, or turn off Saved. Places already in your plan are excluded.' : 'Places already in your plan are excluded. Turn off Saved to see other options.'}</p><button class="studio-button light" data-action="reset-replacement-search">Clear filters</button></div>`;
+        document.querySelector('#replacement-result-status').textContent =
+            `${options.length} ${options.length === 1 ? 'place' : 'places'} available`;
+        document.querySelectorAll('.replacement-media img').forEach((img) =>
+            img.addEventListener('error', () => {
+                img.hidden = true;
+            }),
+        );
+        syncReplacementSelection();
+    }
+    function syncReplacementSelection() {
+        const selected = place(replacement.selected);
+        document
+            .querySelectorAll('[data-select-replacement]')
+            .forEach((button) =>
+                button.setAttribute(
+                    'aria-pressed',
+                    String(
+                        button.dataset.selectReplacement ===
+                            replacement.selected,
+                    ),
+                ),
+            );
+        document.querySelector('#replacement-selection').innerHTML = selected
+            ? `<span>Selected</span><strong>${E(selected.title)}</strong>`
+            : 'Choose a place to continue';
+        document.querySelector('[data-action="apply-replacement"]').disabled =
+            !selected;
+    }
+    function applyReplacement(button) {
+        if (!replacement?.selected) return;
+        const request = { ...replacement };
+        const source = A.replacementPlan(state, request);
+        if (!source) {
+            notify('Your plan has changed. Ask for new alternatives.');
+            return;
+        }
+        const itemId = replacement.itemId;
+        const selectedId = replacement.selected;
+        const original = M.clone(source.items.find((x) => x.id === itemId));
+        beginLoading(
+            'Preparing your replacement…',
+            'list',
+            () => {
+                const proposalRef = A.selectReplacement(
+                    state,
+                    request,
+                    selectedId,
+                );
+                const updated = proposalRef.items.find(
+                    (x) => x.id === selectedId,
+                );
+                const after = JSON.stringify(updated);
+                const scroll = panel ? returnScroll : window.scrollY;
+                changed('Replaced with ' + place(selectedId).title);
+                store();
+                closePanel(false);
+                render();
+                window.scrollTo({ top: scroll, behavior: 'instant' });
+                const trigger = document.querySelector(
+                    `[data-swap="${selectedId}"]`,
+                );
+                trigger?.focus({ preventScroll: true });
+                if (!reducedMotion())
+                    trigger
+                        ?.closest('li')
+                        .animate(
+                            [
+                                { backgroundColor: '#dff2e8' },
+                                { backgroundColor: 'transparent' },
+                            ],
+                            { duration: 900, easing: 'ease-out' },
+                        );
+                notify(
+                    `Changed to ${place(selectedId).title}. Time kept.`,
+                    () => {
+                        if (
+                            state.proposal !== proposalRef ||
+                            !proposalRef.items.includes(updated) ||
+                            JSON.stringify(updated) !== after ||
+                            proposalRef.items.some((x) => x.id === original.id)
+                        ) {
+                            notify(
+                                'The plan has changed since. Review it before replacing this place again.',
+                            );
+                            return;
+                        }
+                        Object.assign(updated, original);
+                        changed('Restored ' + original.title);
+                    },
+                );
+            },
+            button,
+        );
+    }
+    function journeyFor(p, x) {
+        if (p !== state.proposal && !state.plans.includes(p)) return '';
+        const items = ordered(p),
+            index = items.findIndex((y) => y.id === x.id),
+            previous = items[index - 1];
+        const destination = x.venue || x.location || place(x.id)?.title;
+        if (!destination) return '';
+        const params = new URLSearchParams({
+            to: destination,
+            date: p.date,
+            arrive: x.start,
+            activity: x.id,
+            planDate: p.date,
+        });
+        const from = previous
+            ? previous.venue || previous.location || place(previous.id)?.title
+            : ExpaduStore.read().brief.from;
+        if (from) params.set('from', from);
+        if (previous) {
+            params.set('previousId', previous.id);
+            params.set('previousEnd', previous.end);
+        }
+        const status = x.journey
+            ? ExpaduHandoffs.journeyStatus(
+                  x.journey,
+                  p,
+                  { ...x, location: destination },
+                  previous,
+              )
+            : '';
+        return `<div class="activity-journey">${x.journey ? `<small>${E(status)}</small><span>${E(x.journey.from)} → ${E(x.journey.to)} · ${E(x.journey.depart)}–${E(x.journey.arrive)}</span>` : ''}<a href="../departures-next/?${E(params.toString())}">${I('route')}${x.journey ? 'Review journey' : previous ? 'Journey from previous activity' : 'Check journey'}</a></div>`;
+    }
+    function timeline(p, editable = false) {
+        const old = p.baseId
+            ? state.plans.find((x) => x.id === p.baseId)
+            : null;
+        return `<ol class="plan-timeline">${ordered(p)
+            .map((x) => {
+                const before = old?.items.find((y) => y.id === x.id);
+                const changed =
+                    old &&
+                    (!before ||
+                        before.start !== x.start ||
+                        before.end !== x.end);
+                const processItem = x.sourceType === 'bureaucracy';
+                const previewable =
+                    !processItem &&
+                    (place(x.id) || x.type === 'event' || x.personal);
+                const appointment =
+                    x.type === 'appointment' || x.id === 'appointment';
+                return `<li class="${x.fixed ? 'fixed-item' : ''}"><div class="timeline-time"><strong>${E(x.start)}</strong><span>${E(x.end)}</span></div><div class="timeline-node">${I(x.type === 'task' ? 'document' : x.fixed || appointment ? 'calendar' : 'pin')}</div><div class="timeline-content">${x.fixed ? `<span class="fixed-label">${x.type === 'event' ? 'Fixed event · captured sample' : processItem ? 'Recorded appointment' : x.personal ? 'Confirmed appointment' : 'Fixed · sample appointment'}</span>` : appointment ? '<span class="fixed-label">Personal appointment</span>' : ''}${changed ? `<span class="changed-label">${before ? `Was ${before.start}–${before.end}` : 'Added to this proposal'}</span>` : ''}<h3>${previewable ? `<button class="item-preview-title" data-preview="${E(x.id)}" aria-label="Preview ${E(x.title)}">${E(x.title)}</button>` : E(x.title)}</h3><p>${E(x.venue || x.location || place(x.id)?.area || (x.type === 'task' ? 'Preparation time' : 'Location to be added'))}</p>${journeyFor(p, x)}${processItem ? `<a class="plain-button" href="${E(StudioIntegration.bureaucracyLink(x))}">${I('document')}Open process ${I('arrow')}</a>` : ''}${editable ? `<div class="timeline-actions">${!x.fixed ? timeEditor(x) : ''}${!x.fixed && !appointment && x.type !== 'event' && x.type !== 'task' ? `<button class="plain-button" data-swap="${x.id}">Swap place</button>` : ''}<button class="plain-button" data-remove="${x.id}" aria-label="Remove ${E(x.title)}">Remove</button></div>` : ''}</div></li>`;
+            })
+            .join('')}</ol>`;
+    }
+    function proposal() {
+        const p = state.proposal;
+        if (!p)
+            return emptyAnswer(
+                'No proposal open',
+                'Choose a place or describe a day to start planning.',
+            );
+        const errors = M.conflicts(p),
+            old = state.plans.find((x) => x.id === p.baseId);
+        const removed =
+            old?.items.filter((x) => !p.items.some((y) => y.id === x.id)) || [];
+        return `<div class="response-heading"><span class="response-mark">${I('spark')}</span><div><h1>${p.baseId ? 'A change to your day.' : 'Here’s one way to spend it.'}</h1><p>${p.baseId ? 'Review the changes before updating your plan.' : 'Adjust the times until it feels right.'}</p></div></div><div class="proposal-layout"><section class="timeline-paper" aria-label="Plan proposal"><div class="paper-heading proposal-heading"><div><span class="proposal-label">${p.baseId ? 'Proposed revision' : 'Proposed plan'}</span><h2>${E(longDate(p.date))}</h2></div><details class="date-picker"><summary aria-label="Change plan date">${I('calendar')}<span>Date</span></summary><form id="proposal-date-form"><label>Plan date<input type="date" name="date" value="${E(p.date)}" required></label><button class="studio-button light">Keep date</button></form></details></div>${timeline(p, true)}<div class="plan-add-actions"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-action="discover">Explore places</button></div>${!p.items.length ? '<p class="empty-inline">No activities in this proposal. Add an activity, or confirm below to cancel an existing day.</p>' : ''}${removed.length ? `<p class="removed-note">Removed in this proposal: ${removed.map((x) => E(x.title)).join(', ')}</p>` : ''}<div class="travel-note">${I('route')}<p>Travel between activities still needs checking.<br><span>No route has been calculated in this preview.</span></p></div><div class="conflict-note" role="status">${errors.map((x) => `<p>${E(x)}</p>`).join('')}</div><div class="proposal-footer"><button class="studio-button primary" data-action="confirm" ${errors.length || (!p.items.length && !p.baseId) ? 'disabled' : ''}>${I('check')}${!p.items.length && p.baseId ? 'Cancel this day' : p.baseId ? 'Apply changes' : 'Confirm plan'}</button><button class="plain-button" data-action="discard">${p.baseId ? 'Discard changes' : 'Discard proposal'}</button></div></section><aside class="plan-companion"><h2>Your day, your pace.</h2><p>${p.items.some((x) => x.fixed) ? 'The sample appointment stays fixed. Everything around it can change.' : 'These are suggested times. You decide what becomes part of your day.'}</p><div class="companion-art" aria-hidden="true">${I('sun')}<span></span>${I('leaf')}</div><div class="companion-note">${I('bell')}<div><strong>Reminders are off</strong><p>Nothing will be sent from this preview.</p></div></div><button class="plain-button" data-action="discover">Explore more places ${I('arrow')}</button></aside></div>`;
+    }
+    function plansPage() {
+        if (savedView)
+            return `<div class="plans-heading"><div><h1>Keep it for later.</h1><p>Saved ideas stay unscheduled until you add them to a plan.</p></div><span class="collection-total">${state.saved.length} ${state.saved.length === 1 ? 'idea' : 'ideas'}</span></div>${state.saved.length ? `<div class="discovery-grid saved-grid">${state.saved.map(place).filter(Boolean).map(card).join('')}</div>` : `<div class="saved-empty">${I('bookmark')}<h2>Keep something that catches your eye.</h2><p>Use the bookmark on a place. It stays here until you decide to plan it.</p><button class="studio-button light" data-action="discover">Discover places ${I('arrow')}</button></div>`}`;
+        const selected = state.date,
+            p = planFor(selected);
+        const d = new Date(selected + 'T12:00:00');
+        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        const days = Array.from({ length: 7 }, (_, i) => {
+            const x = new Date(d);
+            x.setDate(d.getDate() + i);
+            return M.iso(x);
+        });
+        return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time. Weekly planning is coming later.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}"><span>${new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${planFor(date) ? 'has-plan' : ''}" aria-label="${planFor(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}Confirmed plan</span><button class="plain-button" data-revise="${p.id}">${I('spark')}Adjust with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off <span>Preview only</span></div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Unconfirmed proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}`;
+    }
+    const entryMarkup = new Map();
+    function render() {
+        const main = document.querySelector('#main');
+        const chapter = C.current(state);
+        const oldScroll = window.scrollY;
+        const anchor = [...main.querySelectorAll('[data-chat-entry]')].find(
+            (el) => el.getBoundingClientRect().bottom > 100,
+        );
+        const anchorTop = anchor?.getBoundingClientRect().top;
+        if (main.dataset.chapter !== chapter.id) {
+            main.innerHTML =
+                navBar() +
+                `<p class="chat-section-date">${E(new Date(chapter.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }))} · Sample responses</p><div class="chat-feed" aria-label="Conversation"></div>`;
+            main.dataset.chapter = chapter.id;
+            entryMarkup.clear();
+        }
+        const feed = main.querySelector('.chat-feed');
+        const empty = feed.querySelector('.studio-welcome');
+        if (!chapter.entries.length) {
+            if (!empty) feed.innerHTML = welcome();
+        } else {
+            empty?.remove();
+            for (const entry of chapter.entries) {
+                const html = StudioConversationView.entry(entry, {
+                    state,
+                    escape: E,
+                    icon: I,
+                    card,
+                    timeline,
+                    proposal,
+                    dateLabel: shortDate,
+                    place,
+                    serviceCard: features.serviceCard,
+                });
+                if (entryMarkup.get(entry.id) === html) continue;
+                const existing = feed.querySelector(
+                    `[data-chat-entry="${entry.id}"]`,
+                );
+                if (existing) {
+                    const openDetails = [
+                        ...existing.querySelectorAll('details'),
+                    ]
+                        .map((d, i) => (d.open ? i : -1))
+                        .filter((i) => i >= 0);
+                    const template = document.createElement('template');
+                    template.innerHTML = html;
+                    const next = template.content.firstElementChild;
+                    openDetails.forEach((i) => {
+                        if (next.querySelectorAll('details')[i])
+                            next.querySelectorAll('details')[i].open = true;
+                    });
+                    existing.replaceWith(next);
+                } else {
+                    feed.insertAdjacentHTML('beforeend', html);
+                    if (!reducedMotion())
+                        feed.lastElementChild.animate(
+                            [
+                                { opacity: 0, transform: 'translateY(6px)' },
+                                { opacity: 1, transform: 'translateY(0)' },
+                            ],
+                            { duration: 220, easing: 'ease-out' },
+                        );
+                }
+                entryMarkup.set(entry.id, html);
+            }
+        }
+        input();
+        syncApproval();
+        syncSend();
+        const requestField = document.querySelector('#studio-request');
+        if (requestField.value && !requestField.style.height)
+            requestField.style.height =
+                Math.min(120, requestField.scrollHeight) + 'px';
+        document.querySelector('#studio-request').placeholder = chapter.entries
+            .length
+            ? 'Ask or add a detail…'
+            : 'Ask, discover, or plan…';
+        syncPlanning();
+        syncSaved();
+        let live = document.querySelector('#chat-announcement');
+        if (!live) {
+            live = document.createElement('div');
+            live.id = 'chat-announcement';
+            live.className = 'sr-only';
+            live.setAttribute('role', 'status');
+            document.body.append(live);
+        }
+        const lastReply = chapter.entries
+            .filter((e) => e.role === 'assistant')
+            .at(-1);
+        const announcement = lastReply?.text || '';
+        if (live.textContent !== announcement) live.textContent = announcement;
+        if (panel) renderPanel();
+        features.mountGuides();
+        if (anchor) {
+            const next = document.querySelector(
+                `[data-chat-entry="${anchor.dataset.chatEntry}"]`,
+            );
+            if (next)
+                window.scrollTo({
+                    top:
+                        oldScroll +
+                        next.getBoundingClientRect().top -
+                        anchorTop,
+                    behavior: 'instant',
+                });
+        }
+    }
+    function revealPlan() {
+        const card = document
+            .querySelector('#studio-response')
+            ?.closest('.chat-entry');
+        if (!card) return;
+        const headerHeight =
+            document.querySelector('.scroll-header')?.getBoundingClientRect()
+                .height || 130;
+        card.style.scrollMarginTop = `${headerHeight + 16}px`;
+        card.scrollIntoView({
+            block: 'start',
+            behavior: reducedMotion() ? 'instant' : 'smooth',
+        });
+    }
+    function revealLatest() {
+        document.querySelector('.chat-feed')?.lastElementChild?.scrollIntoView({
+            block: 'start',
+            behavior: reducedMotion() ? 'instant' : 'smooth',
+        });
+    }
+    function note(text) {
+        return C.append(state, 'assistant', text);
+    }
+    function changed(label, silent = false) {
+        const applied = A.changed(state, label);
+        if (!silent)
+            note(
+                label +
+                    '.' +
+                    (applied
+                        ? ' Applied to your plan. Undo is available.'
+                        : ' Ready for your review.'),
+            );
+        store();
+        render();
+    }
+    function commitPlan() {
+        const saved = A.commit(state);
+        if (saved)
+            note(
+                'Your plan is saved. You can keep editing here, or open it in My Plans.',
+            );
+        state.response = { kind: 'confirmed' };
+        store();
+        render();
+    }
+    function navigate(target) {
+        if (target === 'composer') {
+            closePanel();
+            return;
+        }
+        openPanel(target);
+    }
+    function showProposal() {
+        state.date = state.proposal?.date || state.date;
+        state.response = { kind: 'proposal', request: 'Your plan proposal' };
+        C.recordPlan(state, 'Opened proposal');
+        store();
+        closePanel(false);
+        render();
+        revealPlan();
+    }
+    let loadingJob = null;
+    function cancelLoading(completing = false) {
+        if (!loadingJob) return;
+        const job = loadingJob;
+        loadingJob = null;
+        clearTimeout(job.timer);
+        job.gate.finish(job.ticket);
+        job.restore();
+        if (!completing && pendingReply) {
+            C.updateEntry(state, pendingReply, {
+                kind: 'cancelled',
+                text: 'Request stopped. Your plan has not changed.',
+            });
+            pendingReply = null;
+            store();
+            render();
+        }
+    }
+    function beginLoading(label, kind, complete, button = null) {
+        if (loadingJob) return;
+        const field = document.querySelector('#studio-request');
+        const send = document.querySelector('.send');
+        const main = document.querySelector('#main');
+        const form = document.querySelector('#studio-form');
+        const originalButton = button?.innerHTML;
+        const originalSend = send.innerHTML;
+        const sendLabel = send.getAttribute('aria-label');
+        field.readOnly = true;
+        send.disabled = true;
+        if (button) button.disabled = true;
+        const restore = () => {
+            form.classList.remove('is-thinking');
+            field.readOnly = false;
+            syncSend();
+            send.innerHTML = originalSend;
+            send.classList.remove('expadu-loading-button');
+            send.setAttribute('aria-label', sendLabel);
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = originalButton;
+                button.classList.remove('expadu-loading-button');
+            }
+            main.removeAttribute('aria-busy');
+            document.querySelector('#composer-progress')?.remove();
+            document.querySelector('#response-placeholder')?.remove();
+            const welcome = document.querySelector('.studio-welcome');
+            if (welcome) welcome.hidden = false;
+        };
+        const gate = ExpaduLoading.createGate({
+            show() {
+                if (pendingReply) form.classList.add('is-thinking');
+                main.setAttribute('aria-busy', 'true');
+                send.innerHTML = ExpaduLoading.spark();
+                send.classList.add('expadu-loading-button');
+                send.setAttribute('aria-label', label);
+                if (button) {
+                    button.innerHTML =
+                        ExpaduLoading.spark() +
+                        `<span>${label.startsWith('Saving') ? 'Saving…' : 'Preparing…'}</span>`;
+                    button.classList.add('expadu-loading-button');
+                }
+                if (!pendingReply)
+                    document
+                        .querySelector(
+                            panel
+                                ? '#workspace-panel .panel-top'
+                                : '#studio-form',
+                        )
+                        .insertAdjacentHTML(
+                            panel ? 'afterend' : 'afterbegin',
+                            `<div id="composer-progress">${ExpaduLoading.status(label)}<button type="button" data-action="cancel-loading">Cancel</button></div>`,
+                        );
+            },
+            hide: restore,
+        });
+        const job = { gate, ticket: gate.start(), restore, timer: null };
+        loadingJob = job;
+        // Deliberate preview latency demonstrates the shared state; live callers finish when their request settles.
+        job.timer = setTimeout(() => {
+            if (loadingJob !== job) return;
+            cancelLoading(true);
+            try {
+                complete();
+            } catch (error) {
+                notify(error.message);
+            } finally {
+                job.afterComplete?.();
+            }
+        }, 1100);
+    }
+    function submit(text, consumeDraft = false) {
+        if (loadingJob) return;
+        try {
+            if (refreshWorkspace()) return;
+        } catch {
+            persistent = false;
+            syncStorageNotice();
+            return;
+        }
+        text = A.requestText(state, text, consumeDraft);
+        if (!text) return;
+        closePanel(false);
+        C.append(state, 'user', text);
+        const entry = C.append(state, 'assistant', 'Thinking…', {
+            kind: 'pending',
+            request: text,
+        });
+        pendingReply = entry.id;
+        if (consumeDraft) {
+            document.querySelector('#studio-request').value = '';
+            document.querySelector('#studio-request').style.height = '';
+        }
+        if (!store()) {
+            if (consumeDraft) {
+                state.prompt = text;
+                document.querySelector('#studio-request').value = text;
+            }
+            render();
+            return;
+        }
+        render();
+        revealLatest();
+        beginLoading('Thinking…', 'list', () => {
+            try {
+                submitNow(text, entry.id);
+            } catch (error) {
+                C.updateEntry(state, entry.id, {
+                    kind: 'failed',
+                    text: error.message,
+                });
+            }
+            pendingReply = null;
+            store();
+            render();
+        });
+    }
+    function submitNow(text, replyId) {
+        const reply = (message, extra = {}) =>
+            C.updateEntry(state, replyId, {
+                kind: 'text',
+                text: message,
+                ...extra,
+            });
+        const situationChange = window.BureaucracySituation?.intent(text);
+        if (situationChange) {
+            const s = BureaucracyOrientation.load();
+            if (BureaucracySituation.applies(s)) {
+                BureaucracySituation.state(s);
+                const opened = BureaucracySituation.report(s, situationChange);
+                BureaucracyOrientation.review(s);
+                if (BureaucracyOrientation.save(s)) {
+                    state.conversation.activeDate = null;
+                    reply(
+                        opened
+                            ? 'Let’s review this change before updating your situation.'
+                            : 'There’s an unfinished update. Let’s finish or cancel that first.',
+                        {
+                            kind: 'bureaucracy',
+                            orientation: true,
+                            orientationPerson: s.person,
+                            orientationProfile: s.profileId,
+                        },
+                    );
+                } else
+                    reply(
+                        'Your situation changed in another view. Reopen Bureaucracy to review the latest answers.',
+                    );
+                return;
+            }
+        }
+        if (
+            /\b(code|javascript|python|hack|write.*poem|politics)\b/i.test(text)
+        ) {
+            state.conversation.activeDate = null;
+            reply(
+                'Composer helps with Expadu places, plans, events, journeys, services and reviewed bureaucracy information. I cannot create unrelated content. What would you like help with in your day?',
+            );
+            return;
+        }
+        if (/\b(book|pay|purchase|submit.*application)\b/i.test(text)) {
+            reply(
+                'This preview cannot book, pay or submit anything. These actions will always need your explicit confirmation, even when routine plan changes are allowed.',
+            );
+            return;
+        }
+        if (
+            /^(apply|confirm|save) (my |the |this )?(plan|changes|proposal)[.!]?$/i.test(
+                text,
+            )
+        ) {
+            const saved = A.commit(state);
+            reply(
+                saved
+                    ? 'Your plan is saved. Undo is available.'
+                    : 'Day cancelled. Undo is available below.',
+            );
+            return;
+        }
+        if (
+            /^undo( (that|last change|last applied change))?[.!]?$/i.test(text)
+        ) {
+            A.undo(state);
+            reply('Last applied change undone.');
+            return;
+        }
+        const r = M.respond(text, state);
+        if (r.kind === 'event' || r.kind === 'journey') {
+            state.conversation.activeDate = null;
+            reply(
+                r.kind === 'event'
+                    ? 'Here is a captured event to try with a fixed time.'
+                    : 'Let’s check a journey. Your plan stays as it is.',
+                { kind: r.kind, eventId: 'event:kunst-machen' },
+            );
+            return;
+        }
+        if (r.kind === 'bureaucracy') {
+            state.conversation.activeDate = null;
+            reply(
+                'I do not have verified guidance for this question in this preview. Open the reviewed process information to check its sources and coverage.',
+                {
+                    kind: 'bureaucracy',
+                    sourceKey: /anmeldung|register|registration|address/i.test(
+                        text,
+                    )
+                        ? 'core.anmeldung'
+                        : /blue card/i.test(text)
+                          ? 'case.bc.first_application.prepare'
+                          : null,
+                },
+            );
+            return;
+        }
+        if (/^(add|create|schedule).*appointment/i.test(text)) {
+            reply(
+                'Use Add appointment below to choose the title, date and time. Nothing will be booked for you.',
+                { kind: 'appointment-form' },
+            );
+            return;
+        }
+        if (
+            /^(cancel|delete|remove) (my |the |this )?(day|plan)[.!]?$/i.test(
+                text,
+            )
+        ) {
+            const date = state.conversation.activeDate,
+                current = planFor(date);
+            if (!current) {
+                reply('Open a confirmed day from My Plans first.');
+                return;
+            }
+            M.propose(state, [], date, current.id);
+            state.proposal.items = [];
+            C.recordPlan(state, 'Proposed day cancellation');
+            reply(
+                'Review the empty day below, then choose Cancel this day. Saved ideas stay available.',
+            );
+            return;
+        }
+        const isEdit =
+            /\b(swap|replace|remove|delete|move|later|change|adjust|revise)\b/i.test(
+                text,
+            );
+        if (isEdit) {
+            const date = state.conversation.activeDate;
+            const current =
+                state.proposal?.date === date ? state.proposal : planFor(date);
+            if (!date || !current) {
+                reply(
+                    'Which plan would you like to change? Open it from My Plans, or resume your proposal below.',
+                );
+                return;
+            }
+            if (state.proposal && state.proposal.date !== date)
+                throw Error(
+                    'Finish your current proposal before changing another plan.',
+                );
+            if (
+                /\d{4}-\d{2}-\d{2}|\b(today|tomorrow|saturday)\b/i.test(text) &&
+                r.date !== date
+            ) {
+                reply(
+                    'That date is different from your active plan. Open the intended day in My Plans first.',
+                );
+                return;
+            }
+            const x = A.editTarget(current, text);
+            if (/swap|replace/i.test(text)) {
+                const options = A.replacementOptions(state, x.id, catalogue);
+                reply(
+                    options.placeIds.length
+                        ? `Here are alternatives for ${x.title}. Its time stays ${x.start}–${x.end}.`
+                        : `No other sample places are available for ${x.title}.`,
+                    options,
+                );
+                return;
+            }
+            if (!state.proposal) M.propose(state, [], date, current.id);
+            if (/remove|delete/i.test(text))
+                state.proposal.items = state.proposal.items.filter(
+                    (i) => i.id !== x.id,
+                );
+            else {
+                const requested = text.match(/\b(\d{1,2}:\d{2})\b/);
+                if (requested) {
+                    const start = M.normalizeTime(requested[1]);
+                    const minutes = (value) =>
+                        Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+                    const endMinutes =
+                        start &&
+                        minutes(start) + minutes(x.end) - minutes(x.start);
+                    if (!start || endMinutes >= 1440)
+                        throw Error(
+                            'Choose a time that finishes within the same day.',
+                        );
+                    const end =
+                        String(Math.floor(endMinutes / 60)).padStart(2, '0') +
+                        ':' +
+                        String(endMinutes % 60).padStart(2, '0');
+                    M.setTime(state, x.id, start, end);
+                } else if (/later/i.test(text)) M.moveLater(state, x.id);
+                else {
+                    reply(
+                        'You can edit the plan below. To change a time here, try “Move Blücherpark to 14:00”.',
+                    );
+                    C.recordPlan(state, 'Opened for editing');
+                    return;
+                }
+            }
+            const applied = A.changed(state, 'Updated ' + x.title);
+            reply(
+                `${x.title} updated in your plan.${applied ? ' Applied automatically. Undo is available.' : ' Review the change, then Apply.'}`,
+            );
+            return;
+        }
+        state.response = { ...r, request: text };
+        if (r.kind === 'proposal') {
+            state.date = r.date;
+            M.propose(
+                state,
+                r.appointment ? ['walk', 'appointment'] : ['walk'],
+                r.date,
+            );
+            const applied = A.changed(state, 'Created proposal');
+            reply(
+                applied
+                    ? 'Your plan is saved. Undo is available.'
+                    : 'Here is a proposal. Edit it here or ask me to make a change. Nothing is confirmed until you apply it.',
+            );
+        } else if (r.kind === 'discovery') {
+            state.conversation.activeDate = null;
+            reply(
+                'Two outdoor ideas from the sample city listings. Save one for later, or add it to your plan.',
+                {
+                    kind: 'discovery',
+                    placeIds: catalogue.slice(0, 2).map((p) => p.id),
+                },
+            );
+        } else if (r.kind === 'answer') {
+            const p =
+                state.proposal?.date === r.date
+                    ? state.proposal
+                    : planFor(r.date);
+            state.conversation.activeDate = null;
+            if (p) {
+                C.presentPlan(state, p.date, replyId);
+            } else
+                reply(
+                    `No confirmed plan for ${shortDate(r.date)} yet.${state.proposal?.date === r.date ? ' Your proposal is still waiting for approval.' : ' You can ask me to put one together.'}`,
+                );
+        } else {
+            state.conversation.activeDate = null;
+            if (r.kind === 'bureaucracy')
+                reply(
+                    'I do not have verified guidance for this question in this preview. Open the reviewed process information to check its sources and coverage.',
+                    {
+                        kind: 'bureaucracy',
+                        sourceKey:
+                            /anmeldung|register|registration|address/i.test(
+                                text,
+                            )
+                                ? 'core.anmeldung'
+                                : /blue card/i.test(text)
+                                  ? 'case.bc.first_application.prepare'
+                                  : null,
+                    },
+                );
+            else if (r.kind === 'unavailable')
+                reply(
+                    'The sample listings do not contain enough verified information to answer that preference. I will not guess about prices, access or current availability.',
+                );
+            else
+                reply(
+                    'This preview understands a few examples: find outdoor places, plan Saturday around an appointment, or change an activity’s time. The live Composer will support more Expadu services.',
+                );
+        }
+    }
+    const closeTimeOptions = () => ExpaduTime.close();
+    document.addEventListener('input', (e) => {
+        if (e.target.id === 'replacement-search') {
+            cancelLoading();
+            replacement.query = e.target.value;
+            renderReplacementResults();
+            return;
+        }
+        if (e.target.id === 'studio-request') {
+            state.prompt = e.target.value;
+            syncSend();
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(120, e.target.scrollHeight) + 'px';
+            store();
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.target.closest('.studio-detail-dialog')) return;
+        if (
+            e.key === 'Escape' &&
+            document.querySelector('.composer-actions')?.open
+        ) {
+            e.preventDefault();
+            closeComposerActions(true);
+            return;
+        }
+        if (e.target.closest('.approval-control')) {
+            const menu = document.querySelector('#approval-menu');
+            const choices = [...menu.querySelectorAll('[data-approval]')];
+            if (e.key === 'Escape' && !menu.hidden) {
+                e.preventDefault();
+                toggleApproval(false, true);
+                return;
+            }
+            if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+                e.preventDefault();
+                if (menu.hidden) toggleApproval(true);
+                else {
+                    const current = choices.indexOf(document.activeElement);
+                    const next =
+                        e.key === 'Home'
+                            ? 0
+                            : e.key === 'End'
+                              ? choices.length - 1
+                              : (current +
+                                    (e.key === 'ArrowDown' ? 1 : -1) +
+                                    choices.length) %
+                                choices.length;
+                    choices[next].focus();
+                }
+                return;
+            }
+        }
+        if (e.key === 'Escape' && loadingJob) {
+            e.preventDefault();
+            cancelLoading();
+            return;
+        }
+        if (
+            e.key === 'Escape' &&
+            panel === 'replace' &&
+            replacement.categoryOpen
+        ) {
+            e.preventDefault();
+            replacement.categoryOpen = false;
+            syncReplacementFilters();
+            document
+                .querySelector('[data-action="toggle-replacement-categories"]')
+                .focus({ preventScroll: true });
+            return;
+        }
+        if (e.key === 'Escape' && panel) {
+            e.preventDefault();
+            closePanel();
+            return;
+        }
+        if (
+            e.key === 'Tab' &&
+            panel &&
+            (panel === 'replace' || matchMedia('(max-width: 999px)').matches)
+        ) {
+            const controls = [
+                ...document
+                    .querySelector('#workspace-panel')
+                    .querySelectorAll(
+                        'button:not(:disabled),a[href],input,summary',
+                    ),
+            ].filter((x) => x.getClientRects().length);
+            const first = controls[0],
+                last = controls.at(-1);
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+        if (
+            e.target.id === 'studio-request' &&
+            e.key === 'Enter' &&
+            !e.shiftKey &&
+            !e.isComposing
+        ) {
+            e.preventDefault();
+            e.target.form.requestSubmit();
+        }
+    });
+    document.addEventListener('submit', (e) => {
+        if (e.target.id === 'studio-form') {
+            e.preventDefault();
+            const t = document.querySelector('#studio-request').value.trim();
+            if (t) submit(t, true);
+            return;
+        }
+        if (e.target.dataset.timeForm) {
+            e.preventDefault();
+            const data = new FormData(e.target),
+                x = state.proposal.items.find(
+                    (x) => x.id === e.target.dataset.timeForm,
+                );
+            if (x && !x.fixed) {
+                const start = M.normalizeTime(data.get('start'));
+                const end = M.normalizeTime(data.get('end'));
+                const error = e.target.querySelector('.time-error');
+                const fields = [...e.target.querySelectorAll('input')];
+                fields.forEach((field) =>
+                    field.removeAttribute('aria-invalid'),
+                );
+                if (!start || !end || end <= start) {
+                    error.hidden = false;
+                    error.textContent =
+                        !start || !end
+                            ? 'Use 24-hour time, e.g. 13:30 or 1330.'
+                            : 'End time must be after the start.';
+                    const field = fields[!start ? 0 : 1];
+                    field.setAttribute('aria-invalid', 'true');
+                    field.focus();
+                    return;
+                }
+                try {
+                    M.setTime(state, x.id, start, end);
+                } catch (problem) {
+                    error.hidden = false;
+                    error.textContent = problem.message;
+                    fields.forEach((field) =>
+                        field.setAttribute('aria-invalid', 'true'),
+                    );
+                    fields[0].focus({ preventScroll: true });
+                    return;
+                }
+                closeTimeOptions();
+                e.target.closest('details').open = false;
+                changed('Updated time for ' + x.title);
+                document
+                    .querySelector(`[data-time-form="${x.id}"]`)
+                    ?.closest('details')
+                    .querySelector('summary')
+                    .focus({ preventScroll: true });
+                notify('Suggested time updated');
+            }
+            return;
+        }
+        if (e.target.id === 'proposal-date-form') {
+            e.preventDefault();
+            const nextDate = new FormData(e.target).get('date');
+            if (
+                state.proposal.items.some(
+                    (x) => x.type === 'event' && x.date !== nextDate,
+                )
+            ) {
+                notify(
+                    'This event has a fixed date. Remove it before changing the day.',
+                );
+                return;
+            }
+            if (state.proposal.date !== nextDate)
+                state.proposal.items.forEach((item) => {
+                    if (item.journey) item.journey.status = 'stale';
+                });
+            state.proposal.date = nextDate;
+            state.date = state.proposal.date;
+            changed('Changed plan date');
+        }
+    });
+    document.addEventListener('change', (e) => {
+        if (e.target.id === 'plan-date' && e.target.value) {
+            state.date = e.target.value;
+            store();
+            render();
+        }
+    });
+    document.addEventListener('click', (e) => {
+        const el = e.target.closest('button,a');
+        if (!el || el.closest('.studio-detail-dialog')) return;
+        if (el.closest('.composer-actions-menu')) closeComposerActions(true);
+        if (el.id === 'approval-mode') {
+            toggleApproval(document.querySelector('#approval-menu').hidden);
+            return;
+        }
+        if (el.dataset.approval) {
+            C.setApproval(state, el.dataset.approval);
+            store();
+            syncApproval();
+            toggleApproval(false, true);
+            notify(
+                el.dataset.approval === 'routine'
+                    ? 'Routine plan edits can now apply automatically. Undo stays available.'
+                    : 'Plan changes will wait for your approval.',
+            );
+            return;
+        }
+        if (el.dataset.action === 'cancel-loading') {
+            cancelLoading();
+            document
+                .querySelector(
+                    panel === 'replace'
+                        ? '[data-action="apply-replacement"]'
+                        : '#studio-request',
+                )
+                .focus();
+            return;
+        }
+        if (
+            loadingJob &&
+            (el.dataset.nav || el.dataset.action || !el.closest('#studio-form'))
+        )
+            cancelLoading();
+        if (el.dataset.openSection) {
+            state.conversation.currentId = el.dataset.openSection;
+            state.conversation.activeDate = null;
+            closePanel(false);
+            store();
+            render();
+            revealLatest();
+            return;
+        }
+        if (el.dataset.retry) {
+            const entry = C.current(state).entries.find(
+                (x) => x.id === el.dataset.retry,
+            );
+            if (entry?.request) submit(entry.request);
+            return;
+        }
+        if (el.dataset.openPlan) {
+            const date = el.dataset.openPlan;
+            if (!planFor(date) && state.proposal?.date !== date) {
+                notify(
+                    'This proposal was discarded. Open My Plans to choose a day.',
+                );
+                return;
+            }
+            state.date = date;
+            C.presentPlan(state, date);
+            closePanel(false);
+            store();
+            render();
+            revealPlan();
+            return;
+        }
+        if (el.dataset.chatReplace || el.dataset.browseReplacements) {
+            const entry = C.current(state).entries.find(
+                (x) =>
+                    x.id ===
+                    (el.dataset.entry || el.dataset.browseReplacements),
+            );
+            if (!entry || !A.replacementPlan(state, entry)) {
+                notify('Your plan has changed. Ask for new alternatives.');
+                return;
+            }
+            replacement = {
+                planDate: entry.planDate || state.conversation.activeDate,
+                proposalToken: entry.proposalToken,
+                itemId: entry.itemId,
+                selected: el.dataset.chatReplace || null,
+                query: '',
+                filter: 'all',
+                category: '',
+                categoryOpen: false,
+            };
+            if (el.dataset.browseReplacements) openPanel('replace');
+            else applyReplacement(el);
+            return;
+        }
+        if (el.dataset.action === 'undo-plan') {
+            try {
+                A.undo(state);
+                note('Last applied change undone.');
+                store();
+                render();
+            } catch (error) {
+                notify(error.message);
+            }
+            return;
+        }
+        if (el.dataset.action === 'close-panel') {
+            closePanel();
+            return;
+        }
+        if (el.dataset.nav) {
+            e.preventDefault();
+            navigate(el.dataset.nav);
+            return;
+        }
+        if (el.dataset.prompt) {
+            submit(el.dataset.prompt);
+            return;
+        }
+        if (el.dataset.save) {
+            const id = el.dataset.save,
+                before = state.saved.includes(id);
+            M.bookmark(state, id);
+            store();
+            el.setAttribute('aria-pressed', String(!before));
+            el.setAttribute(
+                'aria-label',
+                `${before ? 'Save' : 'Unsave'} ${place(id).title}`,
+            );
+            window.ExpaduMotion?.feedback(el);
+            notify(
+                before ? 'Removed from saved ideas' : 'Saved for another day',
+                () => {
+                    state.saved = state.saved.filter((x) => x !== id);
+                    if (before) state.saved.push(id);
+                    store();
+                    render();
+                },
+            );
+            syncSaved();
+            if (savedView) {
+                render();
+                window.ExpaduMotion?.reveal(
+                    document.querySelector('#workspace-panel .panel-body'),
+                );
+            }
+            return;
+        }
+        if (el.dataset.add) {
+            const id = el.dataset.add;
+            if (el.getAttribute('aria-disabled') === 'true') return;
+            try {
+                const date = state.conversation.activeDate || state.date;
+                M.propose(state, [id], state.proposal?.date || date);
+                const added = state.proposal.items.find(
+                    (item) => item.id === id,
+                );
+                changed(
+                    `${place(id).title} added at ${added.start}–${added.end}`,
+                );
+                notify(
+                    'Added to your plan. Keep choosing places or review below.',
+                );
+            } catch (error) {
+                notify(error.message);
+            }
+            return;
+        }
+        if (el.dataset.revise) {
+            const p = state.plans.find((x) => x.id === el.dataset.revise);
+            if (p) {
+                try {
+                    M.propose(state, [], p.date, p.id);
+                    showProposal();
+                } catch (error) {
+                    notify(error.message);
+                }
+            }
+            return;
+        }
+        if (el.dataset.remove) {
+            const id = el.dataset.remove;
+            const old = M.clone(state.proposal);
+            state.proposal.items = state.proposal.items.filter(
+                (x) => x.id !== id,
+            );
+            changed('Activity removed');
+            const afterRemoval = JSON.stringify(state.proposal);
+            notify('Activity removed', () => {
+                if (JSON.stringify(state.proposal) !== afterRemoval) {
+                    notify(
+                        'The draft has changed since. Review it before restoring this activity.',
+                    );
+                    return;
+                }
+                if (state.conversation.approval === 'routine') {
+                    notify('Use Undo last applied change on the plan.');
+                    return;
+                }
+                state.proposal = old;
+                changed('Restored removed activity');
+            });
+            return;
+        }
+        if (el.dataset.swap) {
+            const item = state.proposal?.items.find(
+                (item) => item.id === el.dataset.swap,
+            );
+            if (!item || item.fixed) return;
+            state.conversation.activeDate = state.proposal.date;
+            submit(`Swap ${item.title}`);
+            return;
+        }
+        if (el.dataset.replacementFilter) {
+            replacement.filter =
+                replacement.filter === 'saved' ? 'all' : 'saved';
+            replacement.categoryOpen = false;
+            syncReplacementFilters();
+            renderReplacementResults();
+            document
+                .querySelector('[data-replacement-filter="saved"]')
+                .focus({ preventScroll: true });
+            return;
+        }
+        if (el.dataset.action === 'toggle-replacement-categories') {
+            replacement.categoryOpen = !replacement.categoryOpen;
+            syncReplacementFilters();
+            document
+                .querySelector('[data-action="toggle-replacement-categories"]')
+                .focus({ preventScroll: true });
+            if (replacement.categoryOpen && !reducedMotion())
+                document.querySelector('#replacement-categories').animate(
+                    [
+                        { opacity: 0, transform: 'translateY(-4px)' },
+                        { opacity: 1, transform: 'translateY(0)' },
+                    ],
+                    { duration: 160, easing: 'ease-out' },
+                );
+            return;
+        }
+        if (el.hasAttribute('data-replacement-category')) {
+            replacement.category = el.dataset.replacementCategory;
+            replacement.categoryOpen = false;
+            syncReplacementFilters();
+            renderReplacementResults();
+            document
+                .querySelector('[data-action="toggle-replacement-categories"]')
+                .focus({ preventScroll: true });
+            return;
+        }
+        if (el.dataset.selectReplacement) {
+            replacement.selected = el.dataset.selectReplacement;
+            syncReplacementSelection();
+            if (!reducedMotion())
+                el.animate(
+                    [{ transform: 'scale(.985)' }, { transform: 'scale(1)' }],
+                    { duration: 180, easing: 'ease-out' },
+                );
+            return;
+        }
+        if (el.dataset.action === 'reset-replacement-search') {
+            replacement.filter = 'all';
+            replacement.query = '';
+            replacement.category = '';
+            replacement.categoryOpen = false;
+            renderReplacement();
+            document.querySelector('#replacement-search').focus();
+            return;
+        }
+        if (el.dataset.action === 'apply-replacement') {
+            applyReplacement(el);
+            return;
+        }
+        if (el.dataset.date) {
+            state.date = el.dataset.date;
+            store();
+            render();
+            return;
+        }
+        if (el.dataset.dayStep) {
+            const d = new Date(state.date + 'T12:00:00');
+            d.setDate(d.getDate() + Number(el.dataset.dayStep));
+            state.date = M.iso(d);
+            store();
+            render();
+            return;
+        }
+        const action = el.dataset.action;
+        if (action === 'undo') {
+            undo?.();
+            document.querySelector('#studio-toast').hidden = true;
+        }
+        if (action === 'new') {
+            C.startFresh(state);
+            state.response = null;
+            state.prompt = '';
+            store();
+            document.querySelector('#studio-request').value = '';
+            render();
+            window.scrollTo({
+                top: 0,
+                behavior: reducedMotion() ? 'instant' : 'smooth',
+            });
+            document
+                .querySelector('#studio-request')
+                .focus({ preventScroll: true });
+        }
+        if (action === 'discover') submit('Find something outdoors');
+        if (action === 'plan-example')
+            submit(`Plan ${state.date} around my 15:00 appointment.`);
+        if (action === 'show-proposal') showProposal();
+        if (action === 'discard') {
+            const p = M.clone(state.proposal);
+            C.recordPlan(state, 'Discarded proposal');
+            state.proposal = null;
+            state.response = null;
+            note('Proposal discarded. Your confirmed plan is unchanged.');
+            store();
+            render(true);
+            notify('Proposal discarded', () => {
+                if (state.proposal) {
+                    notify(
+                        'There is another proposal in progress. Finish it before restoring this one.',
+                    );
+                    return;
+                }
+                state.proposal = p;
+                showProposal();
+            });
+        }
+        if (action === 'confirm') {
+            beginLoading(
+                'Saving this plan in your browser…',
+                'list',
+                () => {
+                    commitPlan();
+                },
+                el,
+            );
+        }
+    });
+    window.addEventListener('popstate', () => {
+        cancelLoading();
+        const target =
+            location.hash === '#history'
+                ? 'history'
+                : location.hash === '#saved'
+                  ? 'saved'
+                  : location.hash === '#plans'
+                    ? 'plans'
+                    : location.hash === '#replace' && replacement
+                      ? 'replace'
+                      : null;
+        if (target) openPanel(target, false);
+        else closePanel(true, false);
+    });
+    window.addEventListener('resize', panelAccessibility);
+    if (!C.current(state).entries.length && state.response) {
+        if (state.response.request)
+            C.append(state, 'user', state.response.request);
+        note(
+            'Your earlier work is available below. This conversation will now keep new exchanges.',
+        );
+        if (state.proposal || planFor(state.date))
+            C.recordPlan(state, 'Earlier plan');
+        else if (state.response.kind === 'discovery')
+            C.append(state, 'assistant', 'Previously suggested places', {
+                kind: 'discovery',
+                placeIds: catalogue.slice(0, 2).map((p) => p.id),
+            });
+    }
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('[data-retry-handoff]')) {
+            const shared = ExpaduStore.read();
+            shared.draft = state.handoffs || [];
+            StudioIntegration.receive(state, shared, M, C);
+            shared.draft = state.handoffs;
+            if (!writeShared(shared)) return;
+            store();
+            render();
+        }
+    });
+    // Capture before ordinary action handling, so minimizing never cancels a reply.
+    document.addEventListener(
+        'click',
+        (event) => {
+            if (!event.target.closest('[data-minimize-composer]')) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            minimizeComposer();
+        },
+        true,
+    );
+    let minimizeSwipe = null;
+    document.addEventListener('pointerdown', (event) => {
+        if (
+            event.pointerType !== 'touch' ||
+            !event.target.closest('.studio-toolbar') ||
+            event.target.closest('button')
+        )
+            return;
+        minimizeSwipe = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+        };
+    });
+    document.addEventListener('pointerup', (event) => {
+        const start = minimizeSwipe;
+        minimizeSwipe = null;
+        if (!start || start.id !== event.pointerId) return;
+        const dy = event.clientY - start.y,
+            dx = event.clientX - start.x;
+        if (dy > 64 && dy > Math.abs(dx) * 1.5) minimizeComposer();
+    });
+    document.addEventListener('pointercancel', () => {
+        minimizeSwipe = null;
+    });
+    let headerFrame = false;
+    function positionComposerHeader() {
+        if (headerFrame) return;
+        headerFrame = true;
+        requestAnimationFrame(() => {
+            headerFrame = false;
+            const header = document.querySelector('.scroll-header');
+            const bottom =
+                header && !header.classList.contains('is-hidden')
+                    ? header.getBoundingClientRect().bottom
+                    : 0;
+            document.documentElement.style.setProperty(
+                '--composer-header-top',
+                `${Math.max(0, bottom)}px`,
+            );
+        });
+    }
+    window.addEventListener('scroll', positionComposerHeader, {
+        passive: true,
+    });
+    window.addEventListener('resize', positionComposerHeader, {
+        passive: true,
+    });
+    window.addEventListener('load', positionComposerHeader);
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted && minimizing) {
+            minimizing = false;
+            document.body.classList.remove('is-minimizing');
+            for (const selector of ['#main', '.studio-input-wrap'])
+                document
+                    .querySelector(selector)
+                    ?.getAnimations()
+                    .forEach((animation) => animation.cancel());
+        }
+        positionComposerHeader();
+    });
+    const features = StudioReviewFeatures.create({
+        getState: () => state,
+        M,
+        C,
+        A,
+        E,
+        I,
+        changed,
+        render,
+        store,
+        note,
+        notify,
+        submit,
+        beginLoading,
+        shortDate,
+        closeTimeOptions,
+    });
+    const shared = ExpaduStore.read();
+    if (StudioIntegration.clearCancelledHandoffs(state, shared))
+        writeShared(shared);
+    const handoff = shared.composerHandoff;
+    const incoming = handoff && state.lastHandoff !== handoff.id;
+    if (!state.bookmarksConnected || incoming) {
+        state.saved = [
+            ...new Set([
+                ...state.saved,
+                ...(shared.savedIdeas || []).map(StudioIntegration.savedId),
+            ]),
+        ];
+        state.bookmarksConnected = true;
+    }
+    let incomingPrompt = '';
+    let incomingStepHelp = false;
+    if (incoming) {
+        if (['ask', 'routine'].includes(shared.approvalMode))
+            state.conversation.approval = shared.approvalMode;
+        if (handoff.action === 'new') {
+            C.startFresh(state);
+            state.response = null;
+            state.prompt = '';
+            shared.prompt = '';
+        }
+        const orientationPerson = new URLSearchParams(location.search).get(
+            'bureaucracyGuide',
+        );
+        const orientationState = BureaucracyOrientation.load();
+        const incomingGuide =
+            orientationPerson === orientationState.person &&
+            BureaucracyOrientation.allowed(orientationState);
+        if (incomingGuide) {
+            if (window.BureaucracySituation?.applies(orientationState))
+                BureaucracyOrientation.review(orientationState);
+            else BureaucracyOrientation.begin(orientationState);
+            BureaucracyOrientation.save(orientationState);
+        }
+        incomingStepHelp =
+            (incomingGuide &&
+                StudioIntegration.receiveBureaucracyGuide(
+                    state,
+                    orientationPerson,
+                    C,
+                    orientationState.profileId || null,
+                )) ||
+            StudioIntegration.receiveBureaucracyHelp(
+                state,
+                new URLSearchParams(location.search).get('helpStep'),
+                window.BureaucracySource || [],
+                C,
+            );
+        if (!incomingStepHelp) StudioIntegration.receive(state, shared, M, C);
+        state.lastHandoff = handoff.id;
+        if (handoff.submit) incomingPrompt = shared.prompt.trim();
+        else if (shared.prompt.trim() && !state.prompt.trim())
+            state.prompt = shared.prompt;
+        if (!incomingStepHelp) shared.draft = state.handoffs;
+        if (
+            handoff.date &&
+            (state.proposal?.date === handoff.date || planFor(handoff.date))
+        ) {
+            state.date = handoff.date;
+            C.presentPlan(state, handoff.date);
+        }
+        if (handoff.submit) shared.prompt = '';
+        writeShared(shared);
+    }
+    window.addEventListener('storage', (event) => {
+        if (event.key !== KEY && event.key !== null) return;
+        try {
+            refreshWorkspace();
+        } catch {
+            persistent = false;
+            syncStorageNotice();
+        }
+    });
+    render();
+    store();
+    if (incomingStepHelp) revealLatest();
+    if (incomingPrompt) submit(incomingPrompt);
+    if (initialPanel) {
+        history.replaceState({}, '', StudioNavigation.panelUrl(location.href));
+        openPanel(initialPanel);
+    }
+    if (incoming && handoff.action === 'appointment')
+        features.appointment(
+            document.querySelector('.composer-actions > summary'),
+        );
+    if (incoming && handoff.action === 'examples')
+        features.examples(
+            document.querySelector('.composer-actions > summary'),
+        );
+    if (!persistent) store();
+})();

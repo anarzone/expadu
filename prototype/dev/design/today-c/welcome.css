@@ -1,0 +1,94 @@
+.optional-welcome {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    border-radius: 20px;
+    padding: 16px 18px;
+    margin: 12px 0 22px;
+    background: var(--blue, #dff4f8);
+    color: var(--ink, #211f17);
+}
+.optional-welcome[hidden] {
+    display: none;
+}
+.optional-welcome .welcome-symbol {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    background: white;
+    border-radius: 12px;
+}
+.optional-welcome svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.optional-welcome > div {
+    flex: 1;
+}
+.optional-welcome strong {
+    font-size: 17px;
+    font-weight: 650;
+}
+.optional-welcome p {
+    font-size: 14px;
+    line-height: 1.45;
+    margin: 4px 0 2px;
+    color: var(--muted, #5e6e73);
+}
+.optional-welcome a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink, #211f17);
+    text-decoration: none;
+}
+.optional-welcome > button {
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    margin: -5px -9px 0 0;
+    border-radius: 50%;
+    color: inherit;
+    cursor: pointer;
+}
+.optional-welcome :is(button, a):focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+}
+@media (min-width: 900px) {
+    .optional-welcome > div {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        column-gap: 16px;
+    }
+    .optional-welcome a {
+        grid-column: 2;
+        grid-row: 1 / 3;
+    }
+    .optional-welcome p {
+        grid-column: 1;
+    }
+}
+@media (max-width: 420px) {
+    .optional-welcome {
+        padding: 12px;
+        gap: 10px;
+    }
+    .optional-welcome .welcome-symbol {
+        display: none;
+    }
+}

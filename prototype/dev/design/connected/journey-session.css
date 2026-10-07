@@ -1,0 +1,58 @@
+@import url('tokens.css');
+.journey-resume {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 1176px;
+    min-height: 56px;
+    margin: 12px auto;
+    padding: 9px 14px;
+    border-radius: var(--radius-lg);
+    background: var(--color-select-bg, #e1f4f8);
+    color: var(--color-text, #211d15);
+    text-decoration: none;
+    font:
+        14px/1.4 Geist,
+        Arial,
+        sans-serif;
+}
+.journey-resume[hidden] {
+    display: none !important;
+}
+.journey-resume > svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+.journey-resume > span {
+    min-width: 0;
+    flex: 1;
+}
+.journey-resume strong,
+.journey-resume small {
+    display: block;
+}
+.journey-resume small {
+    font-size: var(--text-caption);
+    color: var(--color-text-soft, #506a74);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.journey-resume:focus-visible {
+    outline: 2px solid var(--color-focus, #32697b);
+    outline-offset: 2px;
+}
+.journey-resume:active {
+    background: var(--color-select-bg-hover, #cbeaf1);
+}
+@media (max-width: 999px) {
+    #shell + .journey-resume,
+    .service-nav + .journey-resume {
+        margin-inline: 16px;
+    }
+}

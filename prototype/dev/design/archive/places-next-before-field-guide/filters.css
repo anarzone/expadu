@@ -1,0 +1,672 @@
+/* Compact discovery in the shared Expadu colour and icon language. */
+html:has(body[data-page='places']) {
+    scrollbar-gutter: stable;
+}
+body[data-page='places'] .places-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+body[data-page='places'] .places-tools .search-bar {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    height: var(--discovery-target);
+    padding: 0 12px;
+    gap: 9px;
+    border-radius: 13px;
+    background: white;
+    border-color: var(--line);
+    box-shadow: 0 2px 5px #211d1503;
+}
+body[data-page='places'] .search-bar input {
+    width: 100%;
+    min-width: 0;
+    height: calc(var(--discovery-target) - 2px);
+    padding: 0;
+    font-size: var(--discovery-field-text);
+}
+body[data-page='places'] .search-bar:focus-within,
+.origin-input:focus-within {
+    outline: none;
+    border-color: var(--cyan);
+    box-shadow: inset 0 0 0 1px var(--cyan);
+}
+body[data-page='places'] .search-bar > svg,
+.saved-control svg,
+.discovery-control > svg,
+#clear-filters svg,
+.picker-modes svg {
+    width: var(--discovery-icon);
+    height: var(--discovery-icon);
+    flex: 0 0 var(--discovery-icon);
+}
+body[data-page='places'] .search-bar > svg {
+    color: var(--muted);
+}
+#clear-search {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    min-height: 44px;
+    padding: 0;
+    margin-right: -8px;
+    color: var(--muted);
+}
+#clear-search svg {
+    width: 16px;
+    height: 16px;
+}
+.saved-control {
+    display: grid;
+    place-items: center;
+    width: var(--discovery-target);
+    height: var(--discovery-target);
+    flex: none;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    padding: 0;
+    background: transparent;
+    color: var(--ink);
+}
+.saved-control span {
+    display: none;
+}
+.saved-control[aria-pressed='true'] {
+    background: var(--blue);
+    border-color: var(--cyan);
+}
+.saved-control[aria-pressed='true'] svg {
+    fill: var(--cyan);
+}
+body[data-page='places'] .control-row {
+    display: block;
+    margin: 8px 0 4px;
+}
+body[data-page='places'] .filters {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: repeat(var(--category-count), minmax(0, 1fr));
+    width: min(100%, 600px);
+    gap: 4px;
+    margin: 0;
+    padding: 3px;
+    border: 0;
+}
+body[data-page='places'] .filters::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: calc(
+        3px + var(--category-index, 0) * ((100% - 2px) / var(--category-count))
+    );
+    width: calc(
+        (100% - 6px - (var(--category-count) - 1) * 4px) / var(--category-count)
+    );
+    background: var(--blue);
+    border-radius: 12px;
+    z-index: -1;
+    pointer-events: none;
+}
+body[data-page='places'] .filters .filter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 6px 3px;
+    margin: 0;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 500;
+}
+body[data-page='places'] .filters .filter svg {
+    width: 20px;
+    height: 20px;
+}
+body[data-page='places'] .filters .filter[aria-pressed='true'] {
+    color: var(--ink);
+}
+.discovery-controls {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0;
+    border-top: 1px solid var(--line);
+}
+.category-slot {
+    display: none;
+}
+[data-category-icon] {
+    display: flex;
+    flex: 0 0 20px;
+}
+[data-category-icon] svg {
+    width: 20px;
+    height: 20px;
+}
+.picker-category-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+}
+.picker-category-options button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px;
+    border-radius: 9px;
+    font-size: 12px;
+    text-align: left;
+}
+.picker-category-options svg,
+#reset-category-filters svg {
+    width: 20px;
+    height: 20px;
+}
+.picker-category-options [aria-pressed='true'] {
+    background: var(--blue);
+    font-weight: 600;
+}
+#reset-category-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+    color: var(--action);
+    font-size: 12px;
+}
+.discovery-slot {
+    min-width: 0;
+}
+.area-slot {
+    flex: 1;
+}
+.discovery-control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 44px;
+    max-width: 100%;
+    min-height: var(--discovery-target);
+    padding: 0 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ink);
+    font-size: var(--discovery-label);
+}
+.discovery-control [data-picker-value] {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.icon-control,
+#clear-filters {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 10px;
+}
+#clear-filters {
+    color: var(--action);
+}
+.discovery-control[aria-expanded='true'],
+.discovery-control[data-selected='true'],
+.discovery-control:active,
+.saved-control:active {
+    background: var(--blue);
+}
+.discovery-control.has-origin::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 7px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--cyan);
+}
+body[data-page='places'] .section-caption {
+    justify-content: flex-start;
+    margin: 2px 0 10px;
+    min-height: 20px;
+    gap: 7px;
+}
+body[data-page='places'] .section-caption > span {
+    font-size: 12px;
+    color: var(--muted);
+}
+body[data-page='places'] .section-caption .catalogue-note {
+    font-size: 10px;
+}
+.discovery-picker {
+    position: absolute;
+    z-index: 35;
+    top: calc(100% + 4px);
+    left: 0;
+    width: min(var(--discovery-menu-width), 100%);
+    max-height: min(440px, 55dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 6px 12px 12px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: white;
+    box-shadow: 0 12px 36px #211d151a;
+}
+.origin-picker,
+.sort-picker {
+    left: auto;
+    right: 0;
+}
+.sort-picker {
+    width: 200px;
+    padding: 6px;
+}
+.picker-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 40px;
+    gap: 8px;
+    color: var(--ink);
+    font-size: 13px;
+}
+.picker-head strong {
+    font-weight: 600;
+}
+.picker-head .icon-button {
+    color: var(--muted);
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    margin-right: -8px;
+    padding: 0;
+}
+.picker-head svg {
+    width: 16px;
+    height: 16px;
+}
+.all-areas {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 9px;
+    font-size: 13px;
+    text-align: left;
+    color: var(--ink);
+}
+.all-areas svg {
+    width: 18px;
+    height: 18px;
+}
+.all-areas svg:last-child {
+    margin-left: auto;
+    opacity: 0;
+}
+.all-areas[aria-pressed='true'] {
+    background: var(--blue);
+}
+.all-areas[aria-pressed='true'] svg:last-child {
+    opacity: 1;
+}
+.picker-label {
+    margin: 12px 2px 6px;
+    color: var(--muted);
+    font-size: 11px;
+}
+.picker-area-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+}
+.picker-area {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    min-height: 44px;
+    padding: 8px;
+    border-radius: 9px;
+    color: var(--ink);
+    font-size: 12px;
+    cursor: pointer;
+}
+.picker-area input,
+.picker-modes input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    inset: 0;
+    margin: 0;
+    cursor: pointer;
+}
+.picker-area svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+}
+.picker-area:has(:checked) {
+    background: var(--blue);
+}
+.picker-area:has(:checked) svg {
+    opacity: 1;
+}
+.picker-hint {
+    margin: 8px 2px 0;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+.origin-input {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--paper);
+    padding: 0 10px;
+}
+.origin-input > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+}
+.picker-field input {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    border: 0;
+    padding: 8px 0;
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    background: transparent;
+    outline: none;
+    box-shadow: none;
+}
+#discovery-origin-form fieldset {
+    border: 0;
+    min-width: 0;
+    margin: 10px 0 0;
+    padding: 0;
+}
+#discovery-origin-form legend {
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 6px;
+    padding: 0;
+}
+.picker-modes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    background: var(--paper);
+    padding: 3px;
+    border-radius: 10px;
+}
+.picker-modes label {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 44px;
+    border-radius: 8px;
+    color: var(--ink);
+    cursor: pointer;
+}
+.picker-modes label span {
+    display: flex;
+}
+.picker-modes label:has(:checked) {
+    background: var(--blue);
+    box-shadow: inset 0 -2px var(--cyan);
+}
+.picker-origin-footer {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+.picker-origin-footer .picker-hint {
+    margin: 0;
+}
+.picker-done {
+    min-height: 44px;
+    padding: 6px 12px;
+    color: var(--action);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+}
+.sort-picker .picker-head {
+    padding-left: 10px;
+}
+.sort-picker .picker-head .icon-button {
+    margin-right: 0;
+}
+.sort-picker > button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+}
+.sort-picker > button svg {
+    width: 16px;
+    height: 16px;
+    opacity: 0;
+}
+.sort-picker > button[aria-pressed='true'] {
+    background: var(--blue);
+}
+.sort-picker > button[aria-pressed='true'] svg {
+    opacity: 1;
+}
+.places-discovery .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.places-discovery button:focus-visible,
+.picker-area:has(:focus-visible),
+.picker-modes label:has(:focus-visible) {
+    outline: 2px solid var(--cyan);
+    outline-offset: -2px;
+}
+.places-discovery button:focus:not(:focus-visible),
+.places-discovery input:focus {
+    outline: none;
+}
+@media (max-width: 999px) {
+    body[data-page='places'] .control-row,
+    #clear-filters {
+        display: none;
+    }
+    .discovery-controls {
+        gap: 4px;
+        margin-top: 6px;
+        border-top: 0;
+    }
+    .category-slot {
+        display: block;
+        flex: 1;
+    }
+    .area-slot {
+        flex: 1;
+    }
+    .category-slot .discovery-control,
+    .area-slot .discovery-control {
+        width: 100%;
+        padding-inline: 4px;
+        font-size: var(--discovery-label);
+        gap: 5px;
+    }
+    .origin-slot,
+    .sort-slot {
+        flex: 0 0 44px;
+    }
+    .category-picker {
+        width: min(300px, 100%);
+    }
+}
+@media (max-width: 359px) {
+    .discovery-controls {
+        gap: 2px;
+    }
+    .category-slot {
+        flex: 1.1;
+    }
+    .category-slot .discovery-control,
+    .area-slot .discovery-control {
+        padding-inline: 3px;
+    }
+}
+@media (min-width: 1000px) {
+    .places-discovery {
+        display: grid;
+        grid-template-columns: minmax(260px, 0.9fr) minmax(490px, 1.1fr);
+        column-gap: 20px;
+        align-items: center;
+    }
+    body[data-page='places'] .control-row {
+        margin: 0;
+        min-width: 0;
+    }
+    body[data-page='places'] .filters {
+        width: 100%;
+    }
+    .discovery-controls {
+        grid-column: 1 / -1;
+        margin-top: 8px;
+    }
+}
+@media (max-width: 650px) {
+    body[data-page='places'] .page-title {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        margin: 0;
+        padding: 0;
+    }
+    body[data-page='places'] .page-title .title-aside {
+        display: none;
+    }
+    body[data-page='places'] #main {
+        padding-top: 12px;
+    }
+    .discovery-control {
+        font-size: var(--discovery-label);
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    body[data-page='places'] .filters::before {
+        transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .places-discovery button,
+    .picker-area,
+    .picker-modes label {
+        transition:
+            color 160ms ease,
+            background-color 160ms ease,
+            box-shadow 160ms ease;
+    }
+}
+body[data-page='places'] .place-meta {
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0 2px;
+}
+body[data-page='places'] .place-meta > button:first-child {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+}
+body[data-page='places'] .place-meta h3 {
+    color: var(--ink);
+}
+body[data-page='places'] .place-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex: none;
+    min-height: 44px;
+    padding: 0 4px 0 8px;
+    font-size: 13px;
+    color: var(--action);
+    white-space: nowrap;
+    border-radius: 10px;
+}
+body[data-page='places'] .place-add:hover {
+    color: var(--action);
+    background: #ff390208;
+}
+.place-add svg {
+    width: 17px;
+    height: 17px;
+}
+body[data-page='places'] .place-foot {
+    padding: 3px 0 0;
+    font-size: 10px;
+}
+body[data-page='places'] .place-foot a {
+    padding-block: 5px;
+}
+
+@media (max-width: 650px) {
+    body[data-page='places'] .place-image {
+        height: clamp(165px, 25svh, 230px);
+        border-radius: 20px;
+    }
+    body[data-page='places'] .place-meta h3 {
+        font-size: 20px;
+        line-height: 1.25;
+    }
+    body[data-page='places'] .place-meta p {
+        margin-top: 3px;
+        font-size: 13px;
+    }
+    body[data-page='places'] .place-add {
+        font-size: 12px;
+    }
+    body[data-page='places'] .place-card {
+        margin-bottom: 20px;
+    }
+}

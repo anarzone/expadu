@@ -1,0 +1,49 @@
+{
+  "created_at": "2026-10-01",
+  "method": "built-in image_gen, fresh generation from blank canvas",
+  "prompts": "final-prompts.json",
+  "raster_inputs": false,
+  "post_processing": false,
+  "outputs": [
+    {
+      "file": "01-everyday.png",
+      "source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-6f51fa5d-c27d-4538-b6dc-dca50cd6986e.png",
+      "sha256": "5804cffb8a0e0c8d45166c60d3dde2583ebfc6307e4efafc0f4cfcf6b0f0c752",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "prompt_key": "everyday"
+    },
+    {
+      "file": "02-important-event.png",
+      "source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-6c0961f8-791c-48ea-8aac-ba556dfde47c.png",
+      "sha256": "2c5a468d27879405dad71d9ece176f96503984f2bb040d90c2addca36ea43227",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "prompt_key": "important"
+    },
+    {
+      "file": "03-route-delay.png",
+      "source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-f86636bd-6495-477d-af2c-4173dff202cf.png",
+      "sha256": "f9484e5ed44513204ac0ed629de63ca8ed51145f8c19bd6636a715a14184f650",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "prompt_key": "delay"
+    },
+    {
+      "file": "04-interactions.png",
+      "source": "/Users/anar/.codex/generated_images/01a071b7-23e0-7502-82aa-67ade1312403/exec-12e0c6a8-b068-4658-b1c2-23acf2b29fb8.png",
+      "sha256": "5fe404a22c49ebab8ff9c27def660a3a666c4e21ab5de7ecfc30c46f98299476",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "prompt_key": "interactions"
+    }
+  ]
+}

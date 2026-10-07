@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc"><title id="title">Distinct actions, consistent icons</title><desc id="desc">Information for appointment details, folded map for route, folder for paperwork, calendar plus for planning, bookmark for save, signpost for alternative routes. Exact Phosphor Regular SVG assets.</desc><rect width="1200" height="680" rx="24" fill="#F5FAFB"/><style>text{font-family:Arial,sans-serif;fill:#20221D}.title{font-size:28px;font-weight:700}.body{font-size:18px;font-weight:600}.sub{font-size:15px;fill:#53656A}.value{font-size:25px;font-weight:700}</style>
+<text x="36" y="48" class="title">Distinct actions. Consistent icons.</text>
+<text x="36" y="78" class="sub">Exact Phosphor Regular symbols · Labels below explain this reference, not extra buttons in the app.</text>
+<rect x="36" y="108" width="176" height="132" rx="18" fill="white"/>
+<g transform="translate(101 126) scale(0.171875)" fill="#D9340A"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"/></g>
+<text x="124" y="212" text-anchor="middle" class="sub">Appointment details</text>
+<rect x="225" y="108" width="176" height="132" rx="18" fill="white"/>
+<g transform="translate(290 126) scale(0.171875)" fill="#126B82"><path d="M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM104,52.94l48,24V203.06l-48-24ZM40,62.25l48-12v127.5l-48,12Zm176,131.5-48,12V78.25l48-12Z"/></g>
+<text x="313" y="212" text-anchor="middle" class="sub">View route</text>
+<rect x="414" y="108" width="176" height="132" rx="18" fill="white"/>
+<g transform="translate(479 126) scale(0.171875)" fill="#D9340A"><path d="M245,110.64A16,16,0,0,0,232,104H216V88a16,16,0,0,0-16-16H130.67L102.94,51.2a16.14,16.14,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A16.05,16.05,0,0,0,245,110.64ZM93.34,64,123.2,86.4A8,8,0,0,0,128,88h72v16H69.77a16,16,0,0,0-15.18,10.94L40,158.7V64Zm112,136H43.1l26.67-80H232Z"/></g>
+<text x="502" y="212" text-anchor="middle" class="sub">Open paperwork</text>
+<rect x="603" y="108" width="176" height="132" rx="18" fill="white"/>
+<g transform="translate(668 126) scale(0.171875)" fill="#D9340A"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-48-56a8,8,0,0,1-8,8H136v16a8,8,0,0,1-16,0V160H104a8,8,0,0,1,0-16h16V128a8,8,0,0,1,16,0v16h16A8,8,0,0,1,160,152Z"/></g>
+<text x="691" y="212" text-anchor="middle" class="sub">Plan this event</text>
+<rect x="792" y="108" width="176" height="132" rx="18" fill="white"/>
+<g transform="translate(857 126) scale(0.171875)" fill="#126B82"><path d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Zm0,177.57-51.77-32.35a8,8,0,0,0-8.48,0L72,209.57V48H184Z"/></g>
+<text x="880" y="212" text-anchor="middle" class="sub">Save for later</text>
+<rect x="981" y="108" width="176" height="132" rx="18" fill="white"/>
+<g transform="translate(1046 126) scale(0.171875)" fill="#D9340A"><path d="M246,106.65,212.33,69.3A16,16,0,0,0,200.44,64H136V32a8,8,0,0,0-16,0V64H40A16,16,0,0,0,24,80v64a16,16,0,0,0,16,16h80v64a8,8,0,0,0,16,0V160h64.44a16,16,0,0,0,11.89-5.3L246,117.35A8,8,0,0,0,246,106.65ZM200.44,144H40V80H200.44l28.8,32Z"/></g>
+<text x="1069" y="212" text-anchor="middle" class="sub">Alternative routes</text>
+<text x="36" y="288" class="body">In the page</text>
+<rect x="36" y="310" width="554" height="120" rx="22" fill="white"/>
+<text x="62" y="347" class="value">14:00  Your appointment</text>
+<text x="62" y="378" class="sub">Mülheim · Confirmed</text>
+<g transform="translate(526 340) scale(0.109375)" fill="#D9340A"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"/></g>
+<rect x="610" y="310" width="554" height="120" rx="22" fill="#E0F5FA"/>
+<g transform="translate(632 354) scale(0.109375)" fill="#126B82"><path d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"/></g>
+<text x="688" y="342" class="sub">Leave</text>
+<text x="688" y="378" class="value">13:24</text>
+<text x="862" y="342" class="sub">Arrive</text>
+<text x="862" y="378" class="value">13:52</text>
+<g transform="translate(1100 354) scale(0.109375)" fill="#126B82"><path d="M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM104,52.94l48,24V203.06l-48-24ZM40,62.25l48-12v127.5l-48,12Zm176,131.5-48,12V78.25l48-12Z"/></g>
+<rect x="36" y="450" width="554" height="128" rx="22" fill="#F1EBFC"/>
+<text x="62" y="489" class="value">EU Blue Card</text>
+<text x="62" y="523" class="sub">1 / 5 documents</text>
+<g transform="translate(526 482) scale(0.109375)" fill="#D9340A"><path d="M245,110.64A16,16,0,0,0,232,104H216V88a16,16,0,0,0-16-16H130.67L102.94,51.2a16.14,16.14,0,0,0-9.6-3.2H40A16,16,0,0,0,24,64V208h0a8,8,0,0,0,8,8H211.1a8,8,0,0,0,7.59-5.47l28.49-85.47A16.05,16.05,0,0,0,245,110.64ZM93.34,64,123.2,86.4A8,8,0,0,0,128,88h72v16H69.77a16,16,0,0,0-15.18,10.94L40,158.7V64Zm112,136H43.1l26.67-80H232Z"/></g>
+<rect x="610" y="450" width="554" height="128" rx="22" fill="white"/>
+<text x="636" y="489" class="value">17:30  Language café</text>
+<text x="636" y="523" class="sub">Saved for later</text>
+<g transform="translate(1100 482) scale(0.109375)" fill="#D9340A"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-48-56a8,8,0,0,1-8,8H136v16a8,8,0,0,1-16,0V160H104a8,8,0,0,1,0-16h16V128a8,8,0,0,1,16,0v16h16A8,8,0,0,1,160,152Z"/></g>
+<text x="36" y="625" class="body">Repeat a symbol only for the same action. No generic forward arrow on every row.</text>
+<text x="36" y="653" class="sub">24px glyphs · 44px minimum targets in implementation · Current Composer and logo stay unchanged.</text>
+</svg>

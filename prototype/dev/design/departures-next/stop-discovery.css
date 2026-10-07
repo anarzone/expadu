@@ -1,0 +1,188 @@
+@import url('../connected/tokens.css');
+/* Compact discovery stays inside the existing stop popover. */
+body[data-timetable-design='station'] .journey-popover[data-kind='stops'] {
+    width: min(420px, calc(100vw - 24px));
+}
+.stop-discovery {
+    min-width: 0;
+    color: var(--ink);
+}
+.sd-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+}
+.sd-search > svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    color: var(--ink-soft);
+}
+body.travel-palette .journey-popover .sd-search input[type='search'],
+body.travel-palette .journey-popover .sd-search input[type='search']:focus {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    outline: 0;
+    font: inherit;
+    font-size: var(--text-body);
+}
+.sd-search:focus-within {
+    border-color: var(--teal);
+}
+.sd-contexts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    margin: 8px 0;
+}
+.sd-contexts button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 7px 6px;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-small);
+}
+.sd-contexts button[aria-pressed='true'] {
+    color: var(--teal);
+    background: var(--blue);
+}
+.sd-results {
+    display: grid;
+    gap: 2px;
+}
+.sd-row {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    border-radius: var(--radius-md);
+}
+.sd-row:has(.sd-choose[aria-pressed='true']) {
+    background: var(--blue);
+}
+.sd-choose {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    flex: 1;
+    min-width: 0;
+    min-height: 58px;
+    padding: 9px 10px;
+    text-align: left;
+    border-radius: var(--radius-md);
+}
+.sd-choose > span {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+}
+.sd-choose strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.35;
+}
+.sd-choose small {
+    color: var(--ink-soft);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+}
+.sd-choose svg,
+.sd-save svg,
+.sd-locate svg {
+    width: 19px;
+    height: 19px;
+    flex: none;
+}
+.sd-choose > svg {
+    color: var(--teal);
+}
+.sd-save {
+    display: grid;
+    place-items: center;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    color: var(--ink-soft);
+}
+.sd-save[aria-pressed='true'] {
+    color: var(--orange);
+}
+.sd-save[aria-pressed='true'] svg {
+    fill: currentColor;
+    fill-opacity: 0.15;
+}
+.sd-status,
+.sd-coverage {
+    color: var(--ink-soft);
+    margin: 12px 2px 0;
+    font-size: var(--text-caption);
+    line-height: 1.5;
+}
+.sd-coverage {
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-size: var(--text-micro);
+}
+.sd-area {
+    display: grid;
+    margin: 3px 0 10px;
+    gap: 6px;
+}
+.sd-area label {
+    color: var(--ink-soft);
+    font-size: var(--text-caption);
+}
+.journey-popover .sd-area select {
+    min-height: 44px;
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: var(--text-control);
+}
+.sd-locate {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    min-height: 44px;
+    padding: 8px;
+    color: var(--teal);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-small);
+}
+.stop-discovery button {
+    transition:
+        background-color 120ms ease,
+        color 120ms ease;
+}
+.stop-discovery button:active {
+    background: var(--blue);
+}
+.stop-discovery button:focus-visible,
+.sd-area select:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+}
+@media (hover: hover) {
+    .sd-contexts button:not([aria-pressed='true']):hover,
+    .sd-row:not(:has(.sd-choose[aria-pressed='true'])) .sd-choose:hover,
+    .sd-save:hover,
+    .sd-locate:hover {
+        background: var(--surface-quiet);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .stop-discovery button {
+        transition: none;
+    }
+}

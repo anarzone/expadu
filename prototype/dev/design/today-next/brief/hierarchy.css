@@ -1,0 +1,158 @@
+/* Colour roles for Today (connected/design-decisions.md, "Colour roles").
+   One job per colour: ink for content and links, orange for the one main
+   action, cyan for selection and travel, lavender for paperwork. Loaded last. */
+
+/* One surface: sections are separated by hairlines, not individual tints. */
+.today-reference.today-flow .practical-surface,
+.today-reference.today-flow .continue-composer {
+    background: transparent;
+}
+.today-reference.today-flow .practical-surface {
+    position: relative;
+}
+
+/* Text links: ink, with an arrow when they lead to another page. */
+.today-reference.today-flow :is(.board-full, .discovery-heading > a) {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ink);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+}
+.today-reference.today-flow :is(.board-full, .discovery-heading > a)::after {
+    content: '→';
+    font-weight: var(--weight-regular);
+    transition: transform 0.15s ease;
+}
+.today-reference.today-flow
+    :is(.board-full, .discovery-heading > a):hover::after {
+    transform: translateX(2px);
+}
+.today-reference.today-flow .continue-actions .text-action {
+    color: var(--ink);
+    font-weight: var(--weight-semibold);
+}
+
+/* Disclosure label in ink; the travel icon keeps its cyan. */
+.today-reference.today-flow .departure-board > summary {
+    color: var(--ink);
+}
+.today-reference.today-flow .departure-board > summary > svg:first-child {
+    color: var(--teal);
+}
+
+/* Composer continuation: neutral card, small teal mark, ink secondary action. */
+.today-reference.today-flow .continue-actions .outline-action {
+    border-color: rgba(39, 36, 31, 0.32);
+    color: var(--ink);
+}
+.today-reference.today-flow .continue-actions .outline-action:hover {
+    background: var(--surface-quiet);
+}
+.today-reference.today-flow .continue-item-dot {
+    background: var(--line);
+}
+.today-reference.today-flow .decision-marker {
+    background: var(--ink-soft);
+}
+
+/* Paperwork: lavender stays on its progress indicator; text in ink. */
+.today-reference.today-flow .paperwork-focus p {
+    color: var(--ink-soft);
+}
+.today-reference.today-flow .document-progress > span {
+    color: var(--muted);
+}
+
+/* Data is never heavier than its section title. */
+.today-reference.today-flow .forecast-strip > b {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-semibold);
+}
+.today-reference.today-flow .departure-row time {
+    font-weight: var(--weight-semibold);
+}
+
+@media (max-width: 700px) {
+    .today-reference.today-flow .practical-surface,
+    .today-reference.today-flow .continue-composer {
+        background: transparent;
+    }
+    /* The Composer card used its tint as a boundary; use a hairline instead. */
+    .today-reference.today-flow .column-continuation::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--line) 16%,
+            var(--line) 84%,
+            transparent
+        );
+    }
+    .today-reference.today-flow .practical-surface::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        inset-inline: 16px;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--line) 16%,
+            var(--line) 84%,
+            transparent
+        );
+    }
+    .today-reference.today-flow .practical-surface:first-child::before {
+        content: none;
+    }
+    /* The paperwork row no longer reserves a column for a Composer prompt. */
+    .today-reference.today-flow .paperwork-panel:not(.paperwork-optional) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .today-reference.today-flow .forecast-strip > b {
+        font-size: var(--text-section);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .today-reference.today-flow
+        :is(.board-full, .discovery-heading > a)::after {
+        transition: none;
+    }
+}
+
+/* Secondary paperwork link: ink with an arrow, not violet text. */
+.today-reference.today-flow .situation-link span {
+    color: var(--ink);
+    font-weight: var(--weight-semibold);
+}
+.today-reference.today-flow .situation-link span::after {
+    content: ' →';
+    font-weight: var(--weight-regular);
+}
+
+/* Form controls use the strong border so their edges meet 3:1 contrast. */
+.today-next :is(.form-field input, .form-field select, .form-field textarea) {
+    border-color: var(--color-border-strong);
+}
+
+/* Text that relied on browser defaults now uses the type scale. */
+.today-reference .appointment-menu button {
+    font-size: var(--text-control);
+}
+.today-reference .route-unknown strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.today-reference .earlier-plans summary small {
+    font-size: var(--text-micro);
+}
+.today-reference .paperwork-optional strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}

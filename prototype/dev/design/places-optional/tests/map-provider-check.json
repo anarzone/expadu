@@ -1,0 +1,12 @@
+{
+  "at": "2026-09-27T17:42:17.496Z",
+  "style": {
+    "url": "https://tiles.openfreemap.org/styles/positron",
+    "status": 200
+  },
+  "providerResponses": 13,
+  "failedResponses": [],
+  "pins": 16,
+  "mapLoaded": true,
+  "runtimeErrors": []
+}

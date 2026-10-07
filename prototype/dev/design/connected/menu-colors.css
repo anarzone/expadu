@@ -1,0 +1,30 @@
+/* Approved section colours stay constant across rest, hover, focus and selection.
+   Shared geometry and interaction live in shell-review.css. */
+.shell-review :is(.service-nav, .services) > :is(a, button) {
+    --menu-accent: #009bbb;
+    --menu-tint: #e0f5fa;
+}
+.shell-review :is(.service-nav, .services) > [data-page='places'] {
+    --menu-accent: #11845b;
+    --menu-tint: #e6f5ed;
+}
+.shell-review :is(.service-nav, .services) > [data-page='events'] {
+    --menu-accent: #8352cf;
+    --menu-tint: #f0e9fb;
+}
+.shell-review :is(.service-nav, .services) > [data-page='bureaucracy'] {
+    --menu-accent: #a8760a;
+    --menu-tint: #fbf2dc;
+}
+.shell-review :is(.service-nav, .services) > [data-page='departures'] {
+    --menu-accent: #227db9;
+    --menu-tint: #e6f1fb;
+}
+.shell-review :is(.service-nav, .services) > [data-page='services'] {
+    --menu-accent: #666b93;
+    --menu-tint: #eceef7;
+}
+/* One colour per section, whether resting, hovered or selected. */
+.shell-review :is(.service-nav, .services) > :is(a, button) svg {
+    color: var(--menu-accent);
+}

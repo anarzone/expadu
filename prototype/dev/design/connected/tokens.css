@@ -1,0 +1,132 @@
+/* Expadu design tokens — the single source for colour, type, spacing, shape,
+   elevation and motion across the connected mocks and the design guide.
+   Semantic names describe the job, not the colour (see design-decisions.md,
+   "Colour roles"). Existing palettes alias these values. Neutrals, cyan and
+   orange are the accepted Travel "warm paper & Lagoon" colours, shared by every
+   page since 6 October. */
+:root {
+    /* ── Colour · surfaces ─────────────────────────────────────────────── */
+    --color-bg-canvas: #faf6ee; /* page background */
+    --color-bg-surface: #fffdf8; /* cards, sections, menus */
+    --color-bg-quiet: #f1ebdf; /* rows, inputs, hover */
+    --color-bg-inset: #f1ebdf; /* neutral pills */
+    --color-bg-hover: #e9e0cf; /* pressed neutral */
+    --color-bg-header: #fffdf8; /* app header */
+
+    /* ── Colour · lines ────────────────────────────────────────────────── */
+    --color-border: #e6ddcb; /* hairlines and separators (decorative) */
+    --color-border-strong: #8a8277; /* form controls: ≥3:1 on every surface */
+
+    /* ── Colour · text ─────────────────────────────────────────────────── */
+    --color-text: #211d15; /* titles, data, links */
+    --color-text-soft: #6e6657; /* body detail */
+    --color-text-muted: #6e6657; /* captions, labels */
+    --color-text-on-action: #ffffff;
+
+    /* ── Colour · action (one main action per section) ─────────────────── */
+    --color-action: #c23b0e;
+    --color-action-hover: #a9320b;
+    --color-action-text: #c23b0e; /* orange text actions on pale surfaces */
+    --color-action-tint: #fff4ec; /* hover behind outlined actions */
+
+    /* ── Colour · selection & travel ───────────────────────────────────── */
+    --color-select-bg: #def5f8;
+    --color-select-bg-hover: #cceef3;
+    --color-select-text: #00768b; /* teal: travel icons, line ink */
+    --color-focus: #00768b;
+
+    /* ── Colour · paperwork ────────────────────────────────────────────── */
+    --color-paper-bg: #efe7fb;
+    --color-paper-bg-quiet: #f3eefb;
+    --color-paper-text: #67409a;
+
+    /* ── Colour · attention (deadlines, tight timings, delays) ─────────── */
+    --color-attention-bg: #fff1d6;
+    --color-attention: #ffe49a;
+    --color-attention-border: #f1d79b;
+    --color-attention-text: #694207;
+
+    /* ── Colour · conflict (a plan that cannot work) ───────────────────── */
+    --color-conflict-bg: #fff0eb;
+    --color-conflict: #ffd9cc;
+    --color-conflict-border: #f2b8a8;
+    --color-conflict-text: #a2300e;
+
+    /* ── Colour · section icons and brand ──────────────────────────────── */
+    --color-nav-teal: #00768b; /* Today, Travel */
+    --color-nav-violet: #7047ac; /* Events, Services */
+    --color-nav-rust: #b94b18; /* Paperwork */
+    --color-brand-orange: #ff3902; /* logo only */
+    --color-brand-cyan: #05badd; /* logo only */
+
+    /* ── Typography ────────────────────────────────────────────────────── */
+    --font-sans: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --text-micro: 11px; /* smallest readable label */
+    --text-caption: 12px;
+    --text-small: 13px;
+    --text-control: 14px;
+    --text-body: 15px;
+    --text-section: 17px;
+    --text-title-sm: 20px;
+    --text-title: 24px;
+    --text-title-lg: 28px;
+    --text-display-sm: 32px; /* page heroes */
+    --text-display: 40px;
+    --text-display-lg: 52px; /* largest headline */
+    --text-display-fluid: clamp(36px, 4vw, 52px); /* plan times */
+
+    /* Only the weights that are loaded (Geist 400/500/600/700). */
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+
+    --leading-tight: 1.1;
+    --leading-snug: 1.25;
+    --leading-body: 1.5;
+
+    /* ── Spacing (2px base) ────────────────────────────────────────────── */
+    --space-2: 2px;
+    --space-4: 4px;
+    --space-6: 6px;
+    --space-8: 8px;
+    --space-10: 10px;
+    --space-12: 12px;
+    --space-14: 14px;
+    --space-16: 16px; /* phone page gutter */
+    --space-20: 20px;
+    --space-24: 24px; /* desktop section padding */
+    --space-32: 32px;
+    --space-40: 40px;
+
+    /* ── Breakpoints (reference: media queries cannot use variables) ────
+       small phone ≤359 · phone ≤700 · tablet 701–999 · desktop ≥1000.
+       Use these values in CSS and matchMedia; adapt in between with
+       auto-fit grids and wrapping rows, not new breakpoints. */
+    --breakpoint-phone: 700px;
+    --breakpoint-tablet: 999px;
+    --breakpoint-desktop: 1000px;
+
+    /* ── Shape ─────────────────────────────────────────────────────────── */
+    --radius-sm: 8px; /* badges, pills, small chips */
+    --radius-md: 12px; /* controls, rows, menu items */
+    --radius-lg: 16px; /* cards, menus, fields */
+    --radius-xl: 24px; /* sections, event cards, sheets */
+    --radius-pill: 999px; /* buttons, chips */
+    --radius-round: 50%; /* dots, avatars, icon buttons */
+    --touch-target: 44px;
+
+    /* ── Elevation ─────────────────────────────────────────────────────── */
+    --shadow-flat: 0 1px 0 #51453814;
+    --shadow-raised: 0 4px 20px #3e352b14;
+    --shadow-menu: 0 14px 32px -12px rgba(39, 36, 31, 0.28);
+    --shadow-sheet: 0 10px 30px #3e352b22;
+    --ring-focus: 0 0 0 2px var(--color-focus);
+
+    /* ── Motion ────────────────────────────────────────────────────────── */
+    --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-standard: ease;
+    --duration-fast: 120ms;
+    --duration-base: 180ms;
+    --duration-slow: 280ms;
+}

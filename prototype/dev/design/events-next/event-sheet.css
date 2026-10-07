@@ -1,0 +1,1418 @@
+@import url('../connected/tokens.css');
+/* The same frame as Places, with an event ticket in place of the photograph. */
+.detail-dialog:has(.event-sheet) .dialog-head {
+    height: auto;
+    min-height: 64px;
+    align-items: flex-start;
+    gap: 12px;
+    flex-shrink: 0;
+    padding-block: 16px 12px;
+}
+.detail-dialog:has(.event-sheet) .dialog-head h2 {
+    font-size: var(--text-title-sm);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    margin: 0;
+}
+.detail-dialog:has(.event-sheet) .dialog-head .icon-button {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    margin-top: -5px;
+}
+.event-ticket {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--blue);
+    border-radius: var(--radius-lg);
+    margin: 0 20px;
+    padding: 12px;
+    flex-shrink: 0;
+}
+.event-ticket-art {
+    width: 42px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+    background: white;
+}
+.event-ticket-art svg {
+    width: 29px;
+    height: 29px;
+}
+.event-ticket > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.event-ticket > div > span {
+    font-size: var(--text-micro);
+}
+.event-ticket strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.event-ticket .event-ticket-time {
+    margin-left: auto;
+    text-align: right;
+}
+.event-ticket-time small {
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.event-ticket-time strong {
+    font-size: var(--text-body);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.event-sheet .place-sheet-tabs {
+    margin-top: 12px;
+}
+.event-sheet .place-sheet-scroll {
+    padding-top: 16px;
+}
+.event-sheet .event-about-intro h3 {
+    font-size: var(--text-title-sm);
+    line-height: 1.25;
+}
+.event-sheet .event-about-intro p {
+    margin: 4px 0 12px;
+    color: var(--muted);
+    font-size: var(--text-caption);
+}
+.event-sheet .event-description {
+    font-size: var(--text-control);
+    line-height: 1.55;
+    margin: 0 0 14px;
+}
+.event-practical {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    padding-block: 12px;
+    border-block: 1px solid var(--line);
+}
+.event-practical > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.event-practical span {
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+.event-practical strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    line-height: 1.35;
+}
+.event-before {
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--peach) 40%, white);
+    padding: 12px 14px;
+    margin-top: 14px;
+}
+.event-before > strong {
+    font-size: var(--text-small);
+}
+.event-sheet .event-before p {
+    font-size: var(--text-caption);
+    margin: 5px 0;
+    color: var(--ink);
+}
+.event-before small {
+    color: var(--muted);
+    font-size: var(--text-micro);
+    display: block;
+}
+.event-before a {
+    display: inline-block;
+    padding-block: 6px;
+    color: var(--action);
+    text-decoration: underline;
+    font-size: var(--text-caption);
+}
+.event-source summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 44px;
+    font-size: var(--text-small);
+    color: var(--muted);
+    cursor: pointer;
+    list-style: none;
+}
+.event-source summary::-webkit-details-marker {
+    display: none;
+}
+.event-source summary svg {
+    width: 14px;
+    height: 14px;
+}
+.event-sheet .event-source p {
+    font-size: var(--text-micro);
+    margin: 0 0 10px;
+    color: var(--muted);
+}
+.event-reminder {
+    display: flex;
+    align-items: center;
+    position: relative;
+    gap: 12px;
+    cursor: pointer;
+    min-height: 48px;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+}
+.event-reminder-copy {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.event-reminder strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+}
+.event-reminder small {
+    font-size: var(--text-caption);
+    color: var(--muted);
+}
+.event-reminder input {
+    position: absolute;
+    right: 0;
+    width: 44px;
+    height: 44px;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+.event-switch {
+    position: relative;
+    width: 38px;
+    height: 23px;
+    border-radius: var(--radius-xl);
+    background: var(--line);
+    flex-shrink: 0;
+}
+.event-switch::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 17px;
+    height: 17px;
+    border-radius: var(--radius-round);
+    background: white;
+    box-shadow: 0 1px 3px #0002;
+}
+.event-reminder :checked + .event-switch {
+    background: var(--cyan);
+}
+.event-reminder :checked + .event-switch::after {
+    transform: translateX(15px);
+}
+.event-reminder :focus-visible + .event-switch {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+}
+.event-sheet .event-fixed-day {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 12px 14px;
+    background: var(--blue);
+    border-radius: var(--radius-md);
+    margin-bottom: 12px;
+}
+.event-fixed-day > span {
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.event-fixed-day strong {
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+}
+.event-sheet .event-attendance-note {
+    font-size: var(--text-caption);
+    color: var(--muted);
+    margin: 0 0 12px;
+}
+.event-sheet .attendance-choice {
+    padding: 3px;
+    margin: 0 0 12px;
+    display: flex;
+    gap: 3px;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+}
+.event-sheet .attendance-choice legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+.event-sheet .attendance-choice label {
+    flex: 1;
+    position: relative;
+    padding: 10px 5px;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-size: var(--text-caption);
+    margin: 0;
+}
+.event-sheet .attendance-choice input {
+    position: absolute;
+    opacity: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+.event-sheet .attendance-choice label:has(:checked) {
+    background: var(--blue);
+    box-shadow: inset 0 -2px var(--cyan);
+}
+.event-sheet .attendance-choice label:has(:focus-visible) {
+    outline: 2px solid var(--cyan);
+}
+.event-flexible-confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: var(--text-caption);
+    line-height: 1.4;
+    margin: 0 0 12px;
+}
+.event-flexible-confirm[hidden] {
+    display: none;
+}
+.event-flexible-confirm input {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+    margin: 1px 0 0;
+    accent-color: var(--cyan);
+}
+.event-sheet .selection-times {
+    grid-template-columns: minmax(0, 1fr) 12px minmax(0, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.event-sheet .selection-times input {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    height: 44px;
+    padding: 8px 10px;
+    font-size: var(--text-title-sm);
+    border-radius: var(--radius-md);
+    background: white;
+    border: 1px solid var(--line);
+    font-weight: var(--weight-medium);
+}
+.event-sheet .selection-times input[readonly] {
+    background: transparent;
+    border-color: transparent;
+    padding-left: 0;
+    color: var(--ink);
+}
+.event-sheet .selection-agenda {
+    margin-top: 2px;
+}
+.event-sheet .selection-agenda ul:not(.visit-day-timeline) {
+    list-style: none;
+    padding: 0 0 8px;
+    margin: 0;
+}
+.event-sheet .selection-agenda ul:not(.visit-day-timeline) li {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+    font-size: var(--text-micro);
+}
+.event-sheet .selection-agenda ul:not(.visit-day-timeline) li > span {
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+.event-sheet .selection-agenda strong {
+    font-size: var(--text-caption);
+}
+.event-sheet .selection-agenda small {
+    display: block;
+    font-weight: var(--weight-regular);
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.event-sheet .selection-agenda p,
+.event-sheet .selection-hint {
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.event-sheet .selection-agenda summary > span {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+}
+.event-sheet .actions {
+    justify-content: flex-end;
+}
+.event-sheet .selection-error {
+    font-size: var(--text-caption);
+}
+.event-sheet .event-added {
+    padding: 24px 20px;
+}
+.event-added-date {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--blue);
+    margin-bottom: 16px;
+    font-size: var(--text-caption);
+}
+.event-added > strong {
+    font-size: var(--text-title);
+    font-variant-numeric: tabular-nums;
+}
+.event-added > small {
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+.event-sheet .event-arrival {
+    color: var(--muted);
+    font-size: var(--text-micro);
+    margin: 8px 0 0;
+}
+.event-sheet .place-journey-destination > span {
+    display: block;
+}
+.event-sheet .place-journey-destination strong {
+    font-size: var(--text-control);
+    line-height: 1.35;
+}
+@media (max-width: 700px) {
+    .event-ticket {
+        margin-inline: 16px;
+    }
+    .detail-dialog:has(.event-sheet) .dialog-head h2 {
+        font-size: var(--text-title-sm);
+    }
+}
+@media (max-width: 359px) {
+    .event-ticket {
+        gap: 8px;
+        padding: 10px;
+    }
+    .event-ticket-art {
+        width: 30px;
+        height: 36px;
+    }
+    .event-ticket-art svg {
+        width: 23px;
+        height: 23px;
+    }
+    .event-ticket strong,
+    .event-ticket-time strong {
+        font-size: var(--text-caption);
+    }
+    .event-sheet .place-sheet-tabs button {
+        font-size: var(--text-caption);
+    }
+    .detail-dialog:has(.event-sheet) .dialog-head h2 {
+        font-size: var(--text-title-sm);
+    }
+    .event-sheet .event-about-intro h3 {
+        font-size: var(--text-title-sm);
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .event-switch,
+    .event-switch::after {
+        transition:
+            background 180ms ease,
+            transform 200ms ease;
+    }
+    .event-sheet .attendance-choice label {
+        transition:
+            background 180ms ease,
+            box-shadow 180ms ease;
+    }
+}
+.detail-dialog:has(.event-sheet)[open] {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.detail-dialog:has(.event-sheet) #dialog-body {
+    height: auto;
+}
+.event-sheet .attendance-choice label {
+    border: 0;
+}
+.event-sheet .place-journey-destination strong {
+    display: block;
+    margin-top: 3px;
+}
+.event-sheet .place-journey fieldset label:has(:checked) > span {
+    background: var(--blue);
+    color: var(--ink);
+    box-shadow: inset 0 -2px var(--cyan);
+}
+.event-planned-ticket {
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+    background: var(--blue);
+    border-radius: var(--radius-lg);
+    margin: 16px 0;
+}
+.event-planned-ticket > div {
+    min-width: 0;
+}
+.event-planned-ticket strong {
+    font-size: var(--text-title);
+    font-variant-numeric: tabular-nums;
+}
+.event-sheet .event-planned-ticket p {
+    margin: 5px 0;
+    font-weight: var(--weight-medium);
+}
+.event-planned-ticket small {
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+.event-remove-confirm,
+.event-removed-notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    font-size: var(--text-small);
+    white-space: nowrap;
+}
+.event-remove-confirm > span,
+.event-removed-notice > span {
+    flex: 1;
+}
+.event-remove-confirm button,
+.event-removed-notice button {
+    min-height: 40px;
+    padding: 6px;
+    font-size: var(--text-small);
+}
+.event-remove-confirm [data-confirm-event-remove] {
+    color: var(--action);
+    font-weight: var(--weight-semibold);
+}
+.event-removed-notice {
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    background: var(--blue);
+    margin-bottom: 12px;
+    font-size: var(--text-caption);
+}
+
+/* The poster continues inside the sheet without taking space from its actions. */
+.event-ticket-poster {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 112px;
+    align-items: flex-end;
+    padding: 16px;
+    background: #15383c;
+    color: white;
+}
+.event-ticket-poster > .event-poster-image {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    object-position: center 35%;
+}
+.event-ticket-shade {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, #08191c00, #08191ce0);
+}
+.event-ticket-poster .event-ticket-time small {
+    color: #d5e7e7;
+}
+.event-ticket-poster > div > span {
+    margin-bottom: 4px;
+    font-size: var(--text-micro);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+@media (max-height: 700px) {
+    .event-ticket-poster {
+        min-height: 84px;
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .event-ticket-poster > .event-poster-image {
+        animation: event-art-settle 420ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes event-art-settle {
+        from {
+            transform: scale(1.06);
+            opacity: 0.75;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+}
+
+/* Keep event colour in the cards, on a quieter version of the shared canvas. */
+.detail-dialog:has(.event-sheet) {
+    --event-canvas: #f8f5ff;
+    --event-violet: #7141b9;
+    --event-lilac: #e9ddff;
+    --event-yellow: #fff1a6;
+    --muted: #62566f;
+    --event-field-edge: #b7aa82;
+    --event-control-rail: #ece8f3;
+    --event-selection-shadow: 0 2px 6px #1537460b;
+    background: var(--event-canvas);
+    border: 0;
+}
+.detail-dialog:has(.event-sheet) .dialog-head {
+    min-height: 0;
+    height: auto;
+    padding: 16px 20px 14px;
+    margin: 0;
+    border: 0;
+}
+.detail-dialog:has(.event-sheet) .dialog-head h2 {
+    max-width: calc(100% - 42px);
+}
+.event-sheet .event-ticket-poster {
+    height: 104px;
+    min-height: 104px;
+    flex: 0 0 104px;
+    border-radius: var(--radius-lg);
+}
+.event-sheet .place-sheet-tabs {
+    background: var(--event-control-rail);
+    padding: 4px;
+    margin-top: 12px;
+    border: 0;
+    border-radius: var(--radius-lg);
+}
+.event-sheet .place-sheet-panel,
+.event-sheet
+    .place-sheet-panel:is([data-panel='plan'], [data-panel='directions']) {
+    background: transparent;
+    border-radius: 0;
+}
+/* Pair a fading scroll edge with a separate, borderless action row. */
+.event-sheet :is(.place-sheet-footer, .actions),
+.event-sheet
+    .place-sheet-panel:is([data-panel='plan'], [data-panel='directions'])
+    :is(.place-sheet-footer, .actions) {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    isolation: isolate;
+    padding-top: 8px;
+}
+.event-sheet :is(.place-sheet-footer, .actions)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        color-mix(in srgb, var(--event-canvas) 65%, transparent) 40%,
+        color-mix(in srgb, var(--event-canvas) 94%, transparent)
+    );
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 55%);
+    mask-image: linear-gradient(to bottom, transparent, black 55%);
+}
+/* Fade before the overflow clip, with enough end space to reveal the last line. */
+.event-sheet .place-sheet-scroll {
+    padding-bottom: 44px;
+    scroll-padding-bottom: 44px;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        black 0,
+        black calc(100% - 28px),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        black 0,
+        black calc(100% - 28px),
+        transparent 100%
+    );
+}
+.event-sheet .event-practical {
+    background: white;
+    border: 0;
+    border-radius: var(--radius-lg);
+    padding: 14px;
+    gap: 16px;
+}
+.event-sheet .event-before {
+    background: transparent;
+    padding: 14px 2px 8px;
+    margin-top: 0;
+}
+.event-sheet .event-reminder {
+    border: 0;
+    background: white;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+}
+.event-sheet .event-source {
+    margin-block: 0 8px;
+}
+.event-plan-heading {
+    margin: 0 0 14px;
+}
+.event-plan-heading > span {
+    color: var(--muted);
+    font-size: var(--text-micro);
+}
+.event-sheet .event-plan-heading h3 {
+    font-size: var(--text-title-sm);
+    line-height: 1.2;
+    margin: 4px 0 0;
+    letter-spacing: -0.5px;
+}
+.event-visit-setup {
+    background:
+        radial-gradient(ellipse at 100% 0, #fff9d9, transparent 70%),
+        linear-gradient(135deg, #ffe88a, #fff2b2 65%, #f9e6aa);
+    padding: 14px;
+}
+.event-sheet .event-fixed-day {
+    padding: 0 0 12px;
+    margin: 0;
+    background: transparent;
+    border-radius: 0;
+}
+.event-sheet .event-fixed-day > span {
+    font-size: var(--text-micro);
+}
+.event-sheet .event-fixed-day strong {
+    font-size: var(--text-section);
+}
+.event-sheet .event-attendance-note {
+    font-size: var(--text-small);
+    line-height: 1.45;
+    margin-bottom: 10px;
+}
+.event-sheet .attendance-choice {
+    border: 0;
+    background: rgb(255 255 255 / 65%);
+}
+.event-sheet .attendance-choice label {
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+}
+.event-sheet .attendance-choice label:has(:checked) {
+    background: white;
+    box-shadow: 0 2px 6px #1233380a;
+}
+.event-sheet .event-flexible-confirm {
+    font-size: var(--text-small);
+    margin-block: 8px 12px;
+}
+.event-sheet .visit-suggestions[hidden] {
+    display: none;
+}
+.event-sheet .selection-agenda {
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: white;
+    padding: 0 12px;
+}
+.event-sheet .selection-agenda .visit-day-timeline > li {
+    border: 0;
+}
+.event-sheet .place-route {
+    background: linear-gradient(135deg, #e1d3ff, #f0e9ff 70%, #fff3b8);
+}
+.event-sheet .place-journey fieldset {
+    background: var(--event-control-rail);
+    border: 0;
+    border-radius: var(--radius-lg);
+    padding: 4px;
+}
+.event-sheet .place-journey fieldset label {
+    min-height: 40px;
+}
+.event-sheet .event-route-preview {
+    background: white;
+    border: 0;
+    border-radius: var(--radius-lg);
+    padding: 16px;
+}
+.event-sheet .event-route-preview > p {
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+    line-height: 1.35;
+    color: var(--ink);
+    margin: 12px 0;
+}
+.event-route-mode {
+    background: linear-gradient(120deg, #eee5ff, #fff6cc);
+    padding: 12px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+}
+.event-route-mode span {
+    display: block;
+    color: var(--muted);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-regular);
+    margin-top: 3px;
+}
+.event-route-preview > small {
+    display: block;
+    font-size: var(--text-small);
+    color: var(--muted);
+    line-height: 1.45;
+    margin-top: 12px;
+}
+@media (max-width: 700px) {
+    .detail-dialog:has(.event-sheet) .dialog-head {
+        padding-inline: 16px;
+    }
+}
+@media (max-height: 700px) {
+    .event-sheet .event-ticket-poster {
+        height: 88px;
+        min-height: 88px;
+        flex-basis: 88px;
+    }
+}
+
+.event-sheet .place-sheet-tabs button[aria-pressed='true'] {
+    background: white;
+    color: var(--ink);
+    box-shadow: var(--event-selection-shadow);
+    border-bottom-color: transparent;
+}
+.event-sheet .place-sheet-tabs button[aria-pressed='true']::after {
+    display: none;
+}
+.event-sheet .visit-setup .visit-suggestions button[aria-pressed='true'] {
+    background: var(--event-violet);
+    color: white;
+    box-shadow: 0 3px 9px #7141b924;
+}
+.event-sheet .event-fixed-day > span {
+    color: #665536;
+}
+.event-sheet .event-fixed-day strong {
+    color: var(--ink);
+}
+.event-sheet .visit-suggestions > p {
+    color: var(--ink);
+}
+/* White fields need a visible edge against the light yellow gradient. */
+.event-sheet .selection-times input:not([readonly]),
+.event-sheet .visit-setup .visit-suggestions button {
+    border: 1px solid var(--event-field-edge);
+    box-shadow: 0 2px 5px rgb(140 107 22 / 7%);
+}
+.event-sheet .visit-setup .visit-suggestions button[aria-pressed='true'] {
+    border-color: var(--event-violet);
+}
+.event-sheet .selection-times input:is([aria-expanded='true'], :focus-visible) {
+    border-color: var(--event-violet);
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--event-violet);
+}
+.event-sheet .selection-times input::placeholder {
+    color: #797075;
+    font-size: var(--text-body);
+    font-weight: var(--weight-regular);
+}
+.event-sheet .selection-agenda {
+    background: white;
+}
+.event-sheet .selection-agenda .visit-day-card,
+.event-sheet .selection-agenda .visit-day-entry.is-preview .visit-day-card {
+    background: var(--paper);
+    border: 0;
+    border-radius: var(--radius-md);
+    padding: 12px;
+}
+.event-sheet
+    .selection-agenda
+    .visit-day-entry.is-preview
+    .visit-day-time
+    time {
+    color: var(--ink);
+}
+.event-sheet .selection-agenda .visit-day-meta,
+.event-sheet .selection-agenda .visit-day-entry.is-preview .visit-day-meta {
+    color: var(--muted);
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-micro);
+}
+.event-sheet .visit-day-meta > span + span {
+    border: 0;
+    padding-left: 0;
+}
+.event-sheet .visit-day-meta > .visit-day-state {
+    background: var(--blue);
+    color: var(--ink);
+    border-radius: var(--radius-sm);
+    padding: 3px 6px;
+    font-size: var(--text-micro);
+    line-height: 1.2;
+    font-weight: var(--weight-medium);
+}
+.event-sheet .selection-agenda .visit-day-overlap {
+    color: var(--action);
+}
+.event-sheet .visit-day-card:has(:focus-visible) {
+    outline: none;
+}
+.event-sheet .visit-day-action:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: -2px;
+}
+.event-sheet .event-practical {
+    background: linear-gradient(120deg, #fff4b8, #fff9dc);
+}
+.event-sheet .event-planned-ticket {
+    background: linear-gradient(130deg, #e5d7ff, #f5eaff 60%, #fff2b1);
+}
+.event-sheet :is(.place-sheet-footer, .actions) .button.primary {
+    box-shadow: 0 3px 10px #d9340a16;
+}
+
+.event-sheet .place-journey fieldset label:has(:checked) > span {
+    background: white;
+    color: var(--ink);
+    border-color: transparent;
+    box-shadow: var(--event-selection-shadow);
+}
+
+.event-sheet .place-route input {
+    border: 1px solid #b1a1c2;
+}
+.event-sheet :is(.event-reminder, .selection-agenda, .event-route-preview) {
+    box-shadow: 0 2px 8px rgb(83 57 126 / 6%);
+}
+.event-sheet .selection-agenda {
+    box-shadow: none;
+}
+
+/* A compact visit ticket keeps the date, choices and action in one mobile frame. */
+.event-sheet .event-visit-setup {
+    padding: 16px;
+    border-radius: var(--radius-xl);
+}
+.event-sheet .event-fixed-day {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+}
+.event-sheet .event-fixed-day .event-date-badge {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 1px;
+    width: 48px;
+    height: 54px;
+    flex: 0 0 48px;
+    border-radius: var(--radius-md);
+    background: var(--event-violet);
+    color: white;
+    box-shadow: 0 3px 8px rgb(113 65 185 / 12%);
+}
+.event-sheet .event-fixed-day .event-date-badge small {
+    color: white;
+    font-size: var(--text-micro);
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+.event-date-badge b {
+    font-size: var(--text-title);
+    line-height: 1.1;
+    font-weight: var(--weight-semibold);
+}
+.event-date-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+.event-date-copy > span {
+    color: #665536;
+    font-size: var(--text-micro);
+}
+.event-sheet .event-date-copy > strong {
+    font-size: var(--text-body);
+    line-height: 1.3;
+}
+.event-sheet .event-session-times {
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: rgb(255 255 255 / 64%);
+}
+.event-session-time {
+    display: grid;
+    gap: 5px;
+}
+.event-session-time > span,
+.event-sheet .event-session-times .form-field {
+    color: var(--muted);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-regular);
+}
+.event-session-time strong {
+    color: var(--ink);
+    font-size: var(--text-title);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+.event-sheet .event-session-times > span {
+    margin: 0;
+    color: var(--muted);
+}
+.event-sheet .event-session-times input[data-time-input] {
+    height: 44px;
+    min-height: 44px;
+    margin: 5px 0 0;
+    padding: 8px;
+    font-size: var(--text-title-sm);
+}
+.event-sheet .event-plan-summary {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    margin-right: auto;
+}
+.event-plan-summary strong {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+}
+.event-plan-summary small {
+    color: var(--muted);
+    font-size: var(--text-caption);
+}
+.event-sheet :is(.place-sheet-footer, .actions) .button {
+    min-height: 44px;
+    font-size: var(--text-control);
+}
+@media (max-width: 359px) {
+    .event-sheet .event-visit-setup {
+        padding: 12px;
+    }
+    .event-sheet .event-fixed-day {
+        gap: 10px;
+    }
+    .event-sheet .event-date-copy > strong {
+        font-size: var(--text-control);
+    }
+    .event-sheet .event-plan-summary strong {
+        font-size: var(--text-caption);
+    }
+}
+
+/* Recognisable actions and small event facts replace repeated explanations. */
+.event-sheet .event-cover-category {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.event-cover-category svg {
+    width: 16px;
+    height: 16px;
+}
+.event-sheet .place-sheet-tabs button {
+    height: 44px;
+    gap: 6px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-control);
+}
+.event-sheet .place-sheet-tabs svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--event-violet);
+}
+.event-sheet .event-venue {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 68px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: rgb(255 255 255 / 78%);
+    text-align: left;
+    color: var(--ink);
+}
+.event-fact-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: var(--radius-md);
+    background: #ece2ff;
+    color: var(--event-violet);
+}
+.event-fact-icon svg {
+    width: 22px;
+    height: 22px;
+}
+.event-venue > span:nth-child(2) {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+}
+.event-venue strong {
+    font-size: var(--text-section);
+    line-height: 1.3;
+    font-weight: var(--weight-semibold);
+}
+.event-venue small {
+    font-size: var(--text-small);
+    color: var(--muted);
+}
+.event-venue > svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--event-violet);
+}
+.event-sheet .event-practical {
+    gap: 10px;
+    padding: 0;
+    background: transparent;
+    margin-bottom: 12px;
+}
+.event-practical .event-fact {
+    position: relative;
+    gap: 5px;
+    min-width: 0;
+    padding: 14px;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.event-fact > svg {
+    width: 25px;
+    height: 25px;
+    margin-bottom: 8px;
+}
+.event-fact > span {
+    font-size: var(--text-small);
+}
+.event-fact > strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.event-fact-price {
+    background: linear-gradient(125deg, #ffe791, #fff6c9);
+}
+.event-fact-price > svg {
+    color: #816014;
+}
+.event-fact-entry {
+    background: linear-gradient(125deg, #e3d3ff, #f0e7ff);
+}
+.event-fact-entry > svg {
+    color: var(--event-violet);
+}
+.event-organiser {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding-inline: 12px;
+    margin-bottom: 12px;
+    color: var(--event-violet);
+    font-size: var(--text-small);
+    text-decoration: none;
+}
+.event-organiser > svg {
+    width: 19px;
+    height: 19px;
+}
+.event-organiser > svg:last-child {
+    margin-left: auto;
+}
+.event-sheet .event-reminder {
+    padding: 10px 12px;
+    gap: 12px;
+}
+.event-reminder .event-fact-icon {
+    background: transparent;
+}
+.event-sheet .event-source {
+    margin: 8px 0 0;
+}
+.event-source summary > span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.event-source summary > span > svg {
+    width: 17px;
+    height: 17px;
+}
+.event-source summary small {
+    padding: 3px 6px;
+    border-radius: var(--radius-sm);
+    background: #eae2f5;
+    font-size: var(--text-caption);
+    line-height: 1.1;
+}
+.event-source dl {
+    margin: 0;
+    padding: 4px 0;
+    font-size: var(--text-small);
+    line-height: 1.5;
+}
+.event-source dl > div {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 12px;
+    padding-block: 5px;
+}
+.event-source dt {
+    color: var(--muted);
+}
+.event-source dd {
+    margin: 0;
+}
+.event-sheet .event-icon-action {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: rgb(255 255 255 / 72%);
+    border-radius: var(--radius-md);
+}
+.event-sheet .event-icon-action svg {
+    width: 22px;
+    height: 22px;
+}
+.event-sheet .event-icon-action[aria-pressed='true'] {
+    background: var(--event-lilac);
+    color: var(--event-violet);
+}
+.event-sheet .event-icon-action[aria-pressed='true'] svg {
+    fill: var(--event-violet);
+}
+.event-sheet .visit-suggestions > p {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-block: 0 8px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+}
+.event-sheet .visit-suggestions > p svg {
+    width: 16px;
+    height: 16px;
+}
+/* One compact strip, with every time range kept on a single line. */
+.event-sheet .visit-suggestions [role='group'] {
+    gap: 4px;
+    padding: 4px;
+    background: rgb(162 126 35 / 9%);
+    border: 0;
+    border-radius: var(--radius-lg);
+}
+.event-sheet .visit-setup .visit-suggestions button {
+    min-height: 44px;
+    padding: 8px 3px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    box-shadow: none;
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+}
+.event-sheet .visit-setup .visit-suggestions button[aria-pressed='true'] {
+    background: white;
+    color: var(--ink);
+    font-weight: var(--weight-semibold);
+    box-shadow: var(--event-selection-shadow);
+}
+@media (max-width: 359px) {
+    .event-sheet .visit-setup .visit-suggestions button {
+        padding-inline: 1px;
+        font-size: var(--text-caption);
+    }
+}
+@media (prefers-reduced-motion: no-preference) {
+    .event-sheet .visit-setup .visit-suggestions button {
+        transition:
+            background 180ms ease,
+            color 180ms ease,
+            box-shadow 180ms ease;
+    }
+}
+.event-sheet .selection-times {
+    margin-bottom: 0;
+}
+.event-sheet .selection-agenda summary > span {
+    align-items: center;
+}
+.event-sheet .selection-hint {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: var(--text-small);
+}
+.event-sheet .selection-hint > svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+}
+.event-day-empty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 2px 16px;
+}
+.event-day-empty > svg {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    padding: 9px;
+    border-radius: var(--radius-md);
+    background: var(--event-lilac);
+    color: var(--event-violet);
+}
+.event-sheet .event-day-empty p {
+    margin: 3px 0 0;
+    font-size: var(--text-small);
+    color: var(--muted);
+}
+.event-sheet .visit-day-action {
+    min-width: 44px;
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0 6px;
+}
+.event-sheet .visit-day-action > svg {
+    width: 18px;
+    height: 18px;
+}
+/* A separate rail lets the gradient show through the pin without a colour patch. */
+.event-sheet .place-route {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+}
+.event-sheet .place-route::before {
+    content: none;
+}
+.event-route-fields {
+    min-width: 0;
+}
+.event-route-rail {
+    display: grid;
+    grid-template-rows: 12px minmax(6px, 1fr) 22px;
+    justify-items: center;
+    gap: 5px;
+    margin-top: 32px;
+    margin-bottom: 3px;
+}
+.event-route-rail .route-dot {
+    width: 12px;
+    height: 12px;
+    margin: 0;
+    background: transparent;
+    border-color: var(--event-violet);
+}
+.event-route-connector {
+    border-left: 2px dotted #af90d9;
+}
+.event-route-rail > svg {
+    width: 22px;
+    height: 22px;
+    background: transparent;
+    color: var(--action);
+}
+.event-sheet .place-journey fieldset label > span {
+    min-height: 44px;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .event-venue,
+    .event-icon-action {
+        transition:
+            transform 160ms ease,
+            background 160ms ease;
+    }
+    .event-venue:active,
+    .event-icon-action:active {
+        transform: scale(0.98);
+    }
+}
+
+.event-sheet .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.event-sheet .event-arrival,
+.event-arrival > span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.event-sheet .event-arrival {
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+.event-arrival svg {
+    width: 15px;
+    height: 15px;
+}
+.event-sheet :is(button, a):focus-visible {
+    outline: 2px solid var(--event-violet);
+    outline-offset: -2px;
+}

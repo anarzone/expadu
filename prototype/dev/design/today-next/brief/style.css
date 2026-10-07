@@ -1,0 +1,1370 @@
+/* Separate daily-brief experiment; the existing Today layouts are preserved. */
+.today-brief #main {
+    max-width: 1460px;
+    padding-top: 12px;
+}
+.today-brief #shell {
+    padding-inline: max(24px, calc((100% - 1412px) / 2));
+}
+.today-brief .today-greeting {
+    margin-bottom: 12px;
+}
+.brief-canvas {
+    background: var(--surface);
+    border-radius: 24px;
+    overflow: clip;
+}
+.brief-canvas h2 {
+    font-size: 19px;
+    letter-spacing: -0.4px;
+}
+.brief-canvas h3 {
+    font-size: 15px;
+    letter-spacing: -0.2px;
+}
+.brief-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+}
+.brief-section-head .text-action {
+    font-size: 13px;
+    min-height: 44px;
+    flex-shrink: 0;
+}
+.brief-section-head h2 {
+    margin: 0;
+}
+.brief-canvas :is(button, a) {
+    -webkit-tap-highlight-color: transparent;
+}
+.brief-canvas :is(button, a):active {
+    transform: scale(0.985);
+}
+.brief-canvas :is(button, a) {
+    transition:
+        background-color 160ms ease,
+        color 160ms ease,
+        transform 160ms ease;
+}
+.daily-brief {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 290px;
+    gap: 36px;
+    padding: 18px 26px 22px;
+    position: relative;
+}
+.daily-brief::after,
+.brief-feature-band::after {
+    content: '';
+    position: absolute;
+    height: 1px;
+    bottom: 0;
+    inset-inline: 24px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--line) 12%,
+        var(--line) 88%,
+        transparent
+    );
+}
+.brief-personal {
+    min-width: 0;
+}
+.brief-appointment {
+    margin-top: 3px;
+}
+.today-brief .agenda-identity {
+    padding: 6px 46px 12px 0;
+    background: transparent;
+    border-radius: 0;
+}
+.today-brief .agenda-identity.is-revealed {
+    padding-right: 78px;
+}
+.today-brief .identity-main {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+.today-brief .appointment-time {
+    font-size: 44px;
+    letter-spacing: -2px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.appointment-copy {
+    min-width: 0;
+}
+.today-brief .appointment-title {
+    margin: 0 0 4px;
+    color: var(--ink);
+    font-size: 23px;
+    line-height: 1.15;
+    background: none;
+}
+.today-brief .appointment-location {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.appointment-location span {
+    margin-left: 6px;
+}
+.today-brief .appointment-options {
+    top: 4px;
+}
+.today-brief .delete-reveal {
+    min-height: 60px;
+    top: 0;
+    gap: 2px;
+}
+.today-brief .delete-reveal button {
+    width: 44px;
+    height: 44px;
+}
+.today-brief .delete-reveal span {
+    font-size: 11px;
+}
+.brief-journey {
+    border-radius: 16px;
+    background: var(--blue);
+    padding: 13px 16px 11px;
+}
+.brief-route {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 20px;
+    text-align: left;
+    padding: 0;
+    min-height: 50px;
+}
+.brief-route:hover {
+    color: var(--teal);
+}
+.brief-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 2px;
+    color: var(--teal);
+}
+.brief-line svg {
+    width: 26px;
+    height: 26px;
+}
+.brief-line b {
+    display: grid;
+    place-items: center;
+    background: #00758c;
+    color: white;
+    border-radius: 7px;
+    width: 25px;
+    height: 25px;
+    font-size: 14px;
+}
+.brief-stop {
+    display: grid;
+    gap: 1px;
+    flex-shrink: 0;
+}
+.brief-stop small {
+    font-size: 11px;
+    color: #40616a;
+}
+.brief-stop strong {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+}
+.brief-stop del {
+    color: #55717b;
+    font-weight: 400;
+    font-size: 13px;
+}
+.today-brief .route-connector {
+    min-width: 32px;
+    flex: 1;
+    margin-top: 12px;
+}
+.brief-route-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 14px;
+    font-size: 11px;
+    color: #40616a;
+    margin-top: 7px;
+}
+.brief-route-foot small {
+    font-size: 10px;
+}
+.brief-route-unknown {
+    display: grid;
+    gap: 4px;
+}
+.brief-route-unknown small {
+    color: var(--muted);
+    font-size: 12px;
+}
+.brief-alert {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px 10px;
+    padding: 0 0 12px;
+    font-size: 12px;
+}
+.brief-alert strong {
+    background: #ffe3a3;
+    color: #643806;
+    padding: 5px 9px;
+    border-radius: 8px;
+}
+.brief-alert small {
+    color: #40616a;
+}
+.today-brief .brief-journey .recovery-row {
+    padding-top: 12px;
+    margin-top: 8px;
+}
+.today-brief .brief-journey .outline-action {
+    min-height: 42px;
+    background: #fffefa;
+}
+.brief-more {
+    margin-top: 8px;
+}
+.brief-more > summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 13px;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+}
+.brief-more > summary::-webkit-details-marker {
+    display: none;
+}
+.brief-more > summary svg {
+    width: 16px;
+    height: 16px;
+    margin-left: auto;
+    transition: transform 180ms ease;
+}
+.brief-more[open] > summary svg {
+    transform: rotate(180deg);
+}
+.brief-more-preview {
+    font-size: 12px;
+    color: var(--muted);
+}
+.brief-more > div {
+    display: grid;
+    gap: 10px;
+    padding-top: 6px;
+}
+.brief-more[open] > div {
+    animation: brief-reveal 180ms ease-out;
+}
+.today-brief .brief-small-plan .appointment-time {
+    font-size: 23px;
+    min-width: 72px;
+    letter-spacing: -0.5px;
+}
+.today-brief .brief-small-plan .appointment-title {
+    font-size: 17px;
+}
+.brief-open-day {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0 0;
+}
+.brief-open-day > strong {
+    font-size: 28px;
+    letter-spacing: -0.8px;
+}
+.brief-open-day > span {
+    font-size: 13px;
+    color: var(--muted);
+}
+.brief-open-day .outline-action {
+    margin-top: 8px;
+    font-size: 13px;
+    min-height: 42px;
+}
+.brief-weather {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    text-align: left;
+    gap: 14px;
+    background: linear-gradient(125deg, #fff5d880, #fff8e54d 65%, transparent);
+    border-radius: 16px;
+    padding: 16px 22px;
+}
+.brief-weather:hover {
+    background-color: #fbf2dd;
+}
+.brief-weather-place {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.brief-weather-place small {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 400;
+}
+.brief-weather-now {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.brief-weather-now > svg {
+    width: 34px;
+    height: 34px;
+    color: #aa751b;
+}
+.brief-weather-now > strong {
+    font-size: 46px;
+    letter-spacing: -2px;
+    font-weight: 650;
+    line-height: 1;
+}
+.brief-weather-now > span {
+    font-size: 13px;
+    line-height: 1.5;
+}
+.brief-weather-now small {
+    color: var(--muted);
+    font-size: 11px;
+}
+.brief-weather-hours {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--muted);
+}
+.brief-weather-hours b {
+    color: var(--ink);
+    margin-left: 6px;
+}
+.brief-weather-hours i {
+    width: 22px;
+    height: 1px;
+    background: #bca77566;
+}
+.brief-feature-band {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(310px, 1fr);
+    gap: 32px;
+    padding: 16px 26px 20px;
+    position: relative;
+}
+.brief-discovery {
+    min-width: 0;
+}
+.brief-discovery .event-rail {
+    grid-auto-columns: minmax(0, 1fr);
+    grid-template-rows: 1fr;
+    gap: 12px;
+    padding-bottom: 0;
+    scrollbar-width: none;
+}
+.brief-discovery .event-rail::-webkit-scrollbar {
+    display: none;
+}
+.brief-discovery .event-card {
+    height: clamp(300px, 24vw, 330px);
+    border-radius: 18px;
+}
+.brief-discovery .event-copy {
+    left: 18px;
+    bottom: 18px;
+    right: 55px;
+}
+.brief-discovery .event-copy strong {
+    font-size: clamp(21px, 2.1vw, 29px);
+    line-height: 1.05;
+    letter-spacing: -0.65px;
+    margin-bottom: 12px;
+}
+.brief-discovery .event-copy small {
+    font-size: 11px;
+    line-height: 1.5;
+}
+.brief-discovery .event-save,
+.brief-discovery .event-plan {
+    right: 12px;
+}
+.brief-discovery .event-save {
+    top: 12px;
+}
+.brief-discovery .event-plan {
+    bottom: 15px;
+}
+.brief-discovery .event-save[aria-pressed='true'] {
+    background: #085b6bd9;
+    color: white;
+    border-color: #c4f5ff;
+}
+.brief-discovery .event-save[aria-pressed='true'] svg {
+    filter: drop-shadow(0 0 3px #fff5);
+}
+.brief-rail-position {
+    display: none;
+    justify-content: center;
+    height: 44px;
+}
+.brief-rail-position button {
+    min-width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+}
+.brief-rail-position button span {
+    width: 5px;
+    height: 5px;
+    border-radius: 4px;
+    background: #a39c94;
+    transition:
+        width 180ms ease,
+        background 180ms ease;
+}
+.brief-rail-position button[aria-current='true'] span {
+    width: 20px;
+    background: var(--teal);
+}
+.brief-help {
+    display: flex;
+    flex-direction: column;
+    padding-top: 25px;
+    min-width: 0;
+}
+.brief-help-intro {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.brief-composer-symbol {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    flex-shrink: 0;
+    background: var(--blue);
+    color: var(--teal);
+}
+.brief-composer-symbol svg {
+    width: 23px;
+    height: 23px;
+}
+.brief-help-intro h2 {
+    font-size: 23px;
+    letter-spacing: -0.7px;
+}
+.brief-help-intro p {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 3px 0 0;
+}
+.brief-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 20px;
+}
+.brief-prompts button {
+    font-size: 12px;
+    padding: 7px 13px;
+    border-radius: 10px;
+    background: var(--blue);
+    color: #006c82;
+    min-height: 44px;
+}
+.brief-prompts button:hover {
+    background: #c4eaf2;
+}
+.brief-paperwork {
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: linear-gradient(110deg, #eee5fa, #f2edf980);
+    border-radius: 14px;
+    color: var(--ink);
+}
+.brief-paperwork:hover {
+    background-color: #ece2f8;
+}
+.brief-paperwork-icon {
+    color: var(--violet);
+    align-self: center;
+}
+.brief-paperwork-copy {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+.brief-paperwork-copy > small {
+    color: #665473;
+    font-size: 10px;
+}
+.brief-paperwork-copy strong {
+    font-size: 18px;
+    letter-spacing: -0.4px;
+    line-height: 1.15;
+}
+.brief-paperwork-copy > span {
+    color: var(--violet);
+    font-size: 12px;
+}
+.brief-document-count {
+    color: #644496;
+    display: grid;
+    gap: 3px;
+    margin-left: auto;
+    padding-left: 4px;
+}
+.brief-document-count b {
+    font-size: 25px;
+    font-weight: 650;
+    line-height: 1;
+}
+.brief-document-count b small {
+    font-weight: 400;
+    font-size: 12px;
+}
+.brief-document-count > span {
+    font-size: 10px;
+}
+.brief-city {
+    margin-top: 0;
+    padding-top: 21px;
+}
+.brief-city h3 {
+    font-weight: 600;
+}
+.brief-city > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 24px;
+    margin-top: 5px;
+}
+.brief-city a {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-height: 44px;
+    font-size: 13px;
+}
+.brief-city a svg {
+    color: var(--teal);
+    width: 20px;
+    height: 20px;
+}
+.brief-city a:hover {
+    color: var(--teal);
+}
+.brief-later {
+    padding: 10px 26px 20px;
+}
+.brief-later-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 32px;
+}
+.brief-later-grid > * {
+    min-width: 0;
+    position: relative;
+}
+.brief-later-grid > * + *::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    width: 1px;
+    top: 14px;
+    bottom: 8px;
+    background: linear-gradient(transparent, var(--line), transparent);
+}
+.brief-later-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+}
+.brief-later-head > span {
+    color: var(--muted);
+    font-size: 11px;
+}
+.brief-later-head .text-action {
+    min-height: 44px;
+    font-size: 11px;
+}
+.brief-later-row {
+    display: flex;
+    gap: 11px;
+    align-items: center;
+    min-height: 65px;
+    padding: 8px 0;
+    width: 100%;
+    text-align: left;
+    border-radius: 10px;
+}
+a.brief-later-row:hover,
+button.brief-later-row:hover,
+.brief-saved-open:hover {
+    background: #efece5;
+}
+.brief-row-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+.brief-row-copy strong {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.brief-row-copy small {
+    font-size: 11px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+}
+.brief-date {
+    flex-shrink: 0;
+    display: grid;
+    align-content: center;
+    text-align: center;
+    width: 39px;
+    height: 45px;
+    border-radius: 10px;
+    color: var(--teal);
+    background: var(--blue);
+}
+.brief-date small {
+    font-size: 9px;
+}
+.brief-date b {
+    font-size: 20px;
+    font-weight: 650;
+    line-height: 1.1;
+}
+.brief-later-row time {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+.today-brief .brief-saved {
+    padding: 0;
+    margin: 0;
+}
+.today-brief .brief-saved::before {
+    background: linear-gradient(transparent, var(--line), transparent);
+    inset: 14px auto 8px -16px;
+    width: 1px;
+    height: auto;
+}
+.brief-saved-open {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    gap: 11px;
+    align-items: center;
+    min-height: 48px;
+    text-align: left;
+    padding: 0;
+    border-radius: 10px;
+}
+.brief-saved-symbol {
+    width: 39px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    color: var(--violet);
+    background: #eee7f8;
+    flex-shrink: 0;
+}
+.brief-kept-plan {
+    width: 44px;
+    height: 44px;
+    color: var(--action-ink);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+.brief-kept-plan:hover {
+    background: #fff0e5;
+}
+.brief-saved-empty {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding-top: 15px;
+}
+.brief-saved-empty > svg {
+    flex-shrink: 0;
+    color: var(--violet);
+    margin-top: 3px;
+}
+.brief-saved-empty span {
+    display: grid;
+    gap: 8px;
+}
+.brief-saved-empty strong {
+    font-weight: 500;
+    font-size: 14px;
+}
+.brief-saved-empty small {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+.brief-resume {
+    align-items: flex-start;
+}
+.brief-resume-symbol {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 38px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--blue);
+    color: var(--teal);
+}
+.brief-resume-label {
+    font-size: 12px;
+    color: var(--action-ink);
+    padding-top: 3px;
+}
+.brief-linked-record {
+    min-height: 54px;
+    padding-left: 7px;
+}
+.brief-linked-record > svg {
+    flex-shrink: 0;
+    width: 21px;
+    height: 21px;
+    color: var(--teal);
+}
+.brief-linked-record .brief-row-copy strong {
+    font-size: 12px;
+}
+.brief-linked-record .brief-row-copy small {
+    font-size: 10px;
+}
+.today-brief .preview-foot {
+    max-width: 1460px;
+    padding-top: 14px;
+    padding-bottom: 22px;
+}
+.brief-highlight .event-rail {
+    grid-auto-columns: minmax(0, 1fr);
+}
+.brief-highlight .event-card {
+    height: clamp(330px, 30vw, 430px);
+}
+.brief-highlight .event-badge {
+    font-size: 10px;
+    top: 14px;
+    left: 14px;
+}
+@keyframes brief-reveal {
+    from {
+        opacity: 0.4;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@media (min-width: 1201px) {
+    .brief-appointment {
+        display: grid;
+        grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.2fr);
+        align-items: center;
+        gap: 22px;
+    }
+    .today-brief .brief-appointment .identity-main {
+        display: grid;
+        gap: 8px;
+    }
+    .today-brief .brief-appointment .appointment-time {
+        font-size: 41px;
+    }
+    .brief-weather {
+        gap: 10px;
+        padding-block: 14px;
+    }
+}
+@media (max-width: 1100px) {
+    .daily-brief {
+        grid-template-columns: minmax(0, 1fr) 245px;
+        gap: 24px;
+        padding-inline: 22px;
+    }
+    .brief-weather {
+        padding-inline: 16px;
+    }
+    .brief-weather-now {
+        gap: 8px;
+    }
+    .brief-weather-now > strong {
+        font-size: 40px;
+    }
+    .brief-weather-now > svg {
+        width: 29px;
+    }
+    .brief-feature-band {
+        grid-template-columns: minmax(0, 1.35fr) minmax(285px, 1fr);
+        gap: 24px;
+        padding-inline: 22px;
+    }
+    .brief-help-intro h2 {
+        font-size: 21px;
+    }
+    .brief-prompts {
+        gap: 5px;
+    }
+    .brief-prompts button {
+        padding-inline: 10px;
+        font-size: 11px;
+    }
+    .brief-discovery .event-rail {
+        grid-auto-columns: 78%;
+    }
+    .brief-rail-position {
+        display: flex;
+    }
+    .brief-later {
+        padding-inline: 22px;
+    }
+    .brief-later-grid {
+        gap: 26px;
+    }
+    .brief-later-grid > * + *::before,
+    .today-brief .brief-saved::before {
+        left: -13px;
+    }
+}
+@media (max-width: 760px) {
+    .today-brief #main {
+        padding: 8px 12px;
+    }
+    .today-brief #shell {
+        padding-inline: 14px;
+    }
+    .today-brief .today-greeting {
+        align-items: center;
+        min-height: 48px;
+        gap: 8px;
+    }
+    .today-brief .greeting-copy {
+        display: block;
+    }
+    .today-brief .today-greeting h1 {
+        font-size: 24px;
+    }
+    .today-brief .today-greeting p {
+        margin-top: 4px;
+        font-size: 11px;
+    }
+    .today-brief .today-greeting p > span {
+        font-size: 10px;
+    }
+    .today-brief .review-bar {
+        gap: 0;
+    }
+    .today-brief .review-bar > span {
+        display: none;
+    }
+    .today-brief .review-bar select {
+        max-width: 108px;
+        font-size: 11px;
+        padding-left: 3px;
+    }
+    .brief-canvas {
+        border-radius: 18px;
+    }
+    .daily-brief {
+        display: block;
+        padding: 12px 16px 0;
+    }
+    .brief-section-head h2,
+    .brief-canvas h2 {
+        font-size: 17px;
+    }
+    .brief-section-head .text-action {
+        font-size: 12px;
+        gap: 4px;
+    }
+    .brief-section-head .text-action svg {
+        width: 18px;
+        height: 18px;
+    }
+    .today-brief .agenda-identity {
+        padding: 7px 42px 12px 0;
+    }
+    .today-brief .identity-main {
+        gap: 14px;
+    }
+    .today-brief .appointment-time {
+        font-size: 34px;
+        letter-spacing: -1.4px;
+    }
+    .today-brief .appointment-title {
+        font-size: 19px;
+    }
+    .today-brief .appointment-location {
+        font-size: 11px;
+    }
+    .appointment-location span {
+        display: none;
+    }
+    .brief-journey {
+        padding: 12px 12px 10px;
+        border-radius: 13px;
+    }
+    .brief-route {
+        gap: 12px;
+        min-height: 43px;
+    }
+    .brief-line {
+        gap: 4px;
+        flex-direction: column;
+    }
+    .brief-line svg {
+        width: 21px;
+        height: 21px;
+    }
+    .brief-line b {
+        width: 22px;
+        height: 18px;
+        border-radius: 5px;
+        font-size: 11px;
+    }
+    .brief-stop small {
+        font-size: 10px;
+    }
+    .brief-stop strong {
+        font-size: 23px;
+    }
+    .brief-stop del {
+        font-size: 11px;
+    }
+    .has-delay .brief-stop strong {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+    }
+    .brief-route-foot {
+        margin-top: 9px;
+        font-size: 10px;
+    }
+    .brief-route-foot small {
+        font-size: 9px;
+    }
+    .brief-alert {
+        font-size: 11px;
+    }
+    .brief-alert span {
+        flex: 1;
+        min-width: 110px;
+    }
+    .brief-alert small {
+        display: block;
+        font-size: 9px;
+    }
+    .brief-weather {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        padding: 14px 0;
+        gap: 0 16px;
+        border-radius: 0;
+        background: none;
+        align-items: center;
+        width: 100%;
+        margin-top: 4px;
+    }
+    .brief-weather-place {
+        font-size: 12px;
+        gap: 8px;
+        justify-content: flex-start;
+    }
+    .brief-weather-place small {
+        font-size: 9px;
+    }
+    .brief-weather-now {
+        grid-column: 2;
+        grid-row: 1 / 3;
+        gap: 7px;
+    }
+    .brief-weather-now > svg {
+        width: 25px;
+        height: 25px;
+    }
+    .brief-weather-now > strong {
+        font-size: 30px;
+        letter-spacing: -1px;
+    }
+    .brief-weather-now > span {
+        display: none;
+    }
+    .brief-weather-hours {
+        grid-column: 1;
+        font-size: 11px;
+        gap: 7px;
+        margin-top: 4px;
+    }
+    .brief-weather-hours i {
+        width: 12px;
+    }
+    .brief-weather-hours b {
+        margin-left: 3px;
+    }
+    .brief-feature-band {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        padding: 0 16px 10px;
+    }
+    .brief-help {
+        order: -1;
+        padding: 16px 0 10px;
+    }
+    .brief-help-intro {
+        gap: 9px;
+    }
+    .brief-help-intro h2 {
+        font-size: 19px;
+    }
+    .brief-help-intro p {
+        font-size: 11px;
+    }
+    .brief-composer-symbol {
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+    }
+    .brief-composer-symbol svg {
+        width: 21px;
+        height: 21px;
+    }
+    .brief-prompts {
+        margin: 10px 0 14px;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+    .brief-prompts button {
+        font-size: 11px;
+        padding-inline: 10px;
+        flex: 1;
+        min-height: 42px;
+        white-space: nowrap;
+    }
+    .brief-paperwork {
+        padding: 12px;
+        gap: 9px;
+        border-radius: 12px;
+    }
+    .brief-paperwork-copy > small {
+        font-size: 9px;
+    }
+    .brief-paperwork-copy strong {
+        font-size: 17px;
+    }
+    .brief-paperwork-copy > span {
+        font-size: 11px;
+    }
+    .brief-document-count b {
+        font-size: 23px;
+    }
+    .brief-city {
+        padding-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .brief-city h3 {
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+    .brief-city > div {
+        margin: 0;
+        justify-content: space-around;
+        flex: 1;
+        gap: 8px;
+    }
+    .brief-city a {
+        font-size: 11px;
+        gap: 4px;
+    }
+    .brief-city a svg {
+        width: 18px;
+        height: 18px;
+    }
+    .brief-discovery .brief-section-head {
+        margin-bottom: 2px;
+    }
+    .brief-discovery .event-rail {
+        grid-auto-columns: 88%;
+        gap: 10px;
+        margin-right: -16px;
+        padding-right: 16px;
+        scroll-padding-right: 16px;
+    }
+    .brief-discovery .event-card {
+        height: 300px;
+        border-radius: 16px;
+    }
+    .brief-discovery .event-copy strong {
+        font-size: 27px;
+    }
+    .brief-discovery .event-copy small {
+        font-size: 11px;
+    }
+    .brief-rail-position {
+        height: 44px;
+    }
+    .brief-rail-position button {
+        width: 44px;
+        height: 44px;
+    }
+    .brief-later {
+        padding: 8px 16px 16px;
+    }
+    .brief-later-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .brief-later-grid > * + *::before,
+    .today-brief .brief-saved::before {
+        top: -4px;
+        bottom: auto;
+        left: 0;
+        right: 0;
+        width: auto;
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            var(--line),
+            transparent
+        );
+    }
+    .brief-later-head {
+        min-height: 34px;
+    }
+    .brief-later-head .text-action {
+        min-height: 38px;
+    }
+    .brief-later-row {
+        min-height: 62px;
+    }
+    .brief-saved-empty {
+        padding-block: 10px 4px;
+    }
+    .today-brief .preview-foot {
+        padding-inline: 16px;
+        font-size: 10px;
+    }
+    .brief-highlight .event-card {
+        height: 340px;
+    }
+    .is-event-led .brief-feature-band {
+        padding-top: 10px;
+    }
+    .is-event-led .brief-help {
+        order: 0;
+    }
+    .brief-open-day {
+        padding-bottom: 6px;
+    }
+    .brief-open-day > strong {
+        font-size: 25px;
+    }
+    .brief-open-day > span {
+        font-size: 12px;
+    }
+}
+@media (max-width: 360px) {
+    .today-brief #main {
+        padding-inline: 8px;
+    }
+    .daily-brief,
+    .brief-feature-band,
+    .brief-later {
+        padding-inline: 12px;
+    }
+    .brief-discovery .event-rail {
+        margin-right: -12px;
+        padding-right: 12px;
+    }
+    .today-brief .appointment-time {
+        font-size: 30px;
+    }
+    .today-brief .appointment-title {
+        font-size: 17px;
+    }
+    .today-brief .identity-main {
+        gap: 10px;
+    }
+    .brief-city {
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .brief-city h3 {
+        padding-top: 14px;
+        font-size: 11px;
+    }
+    .brief-city a {
+        font-size: 10px;
+        gap: 3px;
+    }
+    .brief-stop strong {
+        font-size: 21px;
+    }
+    .brief-route {
+        gap: 9px;
+    }
+    .today-brief .route-connector {
+        min-width: 20px;
+    }
+    .brief-prompts button {
+        font-size: 10px;
+        padding-inline: 6px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .brief-canvas *,
+    .brief-canvas *::before,
+    .brief-canvas *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Restore the accepted timeline detail: each plan owns its nested journey. */
+.today-brief .daily-brief {
+    align-items: start;
+}
+.brief-section-head h2 small {
+    margin-left: 10px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--muted);
+}
+.brief-timeline {
+    display: grid;
+    gap: 22px;
+    padding-top: 6px;
+}
+.brief-timeline .brief-timeline-item {
+    display: block;
+    position: relative;
+    padding-left: 27px;
+    margin: 0;
+    min-width: 0;
+}
+.brief-timeline-item::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    bottom: -30px;
+    left: 5px;
+    width: 2px;
+    background: var(--orange);
+}
+.brief-timeline-item:last-child::before {
+    bottom: 0;
+    background: linear-gradient(var(--orange), #ff390235);
+}
+.brief-timeline-item::after {
+    content: '';
+    position: absolute;
+    top: 13px;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--orange);
+    box-shadow: 0 0 0 3px var(--surface);
+}
+.today-brief .brief-timeline-item .identity-main {
+    display: block;
+}
+.today-brief .brief-timeline-item .appointment-time {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 48px;
+}
+.today-brief .brief-timeline-item .appointment-title {
+    font-size: 23px;
+    margin-bottom: 5px;
+}
+.today-brief .brief-timeline-item .brief-plan-status {
+    margin-top: 8px;
+    font-size: 11px;
+}
+.today-brief .brief-timeline-item.is-secondary .appointment-time {
+    font-size: 30px;
+}
+.today-brief .brief-timeline-item.is-secondary .appointment-title {
+    font-size: 19px;
+}
+.today-brief .brief-timeline-item .brief-journey {
+    margin-top: 2px;
+}
+@media (max-width: 760px) {
+    .brief-timeline .brief-timeline-item {
+        padding-left: 21px;
+    }
+    .brief-timeline-item::before {
+        left: 4px;
+    }
+    .brief-timeline-item::after {
+        width: 10px;
+        height: 10px;
+    }
+    .today-brief .brief-timeline-item .appointment-time {
+        font-size: 42px;
+    }
+    .today-brief .brief-timeline-item .appointment-title {
+        font-size: 21px;
+    }
+    .today-brief .brief-timeline-item.is-secondary .appointment-time {
+        font-size: 28px;
+    }
+}
