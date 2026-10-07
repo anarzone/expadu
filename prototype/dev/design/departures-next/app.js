@@ -70,6 +70,21 @@ const sourceNote = (route) =>
         ? 'Sample day · scheduled times'
         : '7 Sep 2026 capture';
 const placeName = (name) => name.replace(/^Köln\s+/, '');
+// Stops that are also points in the place layer (connected/places.js
+// anchors), so a stop can open "Around here".
+const placeAnchors = {
+    neumarkt: 'neumarkt',
+    'wiener platz': 'wiener-platz',
+    rheinauhafen: 'rheinauhafen',
+    stadtgarten: 'stadtgarten',
+};
+function nearbyLink(name, date, time) {
+    const anchor = placeAnchors[placeName(name).toLocaleLowerCase()];
+    if (!anchor) return '';
+    // Around here lists the sample day's hours; other dates get no time.
+    const sampleDay = window.ExpaduSampleDay?.date === date;
+    return `../around-here/?near=${anchor}${sampleDay ? `&time=${time}` : ''}`;
+}
 // Which sample the typed request matches, if any.
 const requestTrip = () =>
     J.tripFor
@@ -338,7 +353,12 @@ function syncComposerHelper() {
     const helper = $('#travel-composer-helper');
     if (!helper) return;
     const route = composerRouteChoice();
-    helper.hidden = state.composerHelpDismissed;
+    // Help appears once there's a trip to help with; a request with no route
+    // offers it in its own empty state.
+    helper.hidden =
+        state.composerHelpDismissed ||
+        (!to.value.trim() && !state.servicePreference && !route) ||
+        (state.results && !routeList().length);
     $('#travel-composer-context').textContent = route
         ? `${routeName(route)} · ${route.depart}–${route.arrive}`
         : 'Help with this trip';
@@ -399,19 +419,19 @@ function showSchedule(anchor) {
 function showPreferences(anchor) {
     openPopover(
         'Journey preferences',
-        `<form id="preferences-form"><label for="max-walk">Total walking</label><select id="max-walk">${[
-            [60, 'Any walking time'],
-            [15, 'Up to 15 minutes'],
-            [10, 'Up to 10 minutes'],
-            [5, 'Up to 5 minutes'],
+        `<form id="preferences-form"><span class="preference-label" id="max-walk-label">Total walking</span><input type="hidden" id="max-walk" value="${state.maxWalk}"><div class="segmented walk-choices" role="group" aria-labelledby="max-walk-label">${[
+            [60, 'Any'],
+            [15, '15 min'],
+            [10, '10 min'],
+            [5, '5 min'],
         ]
             .map(
                 ([value, label]) =>
-                    `<option value="${value}" ${state.maxWalk === value ? 'selected' : ''}>${label}</option>`,
+                    `<button type="button" data-max-walk="${value}" aria-pressed="${state.maxWalk === value}" aria-label="${value === 60 ? 'Any walking time' : `Up to ${value} minutes`}">${label}</button>`,
             )
             .join(
                 '',
-            )}</select><label class="toggle-row"><span>${icon('route')}No changes</span><input id="direct" type="checkbox" role="switch" ${state.direct ? 'checked' : ''}></label><label class="toggle-row"><span>${icon('clock')}Hide delay notices</span><input id="avoid-delays" type="checkbox" role="switch" ${state.avoidDelays ? 'checked' : ''}></label><div class="popover-footer"><button type="button" class="quiet-button" data-action="reset-preferences">Reset</button><button class="text-action" type="submit">Done</button></div></form>`,
+            )}</div><label class="toggle-row"><span>${icon('route')}No changes</span><input id="direct" type="checkbox" role="switch" ${state.direct ? 'checked' : ''}></label><label class="toggle-row"><span>${icon('clock')}Hide delay notices</span><input id="avoid-delays" type="checkbox" role="switch" ${state.avoidDelays ? 'checked' : ''}></label><div class="popover-footer"><button type="button" class="quiet-button" data-action="reset-preferences">Reset</button><button class="text-action" type="submit">Done</button></div></form>`,
         anchor,
         'preferences',
     );
@@ -440,6 +460,7 @@ const searchPlaces = [
         detail: 'Tram stop',
         icon: 'train',
     },
+    // Places from the sample day: the appointment and the evening's events.
     ...(J.day
         ? [
               {
@@ -449,6 +470,11 @@ const searchPlaces = [
               },
           ]
         : []),
+    ...(window.ExpaduSampleDay?.events || []).map((event) => ({
+        name: event.venue,
+        detail: `${event.title} · ${event.start}`,
+        icon: 'calendar',
+    })),
     {
         name: 'Museum Ludwig',
         detail: 'Museum',
@@ -643,9 +669,11 @@ function option(route, list, preview = false) {
         ${preview ? '' : `<div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="inline-itinerary">${stepsMarkup(route)}${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}<p class="route-note">${sourceNote(route)} · ${route.mode === 'transit' ? 'Check current departures before travelling.' : 'Street directions weren’t captured.'}</p><div class="inline-route-actions"><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div></div></div></div>`}
     </article>`;
 }
+// The captured example follows the chosen mode: it has one cycling and one
+// walking option besides the trams.
 function renderSampleRoutes() {
     const routes = J.routes
-        .filter((route) => route.mode === 'transit')
+        .filter((route) => route.mode === state.routeMode)
         .slice(0, 3);
     $('#sample-routes').innerHTML = routes
         .map((route) => option(route, routes, true))
@@ -672,7 +700,7 @@ function renderNextTrip() {
         <div class="next-trip-route"><p class="next-trip-leave"><strong>${leaveIn <= 0 ? 'Leave now' : `Leave by ${best.depart}`}</strong>${leaveIn > 0 ? `<span>in ${leaveIn} min</span>` : ''}</p>
             <p class="next-trip-name"><span class="line-badge tram">${icon('train')}<strong>${safe(best.line)}</strong></span>${safe(placeName(trip.from))} → ${safe(tram(best).stop)}</p>
             <p class="next-trip-times"><span><small>Departs</small><time>${tram(best).time}</time></span><span class="next-trip-track" aria-hidden="true"></span><span><small>At stop</small><time>${tram(best).alight}</time></span></p>
-            <small>${walk ? `${walk.duration} min walk · ` : ''}at your appointment ${best.arrive} · ${spare(best)} min to spare</small></div>
+            <small>${walk ? `${walk.duration} min walk · ` : ''}there by ${best.arrive} · ${spare(best)} min to spare</small></div>
         ${best !== planned ? `<p class="next-trip-advice">The ${tram(planned).time} in your plan leaves only ${spare(planned)} min to spare.</p>` : ''}
         <button type="button" class="next-trip-action" data-action="next-trip">See both trams${icon('arrow')}</button>`;
 }
@@ -725,7 +753,7 @@ function stepsMarkup(route) {
     return `<ol class="route-steps">${J.tripSteps(route)
         .map(
             (step) =>
-                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time, trip)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small>${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
+                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time, trip)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small>${step.mode === 'alight' && nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time) ? `<a class="step-nearby" href="${nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time)}">${icon('pin')}Places nearby${icon('arrow')}</a>` : ''}${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
         )
         .join('')}</ol>`;
 }
@@ -766,12 +794,19 @@ function renderResults() {
           ])
         : {
               title: 'No route available for this request',
-              text: 'Live route search isn’t connected in this preview. You can edit your trip or explore the captured sample routes.',
+              text: 'Live route search isn’t connected in this preview. Composer can keep your request, or explore the captured sample routes.',
               reset: false,
+              composer: true,
           };
+    // A start at a known stop still has its departures.
+    const fromStop = T.stops.find(
+        (stop) =>
+            placeName(stop.name).toLocaleLowerCase() ===
+            placeName(from.value.trim()).toLocaleLowerCase(),
+    );
     const contents = list.length
         ? `<div class="route-workspace"><div class="route-options">${(state.more ? list : list.slice(0, 3)).map((route) => option(route, list)).join('')}${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}</div></div>`
-        : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : '<button class="quiet-button" data-action="example">Explore sample routes</button>'}</div></div>`;
+        : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : `${empty.composer ? `<button class="quiet-button" data-action="composer-help">${icon('spark')}Ask Composer</button>` : ''}${empty.composer && fromStop ? `<button class="quiet-button" data-action="from-departures" data-stop-id="${safe(fromStop.id)}">${icon('train')}Departures from ${safe(placeName(fromStop.name))}</button>` : ''}<button class="quiet-button" data-action="example">Explore sample routes</button>`}</div></div>`;
     const captureNote = list.length
         ? `<p class="sample-footnote">${icon('info')}<span>${sourceNote(list[0])} · No live travel status.</span></p>`
         : '';
@@ -995,8 +1030,22 @@ function sampleDayScope(stop, clock) {
     if (!lines.length) return '';
     return `<div class="timetable-scope">${icon('info')}<p>Only line ${lines.join(', ')}, for your appointment trip, is in the sample day. Other services at ${safe(stop.name)} weren’t captured for ${boardDateLabel(clock.date)}.</p><button type="button" class="quiet-button" data-action="timetable-capture">See the ${boardDateLabel(stop.capture.date)} capture</button></div>`;
 }
+// Lines and directions to filter by: those running in the shown window, so
+// the sample day doesn't offer lines that only the 4 Oct capture has.
+function windowEntries() {
+    const clock = timetableClock();
+    const shown = new Set(
+        T.departures(
+            timetableStop().id,
+            clock.date,
+            clock.time,
+            T.entries.length,
+        ).rows.map((row) => row.id),
+    );
+    return scopeEntries().filter((entry) => shown.has(entry.id));
+}
 function boardFilters() {
-    const entries = scopeEntries();
+    const entries = windowEntries();
     const lines = [...new Set(entries.map((entry) => entry.line))];
     if (!lines.includes(state.boardLine)) state.boardLine = 'all';
     const services = [
@@ -1063,7 +1112,7 @@ function boardFilterChoices(key) {
                 { value: 'delayed', label: 'Delay notices' },
             ],
         };
-    const entries = scopeEntries();
+    const entries = windowEntries();
     const lines = [...new Set(entries.map((entry) => entry.line))];
     if (key === 'line')
         return {
@@ -1266,6 +1315,12 @@ function renderDepartures() {
     const stop = timetableStop(),
         clock = timetableClock();
     $('#at-stop-title').textContent = stop.name;
+    const nearby = $('#stop-nearby');
+    if (nearby) {
+        const href = nearbyLink(stop.name, clock.date, clock.time);
+        nearby.hidden = !href;
+        if (href) nearby.setAttribute('href', href);
+    }
     $('.stop-symbol').innerHTML = icon(
         stop.mode === 'all' ? 'pin' : stop.mode === 'bus' ? 'bus' : 'train',
     );
@@ -1274,11 +1329,12 @@ function renderDepartures() {
     $('.board-return').hidden = !state.boardRoute;
     $('#timetable-time-label').textContent =
         `${boardDateLabel(clock.date)} · ${clock.time}`;
-    $('#board-meta').textContent = stop.capture.estimated
-        ? 'Saved estimates · not live'
-        : stop.sampleDay && clock.date === stop.sampleDay.date
-          ? 'Sample day · not live'
-          : 'Sample timetable · not live';
+    $('#board-meta').textContent =
+        stop.sampleDay && clock.date === stop.sampleDay.date
+            ? 'Sample day · not live'
+            : stop.capture.estimated
+              ? 'Saved estimates · not live'
+              : 'Sample timetable · not live';
     boardFilters();
     const filters = {
         line: state.boardLine,
@@ -1703,7 +1759,18 @@ function action(name, button) {
         renderDepartures();
         $('[data-action="board-filters"]').focus({ preventScroll: true });
     } else if (name === 'next-trip') openNextTrip();
-    else if (name === 'timetable-capture') {
+    else if (name === 'from-departures') {
+        state.stop = button.dataset.stopId;
+        Object.assign(state, {
+            boardType: 'all',
+            boardLine: 'all',
+            boardDirection: 'all',
+            boardExpanded: null,
+        });
+        timetableNow();
+        setView('stop');
+        $('[data-action="stops"]')?.focus({ preventScroll: true });
+    } else if (name === 'timetable-capture') {
         const stop = timetableStop();
         Object.assign(state, {
             boardMode: 'date',
@@ -1748,6 +1815,14 @@ function action(name, button) {
         renderResults();
     } else if (name === 'reset-preferences') {
         $('#max-walk').value = '60';
+        popover
+            .querySelectorAll('[data-max-walk]')
+            .forEach((item) =>
+                item.setAttribute(
+                    'aria-pressed',
+                    String(item.dataset.maxWalk === '60'),
+                ),
+            );
         $('#direct').checked = false;
         $('#avoid-delays').checked = false;
     } else if (name === 'ask-composer') {
@@ -1824,6 +1899,13 @@ document.addEventListener('click', (event) => {
               ? $('.find-routes')
               : from
         ).focus();
+    } else if (button.dataset.maxWalk) {
+        $('#max-walk').value = button.dataset.maxWalk;
+        popover
+            .querySelectorAll('[data-max-walk]')
+            .forEach((item) =>
+                item.setAttribute('aria-pressed', String(item === button)),
+            );
     } else if (button.dataset.schedule) {
         $('#schedule-mode').value = button.dataset.schedule;
         $('#scheduled-fields').hidden = button.dataset.schedule === 'now';
@@ -1844,6 +1926,7 @@ document.addEventListener('click', (event) => {
         state.more = false;
         syncControls();
         if (state.results) renderResults();
+        else renderSampleRoutes();
         plannerControl(`[data-route-mode="${state.routeMode}"]`)?.focus({
             preventScroll: true,
         });

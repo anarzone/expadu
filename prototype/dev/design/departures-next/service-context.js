@@ -42,7 +42,10 @@
             !capture ||
             capture.isLive !== false ||
             entry.stopId !== stop.id ||
-            capture.stop?.id !== stop.id
+            capture.stop?.id !== stop.id ||
+            // Only the station capture's own departures; the same stop also
+            // has journey and sample-day times.
+            !capture.entries?.includes(entry)
         )
             return null;
         const value = {

@@ -24,6 +24,8 @@
     flex: none;
 }
 .department-composer #request {
+    /* Pages without a text-field reset otherwise show a typewriter font. */
+    font-family: inherit;
     width: 100%;
     resize: none;
     background: transparent;

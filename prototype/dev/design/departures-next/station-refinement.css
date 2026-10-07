@@ -68,8 +68,9 @@ body[data-timetable-design='station'] .station-service-summary:active {
     background: var(--blue);
 }
 @media (max-width: 999px) {
+    /* Tall enough that the boarding areas don't pile up on one another. */
     body[data-timetable-design='station'] .station-map-panel {
-        --station-map-height: 156px;
+        --station-map-height: 220px;
     }
     body[data-timetable-design='station'] .station-map-panel.is-expanded {
         --station-map-height: min(52svh, 390px);

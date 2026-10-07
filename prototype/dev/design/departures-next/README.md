@@ -1,12 +1,49 @@
-# Travel — White & Lagoon
+# Travel
 
 Preview: http://127.0.0.1:8765/dev/design/departures-next/
+
+Travel uses the shared warm cream palette (`connected/tokens.css`, accepted 6
+October 2026); the White & Lagoon composition below is the layout it kept.
 
 Start from the repository root with `python3 prototype/serve.py`. Use this shared
 entry point rather than `python3 -m http.server`: its larger pending-connection
 queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
+
+## One timetable and the review fixes — 7 October 2026 (in review)
+
+From the owner's Travel review (items 3 and 5–16):
+
+- **One timetable.** The Timetable tab is the Neumarkt station board (line
+  filters, the stop map, all 16 captured departures). Neumarkt is one stop: it
+  opens on the sample day with the appointment trip's line 4, and "See the Sun
+  4 Oct capture" shows the full board. `station.html` forwards here, keeping
+  its query. The Merkenich captures stay in the stop picker.
+- **Captured example follows the mode.** Cycle and Walk show the capture's
+  cycling and walking options instead of the trams.
+- **Composer help.** The box appears once there's a trip to help with; a
+  request without a route offers "Ask Composer" in its own empty state. The
+  Composer field no longer falls back to a typewriter font, and its close
+  button has its own surface so it never doubles up with a ✕ behind it.
+- **Colours.** Bus badges use the travel colour like trams (the icon tells
+  them apart); the orange "Plan from here" link is gone with the old board
+  (each departure's details offer "Plan from this stop").
+- **Station board.** "Estimated" no longer repeats under every time (the
+  header says "Saved estimates" once) and times are no heavier than the
+  section title. The earlier/later buttons read "Earlier" and "Later"; on
+  phones "Sample" is an info button so it doesn't look like a cut-off tab.
+- **Preferences.** Walking time is four aligned choices instead of a select,
+  and the switches' "off" is light.
+- **Stop map.** Taller on phones (220px) so boarding areas don't pile up; its
+  credit starts collapsed.
+- **No route.** "No route available" offers Ask Composer, the starting stop's
+  departures when it is one, and the captured example.
+- **Your day.** The To field suggests the sample day's places: Mülheim (the
+  14:00 appointment), Rheinauhafen (18:30) and Stadtgarten (20:00).
+- **Places nearby.** A stop that is also a point in the place layer
+  (Neumarkt, Wiener Platz) links to Around here, from the timetable and from
+  the trip's "Get off at Wiener Platz" step.
 
 ## Sample day — 7 October 2026 (in review)
 
@@ -47,7 +84,7 @@ view is pixel-identical.
 
 ## Station-wide board — 4 October 2026
 
-Review `station.html?view=timetable`. Following the staging API/data audit, this
+Review `?view=timetable` (`station.html` now forwards to it). Following the staging API/data audit, this
 study replaces the featured next-departure card with one chronological station
 board. Simultaneous departures have equal rows and pagination keeps a tied time
 group together. The default is Neumarkt; switching Tram/Bus preserves the station.

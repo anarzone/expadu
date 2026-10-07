@@ -8,12 +8,13 @@
         />
         <meta name="color-scheme" content="light" />
         <title>Expadu — Travel</title>
-        <link rel="stylesheet" href="./style.css?v=48cebd18de23" />
+        <link rel="stylesheet" href="./style.css?v=ded65c4475fb" />
         <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
         <script defer src="./departure-data.js?v=05fcba8c8280"></script>
         <script defer src="../connected/sample-day.js?v=026fcb4cc1eb"></script>
         <script defer src="./journeys.js?v=954d22c70453"></script>
-        <script defer src="./timetable.js?v=50148a9e01f5"></script>
+        <script defer src="./station-data.js?v=b3440d1669f7"></script>
+        <script defer src="./timetable.js?v=b806fe3877bb"></script>
         <script defer src="../connected/icons.js?v=685f482a1088"></script>
         <script defer src="./icons.js?v=9339c39515e5"></script>
         <script defer src="./journey-ui.js?v=0231b7fa4a9e"></script>
@@ -37,7 +38,11 @@
             defer
             src="../connected/time-control.js?v=255f0aaf235a"
         ></script>
-        <script defer src="./app.js?v=ddfce645ac03"></script>
+        <script defer src="./station-map.js?v=acbec8c9e2b2"></script>
+        <script defer src="./service-context.js?v=bbb3393e63ce"></script>
+        <script defer src="./stop-discovery.js?v=f1153b51fda4"></script>
+        <script defer src="./station-board.js?v=fcbf7a72a311"></script>
+        <script defer src="./app.js?v=b411753e817b"></script>
         <script defer src="../connected/model.js?v=b727e359c259"></script>
         <script defer src="../connected/store.js?v=3078f6a2275c"></script>
         <script defer src="../connected/bridge.js?v=e351cb308817"></script>
@@ -63,18 +68,18 @@
             href="../connected/menu-colors.css?v=80281d6d2c46"
         />
 
-        <script defer src="../connected/handoffs.js?v=9b9cafad9559"></script>
+        <script defer src="../connected/handoffs.js?v=33932970adf3"></script>
         <link
             rel="stylesheet"
             href="../connected/discovery.css?v=81fbdadd3184"
         />
         <link
             rel="stylesheet"
-            href="../today-c/composer-controls.css?v=36385c2c02fb"
+            href="../today-c/composer-controls.css?v=954326e161a8"
         />
         <link
             rel="stylesheet"
-            href="../connected/composer-entry.css?v=9b43b09bff6f"
+            href="../connected/composer-entry.css?v=aa6e3a6ff882"
         />
         <script
             defer
@@ -107,11 +112,17 @@
             href="../connected/today-header.css?v=c1792fee5d7f"
         />
         <link rel="stylesheet" href="./soft-palette.css?v=b5854d636286" />
-        <link rel="stylesheet" href="./workspace.css?v=134becde1a97" />
+        <link rel="stylesheet" href="./workspace.css?v=6f179fa37161" />
+        <link rel="stylesheet" href="./station-map.css?v=51a1378dbd73" />
+        <link rel="stylesheet" href="./station-board.css?v=6786d606c98d" />
+        <link rel="stylesheet" href="./station-refinement.css?v=8dcedec8b2cc" />
+        <link rel="stylesheet" href="./stop-discovery.css?v=e7f468f51944" />
+        <link rel="stylesheet" href="./station-context.css?v=b8fca340757d" />
     </head>
     <body
         class="shell-review departures-page today-palette today-header travel-palette"
         data-view="journey"
+        data-timetable-design="station"
     >
         <!-- shared-header:start -->
         <div id="shell">
@@ -349,8 +360,14 @@
                         >Timetable
                     </button>
                 </div>
-                <button class="sample-label" data-action="about">
-                    Sample<span class="sr-only"> data information</span>
+                <button
+                    class="sample-label"
+                    data-action="about"
+                    aria-label="About these samples"
+                    title="About these samples"
+                >
+                    <span data-icon="info"></span
+                    ><span class="sample-label-text">Sample</span>
                 </button>
             </div>
             <div id="journey-view">
@@ -370,6 +387,17 @@
                             aria-expanded="false"
                             aria-controls="journey-form"
                         ></button>
+                        <div
+                            id="service-preference"
+                            class="service-preference"
+                            hidden
+                        ></div>
+                        <p
+                            id="service-context-status"
+                            class="route-note"
+                            role="status"
+                            hidden
+                        ></p>
                         <form id="journey-form" novalidate>
                             <h2 class="planner-heading">
                                 Where are you heading?
@@ -658,7 +686,7 @@
                             ><span
                                 ><small>Stop</small
                                 ><strong id="at-stop-title"
-                                    >Merkenich Mitte</strong
+                                    >Neumarkt</strong
                                 ></span
                             ><span data-icon="down"></span>
                         </button>
@@ -668,6 +696,11 @@
                         >
                             Plan from here
                         </button>
+                        <a class="stop-nearby" id="stop-nearby" hidden
+                            ><span data-icon="pin"></span>Places nearby<span
+                                data-icon="arrow"
+                            ></span
+                        ></a>
                     </div>
                     <div class="timetable-toolbar">
                         <button
@@ -688,7 +721,7 @@
                                 aria-label="One hour earlier"
                                 title="One hour earlier"
                             >
-                                <span data-icon="back"></span>1 hr
+                                <span data-icon="back"></span>Earlier
                             </button>
                             <button
                                 class="quiet-button"
@@ -696,7 +729,7 @@
                                 aria-label="One hour later"
                                 title="One hour later"
                             >
-                                1 hr<span data-icon="arrow"></span>
+                                Later<span data-icon="arrow"></span>
                             </button>
                         </div>
                         <div class="board-meta" id="board-meta">
@@ -719,8 +752,40 @@
                         >
                             <span data-icon="sliders"></span>Filters
                         </button>
+                        <div
+                            class="station-views"
+                            role="group"
+                            aria-label="Timetable display"
+                        >
+                            <button
+                                type="button"
+                                data-station-view="list"
+                                aria-pressed="true"
+                            >
+                                List
+                            </button>
+                            <button
+                                type="button"
+                                data-station-view="map"
+                                aria-pressed="false"
+                            >
+                                Map
+                            </button>
+                        </div>
                     </div>
+                    <div
+                        id="station-lines"
+                        class="station-lines"
+                        role="group"
+                        aria-label="Choose a line"
+                    ></div>
                     <div id="board-filters" hidden>
+                        <div
+                            id="station-directions"
+                            class="station-directions"
+                            role="group"
+                            aria-label="Direction"
+                        ></div>
                         <div class="board-filter" id="board-line-filter" hidden>
                             <button
                                 type="button"
@@ -800,25 +865,57 @@
                         </button>
                     </div>
                     <p
+                        id="station-active-filters"
+                        class="station-active-filters"
+                        aria-label="Active departure filters"
+                        hidden
+                    ></p>
+                    <p
                         id="board-filter-summary"
                         class="sr-only"
                         role="status"
                         aria-live="polite"
                     ></p>
                 </div>
-                <div class="timetable-departures">
-                    <div class="timetable-columns" aria-hidden="true">
-                        <span>Line</span><span>Towards</span><span>Departs</span
-                        ><span></span>
+                <div class="station-workspace" id="station-workspace">
+                    <div class="timetable-departures">
+                        <div class="timetable-columns" aria-hidden="true">
+                            <span>Line</span><span>Towards</span
+                            ><span>Departs</span><span></span>
+                        </div>
+                        <div
+                            id="departure-cards"
+                            class="timetable-list"
+                            aria-label="Scheduled departures"
+                        ></div>
+                        <div class="board-bottom">
+                            <span>Platform and live delays unavailable</span>
+                        </div>
                     </div>
-                    <div
-                        id="departure-cards"
-                        class="timetable-list"
-                        aria-label="Scheduled departures"
-                    ></div>
-                    <div class="board-bottom">
-                        <span>Platform and live delays unavailable</span>
-                    </div>
+                    <aside
+                        id="station-map-panel"
+                        class="station-map-panel"
+                        aria-label="Stops around the station"
+                        hidden
+                    >
+                        <div
+                            id="station-service-summary"
+                            class="station-service-summary"
+                        ></div>
+                        <div class="station-map-toolbar">
+                            <span>Find your boarding area</span>
+                            <button
+                                type="button"
+                                class="station-map-toggle"
+                                data-action="expand-station-map"
+                                aria-expanded="false"
+                                aria-controls="station-map-content"
+                            >
+                                Expand map
+                            </button>
+                        </div>
+                        <div id="station-map-content"></div>
+                    </aside>
                 </div>
             </section>
             <div id="active-trip" hidden></div>

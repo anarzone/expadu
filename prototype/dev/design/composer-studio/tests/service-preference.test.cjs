@@ -86,7 +86,7 @@ test('reviewing the request returns to the station study with an exact capture r
         scope.ExpaduHandoffs.reviewURL(selectedRequest(scope)),
         'http://localhost/dev/design/composer-studio/',
     );
-    assert.equal(url.pathname, '/dev/design/departures-next/station.html');
+    assert.equal(url.pathname, '/dev/design/departures-next/');
     assert.equal(url.searchParams.get('service'), 'neumarkt-capture-2:0');
     assert.equal(
         url.searchParams.get('serviceCapture'),

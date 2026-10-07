@@ -232,7 +232,7 @@
                 // serialized itinerary or boarding assignment from the URL.
                 params.set('service', service.departureId);
                 params.set('serviceCapture', service.capturedAt);
-                return '../departures-next/station.html?' + params;
+                return '../departures-next/?' + params;
             }
             return '../departures-next/?' + params;
         }

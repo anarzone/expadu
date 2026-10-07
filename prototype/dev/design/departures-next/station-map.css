@@ -28,8 +28,9 @@
     border-radius: var(--radius-round);
     background: var(--teal, #00768b);
 }
+/* Buses in ink, trams in travel teal: orange is kept for actions. */
 .station-map-key.bus {
-    background: var(--orange, #c23b0e);
+    background: var(--ink, #211d15);
 }
 .station-map-stage {
     display: grid;
@@ -90,7 +91,7 @@
         box-shadow 140ms ease;
 }
 .station-map-marker.bus {
-    color: var(--orange, #c23b0e);
+    color: var(--ink, #211d15);
 }
 .station-map-marker svg {
     width: 19px;
@@ -107,7 +108,7 @@
         0 0 0 5px currentColor;
 }
 .station-map-marker.bus.is-matching > span {
-    background: #ffeadf;
+    background: var(--surface-quiet, #f1ebdf);
 }
 .station-map-marker:focus-visible {
     outline: 2px solid var(--ink, #211d15);

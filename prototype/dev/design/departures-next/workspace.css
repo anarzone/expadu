@@ -1498,3 +1498,74 @@ body.travel-palette .next-trip[hidden] {
         transition: none;
     }
 }
+/* Journey preferences: aligned walking choices and a light "off" switch
+   (the shared palette greys it, which reads as "on"). */
+body.travel-palette .preference-label {
+    display: block;
+    margin: 14px 0 6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+body.travel-palette .walk-choices {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+}
+body.travel-palette .walk-choices button {
+    min-height: 40px;
+    padding-inline: 4px;
+    font-size: var(--text-small);
+}
+body.travel-palette .journey-popover .toggle-row input {
+    background: var(--color-bg-hover);
+}
+body.travel-palette .journey-popover .toggle-row input:checked {
+    background: var(--color-select-text);
+}
+/* "Places nearby": the stop in the place layer's map view. */
+body.travel-palette :is(.stop-nearby, .step-nearby) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 44px;
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+}
+body.travel-palette .stop-nearby {
+    flex: none;
+    margin-left: auto;
+}
+body.travel-palette .step-nearby {
+    min-height: 36px;
+}
+body.travel-palette :is(.stop-nearby, .step-nearby) svg {
+    width: 15px;
+    height: 15px;
+}
+body.travel-palette .stop-nearby[hidden] {
+    display: none;
+}
+/* Phones: a tighter trip card, so the form's controls sit clear of the
+   floating Composer button on the first screen. */
+@media (max-width: 700px) {
+    body.travel-palette .next-trip {
+        gap: 8px;
+        margin-bottom: 20px;
+        padding: 14px;
+    }
+    .next-trip-route {
+        gap: 6px;
+        padding: 10px 12px;
+    }
+    .next-trip-advice {
+        padding: 6px 10px;
+    }
+}
+/* Phones: the floating Composer button sits at the bottom right, so the
+   preferences button stays beside the time instead of at the right edge. */
+@media (max-width: 700px) {
+    body.travel-palette :is(.journey-utilities, .result-utilities) {
+        justify-content: flex-start;
+    }
+}

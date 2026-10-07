@@ -407,7 +407,10 @@
     padding: 12px;
     border: 0;
     border-radius: var(--radius-round);
-    background: transparent;
+    /* A surface of its own, so it never merges with a close button or icon
+       on the page behind it. */
+    background: var(--color-bg-surface, #fffdf8);
+    box-shadow: 0 2px 8px #3e352b1a;
     color: var(--color-text-soft, #627f88);
     transition:
         background-color 160ms ease,

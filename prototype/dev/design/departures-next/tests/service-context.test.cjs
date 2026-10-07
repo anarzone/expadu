@@ -9,7 +9,7 @@ const preference = {
     kind: 'service-preference',
     departureId: 'neumarkt-capture-2:0',
     serviceId: 'neumarkt-capture-2',
-    stopId: 'neumarkt-station',
+    stopId: 'neumarkt',
     stopName: 'Neumarkt',
     line: '18',
     headsign: 'Buchheim',

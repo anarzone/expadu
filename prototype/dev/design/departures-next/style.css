@@ -343,10 +343,34 @@ main {
     font-weight: var(--weight-semibold);
 }
 .sample-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     color: var(--muted);
     font-size: var(--text-small);
     min-height: 44px;
     padding: 8px 0 8px 8px;
+}
+.sample-label [data-icon],
+.sample-label [data-icon] svg {
+    width: 16px;
+    height: 16px;
+}
+/* Phones: an info icon, so it doesn't read as a cut-off third tab. */
+@media (max-width: 700px) {
+    .sample-label {
+        justify-content: center;
+        min-width: 44px;
+        padding: 8px;
+    }
+    .sample-label-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
 }
 .sample-tag {
     color: #5a6d73;

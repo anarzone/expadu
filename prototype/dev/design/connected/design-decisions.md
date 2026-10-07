@@ -364,6 +364,20 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Travel review fixes and one timetable — owner request, 7 October (in review):**
+the Timetable tab is the Neumarkt station board; Neumarkt is one stop that
+opens on the sample day with its line 4 and offers the 4 October capture as the
+full board (`station.html` forwards). Bus badges and map markers no longer use
+the action orange; the board says once that its times are estimates, and times
+are no heavier than the section title. The captured example follows the travel
+mode; Composer help appears once there's a trip, and "No route available"
+offers Ask Composer and the start's departures. Walking time is aligned
+choices, the switches' "off" is light, and on phones nothing sits fully under
+the floating Composer button. The To field suggests the day's places; stops in
+the place layer link to Around here. The shared Composer field inherits the
+page font and its close button has its own surface. Details are in
+`departures-next/README.md`.
+
 **Paperwork follows the v2 backend rules — owner request, 7 October (in review):**
 submitting moves a task to Submitted without finishing its step; Update
 progress offers only the changes the backend accepts (waiting only after a

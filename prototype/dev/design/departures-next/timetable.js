@@ -24,21 +24,31 @@
     }
     const dateAtClock = (date, captureTime, time) =>
         time < captureTime ? shift(date, time, 1440).date : date;
+    const journeyStop = {
+        ...J.capture.boardingStop,
+        capture: { date: J.capture.date, time: J.capture.time },
+        // On the sample day this stop opens at its clock, with only the
+        // appointment trip's departures (connected/sample-day.js).
+        ...(J.day ? { sampleDay: { date: J.day.date, time: J.day.time } } : {}),
+    };
+    // One Neumarkt: when the station capture is loaded it is the journeys'
+    // boarding stop, with its own capture as the full board.
+    const station = stationCapture?.stop;
+    const merged = station?.id === journeyStop.id;
     const stops = [
         ...D.stops.map((stop) => ({
             ...stop,
             capture: { date: D.snapshot.dateISO, time: D.snapshot.time },
         })),
-        {
-            ...J.capture.boardingStop,
-            capture: { date: J.capture.date, time: J.capture.time },
-            // On the sample day this stop opens at its clock, with only the
-            // appointment trip's departures (connected/sample-day.js).
-            ...(J.day
-                ? { sampleDay: { date: J.day.date, time: J.day.time } }
-                : {}),
-        },
-        ...(stationCapture ? [stationCapture.stop] : []),
+        merged
+            ? {
+                  ...station,
+                  ...(journeyStop.sampleDay
+                      ? { sampleDay: journeyStop.sampleDay }
+                      : {}),
+              }
+            : journeyStop,
+        ...(station && !merged ? [station] : []),
     ];
     const entries = D.services.flatMap((service) =>
         service.times.map((time) => {

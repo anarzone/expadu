@@ -492,7 +492,7 @@ test('station line filtering keeps a single delayed departure selectable without
 
 test('the station capture starts at Neumarkt and gives tied departures independent disclosures', () => {
     const w = workspace('?view=timetable', true, true, true);
-    assert.equal(w.run('state.stop'), 'neumarkt-station');
+    assert.equal(w.run('state.stop'), 'neumarkt');
     assert.equal(w.element('#at-stop-title').textContent, 'Neumarkt');
     assert.equal(w.run('timetableClock().date'), '2026-10-04');
     assert.equal(w.run('timetableClock().time'), '22:19');
@@ -508,10 +508,10 @@ test('the station capture starts at Neumarkt and gives tied departures independe
     assert.equal(new Set(panels).size, 16);
     assert.doesNotMatch(html, /station-clock|station-feature|Next departure/);
     const first = w.run(
-        'T.entries.find(entry => entry.stopId === "neumarkt-station" && entry.time === "22:19").id',
+        'T.entries.find(entry => entry.stopId === "neumarkt" && entry.time === "22:19").id',
     );
     const second = w.run(
-        'T.entries.filter(entry => entry.stopId === "neumarkt-station" && entry.time === "22:19")[1].id',
+        'T.entries.filter(entry => entry.stopId === "neumarkt" && entry.time === "22:19")[1].id',
     );
     w.run(`departureDetails(${JSON.stringify(first)});`);
     html = w.element('#departure-cards').innerHTML;
@@ -525,21 +525,20 @@ test('the station capture starts at Neumarkt and gives tied departures independe
     assert.match(html, /Estimate from a saved capture/);
 });
 
-test('station-only data is loaded before the model without changing the baseline entry page', () => {
-    const station = fs.readFileSync(
-        path.join(__dirname, '..', 'station.html'),
-        'utf8',
-    );
-    const baseline = fs.readFileSync(
+test('the station board is Travel’s timetable; its data loads before the model', () => {
+    const page = fs.readFileSync(
         path.join(__dirname, '..', 'index.html'),
         'utf8',
     );
-    assert.ok(station.indexOf('./station-data.js') >= 0);
+    assert.ok(page.indexOf('./station-data.js') >= 0);
     assert.ok(
-        station.indexOf('./station-data.js') <
-            station.indexOf('./timetable.js'),
+        page.indexOf('./station-data.js') < page.indexOf('./timetable.js'),
     );
-    assert.doesNotMatch(baseline, /station-data\.js/);
+    // The old address forwards to the same page, keeping its query.
+    assert.match(
+        fs.readFileSync(path.join(__dirname, '..', 'station.html'), 'utf8'),
+        /location\.replace\('\.\/' \+ location\.search/,
+    );
     const w = workspace('?view=timetable', false, true, true);
     const types = w.element('#board-types').innerHTML;
     assert.match(types, /data-board-type="tram"/);
@@ -653,7 +652,7 @@ test('station departure type resets incompatible filters while retaining the sta
     );
     const button = { dataset: { boardType: 'bus' } };
     w.emit('click', { target: { closest: () => button } });
-    assert.equal(w.run('state.stop'), 'neumarkt-station');
+    assert.equal(w.run('state.stop'), 'neumarkt');
     assert.equal(w.run('state.boardType'), 'bus');
     assert.equal(w.run('state.boardLine'), 'all');
     assert.equal(w.run('state.boardDirection'), 'all');
@@ -792,7 +791,7 @@ test('resetting a journey clears the previous service status message', () => {
 test('planning from a captured service preserves its uncertainty until an incompatible edit', () => {
     const w = workspace('?view=timetable', true, true, true);
     w.run(
-        'closeSheet = done => done?.(); const entry = T.entries.find(row => row.stopId === "neumarkt-station"); useStop(entry.stopId, entry.id);',
+        'closeSheet = done => done?.(); const entry = T.entries.find(row => row.stopId === "neumarkt" && row.timeBasis); useStop(entry.stopId, entry.id);',
     );
     assert.equal(w.run('state.servicePreference.kind'), 'service-preference');
     assert.equal(w.run('state.servicePreference.isLive'), false);
@@ -899,7 +898,7 @@ test('Composer help preserves a selected service and requests its missing destin
     const w = workspace('?view=timetable', false, true, true);
     w.run(`
         closeSheet = done => done?.();
-        const service = T.entries.find(row => row.stopId === 'neumarkt-station');
+        const service = T.entries.find(row => row.stopId === 'neumarkt' && row.timeBasis);
         useStop(service.stopId, service.id);
         var originalService = JSON.stringify(state.servicePreference);
         var launchedComposer = false;
@@ -1057,7 +1056,7 @@ test('on the sample day the planner leads with the appointment trip and Today’
     assert.equal(card.hidden, false);
     assert.match(card.innerHTML, /Leave now/);
     assert.match(card.innerHTML, /Departs<\/small><time>13:14/);
-    assert.match(card.innerHTML, /at your appointment 13:48 · 12 min to spare/);
+    assert.match(card.innerHTML, /there by 13:48 · 12 min to spare/);
     assert.match(
         card.innerHTML,
         /The 13:24 in your plan leaves only 2 min to spare/,
@@ -1106,5 +1105,68 @@ test('the sample-day timetable says it only holds the trip’s line', () => {
     assert.match(
         w.element('#board-filter-summary').textContent,
         /5 captured departures/,
+    );
+});
+
+test('one Neumarkt: the station board opens on the sample day with only its line', () => {
+    const w = workspace('?view=timetable', false, true, true, true);
+    w.run('renderDepartures();');
+    assert.equal(w.run('state.stop'), 'neumarkt');
+    assert.equal(w.run('timetableClock().date'), '2026-09-30');
+    assert.equal(w.element('#board-meta').textContent, 'Sample day · not live');
+    assert.equal(
+        w.element('#board-filter-summary').textContent,
+        '2 sample departures',
+    );
+    const html = w.element('#departure-cards').innerHTML;
+    assert.doesNotMatch(html, /<small>Estimated<\/small>|Time in capture/);
+    assert.match(html, /Scheduled sample times/);
+    const lines = w.element('#station-lines').innerHTML;
+    assert.match(lines, /data-station-line="4"/);
+    assert.doesNotMatch(lines, /data-station-line="7"/);
+    w.run('action("timetable-capture", $("#capture-trigger"));');
+    assert.equal(w.run('timetableClock().date'), '2026-10-04');
+    assert.equal(
+        w.element('#board-filter-summary').textContent,
+        '16 captured departures',
+    );
+    // A sample-day departure is never mistaken for the station capture.
+    w.run(`
+        closeSheet = done => done?.();
+        const sample = T.entries.find(row => row.sampleDay);
+        useStop(sample.stopId, sample.id);
+    `);
+    assert.equal(w.run('state.servicePreference'), null);
+});
+
+test('the captured example follows the travel mode', () => {
+    const w = workspace();
+    w.run('state.routeMode = "bike"; renderSampleRoutes();');
+    assert.match(w.element('#sample-routes').innerHTML, /By bike/);
+    assert.doesNotMatch(
+        w.element('#sample-routes').innerHTML,
+        /data-example-route="r9"/,
+    );
+});
+
+test('Composer help waits for a trip; no route offers Composer and the start’s departures', () => {
+    const w = workspace('', false, false, false, true);
+    w.run('syncComposerHelper();');
+    assert.equal(w.element('#travel-composer-helper').hidden, true);
+    w.element('#from').value = 'Neumarkt';
+    w.element('#to').value = 'Rheinauhafen';
+    w.run('syncComposerHelper();');
+    assert.equal(w.element('#travel-composer-helper').hidden, false);
+    w.run('searchJourney();');
+    const results = w.element('#results').innerHTML;
+    assert.match(results, /data-action="composer-help"/);
+    assert.match(
+        results,
+        /data-action="from-departures" data-stop-id="neumarkt"/,
+    );
+    assert.equal(w.element('#travel-composer-helper').hidden, true);
+    assert.match(
+        w.run('[...searchPlaces].map(p => p.name).join()'),
+        /Mülheim,Rheinauhafen,Stadtgarten/,
     );
 });

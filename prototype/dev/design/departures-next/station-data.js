@@ -1,5 +1,6 @@
 /* Public Neumarkt records read from running staging on 4 October 2026.
-   A frozen design capture, never live travel advice. Only station.html loads it.
+   A frozen design capture, never live travel advice. Travel's timetable loads
+   it; Neumarkt is the same stop as the journeys' boarding stop ('neumarkt').
    The timetable's `all` board supplies rounded countdowns, not exact scheduled
    timestamps or boarding-point references. KVB point records are kept separate:
    sharing a line does not prove which point a departure boards from. */
@@ -7,7 +8,7 @@
     const capturedAt = '2026-10-04T22:19:08+02:00';
     const capture = { date: '2026-10-04', time: '22:19', estimated: true };
     const stop = {
-        id: 'neumarkt-station',
+        id: 'neumarkt',
         name: 'Neumarkt',
         mode: 'mixed',
         operator: 'KVB',

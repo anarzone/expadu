@@ -306,16 +306,20 @@
                             bounds.extend([group.lng, group.lat]),
                         );
                         map.resize();
+                        // Small phone maps keep most of their height for the
+                        // markers; the zoom buttons stay clear on the right.
+                        const small = container.clientHeight < 260;
                         map.fitBounds(bounds, {
-                            padding: {
-                                top: 52,
-                                right: 54,
-                                bottom: 48,
-                                left: 40,
-                            },
+                            padding: small
+                                ? { top: 30, right: 54, bottom: 30, left: 24 }
+                                : { top: 52, right: 54, bottom: 48, left: 40 },
                             maxZoom: 17,
                             duration: 0,
                         });
+                        // The map credit starts collapsed to its "i", which opens it.
+                        container
+                            .querySelector('.maplibregl-ctrl-attrib')
+                            ?.classList.remove('maplibregl-compact-show');
                         update();
                     });
                 })

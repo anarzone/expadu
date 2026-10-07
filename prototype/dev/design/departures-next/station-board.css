@@ -207,9 +207,10 @@ body.travel-palette[data-timetable-design='station'] #departure-cards {
     color: var(--teal);
     background: var(--blue);
 }
+/* Line badges are travel colour for every mode; the icon tells bus from tram. */
 .station-service.bus {
-    color: var(--action);
-    background: #fff0e6;
+    color: var(--teal);
+    background: var(--blue);
 }
 .station-service svg {
     width: 17px;
@@ -248,7 +249,8 @@ body.travel-palette[data-timetable-design='station'] #departure-cards {
 }
 .station-time time {
     display: block;
-    font-size: var(--text-title);
+    /* Data is never heavier than its section title. */
+    font-size: var(--text-section);
     font-weight: var(--weight-semibold);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.5px;
@@ -412,7 +414,7 @@ body.travel-palette[data-timetable-design='station']
         font-size: var(--text-micro);
     }
     .station-time time {
-        font-size: var(--text-title-sm);
+        font-size: var(--text-section);
     }
     body.travel-palette[data-timetable-design='station']
         .station-entry
