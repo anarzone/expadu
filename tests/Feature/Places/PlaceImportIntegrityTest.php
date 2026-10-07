@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
+/** The importer refuses mirrors whose data is over a day old. */
+function currentOverpassBase(): array
+{
+    return ['timestamp_osm_base' => now()->toIso8601String()];
+}
+
 function seedTestVeedelBoundary(): void
 {
     $index = 0;
@@ -121,7 +127,7 @@ test('osm import updates by stable identity and excludes points outside Cologne 
     ]);
 
     Http::fake([
-        '*' => Http::response(['elements' => [
+        '*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [
             ['type' => 'node', 'id' => 10, 'lat' => 50.951, 'lon' => 6.951, 'tags' => ['name' => 'Updated park']],
             ['type' => 'node', 'id' => 11, 'lat' => 51.20, 'lon' => 7.20, 'tags' => ['name' => 'Outside park']],
         ]]),
@@ -169,9 +175,9 @@ test('osm import records source facts once and advances the revision only when f
     $changed['tags']['name'] = 'Quellenpark am See';
     $changed['tags']['fee'] = 'yes';
     Http::fakeSequence()
-        ->push(['elements' => [$element]])
-        ->push(['elements' => [$element]])
-        ->push(['elements' => [$changed]]);
+        ->push(['osm3s' => currentOverpassBase(), 'elements' => [$element]])
+        ->push(['osm3s' => currentOverpassBase(), 'elements' => [$element]])
+        ->push(['osm3s' => currentOverpassBase(), 'elements' => [$changed]]);
 
     $this->artisan('osm:import --only=park')->assertSuccessful();
 
@@ -218,7 +224,7 @@ test('osm import records source facts once and advances the revision only when f
 
 test('osm import drops malformed contact urls without losing the place observation', function () {
     seedTestVeedelBoundary();
-    Http::fake(['*' => Http::response(['elements' => [[
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [[
         'type' => 'node',
         'id' => 14,
         'lat' => 50.951,
@@ -256,7 +262,7 @@ test('osm refresh preserves a reviewed display name and retains the changed sour
         'Official evidence confirms the public display name.',
         'places-reviewer@example.test',
     );
-    Http::fake(['*' => Http::response(['elements' => [[
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [[
         'type' => 'node',
         'id' => 13,
         'lat' => 50.952,
@@ -278,7 +284,7 @@ test('osm refresh preserves a reviewed display name and retains the changed sour
 test('bare microfacilities remain stored but are not recommendation destinations', function () {
     seedTestVeedelBoundary();
     Http::fake([
-        '*' => Http::response(['elements' => [
+        '*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [
             ['type' => 'node', 'id' => 20, 'lat' => 50.951, 'lon' => 6.951, 'tags' => ['name' => 'Spielplatz', 'leisure' => 'playground']],
         ]]),
     ]);
@@ -294,7 +300,7 @@ test('osm import captures exact Commons and source image tags with rights pendin
     seedTestVeedelBoundary();
     Queue::fake();
     Http::fake([
-        '*' => Http::response(['elements' => [[
+        '*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [[
             'type' => 'node',
             'id' => 4242,
             'lat' => 50.951,
@@ -343,7 +349,7 @@ test('legacy rows are quarantined and authoritative osm rows are rebuilt indepen
         'lat' => 50.951,
         'lng' => 6.951,
     ]);
-    Http::fake(['*' => Http::response(['elements' => [[
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [[
         'type' => 'way', 'id' => 77, 'center' => ['lat' => 50.951, 'lon' => 6.951], 'tags' => ['name' => 'Legacy Park'],
     ]]])]);
 
@@ -363,7 +369,7 @@ test('a nearby manual null-source row is never overwritten during osm rebuild', 
         'source' => null, 'source_id' => null, 'name' => 'Same Name',
         'category' => 'park', 'lat' => 50.951, 'lng' => 6.951,
     ]);
-    Http::fake(['*' => Http::response(['elements' => [[
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [[
         'type' => 'node', 'id' => 78, 'lat' => 50.9511, 'lon' => 6.9511, 'tags' => ['name' => 'Same Name'],
     ]]])]);
 
@@ -383,7 +389,7 @@ test('unmatched legacy rows cannot remain recommendation eligible after an autho
         'category' => 'park', 'lat' => 51.20, 'lng' => 7.20,
         'is_active' => true, 'is_recommendable' => true,
     ]);
-    Http::fake(['*' => Http::response(['elements' => []])]);
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => []])]);
 
     $this->artisan('spots:quarantine-legacy --force')->assertSuccessful();
     $this->artisan('osm:import --only=park')->assertSuccessful();
@@ -400,7 +406,7 @@ test('a partial category refresh preserves unrelated legacy rows', function () {
         'category' => 'cafe', 'lat' => 50.951, 'lng' => 6.951,
         'is_active' => true, 'is_recommendable' => true,
     ]);
-    Http::fake(['*' => Http::response(['elements' => []])]);
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => []])]);
 
     $this->artisan('osm:import --only=park')->assertSuccessful();
 
@@ -447,7 +453,7 @@ test('the rollout does not reactivate legacy places after an authoritative catal
 
 test('supplied generic dog park and skatepark labels are not destinations', function (string $only, string $name, array $tags) {
     seedTestVeedelBoundary();
-    Http::fake(['*' => Http::response(['elements' => [[
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [[
         'type' => 'node', 'id' => 90, 'lat' => 50.951, 'lon' => 6.951, 'tags' => ['name' => $name, ...$tags],
     ]]])]);
 
@@ -495,7 +501,7 @@ test('a valid empty overpass result retires that refreshed source group', functi
         'ingestion_key' => 'osm-existing-89', // gitleaks:allow -- deterministic test fixture, not a credential
         'payload' => ['name' => 'Existing place'],
     ]);
-    Http::fake(['*' => Http::response(['elements' => []])]);
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => []])]);
 
     $this->artisan('osm:import --only=park')->assertSuccessful();
 
@@ -508,7 +514,7 @@ test('a valid empty overpass result retires that refreshed source group', functi
 test('food imports cover citywide nodes ways and relations with stable identities', function (string $category, string $key, string $value) {
     seedTestVeedelBoundary();
     Queue::fake();
-    Http::fake(['*' => Http::response(['elements' => [
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [
         ['type' => 'node', 'id' => 771, 'lat' => 50.98, 'lon' => 6.95, 'tags' => ['name' => 'Northern node venue', $key => $value]],
         ['type' => 'way', 'id' => 771, 'center' => ['lat' => 50.981, 'lon' => 6.951], 'tags' => ['name' => 'Northern way venue', $key => $value]],
         ['type' => 'relation', 'id' => 771, 'center' => ['lat' => 50.982, 'lon' => 6.952], 'tags' => ['name' => 'Northern relation venue', $key => $value]],
@@ -547,7 +553,7 @@ test('food imports cover citywide nodes ways and relations with stable identitie
 test('overlapping cafe bakery tags keep their category and refresh ownership across partial imports', function () {
     seedTestVeedelBoundary();
     Queue::fake();
-    Http::fake(['*' => Http::response(['elements' => [
+    Http::fake(['*' => Http::response(['osm3s' => currentOverpassBase(), 'elements' => [
         ['type' => 'node', 'id' => 880, 'lat' => 50.98, 'lon' => 6.95, 'tags' => ['name' => 'Bakery cafe', 'amenity' => 'cafe', 'shop' => 'bakery']],
     ]])]);
 
@@ -572,7 +578,7 @@ test('attraction refreshes retain records beyond the former source response cap'
             ? array_slice($elements, 0, (int) $match[1])
             : $elements;
 
-        return Http::response(['elements' => $rows]);
+        return Http::response(['osm3s' => currentOverpassBase(), 'elements' => $rows]);
     });
 
     $this->artisan('osm:import --only=attraction')->assertSuccessful();
@@ -593,7 +599,7 @@ test('source acquisition includes accepted locations beyond the former eastern r
         $bounds = isset($match[1]) ? array_map('floatval', explode(',', $match[1])) : [];
         $covered = count($bounds) === 4 && $bounds[0] <= 50.8685084 && $bounds[3] >= 7.1607594;
 
-        return Http::response(['elements' => $covered ? [[
+        return Http::response(['osm3s' => currentOverpassBase(), 'elements' => $covered ? [[
             'type' => 'node', 'id' => 2301210583, 'lat' => 50.8685084, 'lon' => 7.1607594,
             'tags' => ['name' => 'Eastern viewpoint', 'tourism' => 'viewpoint'],
         ]] : []]);

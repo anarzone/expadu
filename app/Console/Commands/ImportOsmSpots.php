@@ -145,6 +145,14 @@ class ImportOsmSpots extends Command
 
                             continue;
                         }
+                        // A lagging mirror would record months-old tags as
+                        // observed today, and retire places opened since.
+                        $dataAge = $this->dataAgeHours($payload);
+                        if ($dataAge === null || $dataAge > self::MAX_SOURCE_AGE_HOURS) {
+                            $this->warn("    {$category} via {$mirror}: stale data (".($dataAge === null ? 'no timestamp' : round($dataAge).' h old').')');
+
+                            continue;
+                        }
                         $elements = $payload['elements'];
                         foreach ($elements as &$el) {
                             $el['_category'] = $category;
@@ -714,6 +722,21 @@ class ImportOsmSpots extends Command
 
     }
 
+    /** @param array<string, mixed> $payload */
+    protected function dataAgeHours(array $payload): ?float
+    {
+        $base = $payload['osm3s']['timestamp_osm_base'] ?? null;
+        if (! is_string($base) || $base === '') {
+            return null;
+        }
+
+        try {
+            return max(0.0, (CarbonImmutable::now()->getTimestamp() - CarbonImmutable::parse($base)->getTimestamp()) / 3600);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
     /** overpass-api.de rejects anonymous clients (406); identify the importer and POST so long queries are not URL-bound. */
     protected function overpass(string $mirror, string $query): Response
     {
@@ -767,6 +790,9 @@ class ImportOsmSpots extends Command
 
         return $height * $width / 10_000;
     }
+
+    /** Overpass mirrors replicate minutely; a day of lag means the mirror is stuck. */
+    public const MAX_SOURCE_AGE_HOURS = 24;
 
     public const USER_AGENT = 'Expadu/1.0 (places import; +https://expadu.com)';
 
