@@ -165,8 +165,12 @@ class Task extends Model
         }
 
         $attributes ??= app(PathGenerator::class)->profileFor($user)->attributes;
-        // The confirmed arrival answer, never the raw profile column it may have outlived.
-        $arrival = CalendarDate::historical($attributes['arrival_date'] ?? null);
+        // Prefer the confirmed arrival answer: a present-but-null key means the
+        // answer was retired or is disputed, so the raw profile column it may
+        // have outlived must not stand in for it.
+        $arrival = CalendarDate::historical(array_key_exists('arrival_date', $attributes)
+            ? $attributes['arrival_date']
+            : $user->arrival_date?->toDateString());
 
         if ($this->deadline_type === DeadlineType::FactDate) {
             // A title expiry only means something once we know which title it

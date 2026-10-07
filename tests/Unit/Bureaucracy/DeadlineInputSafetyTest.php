@@ -135,3 +135,20 @@ test('a card expiry cannot become expiry of an unlimited legal title', function 
         'current_residence_title' => $title, 'residence_title_expires_at' => '2026-09-10',
     ]))->toBeNull();
 })->with(['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown']);
+
+test('a confirmed arrival answer outranks the stale profile column', function () {
+    expect(deadlineFixtureTask()->computeDeadlineFor(deadlineFixtureUser(), ['entry_mode' => 'visa_free', 'arrival_date' => '2026-08-10'])?->toDateString())
+        ->toBe('2026-11-08')
+        ->and(deadlineFixtureTask('days_since_arrival', 14)->computeDeadlineFor(deadlineFixtureUser(), ['arrival_date' => null]))->toBeNull();
+});
+
+test('a title expiry is not a deadline until the title itself is known', function (?string $title, ?string $expected) {
+    expect(deadlineFixtureTask('fact_date', null)->computeDeadlineFor(deadlineFixtureUser(), [
+        'current_residence_title' => $title, 'residence_title_expires_at' => '2027-01-31',
+    ])?->toDateString())->toBe($expected);
+})->with([
+    'unknown title' => [null, null],
+    'permanent residence (§9)' => ['settlement_permit_9', null],
+    'permanent residence, section unknown' => ['settlement_permit_unknown', null],
+    'limited family permit' => ['family_reunification', '2027-01-31'],
+]);
