@@ -84,11 +84,14 @@ Use relevant instructions in `.agents/skills/` or `.claude/skills/` when needed.
   contextual controls, not a single expanding filter form. Share starting point
   and mode with Directions. Only offer distance or availability choices backed
   by data. Prefer aligned choices over irregular groups of large buttons.
-- Use the approved app’s shared colour tokens for redesigns: its pale canvas,
-  white surfaces, black/dark primary text, cyan selections and orange actions.
-  Main controls must not become uniformly grey. Keep accents purposeful; do not
-  introduce an independent cream/sage palette. Use existing controls as interaction
-  references, but improve layout and hierarchy rather than copying bulky chrome.
+- Use the shared design tokens in `prototype/dev/design/connected/tokens.css`.
+  Every page uses Travel’s warm cream palette (accepted 6 October 2026): cream
+  canvas, warm off-white surfaces, dark warm text, cyan selections and orange
+  actions, one main action per section. Give each colour one role (see “Colour
+  roles” in `design-decisions.md`); do not hard-code colours or introduce a
+  separate palette for a page. Main controls must not become uniformly grey. Use
+  existing controls as interaction references, but improve layout and hierarchy
+  rather than copying bulky chrome.
 - Keep uncertain data visible as uncertain. Mockups must identify sample content
   and must not imply that scripted interactions are connected to live services.
 
