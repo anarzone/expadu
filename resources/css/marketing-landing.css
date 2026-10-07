@@ -2437,14 +2437,23 @@ body.xv-body {
     .xv .xv-login {
         display: none;
     }
+    /* A sideways swipe row only: overflow-y must be hidden or the cards'
+     * slide-up reveal makes the row scroll vertically too. The next card
+     * peeking in is the swipe cue, so the scrollbar is hidden. */
     .xv .xv-daylist {
         display: flex;
         gap: 12px;
         margin-inline: -16px;
-        padding: 0 16px 10px;
+        padding: 0 16px 4px;
         overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
         scroll-snap-type: x mandatory;
         scroll-padding-inline: 16px;
+        scrollbar-width: none;
+    }
+    .xv .xv-daylist::-webkit-scrollbar {
+        display: none;
     }
     .xv .xv-dayrow {
         flex: 0 0 86%;
