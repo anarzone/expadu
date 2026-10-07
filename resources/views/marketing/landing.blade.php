@@ -7,6 +7,8 @@
 @section('own_chrome', '1')
 
 @push('head')
+    <link rel="preload" href="/fonts/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
+
     {{-- Switch reveal animations on before first paint so content never shows,
          hides and re-appears. If marketing-landing.ts hasn't started within
          4 s (blocked or slow), switch them off again: nothing stays hidden. --}}
