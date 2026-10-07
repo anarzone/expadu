@@ -60,6 +60,23 @@ test('new observations preserve practical facts and later omissions do not resur
         ->and($facts['practical']['lit']['status'])->toBe('unknown');
 });
 
+test('venue amenity tags become sourced facts and missing ones stay unknown', function () {
+    $spot = Spot::factory()->create(['category' => 'cafe', 'source' => 'osm', 'source_id' => 'node/900104', 'lat' => 50.94, 'lng' => 6.95]);
+    practicalObservation($spot, ['practical' => [
+        'internet_access' => 'wlan', 'outdoor_seating' => 'yes', 'cuisine' => 'coffee_shop;cake', 'diet:vegan' => 'yes',
+    ]]);
+    $facts = app(PlaceFacts::class)->resolve($spot->fresh());
+    $candidate = app(CandidateRepository::class)->byIds(["spot:{$spot->id}"], CarbonImmutable::parse('2026-09-28 14:00', 'Europe/Berlin'))[0];
+
+    expect($facts['practical']['internet_access'])->toMatchArray(['value' => 'wlan', 'status' => 'known', 'source_url' => 'https://www.openstreetmap.org/node/900104'])
+        ->and($facts['practical']['outdoor_seating']['value'])->toBe('yes')
+        ->and($facts['practical']['cuisine']['value'])->toBe('coffee_shop;cake')
+        ->and($facts['practical']['diet:vegan']['value'])->toBe('yes')
+        ->and($facts['practical']['diet:vegetarian'])->toMatchArray(['value' => null, 'status' => 'unknown'])
+        ->and($facts['practical']['dog']['status'])->toBe('unknown')
+        ->and($candidate->placeFacts['practical'])->toBe($facts['practical']);
+});
+
 test('conditional or contradictory fee evidence never becomes a free claim', function (array $tags) {
     $spot = Spot::factory()->create(['tags' => $tags, 'category' => 'pitch', 'lat' => 50.94, 'lng' => 6.95]);
     $facts = app(PlaceFacts::class)->resolve($spot);
