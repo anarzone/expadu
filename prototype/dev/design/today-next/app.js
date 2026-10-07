@@ -85,8 +85,19 @@
                         sample: true,
                     })),
                 };
+                // A request Today wrote for another sample day does not follow
+                // you here; anything you typed yourself stays.
+                const suggested = shared.todaySuggestion;
+                if (suggested && shared.prompt?.includes(suggested))
+                    shared.prompt = shared.prompt.replace(suggested, '').trim();
+                delete shared.todaySuggestion;
             });
             syncingDay = false;
+            const field = document.querySelector('#request');
+            if (field && field.value !== (S.read().prompt || '')) {
+                field.value = S.read().prompt || '';
+                field.dispatchEvent(new Event('input', { bubbles: true }));
+            }
         }
         syncDay();
     }
@@ -568,7 +579,7 @@
             })
             .join(
                 '',
-            )}</div><button class="plan-tomorrow" data-today-prompt="tomorrow">${I('spark')}Plan tomorrow</button></details>`;
+            )}</div>${contentPriority?.preparation ? '' : `<button class="plan-tomorrow" data-today-prompt="tomorrow">${I('spark')}Plan tomorrow</button>`}</details>`;
     }
     function deadlineStrip() {
         const record = contentPriority?.urgent;
@@ -789,12 +800,13 @@
         const prompt = M.suggestion(day, intent);
         if (!prompt) return;
         const field = document.querySelector('#request');
-        S.update((state) =>
+        S.update((state) => {
             Object.assign(
                 state,
                 M.withSuggestion({ ...state, prompt: field.value }, prompt),
-            ),
-        );
+            );
+            state.todaySuggestion = prompt;
+        });
         field.value = S.read().prompt;
         field.dispatchEvent(new Event('input', { bubbles: true }));
         focusComposer();
@@ -802,7 +814,8 @@
     function openComposer(item) {
         const field = document.querySelector('#request');
         // This adds context, never a scheduled selection, and retains existing text.
-        S.update((state) =>
+        const typed = field.value.trim();
+        S.update((state) => {
             Object.assign(
                 state,
                 M.withContext(
@@ -810,8 +823,9 @@
                     item,
                     day.date,
                 ),
-            ),
-        );
+            );
+            if (!typed) state.todaySuggestion = state.prompt;
+        });
         field.value = S.read().prompt;
         field.dispatchEvent(new Event('input', { bubbles: true }));
         pendingContext = item.id;
@@ -825,15 +839,85 @@
         // Focusing uses the existing Composer expansion and preserves its draft.
         focusComposer();
     }
+    // Details and short tasks open as a sheet on phones and a compact dialog on
+    // larger screens (guide: Sheets & dialogs).
+    const sheet = (html) => `<div class="today-sheet">${html}</div>`;
+    function journeySteps(item, plan) {
+        const j = item.journey,
+            t = M.travel(item),
+            delayed = j.delay > 0;
+        const step = (icon, title, detail, time) =>
+            `<li class="is-${icon}"><span class="sheet-step-icon">${I(icon)}</span><span class="sheet-step-copy"><strong>${title}</strong>${detail ? `<small>${detail}</small>` : ''}</span>${time ? `<span class="sheet-step-time">${time}</span>` : ''}</li>`;
+        return `<ol class="sheet-steps" aria-label="Journey, step by step">${[
+            j.accessWalkMinutes !== null && j.accessWalkMinutes !== undefined
+                ? step(
+                      'walk',
+                      `Walk to ${E(j.from)}`,
+                      `${j.accessWalkMinutes} min`,
+                      plan ? plan.leave : '',
+                  )
+                : '',
+            step(
+                'train',
+                `Line ${E(j.line)} from ${E(j.from)}`,
+                delayed
+                    ? `${j.delay} min late · simulated`
+                    : 'Scheduled · no live status',
+                `${delayed ? `<del>${E(j.depart)}</del> ` : ''}${E(t.departure)}`,
+            ),
+            step('pin', `Get off at ${E(j.to)}`, '', E(t.stationArrival)),
+            j.walkMinutes !== null && j.walkMinutes !== undefined
+                ? step(
+                      'walk',
+                      `Walk to ${E(item.title)}`,
+                      `${j.walkMinutes} min · ${E(item.location)}`,
+                      t.destinationArrival ? `≈ ${t.destinationArrival}` : '',
+                  )
+                : '',
+        ].join('')}</ol>`;
+    }
     function routeDetails(item) {
         const j = item.journey,
-            t = M.travel(item);
+            t = M.travel(item),
+            id = E(item.id);
+        const plan = t.stale
+            ? null
+            : window.TodayContent?.leaveBy(item, M.minutes(day.time));
+        const delayed = !t.stale && j.delay > 0;
+        const late = delayed && t.lateMinutes > 0;
+        const timing = plan
+            ? [
+                  plan.leaveIn > 0 ? inMinutes(plan.leaveIn) : '',
+                  plan.spare !== null && plan.spare >= 0
+                      ? `${plan.spare} min to spare before ${item.start}`
+                      : '',
+              ]
+                  .filter(Boolean)
+                  .join(' · ')
+            : '';
+        const lead = t.stale
+            ? `<div class="sheet-lead is-unknown"><span>Journey</span><strong>Needs checking</strong><small>These sample times no longer match your plan.</small></div>`
+            : late
+              ? `<div class="sheet-lead is-late"><span>On this train</span><strong>${t.lateMinutes} min late</strong><small>Estimated at ${E(item.title)} ${t.destinationArrival} · it starts ${item.start}</small></div>`
+              : plan
+                ? `<div class="sheet-lead"><span>Leave by</span><strong>${plan.leaveIn <= 0 ? 'Now' : plan.leave}</strong>${timing ? `<small>${timing}</small>` : ''}${plan.tight && plan.earlier ? `<p class="sheet-lead-tip"><strong>Tight for this appointment.</strong> ${plan.earlier.leaveIn <= 0 ? 'Leave now' : `Leave by ${plan.earlier.leave}`} for the ${E(plan.earlier.depart)} and arrive with ${plan.earlier.spare} min to spare.</p>` : ''}</div>`
+                : '';
+        let fallback = '';
+        if (delayed && (j.alternatives || []).length)
+            fallback = `<section class="sheet-section"><h3>${late ? 'Get there on time' : 'Other ways to go'}</h3>${alternativesList(item)}</section>`;
+        else if (!t.stale)
+            fallback = `<section class="sheet-section"><h3>If you miss it</h3><p>Check the next Line ${E(j.line)} or another route in Travel.</p></section>`;
         U.open(
             'Your journey',
-            `<p class="detail-intro">${E(j.from)} → ${E(j.to)} · Line ${E(j.line)}</p><dl class="detail-grid"><div><dt>Train departs</dt><dd>${t.departure || 'Needs checking'}</dd></div><div><dt>Arrival at ${E(j.to)} stop</dt><dd>${t.stationArrival || 'Needs checking'}</dd></div><div><dt>Walk to the appointment</dt><dd>${j.walkMinutes ?? 'Unknown'}${j.walkMinutes !== null ? ' min' : ''}</dd></div><div><dt>Arrival at your appointment</dt><dd>${t.destinationArrival ? 'Estimated ' + t.destinationArrival : 'Needs checking'}</dd></div></dl><p class="detail-note">${j.status === 'simulated' ? 'Simulated delay. ' : ''}These are sample times. Live service and the walking route have not been checked.</p><div class="detail-actions"><button class="outline-action" data-today-travel="${E(item.id)}">${I('train')}Check connections</button><button class="outline-action contextual" data-today-context="${E(item.id)}" aria-label="Ask Composer about this journey">${I('spark')}</button></div>`,
+            sheet(
+                `<p class="detail-intro">Line ${E(j.line)} · ${E(j.from)} → ${E(j.to)} · ${E(shortDate(day.date))}</p>${lead}${t.stale ? '' : journeySteps(item, plan)}${fallback}<p class="detail-note">Sample times. Live service and the walking route have not been checked.</p><div class="detail-actions"><button class="outline-action" data-today-travel="${id}">${I('route')}Open in Travel</button><button class="text-action" data-today-context="${id}">${I('spark')}Ask Composer</button></div>`,
+            ),
         );
     }
     function details(item) {
+        const id = E(item.id),
+            onPage = day.agenda.some((entry) => entry.id === item.id),
+            editable = onPage && !item.fixed && item.type !== 'event';
         const date = new Date(
             `${item.date || day.date}T12:00:00`,
         ).toLocaleDateString('en-GB', {
@@ -841,11 +925,93 @@
             day: 'numeric',
             month: 'short',
         });
+        const t = onPage && item.journey ? M.travel(item) : null;
+        const plan =
+            t && !t.stale
+                ? window.TodayContent?.leaveBy(item, M.minutes(day.time))
+                : null;
+        const row = (data, icon, title, detail) =>
+            `<button class="sheet-row" ${data}="${id}">${I(icon)}<span><strong>${title}</strong><small>${detail}</small></span>${I('arrow')}</button>`;
+        const getting = !onPage
+            ? ''
+            : !t
+              ? row(
+                    'data-today-travel',
+                    'route',
+                    'Plan your journey',
+                    'No route in your plan yet',
+                )
+              : t.stale
+                ? row(
+                      'data-today-route',
+                      'train',
+                      'Journey needs checking',
+                      `${E(item.journey.from)} → ${E(item.location)}`,
+                  )
+                : t.lateMinutes > 0
+                  ? row(
+                        'data-today-route',
+                        'train',
+                        `About ${t.lateMinutes} min late`,
+                        `Line ${E(item.journey.line)} is delayed · see ways to get there on time`,
+                    )
+                  : row(
+                      'data-today-route',
+                      'train',
+                      plan
+                          ? plan.leaveIn <= 0
+                              ? 'Leave now'
+                              : `Leave by ${plan.leave}`
+                          : `Line ${E(item.journey.line)}`,
+                      `Line ${E(item.journey.line)} from ${E(item.journey.from)} · ${t.destinationArrival ? `there ≈ ${t.destinationArrival}` : 'arrival needs checking'}`,
+                  );
+        const status = ['Pending', 'Proposal'].includes(item.planStatus)
+            ? 'To review'
+            : M.status(item);
         U.open(
             item.title,
-            `<dl class="detail-grid"><div><dt>In your plan</dt><dd>${E(date)} · ${item.start}–${item.end}</dd></div><div><dt>Location</dt><dd>${E(item.location)}</dd></div><div><dt>Booking</dt><dd>${M.status(item) === 'Booking recorded' ? 'Recorded by you' : 'Not recorded'}</dd></div></dl><p class="detail-note">Keeping an appointment in your plan does not book or confirm it with the organiser.</p>`,
+            sheet(
+                `<p class="detail-intro">${E(date)} · ${item.start}–${item.end} · ${E(item.location)}</p><div class="status-row">${swatch(status)}</div>${paperworkLink(item)}${getting}<dl class="detail-grid"><div><dt>Booking</dt><dd>${M.status(item) === 'Booking recorded' ? 'Recorded by you' : 'Not recorded in Expadu'}</dd></div></dl><p class="detail-note">Keeping an appointment in your plan does not book or confirm it with the organiser.</p>${onPage ? `<div class="detail-actions"><button class="outline-action" data-today-travel="${id}">${I('route')}Directions</button>${editable ? `<button class="text-action" data-today-edit="${id}">${I('pencil')}Edit</button>` : ''}<button class="text-action" data-today-reveal="${id}">${I('trash')}Remove</button></div>` : ''}`,
+            ),
         );
     }
+    (function sheetSwipe() {
+        const dialog = document.querySelector('#shared-dialog');
+        let drag = null;
+        const phoneSheet = () =>
+            dialog.querySelector('.today-sheet') &&
+            matchMedia('(max-width: 700px)').matches;
+        dialog.addEventListener('pointerdown', (event) => {
+            if (
+                !phoneSheet() ||
+                !event.target.closest('.dialog-head') ||
+                event.target.closest('button')
+            )
+                return;
+            drag = { id: event.pointerId, y: event.clientY, at: event.timeStamp, dy: 0 };
+            dialog.setPointerCapture(event.pointerId);
+        });
+        dialog.addEventListener('pointermove', (event) => {
+            if (drag?.id !== event.pointerId) return;
+            drag.dy = Math.max(0, event.clientY - drag.y);
+            dialog.style.transform = `translateY(${drag.dy}px)`;
+        });
+        const release = (event) => {
+            if (drag?.id !== event.pointerId) return;
+            const { dy, at } = drag;
+            drag = null;
+            const fast = dy / Math.max(1, event.timeStamp - at) > 0.5;
+            if (dy > 96 || (fast && dy > 32)) {
+                U.close();
+                return;
+            }
+            const from = dialog.style.transform;
+            dialog.style.transform = '';
+            if (dy) ExpaduMotion?.run(dialog, [{ transform: from }, { transform: 'translateY(0)' }], { duration: 200 });
+        };
+        dialog.addEventListener('pointerup', release);
+        dialog.addEventListener('pointercancel', release);
+    })();
     function openAdd(item = null) {
         editingPlan = item
             ? structuredClone(
@@ -856,7 +1022,7 @@
             : null;
         U.open(
             item ? 'Edit plan' : 'Add a plan',
-            `<form id="today-add-form"><p class="detail-intro">${E(shortDate(day.date))} · Sample day</p><label class="form-field">What’s the plan?<input name="title" value="${E(item?.title || '')}" maxlength="80" required placeholder="Appointment, lunch, a little time outside" autocomplete="off"></label><label class="form-field">Where? <small>Optional</small><input name="location" value="${E(item?.location || '')}" maxlength="100" placeholder="Place or neighbourhood" autocomplete="off"></label><div class="selection-times"><label class="form-field">From<input name="start" data-time-input role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="time-options" inputmode="numeric" maxlength="5" required value="${item?.start || '15:00'}" aria-label="Start time"></label><span aria-hidden="true">–</span><label class="form-field">Until<input name="end" data-time-input role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="time-options" inputmode="numeric" maxlength="5" required value="${item?.end || '16:00'}" aria-label="End time"></label></div><p class="detail-note">A personal plan, not a booking.</p><p id="add-error" role="alert" hidden></p><div class="detail-actions"><button class="outline-action" type="submit">${I(item ? 'check' : 'plus')}${item ? 'Save changes' : 'Add to this day'}</button></div></form>`,
+            sheet(`<form id="today-add-form"><p class="detail-intro">${E(shortDate(day.date))} · Sample day</p><label class="form-field">What’s the plan?<input name="title" value="${E(item?.title || '')}" maxlength="80" required placeholder="Appointment, lunch, a little time outside" autocomplete="off"></label><label class="form-field">Where? <small>Optional</small><input name="location" value="${E(item?.location || '')}" maxlength="100" placeholder="Place or neighbourhood" autocomplete="off"></label><div class="selection-times"><label class="form-field">From<input name="start" data-time-input role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="time-options" inputmode="numeric" maxlength="5" required value="${item?.start || '15:00'}" aria-label="Start time"></label><span aria-hidden="true">–</span><label class="form-field">Until<input name="end" data-time-input role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="time-options" inputmode="numeric" maxlength="5" required value="${item?.end || '16:00'}" aria-label="End time"></label></div><p class="detail-note">A personal plan, not a booking.</p><p id="add-error" role="alert" hidden></p><div class="detail-actions"><button class="outline-action" type="submit">${I(item ? 'check' : 'plus')}${item ? 'Save changes' : 'Add to this day'}</button></div></form>`),
         );
     }
     document.addEventListener('submit', (event) => {
@@ -1055,7 +1221,15 @@
                 planDate: day.date,
             });
         }
-        if (data.todayReveal) reveal(id, true);
+        if (data.todayReveal) {
+            const dialog = document.querySelector('#shared-dialog');
+            if (dialog.open && target.closest('#shared-dialog')) {
+                dialog.addEventListener('close', () => reveal(id, true), {
+                    once: true,
+                });
+                U.close();
+            } else reveal(id, true);
+        }
         if (data.todayDelete && item && revealed === id) {
             try {
                 const receipt = changeDay((shared, workspace) =>
@@ -1119,7 +1293,9 @@
         if ('todayWeather' in data)
             U.open(
                 'Cologne forecast',
-                `<p class="detail-intro">Sample forecast · not live</p><dl class="detail-grid"><div><dt>Now</dt><dd>${I('sun')}21°</dd></div><div><dt>17:00</dt><dd>20°</dd></div><div><dt>20:00</dt><dd>18°</dd></div></dl>`,
+                sheet(
+                    `<p class="detail-intro">Sample forecast · not live</p><dl class="detail-grid"><div><dt>Now</dt><dd>${I('sun')}21°</dd></div><div><dt>17:00</dt><dd>20°</dd></div><div><dt>20:00</dt><dd>18°</dd></div></dl>`,
+                ),
             );
         if (data.todayKept || data.todayKeptPlan) {
             const record = connectedContent().saved.find(
@@ -1150,7 +1326,9 @@
         if ('todayAccount' in data)
             U.open(
                 'Your account',
-                '<p class="detail-intro">Anar · Preview profile</p><p>Account settings are available in the main app.</p>',
+                sheet(
+                    '<p class="detail-intro">Anar · Preview profile</p><p>Account settings are available in the main app.</p>',
+                ),
             );
         if ('clearTodayContext' in data) {
             S.update((state) => {

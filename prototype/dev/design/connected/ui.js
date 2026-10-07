@@ -35,6 +35,10 @@
     const dialog = document.querySelector('#shared-dialog'),
         body = document.querySelector('#dialog-body');
     let toastTimer, undoAction, lastFocus, focusSelector;
+    // Today's sheets slide from the bottom on phones, without a fade over text.
+    const phoneSheet = () =>
+        !!body.querySelector('.today-sheet') &&
+        matchMedia('(max-width: 700px)').matches;
     function open(title, html) {
         const entering =
             !dialog.open || dialog.classList.contains('is-leaving');
@@ -65,11 +69,19 @@
             dialog.classList.add('is-entering');
             ExpaduMotion.run(
                 dialog,
-                [
-                    { opacity: 0, transform: 'translateY(28px) scale(.99)' },
-                    { opacity: 1, transform: 'translateY(0) scale(1)' },
-                ],
-                { duration: 300 },
+                phoneSheet()
+                    ? [
+                          { transform: 'translateY(100%)' },
+                          { transform: 'translateY(0)' },
+                      ]
+                    : [
+                          {
+                              opacity: 0,
+                              transform: 'translateY(28px) scale(.99)',
+                          },
+                          { opacity: 1, transform: 'translateY(0) scale(1)' },
+                      ],
+                { duration: phoneSheet() ? 280 : 300 },
                 () => dialog.classList.remove('is-entering'),
             );
         }
@@ -77,18 +89,30 @@
     function close() {
         if (!dialog.open || dialog.classList.contains('is-leaving')) return;
         if (!window.ExpaduMotion) {
+            if (dialog.style) dialog.style.transform = '';
             dialog.close();
             return;
         }
         dialog.classList.remove('is-entering');
         dialog.classList.add('is-leaving');
+        // A sheet that was dragged down closes from where it is.
+        const dragged = dialog.style?.transform;
+        if (dialog.style) dialog.style.transform = '';
         ExpaduMotion.run(
             dialog,
-            [
-                { opacity: 1, transform: 'translateY(0) scale(1)' },
-                { opacity: 0, transform: 'translateY(20px) scale(.99)' },
-            ],
-            { duration: 180, easing: 'cubic-bezier(.4,0,1,1)' },
+            phoneSheet()
+                ? [
+                      { transform: dragged || 'translateY(0)' },
+                      { transform: 'translateY(100%)' },
+                  ]
+                : [
+                      { opacity: 1, transform: 'translateY(0) scale(1)' },
+                      { opacity: 0, transform: 'translateY(20px) scale(.99)' },
+                  ],
+            {
+                duration: phoneSheet() ? 220 : 180,
+                easing: 'cubic-bezier(.4,0,1,1)',
+            },
             () => {
                 dialog.classList.remove('is-leaving');
                 dialog.close();

@@ -37,13 +37,15 @@ shared = [
     'connected/date-control.css',
     'connected/loading.css',
     'bureaucracy-next/situation.css',
+    # Place and plan selection inside sheets (Today, Events, Travel…).
+    'connected/discovery.css',
 ]
 
 # Selectors whose colours are illustration, photography or brand: unchanged.
 keep = re.compile(
     r'discovery-photo|photo-fallback|place-category|studio-bookmark:before|'
     r'companion-art|replacement-media|header-saved-count|spark|is-thinking|'
-    r'composer-launcher|#composer-tray:not\(\.is-active\)'
+    r'composer-launcher|#composer-tray:not\(\.is-active\)|on-photo'
 )
 
 T = lambda name: f'--color-{name}'
@@ -51,14 +53,15 @@ groups = {
     'text': '#294f59 #213b42 #33535e #243d46 #344f59 #234f5b #294c56 #253e47 '
     '#263c45 #243c45 #345c65 #345d6c #365f6a #396570 #356b78 #416d79 #416773 '
     '#326d7c #356774 #3f6a77 #4d7681 #286777 #245969 #386a78 #211d15 #486974 '
-    '#456570',
+    '#456570 #41656c #326b7b #365b65 #426971',
     'text-soft': '#57717a #4d747e #51676e #5a727b #597985 #4c7380 #627f88 '
     '#667c84 #65808a #687f86 #60777d #75858a #506a74 #687e85 #819399 #52717b '
     '#5d6c70 #879ba1 #6b858c #60747b #607b83 #526b73 #657e87 #647b83 #6a8088 '
     '#526c76 #4d6873 #607a84 #58717b #647c85 #72838a #73858b #71858c #6b8088 '
     '#71838b #7a8c93 #536a71 #5d7278 #61747a #637980 #667a80 #687a80 #697e85 '
     '#70848a #718389 #75878d #5d767f #5d747b #61777e #58717a #5d767e #64808a '
-    '#647a82 #68808a #71848a #426871',
+    '#647a82 #68808a #71848a #426871 #536e76 #7b8e93 #647e86 #617b83 '
+    '#607d86',
     'select-text': '#25768b #277589 #2c7890 #327389 #3c7e8d #4d8290 #08778d '
     '#11b6d1 #477b89 #397360 #376e59 #397553 #35825d #347255 #31796e #417665 '
     '#235d6d #285e6d',
@@ -68,19 +71,20 @@ groups = {
     '#eaf3f5 #e9f2f4 #e8f2f4 #f0f6f7 #edf5f7 #edf6f8 #326b7b0d #e9f3f5 '
     '#e4eef0 #e3ebee #e7f2f5 #def4fa #dceef2',
     'select-bg': '#e0f3f7 #e0f0f4 #e1eff2 #d4e9ed #e6f2f5 #edf9fc #e7f2ef '
-    '#edf7f4 #e3f0e7 #edf6f4 #e5f1ed #e1f4f8 #e5f5f8 #dff4f8',
+    '#edf7f4 #e3f0e7 #edf6f4 #e5f1ed #e1f4f8 #e5f5f8 #dff4f8 #eaf5f6',
     'select-bg-hover': '#d7eaf0 #cee5eb #cbeaf1',
     'border': '#dce7e9 #d8e5e7 #d3e2e6 #c5d7d8 #cbdde1 #e4ecee #dbe6e8 '
     '#d6e3e7 #dbe7eb #e7eef0 #d5e5e9 #d8e5e8 #dce6e9 #c9dfe5 #dce8eb80 '
-    '#d6e5e9 #e5edef #dce7ea #e0eaed #d6e4e8 #d8e6e9 #edf2f3 #d8e3e5 #bcd7df',
-    'border-strong': '#cbdde2 #c9dade #89b4ba #9bbfc9 #aec8d0 #9aaeb5',
+    '#d6e5e9 #e5edef #dce7ea #e0eaed #d6e4e8 #d8e6e9 #edf2f3 #d8e3e5 #bcd7df '
+    '#d9e6e8 #d7e4e7',
+    'border-strong': '#cbdde2 #c9dade #89b4ba #9bbfc9 #aec8d0 #9aaeb5 #c9dcdf',
     'nav-violet': '#8767ad',
     'paper-bg-quiet': '#f1edf7 #f0ebf7',
     'paper-text': '#785da3 #7a6592 #655385',
     'attention-bg': '#fff2e1 #fff0d6',
     'attention-text': '#865515 #724513',
-    'conflict-text': '#a13b24 #994521',
-    'conflict-bg': '#fff3ea',
+    'conflict-text': '#a13b24 #994521 #9b392c',
+    'conflict-bg': '#fff3ea #fff0ea',
     'action': '#d9340a',
     'action-hover': '#bf2d08',
     'focus': '#397988 #49869a #50b4cc #64a5b5 #3997b0 #5a9cae #79bdcc #32697b '
@@ -106,6 +110,7 @@ rules = [
     (r"days button\[aria-pressed='true'\]", r'background', None, T('select-bg')),
     (r"days button\[aria-pressed='true'\]", r'^color$', '#fff', T('select-text')),
     (r'replacement-check', r'background', None, T('select-text')),
+    (r':has\(:checked\)', r'border-color', None, T('select-text')),
     # Text on orange buttons.
     (r'send|compose-button', r'^color$', '#fff', T('text-on-action')),
     # Composer's toast matches Travel's: light surface, ink text.

@@ -394,9 +394,41 @@
         s.date = date;
         return s.proposal;
     }
+    const months = [
+        'january',
+        'february',
+        'march',
+        'april',
+        'may',
+        'june',
+        'july',
+        'august',
+        'september',
+        'october',
+        'november',
+        'december',
+    ];
+    // "30 September" or "September 30", in the working date's year.
+    function namedDate(text, s) {
+        const pattern = months.join('|');
+        const match =
+            text.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(${pattern})\\b`, 'i')) ||
+            text.match(new RegExp(`\\b(${pattern})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`, 'i'));
+        if (!match) return null;
+        const [day, month] = /\d/.test(match[1])
+            ? [match[1], match[2]]
+            : [match[2], match[1]];
+        const year = validDate(s.date)
+            ? s.date.slice(0, 4)
+            : String(new Date().getFullYear());
+        const value = `${year}-${String(months.indexOf(month.toLowerCase()) + 1).padStart(2, '0')}-${day.padStart(2, '0')}`;
+        return validDate(value) ? value : null;
+    }
     function requestDate(text, s) {
         const explicit = text.match(/\b\d{4}-\d{2}-\d{2}\b/);
         if (explicit) return explicit[0];
+        const named = namedDate(text, s);
+        if (named) return named;
         if (/saturday/i.test(text)) return saturday();
         const d = new Date();
         if (/tomorrow/i.test(text)) {
@@ -410,8 +442,22 @@
         const t = text.toLowerCase(),
             date = requestDate(text, s);
         if (!validDate(date)) return { kind: 'clarify', date: s.date };
+        // Getting somewhere, or planning a day, comes before paperwork words:
+        // "How do I get to my Blue Card appointment?" is a journey question.
         if (
-            /visa|register|registration|anmeldung|permit|bureaucracy|blue card/.test(
+            /\b(how (do|can|should) i get to|get there|directions to|journey to|route to)\b/.test(
+                t,
+            )
+        )
+            return { kind: 'journey', date };
+        if (/\b(help me plan|plan my day|what should i do)\b/.test(t))
+            return {
+                kind: 'proposal',
+                date,
+                appointment: /around (my|an?|the) .*appointment/.test(t),
+            };
+        if (
+            /visa|register|registration|anmeldung|permit|bureaucracy|blue card|paperwork|settle in/.test(
                 t,
             )
         )

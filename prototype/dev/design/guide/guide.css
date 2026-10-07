@@ -1692,6 +1692,13 @@ svg:not(.modern-icon) {
     width: 42%;
     border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
+.ladder-dialog {
+    top: 18px;
+    bottom: 18px;
+    left: 24%;
+    right: 24%;
+    border-radius: var(--radius-md);
+}
 .state-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));

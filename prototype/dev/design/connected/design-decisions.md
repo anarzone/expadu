@@ -364,6 +364,19 @@ auto-fit grid with a 260px minimum, the Events filter row wraps by itself,
 and Today's 1000–1199px refinement was removed. The only other width rule is
 ≥1500px, which caps content width.
 
+**Today sheets, details and Composer requests — owner request, 7 October (in review):**
+Today's journey, plan details, forecast and Add a plan open as a bottom sheet
+on phones (drag down to close) and a compact centred dialog on larger screens,
+like the Event sheet, with a light scrim and no blur. The journey sheet leads
+with the leave-by time and lists each step; plan details add What to bring,
+the journey, booking status and Directions/Edit/Remove. Each screen has at
+most one contextual Composer action besides the launcher. Composer requests
+from Today are written in natural language with named dates and clear when the
+sample day changes; Composer's sample responder reads named dates and routes
+journey and planning requests before paperwork words. `connected/discovery.css`
+moved to the shared palette too. Every page's default view stayed
+pixel-identical; details are in `today-next/brief/README.md`.
+
 **Composer on the shared palette — owner approval, 7 October:** Composer and
 the department Composer bar had kept their blue-grey palette. Their colours now
 come from `tokens.css` by role (`tools/composer-colours.py`, 345 declarations,

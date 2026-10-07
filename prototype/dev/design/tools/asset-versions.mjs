@@ -31,10 +31,13 @@ const digest = (file) =>
 let changed = 0;
 for (const page of pages) {
     const html = fs.readFileSync(page, 'utf8');
+    // Assets resolve against <base href>, as the browser does.
+    const base = html.match(/<base\s+href="([^"]+)"/)?.[1] || './';
+    const root = path.resolve(path.dirname(page), base);
     const next = html.replace(
         /((?:src|href)=")([^"?#:]+)\?v=([0-9a-f]+)"/g,
         (whole, attr, asset, version) => {
-            const file = path.resolve(path.dirname(page), asset);
+            const file = path.resolve(root, asset);
             if (!fs.existsSync(file)) return whole;
             const fresh = digest(file);
             if (fresh === version) return whole;

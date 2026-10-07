@@ -21,6 +21,34 @@ syntax and formatting pass. Current captures:
 [desktop](review/reference-restored-desktop.jpg) and
 [mobile](review/reference-restored-mobile.jpg).
 
+## Sheets, richer details and Composer requests — 7 October 2026
+
+Review items 7–10.
+
+- **Sheets (`brief/sheets.css`):** the journey, plan details, forecast and Add
+  a plan open as a bottom sheet on phones (slides up, drag the top edge down to
+  close) and a 520px dialog on larger screens, like the Event sheet. Light
+  scrim, no blur; Escape and the close button work and focus returns.
+- **Journey sheet:** leave-by time with minutes to spare, then walk → line →
+  get off → walk with their times. A tight connection offers the earlier
+  service; a delayed one lists the alternatives; otherwise "If you miss it"
+  points to Travel. Only sample data is shown: no platforms or next services
+  are invented.
+- **Plan details:** date, time and place, status, What to bring, a getting-there
+  row (leave by, or "About 10 min late" when delayed), booking status and
+  Directions, Edit and Remove. Remove closes the sheet and shows the inline
+  delete on the card.
+- **One Composer entry per screen:** besides the floating launcher, each screen
+  offers at most one contextual Composer action; the reminder's "Review with
+  Composer" replaces "Plan tomorrow" on the preparing day.
+- **Natural requests:** Composer is pre-filled with, for example, "Help me plan
+  Thursday 1 October. I already have Language class in Ehrenfeld at 18:00." or
+  "How do I get to Mülheim by 14:00 on Wednesday 30 September? It's for my Blue
+  Card appointment." A request Today wrote is cleared when you switch sample
+  day; anything you typed stays. Composer's sample responder now reads named
+  dates and puts journey and planning requests before paperwork words, so each
+  request reaches the right reply.
+
 ## Colour roles — 6 October 2026
 
 `brief/hierarchy.css` (loaded last) applies the "Colour roles" table in

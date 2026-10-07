@@ -200,6 +200,33 @@ test('questions and unknown requests do not create plans', () => {
     assert.equal(M.respond('hello xyz', s).kind, 'clarify');
     assert.equal(s.proposal, null);
 });
+test('requests from Today keep their date and reach the right reply', () => {
+    const s = M.fresh();
+    s.date = '2026-10-10';
+    const plan = M.respond('Help me plan my day on Wednesday 30 September.', s);
+    assert.equal(plan.kind, 'proposal');
+    assert.equal(plan.date, '2026-09-30');
+    assert.equal(plan.appointment, false);
+    assert.equal(
+        M.respond('Help me plan Thursday 1 October. I already have Language class in Ehrenfeld at 18:00.', s).date,
+        '2026-10-01',
+    );
+    // A journey to an appointment is not a paperwork question.
+    const journey = M.respond(
+        'How do I get to Mülheim by 14:00 on Wednesday 30 September? It’s for my Blue Card appointment.',
+        s,
+    );
+    assert.equal(journey.kind, 'journey');
+    assert.equal(journey.date, '2026-09-30');
+    assert.equal(M.respond('How do I get a Blue Card?', s).kind, 'bureaucracy');
+    assert.equal(
+        M.respond('Help me settle in: which paperwork should I sort out first?', s).kind,
+        'bureaucracy',
+    );
+    assert.equal(M.respond('Plan Saturday afternoon around my 15:00 appointment.', s).appointment, true);
+    assert.equal(M.respond('October 3rd walk', s).date, '2026-10-03');
+    assert.equal(M.respond('Plan 31 September', s).date, '2026-10-10');
+});
 test('explicit dates are retained and adjacent activities do not overlap', () => {
     const s = M.fresh();
     assert.equal(M.respond('Plan 2026-10-12', s).date, '2026-10-12');

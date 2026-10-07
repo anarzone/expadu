@@ -32,7 +32,10 @@ test('coming-up records stay outside today and suggestion drafts preserve existi
     const day = copy(M.scenario('everyday'));
     assert.ok(day.upcoming.every((item) => item.date > day.date));
     const prompt = M.suggestion(day, 'tomorrow');
-    assert.match(prompt, /2026-10-01/);
+    assert.equal(
+        prompt,
+        'Help me plan Thursday 1 October. I already have Language class in Ehrenfeld at 18:00.',
+    );
     assert.match(prompt, /Language class/);
     assert.doesNotMatch(prompt, /Blue Card appointment/);
     const original = {
@@ -44,7 +47,17 @@ test('coming-up records stay outside today and suggestion drafts preserve existi
     assert.deepEqual(copy(next.draft), original.draft);
     assert.equal(M.withSuggestion(next, prompt).prompt, next.prompt);
     assert.equal(original.prompt, 'Keep this question.');
-    assert.match(M.suggestion(day, 'day'), /14:00/);
+    assert.equal(
+        M.suggestion(day, 'day'),
+        'Help me plan the rest of Wednesday 30 September. I already have Blue Card appointment in Mülheim at 14:00.',
+    );
+    assert.equal(
+        M.suggestion({ ...day, agenda: [] }, 'day'),
+        'Help me plan my day on Wednesday 30 September.',
+    );
+    // No machine dates or instructions to the assistant in a person's request.
+    for (const intent of ['day', 'tomorrow', 'paperwork'])
+        assert.doesNotMatch(M.suggestion(day, intent), /\d{4}-\d{2}-\d{2}|sample|guidance/i);
     assert.equal(M.suggestion(day, 'unknown'), '');
 });
 
@@ -125,6 +138,10 @@ test('Composer receives unscheduled context with exact appointment/date and orig
     const result = M.withContext(shared, day.agenda[0], day.date);
     assert.deepEqual(shared, before);
     assert.equal(result.prompt, before.prompt);
+    assert.equal(
+        M.withContext({}, day.agenda[0], day.date).prompt,
+        'How do I get to Mülheim by 14:00 on Wednesday 30 September? It’s for my Blue Card appointment.',
+    );
     assert.equal(result.draft[0].id, 'existing');
     assert.equal(result.draft[1].scheduled, false);
     assert.equal(result.draft[1].activityId, day.agenda[0].id);

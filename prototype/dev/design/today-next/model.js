@@ -287,8 +287,25 @@
         next.draft = (next.draft || []).filter((x) => x.id !== context.id);
         next.draft.push(context);
         if (!next.prompt?.trim())
-            next.prompt = `Help me check the journey to ${item.title} at ${item.start} on ${date}. This is a sample day; check current travel information.`;
+            next.prompt = `How do I get to ${item.location} by ${item.start} on ${dayLabel(date)}? It’s for my ${item.title}.`;
         return next;
+    }
+    // Requests read like a person wrote them: "Thursday 1 October", not an ISO date.
+    function dayLabel(date) {
+        return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            timeZone: 'UTC',
+        });
+    }
+    function planList(items) {
+        const parts = items.map(
+            (item) => `${item.title} in ${item.location} at ${item.start}`,
+        );
+        return parts.length > 1
+            ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`
+            : parts[0] || '';
     }
     function paperworkFocus(records) {
         return (
@@ -362,17 +379,14 @@
         };
     }
     function suggestion(day, intent) {
-        const describe = (items) =>
-            items
-                .map(
-                    (item) =>
-                        `${item.start}–${item.end} ${item.title} (${item.location})`,
-                )
-                .join('; ');
+        const already = (items) =>
+            items.length ? ` I already have ${planList(items)}.` : '';
         if (intent === 'day')
-            return `Help me review this sample day on ${day.date}: ${describe(day.agenda) || 'No plans yet'}. Keep the times of my existing plans and help me decide what to do next.`;
+            return day.agenda.length
+                ? `Help me plan the rest of ${dayLabel(day.date)}.${already(day.agenda)}`
+                : `Help me plan my day on ${dayLabel(day.date)}.`;
         if (intent === 'paperwork')
-            return 'Help me organise my personal paperwork checklist. Ask what I want to work on; use reviewed official guidance for any requirements.';
+            return 'Help me settle in: which paperwork should I sort out first?';
         if (intent === 'tomorrow') {
             const next = new Date(`${day.date}T12:00:00Z`);
             next.setUTCDate(next.getUTCDate() + 1);
@@ -380,7 +394,7 @@
             const plans = (day.upcoming || []).filter(
                 (item) => item.date === date,
             );
-            return `Help me plan ${date}. My sample plans: ${describe(plans) || 'No plans yet'}. Ask what else I would like to fit in.`;
+            return `Help me plan ${dayLabel(date)}.${already(plans)}`;
         }
         return '';
     }
@@ -401,6 +415,7 @@
         remove,
         undo,
         withContext,
+        dayLabel,
         minutes,
         paperworkFocus,
         dayBrief,
