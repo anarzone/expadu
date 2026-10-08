@@ -1147,6 +1147,16 @@
         board.insertAdjacentHTML('beforeend', next());
         gallery.append(board);
         paintStreet();
+        const sheetApi = window.ExpaduEventSheet;
+        if (sheetApi && !sheetApi.wallDressed) {
+            const open = sheetApi.open;
+            sheetApi.open = (item, ...rest) => {
+                const result = open(item, ...rest);
+                dressSheet(item);
+                return result;
+            };
+            sheetApi.wallDressed = true;
+        }
         const fitSoon = () => requestAnimationFrame(fitCorner);
         fitSoon();
         window.addEventListener('resize', fitSoon);
@@ -1278,6 +1288,117 @@
             for (const name of ['--tilt-x', '--tilt-y', '--glare-x', '--glare-y'])
                 card.style.removeProperty(name);
         });
+    }
+
+    /* ---------- "More about it": the sheet as the poster opened up ----------
+       On the Events page the shared sheet takes the Wall's look: the
+       poster's art with its date tape and big time on the cover, the same
+       words as the posters (Add to plan), today's state and the rain
+       warning, the fit with your day, unknown facts on one line, and no
+       Plan tab for an event that can no longer be planned. Today's pages
+       keep the shared sheet as it is. */
+    const unknownWords = {
+        Admission: 'admission',
+        'When to arrive': 'when to arrive',
+        Language: 'language',
+        'Who it’s for': 'who it’s for',
+        Accessibility: 'accessibility',
+    };
+    const listWords = (words) =>
+        words.length < 2
+            ? words.join('')
+            : `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
+    function dressSheet(item) {
+        const sheet = document.querySelector('.event-sheet');
+        if (!sheet || !item || sheet.dataset.wall) return;
+        sheet.dataset.wall = 'true';
+        const past = F.past(item, today);
+        // Today's clock and weather, as on the poster.
+        const { hour: now, ctx } = streetNow();
+        const forecast = ctx.source === 'Sample weather' ? 'sample forecast' : 'forecast';
+        const start = item.start ? Sky.hours(item.start) : null,
+            end = item.end ? Sky.hours(item.end) : null;
+        const when =
+            item.date !== today || start === null || end === null
+                ? ''
+                : now >= end
+                  ? 'over'
+                  : now >= start
+                    ? 'now'
+                    : '';
+        const wet =
+            item.date === today &&
+            when !== 'over' &&
+            !!item.start &&
+            outdoors(item) &&
+            Sky.rainLikely(ctx.weather, item.start);
+        const closed = past || when === 'over';
+
+        // The cover: the poster's ink, its date tape and its big time.
+        const ticket = sheet.querySelector('.event-ticket');
+        if (ticket) {
+            ticket.classList.add('is-wall', `pp--${P.ink(item)}`);
+            const date = ticket.querySelector(':scope > div:not(.event-ticket-time) strong');
+            if (date) date.outerHTML = `<span class="pp-tape">${E(P.tape(item, today))}</span>`;
+            // The start big, as on the poster; the end small beneath it.
+            const time = ticket.querySelector('.event-ticket-time');
+            if (time && item.start)
+                time.innerHTML = `<strong>${E(item.start)}</strong><small>${item.end ? `until ${E(item.end)}` : 'End time to check'}${past ? ' · already happened' : ''}</small>`;
+        }
+        // The same words as the posters.
+        sheet
+            .querySelectorAll('.place-sheet-footer [data-event-section="plan"]')
+            .forEach((button) => {
+                const icon = button.querySelector('svg')?.outerHTML || '';
+                button.innerHTML = `${icon}Add to plan`;
+            });
+        const planTab = sheet.querySelector('.place-sheet-tabs [data-event-section="plan"]');
+        planTab?.setAttribute('aria-label', 'Add to plan');
+        // Nothing to plan once it's over: no Plan tab, no Add to plan, no
+        // reminder.
+        if (closed) {
+            planTab?.remove();
+            sheet.querySelector('.event-reminder')?.remove();
+            sheet
+                .querySelector('.place-sheet-footer [data-event-section="plan"]')
+                ?.remove();
+        }
+        // Today's state, the rain warning and how it fits your day.
+        const about = sheet.querySelector('[data-panel="about"] .place-sheet-scroll');
+        const fit = !closed && day.appointment ? P.fits(item, day.appointment, today) : '';
+        const flags = [
+            when === 'now'
+                ? `<span class="pp-flag pp-flag--now"><span aria-hidden="true"></span>On now · until ${E(item.end)}</span>`
+                : when === 'over'
+                  ? '<span class="pp-flag pp-flag--over">Over</span>'
+                  : '',
+            wet
+                ? `<span class="pp-flag pp-flag--rain">${drop}Rain likely at ${E(item.start)} · ${forecast}</span>`
+                : '',
+        ].join('');
+        if (about && (flags || fit))
+            about.insertAdjacentHTML(
+                'afterbegin',
+                `<div class="event-today">${flags ? `<div class="pp-flags">${flags}</div>` : ''}${fit ? `<p class="pp-fit"><span aria-hidden="true"></span>${E(fit)}</p>` : ''}</div>`,
+            );
+        // What the listing doesn't say goes on one line; what it says stays.
+        const know = sheet.querySelector('.event-know');
+        if (know) {
+            const unknown = [...know.querySelectorAll('dl > div')].filter((row) =>
+                row.querySelector('dd.is-unknown'),
+            );
+            const words = unknown.map(
+                (row) => unknownWords[row.querySelector('dt').textContent] || row.querySelector('dt').textContent.toLowerCase(),
+            );
+            unknown.forEach((row) => row.remove());
+            know.querySelector(':scope > p')?.remove();
+            if (!know.querySelector('dl > div')) know.querySelector('dl')?.remove();
+            if (words.length)
+                know.insertAdjacentHTML(
+                    'beforeend',
+                    `<p class="event-unlisted"><strong>Not listed:</strong> ${E(listWords(words))}.${closed ? '' : ' Check with the organiser before you go.'}</p>`,
+                );
+        }
     }
 
     // The event sheet's cover follows the view: the poster's art on the

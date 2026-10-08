@@ -207,6 +207,16 @@ const inside = (box, viewport) =>
                 return time.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
             });
             assert.equal(timeOnTop, true, 'the sheet hides its time under the art');
+            // The sheet is the poster opened up: the poster's words, today's
+            // rain warning and fit, and what isn't listed on one line.
+            const sheet = page.locator('.event-sheet');
+            assert.match(await sheet.locator('.event-ticket .pp-tape').innerText(), /tonight · 30 sept/i);
+            assert.equal(await sheet.locator('.event-ticket-time strong').innerText(), '20:00');
+            assert.match(await sheet.locator('[data-panel="about"] .place-sheet-footer .button.primary').innerText(), /^Add to plan$/);
+            assert.match(await sheet.locator('.event-today .pp-flag--rain').innerText(), /Rain likely at 20:00 · sample forecast/);
+            assert.match(await sheet.locator('.event-today .pp-fit').innerText(), /after your Blue Card appointment ends/);
+            assert.equal(await sheet.locator('.event-know dd.is-unknown').count(), 0);
+            assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed: admission, language/);
             await page.keyboard.press('Escape');
             await page.click('[data-wall-view="wall"]');
 
@@ -444,6 +454,15 @@ const inside = (box, viewport) =>
         );
         await street.goto(`${base}?date=2026-09-30&at=22:40`, { waitUntil: 'networkidle' });
         assert.equal(await outdoorFilm.getAttribute('data-when'), 'over');
+        // Its sheet says Over and offers nothing to plan or be reminded of.
+        await outdoorFilm.evaluate((pp) => pp.querySelector('.pp-back-more').click());
+        await street.waitForSelector('.event-sheet');
+        assert.equal(await street.locator('.event-sheet .event-today .pp-flag--over').count(), 1);
+        assert.equal(
+            await street.locator('.event-sheet :is([data-event-section="plan"], .event-reminder)').count(),
+            0,
+        );
+        await street.keyboard.press('Escape');
         assert.equal(await outdoorFilm.locator('.pp-plan').isVisible(), false);
         assert.equal(await outdoorFilm.locator('.pp-flag--rain').count(), 0);
         await street.close();

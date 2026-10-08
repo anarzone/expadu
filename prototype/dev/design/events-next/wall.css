@@ -1845,6 +1845,98 @@ main[data-view='skyline'] .wall-board > .wall-sky {
     z-index: 1;
 }
 
+/* ---------- "More about it" on the Events page ----------
+   The shared sheet in the Wall's colours: cream paper and dark text, cyan
+   for the selected tab and other selections, orange only for Add to plan.
+   The cover is the poster's art with its date tape and big time. */
+body[data-page='events'] .detail-dialog:has(.event-sheet) {
+    --event-canvas: var(--color-bg-canvas);
+    --event-violet: var(--color-select-text);
+    --event-lilac: var(--color-select-bg);
+    --muted: var(--color-text-soft);
+    --event-control-rail: var(--color-bg-quiet);
+}
+body[data-page='events'] .event-sheet .event-fact-icon {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+body[data-page='events'] .event-sheet .event-venue {
+    background: var(--color-bg-surface);
+}
+body[data-page='events'] .event-sheet .event-venue > svg:last-child {
+    color: var(--color-text-soft);
+}
+body[data-page='events'] .event-sheet .place-sheet-tabs svg {
+    color: var(--color-text-soft);
+}
+body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='true'] {
+    background: var(--color-bg-surface);
+}
+body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='true'] svg {
+    color: var(--color-select-text);
+}
+.event-sheet .event-ticket.is-wall {
+    height: 156px;
+    min-height: 156px;
+    flex-basis: 156px;
+    align-items: flex-end;
+}
+.event-ticket.is-wall .pp-tape {
+    margin-top: 8px;
+    font-size: 16px;
+    white-space: nowrap;
+}
+.event-ticket.is-wall .event-ticket-time strong {
+    color: transparent;
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: clamp(36px, 10vw, 48px);
+    font-weight: 800;
+    line-height: 0.95;
+    -webkit-text-stroke: 1.6px #fff8e6;
+}
+@media (max-height: 700px) {
+    .event-sheet .event-ticket.is-wall {
+        height: 120px;
+        min-height: 120px;
+        flex-basis: 120px;
+    }
+}
+/* Today's state, the rain warning and the fit with your day, first. */
+.event-today {
+    display: grid;
+    gap: 8px;
+    margin: 0 0 14px;
+}
+.event-today .pp-flags {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0;
+}
+.event-today .pp-flag {
+    box-shadow: none;
+    border: 1px solid var(--color-border);
+}
+.event-today .pp-flag--now,
+.event-today .pp-flag--over {
+    border-color: transparent;
+}
+.event-today .pp-fit {
+    margin: 0 !important;
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+/* What the listing doesn't say, on one line. */
+.event-sheet .event-unlisted {
+    margin: 12px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.event-sheet .event-unlisted strong {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+
 /* A listing without a time doesn't print one. */
 .pp.is-listing .pp-time {
     display: none;

@@ -443,8 +443,12 @@ the street corner (with the weather chip), the rain warning on outdoor
 posters, and today's posters following the clock ("On now", "Over"). Then
 (owner request) the wall looks real (damp, streaks, bricks, cracks, torn
 posters, a drainpipe, a house number, a stone base) and no bare wall is
-left under the corner: the column grows to meet the row beside it.
-Details are in `events-next/README.md`.
+left under the corner: the column grows to meet the row beside it. The
+"More about it" sheet (owner request) becomes the poster opened up on the
+Events page: the Wall's colours, the poster's art, tape and time on its
+cover, "Add to plan", today's state, rain and fit first, unknown facts on
+one line, and no planning once an event is over. Today's sheet is
+unchanged. Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky
 "Composer · Minimize" bar is replaced by one compact row at the top of the

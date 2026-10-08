@@ -5,6 +5,30 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## "More about it": the poster opened up — 8 October 2026
+
+Owner review of the details sheet; all six suggestions chosen. On the
+Events page the shared sheet (`event-sheet.js`, also used by Today) is
+dressed by `wall.js` when it opens; Today's sheet is unchanged.
+
+1. **The Wall's colours.** Cream paper and dark text instead of the old
+   lavender and violet; cyan only for the selected tab and selections,
+   orange only for Add to plan.
+2. **The poster on the cover.** The poster's art with its yellow date tape
+   ("Tonight · 30 Sept") and the start time big in the poster's outlined
+   numerals, "until 22:00" small beneath. (A bug where the art covered
+   the date and time is fixed; the test checks the time is on top.)
+3. **The same words.** The sheet's main button says Add to plan, as the
+   posters do (it said "Plan to go").
+4. **Today first.** "On now · until 21:00" or "Over", "Rain likely at
+   20:00 · sample forecast" for an outdoor event, and how it fits your day
+   ("It starts 5 hours 30 min after your Blue Card appointment ends").
+5. **Unknowns on one line.** What the listing says stays as rows; what it
+   doesn't goes on one line: "Not listed: admission, language, who it's
+   for and accessibility. Check with the organiser before you go."
+6. **Nothing to plan when it's over.** A past event, or one that's over
+   today, has no Plan tab, no Add to plan and no reminder.
+
 ## A real wall, and no bare wall under the corner — 8 October 2026
 
 Owner review: an empty patch of wall was left under the street corner, and
