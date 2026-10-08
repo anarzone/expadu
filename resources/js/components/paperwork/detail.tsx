@@ -9,8 +9,9 @@ import {
     stepKinds,
     stepStatusLabels,
     when,
-    workflowLabels,
+    stateLabel,
     workflowTone,
+    paragraphs,
 } from './format';
 import { Icon } from './icons';
 import { BackToOverview, SourcesBody } from './lists';
@@ -174,7 +175,11 @@ function StepContent({ process, step }: { process: Process; step: Step }) {
                     <summary>
                         About this step <Icon name="down" />
                     </summary>
-                    <p className="review-copy">{step.description}</p>
+                    {paragraphs(step.description).map((text) => (
+                        <p className="review-copy" key={text}>
+                            {text}
+                        </p>
+                    ))}
                     <small>
                         Checked against the official sources
                         {step.verified_at
@@ -333,7 +338,7 @@ export function TaskDetail() {
                         {process.title} progress
                     </h2>
                     <Badge
-                        text={workflowLabels[process.state.workflow]}
+                        text={stateLabel(process)}
                         kind={workflowTone(process.state.workflow)}
                     />
                 </div>

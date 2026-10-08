@@ -32,6 +32,8 @@ interface Draft {
     effectiveFrom: string;
     /** Set when the answer goes to the plan's offered question. */
     question?: Question;
+    /** The saved answer as it was when the person reviewed the change. */
+    previous?: Answer | null;
 }
 
 const operationLabels: Record<string, string> = {
@@ -687,6 +689,10 @@ export function Situation({ request }: { request: SituationRequest }) {
                         }
                         onClick={() => {
                             setError(null);
+                            setDraft({
+                                ...draft,
+                                previous: recorded(draft.key),
+                            });
                             setMode('confirm');
                         }}
                     >
@@ -696,7 +702,7 @@ export function Situation({ request }: { request: SituationRequest }) {
             </>
         );
     } else if (mode === 'confirm') {
-        const previous = recorded(draft.key);
+        const previous = draft.previous ?? null;
 
         body = (
             <>

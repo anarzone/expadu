@@ -9,7 +9,7 @@ import {
     durationText,
     formatDate,
     todayIso,
-    workflowLabels,
+    stateLabel,
 } from './format';
 import { Icon } from './icons';
 import { Situation } from './situation';
@@ -177,7 +177,7 @@ function ProgressForm({ process }: { process: Process }) {
         <>
             <Scope process={process} />
             <p className="workflow-now">
-                Now: <strong>{workflowLabels[process.state.workflow]}</strong>
+                Now: <strong>{stateLabel(process)}</strong>
             </p>
             {usable.length ? (
                 <form onSubmit={submit}>

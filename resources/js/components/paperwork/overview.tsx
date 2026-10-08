@@ -13,7 +13,7 @@ import {
     soon,
     stepKinds,
     stepStatusLabels,
-    workflowLabels,
+    stateLabel,
     workflowTone,
     factLabels,
     clock,
@@ -122,7 +122,7 @@ function ProcessCard({ process }: { process: Process }) {
             </span>
             <span className="process-card-status">
                 <Badge
-                    text={workflowLabels[process.state.workflow]}
+                    text={stateLabel(process)}
                     kind={workflowTone(process.state.workflow)}
                 />
                 <Icon name="arrow" />
@@ -433,7 +433,7 @@ function QuestionCard() {
                 <span>
                     <Icon name="info" />
                     {q.status === 'paused'
-                        ? 'That’s enough questions for now.'
+                        ? 'You’ve answered a few questions. The rest can wait until you’re ready.'
                         : 'That answer didn’t fit. You can try the question again.'}
                 </span>
                 <button

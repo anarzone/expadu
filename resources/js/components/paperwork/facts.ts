@@ -87,7 +87,7 @@ export const fields: Record<string, FieldCopy> = {
         options: {
             standard: 'Standard work permit',
             blue_card: 'EU Blue Card',
-            chancenkarte: 'Opportunity Card',
+            chancenkarte: 'Opportunity Card (Chancenkarte)',
         },
     },
     moved_in_at: { label: 'Move-in date', icon: 'pin' },

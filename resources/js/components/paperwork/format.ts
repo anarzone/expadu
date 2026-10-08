@@ -20,6 +20,15 @@ export const workflowLabels: Record<Workflow, string> = {
     untracked: 'Not started',
 };
 
+/** A tracked task with nothing reported yet reads "Tracking", never "Not started". */
+export const stateLabel = (process: {
+    id: number | null;
+    state: { workflow: Workflow };
+}): string =>
+    process.id !== null && process.state.workflow === 'not_started'
+        ? 'Tracking'
+        : workflowLabels[process.state.workflow];
+
 export const workflowTone = (workflow: Workflow): string =>
     ({
         submitted: 'waiting',
@@ -97,6 +106,14 @@ export function formatDate(d: string | null | undefined): string {
         : 'Date unknown';
 }
 
+/** Catalogue text arrives wrapped at a fixed width: blank lines are paragraphs, single breaks are spaces. */
+export function paragraphs(text: string): string[] {
+    return text
+        .split(/\n\s*\n/)
+        .map((p) => p.replace(/\s*\n\s*/g, ' ').trim())
+        .filter(Boolean);
+}
+
 export const todayIso = (): string => new Date().toLocaleDateString('en-CA');
 
 /** "Today", "Tomorrow" or a weekday within the coming week. */
@@ -121,7 +138,9 @@ export function relative(
                 ? new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(
                       new Date(`${d}T12:00:00`),
                   )
-                : '';
+                : days === 7
+                  ? 'In a week'
+                  : '';
 
     return { days, label };
 }

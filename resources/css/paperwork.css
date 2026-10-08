@@ -2878,6 +2878,9 @@
         margin-left: auto;
         min-height: 44px;
     }
+    .process-note:has(.plain-button) {
+        align-items: center;
+    }
     .review-tools-panel small {
         color: var(--color-text-soft);
     }
@@ -3199,7 +3202,7 @@
     }
     #case-editor:has(.orientation)
         + .bureaucracy-view
-        :is(.getting-started, .question-card) {
+        :is(.getting-started, .question-card, .deferred-question) {
         display: none;
     }
     @media (max-width: 700px) {
