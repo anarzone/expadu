@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width,initial-scale=1,viewport-fit=cover"
+        />
+        <meta name="color-scheme" content="light" />
+        <title>Expadu — On the wall</title>
+        <link rel="stylesheet" href="../connected/style.css?v=cc9941eb1796" />
+        <link
+            rel="stylesheet"
+            href="../connected/discovery-scale.css?v=dc08487c179f"
+        />
+        <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
+        <script defer src="../connected/model.js?v=b727e359c259"></script>
+        <script defer src="../connected/store.js?v=17618b25abbe"></script>
+        <script defer src="../connected/icons.js?v=685f482a1088"></script>
+        <script defer src="../connected/ui.js?v=2daf91e05326"></script>
+        <script defer src="../connected/content-ui.js?v=251936b3dc96"></script>
+        <script defer src="../connected/sample-day.js?v=62b707facdee"></script>
+        <script defer src="../connected/sample-places.js?v=e426f4729b9a"></script>
+        <script defer src="../connected/places.js?v=fc4b989834ed"></script>
+        <script defer src="../events-next/event-model.js?v=83b083f61b2a"></script>
+        <script defer src="../events-next/distance.js?v=814ea3a0a964"></script>
+        <script defer src="../events-next/week-swipe.js?v=4f35133eb57d"></script>
+        <script defer src="../events-next/posters.js?v=0508f3324c8a"></script>
+        <script defer src="../events-next/festival.js?v=7fd46a7a6053"></script>
+        <script defer src="./poster-art.js?v=609bc51b7775"></script>
+        <script defer src="./wall.js?v=b5f3efb12270"></script>
+        <script defer src="../events-next/app.js?v=18ac24248f7e"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/shell-review.css?v=f06ba9e90e95"
+        />
+        <script defer src="../today-next/icons.js?v=b1a07d3a4600"></script>
+        <script
+            defer
+            src="../connected/today-header.js?v=67fa4f3683b4"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/location-popover.css?v=848f7280e0f4"
+        />
+        <script
+            defer
+            src="../connected/location-popover.js?v=cca96c19fb5a"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/menu-colors.css?v=80281d6d2c46"
+        />
+
+        <script defer src="../connected/handoffs.js?v=33932970adf3"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/discovery.css?v=81fbdadd3184"
+        />
+        <link
+            rel="stylesheet"
+            href="../today-c/composer-controls.css?v=954326e161a8"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/composer-entry.css?v=aa6e3a6ff882"
+        />
+        <script
+            defer
+            src="../connected/composer-entry.js?v=a6bd36124708"
+        ></script>
+        <script defer src="../connected/page-context.js?v=ae95f5b6e093"></script>
+        <script
+            defer
+            src="../today-c/composer-controls.js?v=738cd87b9222"
+        ></script>
+        <script defer src="../connected/day-actions.js?v=0b96c92b87af"></script>
+        <script defer src="../connected/day-swipe.js?v=93f6b73bb816"></script>
+        <script
+            defer
+            src="../connected/visit-timeline.js?v=2ab6dbc3b38d"
+        ></script>
+        <script defer src="../connected/planning-ui.js?v=4b0a7b379d2f"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/date-control.css?v=af988dcad8c6"
+        />
+        <script
+            defer
+            src="../connected/date-control.js?v=992a30c37fb2"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/place-sheet.css?v=03a38f257ea6"
+        />
+        <script
+            defer
+            src="../departures-next/journeys.js?v=954d22c70453"
+        ></script>
+        <script
+            defer
+            src="../connected/journey-preview.js?v=3cf071bc3810"
+        ></script>
+        <script defer src="../connected/place-sheet.js?v=d74bea244576"></script>
+        <script
+            defer
+            src="../composer-studio/wheel-motion.js?v=c203940ffe0e"
+        ></script>
+        <link
+            rel="stylesheet"
+            href="../connected/time-control.css?v=3052c121783e"
+        />
+        <script
+            defer
+            src="../connected/time-control.js?v=255f0aaf235a"
+        ></script>
+        <link rel="stylesheet" href="../connected/motion.css?v=2a54464bcba6" />
+        <link rel="stylesheet" href="../events-next/events.css?v=722fb04c29ff" />
+        <link rel="stylesheet" href="../events-next/posters.css?v=6cbf2f6a69ef" />
+        <link rel="stylesheet" href="../events-next/event-sheet.css?v=e521415daa56" />
+        <script defer src="../events-next/event-sheet.js?v=46f73c08240a"></script>
+        <link
+            rel="stylesheet"
+            href="../connected/journey-session.css?v=b62abeb5985b"
+        />
+        <script
+            defer
+            src="../connected/journey-session.js?v=208026dd621f"
+        ></script>
+        <link rel="stylesheet" href="../events-next/spotlight.css?v=3069d10c6b04" />
+        <link rel="stylesheet" href="../events-next/festival.css?v=7f84cb7f8998" />
+        <link
+            rel="stylesheet"
+            href="../connected/today-palette.css?v=0fcb87eb7f09"
+        />
+        <link
+            rel="stylesheet"
+            href="../connected/today-header.css?v=c1792fee5d7f"
+        />
+        <link rel="stylesheet" href="./wall.css?v=860dc18c5d70" />
+    </head>
+    <body class="shell-review today-palette today-header" data-page="events">
+        <!-- shared-header:start -->
+        <div id="shell">
+            <div class="scroll-header">
+                <header class="app-header" data-static-header>
+                    <a
+                        href="../today-next/brief/"
+                        class="brand"
+                        aria-label="Expadu home"
+                        ><svg viewBox="13 22 74 60" aria-hidden="true">
+                            <g transform="translate(2.45 2.05)">
+                                <circle
+                                    cx="20.5"
+                                    cy="50"
+                                    r="6"
+                                    fill="#05badd"
+                                />
+                                <rect
+                                    x="30"
+                                    y="24"
+                                    width="13"
+                                    height="52"
+                                    rx="6"
+                                    fill="currentColor"
+                                />
+                                <rect
+                                    x="46"
+                                    y="24"
+                                    width="34"
+                                    height="13"
+                                    rx="6"
+                                    fill="#ff3902"
+                                    transform="rotate(-7 46 30)"
+                                />
+                                <rect
+                                    x="46"
+                                    y="43.5"
+                                    width="25"
+                                    height="13"
+                                    rx="6"
+                                    fill="#ff3902"
+                                    transform="rotate(-4 46 50)"
+                                />
+                                <rect
+                                    x="46"
+                                    y="63"
+                                    width="34"
+                                    height="13"
+                                    rx="6"
+                                    fill="#ff3902"
+                                    transform="rotate(-2 46 69)"
+                                />
+                            </g></svg
+                        >Expadu</a
+                    >
+                    <nav class="service-nav" aria-label="Main navigation">
+                        <a data-page="today" href="../today-next/brief/"
+                            ><svg
+                                class="modern-icon"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 256 256"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"
+                                /></svg
+                            ><span>Today</span></a
+                        >
+                        <a
+                            data-page="events"
+                            href="../events-next/"
+                            aria-current="page"
+                            ><svg
+                                class="modern-icon"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 256 256"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-68-76a12,12,0,1,1-12-12A12,12,0,0,1,140,132Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,132ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,140,172Zm44,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"
+                                /></svg
+                            ><span>Events</span></a
+                        >
+                        <a data-page="bureaucracy" href="../bureaucracy-next/"
+                            ><svg
+                                class="modern-icon"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 256 256"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z"
+                                /></svg
+                            ><span>Paperwork</span></a
+                        >
+                        <a data-page="departures" href="../departures-next/"
+                            ><svg
+                                class="modern-icon"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 256 256"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M184,24H72A32,32,0,0,0,40,56V184a32,32,0,0,0,32,32h8L65.6,235.2a8,8,0,1,0,12.8,9.6L100,216h56l21.6,28.8a8,8,0,1,0,12.8-9.6L176,216h8a32,32,0,0,0,32-32V56A32,32,0,0,0,184,24ZM56,120V80h64v40Zm80-40h64v40H136ZM72,40H184a16,16,0,0,1,16,16v8H56V56A16,16,0,0,1,72,40ZM184,200H72a16,16,0,0,1-16-16V136H200v48A16,16,0,0,1,184,200ZM96,172a12,12,0,1,1-12-12A12,12,0,0,1,96,172Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,172Z"
+                                /></svg
+                            ><span>Travel</span></a
+                        >
+                        <a data-page="services" href="../services-next/"
+                            ><svg
+                                class="modern-icon"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 256 256"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M104,40H56A16,16,0,0,0,40,56v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,104,40Zm0,64H56V56h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,64H152V56h48v48Zm-96,32H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm0,64H56V152h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Zm0,64H152V152h48v48Z"
+                                /></svg
+                            ><span>Services</span></a
+                        >
+                    </nav>
+                    <div class="header-utilities">
+                        <div class="header-context">
+                            <button
+                                type="button"
+                                class="city"
+                                data-ui="city"
+                                aria-label="Cologne"
+                            >
+                                <svg
+                                    class="modern-icon"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 256 256"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Zm0-112a88.1,88.1,0,0,0-88,88c0,31.4,14.51,64.68,42,96.25a254.19,254.19,0,0,0,41.45,38.3,8,8,0,0,0,9.18,0A254.19,254.19,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25A88.1,88.1,0,0,0,128,16Zm0,206c-16.53-13-72-60.75-72-118a72,72,0,0,1,144,0C200,161.23,144.53,209,128,222Z"
+                                    /></svg
+                                ><span data-city-label>Cologne</span
+                                ><svg
+                                    class="modern-icon"
+                                    aria-hidden="true"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 256 256"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+                        <a
+                            href="../composer-studio/#saved"
+                            class="my-day"
+                            aria-label="Saved ideas"
+                            title="Saved ideas"
+                            ><svg
+                                class="modern-icon"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 256 256"
+                                fill="currentColor"
+                            >
+                                <path
+                                    d="M184,32H72A16,16,0,0,0,56,48V224a8,8,0,0,0,12.24,6.78L128,193.43l59.77,37.35A8,8,0,0,0,200,224V48A16,16,0,0,0,184,32Zm0,177.57-51.77-32.35a8,8,0,0,0-8.48,0L72,209.57V48H184Z"
+                                /></svg
+                            ><span>Saved</span><b data-count hidden>0</b></a
+                        >
+                        <button
+                            type="button"
+                            class="account-button"
+                            aria-label="Your account"
+                            popovertarget="header-account"
+                        >
+                            <span>A</span>
+                        </button>
+                    </div>
+                </header>
+            </div>
+        </div>
+        <!-- shared-header:end -->
+        <main id="main"></main>
+        <div id="dock"></div>
+    </body>
+</html>

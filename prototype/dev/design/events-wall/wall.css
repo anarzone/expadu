@@ -1,0 +1,1461 @@
+/* Events as a poster wall (owner's choice, 8 October). Builds on the Events
+   page's own styles; only the posters, the column, the skyline and the
+   page layout are new. Poster inks are art, like Festival's yellow: the
+   page keeps the shared cream palette, cyan selections and orange actions. */
+@font-face {
+    font-family: 'Poster Grotesque';
+    src: url('./fonts/bricolage-grotesque-latin.woff2') format('woff2');
+    font-weight: 200 800;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Poster Grotesque';
+    src: url('./fonts/bricolage-grotesque-latin-ext.woff2') format('woff2');
+    font-weight: 200 800;
+    font-display: swap;
+    unicode-range: U+0100-024F, U+1E00-1EFF;
+}
+body[data-page='events'] {
+    --poster-display: 'Poster Grotesque', Geist, sans-serif;
+    --poster-purple: #4b2bb8;
+    --poster-night: #1b1840;
+    --poster-paper: #fff8e6;
+    --poster-green: #1f7a4d;
+    --poster-cream: #fff6d8;
+    --poster-column: #2e4a3f;
+    --poster-column-ring: #3e6152;
+}
+
+/* ---------- Heading: title, date tape and the view switch ---------- */
+.wall-heading {
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+.wall-heading-text p {
+    margin: 6px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-body);
+}
+.wall-heading-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.wall-heading #event-calendar-toggle {
+    padding: 0 12px 0 14px;
+    background: var(--festival-yellow, #ffe363);
+    color: var(--color-text);
+    border-radius: 4px;
+    font-family: 'Festival Marker', Geist, sans-serif;
+    font-weight: var(--weight-regular);
+    font-size: 17px;
+    transform: rotate(-2deg);
+    box-shadow: 0 2px 0 #211d1514;
+}
+.wall-heading #event-calendar-toggle > svg:first-child {
+    display: none;
+}
+.wall-views {
+    display: flex;
+    padding: 4px;
+    border-radius: 14px;
+    background: var(--color-bg-quiet);
+}
+.wall-views button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+}
+.wall-views button svg {
+    width: 18px;
+    height: 18px;
+}
+.wall-views button[aria-pressed='true'] {
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+    box-shadow: var(--event-selection-shadow, 0 1px 3px #211d151f);
+}
+
+/* ---------- The wall ---------- */
+.wall-board {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(300px, 380px);
+    grid-template-areas: 'column day next';
+    align-items: end;
+    gap: 28px 32px;
+    margin-top: 14px;
+    padding: 36px 32px 28px;
+    border-radius: 32px;
+    background: var(--color-bg-hover);
+}
+.wall-board #event-featured {
+    grid-area: column;
+    margin: 0;
+    align-self: start;
+}
+.wall-board #event-list {
+    grid-area: day;
+    min-width: 0;
+}
+.wall-next {
+    grid-area: next;
+    align-self: start;
+}
+/* A full day of posters, or a narrower desktop, puts the calendar beneath. */
+.wall-board:has(.wall-view--wall .wall-day > .pp:nth-child(2)) {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'column day' 'column next';
+}
+@media (max-width: 1199px) {
+    .wall-board {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas: 'column day' 'column next';
+    }
+}
+main[data-view='skyline'] .wall-board {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'day' 'next';
+    padding: 0;
+    background: none;
+}
+main[data-view='skyline'] .wall-board #event-featured,
+main[data-view='wall'] .wall-view--skyline,
+main[data-view='skyline'] .wall-view--wall {
+    display: none;
+}
+.wall-day {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 26px 22px;
+}
+.wall-day > .pp:nth-child(odd) {
+    transform: rotate(1.4deg);
+}
+.wall-day > .pp:nth-child(even) {
+    transform: rotate(-1.1deg);
+}
+.wall-day-note {
+    margin: 0;
+    color: var(--color-text-soft);
+}
+.wall-view .festival-credit {
+    margin: 18px 0 0;
+}
+
+/* The city's poster column (Litfaßsäule) holds the featured pick. */
+.wall-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.wall-column-cap {
+    position: relative;
+    width: 404px;
+    height: 44px;
+    border-radius: 50% 50% 8px 8px / 100% 100% 8px 8px;
+    background: var(--poster-column);
+}
+.wall-column-cap > span {
+    position: absolute;
+    left: 50%;
+    top: -14px;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    border-radius: 50%;
+    background: var(--poster-column);
+}
+.wall-column-cap::after {
+    content: '';
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 46px;
+    height: 12px;
+    border-radius: 4px;
+    background: var(--poster-column-ring);
+}
+.wall-column-body {
+    position: relative;
+    margin-top: 18px;
+    overflow: hidden;
+}
+/* The column's curve, over the poster but under its buttons. */
+.wall-column-body::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+        90deg,
+        #0005 0%,
+        #0000 18%,
+        #ffffff14 42%,
+        #0000 66%,
+        #0006 100%
+    );
+}
+.wall-column-base {
+    width: 396px;
+    height: 30px;
+    border-radius: 6px 6px 2px 2px;
+    background: var(--poster-column);
+}
+.wall-column-caption {
+    margin: 10px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+
+/* Next in the city's calendar, and the week's notes. */
+.wall-next-head h2 {
+    margin: 0;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.5px;
+}
+.wall-next-head p {
+    margin: 2px 0 14px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.wall-next-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 22px 18px;
+    align-items: start;
+}
+.wall-next-grid > .pp:nth-child(3n + 1) {
+    transform: rotate(-1.3deg);
+}
+.wall-next-grid > .pp:nth-child(3n + 2) {
+    transform: rotate(1.2deg);
+    margin-top: 12px;
+}
+.wall-note {
+    position: relative;
+    margin-top: 20px;
+    padding: 20px 18px 16px;
+    background: #fff1a8;
+    color: var(--color-text);
+    transform: rotate(-2deg);
+    box-shadow: 0 8px 18px #211d1524;
+}
+.wall-note-pin {
+    position: absolute;
+    left: 50%;
+    top: -9px;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    border-radius: 50%;
+    background: var(--color-action);
+}
+.wall-note strong {
+    font-family: 'Festival Marker', Geist, sans-serif;
+    font-weight: var(--weight-regular);
+    font-size: 18px;
+    line-height: 1.25;
+}
+.wall-note p {
+    margin: 8px 0 0;
+    font-size: var(--text-control);
+}
+
+/* Already taken down: the captured past day, faded. */
+.wall-past {
+    margin-top: 32px;
+}
+.wall-past[hidden] {
+    display: none;
+}
+.wall-past-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+    margin-bottom: 14px;
+}
+.wall-past-head h2 {
+    margin: 0;
+    font-size: var(--text-title);
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.5px;
+}
+.wall-past-head p {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+}
+.wall-past-open {
+    margin-left: auto;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+.wall-past-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+}
+.wall-past-poster {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 8px;
+    height: 190px;
+    padding: 12px;
+    overflow: hidden;
+    color: var(--pp-text, var(--color-text));
+    filter: grayscale(0.85);
+    opacity: 0.72;
+}
+.wall-past-poster > .pp-art {
+    z-index: 0;
+}
+.wall-past-stamp,
+.wall-past-title {
+    position: relative;
+    z-index: 1;
+}
+.wall-past-stamp {
+    align-self: flex-start;
+    padding: 2px 6px;
+    border: 2px solid currentColor;
+    border-radius: 4px;
+    font-size: var(--text-micro);
+    font-weight: var(--weight-bold);
+    transform: rotate(-4deg);
+}
+.wall-past-title {
+    font-family: var(--poster-display);
+    font-weight: 800;
+    font-size: 16px;
+    line-height: 0.98;
+    text-transform: uppercase;
+}
+
+/* ---------- Posters ---------- */
+.pp {
+    --pp-ground: var(--poster-paper);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text);
+    --pp-shape: var(--poster-purple);
+    position: relative;
+    flex: none;
+    container-type: inline-size;
+    background: var(--pp-ground);
+    color: var(--pp-text);
+    box-shadow: 0 14px 30px #211d1530;
+}
+.pp--day {
+    --pp-ground: var(--festival-yellow, #ffe363);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text);
+    --pp-shape: var(--poster-purple);
+}
+.pp--evening {
+    --pp-ground: var(--poster-purple);
+    --pp-text: var(--festival-yellow, #ffe363);
+    --pp-soft: var(--poster-cream);
+    --pp-shape: var(--festival-yellow, #ffe363);
+}
+.pp--night {
+    --pp-ground: var(--poster-night);
+    --pp-text: var(--poster-cream);
+    --pp-soft: var(--poster-cream);
+    --pp-shape: var(--festival-yellow, #ffe363);
+}
+.pp--paper {
+    --pp-ground: var(--poster-paper);
+    --pp-text: var(--color-text);
+    --pp-soft: var(--color-text-soft);
+    --pp-shape: var(--poster-purple);
+}
+.pp--size-wall {
+    width: 300px;
+    height: 420px;
+}
+.pp--size-column {
+    width: 364px;
+    height: 560px;
+    box-shadow: none;
+}
+.pp--size-mini {
+    width: 100%;
+    height: 262px;
+    box-shadow: 0 10px 22px #211d1524;
+}
+.pp-face {
+    position: absolute;
+    inset: 0;
+}
+.pp-face[hidden] {
+    display: none;
+}
+
+/* The art: the category's shape in the hour's ink. Also used alone as a
+   picture (a card's photo slot, the event sheet's cover). */
+.pp-art {
+    --pp-ground: var(--poster-paper);
+    --pp-shape: var(--poster-purple);
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background: var(--pp-ground);
+}
+.pp-art.pp--day {
+    --pp-ground: var(--festival-yellow, #ffe363);
+    --pp-shape: var(--poster-purple);
+}
+.pp-art.pp--evening {
+    --pp-ground: var(--poster-purple);
+    --pp-shape: var(--festival-yellow, #ffe363);
+}
+.pp-art.pp--night {
+    --pp-ground: var(--poster-night);
+    --pp-shape: var(--festival-yellow, #ffe363);
+}
+.pp-art::before,
+.pp-art::after,
+.pp-art > span {
+    content: '';
+    position: absolute;
+    box-sizing: border-box;
+}
+.pp-art.pp--rings::before {
+    right: -24%;
+    top: 12%;
+    width: 82%;
+    aspect-ratio: 1;
+    border: max(12px, 6cqi) solid var(--pp-shape);
+    border-radius: 50%;
+    opacity: 0.85;
+}
+.pp-art.pp--rings::after {
+    right: -10%;
+    top: 24%;
+    width: 54%;
+    aspect-ratio: 1;
+    border: max(9px, 4.5cqi) solid var(--pp-shape);
+    border-radius: 50%;
+    opacity: 0.42;
+}
+.pp-art.pp--rings > span,
+.pp-art.pp--dots > span {
+    left: 0;
+    bottom: 0;
+    width: 62%;
+    height: 32%;
+    background-image: radial-gradient(
+        circle,
+        var(--pp-shape) 2.2px,
+        transparent 2.6px
+    );
+    background-size: 13px 13px;
+    opacity: 0.32;
+}
+/* At night the rings become a moon among stars. */
+.pp-art.pp--night > span {
+    inset: 0;
+    width: auto;
+    height: auto;
+    background-image:
+        radial-gradient(circle, #fff6d8bf 1.1px, transparent 1.6px),
+        radial-gradient(circle, #ffe36399 1.6px, transparent 2.1px);
+    background-size:
+        37px 41px,
+        83px 71px;
+    background-position:
+        0 0,
+        19px 23px;
+    opacity: 1;
+}
+.pp-art.pp--night.pp--rings::before {
+    right: 9%;
+    top: 16%;
+    width: 32%;
+    border: 0;
+    background: var(--poster-cream);
+    box-shadow:
+        0 0 0 12px #ffe3634d,
+        0 0 0 26px #ffe3631f;
+    opacity: 1;
+}
+.pp-art.pp--night.pp--rings::after {
+    display: none;
+}
+.pp-art.pp--checks::before {
+    inset: 0 0 auto;
+    height: 17%;
+    background: repeating-conic-gradient(
+            var(--pp-shape) 0 25%,
+            transparent 0 50%
+        )
+        0 0 / 26px 26px;
+}
+.pp-art.pp--checks.pp--day::before,
+.pp-art.pp--checks.pp--paper::before {
+    background: repeating-conic-gradient(
+            var(--color-text) 0 25%,
+            transparent 0 50%
+        )
+        0 0 / 26px 26px;
+}
+.pp-art.pp--waves::before {
+    inset: 0 0 auto;
+    height: 22%;
+    background: repeating-radial-gradient(
+        circle at 50% 120%,
+        var(--poster-green) 0 7px,
+        transparent 7px 14px
+    );
+}
+.pp-art.pp--bubbles::before {
+    right: 8%;
+    top: 12%;
+    width: 34%;
+    height: 22%;
+    border: max(5px, 2.4cqi) solid var(--pp-shape);
+    border-radius: 999px 999px 999px 10px;
+}
+.pp-art.pp--bubbles::after {
+    right: 34%;
+    top: 26%;
+    width: 26%;
+    height: 17%;
+    border-radius: 999px 999px 10px 999px;
+    background: var(--pp-shape);
+    opacity: 0.55;
+}
+.pp-art.pp--dots > span {
+    width: 100%;
+    height: 40%;
+}
+/* Small or wide uses: keep the shapes, drop the detail. */
+.pp-art--slot::before,
+.pp-art--cover::before {
+    right: 4%;
+}
+
+.pp-open {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 16px 18px 18px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.pp-open:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+}
+.pp-top {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}
+.pp-category {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: var(--radius-pill);
+    background: #ffffff29;
+    color: var(--pp-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    backdrop-filter: blur(8px);
+}
+.pp--day .pp-category,
+.pp--paper .pp-category {
+    background: #211d1514;
+}
+.pp-category svg {
+    width: 15px;
+    height: 15px;
+}
+.pp-tape {
+    display: inline-block;
+    margin-top: auto;
+    padding: 3px 12px 1px;
+    background: var(--festival-yellow, #ffe363);
+    color: var(--color-text);
+    font-family: 'Festival Marker', Geist, sans-serif;
+    font-size: 17px;
+    line-height: 1.3;
+    transform: rotate(-3deg);
+}
+.pp--day .pp-tape {
+    background: var(--color-text);
+    color: var(--festival-yellow, #ffe363);
+}
+.pp-title {
+    margin-top: 14px;
+    font-family: var(--poster-display);
+    font-weight: 800;
+    font-size: clamp(22px, 13.5cqi, 60px);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+}
+/* Only very long words break, and only where both parts stay readable:
+   "Feierabend-rundgang", never "Fei-erabendrundgang" or "Klima-wandel". */
+.pp-title,
+.wall-past-title {
+    hyphens: auto;
+    hyphenate-limit-chars: 13 6 6;
+    -webkit-hyphenate-limit-before: 6;
+    -webkit-hyphenate-limit-after: 6;
+}
+.pp-translation {
+    margin-top: 6px;
+    color: var(--pp-soft);
+    font-size: var(--text-small);
+    opacity: 0.9;
+}
+.pp-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 12px;
+    padding-right: 66px;
+    box-sizing: border-box;
+}
+.pp-time {
+    font-family: var(--poster-display);
+    font-weight: 800;
+    font-size: clamp(32px, 17cqi, 64px);
+    line-height: 0.9;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--pp-text);
+}
+.pp--paper .pp-time {
+    font-family: var(--font-sans);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    color: var(--pp-soft);
+    -webkit-text-stroke: 0;
+}
+.pp-meta,
+.pp-price {
+    color: var(--pp-soft);
+    font-size: var(--text-control);
+}
+.pp-meta {
+    font-weight: var(--weight-medium);
+}
+.pp-save,
+.pp-plan {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.pp-save {
+    top: 16px;
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ffffff59;
+    background: #ffffff2e;
+    color: var(--pp-soft);
+    backdrop-filter: blur(10px);
+}
+.pp--day .pp-save,
+.pp--paper .pp-save {
+    border-color: #211d1526;
+    background: #ffffff59;
+}
+.pp-save svg,
+.pp-back-save svg {
+    width: 19px;
+    height: 19px;
+}
+.pp-save[aria-pressed='true'],
+.pp-back-save[aria-pressed='true'] {
+    border-color: transparent;
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.pp-save[aria-pressed='true'] svg,
+.pp-back-save[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.pp-plan {
+    right: 16px;
+    bottom: 16px;
+    width: 54px;
+    height: 54px;
+    border: 0;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    box-shadow: 0 6px 16px #c23b0e66;
+}
+.pp-plan:hover {
+    background: var(--color-action-hover);
+}
+.pp-plan svg,
+.pp-back-plan svg {
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.pp-save:active,
+.pp-plan:active,
+.pp-open:active {
+    transform: scale(0.97);
+}
+
+/* Past listings: faded, no Save or Plan. */
+.pp.is-past {
+    filter: grayscale(0.8);
+    opacity: 0.78;
+}
+.pp.is-past .pp-tape {
+    background: transparent;
+    color: inherit;
+    border: 2px solid currentColor;
+}
+
+/* The back: the listing's facts and the actions. */
+.pp-back {
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    background: var(--poster-paper);
+    color: var(--color-text);
+    box-shadow: inset 0 0 0 1px #211d1514;
+}
+.pp-back-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 6px 6px 14px;
+    background: var(--pp-ground);
+    color: var(--pp-soft);
+}
+.pp-back-head .pp-tape {
+    margin: 0;
+    font-size: 14px;
+}
+.pp-back-note {
+    flex: 1;
+    font-size: var(--text-small);
+}
+.pp-turn-back {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #ffffff29;
+    color: inherit;
+}
+.pp--day .pp-turn-back,
+.pp--paper .pp-turn-back {
+    background: #211d1514;
+}
+.pp-turn-back svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.pp-back-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 16px 8px;
+    font-size: var(--text-small);
+}
+.pp-back-title {
+    font-size: var(--text-section);
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
+}
+.pp-back-body .pp-translation {
+    margin: 0;
+    color: var(--color-text-soft);
+}
+.pp-back-body p {
+    margin: 0;
+}
+.pp-back-when {
+    margin-top: 4px !important;
+}
+.pp-back-where,
+.pp-back-past {
+    color: var(--color-text-soft);
+}
+.pp-facts {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 12px;
+    margin: 8px 0 0;
+}
+.pp-facts > div {
+    display: contents;
+}
+.pp-facts dt {
+    color: var(--color-text-soft);
+}
+.pp-facts dd {
+    margin: 0;
+}
+.pp-facts dd.is-unknown {
+    color: var(--color-text-muted);
+    opacity: 0.85;
+}
+.pp-fit {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px !important;
+}
+.pp-fit > span {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    margin-top: 4px;
+    border-radius: 50%;
+    background: var(--color-select-text);
+}
+.pp-back-actions {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px 12px;
+}
+.pp-back-plan,
+.pp-back-save,
+.pp-back-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    border: 0;
+    border-radius: var(--radius-md);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+    cursor: pointer;
+}
+.pp-back-plan {
+    flex: 1;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+}
+.pp-back-save {
+    width: 44px;
+    padding: 0;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.pp-back-more {
+    padding: 0 12px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.pp.is-listing .pp-back-more,
+.pp.is-past .pp-back-more {
+    flex: 1;
+}
+.pp-back-more svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Mini posters: the later listings. */
+.pp--size-mini .pp-open {
+    padding: 12px 14px 14px;
+}
+.pp--size-mini .pp-top {
+    min-height: 32px;
+}
+.pp--size-mini .pp-category {
+    height: 26px;
+    padding: 0 10px;
+    background: var(--poster-paper);
+    font-size: var(--text-caption);
+    backdrop-filter: none;
+}
+/* Small posters keep the shape small and the words clear. */
+.pp--size-mini .pp-art.pp--rings::before {
+    right: -18%;
+    top: -14%;
+    width: 52%;
+}
+.pp--size-mini .pp-art.pp--rings::after {
+    right: -6%;
+    top: -4%;
+    width: 30%;
+}
+.pp--size-mini .pp-art > span {
+    display: none;
+}
+.pp--size-mini .pp-tape {
+    margin-top: 44px;
+    font-size: 14px;
+}
+.pp--size-mini .pp-title {
+    margin-top: 10px;
+    font-size: clamp(16px, 10.5cqi, 24px);
+}
+.pp--size-mini .pp-bottom {
+    padding-right: 0;
+}
+.pp--size-mini .pp-price,
+.pp.is-listing .pp-time {
+    display: none;
+}
+.pp--size-mini .pp-back-body {
+    padding: 8px 12px 4px;
+}
+.pp--size-mini .pp-facts {
+    display: none;
+}
+
+/* ---------- Skyline: the day lit above the city ---------- */
+.sky {
+    --sky-1: #24175e;
+    --sky-2: #33208a;
+    --sky-3: #4b2bb8;
+    --sky-4: #7e36ae;
+    --sky-5: #d9785e;
+    --sky-far: #3b2a7a;
+    --sky-near: #140f36;
+    --sky-river: #1a2257;
+    --sky-orb: var(--poster-cream);
+    --sky-window: 0.75;
+    --sky-stars: 1;
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    background: var(--sky-1);
+    color: var(--poster-cream);
+}
+.sky[data-sky='afternoon'] {
+    --sky-1: #7cc6e0;
+    --sky-2: #94d1e5;
+    --sky-3: #b4dfeb;
+    --sky-4: #d6ecee;
+    --sky-5: #f3dfa6;
+    --sky-far: #6f87a8;
+    --sky-near: #2b3550;
+    --sky-river: #3f6f94;
+    --sky-orb: #ffe363;
+    --sky-window: 0;
+    --sky-stars: 0;
+}
+.sky[data-sky='late'] {
+    --sky-1: #0e0a2b;
+    --sky-2: #140f3a;
+    --sky-3: #1b1449;
+    --sky-4: #221a57;
+    --sky-5: #2c2264;
+    --sky-far: #2a2160;
+    --sky-near: #07051a;
+    --sky-river: #10153d;
+    --sky-window: 0.9;
+}
+.sky-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transition: none;
+}
+/* Shared icon styles stroke every svg; the drawing has no outlines. */
+.sky-art,
+.sky-art * {
+    stroke: none;
+}
+.sky-art .sky-1 {
+    fill: var(--sky-1);
+}
+.sky-art .sky-2 {
+    fill: var(--sky-2);
+}
+.sky-art .sky-3 {
+    fill: var(--sky-3);
+}
+.sky-art .sky-4 {
+    fill: var(--sky-4);
+}
+.sky-art .sky-5 {
+    fill: var(--sky-5);
+}
+.sky-art .sky-far {
+    fill: var(--sky-far);
+}
+.sky-art .sky-near,
+.sky-art .sky-bridge-deck {
+    fill: var(--sky-near);
+}
+.sky-art .sky-bridge {
+    fill: none;
+    stroke: var(--sky-near) !important;
+    stroke-width: 10;
+}
+.sky-art .sky-river {
+    fill: var(--sky-river);
+}
+.sky-art .sky-windows {
+    fill: #f2c86b;
+    opacity: var(--sky-window);
+}
+.sky-art .sky-stars {
+    fill: var(--poster-cream);
+    opacity: var(--sky-stars);
+}
+.sky-art .sky-orb {
+    fill: var(--sky-orb);
+}
+.sky-art .sky-orb-halo {
+    fill: var(--sky-orb);
+    opacity: 0.12;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .sky-art rect,
+    .sky-art g,
+    .sky-art circle {
+        transition:
+            fill 280ms var(--ease-settle),
+            opacity 280ms var(--ease-settle);
+    }
+    .sky-light {
+        transition: opacity 180ms var(--ease-settle);
+    }
+}
+.sky-head {
+    position: absolute;
+    z-index: 3;
+    left: 28px;
+    right: 24px;
+    top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    pointer-events: none;
+}
+.sky-head > * {
+    pointer-events: auto;
+}
+.sky-head h2 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: var(--weight-bold);
+    line-height: 1;
+    letter-spacing: -1.2px;
+}
+.sky[data-sky='afternoon'] .sky-head,
+.sky[data-sky='afternoon'] .sky-note {
+    color: var(--color-text);
+}
+.sky-head p {
+    margin: 6px 0 0;
+    font-size: var(--text-body);
+    opacity: 0.9;
+}
+.sky-bands {
+    display: flex;
+    padding: 4px;
+    border-radius: 16px;
+    background: #ffffff24;
+    backdrop-filter: blur(10px);
+}
+.sky-bands button {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font-size: var(--text-control);
+    font-weight: var(--weight-medium);
+}
+.sky-bands button[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-weight: var(--weight-semibold);
+}
+.sky-scroll {
+    position: relative;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+.sky-scroll::-webkit-scrollbar {
+    display: none;
+}
+.sky-scroll:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: -3px;
+}
+.sky-inner {
+    position: relative;
+    width: max(100%, 780px);
+    aspect-ratio: 1376 / 560;
+}
+.sky-light {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--poster-cream);
+    /* `translate`, not `transform`: buttons share a pressed nudge. */
+    translate: -50% -100%;
+    cursor: pointer;
+}
+.sky-light.is-end {
+    align-items: flex-end;
+    translate: calc(-100% + 17px) -100%;
+}
+.sky-light.is-start {
+    align-items: flex-start;
+    translate: -17px -100%;
+}
+.sky-light-label {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 12px;
+    background: #1b1840c4;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    backdrop-filter: blur(8px);
+}
+.sky-light:hover .sky-light-label,
+.sky-light:focus-visible .sky-light-label {
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+}
+.sky-light:focus-visible {
+    outline: none;
+}
+.sky-light:focus-visible .sky-light-dot {
+    outline: 3px solid var(--color-select-bg);
+    outline-offset: 4px;
+}
+.sky-light-dot {
+    width: 30px;
+    height: 30px;
+    border: 3px solid var(--color-bg-surface);
+    border-radius: 50%;
+    background: var(--festival-yellow, #ffe363);
+    box-shadow:
+        0 0 0 9px #ffe36347,
+        0 0 40px 18px #ffe3636b;
+}
+/* Lights for another part of the day stay visible but dim. */
+.sky[data-sky='afternoon'] .sky-light:not([data-band='afternoon']),
+.sky[data-sky='evening'] .sky-light:not([data-band='evening']),
+.sky[data-sky='late'] .sky-light:not([data-band='late']) {
+    opacity: 0.5;
+}
+.sky[data-sky='afternoon'] .sky-light:not([data-band='afternoon']) .sky-light-dot,
+.sky[data-sky='evening'] .sky-light:not([data-band='evening']) .sky-light-dot,
+.sky[data-sky='late'] .sky-light:not([data-band='late']) .sky-light-dot {
+    box-shadow: none;
+}
+.sky-you {
+    position: absolute;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: #ffffff24;
+    color: var(--poster-cream);
+    font-size: var(--text-caption);
+    white-space: nowrap;
+    transform: translateX(-100%);
+    backdrop-filter: blur(8px);
+}
+.sky-you > span {
+    width: 11px;
+    height: 11px;
+    border: 2px solid var(--poster-cream);
+    background: var(--color-paper-bg);
+    transform: rotate(45deg);
+}
+.sky-away {
+    position: absolute;
+    z-index: 3;
+    right: 20px;
+    bottom: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+.sky-away button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 12px 0 14px;
+    border: 0;
+    border-radius: 12px;
+    background: #1b1840b3;
+    color: var(--poster-cream);
+    font-size: var(--text-small);
+    backdrop-filter: blur(8px);
+}
+.sky-away svg {
+    width: 16px;
+    height: 16px;
+}
+.sky-note {
+    position: absolute;
+    z-index: 3;
+    left: 28px;
+    bottom: 14px;
+    margin: 0;
+    font-size: var(--text-caption);
+    opacity: 0.85;
+}
+.sky-cards {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 22px;
+}
+.sky-cards .festival-card {
+    aspect-ratio: auto;
+    height: 380px;
+}
+.festival-card .pp-art--slot {
+    position: absolute;
+    inset: 0;
+}
+.sky-poster-label {
+    position: absolute;
+    z-index: 2;
+    left: 16px;
+    top: 58px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: #1b184099;
+    color: var(--poster-cream);
+    font-size: var(--text-caption);
+    backdrop-filter: blur(6px);
+}
+
+/* The event sheet's cover when it shows the poster's art. */
+.event-ticket .pp-art--cover {
+    z-index: 0;
+}
+
+/* ---------- Tablets and phones ---------- */
+@media (max-width: 999px) {
+    .event-gallery {
+        display: flex;
+        flex-direction: column;
+    }
+    .wall-board,
+    main[data-view='skyline'] .wall-board {
+        display: contents;
+    }
+    .wall-board #event-featured {
+        order: -1;
+        width: 100%;
+        align-self: stretch;
+        margin: 4px 0 18px;
+    }
+    .pp--size-column {
+        height: 440px;
+    }
+    .wall-board #event-list {
+        margin-top: 4px;
+    }
+    .wall-next {
+        margin-top: 26px;
+    }
+    .wall-day {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 16px;
+        margin: 0 -16px;
+        padding: 10px 16px 18px;
+        scrollbar-width: none;
+    }
+    .wall-day::-webkit-scrollbar {
+        display: none;
+    }
+    .wall-day > .pp {
+        scroll-snap-align: start;
+        scroll-margin-left: 16px;
+    }
+}
+@media (max-width: 700px) {
+    .wall-heading {
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    .wall-heading-text p {
+        display: none;
+    }
+    .wall-heading-tools {
+        gap: 8px;
+    }
+    .wall-views button {
+        padding: 0 10px;
+    }
+    .wall-views button span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    .wall-board #event-featured,
+    .wall-column {
+        width: 100%;
+        align-self: stretch;
+    }
+    .wall-column-cap {
+        width: calc(100% - 8px);
+        height: 24px;
+    }
+    .wall-column-cap::after {
+        top: 25px;
+        height: 7px;
+    }
+    .wall-column-cap > span {
+        display: none;
+    }
+    .wall-column-body {
+        width: calc(100% - 26px);
+        margin-top: 10px;
+    }
+    .wall-column-base {
+        display: none;
+    }
+    .wall-column-caption {
+        align-self: flex-start;
+        margin-top: 8px;
+    }
+    .pp--size-column {
+        width: 100%;
+        height: 340px;
+    }
+    .pp--size-column .pp-title {
+        font-size: clamp(30px, 13cqi, 46px);
+    }
+    .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+    .wall-next-grid {
+        gap: 18px 14px;
+    }
+    .wall-past-row {
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: 132px;
+        overflow-x: auto;
+        margin: 0 -16px;
+        padding: 0 16px 8px;
+    }
+    .wall-past-open {
+        margin-left: 0;
+    }
+    .sky {
+        border-radius: 24px;
+    }
+    .sky-head {
+        left: 12px;
+        right: 12px;
+        top: 16px;
+        bottom: 12px;
+    }
+    .sky-head > div:first-child {
+        padding-left: 4px;
+    }
+    .sky-head p {
+        display: none;
+    }
+    .sky-bands {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .sky-bands button {
+        min-height: 44px;
+        padding: 0;
+    }
+    .sky-note {
+        display: none;
+    }
+    .sky-away {
+        right: 12px;
+        bottom: 70px;
+    }
+    .sky-inner {
+        width: 836px;
+        height: 340px;
+        aspect-ratio: auto;
+    }
+    .sky-cards {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

@@ -389,6 +389,23 @@ from the event's or venue's listing, otherwise "Not listed". Composer keeps
 the cream palette. The records now live in `connected/sample-day.js` for
 Today and Composer. Details are in `composer-studio/README.md`.
 
+**Events on the wall — owner's choice, 8 October (in review):** from the
+Events concepts canvas the owner chose Poster Press, with the Rhine skyline
+joining it and posters wherever there's no picture. A separate page,
+`events-wall/`, keeps the Events baseline unchanged until approval. Every
+event is a poster set only from its listing (the category picks the shape,
+the hour picks the ink; unknowns stay "not listed"). The featured "Coming up"
+pick hangs on a poster column and stays put while filtering; tapping a poster
+turns it over to its facts, "Fits your day" (from the recorded appointment
+only) and Add to plan, Save and More about it. Later dates in the same city
+series hang as paper posters without time, price or planning; the captured
+past day is faded with no Save or Plan. The Skyline view lights the day's
+events above an illustrated Cologne and keeps photo cards, with the poster's
+art where there's no usable picture (the sample film night's illustration
+showed somewhere else). Filters, calendar, sheet and planning are the Events
+page's own. Poster lettering uses Bricolage Grotesque; the app's titles stay
+Geist while that decision is open. Details are in `events-wall/README.md`.
+
 **Composer has one header — owner request, 8 October:** the sticky
 "Composer · Minimize" bar is replaced by one compact row at the top of the
 conversation ("✦ Composer · Wed 30 Sept · Sample day" and "← Back to
