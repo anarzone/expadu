@@ -1,4 +1,7 @@
+import { clsx } from 'clsx';
+import { AppointmentEditor, SubmissionEditor } from './editors';
 import {
+    coverageNote,
     formatDate,
     kindLabels,
     onDay,
@@ -41,7 +44,7 @@ export function DueChip({ step }: { step: Step }) {
 
     return (
         <span
-            className={`due-chip${row.days_remaining <= 1 ? 'is-urgent' : ''}`}
+            className={clsx('due-chip', row.days_remaining <= 1 && 'is-urgent')}
         >
             <Icon name="calendar" />
             {anchor?.document === 'visa'
@@ -186,7 +189,7 @@ function ComingUp() {
                     <button
                         type="button"
                         key={row.id}
-                        className={`coming-row${urgent ? 'is-urgent' : ''}`}
+                        className={clsx('coming-row', urgent && 'is-urgent')}
                         onClick={() =>
                             key
                                 ? go({ view: 'detail', process: key })
@@ -218,8 +221,46 @@ function ComingUp() {
 }
 
 /** plan.timeline, soonest first; dates still unknown stay listed with what they need. */
+/** "Which task is the appointment for?": only tasks you are tracking can hold one. */
+function ChooseAppointmentTask() {
+    const { plan, openEditor } = usePaperwork();
+    const tracked = plan.processes.filter((p) => p.id !== null && !p.is_closed);
+
+    if (!tracked.length) {
+        return (
+            <p>Start tracking a task first, then keep its appointment there.</p>
+        );
+    }
+
+    return (
+        <>
+            {tracked.map((p) => (
+                <button
+                    type="button"
+                    key={p.occurrence_key}
+                    className="person-option"
+                    onClick={() =>
+                        openEditor({
+                            title: 'Record an appointment',
+                            body: (
+                                <AppointmentEditor
+                                    processKey={p.occurrence_key}
+                                />
+                            ),
+                        })
+                    }
+                >
+                    <TopicIcon topic={p.topic} />
+                    <strong>{p.title}</strong>
+                    <Icon name="arrow" />
+                </button>
+            ))}
+        </>
+    );
+}
+
 function Dates() {
-    const { plan, go, processByKey } = usePaperwork();
+    const { plan, go, processByKey, openEditor, canEdit } = usePaperwork();
     const rows = folded(plan.timeline).sort((a, b) =>
         (rowDate(a) ?? '9999').localeCompare(rowDate(b) ?? '9999'),
     );
@@ -228,6 +269,21 @@ function Dates() {
         <section className="overview-dates" aria-labelledby="dates-heading">
             <div className="case-section-head">
                 <h2 id="dates-heading">Dates &amp; appointments</h2>
+                {canEdit ? (
+                    <button
+                        type="button"
+                        className="icon-button"
+                        aria-label="Record an appointment"
+                        onClick={() =>
+                            openEditor({
+                                title: 'Which task is the appointment for?',
+                                body: <ChooseAppointmentTask />,
+                            })
+                        }
+                    >
+                        <Icon name="plus" />
+                    </button>
+                ) : null}
             </div>
             <div className="date-grid">
                 {rows.length ? (
@@ -235,17 +291,40 @@ function Dates() {
                         const key = anchoredTo(plan, row);
                         const date = rowDate(row);
                         const r = soon(date);
+                        // Your own records are edited in place; a step's date leads to its task.
+                        const editable =
+                            canEdit &&
+                            key !== null &&
+                            (row.kind === 'appointment' ||
+                                row.kind === 'submission_recorded');
+                        const open = () => {
+                            if (!key) {
+                                return;
+                            }
+
+                            if (row.kind === 'appointment') {
+                                openEditor({
+                                    title: 'Record an appointment',
+                                    body: (
+                                        <AppointmentEditor processKey={key} />
+                                    ),
+                                });
+                            } else if (row.kind === 'submission_recorded') {
+                                openEditor({
+                                    title: 'Record a submission',
+                                    body: <SubmissionEditor processKey={key} />,
+                                });
+                            } else {
+                                go({ view: 'detail', process: key });
+                            }
+                        };
 
                         return (
                             <button
                                 type="button"
                                 key={row.id}
                                 className="timeline-row"
-                                onClick={() =>
-                                    key
-                                        ? go({ view: 'detail', process: key })
-                                        : undefined
-                                }
+                                onClick={open}
                                 disabled={!key}
                             >
                                 <span className="timeline-icon">
@@ -266,7 +345,13 @@ function Dates() {
                                     </small>
                                 </span>
                                 <span
-                                    className={`timeline-date${row.kind === 'document_expiry' && r && r.days <= 1 ? 'is-urgent' : ''}`}
+                                    className={clsx(
+                                        'timeline-date',
+                                        row.kind === 'document_expiry' &&
+                                            r &&
+                                            r.days <= 1 &&
+                                            'is-urgent',
+                                    )}
                                 >
                                     {r?.label ? <em>{r.label}</em> : null}
                                     {row.state === 'date_unknown'
@@ -276,7 +361,7 @@ function Dates() {
                                         <small>{clock(row)}</small>
                                     ) : null}
                                 </span>
-                                <Icon name="arrow" />
+                                <Icon name={editable ? 'pencil' : 'arrow'} />
                             </button>
                         );
                     })
@@ -404,7 +489,7 @@ export function Overview({ onCoverage }: { onCoverage: () => void }) {
             <div className="coverage-strip">
                 <span>
                     <Icon name="info" />
-                    Guidance is checked against official sources daily
+                    {coverageNote(plan.coverage.units)}
                 </span>
                 <button type="button" onClick={onCoverage}>
                     View coverage

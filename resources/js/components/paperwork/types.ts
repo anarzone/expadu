@@ -153,6 +153,8 @@ export interface Process {
     version: number;
     occurrence_key: string;
     review_token: string | null;
+    guidance_state: 'current' | 'review_required' | 'history_only';
+    bind_occurrence: string | null;
     state: {
         workflow: Workflow;
         steps: Record<string, string>;

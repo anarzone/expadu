@@ -238,13 +238,16 @@
         letter-spacing: -2.3px;
         line-height: 1.1;
     }
+    /* The prototype relies on the browser's bold headings; the app's base styles reset them. */
     h2 {
         font-size: var(--text-title-lg);
+        font-weight: var(--weight-bold);
         line-height: 1.2;
         letter-spacing: -0.7px;
     }
     h3 {
         font-size: var(--text-title);
+        font-weight: var(--weight-bold);
         line-height: 1.25;
         letter-spacing: -0.4px;
     }
@@ -323,6 +326,7 @@
         color: #fff;
     }
     .detail-dialog {
+        margin: auto;
         width: min(680px, calc(100vw - 32px));
         max-height: calc(100dvh - 40px);
         border: 1px solid var(--line);
@@ -390,8 +394,9 @@
         left: 50%;
         transform: translate(-50%, 16px);
         padding: 13px 20px;
-        background: var(--ink);
-        color: #fff;
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: var(--shadow-raised);
         border-radius: var(--radius-xl);
         max-width: calc(100vw - 32px);
         width: max-content;
@@ -2994,11 +2999,6 @@
     .case-tabs [aria-pressed='true'] {
         background-color: var(--surface);
     }
-    .toast {
-        background: var(--surface);
-        color: var(--ink);
-        box-shadow: var(--shadow-raised);
-    }
     .process-resource-static {
         display: flex;
         align-items: center;
@@ -3007,6 +3007,13 @@
     }
     .process-resource-static small {
         display: block;
+    }
+    .source-links a {
+        white-space: nowrap;
+    }
+    .sources-also {
+        margin-top: 8px;
+        font-size: var(--text-section);
     }
 }
 

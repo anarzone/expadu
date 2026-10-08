@@ -124,6 +124,8 @@ function StepContent({ process, step }: { process: Process; step: Step }) {
                                 go({
                                     view: 'paperwork',
                                     paperFilter: process.occurrence_key,
+                                    // Open the first document still to check, as the prototype does.
+                                    focus: open?.id ?? null,
                                 })
                             }
                         >
@@ -298,6 +300,17 @@ export function TaskDetail() {
                 ),
             'Tracking started. Nothing has been submitted.',
         ).then((refused) => refused && toast(refused));
+    const review = () =>
+        run(
+            () =>
+                commands.reviewProcess(
+                    process.id!,
+                    process.version,
+                    process.review_token!,
+                    process.bind_occurrence,
+                ),
+            'Updated steps confirmed. Your progress is kept.',
+        ).then((refused) => refused && toast(refused));
     const untrack = () =>
         run(
             () =>
@@ -369,6 +382,26 @@ export function TaskDetail() {
                         Undo
                     </button>
                 </p>
+            ) : null}
+            {tracked &&
+            process.guidance_state === 'review_required' &&
+            canEdit ? (
+                <section className="proposal-banner">
+                    <div>
+                        <strong>The guidance for this task changed.</strong>
+                        <p>
+                            Read the updated steps below. Your recorded progress
+                            stays; confirm to keep going with the new steps.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        className="button primary"
+                        onClick={review}
+                    >
+                        Use the updated steps
+                    </button>
+                </section>
             ) : null}
             {process.state.report?.note ? (
                 <p className="process-note">
@@ -457,7 +490,11 @@ export function TaskDetail() {
                         <Icon name="info" />
                         <span>
                             Official information
-                            <small>Checked against the official pages</small>
+                            <small>
+                                {steps[0]?.verified_at
+                                    ? `Checked against the official pages on ${formatDate(steps[0].verified_at)}`
+                                    : 'Current guidance needs checking'}
+                            </small>
                         </span>
                         <Icon name="arrow" />
                     </button>

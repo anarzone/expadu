@@ -26,6 +26,14 @@ async function openBlueCard(page: Page): Promise<void> {
 }
 
 async function ensureTracked(page: Page): Promise<void> {
+    // A catalogue update to this task's own steps asks for a review first.
+    const review = page.getByRole('button', { name: 'Use the updated steps' });
+
+    if (await review.isVisible()) {
+        await review.click();
+        await expect(review).toHaveCount(0);
+    }
+
     const start = page.getByRole('button', { name: 'Start tracking' });
 
     if (await start.isVisible()) {

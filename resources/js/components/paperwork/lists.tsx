@@ -215,16 +215,26 @@ function SourceRecord({ unit }: { unit: CoverageUnit }) {
 /** What each reviewed unit covers. None of these states means you are eligible or every case is covered. */
 export function SourcesBody({ process }: { process?: Process }) {
     const { plan } = usePaperwork();
-    const ids = process ? process.steps.map((s) => s.guidance_id) : null;
-    const units = plan.coverage.units.filter(
-        (u) =>
-            !ids ||
-            ids.includes(u.unit_id) ||
-            (process &&
-                u.definition_id === process.definition_id &&
-                u.state !== 'partial' &&
-                u.state !== 'complete'),
+    // A task's own units (and any of its process withdrawn or unconfirmed); otherwise the plan's
+    // processes first, with the rest of the catalogue tucked away below.
+    const yours = new Set(
+        process
+            ? [process.definition_id]
+            : [...plan.processes, ...plan.history].map((p) => p.definition_id),
     );
+    const ids = process ? process.steps.map((s) => s.guidance_id) : null;
+    const relevant = plan.coverage.units.filter((u) =>
+        ids
+            ? ids.includes(u.unit_id) ||
+              (u.definition_id !== null &&
+                  yours.has(u.definition_id) &&
+                  u.state !== 'partial' &&
+                  u.state !== 'complete')
+            : u.definition_id !== null && yours.has(u.definition_id),
+    );
+    const others = process
+        ? []
+        : plan.coverage.units.filter((u) => !relevant.includes(u));
 
     return (
         <>
@@ -233,13 +243,24 @@ export function SourcesBody({ process }: { process?: Process }) {
                 Whether a rule applies to you, and any legal date, comes from
                 the authority.
             </p>
-            {units.length ? (
-                units.map((unit) => (
+            {relevant.length ? (
+                relevant.map((unit) => (
                     <SourceRecord key={unit.unit_id} unit={unit} />
                 ))
             ) : (
                 <p className="muted">No guidance is published for this yet.</p>
             )}
+            {others.length ? (
+                <details className="step-guidance">
+                    <summary className="sources-also">
+                        Also in the catalogue ({others.length}){' '}
+                        <Icon name="down" />
+                    </summary>
+                    {others.map((unit) => (
+                        <SourceRecord key={unit.unit_id} unit={unit} />
+                    ))}
+                </details>
+            ) : null}
             <p className="date-separation">
                 Missing coverage is not a completed plan.
             </p>

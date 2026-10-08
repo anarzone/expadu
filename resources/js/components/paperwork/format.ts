@@ -198,3 +198,10 @@ export const processName = (
 
 export const lower = (text: string): string =>
     text.charAt(0).toLowerCase() + text.slice(1);
+
+/** Coverage is called complete only when every unit says so; partial or unconfirmed stays explicit. */
+export function coverageNote(units: { state: string }[]): string {
+    return units.length > 0 && units.every((u) => u.state === 'complete')
+        ? 'Guidance is checked against official sources daily'
+        : 'Some guidance still needs checking';
+}

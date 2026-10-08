@@ -149,6 +149,19 @@ export const commands = {
                 confirmed: true,
             },
         ),
+    reviewProcess: (
+        processId: number,
+        version: number,
+        reviewToken: string,
+        bindOccurrence: string | null,
+    ) =>
+        send('POST', `${base}/processes/${processId}/review`, {
+            request_id: requestId(),
+            expected_version: version,
+            review_token: reviewToken,
+            bind_occurrence: bindOccurrence,
+            confirmed: true,
+        }),
     withdrawRequirement: (
         processId: number,
         requirementId: string,

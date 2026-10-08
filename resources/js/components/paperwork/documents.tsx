@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { commands } from './api';
 import { readinessLabels } from './format';
 import { Icon, TopicIcon } from './icons';
@@ -60,7 +61,35 @@ function DocumentRow({
     process: Process;
     requirement: Requirement;
 }) {
-    const { plan, run, toast, openSheet, canEdit } = usePaperwork();
+    const { plan, run, toast, openSheet, canEdit, location, jurisdiction } =
+        usePaperwork();
+    const focused = location.focus === requirement.id;
+    const row = useRef<HTMLDetailsElement>(null);
+    useEffect(() => {
+        if (!focused || !row.current) {
+            return;
+        }
+
+        row.current.open = true;
+        row.current.querySelector('summary')?.focus({ preventScroll: true });
+        row.current.scrollIntoView({
+            block: 'center',
+            behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                ? 'instant'
+                : 'smooth',
+        });
+    }, [focused]);
+    const start = () =>
+        run(
+            () =>
+                commands.startProcess(
+                    plan.person_id,
+                    jurisdiction,
+                    process.occurrence_key,
+                    process.review_token!,
+                ),
+            'Tracking started. Check each document when you are ready.',
+        ).then((refused) => refused && toast(refused));
     const evidence: EvidenceItem[] =
         'evidence' in plan.paperwork ? plan.paperwork.evidence : [];
     const conditional = requirement.applicability !== 'required';
@@ -161,7 +190,7 @@ function DocumentRow({
     };
 
     return (
-        <details className="document-row">
+        <details className="document-row" ref={row}>
             <summary>
                 <span
                     className={`document-symbol ${confirmed ? 'confirmed' : ''}`}
@@ -189,10 +218,14 @@ function DocumentRow({
                 <ProducedLine link={requirement.produced_by} />
                 {canEdit ? (
                     !started ? (
-                        <p className="muted">
-                            Start tracking {process.title} to mark documents
-                            ready for it.
-                        </p>
+                        <button
+                            type="button"
+                            className="button secondary"
+                            onClick={start}
+                        >
+                            <Icon name="plus" />
+                            Start tracking this task
+                        </button>
                     ) : (
                         <>
                             {requirement.readiness === 'missing' ? (

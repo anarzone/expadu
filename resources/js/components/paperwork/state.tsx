@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import { clsx } from 'clsx';
 import {
     createContext,
     useCallback,
@@ -21,6 +22,8 @@ export interface Location {
     step: string | null;
     filter: ActionFilter;
     paperFilter: string;
+    /** A requirement row to open and scroll to on the documents view. */
+    focus: string | null;
 }
 
 const views: View[] = ['overview', 'paperwork', 'actions', 'history', 'detail'];
@@ -43,6 +46,7 @@ function fromUrl(): Location {
         step: q.get('step'),
         filter: filter && filters.includes(filter) ? filter : 'all',
         paperFilter: q.get('documents') ?? 'all',
+        focus: q.get('document'),
     };
 }
 
@@ -68,6 +72,10 @@ function toUrl(location: Location): string {
 
     if (location.view === 'paperwork' && location.paperFilter !== 'all') {
         url.searchParams.set('documents', location.paperFilter);
+    }
+
+    if (location.view === 'paperwork' && location.focus) {
+        url.searchParams.set('document', location.focus);
     }
 
     return url.toString();
@@ -156,6 +164,7 @@ export function PaperworkProvider({
                 ...current,
                 process: null,
                 step: null,
+                focus: null,
                 ...next,
             };
             window.history.pushState({}, '', toUrl(location));
@@ -288,7 +297,7 @@ export function PaperworkProvider({
         <PaperworkContext.Provider value={value}>
             {children}
             <div
-                className={`toast${message ? 'show' : ''}`}
+                className={clsx('toast', message && 'show')}
                 role="status"
                 aria-live="polite"
             >

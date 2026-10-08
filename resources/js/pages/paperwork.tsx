@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { TaskDetail } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
 import { InlineEditor, SheetDialog } from '@/components/paperwork/editors';
+import { coverageNote } from '@/components/paperwork/format';
 import { Icon } from '@/components/paperwork/icons';
 import { AllActions, History, SourcesBody } from '@/components/paperwork/lists';
 import { Overview } from '@/components/paperwork/overview';
@@ -16,7 +17,7 @@ interface Props {
 }
 
 function Workspace() {
-    const { location, go, processByKey, openSheet } = usePaperwork();
+    const { plan, location, go, processByKey, openSheet } = usePaperwork();
     const process =
         location.view === 'detail' ? processByKey(location.process) : undefined;
     const heading = process?.title ?? 'Paperwork';
@@ -67,8 +68,8 @@ function Workspace() {
             <div className="case-footnote">
                 <Icon name="info" />
                 <span>
-                    Guidance checked against official sources · your progress is
-                    your own record
+                    {coverageNote(plan.coverage.units)} · your progress is your
+                    own record
                 </span>
                 <button type="button" onClick={coverage}>
                     Sources &amp; coverage
