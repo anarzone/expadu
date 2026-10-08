@@ -76,16 +76,17 @@ answer appearing under a resting pointer doesn't open one. Tests:
 
 ### One compact heading — owner request, 8 October
 
-The sticky "✦ Composer · Minimize" bar under the app header is gone (with the
-app header it took about 177px on a phone before any content). Its job is one
-compact row at the top of the conversation that scrolls with it: "✦ Composer"
-with "Wed 30 Sept · Sample day" under it, and "← Back to Paperwork" (or
-whichever page Composer was opened from; Today otherwise) on the right. The
-back button keeps the conversation, as Minimize did, and says so to screen
-readers. The separate centred date line is folded in. Content starts about 40px
-higher on phones; the app header is the only sticky header.
+The bulky "✦ Composer · Minimize" bar under the app header is replaced by one
+compact row: "✦ Composer" with "Wed 30 Sept · Sample day" under it, and
+"← Back to Paperwork" (or whichever page Composer was opened from; Today
+otherwise) on the right. The back button minimizes: it keeps the
+conversation, as Minimize did, and says so to screen readers. The separate
+centred date line is folded in. The row stays under the app header, so
+leaving is always one tap away, and a swipe down on it minimizes on touch
+screens. (A first version let it scroll away, which hid the exit
+mid-conversation; the owner caught it the same day.)
 `ExpaduStore.composerOrigin()` names the page. `tests/connected-browser.cjs`
-checks the heading and its "Back to Today".
+checks the heading, its "Back to Today" and that it stays in view.
 
 ### Follow-ups — 8 October
 

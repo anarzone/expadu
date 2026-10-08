@@ -348,21 +348,29 @@
     if (!document.querySelector('#shell [data-static-header]'))
         document.querySelector('#shell').innerHTML =
             `<header class="app-header"><a href="../today-c/" class="brand" aria-label="Expadu home">${logo}Expadu</a><div class="header-context"><button class="city">${I('pin')}Cologne${I('down')}</button><span class="header-weather" role="img" aria-label="Sample weather, 21 degrees">${I('sun')}<strong>21°</strong></span></div><a class="my-day" href="#saved" data-nav="saved" aria-label="Open saved ideas">${I('bookmark')}<span>Saved</span><b class="header-saved-count" hidden></b></a></header><nav class="service-nav" aria-label="Main navigation">${nav.map(([path, icon, label]) => `<a data-page="${path.replace(/-(next|c)$/, '')}" href="../${path}/">${I(icon)}<span>${label}</span></a>`).join('')}</nav>`;
-    // One compact row that scrolls with the conversation: what this is and
-    // which day, and the way back to the page Composer was opened from (your
-    // conversation stays here). No second sticky bar under the app header.
-    function heading() {
+    // One compact row under the app header: what this is and which day, and
+    // the way back to the page Composer was opened from (minimizing: your
+    // conversation stays here). It stays in view, so leaving is one tap.
+    // The approved design (8 October) names Composer in a small cyan mark:
+    // above the conversation on phones, above Your day on desktop.
+    function backButton() {
         const back = ExpaduStore.composerOrigin?.() || { name: 'Today' };
-        return `<div class="composer-heading"><p class="composer-heading-title"><span class="workspace-name">${I('spark')}Composer</span><span class="composer-heading-date">${E(shortDate(M.today()))} · Sample day</span></p><button type="button" class="composer-minimize" data-minimize-composer aria-label="Back to ${E(back.name)}. Your conversation stays in Composer." title="Back to ${E(back.name)}">${I('back')}<span>Back to ${E(back.name)}</span></button></div>`;
+        return `<button type="button" class="composer-minimize" data-minimize-composer aria-label="Back to ${E(back.name)}. Your conversation stays in Composer." title="Back to ${E(back.name)}">${I('back')}<span>Back to ${E(back.name)}</span></button>`;
     }
-    // The top edge content can scroll to: under the app header while it
-    // shows, otherwise the top of the window.
+    function heading() {
+        return `<div class="composer-heading"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div>`;
+    }
+    // The top edge content can scroll to: under the Composer heading, which
+    // sits under the app header while that shows.
     const contentTop = () =>
+        document.querySelector('.composer-heading')?.getBoundingClientRect()
+            .bottom ||
         parseFloat(
             getComputedStyle(document.documentElement).getPropertyValue(
                 '--composer-header-top',
             ),
-        ) || 0;
+        ) ||
+        0;
     let minimizing = false;
     function minimizeComposer() {
         if (minimizing) return;
@@ -605,7 +613,7 @@
                     `${state.handoffs.length} selections waiting. ${state.handoffs[0].handoffError}`;
             return;
         }
-        area.innerHTML = `<div class="studio-input-wrap"><form id="studio-form">${state.handoffs?.length ? `<div class="handoff-note" role="status"><span>${state.handoffs.length} selection${state.handoffs.length === 1 ? '' : 's'} waiting. ${E(state.handoffs[0].handoffError)}</span><button type="button" data-retry-handoff>Try adding again</button></div>` : ''}<div data-planning-context>${planningContext()}</div><div class="studio-field"><label class="sr-only" for="studio-request">${state.response ? 'Continue with Composer' : 'What can I help you with?'}</label><textarea id="studio-request" rows="1" maxlength="700" placeholder="${state.response ? 'Ask or add a detail…' : 'Ask, discover, or plan…'}">${E(state.prompt)}</textarea></div><div class="composer-tools"><details class="composer-actions"><summary aria-label="Composer actions" title="Composer actions">${I('plus')}</summary><div class="composer-actions-menu" aria-label="Composer actions"><button type="button" data-nav="plans">${I('calendar')}My Plans</button><button type="button" data-nav="saved">${I('bookmark')}Saved</button><button type="button" data-nav="history">${I('clock')}History</button><button type="button" data-action="appointment">${I('calendar')}Add appointment</button><button type="button" data-action="examples">${I('spark')}Try Composer</button><button type="button" data-action="new">${I('plus')}Start fresh</button></div></details><div class="approval-control"><button type="button" id="approval-mode" aria-label="Plan change approval: ask me first" aria-haspopup="menu" aria-expanded="false" aria-controls="approval-menu"><span>Ask first</span>${I('down')}</button><div id="approval-menu" class="approval-menu" role="menu" aria-label="Plan change approval" hidden><p class="approval-heading">Plan changes</p><button type="button" role="menuitemradio" aria-checked="true" tabindex="-1" data-approval="ask"><span><strong>Ask me first</strong><small>I’ll show each change for you to apply.</small></span>${I('check')}</button><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-approval="routine"><span><strong>Make small edits for me</strong><small>Time and place edits apply straight away. You can undo them.</small></span>${I('check')}</button><p class="approval-footnote">Bookings and payments always need your OK.</p></div></div><button class="send" type="submit" aria-label="Send request" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button></div></form></div>`;
+        area.innerHTML = `<div class="studio-input-wrap"><form id="studio-form">${state.handoffs?.length ? `<div class="handoff-note" role="status"><span>${state.handoffs.length} selection${state.handoffs.length === 1 ? '' : 's'} waiting. ${E(state.handoffs[0].handoffError)}</span><button type="button" data-retry-handoff>Try adding again</button></div>` : ''}<div data-planning-context>${planningContext()}</div><div class="studio-field"><label class="sr-only" for="studio-request">${state.response ? 'Continue with Composer' : 'What can I help you with?'}</label><textarea id="studio-request" rows="1" maxlength="700" placeholder="Ask, discover, or plan…">${E(state.prompt)}</textarea></div><div class="composer-tools"><details class="composer-actions"><summary aria-label="Composer actions" title="Composer actions">${I('plus')}</summary><div class="composer-actions-menu" aria-label="Composer actions"><button type="button" data-nav="plans">${I('calendar')}My Plans</button><button type="button" data-nav="saved">${I('bookmark')}Saved</button><button type="button" data-nav="history">${I('clock')}History</button><button type="button" data-action="appointment">${I('calendar')}Add appointment</button><button type="button" data-action="examples">${I('spark')}Try Composer</button><button type="button" data-action="new">${I('plus')}Start fresh</button></div></details><div class="approval-control"><button type="button" id="approval-mode" aria-label="Plan change approval: ask me first" aria-haspopup="menu" aria-expanded="false" aria-controls="approval-menu"><span>Ask first</span>${I('down')}</button><div id="approval-menu" class="approval-menu" role="menu" aria-label="Plan change approval" hidden><p class="approval-heading">Plan changes</p><button type="button" role="menuitemradio" aria-checked="true" tabindex="-1" data-approval="ask"><span><strong>Ask me first</strong><small>I’ll show each change for you to apply.</small></span>${I('check')}</button><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-approval="routine"><span><strong>Make small edits for me</strong><small>Time and place edits apply straight away. You can undo them.</small></span>${I('check')}</button><p class="approval-footnote">Bookings and payments always need your OK.</p></div></div><button class="send" type="submit" aria-label="Send request" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button></div></form></div>`;
     }
     function syncSend() {
         const field = document.querySelector('#studio-request');
@@ -698,7 +706,7 @@
                 tag: 'Paperwork',
                 icon: 'document',
                 label: `What do I need to bring at ${a.start}?`,
-                detail: `${x.record.prepared} of ${x.record.total} documents marked ready`,
+                detail: `Your ${x.record.title} checklist`,
             },
             x.tonight.length && {
                 kind: 'events',
@@ -736,60 +744,89 @@
                   .join('')}</div>`
             : '';
         return `<section class="studio-welcome${cards.length ? ' has-starter-cards' : ''}">${cards.length ? '' : `<div class="welcome-symbol" aria-hidden="true">${I('spark')}</div>`}${dayRow(x)}<h1>What’s on your mind?</h1><p>Ask in your own words. Composer knows your plan, uses the city’s listings and says “Not listed” instead of guessing.</p>${starterCards}<div class="starter-chips" role="group" aria-label="More to ask">${chips
-            .map(([icon, label, prompt]) => `<button class="starter-chip" data-prompt="${E(prompt)}">${I(icon)}<span>${E(label)}</span></button>`)
+            .map(([, label, prompt]) => `<button class="starter-chip" data-prompt="${E(prompt)}"><span>${E(label)}</span></button>`)
             .join('')}</div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}</section>`;
+    }
+    // The day's facts, in the approved design's order: the trip to take now,
+    // the appointment, your record's deadline, the area after it, tonight.
+    // Each asks about itself (a deadline opens your record).
+    const dateShort = (date) =>
+        new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    function dayFacts(x) {
+        const a = x.appointment;
+        const facts = [];
+        if (a && x.trip)
+            facts.push({
+                prompt: `When should I leave for my ${a.start}?`,
+                tile: 'is-travel',
+                icon: I('train'),
+                small: `${x.trip.leaveNow ? 'Now' : `By ${clockText(x.trip.best.leave)}`} · leave for ${a.start}`,
+                strong: `Line ${x.trip.journey.line} at ${x.trip.best.depart} from ${x.trip.journey.from}`,
+            });
+        if (a)
+            facts.push({
+                prompt: x.record?.total ? `What do I need to bring at ${a.start}?` : `When should I leave for my ${a.start}?`,
+                tile: 'is-paper',
+                icon: I('document'),
+                small: `${a.start} · in your plan`,
+                strong: `${a.title}, ${a.location}`,
+            });
+        for (const item of x.planned.filter((p) => p.id !== a?.id))
+            facts.push({
+                openPlan: x.today,
+                tile: '',
+                icon: I('calendar'),
+                small: `${item.start} · ${item.proposed ? 'proposed' : 'in your plan'}`,
+                strong: item.title,
+            });
+        for (const d of x.deadlines)
+            facts.push({
+                href: paperworkHref(d.id),
+                tile: 'is-attention',
+                icon: I('clock'),
+                small: `${relativeDay(d.deadline, x.today)} · your records`,
+                strong: d.deadlineLabel,
+            });
+        if (a && x.anchor)
+            facts.push({
+                prompt: 'Is there a pharmacy near my appointment?',
+                tile: 'is-map',
+                icon: mapPicture(x.nearby) || I('pin'),
+                small: `After ${a.end || a.start}`,
+                strong: `Near ${x.anchor.name.split(',')[0]}`,
+            });
+        if (x.tonight.length)
+            facts.push({
+                prompt: 'What’s on tonight?',
+                tile: 'is-events',
+                icon: I('calendar'),
+                small: 'Tonight · sample programme',
+                strong: `${x.tonight.length === 1 ? 'One event' : `${x.tonight.length} events`} from ${x.tonight[0].start}`,
+            });
+        return facts;
+    }
+    function fact(f, kind) {
+        const inner = `<span class="${kind}-tile ${f.tile}">${f.icon}</span><span><small>${E(f.small)}</small><strong>${E(f.strong)}</strong></span>`;
+        return f.href
+            ? `<a class="${kind}" href="${E(f.href)}">${inner}</a>`
+            : f.openPlan
+              ? `<button class="${kind}" data-open-plan="${E(f.openPlan)}">${inner}</button>`
+              : `<button class="${kind}" data-prompt="${E(f.prompt)}">${inner}</button>`;
     }
     // Phones: the day's facts in one scrolling row above the starters.
     function dayRow(x) {
-        const items = [
-            ...(x.appointment
-                ? [`<a class="day-chip" href="${E(ExpaduStore.routes.today)}"><span class="day-chip-tile is-paper">${I('document')}</span><span><small>${E(x.appointment.start)} · in your plan</small><strong>${E(x.appointment.title)}</strong></span></a>`]
-                : []),
-            ...x.deadlines.map(
-                (d) =>
-                    `<a class="day-chip" href="${E(paperworkHref(d.id))}"><span class="day-chip-tile is-attention">${I('clock')}</span><span><small>${E(relativeDay(d.deadline, x.today))} · your records</small><strong>${E(d.deadlineLabel)}</strong></span></a>`,
-            ),
-            ...x.upcoming.map(
-                (u) =>
-                    `<button class="day-chip" data-nav="plans"><span class="day-chip-tile">${I('calendar')}</span><span><small>${E(relativeDay(u.date, x.today))} · ${E(u.start)}</small><strong>${E(u.title)}</strong></span></button>`,
-            ),
-        ];
-        return items.length
-            ? `<div class="day-row" role="group" aria-label="Your day">${items.join('')}</div>`
+        const facts = dayFacts(x);
+        return facts.length
+            ? `<div class="day-row" role="group" aria-label="Your day">${facts.map((f) => fact(f, 'day-chip')).join('')}</div>`
             : '';
     }
-    // Desktop: what Composer plans with, beside the conversation. Each item
-    // asks about itself or opens its record.
+    // Desktop: what Composer plans with, beside the conversation, under
+    // Composer's mark and the way back to the page it was opened from.
     function dayPanel() {
         const x = todayContext();
-        const a = x.appointment;
-        const rows = [];
-        if (a && x.trip)
-            rows.push(
-                `<button class="day-item" data-prompt="When should I leave for my ${E(a.start)}?"><span class="day-item-tile is-travel">${I('train')}</span><span><small>${x.trip.leaveNow ? 'Now' : `By ${clockText(x.trip.best.leave)}`} · leave for ${E(a.start)}</small><strong>Line ${E(x.trip.journey.line)} at ${E(x.trip.best.depart)} from ${E(x.trip.journey.from)}</strong></span></button>`,
-            );
-        if (a)
-            rows.push(
-                `<button class="day-item" data-prompt="${E(x.record?.total ? `What do I need to bring at ${a.start}?` : `When should I leave for my ${a.start}?`)}"><span class="day-item-tile is-paper">${I('document')}</span><span><small>${E(a.start)} · in your plan</small><strong>${E(a.title)}, ${E(a.location)}</strong></span></button>`,
-            );
-        for (const item of x.planned.filter((p) => p.id !== a?.id))
-            rows.push(
-                `<button class="day-item" data-open-plan="${E(x.today)}"><span class="day-item-tile">${I('calendar')}</span><span><small>${E(item.start)} · ${item.proposed ? 'proposed' : 'in your plan'}</small><strong>${E(item.title)}</strong></span></button>`,
-            );
-        for (const d of x.deadlines)
-            rows.push(
-                `<a class="day-item" href="${E(paperworkHref(d.id))}"><span class="day-item-tile is-attention">${I('clock')}</span><span><small>${E(relativeDay(d.deadline, x.today))} · your records</small><strong>${E(d.deadlineLabel)}</strong></span></a>`,
-            );
-        if (a && x.anchor)
-            rows.push(
-                `<button class="day-item" data-prompt="Is there a pharmacy near my appointment?"><span class="day-item-tile is-map">${mapPicture(x.nearby) || I('pin')}</span><span><small>After ${E(a.end || a.start)}</small><strong>Near ${E(x.anchor.name)}</strong></span></button>`,
-            );
-        if (x.tonight.length)
-            rows.push(
-                `<button class="day-item" data-prompt="What’s on tonight?"><span class="day-item-tile is-events">${I('calendar')}</span><span><small>Tonight · sample programme</small><strong>${x.tonight.length === 1 ? 'One event' : `${x.tonight.length} events`} from ${E(x.tonight[0].start)}</strong></span></button>`,
-            );
+        const rows = dayFacts(x).map((f) => fact(f, 'day-item'));
         if (!rows.length && !x.upcoming.length) return '';
-        return `<h2 id="composer-day-title">Your ${E(weekday(x.today))}</h2><p class="composer-day-note">${E(shortDate(x.today))} · ${E(x.now)} · Sample day. Composer plans around this; tap one to ask.</p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${x.upcoming.length ? `<div class="day-later"><p>Coming up</p>${x.upcoming.map((u) => `<button data-nav="plans"><strong>${E(relativeDay(u.date, x.today))}</strong> · ${E(u.title)}, ${E(u.start)}</button>`).join('')}</div>` : ''}<nav class="day-tools" aria-label="Your Composer"><button data-nav="plans">${I('calendar')}My Plans</button><button data-nav="saved">${I('bookmark')}Saved${state.saved.length ? ` · ${state.saved.length}` : ''}</button><button data-nav="history">${I('clock')}History</button></nav>`;
+        return `<div class="composer-day-head"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div><h2 id="composer-day-title">Your ${E(weekday(x.today))}</h2><p class="composer-day-note">${E(shortDate(x.today))} · ${E(x.now)} · Sample day. Composer plans around this. Tap one to ask.</p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${x.upcoming.length ? `<div class="day-later"><p>Coming up</p>${x.upcoming.map((u) => `<button data-nav="plans"><strong>${E(dateShort(u.date))}</strong> · ${E(u.title)}, ${E(u.start)}</button>`).join('')}</div>` : ''}<nav class="day-tools" aria-label="Your Composer"><button data-nav="plans">${I('calendar')}My Plans</button><button data-nav="saved">${I('bookmark')}Saved${state.saved.length ? ` · ${state.saved.length}` : ''}</button><button data-nav="history">${I('clock')}History</button></nav>`;
     }
     // Places near a point (connected/places.js) use the shared photo-free
     // card with Composer's own Quick look, Save and Add handlers.
@@ -1067,7 +1104,7 @@
         if (main.dataset.chapter !== chapter.id) {
             main.innerHTML =
                 heading() +
-                `<div class="chat-feed" aria-label="Conversation"></div>`;
+                `<div class="chat-bar" hidden><p>Sample answers from the sample day · nothing here is live</p><button type="button" data-action="new">Start fresh</button></div><div class="chat-feed" aria-label="Conversation"></div>`;
             main.dataset.chapter = chapter.id;
             entryMarkup.clear();
         }
@@ -1087,6 +1124,7 @@
         day.hidden = !dayHtml;
         document.body.classList.toggle('has-composer-day', !!dayHtml);
         const feed = main.querySelector('.chat-feed');
+        main.querySelector('.chat-bar').hidden = !chapter.entries.length;
         const empty = feed.querySelector('.studio-welcome');
         if (!chapter.entries.length) {
             if (!empty) feed.innerHTML = welcome();
@@ -1144,10 +1182,8 @@
         if (requestField.value && !requestField.style.height)
             requestField.style.height =
                 Math.min(120, requestField.scrollHeight) + 'px';
-        document.querySelector('#studio-request').placeholder = chapter.entries
-            .length
-            ? 'Ask or add a detail…'
-            : 'Ask, discover, or plan…';
+        document.querySelector('#studio-request').placeholder =
+            'Ask, discover, or plan…';
         syncPlanning();
         syncSaved();
         let live = document.querySelector('#chat-announcement');

@@ -411,9 +411,11 @@ in `events-next/README.md`.
 **Composer has one header — owner request, 8 October:** the sticky
 "Composer · Minimize" bar is replaced by one compact row at the top of the
 conversation ("✦ Composer · Wed 30 Sept · Sample day" and "← Back to
-Paperwork", naming the page Composer was opened from). It scrolls with the
-conversation; the app header stays the only sticky header. "Minimize" is no
-longer used as a label. Details are in `composer-studio/README.md`.
+Paperwork", naming the page Composer was opened from). It stays under the
+app header so leaving (minimizing) is always one tap away; a first version
+that scrolled away hid the exit mid-conversation and was corrected the same
+day. "Minimize" is no longer used as a label. Details are in
+`composer-studio/README.md`.
 
 **Paperwork reads the v2 plan contract — follows the owner's go-ahead to map
 it after the design refresh, 8 October (in review):** Paperwork renders the
