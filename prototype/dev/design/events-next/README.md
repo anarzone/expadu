@@ -5,6 +5,19 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The phone Wall, checked — 8 October 2026
+
+- At dusk and night the column's caption and the credit stayed light for
+  the dark wall, which phones don't have; they now stay dark on the cream
+  page (the light text is for the desktop wall only).
+- The line of cobbles lies right under the column, with the caption
+  below it; rain falls more lightly across the poster.
+- Today's flags ("On now", "Over", "Rain likely") sit in the poster's top
+  row beside its category, and a flagged poster sets its title a little
+  smaller, so its own time and place are never cut off. The column's
+  poster on a phone and long titles on the narrowest (272px) posters are
+  a touch smaller too; the browser test checks no poster cuts off its text.
+
 ## "More about it": the poster opened up — 8 October 2026
 
 Owner review of the details sheet; all six suggestions chosen. On the

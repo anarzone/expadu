@@ -1061,8 +1061,10 @@
                     ? `<span class="pp-flag pp-flag--rain">${drop}Rain likely · ${forecast}</span>`
                     : '',
             ].join('');
+            // In the top row beside the category, so the poster's own text
+            // keeps its room.
             card.querySelector('.pp-top')?.insertAdjacentHTML(
-                'afterend',
+                'beforeend',
                 `<span class="pp-flags">${flags}</span>`,
             );
             open.setAttribute(

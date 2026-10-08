@@ -64,6 +64,15 @@ const inside = (box, viewport) =>
                 assert.deepEqual(covered, [], 'a control sits under Composer');
             }
 
+            // No poster's own text is cut off, here or on the past day.
+            const clippedPosters = async () =>
+                page.evaluate(() =>
+                    [...document.querySelectorAll('.pp .pp-front .pp-open')]
+                        .filter((b) => b.offsetParent && b.scrollHeight > b.clientHeight + 1)
+                        .map((b) => b.closest('.pp').dataset.poster),
+                );
+            assert.deepEqual(await clippedPosters(), [], 'a poster cuts off its text');
+
             // Turning a poster over shows its facts and actions, and back.
             const poster = page.locator(
                 '.wall-view--wall [data-poster="today-review-cinema"], #event-featured [data-poster="today-review-culture"]',
@@ -226,6 +235,7 @@ const inside = (box, viewport) =>
             });
             const past = page.locator('.wall-view--wall .pp.is-past');
             assert.equal(await past.count(), 7);
+            assert.deepEqual(await clippedPosters(), [], 'a past poster cuts off its text');
             assert.equal(
                 await page.locator('.wall-view--wall .pp.is-past .pp-plan, .wall-view--wall .pp.is-past .pp-save').count(),
                 0,
@@ -371,6 +381,21 @@ const inside = (box, viewport) =>
         // Today's lights follow the clock (?at= previews another time), and
         // on a touch screen the first tap shows a light's hour, the second
         // opens it.
+        // At dusk on a phone the column's caption stays dark on the cream
+        // page (the dark wall is only on larger screens), and the cobbles
+        // lie right under the column, above the caption.
+        await touch.goto(`${base}?date=2026-09-30&at=19:30`, { waitUntil: 'networkidle' });
+        const caption = await touch.locator('.wall-column-caption').evaluate((el) => {
+            const [r, g, b] = getComputedStyle(el).color.match(/\d+/g).map(Number);
+            return r + g + b;
+        });
+        assert.ok(caption < 450, `the caption is too light on the cream page: ${caption}`);
+        const order = await touch.evaluate(() => {
+            const at = (s) => document.querySelector(s).getBoundingClientRect();
+            return at('.wall-column-body').bottom <= at('.wall-scene-ground').top + 6 &&
+                at('.wall-scene-ground').bottom <= at('.wall-column-caption').top + 2;
+        });
+        assert.equal(order, true, 'the cobbles should sit between the column and its caption');
         await touch.goto(`${base}?date=2026-09-30&view=skyline&at=19:30`, { waitUntil: 'networkidle' });
         const culture = touch.locator('.sky-light[data-detail="today-review-culture"]');
         assert.match(await culture.getAttribute('class'), /is-now/);

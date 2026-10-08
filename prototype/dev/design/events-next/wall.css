@@ -500,12 +500,28 @@ main[data-view='skyline'] .wall-board > .wall-sky {
 }
 
 /* ---------- Today's posters: on now, over, rain likely ---------- */
-.pp-flags {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+.pp-top:has(.pp-flags) {
+    flex-wrap: wrap;
     gap: 6px;
-    margin-top: 8px;
+    padding-right: 46px;
+}
+.pp-flags {
+    display: contents;
+}
+.event-today .pp-flags {
+    display: flex;
+}
+/* The narrowest posters (272px) set long titles a touch smaller, so a
+   four-line title still leaves room for the time and place. */
+@container (max-width: 290px) {
+    .pp .pp-title {
+        font-size: clamp(20px, 12.4cqi, 60px);
+    }
+}
+/* A poster carrying a flag sets its title a little smaller, so its own
+   lines below always fit. */
+.pp:has(.pp-flags) .pp-title {
+    font-size: clamp(20px, 11.5cqi, 48px);
 }
 .pp-flag {
     display: inline-flex;
@@ -804,8 +820,10 @@ main[data-view='skyline'] .wall-board > .wall-sky {
 .wall-board[data-dark] .wall-column-glow {
     opacity: 1;
 }
-.wall-board[data-dark] :is(.festival-credit, .wall-column-caption, .wall-day-note) {
-    color: #e9e1d0;
+@media (min-width: 1000px) {
+    .wall-board[data-dark] :is(.festival-credit, .wall-column-caption, .wall-day-note) {
+        color: #e9e1d0;
+    }
 }
 /* Wet posters shine. */
 .wall-board[data-wet] .pp-front::before {
@@ -2768,11 +2786,23 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         border-width: 2px;
         background: var(--poster-column);
     }
+    /* The cobbles lie right under the column; the caption comes after
+       them. The rain is lighter, falling across the poster. */
     .wall-scene {
-        padding-bottom: 16px;
+        padding-bottom: 0;
+    }
+    .wall-scene .wall-column-caption {
+        min-height: 20px;
+        margin-top: 24px;
+        line-height: 20px;
     }
     .wall-scene-ground {
-        height: 16px;
+        bottom: 20px;
+        height: 18px;
+    }
+    .wall-scene-rain {
+        bottom: 20px;
+        opacity: calc(var(--rain, 0) * 0.4);
     }
     .wall-scene-ground::before {
         top: 0;
@@ -2806,7 +2836,7 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         margin-top: 10px;
     }
     .pp--size-column .pp-title {
-        font-size: clamp(30px, 13cqi, 46px);
+        font-size: clamp(28px, 11.5cqi, 42px);
     }
     .pp--size-wall {
         width: 272px;
