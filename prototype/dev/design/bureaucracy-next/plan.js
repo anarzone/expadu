@@ -689,6 +689,16 @@
     function documentAction(s, id, index, action) {
         const p = process(s, id);
         if (!p?.started || terminal(p)) return false;
+        // Only a required document can be confirmed for use; an optional
+        // ("may be needed") one can't, as the backend refuses it.
+        if (action === 'confirm') {
+            const row = root.BureaucracyContract?.plan(
+                s,
+            ).paperwork.requirements?.find(
+                (r) => r.occurrence_key === id && r.index === index,
+            );
+            if (row && row.applicability !== 'required') return false;
+        }
         const done =
             id === 'blue-card'
                 ? B.documentAction(s, index, action)

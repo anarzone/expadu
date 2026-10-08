@@ -4,6 +4,27 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## Tested against the rules, person by person — 8 October 2026
+
+`tests/use-cases.test.cjs` walks six newcomers through every question they'd
+be asked (a non-EU D-visa employee aiming for the Blue Card, an EU citizen who
+has settled in, a non-EU person still planning the move, a work-permit holder,
+someone who answers "I don't know" to everything and someone who skips
+everything) and checks the backend's rules on each: who is asked what, which
+tasks open, the pause after three, one question at a time, unknown answers
+opening nothing. On the sample person it checks that reading the plan saves
+nothing, documents (having one isn't ready; an optional one can't be marked
+ready), progress (waiting needs a submission, completion every step), dates
+(targets from your own answers, never a legal deadline), gaps (partial
+coverage, an unconfirmed card shows nothing of its own) and read-only people.
+A browser pass at 390 and 1280 checks every view for legal figures outside the
+cards' own text, eligibility or deadline claims, overflow and errors.
+
+Found and fixed by it: a newcomer's visa answer didn't date the Blue Card
+targets (they read the page's own stored date only), and the model would mark
+an optional document ready if asked (the page never offered it; the backend
+refuses it).
+
 ## The backend's questions, Your situation, and tasks that arrive — 8 October 2026 (in review)
 
 From the backend session's review (its points 1, 2, 8 and 9). Questions,

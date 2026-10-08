@@ -169,17 +169,24 @@
             });
         });
     }
+    // Your visa expiry: your answer when you've given one (Your situation,
+    // the question card), otherwise the date Paperwork keeps.
+    function expiryOf(s) {
+        const f = answersOf(s).facts.visa_expires_at;
+        return f?.state === 'value' && B.validDate(f.value) ? f.value : null;
+    }
     function timelineOf(s, ps) {
         const rows = [];
-        if (B.validDate(s.expiry))
+        const expiry = expiryOf(s);
+        if (expiry)
             rows.push({
                 id: 'visa.expiry',
                 kind: 'document_expiry',
-                date: s.expiry,
+                date: expiry,
                 precision: 'calendar_date',
                 timezone: ZONE,
                 state: 'dated',
-                overdue: daysFrom(s.expiry) < 0,
+                overdue: daysFrom(expiry) < 0,
                 provenance: 'confirmed_fact',
                 legal_effect: 'not_assessed',
                 fact_key: 'visa_expires_at',
@@ -200,7 +207,7 @@
             // no legal_due policy any more (process-map.yaml has no
             // temporal_policy since f761736d). Copy reads "Aim to … by".
             if (p.id === 'blue-card') {
-                const known = B.validDate(s.expiry);
+                const known = !!expiry;
                 // Both Blue Card steps take their date from the visa expiry
                 // (deadline_type fact_date on visa_expires_at).
                 [
@@ -212,11 +219,11 @@
                         id: `${p.id}:${unit}.due`,
                         kind: 'preparation_target',
                         source_rule_id: unit,
-                        date: known ? s.expiry : null,
+                        date: known ? expiry : null,
                         precision: 'calendar_date',
                         state: known ? 'dated' : 'date_unknown',
                         needed_fact: known ? null : 'visa_expires_at',
-                        overdue: known && daysFrom(s.expiry) < 0,
+                        overdue: known && daysFrom(expiry) < 0,
                         conditional: true,
                         anchor_fact: 'visa_expires_at',
                         anchor_event_id: known ? 'visa.expiry' : null,
@@ -849,16 +856,10 @@
     }
     // GET /people/{person}/facts, for the one sample fact this page asks.
     function facts(s) {
-        const known = B.validDate(s.expiry);
+        const f = answersOf(s).facts.visa_expires_at;
         return {
-            values: { visa_expires_at: known ? s.expiry : null },
-            states: {
-                visa_expires_at: known
-                    ? 'value'
-                    : s.expiryUnknown
-                      ? 'unknown'
-                      : null,
-            },
+            values: { visa_expires_at: expiryOf(s) },
+            states: { visa_expires_at: f?.state || null },
         };
     }
     // The account holder's own records as Today and Composer show them: the
