@@ -5,6 +5,20 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The skyline answers the column — 8 October 2026
+
+Owner request. In the Skyline view the column now stands beside the city, as
+on the wall. Every poster on the column has a light on the skyline (the
+day's events, and the later listings as rings until they face you); a
+listing outside the drawing is named at the edge ("Further north: …").
+Turning the column brightens the light of the poster facing you, smoothly as
+it turns, and dims the others; tapping one of those lights turns the column
+to its poster the short way round (bringing the column into view first on a
+phone). Lights for the day's other events still open their details. The
+featured pick isn't repeated as a card below the sky, and the count line
+says "on the poster column" in both views. Beside the column the sky's title
+sits above the drawing.
+
 ## The column turns, and the wall comes alive — 8 October 2026
 
 The owner liked the poster wall and asked for it to be more interactive and

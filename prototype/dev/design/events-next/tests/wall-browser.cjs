@@ -104,22 +104,39 @@ const inside = (box, viewport) =>
             await column.locator('[data-column-step="-1"]').click();
             await page.waitForTimeout(450);
 
-            // Skyline: the day's lights, and a poster where there's no
-            // usable picture (the film night).
+            // Skyline: the column stands beside the city. Its posters' lights
+            // glow as they face you, and tapping one turns the column; the
+            // film night has a poster where there's no usable picture.
             await page.click('[data-wall-view="skyline"]');
             assert.match(page.url(), /view=skyline/);
             const sky = page.locator('.wall-view--skyline');
-            assert.equal(await sky.locator('.sky-light').count(), 2);
-            assert.equal(await sky.locator('.festival-card').count(), 2);
+            assert.equal(await page.locator('#event-featured').isVisible(), true);
+            assert.equal(await sky.locator('.sky-light').count(), 4);
+            assert.equal(await sky.locator('.sky-light[data-poster-id]').count(), 3);
+            assert.equal(
+                await sky.locator('.sky-light.is-facing').getAttribute('data-poster-id'),
+                'today-review-culture',
+            );
+            assert.equal(await sky.locator('.festival-card').count(), 1);
             assert.equal(
                 await sky.locator('.festival-card.is-poster [data-detail="today-review-cinema"]').count(),
                 1,
             );
-            assert.equal(await page.locator('#event-featured').isVisible(), false);
+            const flora = sky.locator('.sky-light[data-poster-id^="garden-listing"]');
+            await flora.evaluate((el) => el.click());
+            await page.waitForTimeout(700);
+            assert.equal(
+                await sky.locator('.sky-light.is-facing').getAttribute('data-poster-id'),
+                await flora.getAttribute('data-poster-id'),
+            );
+            assert.match(
+                await page.locator('.wall-column-count').innerText(),
+                new RegExp(`^${Number(await flora.getAttribute('data-column-to')) + 1} / 4$`),
+            );
             await sky.locator('.sky').evaluate((el) =>
                 el.scrollIntoView({ block: 'center' }),
             );
-            await sky.locator('.sky-light').first().click();
+            await sky.locator('.sky-light[data-detail="today-review-cinema"]').evaluate((el) => el.click());
             await page.waitForSelector('.event-sheet');
             await page.keyboard.press('Escape');
             await page.click('[data-wall-view="wall"]');
