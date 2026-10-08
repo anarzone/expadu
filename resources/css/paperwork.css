@@ -1560,7 +1560,8 @@
     }
     .source-links {
         display: flex;
-        gap: 18px;
+        flex-wrap: wrap;
+        gap: 6px 14px;
         font-size: var(--text-body);
         margin-top: 10px;
     }

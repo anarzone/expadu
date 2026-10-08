@@ -215,22 +215,23 @@ function SourceRecord({ unit }: { unit: CoverageUnit }) {
 /** What each reviewed unit covers. None of these states means you are eligible or every case is covered. */
 export function SourcesBody({ process }: { process?: Process }) {
     const { plan } = usePaperwork();
-    // A task's own units (and any of its process withdrawn or unconfirmed); otherwise the plan's
-    // processes first, with the rest of the catalogue tucked away below.
-    const yours = new Set(
-        process
-            ? [process.definition_id]
-            : [...plan.processes, ...plan.history].map((p) => p.definition_id),
+    // The units this person's steps come from, plus any withdrawn or unconfirmed unit of their
+    // processes (it explains a missing step). Other variants of the same tasks, and the rest of
+    // the catalogue, are tucked away below.
+    const processes = process
+        ? [process]
+        : [...plan.processes, ...plan.history];
+    const yours = new Set(processes.map((p) => p.definition_id));
+    const ids = new Set(
+        processes.flatMap((p) => p.steps.map((s) => s.guidance_id)),
     );
-    const ids = process ? process.steps.map((s) => s.guidance_id) : null;
-    const relevant = plan.coverage.units.filter((u) =>
-        ids
-            ? ids.includes(u.unit_id) ||
-              (u.definition_id !== null &&
-                  yours.has(u.definition_id) &&
-                  u.state !== 'partial' &&
-                  u.state !== 'complete')
-            : u.definition_id !== null && yours.has(u.definition_id),
+    const relevant = plan.coverage.units.filter(
+        (u) =>
+            ids.has(u.unit_id) ||
+            (u.definition_id !== null &&
+                yours.has(u.definition_id) &&
+                u.state !== 'partial' &&
+                u.state !== 'complete'),
     );
     const others = process
         ? []
