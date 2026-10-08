@@ -19,8 +19,8 @@ test('overview shows up to three actionable steps and retains blocked and waitin
     assert.equal(p.next.length, 3);
     assert.ok(p.next.every((a) => a.status === 'todo'));
     assert.equal(new Set(p.next.map((a) => a.process)).size, 2);
-    assert.equal(p.actions.length, 5);
-    assert.equal(p.remaining, 2);
+    assert.equal(p.actions.length, 6);
+    assert.equal(p.remaining, 3);
     assert.equal(
         Object.values(p.counts).reduce((a, b) => a + b, 0),
         p.total,
@@ -46,9 +46,11 @@ test('same-kind documents stay independently confirmed per application', () => {
     const s = fresh();
     assert.equal(s.docs[0], 'confirmed_for_use');
     assert.equal(s.records.address.docs[0], 'reported_available');
+    const blueCard = JSON.stringify(s.docs);
     P.documentAction(s, 'address', 0, 'confirm');
     assert.equal(s.records.address.docs[0], 'confirmed_for_use');
-    assert.equal(s.records.health.docs[0], 'reported_available');
+    // The Blue Card's own passport row is unchanged.
+    assert.equal(JSON.stringify(s.docs), blueCard);
     assert.equal(s.prepared, false);
     assert.equal(s.records.address.workflow, 'blocked');
 });
@@ -152,7 +154,7 @@ test('unknown facts leave other processes, historical records and actions reacha
     const s = fresh();
     B.confirmExpiry(s, null);
     const p = P.projection(s);
-    assert.equal(p.actions.length, 5);
+    assert.equal(p.actions.length, 6);
     assert.equal(p.history.length, 1);
     assert.equal(P.timeline(s).find((t) => t.id === 'expiry').date, null);
 });
@@ -208,7 +210,7 @@ test('cancelled processes move to retained history and leave current action coun
         p.actions.some((a) => a.process === 'address'),
         false,
     );
-    assert.equal(p.total, 4);
+    assert.equal(p.total, 5);
     assert.equal(
         p.history.find((h) => h.id === 'address').workflow,
         'cancelled',

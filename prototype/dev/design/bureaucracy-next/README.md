@@ -4,6 +4,40 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## The current catalogue, and when it was checked — 8 October 2026 (in review)
+
+From the backend session's review of the mock against the backend (its
+points 3–7). The sample's guidance now comes from the current reviewed
+catalogue (`codex/bureaucracy-backend-v2`, `database/seeders/data/bureaucracy`,
+8 Oct), copied exactly in `source-data.js`:
+
+- **The EU Blue Card has three steps**: prepare the evidence, submit before
+  the D visa expires (both still aim for the visa expiry), and "Attend your
+  Blue Card appointment with the originals". The documents are listed once,
+  on the appointment step: nine of them, four optional ("May be needed": the
+  entry visa, BA approval, private health insurance proof and a professional
+  licence). The sample's 14:00 appointment is that step.
+- **Only required documents count**: only a required document can be marked
+  ready, so a step's count is "ready of required" (1 of 5 for the Blue Card,
+  as Today and Composer show) and its first document to check is a required
+  one while any is open. The backend still counts every listed row and takes
+  the first open one; this is raised with it.
+- **The other tasks as the catalogue words them now**: "Check and prepare your
+  address registration (Anmeldung)" with its two documents, "Confirm health
+  insurance cover for your stay" and "Review an account for your everyday
+  payments" with none ("This task lists no documents."), and the Steuer-ID
+  card.
+- **Checked, with a date**: "About this step", Official information, the
+  Sources sheet and Composer's guidance card say "Checked against the official
+  pages on 30 Sept 2026" (the daily automated check, as of the sample day; the
+  card's content version stays its own). The overview strip still says "Some
+  guidance still needs checking": the units are preparation guidance only,
+  and every unit would have to be complete to say otherwise. The footnote is
+  "Sample progress and guidance".
+- **What a newcomer tripped over**, fixed as the app fixed them: a task you
+  start tracking reads "Tracking"; step text flows as paragraphs; a date a
+  week away says "In a week".
+
 ## Arrival asked as itself, no free-text tasks, documents explained — 8 October 2026 (in review)
 
 The remaining follow-ups from the backend mapping (C19 and C27), and the

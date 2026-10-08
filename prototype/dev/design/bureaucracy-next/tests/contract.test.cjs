@@ -36,19 +36,21 @@ test('next actions are the todo steps, earliest target first, at most three', ()
     assert.equal(p.evaluated_at, '2026-09-30T13:10:00+02:00');
     assert.deepEqual(
         p.overview.next_actions.map((a) => a.id),
-        ['blue-card:0', 'blue-card:1', 'address:0'],
+        ['blue-card:0', 'blue-card:1', 'blue-card:2'],
     );
     // Both Blue Card steps aim for the visa expiry; they keep their order.
+    // The appointment step has no target, so it follows them.
     assert.equal(p.overview.next_actions[0].dates[0].date, '2026-10-01');
     assert.equal(p.overview.next_actions[1].dates[0].date, '2026-10-01');
-    assert.equal(p.overview.remaining_action_count, 1);
+    assert.deepEqual(p.overview.next_actions[2].dates, []);
+    assert.equal(p.overview.remaining_action_count, 2);
     // The bank task isn't started: its step needs a start first.
     assert.equal(
         p.actions.find((a) => a.id === 'bank:0').requires_process_start,
         true,
     );
-    assert.equal(p.progress.total, 5);
-    assert.equal(p.progress.todo.count, 4);
+    assert.equal(p.progress.total, 6);
+    assert.equal(p.progress.todo.count, 5);
     assert.equal(p.progress.waiting.count, 1);
 });
 
@@ -71,14 +73,24 @@ test('steps carry their position, own documents, first open one and completion e
         [
             [1, 'case.bc.first_application.prepare.complete'],
             [2, 'case.bc.first_application.submit.complete'],
+            [3, 'bc.blue_card.complete'],
         ],
     );
-    assert.deepEqual(steps[0].requirements, { ready: 1, total: 5 });
-    // The first not confirmed for use, in catalogue order (as the backend).
-    assert.match(steps[0].first_open_requirement.label, /^Employment contract/);
-    assert.equal(steps[0].first_open_requirement.conditional, false);
+    // The documents are listed once, on the appointment step (current
+    // catalogue). Only a required one can be marked ready, so the count is
+    // over the five required; the four optional ones are listed too.
+    assert.deepEqual(steps[0].requirements, { ready: 0, total: 0, listed: 0 });
+    assert.deepEqual(steps[2].requirements, { ready: 1, total: 5, listed: 9 });
+    // The first required one not confirmed for use, in catalogue order.
+    assert.match(
+        steps[2].first_open_requirement.label,
+        /^Biometric passport photo/,
+    );
+    assert.equal(steps[2].first_open_requirement.conditional, false);
+    assert.equal(steps[0].first_open_requirement, null);
     assert.equal(steps[0].completion_event, 'step_completed');
     assert.equal(steps[1].completion_event, 'submission_recorded');
+    assert.equal(steps[2].completion_event, 'step_completed');
     assert.equal(steps[0].dates[0].kind, 'preparation_target');
     assert.equal(steps[1].dates[0].kind, 'preparation_target');
 });
@@ -88,11 +100,22 @@ test('applicability is data, and "unknown" readiness is reported as missing', ()
     const bc = rows.filter((r) => r.occurrence_key === 'blue-card');
     assert.deepEqual(
         bc.map((r) => r.applicability),
-        ['required', 'required', 'conditional', 'required', 'conditional'],
+        [
+            'required',
+            'conditional',
+            'required',
+            'required',
+            'required',
+            'conditional',
+            'required',
+            'conditional',
+            'conditional',
+        ],
     );
-    assert.equal(bc[4].readiness, 'missing');
+    assert.equal(bc[1].readiness, 'missing');
     assert.ok(rows.every((r) => r.readiness !== 'unknown'));
-    assert.equal(bc[0].id, 'case.bc.first_application.prepare.document.1');
+    assert.equal(bc[0].id, 'bc.blue_card.document.1');
+    assert.equal(bc[0].step_id, 'bc.blue_card.complete');
 });
 
 test('the visa expiry is a personal date; both Blue Card targets are anchored to it', () => {
@@ -294,7 +317,7 @@ test('the question is the registry’s; skipping defers it and "I don’t know" 
 
 test('coverage lists every reviewed unit without claiming completeness', () => {
     const units = plan(fresh()).coverage.units;
-    assert.equal(units.length, 6);
+    assert.equal(units.length, 7);
     assert.ok(units.every((u) => u.state === 'partial'));
     assert.equal(
         units.find((u) => u.unit_id === 'core.anmeldung').definition_id,
@@ -343,7 +366,8 @@ test('Today and Composer read the records Paperwork keeps, not a copy', () => {
     assert.equal(first.deadlineLabel, fixture.deadlineLabel);
     // Marked ready and submitted in Paperwork.
     const s = shared.BureaucracyPlan.hydrate(shared.BureaucracyPreview.fresh());
-    shared.BureaucracyPlan.documentAction(s, 'blue-card', 1, 'confirm');
+    // The employment contract (you have it) is confirmed for this task.
+    shared.BureaucracyPlan.documentAction(s, 'blue-card', 3, 'confirm');
     shared.BureaucracyPlan.recordSubmission(s, 'blue-card', '2026-09-29');
     store['expadu-bureaucracy-design-v1'] = JSON.stringify(s);
     const [after] = read();
@@ -380,7 +404,7 @@ test('an unconfirmed card shows only its title and official page, nothing of its
     const bc = p.processes.find((x) => x.occurrence_key === 'blue-card');
     assert.deepEqual(
         bc.steps.map((x) => x.guidance_id),
-        ['case.bc.first_application.prepare'],
+        ['case.bc.first_application.prepare', 'bc.blue_card'],
     );
     assert.equal(
         p.timeline.some(
@@ -393,9 +417,8 @@ test('an unconfirmed card shows only its title and official page, nothing of its
         false,
     );
     // With every card unconfirmed, the task leaves the plan.
-    own.BureaucracySource.find(
-        (r) => r.key === 'case.bc.first_application.prepare',
-    ).state = 'unconfirmed';
+    for (const key of ['case.bc.first_application.prepare', 'bc.blue_card'])
+        own.BureaucracySource.find((r) => r.key === key).state = 'unconfirmed';
     const none = JSON.parse(JSON.stringify(Co.plan(Po.hydrate(Bo.fresh()))));
     assert.equal(
         none.processes.some((x) => x.occurrence_key === 'blue-card'),
@@ -431,13 +454,26 @@ test('each task carries its own name and whether its start can still be undone',
     const s = fresh();
     P.start(s, 'bank');
     assert.equal(proc(plan(s), 'bank').untrackable, true);
-    // Confirming a document for the task is progress too.
-    assert.equal(P.documentAction(s, 'bank', 0, 'confirm'), true);
+    // Finishing a step is progress.
+    assert.equal(P.toggleStep(s, 'bank:0'), true);
     assert.equal(proc(plan(s), 'bank').untrackable, false);
     assert.match(
         P.event(s, 'bank', 'process_untracked').error,
         /already has progress/,
     );
+    // So is confirming a document for the task (the bank card lists none,
+    // so a newly tracked address registration shows it).
+    const n = fresh();
+    delete n.records.address;
+    P.hydrate(n);
+    n.records.address.workflow = 'not_started';
+    n.records.address.base = 'not_started';
+    n.records.address.reports = [];
+    n.records.address.started = true;
+    n.records.address.docs = ['reported_available', 'missing'];
+    assert.equal(proc(plan(n), 'address').untrackable, true);
+    assert.equal(P.documentAction(n, 'address', 0, 'confirm'), true);
+    assert.equal(proc(plan(n), 'address').untrackable, false);
 });
 
 test('documents carry English names for German terms and the task they come from', () => {
@@ -451,14 +487,16 @@ test('documents carry English names for German terms and the task they come from
         },
     ]);
     // The label itself is unchanged; no term means an empty list.
-    assert.match(landlord.label, /^Wohnungsgeberbescheinigung \(Cologne form/);
+    assert.match(landlord.label, /^Wohnungsgeberbescheinigung confirming/);
     assert.deepEqual(
         rows.find((r) => r.label.startsWith('Valid passport')).terms,
         [],
     );
     // A catalogue link, not a prerequisite: the Blue Card's health
     // evidence comes from Health insurance, whose step lists it back.
-    const evidence = rows.find((r) => r.label === 'Health-insurance evidence');
+    const evidence = rows.find((r) =>
+        r.label.startsWith('Proof of full health insurance'),
+    );
     assert.deepEqual(evidence.produced_by, {
         unit_id: 'core.health_insurance',
         process_id: 'health.coverage',
@@ -468,12 +506,14 @@ test('documents carry English names for German terms and the task they come from
     const health = proc(p, 'health').steps[0];
     assert.deepEqual(health.produces, [
         {
-            unit_id: 'case.bc.first_application.prepare',
+            unit_id: 'bc.blue_card',
             process_id: 'residence.blue_card.first',
-            document_id: 'case.bc.first_application.prepare.document.4',
-            label: 'Health-insurance evidence',
+            document_id: 'bc.blue_card.document.8',
+            label: 'Proof of full health insurance — only if you are not statutorily insured',
         },
     ]);
+    // Optional for the Blue Card: only if you aren't statutorily insured.
+    assert.equal(evidence.applicability, 'conditional');
     // Linking never changes the requirement's identity.
-    assert.equal(evidence.id, 'case.bc.first_application.prepare.document.4');
+    assert.equal(evidence.id, 'bc.blue_card.document.8');
 });

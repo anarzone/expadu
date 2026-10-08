@@ -27,7 +27,7 @@
             tone: 'green',
             initial: 'waiting',
             note: 'Response pending',
-            docs: ['reported_available'],
+            docs: [],
             // "Waiting" follows a recorded submission (sample date).
             reports: [
                 { event: 'preparation_started' },
@@ -43,7 +43,7 @@
             tone: 'blue',
             initial: 'not_started',
             note: '',
-            docs: ['reported_available', 'unknown'],
+            docs: [],
             reports: [],
         },
     ];
@@ -139,7 +139,8 @@
                 docs: s.docs,
                 appointment: s.appointment,
                 submission: s.submission,
-                records: [0, 1],
+                // Prepare, submit, and the appointment (the last card).
+                records: [0, 1, 6],
                 closedOn: s.closedOn,
                 reports: s.reports,
             },
@@ -204,7 +205,8 @@
                             ? 'completed'
                             : p.id === 'blue-card' &&
                                 ((i === 0 && s.prepared) ||
-                                    (i === 1 && s.submitDone))
+                                    (i === 1 && s.submitDone) ||
+                                    (i === 2 && s.attended))
                               ? 'completed'
                               : p.id !== 'blue-card' && s.records[p.id].done
                                 ? 'completed'
@@ -497,7 +499,9 @@
         if (s.profileKind !== 'personal' && id === 'blue-card') return false;
         const r = holder(s, id);
         const stepDone =
-            id === 'blue-card' ? s.prepared || s.submitDone : r.done;
+            id === 'blue-card'
+                ? s.prepared || s.submitDone || s.attended
+                : r.done;
         return (
             !stepDone &&
             !r.reports?.length &&
@@ -516,7 +520,7 @@
     };
     function stepsDone(s, p) {
         return p.id === 'blue-card'
-            ? !!(s.prepared && s.submitDone)
+            ? !!(s.prepared && s.submitDone && s.attended)
             : !!s.records[p.id]?.done;
     }
     // What "Update progress" offers from where the task is now. "Blocked"
@@ -591,7 +595,8 @@
             if (actionId === 'blue-card:1') {
                 if (finishing && !s.submission) return false;
                 s.submitDone = finishing;
-            } else s.prepared = finishing;
+            } else if (actionId === 'blue-card:2') s.attended = finishing;
+            else s.prepared = finishing;
         } else s.records[p.id].done = finishing;
         // Like the backend, step work moves a task that hadn't started into
         // preparation; the office's states stay as they are.

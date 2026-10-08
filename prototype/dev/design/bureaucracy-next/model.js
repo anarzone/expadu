@@ -29,11 +29,19 @@
         appointment: sampleAppointment(),
         submission: null,
         prepared: false,
+        // The appointment step's nine documents (bc.blue_card), in order:
+        // passport (ready), entry visa*, photo, contract (you have it),
+        // qualification, BA approval*, rent proof, health insurance proof*,
+        // professional licence* (*optional, "May be needed").
         docs: [
             'confirmed_for_use',
+            'unknown',
+            'missing',
             'reported_available',
             'missing',
+            'unknown',
             'missing',
+            'unknown',
             'unknown',
         ],
     });
@@ -62,7 +70,7 @@
         process: null,
         expiry: null,
         appointment: null,
-        docs: Array(5).fill('unknown'),
+        docs: Array(9).fill('unknown'),
         workflow: 'not_started',
         tracked: [],
         records: {},

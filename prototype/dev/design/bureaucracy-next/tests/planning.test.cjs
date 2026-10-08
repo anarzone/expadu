@@ -116,11 +116,12 @@ test('private, closed and unstarted processes cannot schedule time; invalid step
         D.selection(source, 'blue-card', 'preparation', 'blue-card:0'),
     );
     source.person = 'self';
-    // Completion needs both steps confirmed (backend rule).
+    // Completion needs every step confirmed (backend rule).
     Object.assign(source, {
         prepared: true,
         submission: '2026-09-20',
         submitDone: true,
+        attended: true,
     });
     assert.equal(
         P.updateWorkflow(source, 'blue-card', 'completed', '', '2026-09-27'),

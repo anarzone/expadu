@@ -120,7 +120,8 @@
             const stored = JSON.parse(
                 localStorage.getItem('expadu-bureaucracy-design-v1'),
             );
-            if (stored?.docs?.length === 5)
+            // Only a save in the current sample's shape (its document list).
+            if (stored?.docs?.length === BureaucracyPreview.fresh().docs.length)
                 bureau = { ...BureaucracyPreview.fresh(), ...stored };
         } catch {}
         const now = new Date();

@@ -462,9 +462,16 @@
                 const source = (root.BureaucracySource || []).find(
                     (x) => x.key === entry.sourceKey,
                 );
+                // The daily automated check of the card's official pages.
+                const checkedOn = (d) =>
+                    new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                    });
                 if (entry.stepHelp && source)
-                    return `<section class="service-card"><span class="service-type">${I('document')}Your current step</span><h3>${E(source.title)}</h3><div class="service-actions"><a class="studio-button light" href="${E(root.StudioIntegration.bureaucracyLink(entry))}">${I('back')}Back to this step</a><a class="plain-button" href="${E(source.source)}" target="_blank" rel="noopener">Official information ${I('arrow')}</a></div><p class="detail-caution">Historical sample · source verification recorded ${E(source.verifiedAt)}. Current guidance still needs checking.</p></section>`;
-                return `<section class="service-card"><span class="service-type">${I('document')}${entry.stepHelp ? 'Your current step' : 'Reviewed information'}</span><h3>${E(source?.title || 'Coverage needs checking')}</h3><p class="service-unavailable">Current guidance unavailable in this preview</p>${source ? `<dl class="source-metadata"><div><dt>Catalogue verification</dt><dd>${E(source.verifiedAt)} · historical snapshot</dd></div><div><dt>Coverage</dt><dd>Cologne · current validity not established</dd></div></dl><a class="plain-button" href="${E(source.source)}" target="_blank" rel="noopener">Read the official source ${I('arrow')}</a>` : ''}<p class="detail-caution">No eligibility decision, fees or deadlines are inferred. A current reviewed record is needed before guidance can be shown.</p><a class="plain-button" href="${E(root.StudioIntegration.bureaucracyLink(entry))}">${entry.stepHelp ? 'Back to this step' : 'Open process'} ${I('arrow')}</a></section>`;
+                    return `<section class="service-card"><span class="service-type">${I('document')}Your current step</span><h3>${E(source.title)}</h3><div class="service-actions"><a class="studio-button light" href="${E(root.StudioIntegration.bureaucracyLink(entry))}">${I('back')}Back to this step</a><a class="plain-button" href="${E(source.source)}" target="_blank" rel="noopener">Official information ${I('arrow')}</a></div><p class="detail-caution">Checked against the official pages on ${E(checkedOn(source.verifiedAt))}.</p></section>`;
+                return `<section class="service-card"><span class="service-type">${I('document')}${entry.stepHelp ? 'Your current step' : 'Reviewed information'}</span><h3>${E(source?.title || 'Coverage needs checking')}</h3><p class="service-unavailable">Composer doesn’t give its own guidance here. Paperwork has the reviewed steps.</p>${source ? `<dl class="source-metadata"><div><dt>Last checked</dt><dd>Against the official pages on ${E(checkedOn(source.verifiedAt))}</dd></div><div><dt>Coverage</dt><dd>Cologne · preparation guidance only</dd></div></dl><a class="plain-button" href="${E(source.source)}" target="_blank" rel="noopener">Read the official source ${I('arrow')}</a>` : ''}<p class="detail-caution">No eligibility decision, fees or deadlines are inferred.</p><a class="plain-button" href="${E(root.StudioIntegration.bureaucracyLink(entry))}">${entry.stepHelp ? 'Back to this step' : 'Open process'} ${I('arrow')}</a></section>`;
             }
             return '';
         }

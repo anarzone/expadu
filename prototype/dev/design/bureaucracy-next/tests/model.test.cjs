@@ -38,7 +38,7 @@ test('unknown fact keeps known steps and other processes available', () => {
     B.confirmExpiry(s, null);
     assert.equal(s.expiry, null);
     assert.equal(s.prepared, true);
-    assert.equal(s.docs[1], 'reported_available');
+    assert.equal(s.docs[3], 'reported_available');
 });
 test('document availability and confirmation are separate; they do not complete the process', () => {
     const s = B.fresh();
@@ -56,10 +56,10 @@ test('adult and dependent preview scopes cannot edit facts, documents or export 
         s.person = person;
         s.appointment = { date: '2026-09-22', time: '10:00' };
         assert.equal(B.confirmExpiry(s, null), false);
-        assert.equal(B.documentAction(s, 1, 'confirm'), false);
+        assert.equal(B.documentAction(s, 3, 'confirm'), false);
         assert.equal(B.appointmentForComposer(s), null);
         assert.equal(s.expiry, '2026-10-01');
-        assert.equal(s.docs[1], 'reported_available');
+        assert.equal(s.docs[3], 'reported_available');
     }
 });
 test('expiry alone never becomes an appointment or a Composer item', () => {

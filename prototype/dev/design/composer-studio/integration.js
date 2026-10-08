@@ -177,6 +177,7 @@
         'core.anmeldung': ['address', 'address:0'],
         'case.bc.first_application.prepare': ['blue-card', 'blue-card:0'],
         'case.bc.first_application.submit': ['blue-card', 'blue-card:1'],
+        'bc.blue_card': ['blue-card', 'blue-card:2'],
         'core.health_insurance': ['health', 'health:0'],
         'core.bank_account': ['bank', 'bank:0'],
     };

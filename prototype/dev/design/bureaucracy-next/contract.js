@@ -21,6 +21,7 @@
     const unitDefinitions = {
         'case.bc.first_application.prepare': 'residence.blue_card.first',
         'case.bc.first_application.submit': 'residence.blue_card.first',
+        'bc.blue_card': 'residence.blue_card.first',
         'core.anmeldung': 'address.registration',
         'core.health_insurance': 'health.coverage',
         'core.bank_account': 'banking.account',
@@ -83,8 +84,10 @@
     // prerequisite: the document never waits for it, and it says nothing
     // about your own progress). The sample's one link, by unit and position.
     const producedBy = {
-        'case.bc.first_application.prepare': {
-            3: {
+        // "Proof of full health insurance" comes from the Health insurance
+        // card (documents_required[].from: core.health_insurance).
+        'bc.blue_card': {
+            7: {
                 unit_id: 'core.health_insurance',
                 process_id: 'health.coverage',
             },
@@ -94,8 +97,9 @@
     // required", "where applicable", "if available"). Applicability is
     // data here, as in the backend, not read from the wording by the UI.
     const conditional = {
-        'case.bc.first_application.prepare': [2, 4],
-        'core.bank_account': [1],
+        // optional: true in the catalogue (entry visa, BA approval, private
+        // health insurance proof, professional licence).
+        'bc.blue_card': [1, 5, 7, 8],
     };
     // The registry's wording for the one sample question (facts.yaml).
     const visaQuestion = {
@@ -311,7 +315,14 @@
             const r = R()[n];
             const id = `${p.id}:${i}`;
             const rows = requirements.filter((x) => x.source_rule_id === r.key);
-            const open = rows.find((x) => x.readiness !== 'confirmed_for_use');
+            // Only a required document can be marked ready, so the count is
+            // over the required ones, and the first to check is required
+            // when one is still open. (The backend counts every listed row
+            // and takes the first open one; raised with the backend.)
+            const required = rows.filter((x) => x.applicability === 'required');
+            const open =
+                required.find((x) => x.readiness !== 'confirmed_for_use') ||
+                rows.find((x) => x.readiness !== 'confirmed_for_use');
             const action = local.find((a) => a.id === id);
             return {
                 id,
@@ -348,10 +359,11 @@
                             : [],
                 },
                 requirements: {
-                    ready: rows.filter(
+                    ready: required.filter(
                         (x) => x.readiness === 'confirmed_for_use',
                     ).length,
-                    total: rows.length,
+                    total: required.length,
+                    listed: rows.length,
                 },
                 first_open_requirement: open
                     ? {
@@ -746,7 +758,9 @@
             /* The sample state below still applies. */
         }
         const s = P.hydrate(
-            stored && Array.isArray(stored.docs)
+            stored &&
+                Array.isArray(stored.docs) &&
+                stored.docs.length === B.fresh().docs.length
                 ? { ...B.fresh(), ...stored, person: 'self' }
                 : B.fresh(),
         );
