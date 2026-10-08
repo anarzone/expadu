@@ -373,6 +373,17 @@
     const nowTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(at || '')
         ? at
         : day.time || '12:00';
+    // The App in colour concept's time switch (13:10, Morning … Night)
+    // shows the sky at a time inside each of its parts of the day.
+    const conceptClock = {
+        morning: '08:30',
+        midday: '12:30',
+        afternoon: '16:00',
+        evening: '19:30',
+        night: '22:30',
+    };
+    const chosenTime = () => conceptClock[window.AppInColour?.get?.().time] || '';
+    let skyEvents = [];
     const skyContext = (date) => ({
         date,
         city: skyPlace,
@@ -420,6 +431,7 @@
         ${Sky.mistLayer}${Sky.rainLayer}
     </svg>`;
     function sky(events) {
+        skyEvents = events;
         const lit = events.filter((item) => stage[item.area]);
         // A day that has already happened is drawn with its lights out.
         const past =
@@ -431,8 +443,11 @@
         // Today the sky shows now; another day, the hour its first event
         // starts. Today's lights follow the clock too: over, on now, or
         // still to come.
-        const now = date === today ? Sky.hours(nowTime) : null;
-        const base = now ?? (first?.start ? Sky.hours(first.start) : 12);
+        const chosen = chosenTime();
+        const now = date === today ? Sky.hours(chosen || nowTime) : null;
+        const base =
+            now ??
+            (chosen ? Sky.hours(chosen) : first?.start ? Sky.hours(first.start) : 12);
         const ctx = skyContext(date);
         const st = Sky.at(ctx, base);
         const timing = (item) => {
@@ -594,6 +609,33 @@
         };
         sky.frame = requestAnimationFrame(tick);
     }
+    // A new time of day redraws the sky (today's lights may now be on or
+    // over) and glides there from the hour it was showing.
+    function redrawSky() {
+        document
+            .querySelectorAll('.wall-view--skyline .sky')
+            .forEach((old) => {
+                const from = skyOf(old).shown;
+                old.insertAdjacentHTML('afterend', sky(skyEvents));
+                const next = old.nextElementSibling;
+                old.remove();
+                showHour(next, from);
+                turnSky(next, skyOf(next).base);
+            });
+        requestAnimationFrame(() => {
+            layoutSky();
+            panSky();
+        });
+    }
+    let shownTime = chosenTime();
+    new MutationObserver(() => {
+        if (chosenTime() === shownTime) return;
+        shownTime = chosenTime();
+        redrawSky();
+    }).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-ac-band', 'data-ac-sample'],
+    });
     let settleTimer = null;
     function previewLight(light) {
         clearTimeout(settleTimer);

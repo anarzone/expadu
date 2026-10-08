@@ -38,6 +38,10 @@ proposed (`sky.js`, `sample-weather.js`).
   sky to its hour and that hour's weather (the sun and moon travel there);
   leaving brings it back. On a touch screen the first tap does this and the
   second opens the event; tapping elsewhere goes back.
+- **The App in colour concept's time switch** (13:10, Morning … Night)
+  moves the skyline too: each part of the day shows the sky at a time
+  inside it (08:30, 12:30, 16:00, 19:30, 22:30; 13:10 is the sample day's
+  time), today's lights follow, and the sky glides to the new hour.
 - **Reduced motion:** nothing drifts, falls or pulses, and the sky changes
   without gliding.
 

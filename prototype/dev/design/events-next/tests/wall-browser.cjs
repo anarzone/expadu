@@ -340,6 +340,22 @@ const inside = (box, viewport) =>
         assert.match(await culture.getAttribute('aria-label'), /already over/);
         assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
+        // The App in colour concept's time switch moves the skyline too.
+        const concept = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
+        await concept.goto(
+            `${base.replace('events-next/', 'connected/concepts/app-in-colour-2026-10-07/')}?page=events&width=desktop&mode=concept`,
+            { waitUntil: 'networkidle' },
+        );
+        const framed = concept.frameLocator('iframe');
+        await framed.locator('[data-wall-view="skyline"]').click();
+        await concept.getByRole('button', { name: 'Night', exact: true }).click();
+        await concept.waitForTimeout(1200);
+        assert.match(await framed.locator('.wall-view--skyline .sky-weather').innerText(), /22:30/);
+        assert.equal(await framed.locator('.wall-view--skyline .sky-light.is-out').count(), 2);
+        await concept.getByRole('button', { name: '13:10', exact: true }).click();
+        await concept.waitForTimeout(1200);
+        assert.match(await framed.locator('.wall-view--skyline .sky-weather').innerText(), /13:10/);
+        await concept.close();
         console.log('Poster wall checks passed at 390 and 1440px.');
     } finally {
         await browser.close();
