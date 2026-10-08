@@ -126,6 +126,11 @@ and none of them moves a decision to the client.
   the process is started, `not_started`, with no completed step, no event other than
   `process_started`/`process_untracked`, and no requirement confirmation or evidence share.
   The command applies the same rule. A proposal (`id: null`) is never untrackable.
+- `progress_options` lists the workflow reports the state machine accepts from the current
+  state, in display order: `[{event, date, note, allowed, reason}]`. `date` is
+  `required`, `optional` or `null`; `note` says whether a note may be sent. Completion is
+  listed with `allowed: false` and a `reason` while a step is still open. A proposal has
+  an empty list. Offer only these changes; the command still validates every report.
   `topic_label` comes from `config('bureaucracy_catalogue.topic_labels')` (navigation
   copy, not legal content).
 - `steps[].id` equals the action/progress id `<process_id or occurrence_key>:<step_id>`.

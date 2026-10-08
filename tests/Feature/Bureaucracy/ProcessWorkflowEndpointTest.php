@@ -124,3 +124,16 @@ test('guidance tells the UI which report finishes a step, derived from the revie
         ->and($plan->json('processes.0.guidance.0.completion_event'))->toBe('submission_recorded')
         ->and($plan->json('guidance.0.completion_event'))->toBe('submission_recorded');
 });
+
+test('the plan lists exactly the progress changes the workflow accepts from here', function () {
+    $events = fn () => collect($this->getJson($this->planUrl)->json('processes.0.progress_options'))->keyBy('event');
+
+    expect($events()->keys()->all())->toBe(['preparation_started', 'blocked_reported', 'submission_recorded', 'cancellation_reported'])
+        ->and($events()['submission_recorded'])->toMatchArray(['date' => 'required', 'note' => false, 'allowed' => true]);
+    ($this->report)('preparation_started')->assertSuccessful();
+    expect($events()->keys()->all())->toBe(['blocked_reported', 'submission_recorded', 'action_required_reported', 'completion_reported', 'cancellation_reported'])
+        ->and($events()['completion_reported'])->toMatchArray(['allowed' => false, 'reason' => 'Confirm the individual steps before completing this process.']);
+    ($this->report)('submission_recorded', ['occurred_on' => '2026-09-08'])->assertSuccessful();
+    // After a submission: wait, the office needs something, complete or cancel; never "back to preparing".
+    expect($events()->keys()->all())->toBe(['waiting_reported', 'action_required_reported', 'completion_reported', 'cancellation_reported']);
+});

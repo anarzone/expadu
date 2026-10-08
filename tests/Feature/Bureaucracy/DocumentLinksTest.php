@@ -66,3 +66,10 @@ it('keeps English document names plain', function () {
     expect(fn () => app(CatalogueCompiler::class)->compile([$this->insurance, $this->permit], $this->mapping, [], ['Mietvertrag' => 'Rental contract for 12 months']))
         ->toThrow(DomainException::class, 'Document terms are plain names');
 });
+
+it('refuses a process whose steps are anchored to different occurrences, which would split it into two tasks', function () {
+    $mapping = [...$this->mapping, 'fixture.permit' => [...$this->mapping['fixture.permit'], 'process_id' => 'fixture.health', 'topic' => 'health', 'occurrence_fact' => 'current_residence_title']];
+
+    expect(fn () => app(CatalogueCompiler::class)->compile([$this->insurance, $this->permit], $mapping, [], $this->terms))
+        ->toThrow(DomainException::class, 'anchored to different occurrence facts');
+});

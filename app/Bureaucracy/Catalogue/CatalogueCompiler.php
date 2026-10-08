@@ -148,7 +148,11 @@ final class CatalogueCompiler
             if (isset($definitions[$id]) && $definitions[$id]['topic'] !== $map['topic']) {
                 throw new DomainException("Process [{$id}] has contradictory topic mappings.");
             }
-            $definitions[$id] ??= ['topic' => $map['topic'], 'variants' => []];
+            // Steps of one process share its occurrence; otherwise the plan splits them into two tasks.
+            if (isset($definitions[$id]) && ($definitions[$id]['occurrence_fact'] ?? null) !== ($map['occurrence_fact'] ?? null)) {
+                throw new DomainException("Process [{$id}] has steps anchored to different occurrence facts.");
+            }
+            $definitions[$id] ??= ['topic' => $map['topic'], 'occurrence_fact' => $map['occurrence_fact'] ?? null, 'variants' => []];
             if ($variant['position'] !== null && in_array($variant['position'], array_column($definitions[$id]['variants'], 'position'), true)) {
                 throw new DomainException("Process [{$id}] has two steps at reviewed position [{$variant['position']}].");
             }

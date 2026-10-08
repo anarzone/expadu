@@ -148,6 +148,40 @@ final class ProcessStateMachine
         return $workflow;
     }
 
+    /** Workflow reports a person can choose from here, in the order a UI should offer them. */
+    private const Offered = ['preparation_started', 'blocked_reported', 'submission_recorded', 'waiting_reported',
+        'action_required_reported', 'completion_reported', 'cancellation_reported', 'process_reopened'];
+
+    /**
+     * The progress changes the machine accepts from this state, so a client never has to
+     * re-derive the rules. Completion is listed but not allowed while a step is still open.
+     *
+     * @return list<array{event: string, date: 'required'|'optional'|null, note: bool, allowed: bool, reason: string|null}>
+     */
+    public function progressOptions(array $state): array
+    {
+        $workflow = $state['workflow'] ?? null;
+        if ($workflow === 'untracked') {
+            return [];
+        }
+        $options = [];
+        foreach (self::Offered as $event) {
+            [$from, $target] = self::Transitions[$event];
+            if (! in_array($workflow, $from, true) || $target === $workflow) {
+                continue;
+            }
+            $openSteps = $event === 'completion_reported' && array_filter($state['steps'] ?? [], fn ($status) => $status !== 'completed') !== [];
+            $options[] = ['event' => $event,
+                'date' => $event === 'submission_recorded' ? 'required'
+                    : (in_array($event, ['blocked_reported', 'action_required_reported', 'completion_reported', 'cancellation_reported'], true) ? 'optional' : null),
+                'note' => $event !== 'submission_recorded',
+                'allowed' => ! $openSteps,
+                'reason' => $openSteps ? 'Confirm the individual steps before completing this process.' : null];
+        }
+
+        return $options;
+    }
+
     private function refusal(string $event): string
     {
         return match ($event) {

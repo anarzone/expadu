@@ -3,6 +3,7 @@
 namespace App\Bureaucracy\ReadModel;
 
 use App\Bureaucracy\Processes\ProcessHistory;
+use App\Bureaucracy\Processes\ProcessStateMachine;
 use App\Bureaucracy\Processes\UntrackEligibility;
 
 /**
@@ -32,7 +33,9 @@ final class ProcessDetails
         return [...$process, 'title' => $title, 'topic_label' => $this->topicLabel($process['topic'] ?? null), 'steps' => $steps, ...$closure,
             'blocking_reason' => $this->blockingReason($process, $steps, $requirements),
             // Whether "Track task" can still be undone with process_untracked (same rule the command enforces).
-            'untrackable' => $process['id'] !== null && UntrackEligibility::allows($process['state'], $types, isset($withRecords[$process['id']]))];
+            'untrackable' => $process['id'] !== null && UntrackEligibility::allows($process['state'], $types, isset($withRecords[$process['id']])),
+            // The progress changes accepted from the current state (only once tracking has started).
+            'progress_options' => $process['id'] === null ? [] : (new ProcessStateMachine)->progressOptions($process['state'])];
     }
 
     public function topicLabel(?string $topic): ?string
