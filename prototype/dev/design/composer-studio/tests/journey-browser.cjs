@@ -3,7 +3,8 @@
 // Journey questions answer instead of failing: an ordinary "from A to B"
 // question (the first starter) and the appointment's "when should I leave".
 // Also the approved design's start: the pharmacy starter with its source,
-// the step-free chip and the Events posters.
+// the step-free chip and the Events posters; a place saved and added from
+// Quick look.
 const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const url = 'http://127.0.0.1:8765/dev/design/composer-studio/';
@@ -70,6 +71,24 @@ const url = 'http://127.0.0.1:8765/dev/design/composer-studio/';
         assert.match(
             await page.locator('.place-answer-actions').last().innerText(),
             /OpenStreetMap contributors \(ODbL\)/,
+        );
+        // The compact cards have no buttons of their own: Quick look saves
+        // a place and adds it to the plan.
+        assert.equal(await page.locator('.nearby-answer-card').count(), 3);
+        await page.locator('.nearby-answer-card').first().click();
+        const look = page.locator('dialog.studio-detail-dialog[open]');
+        await look.locator('[data-save]').waitFor();
+        await look.locator('[data-save]').click();
+        assert.equal(
+            await look.locator('[data-save]').getAttribute('aria-pressed'),
+            'true',
+        );
+        assert.equal(await look.locator('[data-save]').innerText(), 'Saved');
+        await look.locator('[data-add]').click();
+        await page.waitForTimeout(400);
+        assert.match(
+            await page.locator('#studio-toast').innerText(),
+            /Added to your plan/,
         );
         await page.evaluate(() => localStorage.clear());
         await page.reload({ waitUntil: 'networkidle' });

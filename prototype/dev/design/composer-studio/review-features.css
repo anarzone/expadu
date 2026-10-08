@@ -446,3 +446,9 @@
     gap: 8px 16px;
     margin-top: 14px;
 }
+.studio .detail-save[aria-pressed='true'] {
+    color: var(--color-select-text);
+}
+.studio .detail-save[aria-pressed='true'] svg {
+    fill: currentColor;
+}

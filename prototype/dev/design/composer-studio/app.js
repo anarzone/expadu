@@ -2369,7 +2369,14 @@
     });
     document.addEventListener('click', (e) => {
         const el = e.target.closest('button,a');
-        if (!el || el.closest('.studio-detail-dialog')) return;
+        // Quick look handles its own buttons, except saving a place or
+        // adding it to the plan, which work as they do everywhere else.
+        if (
+            !el ||
+            (el.closest('.studio-detail-dialog') &&
+                !el.matches('[data-save], [data-add]'))
+        )
+            return;
         if (el.closest('.composer-actions-menu')) closeComposerActions(true);
         if (el.id === 'approval-mode') {
             toggleApproval(document.querySelector('#approval-menu').hidden);
@@ -2478,10 +2485,14 @@
             M.bookmark(state, id);
             store();
             el.setAttribute('aria-pressed', String(!before));
-            el.setAttribute(
-                'aria-label',
-                `${before ? 'Save' : 'Unsave'} ${place(id).title}`,
-            );
+            // A labelled button (Quick look) says it in words instead.
+            const label = el.querySelector('[data-save-label]');
+            if (label) label.textContent = before ? 'Save' : 'Saved';
+            else
+                el.setAttribute(
+                    'aria-label',
+                    `${before ? 'Save' : 'Unsave'} ${place(id).title}`,
+                );
             window.ExpaduMotion?.feedback(el);
             notify(
                 before ? 'Removed from saved ideas' : 'Saved for another day',

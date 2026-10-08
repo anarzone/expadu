@@ -88,7 +88,9 @@ the cream page and the request field pinned to the bottom of the window.
   apart with full-width text, as drawn.
 - **Places answers** are the mock's compact cards: the map, "Pharmacy · 50 m",
   the name and "Listed until 18:30 · Step-free access" (beside the map on
-  phones). A card opens Quick look, which has Save and Add. The title is
+  phones). A card opens Quick look, which has Add to plan and Save (Save was
+  added there when the cards lost their own buttons; both now work from
+  Quick look, where clicks used to be ignored). The title is
   "Three near Wiener Platz." and the note "Hours are the listed ones for
   14:30, …".
 - The step-free facts say "Starts 20:00" for tonight, one per row on phones.

@@ -158,6 +158,9 @@
                     const added = getState().proposal?.items.some(
                         (x) => x.id === item.id,
                     );
+                    // Answers show places as compact cards, so Quick look
+                    // is where a place is saved.
+                    const saved = getState().saved.includes(item.id);
                     const route = new URL(
                         ExpaduStore.routes.departures,
                         document.baseURI,
@@ -172,7 +175,7 @@
                         lat: item.lat,
                         lng: item.lng,
                     });
-                    body.innerHTML = `<img class="preview-image preview-map" src="../connected/place-maps/${E(item.id)}.png" alt="Map around ${E(item.title)}"><p class="detail-eyebrow">${E(item.label)} · ${E(item.area)}</p><h3>${E(item.title)}</h3>${P.facts(item.place, { at: { date: today(), time: M.nowTime?.() || '12:00' } })}<div class="detail-primary"><button class="studio-button light" data-add="${E(item.id)}" ${added ? 'disabled' : ''}>${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button><a class="plain-button" href="${E(nearby)}">${I('pin')}Nearby on map</a><a class="plain-button" href="${E(route.href)}">${I('route')}Directions</a></div>`;
+                    body.innerHTML = `<img class="preview-image preview-map" src="../connected/place-maps/${E(item.id)}.png" alt="Map around ${E(item.title)}"><p class="detail-eyebrow">${E(item.label)} · ${E(item.area)}</p><h3>${E(item.title)}</h3>${P.facts(item.place, { at: { date: today(), time: M.nowTime?.() || '12:00' } })}<div class="detail-primary"><button class="studio-button light" data-add="${E(item.id)}" ${added ? 'disabled' : ''}>${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button><button type="button" class="plain-button detail-save" data-save="${E(item.id)}" aria-pressed="${saved}">${I('bookmark')}<span data-save-label>${saved ? 'Saved' : 'Save'}</span></button><a class="plain-button" href="${E(nearby)}">${I('pin')}Nearby on map</a><a class="plain-button" href="${E(route.href)}">${I('route')}Directions</a></div>`;
                     body.querySelector('.preview-map')?.addEventListener(
                         'error',
                         (event) => event.target.remove(),
