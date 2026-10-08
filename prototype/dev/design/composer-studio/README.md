@@ -80,7 +80,8 @@ the cream page and the request field pinned to the bottom of the window.
   title and each answer's verdict.
 - Composer's cyan mark above Your day on desktop, with "Back to …" beside it;
   on phones the mark and "Back to …" share one short row that stays under
-  the app header. Your day's facts start with the trip to take now; the
+  the app header, with Your day's row under it above the starters and the
+  conversation alike. Your day's facts start with the trip to take now; the
   chips have no icons, so the third peeks in on phones.
 - The chat bar ("Sample answers from the sample day · nothing here is live"
   and Start fresh), questions in cyan bubbles, and each answer's parts 14px
