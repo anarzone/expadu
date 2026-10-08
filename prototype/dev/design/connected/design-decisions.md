@@ -405,8 +405,12 @@ events above an illustrated Cologne and keeps photo cards, with the poster's
 art where there's no usable picture (the sample film night's illustration
 showed somewhere else). Filters, calendar, sheet and planning are the Events
 page's own. Poster lettering uses Bricolage Grotesque; the app's titles stay
-Geist while that decision is open. Today keeps the Festival cards. Details are
-in `events-next/README.md`.
+Geist while that decision is open. Today keeps the Festival cards. Later on
+8 October (owner request, "more interactive and moving"): the column turns
+like a real Litfaßsäule and carries the later city listings too, a lamp
+lights for evening posters, posters are pasted on as a day loads, lean
+towards a mouse, pin when saved and are stamped once in your plan; with
+reduced motion nothing moves by itself. Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky
 "Composer · Minimize" bar is replaced by one compact row at the top of the

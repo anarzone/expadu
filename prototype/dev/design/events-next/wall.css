@@ -139,10 +139,54 @@ main[data-view='skyline'] .wall-view--wall {
     gap: 26px 22px;
 }
 .wall-day > .pp:nth-child(odd) {
-    transform: rotate(1.4deg);
+    rotate: 1.4deg;
 }
 .wall-day > .pp:nth-child(even) {
-    transform: rotate(-1.1deg);
+    rotate: -1.1deg;
+}
+/* Posters are pasted onto the wall as the day loads, one after another. */
+@media (prefers-reduced-motion: no-preference) {
+    .wall-day > .pp {
+        animation: pp-paste 360ms var(--ease-settle) both;
+        animation-delay: calc(var(--i, 0) * 70ms);
+    }
+}
+@keyframes pp-paste {
+    from {
+        opacity: 0;
+        translate: 0 -16px;
+        scale: 1.05;
+    }
+    to {
+        opacity: 1;
+        translate: 0 0;
+        scale: 1;
+    }
+}
+/* With a mouse, a poster leans towards the pointer and catches the light. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .wall-day > .pp {
+        transform: perspective(900px) rotateX(var(--tilt-y, 0deg))
+            rotateY(var(--tilt-x, 0deg));
+        transition:
+            transform var(--duration-fast) var(--ease-settle),
+            box-shadow var(--duration-base) var(--ease-settle);
+    }
+    .wall-day > .pp.is-tilting {
+        box-shadow: 0 24px 44px #211d1540;
+    }
+    .wall-day > .pp.is-tilting .pp-front::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: radial-gradient(
+            circle at var(--glare-x, 50%) var(--glare-y, 50%),
+            #ffffff2e,
+            transparent 45%
+        );
+    }
 }
 .wall-day-note {
     margin: 0;
@@ -185,17 +229,77 @@ main[data-view='skyline'] .wall-view--wall {
     border-radius: 4px;
     background: var(--poster-column-ring);
 }
+/* A lamp under the cap, lit while an evening or night poster faces you. */
+.wall-column-cap::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    left: 50%;
+    bottom: -20px;
+    width: 12px;
+    height: 12px;
+    margin-left: -6px;
+    border-radius: 50%;
+    background: var(--poster-column-ring);
+    transition:
+        background-color var(--duration-slow) var(--ease-settle),
+        box-shadow var(--duration-slow) var(--ease-settle);
+}
+.wall-column:is([data-ink='evening'], [data-ink='night']) .wall-column-cap::before {
+    background: var(--festival-yellow, #ffe363);
+    box-shadow: 0 0 18px 6px #ffe36380;
+}
 .wall-column-body {
     position: relative;
+    width: 364px;
+    height: 560px;
     margin-top: 18px;
     overflow: hidden;
+    touch-action: pan-y;
 }
-/* The column's curve, over the poster but under its buttons. */
+.wall-column-body[tabindex] {
+    cursor: grab;
+}
+.wall-column-body[data-turning] {
+    cursor: grabbing;
+}
+.wall-column-body:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 4px;
+}
+.wall-column-face {
+    position: absolute;
+    inset: 0;
+    transform-origin: center;
+    will-change: transform;
+}
+.wall-column-face > .pp {
+    width: 100%;
+    height: 100%;
+}
+.wall-column-glow {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 151;
+    height: 45%;
+    pointer-events: none;
+    background: radial-gradient(
+        ellipse 70% 60% at 50% 0,
+        #ffe36359,
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity var(--duration-slow) var(--ease-settle);
+}
+.wall-column:is([data-ink='evening'], [data-ink='night']) .wall-column-glow {
+    opacity: 1;
+}
+/* The column's curve, over every poster. */
 .wall-column-body::after {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: 1;
+    z-index: 150;
     pointer-events: none;
     background: linear-gradient(
         90deg,
@@ -212,37 +316,47 @@ main[data-view='skyline'] .wall-view--wall {
     border-radius: 6px 6px 2px 2px;
     background: var(--poster-column);
 }
+.wall-column-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+.wall-column-controls button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow-flat);
+    cursor: pointer;
+}
+.wall-column-controls button:active {
+    transform: scale(0.94);
+}
+.wall-column-controls svg {
+    width: 18px;
+    height: 18px;
+}
+.wall-column-count {
+    min-width: 44px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
 .wall-column-caption {
     margin: 10px 0 0;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
 
-/* Next in the city's calendar, and the week's notes. */
-.wall-next-head h2 {
-    margin: 0;
-    font-size: var(--text-title);
-    font-weight: var(--weight-bold);
-    letter-spacing: -0.5px;
-}
-.wall-next-head p {
-    margin: 2px 0 14px;
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-.wall-next-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 22px 18px;
-    align-items: start;
-}
-.wall-next-grid > .pp:nth-child(3n + 1) {
-    transform: rotate(-1.3deg);
-}
-.wall-next-grid > .pp:nth-child(3n + 2) {
-    transform: rotate(1.2deg);
-    margin-top: 12px;
-}
+/* The week's notes, pinned to the wall. */
 .wall-note {
     position: relative;
     margin-top: 20px;
@@ -396,11 +510,6 @@ main[data-view='skyline'] .wall-view--wall {
     width: 364px;
     height: 560px;
     box-shadow: none;
-}
-.pp--size-mini {
-    width: 100%;
-    height: 262px;
-    box-shadow: 0 10px 22px #211d1524;
 }
 .pp-face {
     position: absolute;
@@ -594,9 +703,14 @@ main[data-view='skyline'] .wall-view--wall {
     font-weight: var(--weight-semibold);
     backdrop-filter: blur(8px);
 }
-.pp--day .pp-category,
-.pp--paper .pp-category {
+.pp--day .pp-category {
     background: #211d1514;
+}
+/* Paper posters print their pattern at the top, so the label gets paper. */
+.pp--paper .pp-category {
+    background: var(--poster-paper);
+    box-shadow: 0 0 0 1px #211d1524;
+    backdrop-filter: none;
 }
 .pp-category svg {
     width: 15px;
@@ -909,54 +1023,82 @@ main[data-view='skyline'] .wall-view--wall {
     height: 16px;
 }
 
-/* Mini posters: the later listings. */
-.pp--size-mini .pp-open {
-    padding: 12px 14px 14px;
-}
-.pp--size-mini .pp-top {
-    min-height: 32px;
-}
-.pp--size-mini .pp-category {
-    height: 26px;
-    padding: 0 10px;
-    background: var(--poster-paper);
-    font-size: var(--text-caption);
-    backdrop-filter: none;
-}
-/* Small posters keep the shape small and the words clear. */
-.pp--size-mini .pp-art.pp--rings::before {
-    right: -18%;
-    top: -14%;
-    width: 52%;
-}
-.pp--size-mini .pp-art.pp--rings::after {
-    right: -6%;
-    top: -4%;
-    width: 30%;
-}
-.pp--size-mini .pp-art > span {
-    display: none;
-}
-.pp--size-mini .pp-tape {
-    margin-top: 44px;
-    font-size: 14px;
-}
-.pp--size-mini .pp-title {
-    margin-top: 10px;
-    font-size: clamp(16px, 10.5cqi, 24px);
-}
-.pp--size-mini .pp-bottom {
-    padding-right: 0;
-}
-.pp--size-mini .pp-price,
+/* A listing without a time doesn't print one. */
 .pp.is-listing .pp-time {
     display: none;
 }
-.pp--size-mini .pp-back-body {
-    padding: 8px 12px 4px;
+
+/* ---------- Your choices on the posters ---------- */
+/* Saved: a push pin. */
+.pp:has(.pp-save[aria-pressed='true'])::before {
+    content: '';
+    position: absolute;
+    z-index: 4;
+    left: 50%;
+    top: -8px;
+    width: 18px;
+    height: 18px;
+    margin-left: -9px;
+    border-radius: 50%;
+    background: #d23a26;
+    box-shadow:
+        0 3px 0 #211d1540,
+        inset -3px -3px 0 #0000002e;
 }
-.pp--size-mini .pp-facts {
-    display: none;
+.wall-column .pp:has(.pp-save[aria-pressed='true'])::before {
+    top: 10px;
+}
+/* In your plan: a rubber stamp. */
+.pp[data-stamp]::after {
+    content: attr(data-stamp);
+    position: absolute;
+    z-index: 3;
+    right: 14px;
+    top: 70px;
+    padding: 5px 9px;
+    border: 3px solid currentColor;
+    border-radius: 6px;
+    color: var(--pp-stamp, #7fe3f0);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    rotate: -8deg;
+    pointer-events: none;
+}
+.pp:is(.pp--day, .pp--paper)[data-stamp]::after {
+    --pp-stamp: var(--color-select-text);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .pp:has(.pp-save[aria-pressed='true'])::before {
+        animation: pp-pin 320ms var(--ease-settle);
+    }
+    .pp[data-stamp]::after {
+        animation: pp-stamp 260ms cubic-bezier(0.2, 1.4, 0.4, 1);
+    }
+}
+@keyframes pp-pin {
+    from {
+        scale: 0;
+        translate: 0 -12px;
+    }
+    60% {
+        scale: 1.15;
+    }
+    to {
+        scale: 1;
+        translate: 0 0;
+    }
+}
+@keyframes pp-stamp {
+    from {
+        opacity: 0;
+        scale: 1.6;
+    }
+    to {
+        opacity: 1;
+        scale: 1;
+    }
 }
 
 /* ---------- Skyline: the day lit above the city ---------- */
@@ -1317,7 +1459,7 @@ main[data-view='skyline'] .wall-view--wall {
         align-self: stretch;
         margin: 4px 0 18px;
     }
-    .pp--size-column {
+    .wall-column-body {
         height: 440px;
     }
     .wall-board #event-list {
@@ -1380,20 +1522,37 @@ main[data-view='skyline'] .wall-view--wall {
     .wall-column-cap > span {
         display: none;
     }
+    .wall-column {
+        position: relative;
+    }
+    .wall-column-cap::before {
+        bottom: -11px;
+        width: 9px;
+        height: 9px;
+        margin-left: -4.5px;
+    }
     .wall-column-body {
         width: calc(100% - 26px);
+        height: 340px;
         margin-top: 10px;
     }
     .wall-column-base {
         display: none;
     }
+    /* The caption and the turn controls share one row. */
     .wall-column-caption {
         align-self: flex-start;
-        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        margin-top: 4px;
     }
-    .pp--size-column {
-        width: 100%;
-        height: 340px;
+    .wall-column-controls {
+        position: absolute;
+        right: 13px;
+        bottom: 0;
+        gap: 6px;
+        margin: 0;
     }
     .pp--size-column .pp-title {
         font-size: clamp(30px, 13cqi, 46px);
@@ -1401,9 +1560,6 @@ main[data-view='skyline'] .wall-view--wall {
     .pp--size-wall {
         width: 272px;
         height: 380px;
-    }
-    .wall-next-grid {
-        gap: 18px 14px;
     }
     .wall-past-row {
         grid-template-columns: none;

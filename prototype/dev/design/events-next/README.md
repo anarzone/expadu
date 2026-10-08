@@ -5,6 +5,35 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The column turns, and the wall comes alive — 8 October 2026
+
+The owner liked the poster wall and asked for it to be more interactive and
+moving.
+
+- **The column turns like a real Litfaßsäule.** It now carries everything
+  coming up: the featured pick, then the later listings in the same city
+  series (which moved off the wall). Drag or swipe sideways, use the arrows
+  under it ("1 / 4") or the arrow keys. Posters sit a quarter turn apart;
+  seen from the front, a poster at angle θ is centred at R·sin θ and narrowed
+  to cos θ, so turning bends them round the column's sides. A flick turns one
+  poster, a long drag lands on the nearest, and only the poster facing you
+  can be used (the others are inert). Once a session the column turns a
+  little and back to show it can; never with reduced motion.
+- **A lamp under the cap** lights while an evening or night poster faces you.
+- **Posters are pasted onto the wall** one after another as a day loads
+  (360ms, 70ms apart), and turn over in depth.
+- **With a mouse, a wall poster leans towards the pointer** and catches the
+  light. Touch and reduced motion keep it still.
+- **Your choices show on the posters.** Saving pins a poster with a push pin;
+  once an event is in your plan for its day it gets a stamp: "In your plan",
+  or "Added · not confirmed" while it's a proposal. A sample plan you didn't
+  make isn't stamped.
+- The week's notes (the 3 October holiday) stay pinned to the wall.
+
+`tests/wall-browser.cjs` now also checks the column's four posters, that the
+listings can't be planned, turning with the arrows and that only the front
+poster is usable.
+
 ## On the wall: the Events page since 8 October 2026
 
 The owner approved the poster wall and asked for it to replace Events
@@ -27,8 +56,9 @@ there's no picture.
   time is plain paper). Unknowns read "Price not listed" or "Time not listed
   yet". Titles use Bricolage Grotesque as poster lettering
   (`fonts/` links to the self-hosted files in `public/fonts/`).
-- **The poster column** (a Litfaßsäule) holds the featured pick, "Coming up",
-  which stays put while you filter, as the owner decided for Events. The
+- **The poster column** (a Litfaßsäule) holds what's coming up: the
+  featured pick and the later city listings. It stays put while you filter,
+  as the owner decided for Events, and turns (see the section above). The
   chosen day's other events hang on the wall beside it.
 - **Turn a poster over** (tap it) for the back: when and where, the quiet facts
   list (Admission, When to arrive, Language, Who it's for, Accessibility from

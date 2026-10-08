@@ -61,18 +61,204 @@
             : null,
     });
 
-    /* ---------- The poster column: the featured, upcoming pick ---------- */
+    /* ---------- The poster column: what's coming up, all the way round ----
+       The featured picks, then the later listings in the same city series.
+       It turns like a real Litfaßsäule: drag or swipe sideways, the arrows
+       or the arrow keys. Only the poster facing you can be used. */
     function feature(items) {
-        const selection = base.featured(items);
-        if (!selection.length) return '';
-        const [lead, ...more] = selection;
-        return `<div class="wall-column" role="region" aria-label="Coming up, independent of date filters">
+        const posters = [
+            ...base.featured(items).map((item) =>
+                P.poster(item, { size: 'column', ...posterOptions(item) }),
+            ),
+            ...laterListings(items).map((item) =>
+                P.poster(item, { size: 'column', today, listing: true }),
+            ),
+        ];
+        if (!posters.length) return '';
+        const many = posters.length > 1;
+        return `<div class="wall-column" role="region" aria-roledescription="carousel" aria-label="Coming up, independent of date filters">
             <span class="wall-column-cap" aria-hidden="true"><span></span></span>
-            <div class="wall-column-body">${P.poster(lead, { size: 'column', ...posterOptions(lead) })}</div>
+            <div class="wall-column-body"${many ? ' tabindex="0" aria-label="Poster column. Drag sideways or use the arrow keys to turn it."' : ''}>
+                ${posters.map((poster, i) => `<div class="wall-column-face" role="group" aria-roledescription="poster" aria-label="${i + 1} of ${posters.length}">${poster}</div>`).join('')}
+                <span class="wall-column-glow" aria-hidden="true"></span>
+            </div>
             <span class="wall-column-base" aria-hidden="true"></span>
-            <p class="wall-column-caption">Coming up · on the poster column${more.length ? ` · ${more.length} more after it` : ''}</p>
+            ${many ? `<div class="wall-column-controls"><button type="button" data-column-step="-1" aria-label="Turn to the previous poster">${I('back')}</button><span class="wall-column-count" aria-live="polite">1 / ${posters.length}</span><button type="button" data-column-step="1" aria-label="Turn to the next poster">${I('arrow')}</button></div>` : ''}
+            <p class="wall-column-caption">Coming up${many ? ' · turn the column' : ' · on the poster column'}</p>
         </div>`;
     }
+    const reducedMotion = () =>
+        window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    // Each poster sits a quarter turn from the next. Seen from the front, a
+    // poster at angle θ is centred at R·sin θ and narrowed to cos θ, so
+    // turning the column bends the posters round its sides.
+    function bindColumn(root) {
+        const column = root.querySelector('.wall-column');
+        const body = column?.querySelector('.wall-column-body');
+        const faces = [...(body?.querySelectorAll('.wall-column-face') || [])];
+        const count = faces.length;
+        if (!count) return;
+        const step = Math.PI / 2;
+        let pos = 0,
+            current = 0,
+            frame = null,
+            drag = null,
+            moved = false;
+        const wrap = (d) => {
+            let x = ((d % count) + count) % count;
+            if (x > count / 2) x -= count;
+            return x;
+        };
+        function paint() {
+            const radius = body.clientWidth / 2;
+            faces.forEach((face, i) => {
+                const angle = wrap(i - pos) * step;
+                const cos = Math.cos(angle);
+                const visible = cos > 0.02;
+                face.style.visibility = visible ? 'visible' : 'hidden';
+                face.style.zIndex = String(Math.round(cos * 100));
+                face.style.transform = visible
+                    ? `translateX(${(radius * Math.sin(angle)).toFixed(1)}px) scaleX(${cos.toFixed(4)})`
+                    : 'none';
+                face.style.filter = `brightness(${(0.55 + 0.45 * cos).toFixed(3)})`;
+            });
+        }
+        function settle(index) {
+            current = ((index % count) + count) % count;
+            faces.forEach((face, i) => {
+                const front = i === current;
+                face.inert = !front;
+                face.setAttribute('aria-hidden', String(!front));
+                // A poster turned over turns back when it leaves the front.
+                const card = face.querySelector('.pp.is-turned');
+                if (card && !front) {
+                    card.classList.remove('is-turned');
+                    card.querySelector('.pp-front').hidden = false;
+                    card.querySelector('.pp-back').hidden = true;
+                }
+            });
+            const counter = column.querySelector('.wall-column-count');
+            if (counter) counter.textContent = `${current + 1} / ${count}`;
+            const ink = faces[current]
+                .querySelector('.pp')
+                ?.className.match(/pp--(day|evening|night|paper)/)?.[1];
+            column.dataset.ink = ink || 'paper';
+        }
+        function animateTo(target, duration = 320) {
+            cancelAnimationFrame(frame);
+            if (reducedMotion()) {
+                pos = target;
+                paint();
+                settle(Math.round(target));
+                return;
+            }
+            const from = pos,
+                start = performance.now();
+            const tick = (now) => {
+                const t = Math.min(1, (now - start) / duration);
+                // The shared ease-settle curve: quick start, soft landing.
+                const eased = 1 - Math.pow(1 - t, 3);
+                pos = from + (target - from) * eased;
+                paint();
+                if (t < 1) frame = requestAnimationFrame(tick);
+                else settle(Math.round(target));
+            };
+            frame = requestAnimationFrame(tick);
+        }
+        const go = (by) => animateTo(Math.round(pos) + by);
+        column.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-column-step]');
+            if (button) go(Number(button.dataset.columnStep));
+        });
+        body.addEventListener('keydown', (event) => {
+            if (event.target !== body || count < 2) return;
+            const by = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
+            if (by) {
+                event.preventDefault();
+                go(by);
+            }
+        });
+        if (count > 1) {
+            body.addEventListener('pointerdown', (event) => {
+                if (event.button !== 0 || event.isPrimary === false) return;
+                cancelAnimationFrame(frame);
+                moved = false;
+                drag = {
+                    id: event.pointerId,
+                    x: event.clientX,
+                    y: event.clientY,
+                    pos,
+                    samples: [[performance.now(), pos]],
+                };
+            });
+            body.addEventListener('pointermove', (event) => {
+                if (!drag || event.pointerId !== drag.id) return;
+                const dx = event.clientX - drag.x,
+                    dy = event.clientY - drag.y;
+                if (!moved) {
+                    if (Math.max(Math.abs(dx), Math.abs(dy)) < 8) return;
+                    if (Math.abs(dy) > Math.abs(dx)) {
+                        drag = null;
+                        return;
+                    }
+                    moved = true;
+                    body.dataset.turning = 'true';
+                    body.setPointerCapture(event.pointerId);
+                }
+                event.preventDefault();
+                pos = drag.pos - dx / ((body.clientWidth / 2) * step);
+                drag.samples.push([performance.now(), pos]);
+                if (drag.samples.length > 6) drag.samples.shift();
+                paint();
+            });
+            const release = (event) => {
+                if (!drag || event.pointerId !== drag.id) return;
+                const { samples, pos: start } = drag;
+                drag = null;
+                delete body.dataset.turning;
+                if (!moved) return;
+                // A flick turns one poster; a long drag lands on the nearest.
+                const [t0, p0] = samples[0];
+                const [t1, p1] = samples.at(-1);
+                const velocity = (p1 - p0) / Math.max(1, t1 - t0);
+                let target = Math.round(pos + velocity * 160);
+                target = Math.max(Math.round(start) - 1, Math.min(Math.round(start) + 1, target));
+                animateTo(target);
+            };
+            body.addEventListener('pointerup', release);
+            body.addEventListener('pointercancel', release);
+            // The release of a turn must not also turn a poster over.
+            body.addEventListener(
+                'click',
+                (event) => {
+                    if (!moved) return;
+                    moved = false;
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                },
+                true,
+            );
+        }
+        new ResizeObserver(paint).observe(body);
+        paint();
+        settle(0);
+        // Once a session, the column turns a little and back, to show it can.
+        let hinted = false;
+        try {
+            hinted = !!sessionStorage.getItem('expadu-column-hint');
+            sessionStorage.setItem('expadu-column-hint', '1');
+        } catch {}
+        if (count > 1 && !hinted && !reducedMotion())
+            setTimeout(() => {
+                if (drag || Math.round(pos) !== 0) return;
+                animateTo(0.22, 420);
+                setTimeout(() => !drag && animateTo(0, 420), 460);
+            }, 900);
+    }
+    const bind = (root) => {
+        base.bind(root);
+        bindColumn(root);
+    };
 
     /* ---------- Skyline: the day's events lit above the city ---------- */
     // Where a district sits in the illustration (x and y in % of the
@@ -203,7 +389,7 @@
             ? events.filter((item) => !shown.includes(item.id))
             : events;
         const posters = onWall.length
-            ? `<div class="wall-day">${onWall.map((item) => P.poster(item, { size: 'wall', ...posterOptions(item, distance(item)) })).join('')}</div>`
+            ? `<div class="wall-day">${onWall.map((item, i) => P.poster(item, { size: 'wall', ...posterOptions(item, distance(item)) }).replace('<article ', `<article style="--i:${i}" `)).join('')}</div>`
             : `<p class="wall-day-note">${events.length === 1 ? 'This day’s event is' : 'These events are'} on the poster column.</p>`;
         const pictures = events.filter(hasPicture).length;
         return `<div class="wall-view wall-view--wall">${posters}<p class="festival-credit">Posters are set by Expadu from each listing: title, date, time, place, admission and category. No photo, nothing added. Sample programme.</p></div>
@@ -272,11 +458,11 @@
             })
             .join('');
     }
-    function next(catalogue) {
-        const listings = laterListings(catalogue);
+    // The later listings hang on the column; the week's notes stay pinned
+    // to the wall.
+    function next() {
         const extra = notes();
-        if (!listings.length && !extra) return '';
-        return `<aside class="wall-next" aria-labelledby="wall-next-title"><div class="wall-next-head"><h2 id="wall-next-title">Next in the city’s calendar</h2><p>Later listings in the same series · time and price not listed yet</p></div><div class="wall-next-grid">${listings.map((item) => P.poster(item, { size: 'mini', today, listing: true })).join('')}${extra}</div></aside>`;
+        return extra ? `<div class="wall-next">${extra}</div>` : '';
     }
     function pastStrip(catalogue) {
         const past = unique(catalogue).filter((item) => F.past(item, today));
@@ -349,7 +535,7 @@
             main.querySelector('#event-featured'),
             main.querySelector('#event-list'),
         );
-        board.insertAdjacentHTML('beforeend', next(catalogue));
+        board.insertAdjacentHTML('beforeend', next());
         gallery.append(board);
         gallery.insertAdjacentHTML('afterend', pastStrip(catalogue));
         main.addEventListener('click', (event) => {
@@ -398,6 +584,64 @@
             });
         syncPast();
         syncNote(main);
+        // Your choices show on the posters: Save pins one (CSS), and once
+        // it's in your plan for its day it gets a stamp. A sample plan you
+        // didn't make isn't stamped.
+        const stamps = () => {
+            const H = window.ExpaduHandoffs,
+                S = window.ExpaduStore;
+            if (!H?.dayItems || !S) return;
+            const byDate = {};
+            main.querySelectorAll('.pp[data-event-card]').forEach((card) => {
+                const item = catalogue.find((x) => x.id === card.dataset.poster);
+                if (!item?.date) return;
+                byDate[item.date] ??= H.dayItems(S.read(), S.studio(), item.date);
+                const planned = byDate[item.date].find(
+                    (x) =>
+                        String(x.id).replace(/^event:/, '') === item.id &&
+                        x.planStatus !== 'Sample plan',
+                );
+                const stamp = !planned
+                    ? ''
+                    : planned.planStatus === 'Confirmed'
+                      ? 'In your plan'
+                      : 'Added · not confirmed';
+                if (stamp) card.dataset.stamp = stamp;
+                else delete card.dataset.stamp;
+            });
+        };
+        new MutationObserver(stamps).observe(list, { childList: true });
+        window.addEventListener('expadu:change', stamps);
+        window.addEventListener('storage', stamps);
+        stamps();
+        // With a mouse, a poster on the wall leans towards the pointer and
+        // catches the light. Touch and reduced motion keep it still.
+        const fine = window.matchMedia?.('(hover: hover) and (pointer: fine)');
+        let tiltFrame = null;
+        main.addEventListener('pointermove', (event) => {
+            if (!fine?.matches || reducedMotion()) return;
+            const card = event.target.closest('.wall-day > .pp');
+            if (!card) return;
+            const box = card.getBoundingClientRect();
+            const x = (event.clientX - box.left) / box.width,
+                y = (event.clientY - box.top) / box.height;
+            cancelAnimationFrame(tiltFrame);
+            tiltFrame = requestAnimationFrame(() => {
+                card.classList.add('is-tilting');
+                card.style.setProperty('--tilt-x', `${((x - 0.5) * 8).toFixed(2)}deg`);
+                card.style.setProperty('--tilt-y', `${((0.5 - y) * 8).toFixed(2)}deg`);
+                card.style.setProperty('--glare-x', `${(x * 100).toFixed(1)}%`);
+                card.style.setProperty('--glare-y', `${(y * 100).toFixed(1)}%`);
+            });
+        });
+        main.addEventListener('pointerout', (event) => {
+            const card = event.target.closest('.wall-day > .pp');
+            if (!card || card.contains(event.relatedTarget)) return;
+            cancelAnimationFrame(tiltFrame);
+            card.classList.remove('is-tilting');
+            for (const name of ['--tilt-x', '--tilt-y', '--glare-x', '--glare-y'])
+                card.style.removeProperty(name);
+        });
     }
 
     // The event sheet's cover follows the view: the poster's art on the
@@ -421,7 +665,7 @@
                 'Poster set by Expadu from the listing, not an official poster';
     }).observe(document.documentElement, { childList: true, subtree: true });
 
-    window.ExpaduEventFestival = { ...base, image, feature, render };
+    window.ExpaduEventFestival = { ...base, image, feature, render, bind };
     window.ExpaduEventWall = { mount, laterListings, hasPicture, band, stage };
     // After app.js has built the page, before its own DOMContentLoaded work.
     document.addEventListener('DOMContentLoaded', mount);

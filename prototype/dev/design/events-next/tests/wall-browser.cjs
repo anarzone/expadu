@@ -84,13 +84,25 @@ const inside = (box, viewport) =>
             await page.waitForTimeout(450);
             assert.ok(await poster.locator('.pp-front').isVisible());
 
-            // Next in the city's calendar: dates only, no planning.
-            const listings = page.locator('.wall-next .pp.is-listing');
-            assert.equal(await listings.count(), 3);
+            // The column carries the featured pick and the three later city
+            // listings (dates only, no planning); it turns with its arrows.
+            const column = page.locator('#event-featured .wall-column');
+            assert.equal(await column.locator('.wall-column-face').count(), 4);
+            assert.equal(await column.locator('.pp.is-listing').count(), 3);
             assert.equal(
-                await page.locator('.wall-next [data-plan-item], .wall-next [data-save-item]').count(),
+                await column.locator('.pp.is-listing :is([data-plan-item], [data-save-item])').count(),
                 0,
             );
+            assert.equal(await column.locator('.wall-column-count').innerText(), '1 / 4');
+            await column.locator('[data-column-step="1"]').click();
+            await page.waitForTimeout(450);
+            assert.equal(await column.locator('.wall-column-count').innerText(), '2 / 4');
+            const front = await column.evaluate((el) =>
+                [...el.querySelectorAll('.wall-column-face')].findIndex((f) => !f.inert),
+            );
+            assert.equal(front, 1, 'only the poster facing you can be used');
+            await column.locator('[data-column-step="-1"]').click();
+            await page.waitForTimeout(450);
 
             // Skyline: the day's lights, and a poster where there's no
             // usable picture (the film night).

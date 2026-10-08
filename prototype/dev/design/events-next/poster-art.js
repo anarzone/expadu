@@ -178,18 +178,21 @@
             ).focus({ preventScroll: true });
         };
         if (reduce || !card.animate) return swap();
-        // A quick half-turn: fold to the edge, swap faces, unfold.
+        // A paper turn in depth: fold to the edge, swap faces, unfold.
         card.animate(
-            [{ transform: 'rotateY(0)' }, { transform: 'rotateY(90deg)' }],
+            [
+                { transform: 'perspective(1100px) rotateY(0)' },
+                { transform: 'perspective(1100px) rotateY(90deg) scale(1.03)' },
+            ],
             { duration: 140, easing: 'cubic-bezier(.4,0,1,1)' },
         ).onfinish = () => {
             swap();
             card.animate(
                 [
-                    { transform: 'rotateY(-90deg)' },
-                    { transform: 'rotateY(0)' },
+                    { transform: 'perspective(1100px) rotateY(-90deg) scale(1.03)' },
+                    { transform: 'perspective(1100px) rotateY(0)' },
                 ],
-                { duration: 180, easing: 'cubic-bezier(.2,.8,.2,1)' },
+                { duration: 180, easing: 'cubic-bezier(.22,1,.36,1)' },
             );
         };
     }
