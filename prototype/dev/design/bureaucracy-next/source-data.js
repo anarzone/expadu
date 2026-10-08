@@ -31,6 +31,8 @@ window.BureaucracySource = [
 ];
 
 // Titles and document labels copied from the historical core catalogue. No current guidance is inferred.
+// Health insurance and Bank account no longer list a Meldebescheinigung: no allowed source says an
+// insurer or bank needs it, and §31 ZKG contradicts it for basic accounts (owner, 8 Oct 2026).
 window.BureaucracySource.push(
     ...[
         {
@@ -50,7 +52,7 @@ window.BureaucracySource.push(
             key: 'core.health_insurance',
             title: 'Sort out health insurance',
             description: null,
-            documents: ['Passport or ID', 'Meldebescheinigung'],
+            documents: ['Passport or ID'],
             verifiedAt: '2026-08-22',
             version: '2026-08-22.1',
             source: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/health-insurance',
@@ -60,11 +62,7 @@ window.BureaucracySource.push(
             key: 'core.bank_account',
             title: 'Open a German bank account',
             description: null,
-            documents: [
-                'Passport or ID',
-                'Meldebescheinigung',
-                'Tax ID (if available)',
-            ],
+            documents: ['Passport or ID', 'Tax ID (if available)'],
             verifiedAt: '2026-08-22',
             version: '2026-08-22.1',
             source: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/bank-account',

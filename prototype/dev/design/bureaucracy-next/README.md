@@ -25,9 +25,12 @@ backend's document names and links (8f4074c9):
   Suggested tasks still appear under Your tasks ("Explore before you start").
 - **German document terms in English.** A document whose label names a
   German term shows its English name with the term the office uses, for
-  example "Landlord's confirmation of move-in (Wohnungsgeberbescheinigung)"
-  and "Registration certificate (Meldebescheinigung)". Labels are unchanged
-  (`paperwork.requirements[].terms`).
+  example "Landlord's confirmation of move-in (Wohnungsgeberbescheinigung)".
+  Labels are unchanged (`paperwork.requirements[].terms`).
+- **No Meldebescheinigung for health insurance or a bank account (owner,
+  8 October).** The sample's old, unsourced catalogue labels listed one for
+  both; no allowed source says an insurer or bank needs it, and §31 ZKG
+  contradicts it for basic accounts. The two rows are gone from the sample.
 - **Where a document comes from.** The Blue Card's "Health-insurance
   evidence" says "This comes from your Health insurance task" with a way to
   open it, and the Health insurance step says "Also needed for EU Blue Card

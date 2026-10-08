@@ -27,7 +27,7 @@
             tone: 'green',
             initial: 'waiting',
             note: 'Response pending',
-            docs: ['reported_available', 'missing'],
+            docs: ['reported_available'],
             // "Waiting" follows a recorded submission (sample date).
             reports: [
                 { event: 'preparation_started' },
@@ -43,7 +43,7 @@
             tone: 'blue',
             initial: 'not_started',
             note: '',
-            docs: ['reported_available', 'missing', 'unknown'],
+            docs: ['reported_available', 'unknown'],
             reports: [],
         },
     ];

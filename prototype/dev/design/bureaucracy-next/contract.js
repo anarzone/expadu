@@ -95,7 +95,7 @@
     // data here, as in the backend, not read from the wording by the UI.
     const conditional = {
         'case.bc.first_application.prepare': [2, 4],
-        'core.bank_account': [2],
+        'core.bank_account': [1],
     };
     // The registry's wording for the one sample question (facts.yaml).
     const visaQuestion = {
