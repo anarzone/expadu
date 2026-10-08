@@ -1,4 +1,4 @@
-version: '2026-09-08.2'
+version: '2026-10-08.1'
 reviewed_by: owner_authorised_product_review
 # Minimal orientation; remaining questions require a current reviewed dependency.
 orientation:
@@ -13,3 +13,9 @@ orientation:
   - fact_key: residence_title_expires_at
     when:
       - {current_residence_title: [standard_work_permit, blue_card, family_reunification]}
+# Not asked while the person's own answers settle it. Choosing the Blue Card as the goal
+# already says which employment track to follow (owner decision, 8 October 2026).
+not_asked:
+  - fact_key: permit_track
+    when:
+      - {case_goal: blue_card}

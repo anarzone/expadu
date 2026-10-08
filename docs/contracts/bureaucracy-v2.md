@@ -108,7 +108,7 @@ and none of them moves a decision to the client.
       "official": [{"id": "case.bc.first_application.prepare.action.1", "url": "https://www.stadt-koeln.de/…", "purpose": "information"}],
       "legal": [{"kind": "primary", "label": "§18g AufenthG", "url": "https://www.gesetze-im-internet.de/…"}]
     },
-    "requirements": {"ready": 0, "total": 5},
+    "requirements": {"ready": 0, "total": 5, "optional": 0},
     "first_open_requirement": {"id": "case.bc.first_application.prepare.document.1", "label": "Valid passport and national D visa",
       "readiness": "missing", "applicability": "required", "conditional": false},
     "dates": []
@@ -141,9 +141,12 @@ and none of them moves a decision to the client.
   positions within a process. Releases compiled before positions existed report
   `null` and keep their stored order. Re-import the catalogue to get positions.
 - `requirements` and `first_open_requirement` are `null` without `manage_evidence`.
-  They count this step's paperwork rows whose applicability is not `not_required`.
-  `ready` counts `confirmed_for_use`. The first open requirement is a presentation
-  aid, not the cause of anything. `conditional` is `applicability !== 'required'`.
+  `total` counts this step's `required` paperwork rows and `ready` those of them that are
+  `confirmed_for_use`; only required rows can be confirmed, so `ready` can reach `total`.
+  `optional` counts the conditional rows ("may be needed"), which are listed but never
+  counted. The first open requirement is the first required row not yet confirmed, or the
+  first conditional one once every required row is ready. It is a presentation aid, not the
+  cause of anything. `conditional` is `applicability !== 'required'`.
 - `steps[].dates` are the timeline rows with this step's `action_id`.
 - Retained `history` steps keep their recorded states. Fields that need current
   reviewed guidance are `null` or empty.
@@ -312,6 +315,13 @@ Reading `questions.status: preview` creates no offer. To answer or skip:
 offers cause a pause/continue choice, not a lifetime limit. Handle `paused`,
 `answer_limit`, `refresh_required`, `already_handled`, `no_more_questions` and
 `permission_required` explicitly. Preserve the manual path when AI is unavailable.
+
+Questions come in the backend's order; do not re-sort them. The most urgent dependent
+work goes first. Within one urgency, a question for work that already applies to the
+person goes before one that only decides whether other routes apply (address
+registration before the employment track). `schema/question-protocol.yaml` `not_asked`
+lists questions the person's own answers settle: the employment track is not asked once
+`case_goal` is `blue_card`.
 
 Question `kind` determines the interaction:
 

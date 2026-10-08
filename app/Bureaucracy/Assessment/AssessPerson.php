@@ -77,20 +77,20 @@ final class AssessPerson
                     default => $complete ? 'requirements_met' : 'supported_preparation',
                 };
                 foreach ($criteria['missing'] as $key) {
-                    $dependencies->add($key, $definition['id'], $variant['id'], $rank);
+                    $dependencies->add($key, $definition['id'], $variant['id'], $rank, $relevance['status'] === 'met');
                 }
                 if (($variant['action_requires_intent'] ?? false) && ! $confirmedIntent && $unresolvedIntent) {
                     // Offer a preference/conflict review, not a legal criterion.
-                    $dependencies->add('case_goal', $definition['id'], $variant['id'], $rank);
+                    $dependencies->add('case_goal', $definition['id'], $variant['id'], $rank, $relevance['status'] === 'met');
                 }
                 if (($variant['action_requires_intent'] ?? false) && ! $confirmedIntent) {
                     foreach ($intentMissing as $key) {
-                        $dependencies->add($key, $definition['id'], $variant['id'], $rank);
+                        $dependencies->add($key, $definition['id'], $variant['id'], $rank, $relevance['status'] === 'met');
                     }
                 }
                 $anchor = (new TemporalDependencies)->anchorKey($variant, $facts);
                 if ($criteria['status'] === 'met' && $anchor !== null && $evaluator->condition($anchor, ['present' => true], $facts, $input->at)->unresolved()) {
-                    $dependencies->add($anchor, $definition['id'], $variant['id'], $rank + self::AnchorBonus);
+                    $dependencies->add($anchor, $definition['id'], $variant['id'], $rank + self::AnchorBonus, $relevance['status'] === 'met');
                 }
                 $variants[] = [...$variant, 'assessment' => $assessment, 'criteria' => $criteria['criteria'],
                     'alternatives' => $criteria['alternatives'], 'missing_facts' => $criteria['missing'],
