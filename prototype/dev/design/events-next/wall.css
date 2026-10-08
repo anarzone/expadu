@@ -1834,6 +1834,17 @@ main[data-view='skyline'] .wall-board > .wall-sky {
     }
 }
 
+/* The sheet's cover: the poster's art sits behind the category, date and
+   time, never over them. */
+.event-ticket > .pp-art--cover,
+.event-ticket > .event-ticket-shade {
+    z-index: 0;
+}
+.event-ticket > div {
+    position: relative;
+    z-index: 1;
+}
+
 /* A listing without a time doesn't print one. */
 .pp.is-listing .pp-time {
     display: none;

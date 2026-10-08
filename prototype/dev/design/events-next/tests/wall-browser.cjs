@@ -199,6 +199,14 @@ const inside = (box, viewport) =>
             }
             await cinema.evaluate((el) => el.click());
             await page.waitForSelector('.event-sheet');
+            // The sheet's cover shows when it's on, above the poster's art.
+            await page.waitForTimeout(500);
+            const timeOnTop = await page.evaluate(() => {
+                const time = document.querySelector('.event-sheet .event-ticket-time strong');
+                const r = time.getBoundingClientRect();
+                return time.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+            });
+            assert.equal(timeOnTop, true, 'the sheet hides its time under the art');
             await page.keyboard.press('Escape');
             await page.click('[data-wall-view="wall"]');
 
