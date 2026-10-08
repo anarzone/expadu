@@ -4,6 +4,29 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## Arrival asked as itself, and Add a task — 8 October 2026 (in review)
+
+Owner go-ahead for the two remaining follow-ups from the backend mapping
+(C19 and "Add a task"):
+
+- **The arrival answer is asked, not inferred (C19).** "Help me get started"
+  used to ask "Are you already in Germany?" and quietly record its answer as
+  the registry fact `arrival_planned`. It now asks that fact's own question in
+  the registry's words, "Are you still planning this move to Germany?"
+  (Yes, still planning · No, I have arrived · I'm not sure), with its reason
+  and "Your answer is kept in your details." The answer goes into your
+  details as you gave it, and answering again updates it. "I'm not sure" is
+  an unknown answer, not a guess.
+- **Add a task without an unbacked task.** The backend has no free-text task,
+  so the + no longer saves one. It opens a compact panel: tasks the plan
+  suggests that you aren't tracking yet (the sample's Bank account), Update
+  your situation to find more, and "Something else? Ask Composer", which
+  sends the question to Composer and saves nothing as a task. Requests saved
+  before stay viewable and removable, with "Ask Composer about it".
+
+Tests: `tests/orientation.test.cjs` covers the arrival question; the panel and
+both hand-offs were checked in the browser at 390 and 1280 px.
+
 ## Reads the v2 plan contract — 8 October 2026 (in review)
 
 The Bürokratiekarten session's updated contract (`docs/contracts/bureaucracy-v2.md`
@@ -82,7 +105,7 @@ was "Tax identification number"). Step headings stay the steps' own. "Undo"
 after Start tracking follows the plan's `untrackable` flag, which confirming
 a document for the task also ends.
 
-Still open: "Add a task" has no backend entity; the document English names
+Still open: the document English names
 and the links between tasks are next on the backend side. The backend
 catalogue has grown to about 46 cards in 30 processes (Blue Card first
 application now has four steps); this preview keeps its historical sample of

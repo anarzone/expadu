@@ -2,14 +2,18 @@
 (function (root) {
     const key = 'expadu-bureaucracy-design-v1';
     const questions = [
+        // The registry's own question (facts.yaml, arrival_planned), asked
+        // in its words: the answer is kept in your details, so it is never
+        // recorded from a different question.
         {
             key: 'move_stage',
-            title: 'Are you already in Germany?',
-            why: 'A little context helps. You can skip any question.',
+            fact: 'arrival_planned',
+            title: 'Are you still planning this move to Germany?',
+            why: 'Planning a move is different from having already arrived. Your answer is kept in your details. You can skip any question.',
             label: 'Your move',
             options: [
-                ['here', 'I’m here', 'pin'],
-                ['planning', 'Still planning', 'calendar'],
+                ['planning', 'Yes, still planning', 'calendar'],
+                ['here', 'No, I have arrived', 'pin'],
                 ['unknown', 'I’m not sure', 'info'],
             ],
         },
@@ -125,20 +129,10 @@
             source: 'sample orientation',
             at,
         };
-        if (
-            q.key === 'move_stage' &&
-            o.details &&
-            !o.details.facts.arrival_planned
-        ) {
-            o.details.facts.arrival_planned = {
-                value:
-                    q.selected === 'unknown'
-                        ? 'unknown'
-                        : q.selected === 'planning',
-                state: q.selected === 'unknown' ? 'unknown' : 'value',
-                source: 'Confirmed introduction',
-                at,
-            };
+        // Your answer to the arrival question itself, so it goes into your
+        // details as you gave it.
+        if (q.fact && o.details) {
+            o.details.facts[q.fact] = arrivalFact(o.answers[q.key]);
             o.details.revision++;
         }
         o.deferred = o.deferred.filter((k) => k !== q.key);
@@ -146,6 +140,16 @@
         advance(o);
         return true;
     }
+    // The details fact for an answer to the arrival question.
+    const arrivalFact = (answer) => ({
+        value:
+            answer.value === 'unknown'
+                ? 'unknown'
+                : answer.value === 'planning',
+        state: answer.value === 'unknown' ? 'unknown' : 'value',
+        source: 'Your answer',
+        at: answer.at,
+    });
     function defer(s) {
         const q = current(s);
         if (!q) return false;
@@ -238,6 +242,7 @@
     const api = {
         key,
         allowed,
+        arrivalFact,
         questions,
         hydrate,
         entry,

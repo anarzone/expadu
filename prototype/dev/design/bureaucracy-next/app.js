@@ -797,7 +797,39 @@
     }
     function requestView() {
         const p = state.custom.find((x) => x.id === state.process);
-        return `${back()}<section class="access-blank"><div class="status-illustration peach">${I('document')}</div><h2 id="view-heading" tabindex="-1">${E(p?.name || 'Your request')}</h2><p>No reviewed guidance is connected to this request. Your other processes remain available.</p>${button('Remove this request', 'remove-request')}</section>`;
+        return `${back()}<section class="access-blank"><div class="status-illustration peach">${I('document')}</div><h2 id="view-heading" tabindex="-1">${E(p?.name || 'Your request')}</h2><p>No reviewed guidance is connected to this request. Your other processes remain available.</p><div class="actions">${p ? button('Ask Composer about it', 'ask-request', 'primary') : ''}${button('Remove this request', 'remove-request')}</div></section>`;
+    }
+    // "Add a task": tasks come from your situation, so each has reviewed
+    // guidance. The plan's suggestions you aren't tracking yet (proposals,
+    // id null) open as usual; anything else goes to Composer as a question,
+    // never saved as a task without guidance.
+    function addTask() {
+        const plan = C.plan(state);
+        const suggested = plan.processes.filter(
+            (p) => p.id === null && !p.is_closed,
+        );
+        openEditor(
+            'Add a task',
+            `<p>Tasks come from your situation, so each one has reviewed guidance. Expadu doesn’t add a task without it.</p>${
+                suggested.length
+                    ? `<div class="add-task-list">${suggested
+                          .map(
+                              (p) =>
+                                  `<button type="button" class="person-option" data-process="${E(p.occurrence_key)}">${I(P.process(state, p.occurrence_key)?.icon || 'document')}<span><strong>${E(nameOf(p.occurrence_key))}</strong><small>Suggested from your answers · not tracked yet</small></span>${I('arrow')}</button>`,
+                          )
+                          .join('')}</div>`
+                    : '<p class="muted">No other tasks are suggested from your answers yet.</p>'
+            }<div class="actions">${button('Update your situation', 'facts')}${J.applies(state) ? '<button type="button" class="button secondary" data-situation="browse">Browse topics</button>' : ''}</div><form id="task-ask-form" class="add-task-ask"><label class="form-field">Something else? Ask Composer<input name="question" maxlength="300" placeholder="What would you like help with?" required></label><p>Composer answers only from reviewed guidance. Nothing is saved as a task.</p><button class="button secondary" type="submit">${I('spark')}Ask Composer</button></form>`,
+        );
+    }
+    // A question for Composer, as if typed there.
+    function askComposer(text) {
+        const prompt = String(text || '').trim();
+        if (!prompt) return;
+        S.update((shared) => {
+            shared.prompt = prompt;
+        });
+        S.go('composer', { compose: '1' });
     }
     // What each reviewed unit covers (plan.coverage.units). None of these
     // states means you are eligible or that every case is covered.
@@ -1239,10 +1271,11 @@
             return;
         }
         if (action === 'add-process') {
-            openEditor(
-                'Add a task',
-                `<form id="process-form"><label class="form-field">What would you like to keep track of?<input name="name" maxlength="100" placeholder="What would you like help with?" required></label><p>Keep a request for review. No legal route is assumed.</p><button class="button primary" type="submit">Save request</button></form>`,
-            );
+            addTask();
+            return;
+        }
+        if (action === 'ask-request') {
+            askComposer(state.custom.find((x) => x.id === state.process)?.name);
             return;
         }
         if (action === 'remove-request') {
@@ -1322,7 +1355,7 @@
             ![
                 'appointment-form',
                 'submission-form',
-                'process-form',
+                'task-ask-form',
                 'workflow-form',
             ].includes(e.target.id)
         )
@@ -1380,11 +1413,8 @@
                 return;
             }
         }
-        if (e.target.id === 'process-form') {
-            if (!d.name.trim()) return;
-            const id = 'request-' + Date.now();
-            state.custom.push({ id, name: d.name.trim() });
-            go('request', id);
+        if (e.target.id === 'task-ask-form') {
+            askComposer(d.question);
             return;
         }
         U.close();

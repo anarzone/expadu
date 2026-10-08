@@ -36,11 +36,13 @@
                               ...root.BureaucracyPreview.sampleFacts(s),
                           }
                         : {};
-                const move = o.answers.move_stage?.value;
-                if (move === 'here' || move === 'planning')
-                    known.arrival_planned = move === 'planning';
-                else if (move === 'unknown') known.arrival_planned = 'unknown';
                 o.details = D.create(known);
+                // An answer to the arrival question itself carries over as
+                // you gave it.
+                if (o.answers.move_stage)
+                    o.details.facts.arrival_planned = G.arrivalFact(
+                        o.answers.move_stage,
+                    );
             }
             return o.details;
         }
@@ -125,15 +127,15 @@
                     ...q,
                     title:
                         q.key === 'move_stage'
-                            ? `Is ${name} already in Germany?`
+                            ? `Is ${name} still planning this move to Germany?`
                             : `What would ${name} like help with?`,
                     options: q.options
                         .filter(([value]) => value !== 'appointment')
                         .map(([value, label, icon]) => [
                             value,
-                            label === 'I’m here'
-                                ? 'Already here'
-                                : label.replace('my ', 'the '),
+                            label
+                                .replace('I have arrived', 'they have arrived')
+                                .replace('my ', 'the '),
                             icon,
                         ]),
                 };

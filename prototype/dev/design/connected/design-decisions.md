@@ -407,6 +407,14 @@ routable. Today's and Composer's Paperwork lines read the same plan through
 titles (EU Blue Card, Address registration…), and Undo after Start tracking
 follows its `untrackable` flag. Details are in `bureaucracy-next/README.md`.
 
+**Paperwork asks arrival as itself; Add a task stays within reviewed guidance
+— owner go-ahead, 8 October (in review):** the introduction asks the registry's
+own arrival question ("Are you still planning this move to Germany?") instead
+of recording a different question's answer as that fact. The + opens a
+compact panel of the plan's suggested tasks not yet tracked, Update your
+situation, and a question for Composer; nothing is saved as a task without
+reviewed guidance. Details are in `bureaucracy-next/README.md`.
+
 **Travel review fixes and one timetable — owner request, 7 October (in review):**
 the Timetable tab is the Neumarkt station board; Neumarkt is one stop that
 opens on the sample day with its line 4 and offers the 4 October capture as the

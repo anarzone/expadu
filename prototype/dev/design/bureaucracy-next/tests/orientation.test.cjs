@@ -164,3 +164,41 @@ test('cancelling an edit keeps the confirmed answer and leaves no pending change
     assert.equal(s.orientation.draft, null);
     assert.equal(s.orientation.mode, 'review');
 });
+
+test('the move question is the registry’s arrival question, and its answer is kept as given', () => {
+    const s = fresh();
+    G.begin(s);
+    const q = G.current(s);
+    // facts.yaml wording, not a different question mapped onto the fact.
+    assert.equal(q.fact, 'arrival_planned');
+    assert.equal(q.title, 'Are you still planning this move to Germany?');
+    assert.match(
+        q.why,
+        /^Planning a move is different from having already arrived\./,
+    );
+    assert.deepEqual(
+        [...q.options.map(([value, label]) => `${value}:${label}`)],
+        [
+            'planning:Yes, still planning',
+            'here:No, I have arrived',
+            'unknown:I’m not sure',
+        ],
+    );
+    // With details open, the answer goes in as your own answer.
+    G.hydrate(s).details = { facts: {}, revision: 0 };
+    G.choose(s, 'here');
+    G.confirm(s);
+    const fact = G.hydrate(s).details.facts.arrival_planned;
+    assert.equal(fact.value, false);
+    assert.equal(fact.source, 'Your answer');
+    // Answering again updates it, rather than keeping an older value.
+    G.edit(s, 'move_stage');
+    G.choose(s, 'planning');
+    G.confirm(s);
+    assert.equal(G.hydrate(s).details.facts.arrival_planned.value, true);
+    // "I'm not sure" is an unknown answer, not a guess.
+    G.edit(s, 'move_stage');
+    G.choose(s, 'unknown');
+    G.confirm(s);
+    assert.equal(G.hydrate(s).details.facts.arrival_planned.state, 'unknown');
+});
