@@ -399,8 +399,11 @@ tasks:
     type: info
     coverage_scope: universal
     applies_if_mode: explicit
+    # Only for a title Expadu has no reviewed rule for: another title, or a settlement permit
+    # whose section the person doesn't know (owner decision, 8 October 2026).
     applies_if:
       citizenship_group: non_eu
+      current_residence_title: {in: [other, settlement_permit_unknown]}
     description: |
       Expadu does not have a reviewed case rule for every residence title. Check the
       exact legal basis printed on the card or visa and confirm the route with the
@@ -414,7 +417,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-07.1
+    content_version: 2026-10-08.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§4 AufenthG — Erfordernis eines Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__4.html'}
