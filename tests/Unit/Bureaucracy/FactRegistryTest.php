@@ -30,6 +30,27 @@ function writeTemporaryCatalogue(array $facts): string
     return $path;
 }
 
+test('fact source and answer-state policies are compiled from the registry', function () {
+    $base = Yaml::parseFile(bureaucracyCataloguePath())['current_residence_title'];
+    $path = writeTemporaryCatalogue(['current_residence_title' => [...$base, 'permissible_sources' => ['manual'], 'allows_not_applicable' => true]]);
+    try {
+        $definition = (new FactRegistry($path))->definition('current_residence_title');
+        expect($definition->permissibleSources)->toBe(['manual'])->and($definition->allowsNotApplicable)->toBeTrue();
+    } finally {
+        unlink($path);
+    }
+});
+
+test('invalid source policy cannot enter the fact registry', function (mixed $sources) {
+    $base = Yaml::parseFile(bureaucracyCataloguePath())['current_residence_title'];
+    $path = writeTemporaryCatalogue(['current_residence_title' => [...$base, 'permissible_sources' => $sources]]);
+    try {
+        expect(fn () => new FactRegistry($path))->toThrow(DomainException::class);
+    } finally {
+        unlink($path);
+    }
+})->with(['empty' => [[]], 'unconfirmed model' => [['ai_generated']], 'string' => 'manual', 'duplicate' => [['manual', 'manual']]]);
+
 /*
 |--------------------------------------------------------------------------
 | Live catalogue: structure + every registered key
@@ -95,7 +116,9 @@ test('the residence title enum registers its canonical route options', function 
         'family_reunification',
         'settlement_permit_9',
         'settlement_permit_18c',
+        'settlement_permit_unknown',
         'other',
+        'none',
     ]);
 });
 
@@ -110,6 +133,7 @@ test('the sponsor title enum registers its canonical route options', function ()
         'blue_card',
         'settlement_permit_9',
         'settlement_permit_18c',
+        'settlement_permit_unknown',
         'other',
     ]);
 });

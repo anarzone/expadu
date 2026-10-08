@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Bureaucracy\GuidancePublication;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,8 +21,15 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
         public int $daysRemaining,
         public string $deadline,
         public ?int $taskId = null,
-        public ?string $appointmentAt = null, // ISO — set when the deadline IS a booked appointment
+        public ?string $appointmentAt = null, // Separate appointment instant, never a deadline extension.
+        public ?array $guidanceReference = null,
     ) {}
+
+    public function shouldSend(mixed $notifiable, string $channel): bool
+    {
+        return $notifiable instanceof User
+            && app(GuidancePublication::class)->allowsReference($this->guidanceReference ?? null, (int) $notifiable->getKey());
+    }
 
     /**
      * Deep-link straight to the task card (the page auto-expands + scrolls).
@@ -79,7 +88,7 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
 
     private function body(): string
     {
-        if ($this->appointmentAt !== null) {
+        if ($this->appointmentAt !== null && str_starts_with($this->tier, 'appointment_')) {
             $at = Carbon::parse($this->appointmentAt);
 
             return match ($this->tier) {
@@ -94,7 +103,7 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
 
             return $days === 0
                 ? 'The deadline is today. Open the checklist to see what to bring.'
-                : "The deadline passed {$days} day(s) ago. It's usually fixable — open the checklist for next steps.";
+                : "The deadline passed {$days} day(s) ago. Open the checklist for next steps.";
         }
 
         return $this->daysRemaining === 0

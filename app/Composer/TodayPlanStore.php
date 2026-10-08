@@ -5,7 +5,7 @@ namespace App\Composer;
 use App\Models\User;
 use App\Places\PlaceIdentity;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 
 /**
  * The one plan a user has pinned to their Today screen. "Save to Today" in the
@@ -18,10 +18,7 @@ class TodayPlanStore
 {
     private const MAX_TTL_HOURS = 72;
 
-    private function key(User $user): string
-    {
-        return "composer:today:{$user->id}";
-    }
+    public function __construct(private PrivatePlanCache $cache, private ActivePlanStore $active) {}
 
     /**
      * Pin a composed plan (its stored array form) to Today.
@@ -34,6 +31,7 @@ class TodayPlanStore
             return;
         }
         $plan = app(PlaceIdentity::class)->normalizePlan($plan);
+        $this->active->assertCurrent($user, $plan);
 
         $start = $plan['constraints']['window_start'] ?? null;
         $until = is_string($start)
@@ -45,7 +43,10 @@ class TodayPlanStore
             min(self::MAX_TTL_HOURS * 3600, (int) CarbonImmutable::now()->diffInSeconds($until, false)),
         );
 
-        Cache::put($this->key($user), [
+        $this->active->store($user, 'today', [
+            'constraints' => $plan['constraints'],
+            'appointment_revision' => $plan['appointment_revision'],
+            'schedule_feasible' => $plan['schedule_feasible'] ?? true,
             'window_start' => $start,
             'constraints' => $plan['constraints'] ?? null,
             'origin' => $plan['origin'] ?? null,
@@ -62,7 +63,7 @@ class TodayPlanStore
      */
     public function get(User $user): ?array
     {
-        $data = Cache::get($this->key($user));
+        $data = $this->cache->get($user, 'today');
         if (! is_array($data) || empty($data['slots'])) {
             return null;
         }
@@ -72,6 +73,17 @@ class TodayPlanStore
         if (! isset($data['constraints']['window_end'])) {
             return null;
         }
+        $weekday = isset($data['window_start']) && is_string($data['window_start'])
+            ? CarbonImmutable::parse($data['window_start'])->isoFormat('dddd')
+            : 'day';
+
+        try {
+            $this->active->assertCurrent($user, $data);
+        } catch (ValidationException) {
+            return ['state' => 'needs_review', 'weekday' => $weekday, 'prompt' => null, 'slots' => [],
+                'message' => 'Your appointments changed. Rebuild your day plan to use the current times.', 'action' => 'recompose'];
+        }
+
         $data = app(PlaceIdentity::class)->normalizePlan($data);
 
         if (isset($data['constraints']['window_end'])) {
@@ -87,18 +99,22 @@ class TodayPlanStore
                 if ($candidate === null || (! app(FeasibilityFilter::class)->matchesDiscovery($constraints, $candidate) || ! $candidate->coversVisit(CarbonImmutable::parse($slot['start_at']), CarbonImmutable::parse($slot['end_at'])))) {
                     return null;
                 }
-                $data['slots'][$index] = (new PlanSlot(
+                $fresh = (new PlanSlot(
                     $candidate, CarbonImmutable::parse($slot['start_at']), CarbonImmutable::parse($slot['end_at']),
                     (int) $slot['travel_min_from_previous'], $slot['why'] ?? null,
                 ))->toArray();
+                // Keep the plan-level leg flags: no journey next to an unroutable appointment.
+                $fresh = [...$fresh, 'travel_known' => $slot['travel_known'] ?? true, 'may_overlap_previous' => $slot['may_overlap_previous'] ?? false];
+                $data['slots'][$index] = $fresh['travel_known'] ? $fresh : [...$fresh, 'travel_min_from_previous' => null, 'leave_by' => null];
             }
         }
 
-        $weekday = isset($data['window_start']) && is_string($data['window_start'])
-            ? CarbonImmutable::parse($data['window_start'])->isoFormat('dddd')
-            : 'day';
-
         return [
+            'state' => 'current',
+            'schedule_feasible' => $data['schedule_feasible'] ?? true,
+            'notices' => [...(($data['schedule_feasible'] ?? true) ? [] : [[
+                'code' => 'appointment_conflict', 'text' => 'Your recorded appointments overlap or cannot all be reached in time. Review the timings before following this plan.',
+            ]]), ...Plan::appointmentNotices($data['slots'])],
             'weekday' => $weekday,
             'prompt' => is_string($data['prompt'] ?? null) ? $data['prompt'] : null,
             'slots' => array_values($data['slots']),
@@ -107,6 +123,6 @@ class TodayPlanStore
 
     public function forget(User $user): void
     {
-        Cache::forget($this->key($user));
+        $this->cache->forget($user, 'today');
     }
 }

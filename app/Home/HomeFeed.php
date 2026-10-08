@@ -3,6 +3,7 @@
 namespace App\Home;
 
 use App\Bureaucracy\PathGenerator;
+use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Composer\IntentWeights;
 use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
@@ -12,16 +13,12 @@ use App\Models\EventAttendee;
 use App\Models\EventReminder;
 use App\Models\User;
 use App\Models\UserPlace;
-use App\Models\UserTask;
-use App\Profile\Applicability;
-use App\Profile\Profile;
 use App\Profile\ProfileEngine;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Collection;
 
 /**
  * Orchestrates the home feed: builds one shared HomeContext and hands it to the
@@ -186,7 +183,7 @@ class HomeFeed
 
         $now = CarbonImmutable::now('Europe/Berlin');
         $forecast = $this->safeForecast();
-        $profile = $this->profiles->build($user);
+        $profile = $this->paths->profileFor($user);
 
         // The shared origin (live / confirmed / remembered), resolved ONCE:
         // the discovery pool + proximity ranking and the travel-minutes stamp
@@ -244,7 +241,8 @@ class HomeFeed
             intentWeights: $this->intents->for($user),
             isWeekendWindow: ($now->isFriday() && $now->hour >= 15) || $now->isSaturday() || $now->isSunday(),
             isEvening: $now->hour >= 17,
-            openTasks: $this->applicableOpenTasks($user, $profile),
+            openTasks: collect(), // Legacy task models are not a decision source.
+            bureaucracyPlan: app(AccountHolderPlan::class)->for($user),
             tonightEvents: $tonightEvents,
             // "The user's day" for the fusion step: the pinned Today plan's slots
             // and the commutes (arrive_by places) that are relevant today.
@@ -270,32 +268,5 @@ class HomeFeed
         } catch (\Throwable) {
             return [];
         }
-    }
-
-    /**
-     * Open tasks that DEFINITELY still apply. A user_task is never deleted on
-     * recompute (progress is preserved), so a task whose applies_if now hinges
-     * on an unanswered attribute (Unknown — a bureaucracy-page teaser) or no
-     * longer matches the profile (No — "no longer relevant") can linger as an
-     * open row. Only Yes reaches the urgent tile + paperwork rail, so a stale
-     * conditional task can't sit "overdue by N days" on the home screen.
-     *
-     * @return Collection<int, UserTask>
-     */
-    private function applicableOpenTasks(User $user, Profile $profile): Collection
-    {
-        return UserTask::query()
-            ->where('user_id', $user->id)
-            ->open()
-            ->notSnoozed()
-            ->with('task')
-            ->get()
-            // deadline_status reads $ut->user for every task (tiles + paperwork
-            // rail, several times each). They all belong to this one user, so set
-            // the relation up front rather than lazy-loading it per task.
-            ->each(fn (UserTask $ut) => $ut->setRelation('user', $user))
-            ->filter(fn (UserTask $ut) => $ut->task !== null
-                && $this->paths->applicability($ut->task, $profile) === Applicability::Yes)
-            ->values();
     }
 }

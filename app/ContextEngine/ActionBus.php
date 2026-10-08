@@ -2,11 +2,13 @@
 
 namespace App\ContextEngine;
 
+use App\Bureaucracy\GuidancePublication;
 use App\Events\Context\ScoredActionInserted;
 use App\Models\User;
 use App\Services\MuteService;
 use App\Support\NotificationThrottle;
 use App\Support\RedisLogger;
+use Carbon\Exceptions\InvalidFormatException;
 use Illuminate\Support\Facades\Redis;
 
 /**
@@ -44,6 +46,12 @@ class ActionBus
 
     public function insert(User $user, ScoredAction $action): ScoredAction
     {
+        if (! app(GuidancePublication::class)->allowsAction($action, $user->id)) {
+            return $action->withoutChannel(ScoredAction::CHANNEL_PUSH)
+                ->withoutChannel(ScoredAction::CHANNEL_DASHBOARD)
+                ->withoutChannel(ScoredAction::CHANNEL_ALERT_PAGE);
+        }
+
         // Per-user mute (Roadmap #6 backend) — when a user has muted a
         // specific instance (e.g. Line 12 disruptions for the day), we
         // strip the push channel. Dashboard card still shows so the
@@ -108,13 +116,19 @@ class ActionBus
 
         foreach ($raw as $member) {
             $data = json_decode((string) $member, true);
-            if (! is_array($data)) {
+            if (! is_array($data) || ! $this->validPayload($data)) {
                 $expired[] = $member;
 
                 continue;
             }
-            $action = ScoredAction::fromArray($data);
-            if ($action->isExpired()) {
+            try {
+                $action = ScoredAction::fromArray($data);
+            } catch (InvalidFormatException) {
+                $expired[] = $member;
+
+                continue;
+            }
+            if ($action->isExpired() || ! app(GuidancePublication::class)->allowsAction($action, $userId)) {
                 $expired[] = $member;
 
                 continue;
@@ -137,6 +151,32 @@ class ActionBus
     public function clear(int $userId): void
     {
         Redis::del($this->key($userId));
+    }
+
+    public function removeTypes(int $userId, array $types): void
+    {
+        foreach (Redis::zrange($this->key($userId), 0, -1) as $member) {
+            $data = json_decode((string) $member, true);
+            if (is_array($data) && in_array($data['type'] ?? null, $types, true)) {
+                Redis::zrem($this->key($userId), $member);
+            }
+        }
+    }
+
+    private function validPayload(array $data): bool
+    {
+        foreach (['type', 'action_key', 'severity', 'created_at'] as $key) {
+            if (! is_string($data[$key] ?? null) || $data[$key] === '') {
+                return false;
+            }
+        }
+
+        return (is_int($data['score'] ?? null) || is_float($data['score'] ?? null)) && is_finite((float) $data['score'])
+            && is_array($data['payload'] ?? null) && is_array($data['deliver_channels'] ?? null)
+            && array_is_list($data['deliver_channels'])
+            && count(array_filter($data['deliver_channels'], fn ($channel) => ! is_string($channel)
+                || ! in_array($channel, [ScoredAction::CHANNEL_DASHBOARD, ScoredAction::CHANNEL_PUSH, ScoredAction::CHANNEL_ALERT_PAGE], true))) === 0
+            && (! isset($data['valid_until']) || is_string($data['valid_until']));
     }
 
     private function removeByActionKey(int $userId, string $actionKey): void

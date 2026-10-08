@@ -3,34 +3,22 @@
 namespace App\Bureaucracy\Cases;
 
 use App\Bureaucracy\Facts\FactRegistry;
+use App\Bureaucracy\Questions\OrientationQuestions;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyFactConflict;
-use App\Models\Task;
-use App\Profile\Applicability;
 use DomainException;
-use Illuminate\Support\Collection;
 
 /**
- * Which unanswered questions would still change what this user is shown.
- *
- * QuestionSelector drives the case plan, so it only ever looks at authoritative
- * rules — a legal claim must never rest on an unreviewed one. That is correct
- * for the plan and wrong for the prompt: a fact can gate a branch that is
- * published but not yet approved, and the user is then never asked for it at
- * all. Measured on the current catalogue, `entry_mode` — the single
- * most-referenced fact in the whole thing — is invisible to standard
- * employees, students and freelancers for exactly this reason.
- *
- * So this sweeps every PUBLISHED rule and reports the registered facts those
- * rules are waiting on. It is deliberately a weaker surface than the plan: it
- * asks questions, it never asserts guidance, and nothing it returns reaches
- * CasePlanComposer.
+ * Relevant approved-rule dependencies plus explicitly reviewed basic orientation.
+ * Missing legal coverage must never cause an interview with no usable outcome.
  */
 final class PendingAnswers
 {
     public function __construct(
         private FactRegistry $factRegistry,
         private CaseAttributes $caseAttributes,
+        private CaseMatcher $matcher,
+        private OrientationQuestions $orientation,
     ) {}
 
     /**
@@ -52,18 +40,17 @@ final class PendingAnswers
 
         $pending = [];
 
-        foreach ($this->publishedRules() as $task) {
-            if (Applicability::evaluate($task->applies_if, $attributes) !== Applicability::Unknown) {
+        $candidates = [
+            ...$this->matcher->match($case)->missingFactKeys,
+            ...$this->orientation->missingKeys($attributes),
+        ];
+
+        foreach ($candidates as $key) {
+            if (in_array($key, $conflicted, true) || ! $this->isRegisteredFact($key)) {
                 continue;
             }
 
-            foreach (Applicability::unknownAttributes($task->applies_if, $attributes) as $key) {
-                if (in_array($key, $conflicted, true) || ! $this->isRegisteredFact($key)) {
-                    continue;
-                }
-
-                $pending[$key] = true;
-            }
+            $pending[$key] = true;
         }
 
         $keys = array_keys($pending);
@@ -75,18 +62,6 @@ final class PendingAnswers
         });
 
         return $keys;
-    }
-
-    /**
-     * @return Collection<int, Task>
-     */
-    private function publishedRules(): Collection
-    {
-        return Task::query()
-            ->where('is_published', true)
-            ->whereNotNull('applies_if')
-            ->orderBy('key')
-            ->get();
     }
 
     private function isRegisteredFact(string $key): bool

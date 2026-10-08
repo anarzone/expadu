@@ -1,5 +1,10 @@
 <?php
 
+use App\Bureaucracy\Verification\SourceCheckRecorder;
+use App\Composer\ActivePlanStore;
+use App\Composer\AppointmentRepository;
+use App\Composer\Constraints;
+use App\Composer\PrivatePlanCache;
 use App\Home\HomeContext;
 use App\Models\User;
 use App\Models\UserTask;
@@ -11,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\HtmlString;
+use Tests\Support\OfflineSourceChecks;
 use Tests\TestCase;
 
 /*
@@ -42,12 +48,15 @@ pest()->extend(TestCase::class)
         // prefix, so strip it first, then clear every match.
         $prefix = (string) config('database.redis.options.prefix');
         $strip = fn (string $key): string => str_starts_with($key, $prefix) ? substr($key, strlen($prefix)) : $key;
-        foreach (['confirmed_location:*', 'location_history:*', 'notif_throttle:*'] as $pattern) {
+        foreach (['confirmed_location:*', 'location_history:*', 'notif_throttle:*', 'pending_actions:*', 'mute:*'] as $pattern) {
             $stale = array_map($strip, Redis::keys($pattern));
             if ($stale !== []) {
                 Redis::del(...$stale);
             }
         }
+
+        // No network here: automatically checked cards count as passing when their claims pass offline.
+        app()->bind(SourceCheckRecorder::class, OfflineSourceChecks::class);
 
         // Mock Vite so tests don't need npm run build
         app()->instance(Vite::class, new class extends Vite
@@ -171,5 +180,28 @@ function homeContext(User $user, array $overrides = []): HomeContext
         todayPlanSlots: $overrides['todayPlanSlots'] ?? [],
         leaveByAnchors: $overrides['leaveByAnchors'] ?? [],
         intendedEventIds: $overrides['intendedEventIds'] ?? [],
+        bureaucracyPlan: $overrides['bureaucracyPlan'] ?? null,
     );
+}
+
+/**
+ * Seed the active Composer plan through the real encrypted store, stamped with
+ * the user's current appointment revision so it passes the freshness check.
+ *
+ * @param  array<string, mixed>  $plan
+ * @return array<string, mixed> the plan as stored
+ */
+function storeComposerPlan(User $user, array $plan): array
+{
+    $plan['appointment_revision'] = app(AppointmentRepository::class)
+        ->revision($user, Constraints::fromArray($plan['constraints']));
+    app(ActivePlanStore::class)->save($user, $plan);
+
+    return $plan;
+}
+
+/** @return array<string, mixed>|null */
+function storedComposerPlan(User $user): ?array
+{
+    return app(PrivatePlanCache::class)->get($user, 'plan');
 }

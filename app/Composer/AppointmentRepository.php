@@ -2,113 +2,83 @@
 
 namespace App\Composer;
 
+use App\Bureaucracy\Assessment\AssessmentRevision;
+use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Models\User;
-use App\Models\UserTask;
-use App\Services\BuergeramtService;
-use App\Services\GeocodingService;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 
-/**
- * The composer's other impure boundary: the user's booked appointments
- * inside the window become fixed-time, non-swappable Candidates. This is
- * the cross-feature moment nothing else can copy — the app that knows your
- * Saturday also knows your Tuesday Ausländerbehörde appointment, and plans
- * the leisure around it. Office coordinates are geocoded once from the
- * static office address and cached forever; if the geocoder is down the
- * anchor still shows (sans travel buffer) and take-me-there re-geocodes on
- * tap, exactly like the bureaucracy office cards.
- */
+/** Only the account holder's explicitly recorded appointments constrain a day plan. */
 class AppointmentRepository
 {
-    private const COLOGNE_CENTRE = [50.9375, 6.9603];
+    private const LongestAppointmentMinutes = 1440;
 
-    public function __construct(
-        private readonly BuergeramtService $offices,
-        private readonly GeocodingService $geocoder,
-    ) {}
+    public function __construct(private AccountHolderPlan $plans, private AssessmentRevision $revisions) {}
 
-    /**
-     * @return list<Candidate>
-     */
+    /** @return list<Candidate> */
     public function within(User $user, Constraints $constraints): array
     {
-        return UserTask::query()
-            ->where('user_id', $user->id)
-            ->whereNotNull('appointment_at')
-            ->whereBetween('appointment_at', [$constraints->windowStart, $constraints->windowEnd])
-            ->with('task')
-            ->get()
-            ->map(fn (UserTask $userTask) => $this->toCandidate($userTask, $user))
-            ->all();
+        return $this->snapshot($user, $constraints)['candidates'];
     }
 
-    private function toCandidate(UserTask $userTask, User $user): Candidate
+    /** Capture candidates and their freshness binding from the same authorised read. */
+    public function snapshot(User $user, Constraints $constraints): array
     {
-        $task = $userTask->task;
-        $office = $this->offices->officeForTask($task?->booking_service_key, $user->veedel);
-        [$lat, $lng] = $this->locate($office);
-
-        $documentCount = is_array($task?->documents_required) ? count($task->documents_required) : 0;
-
-        return new Candidate(
-            id: "appointment:{$userTask->id}",
-            type: 'appointment',
-            name: $task?->title ?? 'Your appointment',
-            lat: $lat,
-            lng: $lng,
-            veedel: null,
-            category: 'appointment',
-            outdoor: false,
-            typicalDurationMin: 45,
-            costTier: 'free',
-            opensAt: null,
-            closesAt: null,
-            fixedStart: CarbonImmutable::parse($userTask->appointment_at)->setTimezone('Europe/Berlin'),
-            swappable: false,
-            subtitle: $this->subtitle($office, $documentCount),
-        );
-    }
-
-    /**
-     * @param  array{name: string, address: string}|null  $office
-     */
-    private function subtitle(?array $office, int $documentCount): ?string
-    {
-        $parts = [];
-        if ($office !== null) {
-            $parts[] = $office['name'];
-        }
-        if ($documentCount > 0) {
-            $parts[] = $documentCount.' '.($documentCount === 1 ? 'document' : 'documents').' on your checklist';
-        }
-
-        return $parts === [] ? null : implode(' · ', $parts);
-    }
-
-    /**
-     * @param  array{name: string, address: string}|null  $office
-     * @return array{0: float, 1: float}
-     */
-    private function locate(?array $office): array
-    {
-        $address = $office['address'] ?? null;
-        if (! is_string($address) || $address === '') {
-            return self::COLOGNE_CENTRE;
-        }
-
-        return Cache::rememberForever('office_geo:'.md5($address), function () use ($address) {
-            try {
-                $hit = $this->geocoder->search($address.', Köln')[0] ?? null;
-
-                if (is_array($hit) && isset($hit['lat'], $hit['lng'])) {
-                    return [(float) $hit['lat'], (float) $hit['lng']];
-                }
-            } catch (\Throwable) {
-                // Fall through to centre; navigation still works on tap.
+        $recorded = $this->recorded($user, $constraints);
+        $candidates = [];
+        foreach ($recorded['appointments'] as $appointment) {
+            $start = CarbonImmutable::parse($appointment['starts_at'])->setTimezone($appointment['timezone']);
+            $duration = $appointment['duration_minutes'] ?? null;
+            if ($start->lessThan($constraints->windowStart)) {
+                throw ValidationException::withMessages(['appointments' => $duration === null
+                    ? 'A recorded appointment with an unknown length starts before this plan and may still be going on. Adjust the planning time or add its length first.'
+                    : 'A recorded appointment overlaps the edge of this plan. Adjust the planning time or review the appointment first.']);
             }
+            if ($duration !== null && $start->addMinutes($duration)->greaterThan($constraints->windowEnd)) {
+                throw ValidationException::withMessages(['appointments' => 'A recorded appointment overlaps the edge of this plan. Adjust the planning time or review the appointment first.']);
+            }
+            $location = $appointment['location'] ?? null;
+            if (! is_array($location)) {
+                throw ValidationException::withMessages(['appointments' => 'A recorded appointment falls within this plan, but its meeting place is unknown. Add its location before planning travel around it.']);
+            }
+            // A text-only place stays unroutable: no coordinates are invented and no journey is computed.
+            $routable = isset($location['lat'], $location['lng']);
+            $candidates[] = new Candidate(
+                id: 'appointment:'.$appointment['id'], type: 'appointment', name: 'Your recorded appointment',
+                lat: $routable ? (float) $location['lat'] : NAN, lng: $routable ? (float) $location['lng'] : NAN, veedel: null, category: 'appointment',
+                outdoor: false, typicalDurationMin: $duration ?? 0, costTier: 'unknown',
+                opensAt: null, closesAt: null, fixedStart: $start, swappable: false, subtitle: $location['label'] ?? null,
+                routable: $routable, durationKnown: $duration !== null,
+            );
+        }
 
-            return self::COLOGNE_CENTRE;
-        });
+        return ['candidates' => $candidates, 'revision' => $this->revisions->for($recorded)];
+    }
+
+    /** Independent of unrelated facts and catalogue changes: recorded timing survives guidance withdrawal. */
+    public function revision(User $user, Constraints $constraints): string
+    {
+        return $this->revisions->for($this->recorded($user, $constraints));
+    }
+
+    private function recorded(User $user, Constraints $constraints): array
+    {
+        $plan = $this->plans->for($user);
+        $appointments = [];
+        foreach ($plan['timeline'] ?? [] as $event) {
+            if ($event['kind'] !== 'appointment' || $event['state'] !== 'recorded') {
+                continue;
+            }
+            $start = CarbonImmutable::parse($event['starts_at']);
+            // An unknown length may run up to the longest recordable appointment.
+            if ($start->lessThan($constraints->windowEnd) && $start->addMinutes($event['duration_minutes'] ?? self::LongestAppointmentMinutes)->greaterThan($constraints->windowStart)) {
+                $appointments[] = array_intersect_key($event, array_flip(['id', 'starts_at', 'timezone', 'duration_minutes', 'location']));
+            }
+        }
+        usort($appointments, fn ($one, $two) => strcmp($one['id'], $two['id']));
+
+        return ['schema' => 'composer.appointments.1', 'actor_id' => $user->id, 'person_id' => $plan['person_id'] ?? null,
+            'window_start' => $constraints->windowStart->toIso8601String(), 'window_end' => $constraints->windowEnd->toIso8601String(),
+            'appointments' => $appointments];
     }
 }

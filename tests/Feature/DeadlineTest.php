@@ -5,11 +5,9 @@ use App\Models\User;
 use App\Models\UserTask;
 use Illuminate\Support\Facades\DB;
 
-test('deadline status resolves without lazy-loading the user, and is memoised', function () {
-    // The home feed reads deadline_status for every open task, several times
-    // each (tiles + paperwork rail sort + card). With the task + user relations
-    // set (as the feed does), a computation must not touch the DB — no per-task
-    // user load — and a second read must reuse the memo, not recompute.
+test('the legacy deadline adapter reads current facts once and memoises within its instance', function () {
+    // The compatibility adapter may read canonical facts, but must not create
+    // state. Home no longer uses this model to make deadline decisions.
     $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(10)]);
     $task = Task::factory()->create(['deadline_type' => 'days_since_arrival', 'deadline_days' => 14]);
     $ut = UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
@@ -17,13 +15,16 @@ test('deadline status resolves without lazy-loading the user, and is memoised', 
     $ut->setRelation('task', $task);
 
     DB::enableQueryLog();
+    DB::flushQueryLog();
     $first = $ut->deadline_status;
+    $firstQueries = DB::getQueryLog();
+    DB::flushQueryLog();
     $second = $ut->deadline_status;
     $queries = DB::getQueryLog();
     DB::disableQueryLog();
 
-    expect($queries)->toBeEmpty()          // relations were used, nothing lazy-loaded
-        ->and($second)->toBe($first);      // memoised — same array, not recomputed
+    expect(collect($firstQueries)->pluck('query')->filter(fn ($sql) => preg_match('/^\s*(insert|update|delete)\b/i', $sql)))->toBeEmpty()
+        ->and($queries)->toBeEmpty()->and($second)->toBe($first);
 });
 
 test('overdue task has correct deadline status', function () {
@@ -86,13 +87,14 @@ test('no deadline for task with deadline_type none', function () {
     expect($status['days_remaining'])->toBeNull();
 });
 
-test('no deadline when user has no arrival date', function () {
+test('the deadline date is unknown when the arrival anchor is missing', function () {
     $user = User::factory()->onboarded()->create(['arrival_date' => null]);
     $task = Task::factory()->create(['deadline_type' => 'days_since_arrival', 'deadline_days' => 14, 'urgency' => 'critical']);
     $ut = UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
 
     expect($ut->absolute_deadline)->toBeNull();
-    expect($ut->deadline_status['urgency'])->toBe('none');
+    expect($ut->deadline_status['urgency'])->toBe('unknown')
+        ->and($ut->deadline_status['label'])->toBe('Deadline date unknown');
 });
 
 test('task computeDeadlineFor returns correct date', function () {
@@ -110,7 +112,9 @@ test('bureaucracy page passes deadline data', function () {
         'arrival_date' => now()->subDays(10),
         'situation' => 'non_eu_employee',
     ]);
-    $task = Task::factory()->create([
+    $task = Task::factory()->approvedFixture()->create([
+        'key' => 'fixture.serialized-deadline',
+        'applies_if' => [[]],
         'deadline_type' => 'days_since_arrival',
         'deadline_days' => 14,
         'urgency' => 'critical',
@@ -119,7 +123,7 @@ test('bureaucracy page passes deadline data', function () {
     UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
     $this->actingAs($user);
 
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -128,6 +132,8 @@ test('bureaucracy page passes deadline data', function () {
         ->has('tasks.active.0.deadline')
         ->has('tasks.active.0.days_remaining')
         ->has('tasks.active.0.deadline_tier')
+        ->where('tasks.active.0.deadline', now()->addDays(4)->toDateString())
+        ->where('tasks.active.0.days_remaining', 4)
         ->has('progress')
     );
 });
@@ -152,7 +158,7 @@ test('snoozed tasks are filtered by scope', function () {
     expect($notSnoozed)->toBe(2); // active + expired snooze
 });
 
-test('the reminder command reopens a recurring task when its next cycle is due', function () {
+test('the reminder command leaves retained legacy recurring progress unchanged', function (bool $dryRun) {
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
         'is_eu' => false,
@@ -170,14 +176,13 @@ test('the reminder command reopens a recurring task when its next cycle is due',
         'next_due_at' => now()->subMinute(),
         'is_applicable' => true,
     ]);
+    $before = $userTask->fresh()->getRawOriginal();
 
     $this->artisan('bureaucracy:remind', [
         '--user' => $user->id,
-        '--dry-run' => true,
+        '--dry-run' => $dryRun,
     ])->assertSuccessful();
 
-    $userTask->refresh();
-    expect($userTask->status->value)->toBe('not_started')
-        ->and($userTask->completed_at)->toBeNull()
-        ->and($userTask->next_due_at)->toBeNull();
-});
+    expect($userTask->fresh()->getRawOriginal())->toBe($before)
+        ->and($user->bureaucracyCase()->exists())->toBeFalse();
+})->with([true, false]);

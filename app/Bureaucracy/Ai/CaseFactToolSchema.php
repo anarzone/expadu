@@ -9,7 +9,7 @@ final class CaseFactToolSchema
     /**
      * @return array<string, mixed>
      */
-    public function for(FactDefinition $definition): array
+    public function for(FactDefinition $definition, bool $subjectAware = false): array
     {
         return [
             'type' => 'function',
@@ -22,9 +22,10 @@ final class CaseFactToolSchema
                     'properties' => [
                         'result' => [
                             'anyOf' => [
-                                $this->candidateSchema($definition),
+                                $this->candidateSchema($definition, $subjectAware),
                                 $this->outcomeOnlySchema('unknown'),
                                 $this->outcomeOnlySchema('off_topic'),
+                                ...($subjectAware ? [$this->outcomeOnlySchema('unclear_subject')] : []),
                             ],
                         ],
                     ],
@@ -38,15 +39,16 @@ final class CaseFactToolSchema
     /**
      * @return array<string, mixed>
      */
-    private function candidateSchema(FactDefinition $definition): array
+    private function candidateSchema(FactDefinition $definition, bool $subjectAware): array
     {
         return [
             'type' => 'object',
             'properties' => [
                 'outcome' => ['type' => 'string', 'enum' => ['candidate']],
                 'value' => $this->valueSchema($definition),
+                ...($subjectAware ? ['subject' => ['type' => 'string', 'enum' => ['selected_person']]] : []),
             ],
-            'required' => ['outcome', 'value'],
+            'required' => $subjectAware ? ['outcome', 'subject', 'value'] : ['outcome', 'value'],
             'additionalProperties' => false,
         ];
     }

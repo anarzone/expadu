@@ -59,14 +59,14 @@ export function PersonaSwitcher() {
 
             <select
                 value={qaSwitcher.current ?? ''}
+                // Read-only: opens the persona's plan without touching this
+                // account's data (the old "become persona" write is retired).
                 onChange={(e) =>
-                    router.post(
-                        `/qa/become/${e.target.value}`,
-                        {},
-                        { preserveScroll: false },
+                    router.visit(
+                        `/bureaucracy/demo?persona=${encodeURIComponent(e.target.value)}`,
                     )
                 }
-                title="Switch the current account to a different persona"
+                title="Preview the plan as a different persona (read-only)"
                 className="w-full rounded-[8px] border-[1.5px] border-border bg-card px-2 py-1.5 text-[12px] outline-none focus:border-primary"
             >
                 {qaSwitcher.current === null && (
@@ -87,18 +87,6 @@ export function PersonaSwitcher() {
                     className="flex-1 rounded-[8px] border border-border px-2 py-1 text-[12px] hover:bg-secondary"
                 >
                     Redo onboarding
-                </button>
-                <button
-                    onClick={() =>
-                        router.post(
-                            '/qa/reset-tasks',
-                            {},
-                            { preserveScroll: true },
-                        )
-                    }
-                    className="flex-1 rounded-[8px] border border-border px-2 py-1 text-[12px] text-primary hover:bg-secondary"
-                >
-                    Reset tasks
                 </button>
             </div>
         </div>

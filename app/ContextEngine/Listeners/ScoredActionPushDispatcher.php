@@ -2,8 +2,10 @@
 
 namespace App\ContextEngine\Listeners;
 
+use App\Bureaucracy\Reminders\PlanReminderDelivery;
 use App\ContextEngine\ContextNotificationFactory;
 use App\Events\Context\ScoredActionInserted;
+use App\Notifications\BureaucracyPlanNotification;
 use App\Support\NotificationThrottle;
 use App\Support\RedisLogger;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +38,10 @@ class ScoredActionPushDispatcher
 
         $notification = $this->notifications->build($action);
         if ($notification === null) {
+            if ($action->type === 'bureaucracy_task') {
+                app(PlanReminderDelivery::class)->release($action->payload);
+            }
+
             return; // dashboard-only action type
         }
 
@@ -62,12 +68,20 @@ class ScoredActionPushDispatcher
         // insert time, so we don't re-check here — just record-sent.
         try {
             $user->notify($notification);
-            NotificationThrottle::recordSent($user);
+            if (! $notification instanceof BureaucracyPlanNotification) {
+                NotificationThrottle::recordSent($user);
+            }
             RedisLogger::log("scored_action_push_dispatch:{$user->id}", $context + [
                 'mode' => 'sent',
                 'notification' => $notification::class,
             ]);
         } catch (\Throwable $e) {
+            if ($notification instanceof BureaucracyPlanNotification) {
+                app(PlanReminderDelivery::class)->release($notification->reference);
+                // Let the durable reassessment retry; admitting a queue job is not delivery.
+                // Its failure record keeps the exception class, not private provider text.
+                throw $e;
+            }
             Log::error('ScoredActionPushDispatcher failed to send', $context + [
                 'error' => $e->getMessage(),
             ]);

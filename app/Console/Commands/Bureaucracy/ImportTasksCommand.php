@@ -3,13 +3,17 @@
 namespace App\Console\Commands\Bureaucracy;
 
 use App\Bureaucracy\Facts\FactRegistry;
+use App\Bureaucracy\GuidancePublication;
 use App\Bureaucracy\RuleSourcePolicy;
+use App\Bureaucracy\Verification\ClaimCheck;
+use App\Bureaucracy\Verification\SourceCheckRecorder;
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
 use App\Models\Task;
 use App\Profile\ProfileEngine;
 use DomainException;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -20,8 +24,12 @@ use Symfony\Component\Yaml\Yaml;
  * content edit — non-destructive (existing user_tasks are preserved).
  *
  * Trust rules:
- * - `verified_at` is read from YAML and is ONLY ever set there by a human
- *   after checking the official source. The importer never invents it.
+ * - Human-reviewed cards: `verified_at` is read from YAML and is ONLY ever set
+ *   there by a human after checking the official source.
+ * - `quote_checked` cards (reviewed_by: automated_source_check) carry `claims`
+ *   quoting the official source for every figure. Their `verified_at` and
+ *   `review_due_at` come only from a passing bureaucracy:verify-sources check.
+ *   The importer never invents either date.
  * - tasks without `is_published: true`... default to published; set
  *   `is_published: false` to hide a task whose facts can't be verified yet.
  *
@@ -66,7 +74,7 @@ use Symfony\Component\Yaml\Yaml;
  */
 class ImportTasksCommand extends Command
 {
-    protected $signature = 'bureaucracy:import-tasks {file? : Specific YAML file (default: import all)} {--dry-run : Show what would change without writing} {--prune : Delete tasks whose key left the catalogue (full imports only)}';
+    protected $signature = 'bureaucracy:import-tasks {file? : Specific YAML file (default: import all)} {--dry-run : Show what would change without writing} {--retire-missing : Unpublish absent keys while preserving all history (full imports only)} {--prune : Deprecated alias for --retire-missing; never deletes progress}';
 
     protected $description = 'Upsert bureaucracy tasks from authored YAML files';
 
@@ -112,24 +120,35 @@ class ImportTasksCommand extends Command
             || ! $this->validateDag($entries)
             || ! $this->validateFigures($entries)
             || ! $this->validateRuleConditions($entries)
-            || ! $this->validateSourceApproval($entries)) {
+            || ! $this->validateSourceApproval($entries)
+            || ! $this->validateClaims($entries)) {
             return self::FAILURE;
         }
 
         $created = 0;
         $updated = 0;
 
-        foreach ($entries as $entry) {
-            $result = $this->upsertTask($entry['situations'], $entry['data']);
-            if ($result === 'created') {
-                $created++;
-            } elseif ($result === 'updated') {
-                $updated++;
-            }
-        }
+        try {
+            DB::transaction(function () use ($entries, &$created, &$updated): void {
+                if (! $this->option('dry-run')) {
+                    DB::select('select pg_advisory_xact_lock(?)', [73408201]);
+                }
+                foreach ($entries as $entry) {
+                    $result = $this->upsertTask($entry['situations'], $entry['data']);
+                    if ($result === 'created') {
+                        $created++;
+                    } elseif ($result === 'updated') {
+                        $updated++;
+                    }
+                }
+                if ($this->option('prune') || $this->option('retire-missing')) {
+                    $this->retireStaleTasks($entries);
+                }
+            });
+        } catch (DomainException $exception) {
+            $this->error('ABORT — '.$exception->getMessage());
 
-        if ($this->option('prune')) {
-            $this->pruneStaleTasks($entries);
+            return self::FAILURE;
         }
 
         $this->info("Done. created={$created} updated={$updated} skipped_files=0");
@@ -138,19 +157,15 @@ class ImportTasksCommand extends Command
     }
 
     /**
-     * Remove tasks that are not part of the catalogue: keyed rows whose key
-     * left the YAML (moved/renamed) AND keyless rows (legacy seeds, ad-hoc
-     * creations). The YAML files are the single source of truth — anything
-     * not in them would duplicate or contradict catalogue cards. Cascades
-     * to user_tasks, so it only runs on full-catalogue imports and lists
-     * everything it deletes.
+     * Withdraw absent units without deleting task, progress or evidence history.
+     * Rename/split progress is reconciled separately through explicit mappings.
      *
      * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
      */
-    private function pruneStaleTasks(array $entries): void
+    private function retireStaleTasks(array $entries): void
     {
         if (is_string($this->argument('file')) && $this->argument('file') !== '') {
-            $this->warn('  --prune ignored: only allowed on full-catalogue imports');
+            $this->warn('  retirement ignored: only allowed on full-catalogue imports');
 
             return;
         }
@@ -167,12 +182,12 @@ class ImportTasksCommand extends Command
             $label = $task->key ?? "(keyless) {$task->title}";
             $progress = $task->userTasks()->count();
             if ($this->option('dry-run')) {
-                $this->line("  [dry] would prune: {$label} ({$progress} user task(s))");
+                $this->line("  [dry] would retire: {$label} ({$progress} user task(s) preserved)");
 
                 continue;
             }
-            $task->delete();
-            $this->warn("  pruned: {$label} ({$progress} user task(s) removed)");
+            $task->update(['is_published' => false]);
+            $this->warn("  retired: {$label} ({$progress} user task(s) preserved)");
         }
     }
 
@@ -316,6 +331,28 @@ class ImportTasksCommand extends Command
     }
 
     /**
+     * Source claims must cover every figure on their card and agree with their quotes.
+     * Whether each quote is still on its page is checked by bureaucracy:verify-sources.
+     *
+     * @param  list<array{situations: array<int, string>, data: array<string, mixed>}>  $entries
+     */
+    private function validateClaims(array $entries): bool
+    {
+        $valid = true;
+        foreach ($entries as $entry) {
+            if (! array_key_exists('claims', $entry['data'])) {
+                continue;
+            }
+            foreach (app(ClaimCheck::class)->offlineErrors($entry['data']) as $error) {
+                $this->error("  ABORT — task `{$entry['data']['key']}` source claims: {$error}");
+                $valid = false;
+            }
+        }
+
+        return $valid;
+    }
+
+    /**
      * Approved authored conditions may only use registered facts and operands
      * valid for those facts. Branch predicates compiled from `situation` are
      * trusted application code and remain backward compatible.
@@ -330,7 +367,13 @@ class ImportTasksCommand extends Command
             $data = $entry['data'];
             $key = $data['key'] ?? '(unknown key)';
 
-            if (($data['review_status'] ?? RuleSourcePolicy::Legacy) === RuleSourcePolicy::Approved
+            if ((array_key_exists('applies_if_mode', $data) && ! in_array($data['applies_if_mode'], ['branch', 'explicit'], true))
+                || (($data['applies_if_mode'] ?? 'branch') === 'explicit' && ! array_key_exists('applies_if', $data))) {
+                $this->error("  ABORT — task `{$key}` requires a valid applies_if_mode and explicit conditions");
+                $valid = false;
+            }
+
+            if ((($data['review_status'] ?? RuleSourcePolicy::Legacy) === RuleSourcePolicy::Approved || ($data['applies_if_mode'] ?? null) === 'explicit')
                 && array_key_exists('applies_if', $data)) {
                 $conditions = $data['applies_if'];
 
@@ -506,7 +549,7 @@ class ImportTasksCommand extends Command
             'links' => $data['links'] ?? [],
             'how_to_steps' => $data['how_to_steps'] ?? [],
             'booking_service_key' => $data['booking_service_key'] ?? null,
-            // Human-verified only: the importer copies the YAML value verbatim.
+            // Human-verified cards copy the YAML value verbatim; `quote_checked` cards take it from their source check.
             'verified_at' => $data['verified_at'] ?? null,
             'jurisdiction' => $data['jurisdiction'] ?? null,
             'legal_sources' => $data['legal_sources'] ?? null,
@@ -520,6 +563,8 @@ class ImportTasksCommand extends Command
             'conflicts_with' => array_values((array) ($data['conflicts_with'] ?? [])),
             'coverage_scope' => $data['coverage_scope'] ?? 'case',
             'deadline_fact_key' => $data['deadline_fact_key'] ?? null,
+            // Source quotes for the automated check; they never change what a person reads.
+            'claims' => $data['claims'] ?? null,
             'is_published' => (bool) ($data['is_published'] ?? true),
         ];
 
@@ -528,6 +573,11 @@ class ImportTasksCommand extends Command
             $payload[$field] = $this->substituteFigures($payload[$field] ?? null);
         }
         $title = $payload['title'];
+        // An automatically checked card is publishable only while a check of exactly this
+        // content and these claims has passed; the dates come from that check.
+        if ($payload['source_verification'] === RuleSourcePolicy::QuoteChecked) {
+            $payload = [...$payload, ...app(SourceCheckRecorder::class)->window(new Task([...$payload, 'key' => $key]))];
+        }
 
         if ($this->option('dry-run')) {
             $this->line("  [dry] would upsert: {$key}");
@@ -535,16 +585,17 @@ class ImportTasksCommand extends Command
             return 'skipped';
         }
 
-        $existing = Task::query()->where('key', $key)->first()
-            // Legacy fallback: first import after the v2 migration matches
-            // pre-key rows by title+situation so they gain keys in place.
-            ?? Task::query()
-                ->whereNull('key')
-                ->where('title', $title)
-                ->whereJsonContains('situation', $situations[0])
-                ->first();
+        // A title match is not an identity or a progress migration mapping.
+        $existing = Task::query()->where('key', $key)->first();
 
         if ($existing) {
+            $replacement = new Task([...$payload, 'key' => $key]);
+            $publication = app(GuidancePublication::class);
+            if ($existing->review_status === 'approved' && $replacement->review_status === 'approved'
+                && $existing->content_version === $replacement->content_version
+                && $publication->contentHash($existing) !== $publication->contentHash($replacement)) {
+                throw new DomainException("Changed approved unit [{$key}] requires a new reviewed content version.");
+            }
             $existing->fill([...$payload, 'key' => $key])->save();
             $this->line("  updated: {$key}");
 
@@ -579,6 +630,12 @@ class ImportTasksCommand extends Command
             $extra['citizenship_group'] = 'eu';
         } elseif ($euFilter === 'non_eu_only') {
             $extra['citizenship_group'] = 'non_eu';
+        }
+
+        // Reviewed canonical rules declare their complete audience explicitly.
+        // The file's legacy navigation category must not add another interview.
+        if (($data['applies_if_mode'] ?? 'branch') === 'explicit') {
+            return [$extra];
         }
 
         $groups = [];

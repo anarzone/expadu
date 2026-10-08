@@ -11,17 +11,49 @@ tasks:
     type: decision
     decision_options:
       - label: Freiberufler
-        body: Liberal professions (§18 EStG) — no trade office, no trade tax, simple EÜR bookkeeping.
+        body: A liberal profession under §18 EStG — you report the start of your work directly to the Finanzamt.
       - label: Gewerbe
-        body: Commercial trade — Gewerbeamt registration, IHK membership, possible trade tax. Switch your path above if this is you.
-    depends_on: [fre.anmeldung]
+        body: A trade business — you notify the trade office when you start, and the municipality informs the Finanzamt.
+    depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      purpose: freelance
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§18 EStG', url: 'https://www.gesetze-im-internet.de/estg/__18.html'}
+      - {kind: primary, label: '§14 GewO', url: 'https://www.gesetze-im-internet.de/gewo/__14.html'}
+      - {kind: primary, label: '§138 AO', url: 'https://www.gesetze-im-internet.de/ao_1977/__138.html'}
+      - {kind: implementation, label: 'Stadt Köln · Gewerbemeldung eines Einzelunternehmens', url: 'https://www.stadt-koeln.de/service/produkte/00268/index.html'}
+    claims:
+      - id: liberal-catalogue
+        states: §18 EStG
+        source: '§18 EStG'
+        quote: Zu der freiberuflichen Tätigkeit gehören die selbständig ausgeübte wissenschaftliche, künstlerische, schriftstellerische, unterrichtende oder erzieherische Tätigkeit
+      - id: trade-notice
+        states: (§14 GewO)
+        source: '§14 GewO'
+        quote: Wer den selbständigen Betrieb eines stehenden Gewerbes, einer Zweigniederlassung oder einer unselbständigen Zweigstelle anfängt, muss dies der zuständigen Behörde gleichzeitig anzeigen
+      - id: tax-office-notice
+        states: report the start of your work directly to the Finanzamt
+        source: '§138 AO'
+        quote: Wer eine freiberufliche Tätigkeit aufnimmt, hat dies dem nach § 19 zuständigen Finanzamt mitzuteilen
+      - id: cologne-trade-office
+        states: register it with the Gewerbemeldestelle, online through the NRW business portal or by post or in person
+        source: 'Stadt Köln · Gewerbemeldung eines Einzelunternehmens'
+        quote: Sie haben die Möglichkeit Gewerbemeldungen online im Wirtschaft- Service -Portal Nordrhein-Westfalen zu tätigen
     description: |
-      Germany splits the self-employed into freie Berufe (liberal professions — no trade
-      licence needed) and Gewerbe (commercial trade — must register at the Gewerbeamt).
-      Doctors, engineers, writers, translators, teachers, journalists and similar
-      professions under §18 EStG are frei; selling goods, e-commerce and most agency-style
-      businesses are Gewerbe. The answer changes your permit type, your taxes, and your
-      to-do list — settle it first.
+      German law treats freie Berufe (liberal professions) differently from Gewerbe (trade).
+      §18 EStG lists the liberal professions: independent scientific, artistic, writing,
+      teaching and educational work, and professions such as doctors, lawyers, engineers,
+      architects, tax advisers, journalists, interpreters, translators and similar
+      professions. Anyone who starts a trade business must notify the trade office at the
+      same time (§14 GewO). If you take up a liberal profession, you report the start of
+      your work directly to the Finanzamt instead. The answer decides whether you need a
+      trade registration, so settle it first.
     phase: first_30_days
     urgency: medium
     deadline_type: none
@@ -31,15 +63,16 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/00268/index.html
     how_to_steps:
       - title: Classify your activity
-        body: Compare your work against the §18 EStG catalogue (scientific, artistic, writing, teaching activities; doctors, lawyers, engineers, architects, journalists, interpreters, translators and similar). Mixed activities are tricky — when in doubt, the Finanzamt's classification in response to your Fragebogen is what counts.
+        body: Compare your work against the list in §18 EStG. If your activity is mixed or unclear, ask the Finanzamt or a tax adviser before you start.
         link: https://www.gesetze-im-internet.de/estg/__18.html
-      - title: If it's a Gewerbe, switch your path here
-        body: Use the path selector at the top of this page to switch to the Gewerbe track — it adds the Gewerbeanmeldung and the IHK steps, and swaps the permit requirements.
+      - title: If it's a Gewerbe, register the trade
+        body: In Cologne you register it with the Gewerbemeldestelle, online through the NRW business portal or by post or in person. Non-EU citizens need a residence title that permits the work.
+        link: https://www.stadt-koeln.de/service/produkte/00268/index.html
 
   - title: Apply for the freelance residence permit (§21 Abs. 5)
     key: fre.residence_permit
     eu_filter: non_eu_only
-    depends_on: [fre.anmeldung, fre.health_insurance]
+    depends_on: []
     description: |
       Non-EU freelancers in liberal professions need the §21(5) permit before working
       independently — freelance work may not begin before the permit. The condition

@@ -4,7 +4,6 @@ namespace App\Bureaucracy\Facts;
 
 use App\Models\BureaucracyCase;
 use App\Models\User;
-use App\Profile\ProfileEngine;
 
 final class LegacyFactBootstrapper
 {
@@ -19,17 +18,17 @@ final class LegacyFactBootstrapper
     ];
 
     public function __construct(
-        private ProfileEngine $profileEngine,
+        private ConfirmedBureaucracyAttributes $confirmedAttributes,
         private CaseFactStore $factStore,
     ) {}
 
     public function bootstrap(User $user): BureaucracyCase
     {
-        $profile = $this->profileEngine->build($user);
+        $attributes = $this->confirmedAttributes->forUser($user);
         $facts = [];
 
         foreach (self::PROFILE_FACT_MAP as $factKey => $profileAttribute) {
-            $facts[$factKey] = $profile->attributes[$profileAttribute] ?? null;
+            $facts[$factKey] = $attributes[$profileAttribute] ?? null;
         }
 
         $storedProfileAttributes = $user->profile_attributes ?? [];

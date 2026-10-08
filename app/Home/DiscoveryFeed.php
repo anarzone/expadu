@@ -9,7 +9,6 @@ use App\Media\PublishedMediaSelector;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
-use App\Models\UserTask;
 use App\Places\DestinationGrouping;
 use App\Places\PlaceFacts;
 use App\Places\PlaceIdentity;
@@ -17,7 +16,6 @@ use App\Profile\CategoryAffinity;
 use App\Profile\Profile;
 use App\Services\NearbyPlaces;
 use App\Support\EventOccurrencePresenter;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -386,40 +384,23 @@ class DiscoveryFeed
 
     private function paperworkRail(HomeContext $context): ?array
     {
-        if ($context->openTasks->isEmpty()) {
+        $plan = app(CurrentBureaucracyPlan::class)->for($context);
+        if (empty($plan['actions'])) {
             return null;
         }
+        $cards = [];
+        foreach (array_slice($plan['actions'], 0, 8) as $action) {
+            $requirements = array_filter($plan['paperwork']['requirements'] ?? [], fn ($row) => $row['occurrence_key'] === $action['occurrence_key']
+                && $row['applicability'] === 'required');
+            $cards[] = ['id' => 'bureaucracy:'.$action['id'], 'name' => $action['title'], 'veedel' => null,
+                'category' => 'task', 'cost' => null, 'lat' => 0.0, 'lng' => 0.0, 'is_new' => false, 'kind' => 'task',
+                'href' => '/bureaucracy', 'reason' => null, 'due_label' => $action['dates'][0]['date'] ?? null,
+                'temporal_kind' => $action['dates'][0]['kind'] ?? null, 'urgency' => null, 'verified' => null,
+                'docs' => isset($plan['paperwork']['requirements']) ? count($requirements) : null,
+                'action' => $action, 'assessment_revision' => $plan['assessment_revision']];
+        }
 
-        $cards = $context->openTasks
-            ->sortBy(fn (UserTask $ut) => $ut->deadline_status['days_remaining'] ?? 99999)
-            ->take(8)
-            ->values()
-            ->map(function (UserTask $ut) {
-                $status = $ut->deadline_status;
-                $verifiedAt = $ut->task?->verified_at;
-
-                return [
-                    'id' => "task:{$ut->id}",
-                    'name' => $ut->task?->title ?? 'Task',
-                    'veedel' => null,
-                    'category' => 'task',
-                    'cost' => null,
-                    'lat' => 0.0,
-                    'lng' => 0.0,
-                    'is_new' => false,
-                    'kind' => 'task',
-                    'href' => '/bureaucracy?focus='.($ut->task?->id ?? ''),
-                    'reason' => null,
-                    // The dedicated task-card fields, matching the prototype.
-                    'due_label' => $status['label'],
-                    'urgency' => $status['urgency'],
-                    'verified' => $verifiedAt ? Carbon::parse($verifiedAt)->format('j M') : null,
-                    'docs' => is_array($ut->task?->documents_required) ? count($ut->task->documents_required) : 0,
-                ];
-            })
-            ->all();
-
-        return $this->rail('paperwork', 'Get your paperwork moving', 'your checklist', '/bureaucracy', $cards);
+        return $this->rail('paperwork', 'Get your paperwork moving', 'your plan', '/bureaucracy', $cards);
     }
 
     /**

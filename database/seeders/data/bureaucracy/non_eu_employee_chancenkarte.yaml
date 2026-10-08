@@ -1,6 +1,5 @@
 # Chancenkarte / Opportunity Card path (§20a AufenthG) — the job-seeking
-# persona. Federal rules (◐): published without the verified badge until
-# confirmed against Köln practice. See docs/bureaucracy-sources.md (Case 8).
+# persona. See docs/bureaucracy-sources.md (Case 8).
 situation: non_eu_employee_chancenkarte
 
 tasks:
@@ -8,51 +7,130 @@ tasks:
     key: ck.work_limits
     type: info
     depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§20a AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__20a.html'}
+    claims:
+      - id: twenty-hours
+        states: employment of at most 20 hours per week on average
+        source: '§20a AufenthG'
+        quote: eine Beschäftigung von durchschnittlich insgesamt höchstens 20 Stunden je Woche auszuüben
+      - id: trial-employment
+        states: trial employments of at most two weeks each
+        source: '§20a AufenthG'
+        quote: eine Probebeschäftigung für jeweils höchstens zwei Wochen auszuüben
+      - id: one-year
+        states: issued for up to one year
+        source: '§20a AufenthG'
+        quote: Die Chancenkarte wird zunächst für einen Zeitraum von bis zu einem Jahr erteilt (Such-Chancenkarte).
+      - id: follow-up-card
+        states: extended by up to two years as a follow-up card
+        source: '§20a AufenthG'
+        quote: um bis zu zwei Jahre als solche verlängert werden, wenn der Ausländer einen Arbeitsvertrag oder ein verbindliches Arbeitsplatzangebot für eine inländische qualifizierte Beschäftigung hat und die Bundesagentur für Arbeit zugestimmt hat
+      - id: follow-up-only-if-no-other-permit
+        states: only if you do not qualify for another work-related residence permit
+        source: '§20a AufenthG'
+        quote: Eine Folge-Chancenkarte wird nur erteilt, wenn der Ausländer die Voraussetzungen für die Erteilung einer anderen Aufenthaltserlaubnis nach Abschnitt 4 nicht erfüllt.
+      - id: livelihood
+        states: only issued when your livelihood is secured
+        source: '§20a AufenthG'
+        quote: Die Chancenkarte darf jedoch nur erteilt werden, wenn der Lebensunterhalt gesichert ist.
+      - id: section
+        states: (§20a AufenthG)
+        source: '§20a AufenthG'
+        quote: Eine Chancenkarte ist eine Aufenthaltserlaubnis zur Suche nach einer Erwerbstätigkeit
     description: |
-      While searching, the Chancenkarte allows part-time work up to 20 hours/week plus
-      unlimited 2-week trial employments (Probearbeiten). The card runs at most 12 months
-      and cannot be extended back-to-back — the plan is to convert it, not renew it.
-      Typical finance requirement at issue: {{figure:chancenkarte_funds}} (2026 figure) via blocked account or a part-time contract meeting that income.
+      While you search, the Chancenkarte only allows employment of at most 20 hours per week on average,
+      plus trial employments of at most two weeks each that must be qualified (§20a AufenthG). The
+      search card is issued for up to one year. With a qualifying job contract or
+      binding offer and the Federal Employment Agency's approval, it can be
+      extended by up to two years as a follow-up card — but only if you do not qualify for another work-related residence permit,
+      so the plan is to move to a work permit. The card is only issued when your livelihood is secured.
+      Typical finance requirement at issue: {{figure:chancenkarte_funds}}.
     phase: arrival
     urgency: medium
     deadline_type: none
     documents_required: []
     links:
-      - https://www.make-it-in-germany.com/en/visa-residence/types/chancenkarte
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__20a.html
 
   - title: Found a job? Convert to a work permit or Blue Card
     key: ck.convert
-    depends_on: [nee.anmeldung]
+    depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§39 AufenthV — Aufenthaltstitel im Bundesgebiet einholen', url: 'https://www.gesetze-im-internet.de/aufenthv/__39.html'}
+      - {kind: primary, label: '§20a AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__20a.html'}
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: implementation, label: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit', url: 'https://www.stadt-koeln.de/service/produkte/01083/index.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+    claims:
+      - id: apply-in-germany
+        states: apply from within Germany
+        source: '§39 AufenthV — Aufenthaltstitel im Bundesgebiet einholen'
+        quote: er ein nationales Visum (§ 6 Absatz 3 des Aufenthaltsgesetzes) oder eine Aufenthaltserlaubnis besitzt
+      - id: card-is-residence-permit
+        states: The Chancenkarte is a residence permit for job seeking
+        source: '§20a AufenthG'
+        quote: Eine Chancenkarte ist eine Aufenthaltserlaubnis zur Suche nach einer Erwerbstätigkeit
+      - id: file-before-expiry
+        states: your Chancenkarte continues to count until the decision
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.
+      - id: fiktionsbescheinigung
+        states: certificate confirming the effect of your application (Fiktionsbescheinigung)
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: Dem Ausländer ist eine Bescheinigung über die Wirkung seiner Antragstellung (Fiktionsbescheinigung) auszustellen.
+      - id: job-offer-required
+        states: tied to a concrete job offer
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Die Beantragung einer Aufenthaltserlaubnis zur Arbeitsaufnahme ist an ein konkretes Arbeitsplatzangebot gebunden.
+      - id: two-photos
+        states: Two current passport photos
+        source: 'Stadt Köln · Aufenthaltserlaubnis für die nichtselbständige Erwerbstätigkeit'
+        quote: Zwei aktuelle Passfotos
+      - id: earlier-settlement
+        states: Blue Card holders can apply for permanent residence earlier
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Sie können früher eine Niederlassungserlaubnis beantragen:'
     description: |
-      The Chancenkarte's whole purpose is conversion: once you sign a qualifying job
-      offer, apply to switch to a standard work permit (§18a/b) or — if the salary
-      clears the threshold — the EU Blue Card (§18g), without leaving Germany. Start
-      the application as soon as you have the signed contract; don't wait for the
-      card's expiry to approach. Typical requirements mirror the standard permit:
-      passport, contract, the employer's job-description form, insurance proof,
-      housing proof, photo.
+      The Chancenkarte is a residence permit for job seeking. Once you have a
+      qualifying job offer, you can apply from within Germany to switch to a
+      residence permit for employment or — if the salary clears the threshold — the
+      EU Blue Card. The application is tied to a concrete job offer. File it as soon
+      as you have the contract: if you apply before the card expires, your Chancenkarte continues to count until the decision.
     phase: ongoing
     urgency: high
     deadline_type: none
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Signed employment contract or binding offer
+      - label: Signed employment contract or binding job offer
       - label: Valid national passport + your Chancenkarte
       - label: Employer's job-description form (Vordruck Stellenbeschreibung)
-        note: Ask HR to fill it the week you sign — it's the document the BA approval waits on.
+        note: The form describes the position planned for you. Ask your employer for it when you sign.
       - label: Proof of health insurance
-        note: Trap — as a Chancenkarte holder you're not in statutory insurance yet; the gap between travel insurance and GKV is where people get burned. Sort GKV the day your job starts.
+        from: core.health_insurance
+        note: If you have an insurance card, showing it is enough; otherwise ask your insurer for a confirmation.
         tone: warn
-      - label: Housing proof (Mietvertrag)
-      - label: Biometric photo
+      - label: Rental contract (Mietvertrag)
+      - label: Two current passport photos
     links:
       - https://www.stadt-koeln.de/service/produkte/01083/index.html
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
     how_to_steps:
       - title: Check which permit your offer qualifies for
-        body: Salary at or above {{figure:blue_card_salary}} (or {{figure:blue_card_salary_shortage}} in shortage occupations/IT) means Blue Card — take it, the permanent-residency fast track is worth it. Below that, the standard §18a/b permit applies. In the app, switch your path accordingly once converted.
-      - title: Apply via Cologne's online Erstantrag
-        body: Same online form (33-F07) as all first applications, with the conversion uploads.
+        body: A salary of at least {{figure:blue_card_salary}} (or {{figure:blue_card_salary_shortage}} in shortage occupations, for recent graduates and for IT specialists without a formal qualification) can qualify for the Blue Card. Blue Card holders can apply for permanent residence earlier. Otherwise the residence permit for employment is the route. In the app, switch your path once converted.
+        link: https://www.stadt-koeln.de/service/produkte/20321/index.html
+      - title: Apply via Cologne's online application
+        body: Cologne accepts the application for a residence permit for employment digitally; Blue Card first applications can also be filed online.
         link: https://www.stadt-koeln.de/service/produkte/01083/index.html
       - title: Mind your card's expiry
-        body: Processing takes weeks — if your Chancenkarte would expire mid-application you'll get a Fiktionsbescheinigung bridging the gap, but only if the application is already filed.
+        body: File before your Chancenkarte expires. You then receive a certificate confirming the effect of your application (Fiktionsbescheinigung).

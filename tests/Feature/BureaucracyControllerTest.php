@@ -60,7 +60,7 @@ test('bureaucracy page renders for an onboarded user', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
-    $this->get(route('bureaucracy'))
+    $this->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('bureaucracy')
@@ -69,7 +69,7 @@ test('bureaucracy page renders for an onboarded user', function () {
 });
 
 test('bureaucracy page requires authentication', function () {
-    $this->get(route('bureaucracy'))
+    $this->get(route('bureaucracy.legacy'))
         ->assertRedirect(route('login'));
 });
 
@@ -87,11 +87,14 @@ test('live bureaucracy page exposes a source-backed verified case plan', functio
         'is_eu' => false,
         'bureaucracy_path' => 'non_eu_employee_blue_card',
         'german_level' => 'b1',
-        'profile_attributes' => ['entry_mode' => 'd_visa'],
+        'profile_attributes' => [
+            'entry_mode' => 'd_visa', 'permit_track' => 'blue_card',
+            'current_residence_title' => 'national_d_visa', 'residence_title_expires_at' => '2026-12-01',
+        ],
     ]);
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('bureaucracy')
@@ -138,11 +141,13 @@ test('live bureaucracy page exposes only bounded AI availability consent disclos
     BureaucracyCaseMessage::factory()->count(3)->for($case, 'case')->create();
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('casePlan.ai.available', true)
-            ->where('casePlan.ai.consented', true)
+            ->where('casePlan.ai.consented', false)
+            ->where('casePlan.ai.consent_scope', 'single_request')
+            ->where('casePlan.ai.notice_version', config('bureaucracy_privacy.notice_version'))
             ->where('casePlan.ai.processor_name', 'DeepSeek')
             ->where('casePlan.ai.processor_privacy_url', 'https://www.deepseek.com/privacy')
             ->where('casePlan.ai.remaining_quota', 17)
@@ -169,7 +174,7 @@ test('live bureaucracy page exposes one server-issued clarification question', f
     ]);
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('casePlan.coverage_state', 'needs_information')
@@ -188,7 +193,7 @@ test('live bureaucracy page exposes one server-issued clarification question', f
             ->etc());
 });
 
-test('live bureaucracy page exposes one sanitized conflict choice and no competing question', function () {
+test('live bureaucracy page keeps a sanitized conflict choice separate from unrelated orientation', function () {
     bureaucracyControllerApprovedRule('case.conflict-route', [['case_goal' => 'blue_card']]);
     $user = User::factory()->onboarded()->create([
         'situation' => 'other',
@@ -215,11 +220,11 @@ test('live bureaucracy page exposes one sanitized conflict choice and no competi
     ]);
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('casePlan.coverage_state', 'conflict')
-            ->where('casePlan.next_question', null)
+            ->where('casePlan.next_question.question', 'Which German visa or residence title do you currently hold?')
             ->has('casePlan.active_conflict', fn (Assert $conflict) => $conflict
                 ->has('id')
                 ->where('question', 'What do you want to do next with your residence status?')
@@ -255,7 +260,7 @@ test('an inapplicable historical task is presented as a fresh applicable step', 
     ]);
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('casePlan.sections.do_now.0.key', 'case.reappeared')

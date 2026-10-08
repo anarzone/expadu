@@ -22,11 +22,12 @@ test('an admin can view any persona and nothing is written', function () {
             expect($props['preview']['active'])->toBe('neu-student')
                 ->and($props['preview']['personas'])->not->toBeEmpty();
 
-            // The synthetic persona still gets a real path: the Anmeldung root
-            // plus a residence-permit card land in the attention lanes.
+            // The synthetic persona still gets a real path: its residence-permit
+            // card lands in the attention lanes. (The branch Anmeldung copy is retired;
+            // core.anmeldung needs v2 registration facts this legacy preview cannot read.)
             $keys = collect([...$props['tasks']['active'], ...$props['tasks']['upcoming']])
                 ->pluck('key');
-            expect($keys)->toContain('stu.anmeldung')
+            expect($keys)->toContain('stu.submit_application')
                 ->and($keys->contains(fn (?string $k) => $k !== null && str_contains($k, 'permit')))->toBeTrue();
 
             return true;

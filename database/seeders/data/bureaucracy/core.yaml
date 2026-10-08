@@ -1,156 +1,202 @@
-# Core branch — digital nomads + "other". The shortest path: the civilian
-# spine only. Content source: docs/bureaucracy-sources.md (Case 0/1).
+# Reviewed core preparation units use explicit needs, not this legacy branch label.
+# Unreviewed records below retain their original branch scope and publication gate.
 situation: core
 
 tasks:
-  - title: Register your address (Anmeldung)
+  - title: Check and prepare your address registration (Anmeldung)
     key: core.anmeldung
     depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      arrival_planned: false
+      registration_status: not_registered
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-22.1
-    source_verification: dual_source
-    verified_at: '2026-08-22'
+    reviewed_by: automated_source_check
+    content_version: 2026-09-08.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§17 BMG — Anmeldung, Abmeldung', url: 'https://www.gesetze-im-internet.de/bmg/__17.html'}
-      - {kind: primary, label: '§54 BMG — Bußgeldvorschriften', url: 'https://www.gesetze-im-internet.de/bmg/__54.html'}
+      - {kind: primary, label: '§19 BMG — Wohnungsgeber confirmation', url: 'https://www.gesetze-im-internet.de/bmg/__19.html'}
+      - {kind: primary, label: '§27 BMG — Registration exceptions', url: 'https://www.gesetze-im-internet.de/bmg/__27.html'}
       - {kind: implementation, label: 'Stadt Köln · Anmeldung Ihres Wohnsitzes', url: 'https://www.stadt-koeln.de/service/produkte/00415/index.html'}
+    claims:
+      - id: registration-period
+        states: two-week period under §17 BMG
+        source: '§17 BMG — Anmeldung, Abmeldung'
+        quote: hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden
+      - id: registration-deadline
+        covers: deadline
+        source: '§17 BMG — Anmeldung, Abmeldung'
+        quote: hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden
+      - id: registration-exceptions
+        states: exceptions in §27 BMG
+        source: '§27 BMG — Registration exceptions'
+        quote: Ausnahmen von der Meldepflicht
+      - id: missing-confirmation
+        states: notify the registration authority without delay as required by §19(2) BMG
+        source: '§19 BMG — Wohnungsgeber confirmation'
+        quote: so hat die meldepflichtige Person dies der Meldebehörde unverzüglich mitzuteilen
     description: |
-      Every resident in Germany must register their address within 2 weeks of
-      moving in (§17 BMG). The Meldebescheinigung is the document everything
-      else hangs off — tax ID, bank account, insurance. Missing the deadline
-      is technically finable (up to €1,000), but in practice tolerated when no
-      appointment was available — register as soon as you can, don't panic.
+      Registration normally follows moving into a dwelling, with a two-week
+      period under §17 BMG. Temporary stays and other situations can fall under
+      exceptions in §27 BMG. Check the applicable procedure with the registration
+      authority if your circumstances are unclear. Employment or a permanent
+      residence title does not by itself answer this question.
+      This card helps you prepare; it does not decide that an exception is absent.
+      Any displayed preparation target uses your move-in date, not your arrival
+      date or an appointment, and is not a confirmed personal legal deadline.
     phase: arrival
     urgency: critical
     deadline_type: days_since_move_in
     deadline_days: 14
     booking_service_key: anmeldung
     documents_required:
-      - label: Passport or EU ID card
-        note: Bring the passport if you have one — the current address gets entered into it.
-      - label: Wohnungsgeberbescheinigung (Cologne form, signed by landlord/main tenant)
-        note: A rental contract or informal letter is NOT sufficient, the move-in date may not be in the future, and it cannot be submitted later — without it the registration simply doesn't happen that day.
-        tone: warn
+      - label: Identity documents appropriate to your nationality and residence status
+        note: Check the city list for your case.
+      - label: Wohnungsgeberbescheinigung confirming actual move-in
+        note: A rental contract alone is not sufficient. Owners use the self-declaration described by the city.
     links:
       - https://www.stadt-koeln.de/service/produkte/00415/index.html
     how_to_steps:
-      - title: Get the Wohnungsgeberbescheinigung from your landlord
-        body: It's Cologne's own form (Formular-Server 02-F17) — send it to your landlord or main tenant before moving day. If you live in your own property, the self-declaration on the same form suffices.
-      - title: Pick your route — online, walk-in, or appointment
-        body: Cologne now offers Anmeldung fully online via the Serviceportal ("Gemeinsam Online"). In person, Kundenzentren take walk-ins on Mondays and Wednesdays; Tuesday, Thursday and Friday require an appointment. Registration is free.
-        link: https://termine.stadt-koeln.de/
-      - title: Mind the religion field on the form
-        body: Declaring a recognized denomination (Catholic, Protestant, Jewish…) enrols you in church tax — 9% of your income tax in NRW, deducted automatically. Leaving later requires a formal, fee-charged Kirchenaustritt at the Amtsgericht. Answer accurately, but know what it means.
-      - title: Make digital copies of the Meldebescheinigung
-        body: You get it on the spot. Photograph it and back it up — you'll need it for almost everything else on this list.
+      - title: Check the procedure and documents for your move
+        body: Open the city page for online eligibility, attendance and any additional family or foreign civil-status documents. Confirm unclear cases with the authority.
+        link: https://www.stadt-koeln.de/service/produkte/00415/index.html
+      - title: Get the move-in confirmation
+        body: If confirmation is refused or not provided in time, notify the registration authority without delay as required by §19(2) BMG. Do not assume that missing proof or a later appointment extends a deadline.
+        link: https://www.gesetze-im-internet.de/bmg/__19.html
+      - title: Keep the registration confirmation
+        body: Keep the confirmation after registration; completing this preparation card does not mean the authority has registered you.
 
-  - title: Wait for your Steuer-ID (tax identification number)
+  - title: Find or recover your Steuer-ID (tax identification number)
     key: core.steuer_id
-    type: wait
-    depends_on: [core.anmeldung]
-    # single_source_approved: §139b AO is unambiguous, but no allow-listed
-    # implementation host covers the tax ID. The BZSt is authoritative and is
-    # linked under `links`, yet bzst.de is not on the implementation allowlist,
-    # and the only Cologne page mentioning the ID is really about ELStAM.
+    type: task
+    depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      arrival_planned: false
+      tax_id_available: false
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-22.1
-    source_verification: single_source_approved
-    single_source_approved: true
-    verified_at: '2026-08-22'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-07.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§139b AO — Identifikationsnummer', url: 'https://www.gesetze-im-internet.de/ao_1977/__139b.html'}
+      - {kind: implementation, label: 'BZSt · Erneute Mitteilung der IdNr', url: 'https://online.portal.bzst.de/SharedDocs/Leistungsbeschreibung/DE/erneute_mitteilung_der_ID-Nr.html'}
+    claims:
+      - id: one-number
+        states: Your tax identification number stays the same for life
+        source: '§139b AO — Identifikationsnummer'
+        quote: Eine natürliche Person darf nicht mehr als eine Identifikationsnummer erhalten.
+      - id: no-change-on-move
+        states: including after a move or marriage
+        source: 'BZSt · Erneute Mitteilung der IdNr'
+        quote: nicht bei Umzug oder Heirat
+      - id: three-months
+        states: if no letter has arrived within three months
+        source: 'BZSt · Erneute Mitteilung der IdNr'
+        quote: wenn Sie innerhalb von 3 Monaten nach Ihrer erstmaligen Anmeldung in Deutschland
+      - id: not-by-phone
+        states: It is not disclosed by phone or email
+        source: 'BZSt · Erneute Mitteilung der IdNr'
+        quote: Eine telefonische Mitteilung oder eine Mitteilung per E-Mail ist aus datenschutzrechtlichen Gründen nicht möglich.
     description: |
-      The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post
-      within 2–4 weeks of Anmeldung — no application needed. You'll need it for any paid
-      work and most dealings with the tax office.
+      Your tax identification number stays the same for life, including after a
+      move or marriage. Check an existing income tax assessment or wage tax
+      certificate before requesting it again. If you do not have it, follow the
+      BZSt procedure. This preparation task is not a delivery promise or deadline.
     phase: arrival
     urgency: high
-    deadline_type: days_since_arrival
-    deadline_days: 28
+    deadline_type: none
     documents_required: []
     links:
-      - https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+      - https://online.portal.bzst.de/SharedDocs/Leistungsbeschreibung/DE/erneute_mitteilung_der_ID-Nr.html
     how_to_steps:
-      - title: Check your post daily
-        body: It arrives as a plain letter from Bonn — easy to mistake for junk mail. Don't throw anything away in your first month.
-      - title: If nothing arrives after 4 weeks, request a copy
-        body: Use the BZSt input form — for data-protection reasons it's only ever sent by post, to your registered address.
-        link: https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+      - title: Look for an existing number
+        body: Check your income tax assessment or wage tax certificate. Do not enter the number in Expadu.
+      - title: Use the official recovery instructions if needed
+        body: BZSt provides a recovery procedure for a lost number. For first registration, its instructions say to request the number if no letter has arrived within three months. It is not disclosed by phone or email.
+        link: https://online.portal.bzst.de/SharedDocs/Leistungsbeschreibung/DE/erneute_mitteilung_der_ID-Nr.html
 
-  - title: Sort out health insurance
+  - title: Confirm health insurance cover for your stay
     key: core.health_insurance
-    depends_on: [core.anmeldung]
+    depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      health_coverage_confirmed: false
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-22.1
-    source_verification: dual_source
-    verified_at: '2026-08-22'
+    reviewed_by: automated_source_check
+    content_version: 2026-09-08.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§5 SGB V — Versicherungspflicht', url: 'https://www.gesetze-im-internet.de/sgb_5/__5.html'}
+      - {kind: primary, label: '§6 SGB V — Versicherungsfreiheit', url: 'https://www.gesetze-im-internet.de/sgb_5/__6.html'}
+      - {kind: primary, label: '§193 VVG — Insurance obligation and exceptions', url: 'https://www.gesetze-im-internet.de/vvg_2008/__193.html'}
       - {kind: implementation, label: 'Make it in Germany · Health insurance', url: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/health-insurance'}
+    claims:
+      - id: cover-obligation
+        states: Statutory and private insurance have different entry conditions and exceptions
+        source: '§193 VVG — Insurance obligation and exceptions'
+        quote: Jede Person mit Wohnsitz im Inland ist verpflichtet, bei einem in Deutschland zum Geschäftsbetrieb zugelassenen Versicherungsunternehmen
     description: |
-      Health insurance is mandatory for everyone living in Germany. Which system you end
-      up in — statutory (gesetzlich) or private (privat) — depends on your work and
-      income situation, but "none" is never an option, and gaps can mean back-payments.
+      Confirm which cover applies to your stay and when it starts. Statutory and
+      private insurance have different entry conditions and exceptions; this card
+      does not decide which system you qualify for. Check any period between
+      arrival and the start of employment with your insurer and, where relevant,
+      the German mission abroad. Do not assume you have an uninsured grace period.
     phase: arrival
     urgency: critical
-    deadline_type: days_since_arrival
-    deadline_days: 30
-    documents_required:
-      - Passport or ID
-      - label: Meldebescheinigung
-        from: core.anmeldung
+    deadline_type: none
+    documents_required: []
     links:
-      - https://www.krankenkassen.de/
+      - https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/health-insurance
     how_to_steps:
-      - title: Work out which system applies to you
-        body: Employees are enrolled in statutory insurance via their employer; the self-employed insure themselves (statutory voluntary or private); travel insurance is only a stop-gap and is not accepted as a substitute for residents.
-      - title: Compare statutory insurers if you have the choice
-        body: TK, AOK, Barmer, DAK — baseline coverage is identical by law; they differ on English service, apps and extras. For most expats, TK has the best English support.
-      - title: Don't leave a gap
-        body: Practical warning — German insurers can charge retroactive premiums for uninsured periods. Sort this in your first weeks, not when you first get sick.
+      - title: Check your circumstances with the insurer
+        body: Explain your work or study situation, existing cover and planned dates. Ask the insurer which cover and documents apply; do not wait for address registration before making this enquiry.
+        link: https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/health-insurance
+      - title: Confirm continuity
+        body: Check the start date and any gap between policies. Keep the insurer's confirmation. Expadu does not approve an insurer or confirm legal sufficiency of your cover.
 
-  - title: Open a German bank account
+  - title: Review an account for your everyday payments
     key: core.bank_account
-    depends_on: [core.anmeldung]
+    depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      bank_account_help_needed: true
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-22.1
-    source_verification: dual_source
-    verified_at: '2026-08-22'
+    reviewed_by: automated_source_check
+    content_version: 2026-09-08.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§31 ZKG — Anspruch auf Abschluss eines Basiskontovertrags', url: 'https://www.gesetze-im-internet.de/zkg/__31.html'}
       - {kind: implementation, label: 'Make it in Germany · Bank account', url: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/bank-account'}
+    claims:
+      - id: basic-account
+        states: A basic payment account (Basiskonto) has a separate statutory application framework under the ZKG
+        source: '§31 ZKG — Anspruch auf Abschluss eines Basiskontovertrags'
+        quote: hat mit einem Berechtigten einen Basiskontovertrag zu schließen, wenn dessen Antrag die Voraussetzungen des § 33 erfüllt
     description: |
-      You'll need a Girokonto (current account) with a SEPA IBAN for rent, salary or
-      invoices, insurance and the dozens of direct debits German life runs on.
+      If you need an account, compare costs, payment facilities and access to
+      support. Document requirements depend on the provider and account type.
+      A basic payment account (Basiskonto) has a separate statutory application
+      framework under the ZKG. This card does not decide your entitlement or
+      require you to replace an existing account.
     phase: first_30_days
     urgency: high
-    deadline_type: days_since_arrival
-    deadline_days: 30
-    documents_required:
-      - Passport or ID
-      - label: Meldebescheinigung
-        from: core.anmeldung
-      - label: Tax ID (if available)
-        from: core.steuer_id
+    deadline_type: none
+    documents_required: []
     links:
-      - https://www.n26.com/en-de
-      - https://www.ing.de/girokonto/
-      - https://www.sparkasse-koelnbonn.de/
+      - https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/bank-account
+      - https://www.gesetze-im-internet.de/zkg/__31.html
     how_to_steps:
-      - title: Pick an account type
-        body: Online-only banks (N26, C24) are fastest and English-friendly. Traditional banks (Sparkasse, ING, Commerzbank) are useful if you want branches or cash-deposit machines around Cologne.
-      - title: Apply with passport + Meldebescheinigung
-        body: Online banks verify identity by video call or in-app; allow 1–3 days for the IBAN. Branch banks may want an appointment.
-      - title: Set up your recurring payments
-        body: Rent, insurance, phone — German billing assumes direct debit. Getting them in place early avoids reminder fees (Mahngebühren).
+      - title: Compare the service you need
+        body: Check account fees and whether online-only support or a branch fits your needs. Expadu does not recommend a particular provider.
+        link: https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/bank-account
+      - title: Check requirements before applying
+        body: Ask the provider for its current document list and the appropriate account procedure. Expadu does not promise an opening time or treat address registration as a universal prerequisite.
 
   - title: Settle your Rundfunkbeitrag (broadcasting fee)
     key: core.rundfunkbeitrag

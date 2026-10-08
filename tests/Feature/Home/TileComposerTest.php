@@ -4,13 +4,12 @@ use App\ContextEngine\ActionBus;
 use App\ContextEngine\ScoredAction;
 use App\Home\TileComposer;
 use App\Models\Event;
-use App\Models\Task;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
-use App\Models\UserTask;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Redis;
+use Tests\Support\ReviewedHomePlan;
 
 beforeEach(function () {
     $prefix = (string) config('database.redis.options.prefix', '');
@@ -39,13 +38,8 @@ test('bus actions become tiles ranked with synthetic tiles by score', function (
     $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(12)]);
 
     // Overdue deadline → synthetic tile at score 95
-    $task = Task::factory()->create([
-        'title' => 'Register your address (Anmeldung)',
-        'situation' => [$user->situation->value],
-        'deadline_type' => 'days_since_arrival',
-        'deadline_days' => 5,
-    ]);
-    UserTask::create(['user_id' => $user->id, 'task_id' => $task->id, 'is_applicable' => true]);
+    $fixture = ReviewedHomePlan::activate($user, ['fixture.home.overdue' => ['deadline_days' => 5]],
+        ['arrival_date' => now()->subDays(12)->toDateString()]);
 
     // Disruption from the bus at score 56
     app(ActionBus::class)->insert($user, busAction('transit_disruption', 56.0, [
@@ -54,7 +48,7 @@ test('bus actions become tiles ranked with synthetic tiles by score', function (
         'stops_affected' => [],
     ]));
 
-    $tiles = app(TileComposer::class)->tiles(homeContext($user));
+    $tiles = app(TileComposer::class)->tiles(homeContext($user, ['bureaucracyPlan' => $fixture['plan']]));
 
     expect($tiles)->not->toBeEmpty();
 
@@ -274,13 +268,8 @@ test('a legal deadline is immune to dismissal demotion even when it is not dange
     // to bury a legal deadline just because the user cleared it before.
     $user = User::factory()->onboarded()->create(['arrival_date' => now()]);
 
-    $task = Task::factory()->create([
-        'title' => 'Register your address (Anmeldung)',
-        'situation' => [$user->situation->value],
-        'deadline_type' => 'days_since_arrival',
-        'deadline_days' => 6, // → 6 days left → 'urgent' → score 65, severity info
-    ]);
-    UserTask::create(['user_id' => $user->id, 'task_id' => $task->id, 'is_applicable' => true]);
+    $fixture = ReviewedHomePlan::activate($user, ['fixture.home.urgent' => ['deadline_days' => 6]],
+        ['arrival_date' => now()->toDateString()]);
 
     // A competing tile that would win once the deadline is demoted (65 − 60 = 5).
     app(ActionBus::class)->insert($user, busAction('transit_disruption', 60.0, [
@@ -299,7 +288,7 @@ test('a legal deadline is immune to dismissal demotion even when it is not dange
         ]);
     }
 
-    $types = collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('type');
+    $types = collect(app(TileComposer::class)->tiles(homeContext($user, ['bureaucracyPlan' => $fixture['plan']])))->pluck('type');
 
     // Deadline still outranks the disruption despite three dismissals.
     expect($types->search('bureaucracy_deadline'))

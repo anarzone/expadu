@@ -2,9 +2,10 @@
 
 namespace App\Bureaucracy\Cases;
 
+use App\Bureaucracy\Facts\ConfirmedBureaucracyAttributes;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
-use App\Profile\ProfileEngine;
+use App\Models\BureaucracyFactConflict;
 
 /**
  * The attribute bag every `applies_if` is evaluated against: profile
@@ -16,34 +17,26 @@ use App\Profile\ProfileEngine;
  */
 final class CaseAttributes
 {
-    public function __construct(private ProfileEngine $profileEngine) {}
+    public function __construct(private ConfirmedBureaucracyAttributes $confirmedAttributes) {}
 
     /**
      * @return array<string, mixed>
      */
     public function for(BureaucracyCase $case): array
     {
-        // A relation that is already loaded is used as-is. The read-only demo
-        // renders a persona from an unsaved case whose user and facts exist
-        // only in memory, and re-querying them would either fail or, worse,
-        // silently read a different user's row.
-        $user = $case->relationLoaded('user')
-            ? $case->user
-            : $case->user()->firstOrFail();
+        // Only an unsaved QA case may supply in-memory relations. A persisted
+        // case must see retirements, corrections and conflicts since it loaded.
+        $user = $case->exists ? $case->user()->first() : $case->user;
 
-        $profile = $this->profileEngine->build($user);
+        $attributes = $user !== null ? $this->confirmedAttributes->forUser($user) : [];
+        $explicitProfile = $attributes;
 
-        $attributes = [
-            ...$profile->attributes,
-            'german_level' => $profile->germanLevel?->value,
-        ];
-
-        $factHistory = $case->relationLoaded('facts')
-            ? $case->facts->sortBy('id')->values()
-            : BureaucracyCaseFact::query()
+        $factHistory = $case->exists
+            ? BureaucracyCaseFact::query()
                 ->where('case_id', $case->getKey())
                 ->orderBy('id')
-                ->get();
+                ->get()
+            : ($case->relationLoaded('facts') ? $case->facts->sortBy('id')->values() : collect());
 
         foreach ($factHistory as $fact) {
             $attributes[$fact->key] = null;
@@ -57,9 +50,23 @@ final class CaseAttributes
                 continue;
             }
 
+            // Earlier bootstraps recorded inferred branch defaults as confirmed.
+            // Preserve those rows, but require corroboration by an explicit input.
+            if ($fact->source === 'legacy_profile' && ($explicitProfile[$fact->key] ?? null) !== $fact->value) {
+                continue;
+            }
+
             $attributes[$fact->key] = $fact->value;
         }
 
-        return $attributes;
+        $conflictKeys = $case->exists
+            ? BureaucracyFactConflict::query()->where('case_id', $case->getKey())->actionable()->pluck('fact_key')
+            : ($case->relationLoaded('conflicts')
+                ? $case->conflicts->where('status', 'unresolved')->pluck('fact_key') : collect());
+        foreach ($conflictKeys as $key) {
+            $attributes[$key] = null;
+        }
+
+        return $this->confirmedAttributes->validated($attributes);
     }
 }

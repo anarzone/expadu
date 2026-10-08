@@ -57,7 +57,7 @@ const CATEGORY_ICON: Record<
 const CATEGORIES: { id: 'all' | Alert['category']; label: string }[] = [
     { id: 'all', label: 'All' },
     { id: 'transit', label: 'Transit' },
-    { id: 'bureau', label: 'Bureaucracy' },
+    { id: 'bureau', label: 'Paperwork' },
     { id: 'events', label: 'Events' },
     { id: 'city', label: 'City' },
 ];

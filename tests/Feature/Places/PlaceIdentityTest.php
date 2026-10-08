@@ -1,5 +1,6 @@
 <?php
 
+use App\Composer\AppointmentRepository;
 use App\Composer\CandidateRepository;
 use App\Composer\Constraints;
 use App\Composer\PlanSlot;
@@ -22,7 +23,6 @@ use App\Services\VeedelDirectory;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 function identityPair(): array
@@ -250,6 +250,7 @@ test('saved Composer snapshots normalize identity without changing timing or oth
     $user = User::factory()->onboarded()->create();
     $slot = ['id' => "spot:{$alias->id}", 'name' => $alias->name, 'start_at' => now()->addHour()->toIso8601String(), 'end_at' => now()->addHours(2)->toIso8601String(), 'travel_min_from_previous' => 7];
     $plan = ['constraints' => ['window_start' => now()->toIso8601String(), 'window_end' => now()->addHours(4)->toIso8601String()], 'slots' => [$slot], 'pins' => ["spot:{$alias->id}"], 'excluded' => ["spot:{$alias->id}"], 'rejected' => [["spot:{$alias->id}", 'event:42']]];
+    $plan['appointment_revision'] = app(AppointmentRepository::class)->revision($user, Constraints::fromArray($plan['constraints']));
     app(TodayPlanStore::class)->save($user, $plan, 'Saved before reconciliation');
     reconcileIdentity($alias, $canonical);
     $normalized = app(PlaceIdentity::class)->normalizePlan($plan);
@@ -272,11 +273,11 @@ test('Composer honors old identity pins locks and exclusions after reconciliatio
     $start = now('Europe/Berlin')->addDay()->setTime(12, 0);
     $constraints = ['window_start' => $start->toIso8601String(), 'window_end' => $start->addHours(5)->toIso8601String()];
     $this->actingAs($user)->postJson('/composer/compose', ['constraints' => $constraints, 'locked' => ["spot:{$alias->id}"]])->assertOk();
-    $stored = Cache::get("composer:plan:{$user->id}");
+    $stored = storedComposerPlan($user);
     expect($stored['pins'])->toBe(["spot:{$canonical->id}"])
         ->and(array_column($stored['slots'], 'id'))->toContain("spot:{$canonical->id}");
     $this->postJson('/composer/compose', ['constraints' => $constraints, 'pins' => ["spot:{$alias->id}"], 'excluded' => ["spot:{$alias->id}"]])->assertOk();
-    $stored = Cache::get("composer:plan:{$user->id}");
+    $stored = storedComposerPlan($user);
     expect($stored['excluded'])->toBe(["spot:{$canonical->id}"])
         ->and(array_column($stored['slots'], 'id'))->not->toContain("spot:{$canonical->id}");
 });
@@ -341,12 +342,12 @@ test('an unavailable canonical place cannot silently remove a saved slot or shif
     $candidate = app(CandidateRepository::class)->byIds(["spot:{$alias->id}"], $start)[0];
     $slot = new PlanSlot($candidate, $start, $start->addHour(), 0);
     $plan = ['constraints' => $constraints->toArray(), 'slots' => [$slot->toArray()], 'origin' => [50.95, 6.95]];
-    Cache::put("composer:plan:{$user->id}", $plan, 3600);
+    $plan = storeComposerPlan($user, $plan);
     reconcileIdentity($alias, $canonical);
     $canonical->update(['is_recommendable' => false]);
 
     $this->actingAs($user)->postJson('/composer/swap', ['slot' => 0])->assertConflict();
-    expect(Cache::get("composer:plan:{$user->id}"))->toBe($plan);
+    expect(storedComposerPlan($user))->toBe($plan);
     $this->postJson('/composer/compose', ['constraints' => $constraints->toArray(), 'pins' => ["spot:{$alias->id}"]])->assertUnprocessable();
 });
 
@@ -380,7 +381,7 @@ test('swapping a later slot preserves an old identity outside the nearest candid
     $second = $repository->byIds(["spot:{$cafe->id}"], $start)[0];
     $firstSlot = (new PlanSlot($old, $start, $start->addHour(), 0))->toArray();
     $secondSlot = (new PlanSlot($second, $start->addHour()->addMinutes(10), $start->addHours(2)->addMinutes(10), 10))->toArray();
-    Cache::put("composer:plan:{$user->id}", ['constraints' => $constraints->toArray(), 'slots' => [$firstSlot, $secondSlot], 'origin' => [50.95, 6.95]], 3600);
+    storeComposerPlan($user, ['constraints' => $constraints->toArray(), 'slots' => [$firstSlot, $secondSlot], 'origin' => [50.95, 6.95]]);
     reconcileIdentity($alias, $canonical);
     expect(array_column($repository->candidatesFor($constraints, 50.95, 6.95), 'id'))->not->toContain("spot:{$canonical->id}");
     $response = $this->actingAs($user)->postJson('/composer/swap', ['slot' => 1])->assertOk();

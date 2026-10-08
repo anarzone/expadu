@@ -99,6 +99,7 @@ class MuteService
     public function muteSubjectFor(string $actionType, array $payload): ?array
     {
         return match ($actionType) {
+            'bureaucracy_task' => is_string($payload['mute_key'] ?? null) ? ['bureaucracy_task', $payload['mute_key']] : null,
             'transit_disruption' => isset($payload['lines'][0])
                 ? ['transit_disruption', mb_strtolower((string) $payload['lines'][0])]
                 : null,

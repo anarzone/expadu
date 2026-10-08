@@ -4,11 +4,9 @@ use App\Composer\TodayPlanStore;
 use App\Enums\LocationSource;
 use App\Models\Event;
 use App\Models\Spot;
-use App\Models\Task;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
-use App\Models\UserTask;
 use App\Places\ReviewPlaceFacts;
 use App\Services\LocationContext;
 use App\Services\UserLocationService;
@@ -18,6 +16,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Tests\Support\RecordedAppointmentFixture;
 
 beforeEach(function () {
     Cache::flush();
@@ -145,7 +144,7 @@ test('compose builds a plan from real candidates and stores it', function () {
     $response->assertOk();
     expect($response->json('plan.slots'))->not->toBeEmpty();
     expect($response->json('notices'))->toBeArray();
-    expect(Cache::get("composer:plan:{$user->id}"))->not->toBeNull();
+    expect(storedComposerPlan($user))->not->toBeNull();
 
     // The plan origin's coordinates ride along so "take me there" starts from
     // the same point the plan measured "same area / N min" against — not a
@@ -480,16 +479,7 @@ test('compose weaves a booked appointment as an immovable anchor', function () {
     $user = composerUser();
     Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);
 
-    $task = Task::factory()->create([
-        'booking_service_key' => 'auslaenderbehoerde',
-        'documents_required' => ['Passport', 'Biometric photo', 'Application form'],
-        'title' => 'Residence permit appointment',
-    ]);
-    UserTask::factory()->create([
-        'user_id' => $user->id,
-        'task_id' => $task->id,
-        'appointment_at' => now('Europe/Berlin')->addDay()->setTime(14, 0),
-    ]);
+    RecordedAppointmentFixture::for($user, now('Europe/Berlin')->addDay()->setTime(14, 0));
 
     $this->actingAs($user);
     $start = now('Europe/Berlin')->addDay()->setTime(10, 0);
@@ -506,8 +496,9 @@ test('compose weaves a booked appointment as an immovable anchor', function () {
     expect($anchor)->not->toBeNull();
     expect($anchor['swappable'])->toBeFalse();
     expect($anchor['start_time'])->toBe('14:00');
-    expect($anchor['subtitle'])->toContain('Ausländerbehörde');
-    expect($anchor['subtitle'])->toContain('3 documents');
+    expect($anchor['subtitle'])->toBe('My recorded meeting place');
+    expect($anchor['cost_tier'])->toBe('unknown');
+    expect($anchor['end_time'])->toBe('14:25');
     expect(collect($response->json('notices'))->pluck('text')->implode(' '))
         ->toContain('appointment');
 });
@@ -518,12 +509,7 @@ test('an appointment anchor refuses to swap', function () {
     $user = composerUser();
     Spot::factory()->count(3)->create(['category' => 'cafe', 'lat' => 50.948, 'lng' => 6.924]);
 
-    $task = Task::factory()->create(['booking_service_key' => 'auslaenderbehoerde', 'title' => 'Permit appointment']);
-    UserTask::factory()->create([
-        'user_id' => $user->id,
-        'task_id' => $task->id,
-        'appointment_at' => now('Europe/Berlin')->addDay()->setTime(14, 0),
-    ]);
+    RecordedAppointmentFixture::for($user, now('Europe/Berlin')->addDay()->setTime(14, 0));
 
     $this->actingAs($user);
     $start = now('Europe/Berlin')->addDay()->setTime(10, 0);

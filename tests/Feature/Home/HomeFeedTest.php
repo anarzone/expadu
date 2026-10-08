@@ -8,15 +8,14 @@ use App\Models\Event;
 use App\Models\EventReminder;
 use App\Models\MediaAsset;
 use App\Models\Spot;
-use App\Models\Task;
 use App\Models\User;
-use App\Models\UserTask;
 use App\Services\LocationContext;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\ReviewedHomePlan;
 
 function homeFeedUser(): User
 {
@@ -165,8 +164,7 @@ test('tonight rail cards carry the real event category and rights-approved media
 });
 
 test('only still-applicable open tasks reach the urgent tile and paperwork rail', function () {
-    // Settled resident; the driving-licence question was never answered, so a
-    // conditional task gated on license_country is now Unknown for them.
+    // An unanswered registered fact must not leak a hypothetical action into Home.
     $user = User::factory()->onboarded()->create([
         'veedel' => 'Ehrenfeld',
         'situation' => 'eu_employee',
@@ -175,28 +173,10 @@ test('only still-applicable open tasks reach the urgent tile and paperwork rail'
         'profile_attributes' => ['housing_status' => 'long_term'],
     ]);
 
-    // Both are freshly overdue (~30 days) against a ~730-day-old arrival, so the
-    // applicable one earns a real tile — not softened away by the lapsed cap.
-    $applies = Task::factory()->create([
-        'key' => 'shared.test_applies',
-        'title' => 'Definitely Applies',
-        'is_published' => true,
-        'applies_if' => [['housing_status' => ['long_term']]],
-        'deadline_type' => 'days_since_arrival',
-        'deadline_days' => 700,
-    ]);
-    $unknown = Task::factory()->create([
-        'key' => 'shared.test_unknown',
-        'title' => 'Hinges On Unanswered',
-        'is_published' => true,
-        'applies_if' => [['license_country' => ['other']]],
-        'deadline_type' => 'days_since_arrival',
-        'deadline_days' => 700,
-    ]);
-
-    // Both already materialised as open rows — PathGenerator never deletes them.
-    UserTask::create(['user_id' => $user->id, 'task_id' => $applies->id]);
-    UserTask::create(['user_id' => $user->id, 'task_id' => $unknown->id]);
+    ReviewedHomePlan::activate($user, [
+        'fixture.applies' => ['title' => 'Definitely Applies', 'applies_if' => [['citizenship_group' => 'eu']], 'deadline_days' => 700],
+        'fixture.unknown' => ['title' => 'Hinges On Unanswered', 'applies_if' => [['german_level' => 'b1']], 'deadline_days' => 700],
+    ], ['arrival_date' => now()->subYears(2)->toDateString(), 'citizenship_group' => 'eu']);
 
     $feed = app(HomeFeed::class);
     $deadlineTitles = collect($feed->tiles($user))->where('type', 'bureaucracy_deadline')->pluck('title');
@@ -208,7 +188,7 @@ test('only still-applicable open tasks reach the urgent tile and paperwork rail'
     expect($paperworkNames)->toContain('Definitely Applies')->not->toContain('Hinges On Unanswered');
 });
 
-test('a long-lapsed deadline drops out of the urgent tiles while a fresh overdue one stays', function () {
+test('age alone never hides an unresolved reviewed legal deadline', function () {
     $user = User::factory()->onboarded()->create([
         'situation' => 'eu_employee',
         'is_eu' => true,
@@ -216,31 +196,15 @@ test('a long-lapsed deadline drops out of the urgent tiles while a fresh overdue
         'profile_attributes' => ['housing_status' => 'long_term'],
     ]);
 
-    // Both applicable + overdue against a ~730-day-old arrival: one ~30 days
-    // past (fresh), one ~1.5 years past (lapsed).
-    $fresh = Task::factory()->create([
-        'title' => 'Fresh Overdue', 'key' => 'x.fresh', 'is_published' => true,
-        'applies_if' => [['housing_status' => ['long_term']]],
-        'deadline_type' => 'days_since_arrival', 'deadline_days' => 700,
-    ]);
-    $lapsed = Task::factory()->create([
-        'title' => 'Long Lapsed', 'key' => 'x.lapsed', 'is_published' => true,
-        'applies_if' => [['housing_status' => ['long_term']]],
-        'deadline_type' => 'days_since_arrival', 'deadline_days' => 180,
-    ]);
-    UserTask::create(['user_id' => $user->id, 'task_id' => $fresh->id]);
-    UserTask::create(['user_id' => $user->id, 'task_id' => $lapsed->id]);
+    ReviewedHomePlan::activate($user, [
+        'fixture.fresh' => ['title' => 'Fresh Overdue', 'deadline_days' => 700],
+        'fixture.old' => ['title' => 'Older Unresolved', 'deadline_days' => 180],
+    ], ['arrival_date' => now()->subYears(2)->toDateString()]);
 
-    // The status caps: fresh stays a sharp countdown, lapsed softens (no number).
-    $status = fn ($t) => $user->userTasks()->where('task_id', $t->id)->first()->deadline_status;
-    expect($status($fresh)['urgency'])->toBe('overdue')
-        ->and($status($lapsed)['urgency'])->toBe('lapsed')
-        ->and($status($lapsed)['label'])->not->toContain('days');
-
-    // Only the fresh miss reaches the urgent "Right now" tiles.
-    $titles = collect(app(HomeFeed::class)->tiles($user))
-        ->where('type', 'bureaucracy_deadline')->pluck('title');
-    expect($titles)->toContain('Fresh Overdue')->not->toContain('Long Lapsed');
+    $tiles = collect(app(HomeFeed::class)->tiles($user))->where('type', 'bureaucracy_deadline');
+    expect($tiles->pluck('title'))->toContain('Fresh Overdue', 'Older Unresolved')
+        ->and($tiles->every(fn ($tile) => $tile['meta']['urgency'] === 'overdue'
+            && $tile['meta']['temporal_kind'] === 'legal_due'))->toBeTrue();
 });
 
 test('the kids chip fires for a user with a child_born_at attribute', function () {

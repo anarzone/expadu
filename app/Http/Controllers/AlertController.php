@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Alerts\AlertClassifier;
+use App\Bureaucracy\GuidancePublication;
 use App\Models\Alert;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -45,17 +46,21 @@ class AlertController extends Controller
     {
         $subtype = $alert->subtype;
         $severity = $alert->severity ?: 'info';
+        $withdrawn = in_array($subtype, ['permanent_residency', 'permanent_residency_eligible'], true)
+            || ($subtype === 'bureaucracy_deadline'
+                && ! app(GuidancePublication::class)->allowsReference($alert->guidance_reference, (int) $alert->user_id));
 
         return [
             'id' => $alert->id,
             'category' => $alert->category ?: AlertClassifier::category($subtype),
-            'lane' => $alert->lane ?: AlertClassifier::lane($subtype, $severity),
-            'severity' => $severity,
-            'source' => AlertClassifier::source($subtype),
-            'action_label' => $alert->deep_link ? AlertClassifier::actionLabel($subtype) : null,
-            'title' => $alert->title,
-            'body' => (string) $alert->body,
-            'deep_link' => $alert->deep_link,
+            'lane' => $withdrawn ? 'action' : ($alert->lane ?: AlertClassifier::lane($subtype, $severity)),
+            'severity' => $withdrawn ? 'info' : $severity,
+            'source' => $withdrawn ? 'Expadu' : AlertClassifier::source($subtype),
+            'action_label' => $withdrawn ? 'Review your current plan' : ($alert->deep_link ? AlertClassifier::actionLabel($subtype) : null),
+            'title' => $withdrawn ? 'Saved guidance needs review' : $alert->title,
+            'body' => $withdrawn ? 'This saved message is not current guidance. Your history is preserved; open Bureaucracy for the current plan.' : (string) $alert->body,
+            'deep_link' => $withdrawn ? '/bureaucracy' : $alert->deep_link,
+            'guidance_status' => $withdrawn ? 'review_required' : null,
             'read' => $alert->read_at !== null,
             // The card's timestamp is its last activity, so a refreshed weather
             // card reads "just now", not the hour it first appeared.

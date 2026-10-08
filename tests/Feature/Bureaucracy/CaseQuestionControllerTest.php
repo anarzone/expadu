@@ -17,6 +17,7 @@ function caseQuestionCondition(string $factKey): array
 {
     return [$factKey => match ($factKey) {
         'residence_title_expires_at' => '2026-10-01',
+        'family_residence_permit_held_since' => ['at_least_months_ago' => 36],
         'blue_card_qualifying_months' => 12,
         'marital_household_continues' => true,
         default => 'settlement_permit',
@@ -112,7 +113,16 @@ test('structured answers are validated using the server registered fact type', f
     'invalid ISO date' => ['residence_title_expires_at', 'tomorrow'],
     'non integer months' => ['blue_card_qualifying_months', 'twelve'],
     'non boolean household answer' => ['marital_household_continues', 'perhaps'],
+    'future historical date' => ['family_residence_permit_held_since', '2099-01-01'],
 ]);
+
+test('valid form encoded scalar answers are stored as their canonical type', function (string $key, mixed $input, mixed $expected) {
+    [$user, $case, $question] = caseQuestionFixture($key);
+    $this->actingAs($user)->post(route('bureaucracy.case-question.answer', $question), ['value' => $input])
+        ->assertRedirect()->assertSessionHasNoErrors();
+
+    expect($case->facts()->where('key', $key)->sole()->value)->toBe($expected);
+})->with([['blue_card_qualifying_months', '12', 12], ['marital_household_continues', '0', false]]);
 
 test('a server issued structured answer becomes a confirmed fact atomically', function () {
     [$user, $case, $question] = caseQuestionFixture();

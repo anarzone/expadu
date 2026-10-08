@@ -126,6 +126,19 @@ test('an unresolved approved case rule produces needs information with its regis
         ->and($result->missingFactKeys)->toBe(['case_goal']);
 });
 
+test('explicit unconditional guidance is valid but malformed alternatives remain excluded', function (array $conditions, bool $visible) {
+    task5MatcherRule('fixture.condition-shape', $conditions, ['coverage_scope' => 'universal']);
+
+    $result = app(CaseMatcher::class)->match(task5MatcherCase());
+
+    expect($result->universalRuleKeys)->toBe($visible ? ['fixture.condition-shape'] : []);
+})->with([
+    'explicit empty conjunction' => [[[]], true],
+    'non-object conjunction' => [[['invalid']], false],
+    'scalar alternative' => [[false], false],
+    'unknown fact' => [[['unregistered_fixture_fact' => true]], false],
+]);
+
 test('unresolved high impact branches keep safe matches visible without claiming full coverage', function () {
     task5MatcherRule('case.safe-registration', [['purpose' => 'family']]);
     task5MatcherRule('case.sponsor-dependent', [[
@@ -153,7 +166,7 @@ test('unresolved high impact branches keep safe matches visible without claiming
         ]]);
 });
 
-test('matcher accepts exact trusted predicates compiled from a persona branch', function () {
+test('matcher accepts compiled family predicates backed by explicit confirmed facts', function () {
     task5MatcherRule('case.family-branch', [[
         'purpose' => 'family',
         'sponsor' => 'non_eu',
@@ -162,6 +175,7 @@ test('matcher accepts exact trusted predicates compiled from a persona branch', 
 
     $result = app(CaseMatcher::class)->match(task5MatcherCase([
         'case_goal' => 'renew_current_title',
+        'sponsor' => 'non_eu',
     ], [
         'situation' => 'family_reunification',
         'bureaucracy_path' => 'family_reunification',
@@ -187,6 +201,7 @@ test('composer routes informational phases and exposes fact-date deadlines', fun
 
     $case = task5MatcherCase([
         'case_goal' => 'settlement_permit',
+        'current_residence_title' => 'blue_card',
         'residence_title_expires_at' => '2026-09-01',
     ]);
     $sections = app(CasePlanComposer::class)->compose($case, app(CaseMatcher::class)->match($case));

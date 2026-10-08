@@ -26,6 +26,12 @@ class PermanentResidencyEligibleNotification extends Notification implements Sho
         public string $trackNote,
     ) {}
 
+    // Previously queued duration-only claims have no reviewed assessment.
+    public function shouldSend(mixed $notifiable, string $channel): bool
+    {
+        return false;
+    }
+
     /**
      * @return array<int, string>
      */

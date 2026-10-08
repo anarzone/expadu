@@ -18,6 +18,7 @@ class CaseMessageController extends Controller
             $request->user(),
             (int) $validated['question_id'],
             $validated['message'],
+            $validated['processing'] ?? null,
         );
 
         return response()->json($result, $result['outcome'] === 'limited' ? 429 : 200);

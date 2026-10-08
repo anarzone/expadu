@@ -64,19 +64,20 @@ type PlanSlot = {
     subtitle: string | null;
     category: string;
     veedel: string | null;
-    lat: number;
-    lng: number;
+    // null for an appointment with a text-only place: no journey can be planned.
+    lat: number | null;
+    lng: number | null;
     outdoor: boolean;
     cost_tier: string;
     is_appointment: boolean;
     swappable: boolean;
     start_time: string;
-    end_time: string;
-    travel_min_from_previous: number;
+    end_time: string | null;
+    travel_min_from_previous: number | null;
     leave_by: string | null;
     closes_at: string | null;
     band: string;
-    duration_label: string;
+    duration_label: string | null;
     why: string | null;
     is_landmark: boolean;
 };
@@ -633,6 +634,10 @@ export default function Composer() {
     }
 
     function takeMeThere(slot: PlanSlot) {
+        if (slot.lat === null || slot.lng === null) {
+            return;
+        }
+
         // Strongest intent signal — only for leisure, not appointments.
         if (!slot.is_appointment) {
             track('take_me_there', {
@@ -1469,8 +1474,8 @@ export default function Composer() {
                                                 </p>
                                             )}
                                             <div className="mt-3 flex items-center gap-3 font-mono text-[12px] text-cyan-h">
-                                                {slot.travel_min_from_previous >
-                                                    0 && (
+                                                {(slot.travel_min_from_previous ??
+                                                    0) > 0 && (
                                                     <span>
                                                         {
                                                             slot.travel_min_from_previous

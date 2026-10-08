@@ -20,5 +20,7 @@ return [
         'stadt-koeln.de',
         'bamf.de',
         'make-it-in-germany.com',
+        // Bundeszentralamt für Steuern: the federal tax office (owner decision, 7 Oct 2026).
+        'bzst.de',
     ],
 ];

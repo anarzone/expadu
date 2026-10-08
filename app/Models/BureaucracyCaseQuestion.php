@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BureaucracyCaseQuestion extends Model
 {
+    protected $dateFormat = 'Y-m-d H:i:sP';
+
+    protected $hidden = ['offer_token', 'answer_fingerprint'];
+
     /** @use HasFactory<BureaucracyCaseQuestionFactory> */
     use HasFactory;
 
@@ -20,6 +24,8 @@ class BureaucracyCaseQuestion extends Model
         'asked_at',
         'answered_at',
         'outcome',
+        'session_id', 'request_id', 'protocol_version', 'dependency_token', 'fact_revision', 'offer_token',
+        'offer_expires_at', 'malformed_attempts', 'answer_fingerprint', 'answer_fact_id', 'answer_fact_revision',
     ];
 
     /** @var array<string, mixed> */
@@ -36,6 +42,8 @@ class BureaucracyCaseQuestion extends Model
             'attempt' => 'integer',
             'asked_at' => 'datetime',
             'answered_at' => 'datetime',
+            'fact_revision' => 'integer', 'answer_fact_revision' => 'integer', 'malformed_attempts' => 'integer',
+            'offer_token' => 'encrypted', 'offer_expires_at' => 'immutable_datetime',
         ];
     }
 
