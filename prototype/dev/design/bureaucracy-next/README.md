@@ -13,12 +13,15 @@ answers and tasks now follow the backend's rules; `registry.js` holds them.
   its why, type and options: dates, choices, yes/no and whole numbers. Labels
   and option names are UI copy, the same as the app's (`facts.ts`). No fact
   allows "Doesn't apply to me" yet; the editor offers it only where one does.
-- **The order**: the protocol's first questions (citizenship, the move, the
-  permit, its expiry) under their own conditions, then what a still-possible
-  task needs, by the registry's priority. A task's questions come from its
-  card's `applies_if`; a skipped question doesn't hold the next ones up.
-  Which question the backend asks first is still the owner's call (the
-  backend session's point 8); this order follows the priorities.
+- **The order** is the backend's (`QuestionProtocol`, 7ffc1179, owner
+  approved): the protocol's first questions (citizenship, the move, the
+  permit, its expiry) under their own conditions; then the most urgent work
+  first, and within one urgency a question for work that already applies
+  before one that only decides whether other routes apply. So a newcomer is
+  asked about address registration and health insurance before the work
+  route, and a task's own date (the move-in date) right after it opens. The
+  employment track isn't asked once the goal is the Blue Card (`not_asked`).
+  A skipped question doesn't hold the next ones up.
 - **The question card** (`plan.questions`) shows the backend's states: a
   question "For your {task} process" (by the backend's process id) with Enter
   date or Answer, I don't know and Skip for now; "{question} left for later"
@@ -62,9 +65,9 @@ catalogue (`codex/bureaucracy-backend-v2`, `database/seeders/data/bureaucracy`,
   licence). The sample's 14:00 appointment is that step.
 - **Only required documents count**: only a required document can be marked
   ready, so a step's count is "ready of required" (1 of 5 for the Blue Card,
-  as Today and Composer show) and its first document to check is a required
-  one while any is open. The backend still counts every listed row and takes
-  the first open one; this is raised with it.
+  as Today and Composer show), with the optional ones counted apart
+  (`requirements.optional`), and its first document to check is a required
+  one while any is open. The backend does the same since 6268e24d.
 - **The other tasks as the catalogue words them now**: "Check and prepare your
   address registration (Anmeldung)" with its two documents, "Confirm health
   insurance cover for your stay" and "Review an account for your everyday

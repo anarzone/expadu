@@ -59,7 +59,7 @@ test('every registry question, in its own words and types', () => {
     assert.ok(R.fields.every((f) => f.allowsNotApplicable === false));
 });
 
-test('orientation first, then what a still-possible task needs, by priority', () => {
+test('orientation first, then the backend’s ranking of what tasks need', () => {
     assert.deepEqual(
         [...R.questions({})],
         ['citizenship_group', 'arrival_planned'],
@@ -77,13 +77,24 @@ test('orientation first, then what a still-possible task needs, by priority', ()
             'arrival_planned',
             'current_residence_title',
             'visa_expires_at',
-            'purpose',
-            'entry_mode',
-            'case_goal',
+            // Equally urgent: work that already applies (only this answer
+            // is missing) before what decides whether other routes apply.
             'registration_status',
             'health_coverage_confirmed',
+            'entry_mode',
+            'purpose',
+            'case_goal',
+            // Less urgent.
             'bank_account_help_needed',
         ],
+    );
+    // A task's own date question follows once it applies.
+    assert.equal(
+        R.questions({
+            ...arrived,
+            registration_status: value('not_registered'),
+        })[4],
+        'moved_in_at',
     );
     // A non-EU person still planning the move isn't asked for a German
     // permit, even though the Blue Card would need one.
@@ -136,13 +147,10 @@ test('a new user’s tasks arrive from their answers, as proposals', () => {
     assert.deepEqual([...P.openedBy(s)], []);
     J.begin(s);
     assert.equal(plan(s).questions.status, 'preview');
-    // Visa expiry, purpose, entry mode; then the goal opens the Blue Card.
-    for (const v of ['2026-10-01', 'employment', 'd_visa']) answer(s, v);
-    J.begin(s);
-    answer(s, 'blue_card');
-    assert.deepEqual([...P.openedBy(s)], ['blue-card']);
+    // The visa expiry, then address registration opens its task.
+    answer(s, '2026-10-01');
     answer(s, 'not_registered');
-    assert.deepEqual([...P.openedBy(s)], ['blue-card', 'address']);
+    assert.deepEqual([...P.openedBy(s)], ['address']);
     const p = plan(s);
     const address = p.processes.find((x) => x.occurrence_key === 'address');
     assert.equal(address.id, null);
@@ -152,6 +160,15 @@ test('a new user’s tasks arrive from their answers, as proposals', () => {
     assert.deepEqual(p.questions.question.process_ids, [
         'address.registration',
     ]);
+    answer(s, '2026-09-25');
+    // Then health insurance, the way in, the purpose; the goal opens the
+    // Blue Card.
+    J.begin(s);
+    for (const v of [false, 'd_visa', 'employment']) answer(s, v);
+    assert.deepEqual([...P.openedBy(s)], ['address', 'health']);
+    J.begin(s);
+    answer(s, 'blue_card');
+    assert.deepEqual([...P.openedBy(s)], ['blue-card', 'address', 'health']);
 });
 
 test('the move-in date dates the registration target with the card’s days', () => {
@@ -204,7 +221,7 @@ test('Your situation lists answers, what was left for later and the current ques
     // question (a skipped one doesn't hold the next up).
     assert.deepEqual(
         [...D.listed(r).map((f) => f.key)],
-        ['citizenship_group', 'arrival_planned', 'purpose'],
+        ['citizenship_group', 'arrival_planned', 'health_coverage_confirmed'],
     );
     // Nothing it guesses might apply: the permit question isn't listed.
     assert.ok(!D.listed(r).some((f) => f.key === 'current_residence_title'));

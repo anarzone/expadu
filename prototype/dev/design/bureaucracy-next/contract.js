@@ -325,8 +325,7 @@
             const rows = requirements.filter((x) => x.source_rule_id === r.key);
             // Only a required document can be marked ready, so the count is
             // over the required ones, and the first to check is required
-            // when one is still open. (The backend counts every listed row
-            // and takes the first open one; raised with the backend.)
+            // while one is open (as the backend does since 6268e24d).
             const required = rows.filter((x) => x.applicability === 'required');
             const open =
                 required.find((x) => x.readiness !== 'confirmed_for_use') ||
@@ -371,7 +370,7 @@
                         (x) => x.readiness === 'confirmed_for_use',
                     ).length,
                     total: required.length,
-                    listed: rows.length,
+                    optional: rows.length - required.length,
                 },
                 first_open_requirement: open
                     ? {

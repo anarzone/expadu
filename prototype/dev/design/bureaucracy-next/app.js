@@ -770,7 +770,10 @@
         const key = c.occurrence_key;
         const editable = c.id !== null && !c.is_closed;
         // A step lists documents even when all of them are optional.
-        const papers = step.requirements?.listed > 0;
+        const papers =
+            (step.requirements?.total || 0) +
+                (step.requirements?.optional || 0) >
+            0;
         const open = step.first_open_requirement;
         const submitStep = step.completion_event === 'submission_recorded';
         const submission =

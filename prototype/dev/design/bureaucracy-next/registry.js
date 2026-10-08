@@ -446,6 +446,7 @@
         {
             id: 'blue-card',
             definition: 'residence.blue_card.first',
+            urgency: 'critical',
             when: {
                 citizenship_group: 'non_eu',
                 purpose: 'employment',
@@ -459,6 +460,7 @@
         {
             id: 'address',
             definition: 'address.registration',
+            urgency: 'critical',
             when: {
                 arrival_planned: false,
                 registration_status: 'not_registered',
@@ -468,16 +470,28 @@
         {
             id: 'health',
             definition: 'health.coverage',
+            urgency: 'critical',
             when: { health_coverage_confirmed: false },
             dates: [],
         },
         {
             id: 'bank',
             definition: 'banking.account',
+            urgency: 'high',
             when: { bank_account_help_needed: true },
             dates: [],
         },
     ];
+    // question-protocol.yaml (2026-10-08.1) not_asked: questions your own
+    // answers settle. Choosing the Blue Card as your goal says which
+    // employment track you follow (owner decision, 8 Oct 2026).
+    const notAsked = [
+        ['permit_track', (f) => said(f, 'case_goal') === 'blue_card'],
+    ];
+    // The cards' urgency (QuestionProtocol ranks by it); a task's own date
+    // question gets a little more (AnchorBonus).
+    const urgency = { critical: 3, high: 2, normal: 1 };
+    const anchorBonus = 0.5;
     // A task applies when every condition is answered as it asks.
     const applies = (facts, t) =>
         Object.entries(t.when).every(([k, v]) => said(facts, k) === v);
@@ -491,8 +505,8 @@
     const opened = (facts) =>
         tasks.filter((t) => applies(facts, t)).map((t) => t.id);
     // Every question that concerns this person now, in the order it would be
-    // asked: orientation first, then what a still-possible task needs, by
-    // the registry's priority.
+    // asked: orientation first, then what a still-possible task needs, in
+    // QuestionProtocol's order (7ffc1179 on the backend branch).
     function questions(facts, deferred = []) {
         const keys = orientation
             .filter(([, when]) => when(facts))
@@ -503,20 +517,56 @@
             (k) => answered(facts, k) || deferred.includes(k),
         );
         if (!oriented) return keys;
-        const needed = new Set();
+        // Each question a still-possible task needs, as QuestionProtocol
+        // ranks them: the most urgent work first; within one urgency, a
+        // question for work that already applies (only that answer is
+        // missing) before one that only decides whether other routes apply;
+        // then the question that more tasks wait on, the registry's
+        // priority, and the key. A first question is asked only under its
+        // own condition (a non-EU person still planning the move isn't asked
+        // for a German permit), even when a task would need it.
+        const first = orientation.map(([key]) => key);
+        const ranked = new Map();
+        const add = (key, priority, relevant, t) => {
+            if (first.includes(key)) return;
+            const e = ranked.get(key) || {
+                key,
+                priority,
+                relevant: false,
+                tasks: new Set(),
+            };
+            e.priority = Math.max(e.priority, priority);
+            e.relevant ||= relevant;
+            e.tasks.add(t.id);
+            ranked.set(key, e);
+        };
         for (const t of tasks)
             if (possible(facts, t)) {
-                for (const k of Object.keys(t.when)) needed.add(k);
-                if (applies(facts, t)) for (const k of t.dates) needed.add(k);
+                for (const k of Object.keys(t.when))
+                    add(
+                        k,
+                        urgency[t.urgency],
+                        Object.entries(t.when).every(
+                            ([other, v]) =>
+                                other === k || said(facts, other) === v,
+                        ),
+                        t,
+                    );
+                if (applies(facts, t))
+                    for (const k of t.dates)
+                        add(k, urgency[t.urgency] + anchorBonus, true, t);
             }
-        // A first question is asked only under its own condition (a
-        // non-EU person still planning the move isn't asked for a German
-        // permit), even when a task would need it.
-        const first = orientation.map(([key]) => key);
-        const rest = fields
-            .filter((f) => needed.has(f.key) && !first.includes(f.key))
-            .sort((a, b) => b.priority - a.priority);
-        return [...keys, ...rest.map((f) => f.key)];
+        for (const [key, settled] of notAsked)
+            if (settled(facts)) ranked.delete(key);
+        const rest = [...ranked.values()].sort(
+            (a, b) =>
+                b.priority - a.priority ||
+                b.relevant - a.relevant ||
+                b.tasks.size - a.tasks.size ||
+                field(b.key).priority - field(a.key).priority ||
+                a.key.localeCompare(b.key),
+        );
+        return [...keys, ...rest.map((e) => e.key)];
     }
     // The tasks a question is for: those it can still open (process_ids
     // carry the backend's process definition ids).

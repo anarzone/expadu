@@ -80,8 +80,16 @@ test('steps carry their position, own documents, first open one and completion e
     // The documents are listed once, on the appointment step (current
     // catalogue). Only a required one can be marked ready, so the count is
     // over the five required; the four optional ones are listed too.
-    assert.deepEqual(steps[0].requirements, { ready: 0, total: 0, listed: 0 });
-    assert.deepEqual(steps[2].requirements, { ready: 1, total: 5, listed: 9 });
+    assert.deepEqual(steps[0].requirements, {
+        ready: 0,
+        total: 0,
+        optional: 0,
+    });
+    assert.deepEqual(steps[2].requirements, {
+        ready: 1,
+        total: 5,
+        optional: 4,
+    });
     // The first required one not confirmed for use, in catalogue order.
     assert.match(
         steps[2].first_open_requirement.label,
