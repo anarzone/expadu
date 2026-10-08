@@ -50,8 +50,9 @@ Tuning: midday is softened from the marketing yellow `#ffe363` to `#ffe680`
 for a band seen every day; the others are the marketing values. The name's
 orange full stop becomes the marketing sun `#ff7a3d` on dark bands.
 
-The time switch previews colour only; the sample day stays Wednesday
-30 September, 13:10. Page height is identical at every time (2,226px at 390,
+The time switch previews colour, and on Events the skyline at a time in
+that part of the day (08:30, 12:30, 16:00, 19:30 or 22:30; since 8 October);
+the sample day stays Wednesday 30 September, 13:10. Page height is identical at every time (2,226px at 390,
 1,501px at 1440). Colour changes fade over 280ms, with no transition for
 reduced motion. The band is measured once per layout, never per time.
 
