@@ -237,20 +237,28 @@
             }[p.id];
             if (fromExpiry) {
                 const known = !!expiry;
+                // The card's own review is past due (review_required): its
+                // dates pause until it's checked again.
+                const paused = s.review?.dateReview && p.id === 'blue-card';
                 fromExpiry.forEach(([unit, i]) =>
                     rows.push({
                         ...base,
                         id: `${p.id}:${unit}.due`,
                         kind: 'preparation_target',
                         source_rule_id: unit,
-                        date: known ? expiry : null,
+                        date: known && !paused ? expiry : null,
                         precision: 'calendar_date',
-                        state: known ? 'dated' : 'date_unknown',
-                        needed_fact: known ? null : 'visa_expires_at',
-                        overdue: known && daysFrom(expiry) < 0,
+                        state: paused
+                            ? 'review_required'
+                            : known
+                              ? 'dated'
+                              : 'date_unknown',
+                        needed_fact: known || paused ? null : 'visa_expires_at',
+                        overdue: known && !paused && daysFrom(expiry) < 0,
                         conditional: true,
                         anchor_fact: 'visa_expires_at',
-                        anchor_event_id: known ? 'visa.expiry' : null,
+                        anchor_event_id:
+                            known && !paused ? 'visa.expiry' : null,
                         step_id: `${unit}.complete`,
                         action_id: `${p.id}:${i}`,
                     }),
@@ -469,6 +477,10 @@
                       }
                     : null,
             },
+            // The catalogue changed this task's own steps (review_required):
+            // the person confirms before going on with the new ones.
+            guidance_state:
+                s.review?.changed === p.id ? 'review_required' : 'current',
             is_closed: closed,
             closed_on: closed ? p.closedOn || null : null,
             closed_event_id: closed ? report?.id || null : null,
@@ -635,7 +647,25 @@
                 deferred: [],
                 candidates_count: 0,
             };
-        const a = answersOf(s);
+        const raw = answersOf(s);
+        // An answer older than its reconfirm_after_days drops out of the
+        // confirmed view, and its question is asked again.
+        const due = Object.entries(raw.facts)
+            .filter(
+                ([k, f]) =>
+                    f.at &&
+                    RG.field(k)?.reconfirmAfterDays &&
+                    (Date.parse(`${P.today()}T12:00:00Z`) - Date.parse(f.at)) /
+                        864e5 >
+                        RG.field(k).reconfirmAfterDays,
+            )
+            .map(([k]) => k);
+        const a = {
+            ...raw,
+            facts: Object.fromEntries(
+                Object.entries(raw.facts).filter(([k]) => !due.includes(k)),
+            ),
+        };
         const asked = RG.questions(a.facts, a.deferred);
         const open = asked.filter(
             (k) => !a.facts[k] && !a.deferred.includes(k),
@@ -695,6 +725,16 @@
                               allows_not_applicable: f.allowsNotApplicable,
                           },
                           process_ids: RG.processIds(a.facts, key),
+                          // Mock-only: what you said last time, when the
+                          // question is back because it's due.
+                          ...(due.includes(key)
+                              ? {
+                                    reconfirm: {
+                                        value: raw.facts[key].value,
+                                        confirmed_at: raw.facts[key].at,
+                                    },
+                                }
+                              : {}),
                           can_skip: true,
                           remaining_before_pause: Math.max(0, 3 - run),
                           can_answer_unknown: !conflict && !related,
@@ -813,6 +853,11 @@
             candidates_count: null,
         },
         guidance: [],
+        ai: {
+            available: false,
+            consent_scope: 'single_request',
+            confirmation_required: true,
+        },
         coverage: coverageOf(),
         paperwork: { available: false, reason: 'permission_required' },
     });
@@ -841,7 +886,7 @@
         const shown = (row) => !hidden.has(row.source_rule_id);
         const requirements = all.flatMap(requirementsOf).filter(shown);
         const timeline = timelineOf(s, all).filter(shown);
-        const processes = all
+        const built = all
             .map((p) =>
                 processOf(
                     s,
@@ -853,6 +898,13 @@
                 ),
             )
             .filter((p) => p.steps.length);
+        // A task whose guidance was withdrawn has no current guidance: it
+        // moves to history (history_only) with the step states you
+        // recorded, never silently dropped.
+        const withdrawn = built.filter(
+            (p) => p.id !== null && s.review?.withdrawn === p.occurrence_key,
+        );
+        const processes = built.filter((p) => !withdrawn.includes(p));
         const steps = processes.flatMap((p) =>
             p.steps.map((step) => ({ ...step, process: p })),
         );
@@ -893,22 +945,33 @@
                     ) || x.i - y.i,
             )
             .map(({ a }) => a);
-        const history = s.history.map((h) => {
-            const r = R()[h.record];
-            return {
-                id: h.id,
-                occurrence_key: h.id,
-                definition_id: definitions[h.id]?.id || null,
-                title: titleOf(h.id) || r?.title || null,
-                topic_label: topicLabels[definitions[h.id]?.topic] || null,
-                untrackable: false,
-                state: { workflow: h.workflow, report: null },
-                is_closed: true,
-                closed_on: h.closedOn || null,
-                closed_event_id: null,
-                steps: [],
-            };
-        });
+        const history = [
+            ...withdrawn.map((p) => ({
+                ...p,
+                guidance_state: 'history_only',
+                steps: p.steps.map((x) => ({
+                    id: x.id,
+                    title: x.title,
+                    status: x.status,
+                })),
+            })),
+            ...s.history.map((h) => {
+                const r = R()[h.record];
+                return {
+                    id: h.id,
+                    occurrence_key: h.id,
+                    definition_id: definitions[h.id]?.id || null,
+                    title: titleOf(h.id) || r?.title || null,
+                    topic_label: topicLabels[definitions[h.id]?.topic] || null,
+                    untrackable: false,
+                    state: { workflow: h.workflow, report: null },
+                    is_closed: true,
+                    closed_on: h.closedOn || null,
+                    closed_event_id: null,
+                    steps: [],
+                };
+            }),
+        ];
         const attention = attentionOf(timeline, processes);
         const questions = questionsOf(s);
         return {
@@ -937,6 +1000,13 @@
             ),
             questions,
             guidance: guidanceOf(s),
+            // AI fact extraction: a single request with consent, and nothing
+            // saved until you confirm (scripted in this preview).
+            ai: {
+                available: true,
+                consent_scope: 'single_request',
+                confirmation_required: true,
+            },
             coverage: coverageOf(),
             paperwork: {
                 available: true,

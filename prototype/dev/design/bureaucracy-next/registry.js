@@ -393,6 +393,38 @@
             'Their status at that time may differ from the status they hold now.',
         ],
     ];
+    // reconfirm_after_days (facts.yaml): once an answer is older, it drops
+    // out of the confirmed view and its question is asked again.
+    const reconfirm = {
+        citizenship_group: 365,
+        arrival_planned: 90,
+        current_residence_title: 180,
+        visa_expires_at: 180,
+        residence_title_expires_at: 180,
+        purpose: 180,
+        entry_mode: 180,
+        arrival_date: 365,
+        moved_in_at: 180,
+        case_goal: 180,
+        permit_track: 180,
+        registration_status: 180,
+        housing_provider_confirmation: 90,
+        health_coverage_confirmed: 90,
+        residence_card_expires_at: 180,
+        german_level: 180,
+        weekly_work_hours: 90,
+        blue_card_qualifying_months: 30,
+        livelihood_secured: 90,
+        housing_sufficient: 180,
+        legal_social_knowledge_proved: 365,
+        tax_id_available: 365,
+        bank_account_help_needed: 180,
+        family_residence_permit_held_since: 180,
+        marital_household_continues: 180,
+        sponsor: 180,
+        sponsor_current_title: 180,
+        sponsor_title_at_entry: 365,
+    };
     const fields = rows.map(
         ([key, label, icon, type, options, priority, question, why]) => ({
             key,
@@ -407,6 +439,7 @@
             // No fact in the registry allows "Doesn't apply to me" yet
             // (allows_not_applicable defaults to false).
             allowsNotApplicable: false,
+            reconfirmAfterDays: reconfirm[key],
         }),
     );
     const field = (key) => fields.find((f) => f.key === key);

@@ -440,3 +440,69 @@ test('joining a spouse: the family route, and a review of what you said about th
     assert.equal(s.relationship.linked, 'settlement_permit_18c');
     assert.equal(r.history[0].operation, 'correct');
 });
+
+test('an answer past its reconfirm days is asked again, with what you said', () => {
+    const s = sample();
+    const r = D.create(
+        { ...B.sampleFacts(s), visa_expires_at: s.expiry },
+        B.sampleHistory(s),
+    );
+    G.hydrate(s).details = r;
+    // "Are you still planning this move?" is reconfirmed every 90 days.
+    r.facts.arrival_planned.at = '2026-06-25T10:00:00+02:00';
+    const q = plan(s).questions.question;
+    assert.equal(q.fact_key, 'arrival_planned');
+    assert.equal(q.reconfirm.value, false);
+    // Within the window it isn't.
+    r.facts.arrival_planned.at = '2026-07-10T10:00:00+02:00';
+    assert.notEqual(plan(s).questions.question?.fact_key, 'arrival_planned');
+});
+
+test('guidance that changed, guidance withdrawn, and a date under review', () => {
+    const s = sample();
+    s.review = { changed: 'blue-card' };
+    let p = plan(s);
+    assert.equal(
+        p.processes.find((x) => x.occurrence_key === 'blue-card')
+            .guidance_state,
+        'review_required',
+    );
+    // Withdrawn: the tracked address task moves to history with its steps.
+    s.review = { withdrawn: 'address' };
+    p = plan(s);
+    assert.ok(!p.processes.some((x) => x.occurrence_key === 'address'));
+    const kept = p.history.find((h) => h.occurrence_key === 'address');
+    assert.equal(kept.guidance_state, 'history_only');
+    assert.ok(
+        kept.steps.length && kept.steps.every((x) => x.title && x.status),
+    );
+    // A card under review: its dates pause, nothing is guessed.
+    s.review = { dateReview: true };
+    const rows = plan(s).timeline.filter(
+        (t) =>
+            t.occurrence_key === 'blue-card' && t.kind === 'preparation_target',
+    );
+    assert.ok(rows.every((t) => t.state === 'review_required' && !t.date));
+});
+
+test('your own words become a candidate answer, never saved until you confirm', () => {
+    const r = D.create();
+    D.edit(r, 'visa_expires_at');
+    assert.equal(D.suggest(r, 'my visa runs until 27 December'), true);
+    assert.equal(r.suggestion.value, '2026-12-27');
+    // Nothing saved: no fact, no draft yet.
+    assert.equal(r.facts.visa_expires_at, undefined);
+    assert.equal(r.draft.value, null);
+    assert.equal(D.useSuggestion(r), true);
+    assert.equal(r.draft.value, '2026-12-27');
+    assert.equal(r.facts.visa_expires_at, undefined);
+    // A date already past this year means next year's.
+    D.suggest(r, 'it ends on the 15th of August');
+    assert.equal(r.suggestion.value, '2027-08-15');
+    D.suggest(r, 'no idea really');
+    assert.equal(r.suggestion.value, null);
+    // Only date questions here.
+    D.cancel(r);
+    D.edit(r, 'purpose');
+    assert.equal(D.suggest(r, 'I came to work'), false);
+});

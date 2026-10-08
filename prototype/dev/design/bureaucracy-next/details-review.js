@@ -221,6 +221,75 @@
         ];
         return edit(r, 'registration_status');
     }
+    // AI fact extraction, scripted for the preview: your own words for
+    // this one question become a candidate answer, which is never saved
+    // unless you confirm it (POST .../extract, then confirm or dismiss).
+    // Dates only, the one example here.
+    const months = [
+        'january',
+        'february',
+        'march',
+        'april',
+        'may',
+        'june',
+        'july',
+        'august',
+        'september',
+        'october',
+        'november',
+        'december',
+    ];
+    function suggest(r, text) {
+        const f = field(r.current);
+        if (!['answer', 'conflict'].includes(r.mode) || f?.type !== 'date')
+            return false;
+        const t = String(text).toLowerCase();
+        let day, month, year;
+        const iso = t.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+        const dotted = t.match(/\b(\d{1,2})[./](\d{1,2})[./](\d{4})\b/);
+        const named =
+            t.match(
+                /\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([a-z]+)(?:\s+(\d{4}))?/,
+            ) || null;
+        const namedFirst = t.match(
+            /\b([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?/,
+        );
+        if (iso) [, year, month, day] = iso.map(Number);
+        else if (dotted) [, day, month, year] = dotted.map(Number);
+        else if (named && months.includes(named[2]))
+            [day, month, year] = [
+                +named[1],
+                months.indexOf(named[2]) + 1,
+                named[3] && +named[3],
+            ];
+        else if (namedFirst && months.includes(namedFirst[1]))
+            [day, month, year] = [
+                +namedFirst[2],
+                months.indexOf(namedFirst[1]) + 1,
+                namedFirst[3] && +namedFirst[3],
+            ];
+        const today =
+            root.ExpaduSampleDay?.date || new Date().toISOString().slice(0, 10);
+        const pad = (n) => String(n).padStart(2, '0');
+        if (day && month && !year) {
+            year = +today.slice(0, 4);
+            if (`${year}-${pad(month)}-${pad(day)}` < today) year += 1;
+        }
+        const value =
+            day && month && year ? `${year}-${pad(month)}-${pad(day)}` : null;
+        r.suggestion = date(value) ? { value, text } : { value: null, text };
+        return true;
+    }
+    function useSuggestion(r) {
+        if (!r.suggestion?.value || !select(r, r.suggestion.value))
+            return false;
+        r.suggestion = null;
+        return true;
+    }
+    function dismissSuggestion(r) {
+        r.suggestion = null;
+        return true;
+    }
     function label(key, value) {
         if (value === 'unknown') return 'I’m not sure';
         if (value === 'declined') return 'Prefer not to say';
@@ -254,6 +323,9 @@
         cancel,
         skip,
         exampleConflict,
+        suggest,
+        useSuggestion,
+        dismissSuggestion,
         label,
     };
 })(globalThis);
