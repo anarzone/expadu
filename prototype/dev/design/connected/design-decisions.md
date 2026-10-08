@@ -419,7 +419,10 @@ off; iPhones start it there). Past posters are weathered (faded, creased,
 torn in their own way) and a past day's skyline has its lights out; skyline
 labels never overlap. The skyline is drawn large and pans (it opens on the
 day's events and glides to the facing poster's light), with Chorweiler and
-the west drawn on the horizon instead of listed under it.
+the west drawn on the horizon instead of listed under it. Then (owner
+request) the Skyline view goes without the column: the city fills the board,
+taller, its lights are only the chosen day's events (each opens its event),
+and its cards are the whole day; the column stays on the Wall.
 Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky

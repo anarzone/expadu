@@ -104,35 +104,59 @@ const inside = (box, viewport) =>
             await column.locator('[data-column-step="-1"]').click();
             await page.waitForTimeout(450);
 
-            // Skyline: the column stands beside the city. Its posters' lights
-            // glow as they face you, and tapping one turns the column; the
-            // film night has a poster where there's no usable picture.
+            // Skyline: the city has the board to itself. Its lights are the
+            // day's events and open them; the cards are the whole day, with a
+            // poster for the film night, which has no usable picture.
             await page.click('[data-wall-view="skyline"]');
             assert.match(page.url(), /view=skyline/);
             const sky = page.locator('.wall-view--skyline');
-            assert.equal(await page.locator('#event-featured').isVisible(), true);
-            assert.equal(await sky.locator('.sky-light').count(), 5);
-            assert.equal(await sky.locator('.sky-light[data-poster-id]').count(), 4);
-            assert.equal(await sky.locator('.sky-away, .sky-foot').count(), 0);
+            assert.equal(await page.locator('#event-featured').isVisible(), false);
+            assert.equal(await sky.locator('.sky-light').count(), 2);
             assert.equal(
-                await sky.locator('.sky-light.is-facing').getAttribute('data-poster-id'),
-                'today-review-culture',
+                await sky.locator('.sky-light:not([data-detail]), [data-column-to], [data-poster-id]').count(),
+                0,
             );
-            assert.equal(await sky.locator('.festival-card').count(), 1);
+            assert.equal(await sky.locator('.sky-away, .sky-foot').count(), 0);
+            const size = await page.evaluate(() => ({
+                sky: document.querySelector('.wall-view--skyline .sky').offsetWidth,
+                list: document.querySelector('#event-list').offsetWidth,
+                drawing: document.querySelector('.wall-view--skyline .sky-inner').offsetWidth,
+                stage: document.querySelector('.wall-view--skyline .sky-scroll').clientWidth,
+                height: document.querySelector('.wall-view--skyline .sky-inner').offsetHeight,
+            }));
+            assert.equal(size.sky, size.list, 'the skyline fills the board');
+            assert.ok(size.drawing >= size.stage, 'the drawing is narrower than its stage');
+            if (viewport.width > 700)
+                assert.ok(size.height >= 500, `skyline only ${size.height}px tall`);
+            assert.doesNotMatch(
+                await page.locator('#event-count-note').innerText(),
+                /featured|column/,
+            );
+            // On a phone the city opens the board and nothing on the first
+            // screen sits under Composer's button.
+            if (viewport.width < 700) {
+                await page.evaluate(() => scrollTo(0, 0));
+                const under = await page.evaluate(() => {
+                    const fab = document.querySelector('.composer-launcher').getBoundingClientRect();
+                    return [...document.querySelectorAll('#main button, #main input, #main a')]
+                        .map((el) => [el, el.getBoundingClientRect()])
+                        .filter(
+                            ([, r]) =>
+                                r.width &&
+                                r.bottom <= innerHeight &&
+                                r.x < fab.right &&
+                                fab.x < r.right &&
+                                r.y < fab.bottom &&
+                                fab.y < r.bottom,
+                        )
+                        .map(([el]) => el.outerHTML.slice(0, 60));
+                });
+                assert.deepEqual(under, [], 'a skyline control sits under Composer');
+            }
+            assert.equal(await sky.locator('.festival-card').count(), 2);
             assert.equal(
                 await sky.locator('.festival-card.is-poster [data-detail="today-review-cinema"]').count(),
                 1,
-            );
-            const flora = sky.locator('.sky-light[data-poster-id^="garden-listing"]');
-            await flora.evaluate((el) => el.click());
-            await page.waitForTimeout(700);
-            assert.equal(
-                await sky.locator('.sky-light.is-facing').getAttribute('data-poster-id'),
-                await flora.getAttribute('data-poster-id'),
-            );
-            assert.match(
-                await page.locator('.wall-column-count').innerText(),
-                new RegExp(`^${Number(await flora.getAttribute('data-column-to')) + 1} / 4$`),
             );
             await sky.locator('.sky').evaluate((el) =>
                 el.scrollIntoView({ block: 'center' }),
@@ -158,9 +182,8 @@ const inside = (box, viewport) =>
                 0,
                 'every past poster is weathered',
             );
-            // The same day on the skyline: its lights are out, labels never
-            // overlap each other or another light, and places off the
-            // drawing are named under it.
+            // The same day on the skyline: its lights are out, and labels
+            // never overlap each other or another light.
             await page.click('[data-wall-view="skyline"]');
             await page.waitForTimeout(300);
             const crowd = await page.evaluate(() => {
@@ -186,6 +209,9 @@ const inside = (box, viewport) =>
             assert.equal(crowd.clashes, 0, 'skyline labels overlap');
             // With a mouse, moving from light to light focuses each in turn.
             if (viewport.width > 700) {
+                await page
+                    .locator('.wall-view--skyline .sky-stage')
+                    .evaluate((el) => el.scrollIntoView({ block: 'center' }));
                 for (const end of [0, 1]) {
                     await page.evaluate((f) => {
                         const s = document.querySelector('.wall-view--skyline .sky-scroll');
@@ -200,7 +226,7 @@ const inside = (box, viewport) =>
                             .map((el) => {
                                 const r = el.querySelector('.sky-light-dot').getBoundingClientRect();
                                 return {
-                                    id: el.dataset.detail || el.dataset.posterId,
+                                    id: el.dataset.detail,
                                     x: r.x + r.width / 2,
                                     y: r.y + r.height / 2,
                                     inside: r.left > box.left && r.right < box.right,
@@ -214,7 +240,7 @@ const inside = (box, viewport) =>
                         const hovered = await page.evaluate(() =>
                             [...document.querySelectorAll('.wall-view--skyline .sky-light')]
                                 .filter((el) => el.matches(':hover'))
-                                .map((el) => el.dataset.detail || el.dataset.posterId),
+                                .map((el) => el.dataset.detail),
                         );
                         assert.deepEqual(hovered, [dot.id], `hovering ${dot.id}`);
                     }

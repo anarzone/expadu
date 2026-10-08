@@ -111,7 +111,7 @@ body[data-page='events'] {
     align-self: start;
 }
 /* A full day of posters, or a narrower desktop, puts the calendar beneath. */
-.wall-board:has(.wall-view--wall .wall-day > .pp:nth-child(2)) {
+main:not([data-view='skyline']) .wall-board:has(.wall-view--wall .wall-day > .pp:nth-child(2)) {
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas: 'column day' 'column next';
 }
@@ -121,11 +121,14 @@ body[data-page='events'] {
         grid-template-areas: 'column day' 'column next';
     }
 }
-/* On the skyline the column stands beside the city. */
+/* The skyline has the board to itself: the column stays on the Wall. */
 main[data-view='skyline'] .wall-board {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: 'column day' 'column next';
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'day' 'next';
     align-items: start;
+}
+main[data-view='skyline'] .wall-board #event-featured {
+    display: none;
 }
 main[data-view='wall'] .wall-view--skyline,
 main[data-view='skyline'] .wall-view--wall {
@@ -202,13 +205,6 @@ main[data-view='skyline'] .wall-view--wall {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-/* Beside the skyline the column steps back a little, so the city is wide. */
-@media (min-width: 1000px) {
-    main[data-view='skyline'] .wall-column {
-        --column-w: 300px;
-        --column-h: 462px;
-    }
 }
 .wall-column-cap {
     position: relative;
@@ -1486,7 +1482,9 @@ main[data-view='skyline'] .wall-view--wall {
 }
 .sky-inner {
     position: relative;
-    height: clamp(340px, 42vh, 440px);
+    /* Tall, but at most 60% of the stage's width on a narrow screen, and
+       never narrower than the stage (450 / 1376 of its width). */
+    height: max(min(clamp(380px, 62vh, 620px), 60cqw), 32.7cqw);
     aspect-ratio: 1376 / 450;
 }
 .sky-light {
@@ -1536,7 +1534,7 @@ main[data-view='skyline'] .wall-view--wall {
 .sky-light-label {
     pointer-events: auto;
 }
-.sky-light:is(.is-quiet, .is-short, .is-coming:not(.is-facing)) .sky-light-label {
+.sky-light:is(.is-quiet, .is-short) .sky-light-label {
     pointer-events: none;
 }
 .sky-light-dot::before {
@@ -1583,46 +1581,17 @@ main[data-view='skyline'] .wall-view--wall {
         0 0 40px 18px #ffe3636b;
 }
 /* Lights for another part of the day stay solid but unlit. */
-.sky[data-sky='afternoon'] .sky-light:not(.is-coming):not(.is-out):not([data-band='afternoon']) .sky-light-dot,
-.sky[data-sky='evening'] .sky-light:not(.is-coming):not(.is-out):not([data-band='evening']) .sky-light-dot,
-.sky[data-sky='late'] .sky-light:not(.is-coming):not(.is-out):not([data-band='late']) .sky-light-dot {
+.sky[data-sky='afternoon'] .sky-light:not(.is-out):not([data-band='afternoon']) .sky-light-dot,
+.sky[data-sky='evening'] .sky-light:not(.is-out):not([data-band='evening']) .sky-light-dot,
+.sky[data-sky='late'] .sky-light:not(.is-out):not([data-band='late']) .sky-light-dot {
     background: #f4e7b0;
     box-shadow: 0 0 0 1px #211d1540;
 }
-.sky[data-sky='afternoon'] .sky-light:not(.is-coming):not(.is-out):not([data-band='afternoon']) .sky-light-label,
-.sky[data-sky='evening'] .sky-light:not(.is-coming):not(.is-out):not([data-band='evening']) .sky-light-label,
-.sky[data-sky='late'] .sky-light:not(.is-coming):not(.is-out):not([data-band='late']) .sky-light-label {
+.sky[data-sky='afternoon'] .sky-light:not(.is-out):not([data-band='afternoon']) .sky-light-label,
+.sky[data-sky='evening'] .sky-light:not(.is-out):not([data-band='evening']) .sky-light-label,
+.sky[data-sky='late'] .sky-light:not(.is-out):not([data-band='late']) .sky-light-label {
     background: var(--color-bg-quiet);
     color: var(--color-text-soft);
-}
-/* The column's lights: what's coming up is a ring until its poster faces
-   you, and every column light glows as much as its poster faces you. */
-.sky-light[data-poster-id] {
-    --facing: 0;
-}
-.sky-light.is-coming .sky-light-dot {
-    width: 22px;
-    height: 22px;
-    border: 3px solid var(--color-bg-surface);
-    background: #211d1540;
-    outline: 1.5px solid #211d1566;
-}
-.sky-light.is-coming:not(.is-facing) .sky-light-label {
-    display: none;
-}
-.sky-light[data-poster-id] .sky-light-dot {
-    scale: calc(0.9 + var(--facing) * 0.3);
-    box-shadow:
-        0 0 0 calc(var(--facing) * 10px) #ffe36347,
-        0 0 calc(var(--facing) * 44px) calc(var(--facing) * 20px) #ffe3636b;
-}
-.sky-light.is-facing {
-    z-index: 3;
-}
-.sky-light.is-facing .sky-light-dot {
-    border-color: var(--color-bg-surface);
-    background: var(--festival-yellow, #ffe363);
-    outline: 0;
 }
 /* A day that has already happened: its lights are out. */
 .sky.is-past .sky-art {
@@ -1677,7 +1646,8 @@ main[data-view='skyline'] .wall-view--wall {
     .sky-light:not(:hover):not(:focus-visible) {
     opacity: 0.35;
 }
-/* Beside the column the sky is narrower: its title sits above the drawing. */
+/* From tablets up, the title sits above the drawing, so the Dom's spires
+   never meet it. */
 @media (min-width: 701px) {
     main[data-view='skyline'] .sky-head {
         position: static;
@@ -1712,6 +1682,7 @@ main[data-view='skyline'] .wall-view--wall {
 /* The drawing pans inside its stage; the note sits on the river. */
 .sky-stage {
     position: relative;
+    container-type: inline-size;
 }
 .sky-note {
     position: absolute;
@@ -1891,7 +1862,7 @@ main[data-view='skyline'] .wall-view--wall {
         left: 12px;
         right: 12px;
         top: 16px;
-        height: 312px;
+        height: 356px;
     }
     .sky-head > div:first-child {
         padding-left: 4px;
@@ -1899,10 +1870,11 @@ main[data-view='skyline'] .wall-view--wall {
     .sky-head p {
         display: none;
     }
+    /* The switch stops short of the corner where Composer's button floats. */
     .sky-bands {
         position: absolute;
         left: 0;
-        right: 0;
+        right: 44px;
         bottom: 0;
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1915,7 +1887,7 @@ main[data-view='skyline'] .wall-view--wall {
         display: none;
     }
     .sky-inner {
-        height: 340px;
+        height: 384px;
     }
     .sky-cards {
         grid-template-columns: minmax(0, 1fr);

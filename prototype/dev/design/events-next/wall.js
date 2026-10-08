@@ -1,7 +1,7 @@
 /* Events as a poster wall (owner's choice, 8 October): every event is a
    poster set from its listing. A second view, Skyline, lights the day's
-   events above Cologne and keeps the photo cards, with a poster wherever
-   there's no usable picture. Filters, dates, details, saving and planning
+   events above Cologne, big and on its own, and keeps the photo cards,
+   with a poster wherever there's no usable picture. Filters, dates, details, saving and planning
    are the Events page's own (app.js); this file only swaps
    how events are drawn. Loaded after festival.js and before app.js. */
 (function () {
@@ -88,27 +88,10 @@
             <p class="wall-column-caption">Coming up${many ? ' · turn the column' : ' · on the poster column'}</p>
         </div>`;
     }
-    // How much each column poster faces you (0–1), for the skyline's lights.
-    const facing = new Map();
-    let facingId = null;
-    function applyFacing() {
-        let front = null;
-        document.querySelectorAll('[data-poster-id]').forEach((el) => {
-            const value = facing.get(el.dataset.posterId) || 0;
-            el.style.setProperty('--facing', value.toFixed(3));
-            el.classList.toggle('is-facing', value > 0.5);
-            if (value > 0.5) front = el.dataset.posterId;
-        });
-        if (front !== facingId) {
-            facingId = front;
-            layoutSky();
-            panSky(front);
-        }
-    }
-    // The skyline is taller than it is wide on screen, so it pans: it glides
-    // to the light of the poster facing you, follows a mouse drag (touch
-    // scrolls natively), and fades at an edge while there's more beyond.
-    function panSky(id) {
+    // The skyline is wider than its stage, so it pans: it opens on the
+    // day's lights, follows a mouse drag (touch scrolls natively), and
+    // fades at an edge while there's more beyond.
+    function panSky() {
         document
             .querySelectorAll('.wall-view--skyline .sky-scroll')
             .forEach((scroller) => {
@@ -116,26 +99,24 @@
                 const width = scroller.firstElementChild.offsetWidth;
                 const view = scroller.clientWidth;
                 const at = (light) => (parseFloat(light.style.left) / 100) * width;
-                const facingLight =
-                    id && scroller.querySelector(`[data-poster-id="${CSS.escape(id)}"]`);
-                // Frame the day's events (and the facing poster's place) when
-                // they fit, with room for their names; otherwise go to the
-                // facing poster's light.
-                const keep = [
-                    ...scroller.querySelectorAll('.sky-light:not(.is-coming)'),
-                    ...(facingLight ? [facingLight] : []),
-                ].map(at);
-                if (!keep.length) return syncFades(scroller);
-                const lo = Math.min(...keep) - 130,
-                    hi = Math.max(...keep) + 130;
-                const centre =
-                    hi - lo <= view
-                        ? (lo + hi) / 2
-                        : facingLight
-                          ? at(facingLight)
-                          : keep[0];
+                // Frame the day's events, with room for their names; when
+                // they don't all fit, open where most of them are.
+                const xs = [...scroller.querySelectorAll('.sky-light')]
+                    .map(at)
+                    .sort((a, b) => a - b);
+                if (!xs.length) return syncFades(scroller);
+                let left;
+                if (xs.at(-1) - xs[0] + 260 <= view)
+                    left = (xs[0] + xs.at(-1)) / 2 - view / 2;
+                else {
+                    const inView = (x0) =>
+                        xs.filter((x) => x >= x0 + 60 && x <= x0 + view - 60).length;
+                    left = xs
+                        .map((x) => x - 130)
+                        .reduce((best, x0) => (inView(x0) > inView(best) ? x0 : best));
+                }
                 scroller.scrollTo({
-                    left: Math.max(0, centre - view / 2),
+                    left: Math.max(0, left),
                     behavior: reducedMotion() ? 'instant' : 'smooth',
                 });
                 syncFades(scroller);
@@ -219,9 +200,7 @@
                     ? `translateX(${(radius * Math.sin(angle)).toFixed(1)}px) scaleX(${cos.toFixed(4)})`
                     : 'none';
                 face.style.filter = `brightness(${(0.55 + 0.45 * cos).toFixed(3)})`;
-                facing.set(face.querySelector('.pp')?.dataset.poster, Math.max(0, cos));
             });
-            applyFacing();
         }
         function settle(index) {
             current = ((index % count) + count) % count;
@@ -266,20 +245,6 @@
             frame = requestAnimationFrame(tick);
         }
         const go = (by) => animateTo(Math.round(pos) + by);
-        // A light on the skyline turns the column to its poster, the short
-        // way round, and brings the column into view first if it's away.
-        document.addEventListener('click', (event) => {
-            const light = event.target.closest('[data-column-to]');
-            if (!light) return;
-            const box = column.getBoundingClientRect();
-            if (box.bottom < 80 || box.top > window.innerHeight - 80)
-                column.scrollIntoView({
-                    block: 'center',
-                    behavior: reducedMotion() ? 'instant' : 'smooth',
-                });
-            const from = Math.round(pos);
-            animateTo(from + wrap(Number(light.dataset.columnTo) - from), 420);
-        });
         column.addEventListener('click', (event) => {
             const button = event.target.closest('[data-column-step]');
             if (button) go(Number(button.dataset.columnStep));
@@ -374,7 +339,9 @@
         bindColumn(root);
     };
 
-    /* ---------- Skyline: the day's events lit above the city ---------- */
+    /* ---------- Skyline: the day's events lit above the city ----------
+       The city has the board to itself (the column stays on the Wall).
+       Each light is one of the chosen day's events and opens it. */
     // Where a district sits in the illustration (x and y in % of the
     // drawing). Districts that aren't drawn get no light; their events are
     // still in the list below.
@@ -435,25 +402,11 @@
         <path class="sky-bridge" d="M1012 402 Q1072 330 1134 402 Q1196 330 1258 402 Q1318 330 1376 402"/><rect class="sky-bridge-deck" x="1012" y="396" width="364" height="8"/>
     </svg>`;
     function sky(events) {
-        const column = columnItems(window.ExpaduEventCatalogue?.() || []);
-        const onColumn = new Map(column.map((item, i) => [item.id, i]));
-        const isToday = new Set(events.map((item) => item.id));
-        // The day's events first, then what hangs on the column.
-        const all = unique([...events, ...column]);
-        const lit = all.filter((item) => stage[item.area]);
+        const lit = events.filter((item) => stage[item.area]);
         // A day that has already happened is drawn with its lights out.
         const past =
             events.length > 0 && events.every((item) => F.past(item, today));
-        // A light for a column poster turns the column; any other opens
-        // the event.
-        const target = (item) =>
-            onColumn.has(item.id)
-                ? `data-column-to="${onColumn.get(item.id)}" data-poster-id="${E(item.id)}"`
-                : `data-detail="${E(item.id)}"`;
-        const when = (item) =>
-            isToday.has(item.id)
-                ? item.start || ''
-                : F.dateLabel(item.date, { weekday: 'short', month: 'short' });
+        const when = (item) => item.start || '';
         const first = [...events].sort((a, b) =>
             String(a.start).localeCompare(String(b.start)),
         )[0];
@@ -486,9 +439,7 @@
         };
         const light = (item) => {
             const [x, y] = place(item.area);
-            const coming = !isToday.has(item.id);
-            const out = past && !coming;
-            return `<button type="button" class="sky-light${coming ? ' is-coming' : ''}${out ? ' is-out' : ''}${far.has(item.area) ? ' is-far' : ''}${x > 78 ? ' is-end' : x < 16 ? ' is-start' : ''}" ${target(item)} data-band="${band(item)}" style="left:${x}%;top:${y}%" aria-label="${onColumn.has(item.id) ? 'Turn the column to ' : ''}${E(item.title)}, ${E(when(item) || 'time not listed')} at ${E(item.venue)}${out ? ', already happened' : ''}"><span class="sky-light-label">${when(item) ? `<span class="sky-when">${E(when(item))}</span><span class="sky-what"> · ${E(item.title)}</span>` : E(item.title)}</span><span class="sky-light-dot" aria-hidden="true"></span></button>`;
+            return `<button type="button" class="sky-light${past ? ' is-out' : ''}${far.has(item.area) ? ' is-far' : ''}${x > 78 ? ' is-end' : x < 16 ? ' is-start' : ''}" data-detail="${E(item.id)}" data-band="${band(item)}" style="left:${x}%;top:${y}%" aria-label="${E(item.title)}, ${E(when(item) || 'time not listed')} at ${E(item.venue)}${past ? ', already happened' : ''}"><span class="sky-light-label">${when(item) ? `<span class="sky-when">${E(when(item))}</span><span class="sky-what"> · ${E(item.title)}</span>` : E(item.title)}</span><span class="sky-light-dot" aria-hidden="true"></span></button>`;
         };
         const title =
             date === today
@@ -498,11 +449,9 @@
                 : `Cologne on ${F.dateLabel(date, { weekday: 'short', month: 'short' })}`;
         const lead = past
             ? 'These have already happened, so their lights are out.'
-            : onColumn.size > 1
-              ? 'Turn the column and its event lights up.'
-              : lit.length
-                ? 'Tap a light to see what’s on there.'
-                : 'Nothing here is drawn on the skyline.';
+            : lit.length
+              ? 'Tap a light to see what’s on there.'
+              : 'Nothing here is drawn on the skyline.';
         return `<section class="sky${past ? ' is-past' : ''}" data-sky="${now}" aria-label="${E(title)}, illustrated">
             <div class="sky-head"><div><h2>${E(title)}</h2><p>${E(lead)}</p></div>
             <div class="sky-bands" role="group" aria-label="Light the city for">${[
@@ -518,21 +467,14 @@
             <div class="sky-stage"><div class="sky-scroll" tabindex="0" aria-label="Skyline. Drag or scroll sideways along the Rhine."><div class="sky-inner">${skyline}${lit.map(light).join('')}${appointment ? `<span class="sky-you" style="left:${stage[appointment.location][0]}%;top:${stage[appointment.location][1] + 10}%"><span aria-hidden="true"></span>Your ${E(appointment.start)} appointment</span>` : ''}</div></div><span class="sky-fade sky-fade--start" aria-hidden="true"></span><span class="sky-fade sky-fade--end" aria-hidden="true"></span><p class="sky-note">Illustration · places approximate</p></div>
         </section>`;
     }
-    // Labels never pile up: the poster facing you is named first, then the
-    // day's events in time order; a label that would overlap one already
-    // placed shortens to its time, or hides (the light stays, and names
-    // itself on hover, focus and to screen readers).
+    // Labels never pile up: the day's events are named in list order; a
+    // label that would overlap one already placed shortens to its time, or
+    // hides (the light stays, and names itself on hover, focus and to
+    // screen readers).
     function layoutSky() {
         document.querySelectorAll('.wall-view--skyline .sky').forEach((sky) => {
             if (!sky.offsetParent) return;
             const lights = [...sky.querySelectorAll('.sky-light')];
-            const rank = (el) =>
-                el.classList.contains('is-facing')
-                    ? 0
-                    : el.classList.contains('is-coming')
-                      ? 2
-                      : 1;
-            lights.sort((a, b) => rank(a) - rank(b));
             const placed = [
                 ...sky.querySelectorAll('.sky-head h2, .sky-head p, .sky-bands'),
             ]
@@ -593,12 +535,11 @@
         const posters = onWall.length
             ? `<div class="wall-day">${onWall.map((item, i) => P.poster(item, { size: 'wall', ...posterOptions(item, distance(item)) }).replace('<article ', `<article style="--i:${i}" `)).join('')}</div>`
             : `<p class="wall-day-note">${events.length === 1 ? 'This day’s event is' : 'These events are'} on the poster column.</p>`;
-        const pictures = onWall.filter(hasPicture).length;
-        const cards = onWall.length
-            ? `<div class="sky-cards">${onWall.map((item, i) => card(item, i, distance(item))).join('')}</div>`
-            : '';
+        // The skyline has no column beside it, so its cards are the whole day.
+        const pictures = events.filter(hasPicture).length;
+        const cards = `<div class="sky-cards">${events.map((item, i) => card(item, i, distance(item))).join('')}</div>`;
         return `<div class="wall-view wall-view--wall">${posters}<p class="festival-credit">Posters are set by Expadu from each listing: title, date, time, place, admission and category. No photo, nothing added. Sample programme.</p></div>
-            <div class="wall-view wall-view--skyline">${sky(events)}${cards}<p class="festival-credit">Sample programme.${pictures ? ' AI illustrations depict the activity, not the listed event or venue.' : ''}${pictures < onWall.length ? ' Where there’s no usable picture, the listing’s poster stands in.' : ''}</p></div>`;
+            <div class="wall-view wall-view--skyline">${sky(events)}${cards}<p class="festival-credit">Sample programme.${pictures ? ' AI illustrations depict the activity, not the listed event or venue.' : ''}${pictures < events.length ? ' Where there’s no usable picture, the listing’s poster stands in.' : ''}</p></div>`;
     }
 
     /* ---------- Next in the city's calendar, and the week's notes ---------- */
@@ -762,17 +703,21 @@
         syncNote(main);
         requestAnimationFrame(() => {
             layoutSky();
-            panSky(facingId);
+            panSky();
         });
     }
-    // The shared count line says what the column holds in each view.
+    // The shared count line: the Wall's column holds the featured events;
+    // the Skyline shows them with the rest of the day.
     let noteSource = '',
         noteWritten = null;
     function syncNote(main) {
         const note = main.querySelector('#event-count-note');
         if (!note) return;
         if (note.textContent !== noteWritten) noteSource = note.textContent;
-        const text = noteSource.replace('featured above', 'on the poster column');
+        const text =
+            view === 'skyline'
+                ? noteSource.replace(/^\d+ featured above( · )?/, '')
+                : noteSource.replace('featured above', 'on the poster column');
         noteWritten = text;
         if (note.textContent !== text) note.textContent = text;
     }
@@ -848,11 +793,17 @@
         };
         new MutationObserver(() => {
             syncPast();
-            facingId = undefined;
-            applyFacing();
+            requestAnimationFrame(() => {
+                layoutSky();
+                panSky();
+            });
         }).observe(list, { childList: true });
         window.addEventListener('resize', layoutSky);
         document.fonts?.ready.then(layoutSky);
+        requestAnimationFrame(() => {
+            layoutSky();
+            panSky();
+        });
         const note = main.querySelector('#event-count-note');
         if (note)
             new MutationObserver(() => syncNote(main)).observe(note, {

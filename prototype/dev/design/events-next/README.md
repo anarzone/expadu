@@ -5,6 +5,29 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The skyline on its own — 8 October 2026
+
+Owner request: the Skyline view can go without the poster column, and the
+skyline should be bigger.
+
+- **No column beside the city.** In the Skyline view the board is the
+  skyline across its full width, then the day's cards. The column (and the
+  later city listings on it) stays on the Wall.
+- **The lights are the chosen day's events,** and each opens its event.
+  The rings for posters coming up, and the glow that followed the column as
+  it turned, went with the column. A past day still has its lights out.
+- **Bigger.** The drawing is up to 620px tall on a desktop (62% of the
+  window's height, at least 380px) and never narrower than its stage, so on
+  a wide screen it fills the board and pans; at most 60% of the stage's
+  width on a tablet. Phones get 384px (was 340px). It opens framing the
+  day's lights, or where most of them are when they don't all fit.
+- **The cards are the whole day,** including the featured event the column
+  used to carry; the count line no longer says "on the poster column" here.
+- **Composer's corner stays free on phones.** The Afternoon/Evening/Late
+  switch stops short of the bottom-right corner, and the first card starts
+  below Composer's button on a 390×844 phone (checked in
+  `tests/wall-browser.cjs`).
+
 ## A bigger skyline you pan — 8 October 2026
 
 Owner review: the list under the drawing ("Further north …") wasn't needed,
