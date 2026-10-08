@@ -140,7 +140,7 @@ const entryModes = [
         value: 'visa_free',
         icon: IconPlaneArrival,
         label: 'Nothing yet — I entered visa-free',
-        subtitle: 'The 90-day window; your first permit is still ahead',
+        subtitle: 'No visa to enter; your first permit is still ahead',
     },
     {
         value: 'has_permit',
@@ -206,8 +206,8 @@ export function SituationStep({
                     </h2>
                     <p className="text-sm text-muted-foreground">
                         Optional. Answering these sharpens your plan and its
-                        deadlines — skip them and the Bureaucracy page will ask
-                        when one of them actually matters.
+                        dates — skip them and the Paperwork page will ask when
+                        one of them actually matters.
                     </p>
                 </div>
 

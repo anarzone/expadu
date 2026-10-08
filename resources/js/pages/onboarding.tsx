@@ -305,7 +305,7 @@ export default function Onboarding() {
                 form.data.address_registration_status === 'registrable' &&
                 form.data.moved_in_at === ''
             ) {
-                return 'Add your move-in date — it anchors the 14-day registration deadline.';
+                return 'Add your move-in date — your address registration is planned from it.';
             }
 
             if (form.data.arrival_planned === null) {
