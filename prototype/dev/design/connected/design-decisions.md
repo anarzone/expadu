@@ -440,7 +440,10 @@ day's posters flow round the corner and across the wall below it.
 view stays in the preview as a reference only, not for the app; the Wall
 borrows its best parts: the hour's sky over the city as the backdrop above
 the street corner (with the weather chip), the rain warning on outdoor
-posters, and today's posters following the clock ("On now", "Over").
+posters, and today's posters following the clock ("On now", "Over"). Then
+(owner request) the wall looks real (damp, streaks, bricks, cracks, torn
+posters, a drainpipe, a house number, a stone base) and no bare wall is
+left under the corner: the column grows to meet the row beside it.
 Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky

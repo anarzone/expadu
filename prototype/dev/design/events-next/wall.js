@@ -83,7 +83,7 @@
             <span class="wall-column-cap" aria-hidden="true"><span></span></span>
             <span class="wall-column-frieze" aria-hidden="true"></span>
             <div class="wall-column-body"${many ? ' tabindex="0" aria-label="Poster column. Drag sideways or use the arrow keys to turn it."' : ''}>
-                <span class="wall-column-old" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+                <span class="wall-column-old" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></span>
                 ${posters.map((poster, i) => `<div class="wall-column-face" role="group" aria-roledescription="poster" aria-label="${i + 1} of ${posters.length}">${poster}</div>`).join('')}
                 <span class="wall-column-glow" aria-hidden="true"></span>
             </div>
@@ -920,22 +920,34 @@
             return `<line x1="${x}" y1="${y}" x2="${x - 4}" y2="${y + 18}"/>`;
         }).join('');
     }).join('')}</g></svg></span>`;
-    // Scraps of older posters and marks where others were pasted, left,
-    // top, width, height, turn and colour; then the stencil.
+    // The wall, as a real one: water streaks under the ledge, plaster
+    // fallen away to the bricks in two places, a few cracks, torn older
+    // posters (white paper showing at the tears, a fragment of their big
+    // type), tape, staples and stickers, paste marks where others were, a
+    // drainpipe, an enamel house number, a darker stone base and a stencil.
+    // Left, top, width, height, turn, colour and a fragment of print.
     const scraps = [
-        [57, 0.6, 170, 74, -3, '#e8cf73'],
-        [95.5, 16, 96, 170, 4, '#bcaed8'],
-        [38, 47, 130, 62, 7, '#c8d8c0'],
-        [97, 62, 120, 96, -7, '#f0c3a6'],
-        [1.5, 98, 160, 56, 2, '#d9cfbb'],
-        [70, 97, 140, 60, -2, '#c9b9e0'],
+        [57, 0.6, 180, 80, -3, '#e8cf73', 'FES'],
+        [95.5, 16, 96, 170, 4, '#bcaed8', ''],
+        [38, 47, 140, 70, 7, '#c8d8c0', 'NACH'],
+        [97, 62, 120, 96, -7, '#f0c3a6', ''],
+        [1.5, 92, 170, 64, 2, '#d9cfbb', 'OPE'],
+        [70, 96, 150, 66, -2, '#c9b9e0', 'KON'],
     ];
-    const decor = `<div class="wall-decor" aria-hidden="true">${scraps
+    const bricks = [
+        'left:1%;bottom:72px;width:230px;height:128px',
+        'right:5%;top:44%;width:150px;height:100px',
+    ];
+    const cracks =
+        '<svg class="wall-cracks" viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false"><path vector-effect="non-scaling-stroke" d="M61 14l1 3-1 2 1.5 3-.5 2 1 4"/><path vector-effect="non-scaling-stroke" d="M62 19l2 1.5 1 2.5"/><path vector-effect="non-scaling-stroke" d="M88 80l-1 3 1.2 2-.6 3 .8 2.5"/><path vector-effect="non-scaling-stroke" d="M12 55l1.5 2-.5 2.5 1 2"/></svg>';
+    const decor = `<div class="wall-decor" aria-hidden="true"><span class="wall-streaks"></span>${bricks
+        .map((at) => `<span class="wall-bricks" style="${at}"></span>`)
+        .join('')}${cracks}<span class="wall-paste" style="left:46%;top:22%"></span><span class="wall-paste" style="left:82%;top:40%"></span><span class="wall-paste" style="left:24%;top:78%"></span>${scraps
         .map(
-            ([left, top, w, h, turn, colour], i) =>
-                `<span class="wall-scrap" style="left:${left}%;top:${top}%;width:${w}px;height:${h}px;rotate:${turn}deg;--scrap:${colour};--n:${i}"></span>`,
+            ([left, top, w, h, turn, colour, print], i) =>
+                `<span class="wall-scrap" style="left:${left}%;top:${top}%;width:${w}px;height:${h}px;rotate:${turn}deg;--scrap:${colour};--n:${i}" data-print="${print}"><span class="wall-tape"></span></span>`,
         )
-        .join('')}<span class="wall-paste" style="left:46%;top:22%"></span><span class="wall-paste" style="left:82%;top:40%"></span><span class="wall-paste" style="left:24%;top:78%"></span><span class="wall-stencil" lang="de">Plakatieren verboten</span></div>`;
+        .join('')}<span class="wall-sticker wall-sticker--round" style="left:34%;top:31%"></span><span class="wall-sticker wall-sticker--strip" style="left:91%;top:84%"></span><span class="wall-pipe"></span><span class="wall-number">17</span><span class="wall-sockel"></span><span class="wall-stencil" lang="de">Plakatieren verboten</span></div>`;
     const clampUnit01 = (value) => Math.max(0, Math.min(1, value));
     // Today's street at today's hour (the sample day's clock, ?at=, or the
     // App in colour concept's time switch) and today's weather.
@@ -977,6 +989,37 @@
             backdrop.querySelector('.sky-weather').innerHTML = Sky.chip(st, ctx);
         }
         markPosters();
+    }
+    // The corner ends where the row of posters beside it ends, so no bare
+    // wall is left under it: the column grows taller, its lower part
+    // covered in older posters, as a real Litfaßsäule is top to bottom.
+    function fitCorner() {
+        const scene = document.querySelector('.wall-scene');
+        if (!scene) return;
+        scene.style.removeProperty('--extra');
+        if (!scene.offsetParent || getComputedStyle(scene).float === 'none') return;
+        const box = scene.getBoundingClientRect();
+        const posters = [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')];
+        // The first poster that starts below the corner begins the next row.
+        const next = posters.find((pp) => pp.getBoundingClientRect().left < box.right - 2);
+        const beside = posters.filter((pp) => pp.getBoundingClientRect().left >= box.right - 2);
+        if (!beside.length) return;
+        const top = (el) => el.offsetParent.getBoundingClientRect().top + el.offsetTop;
+        const rowEnd = next
+            ? top(next) - 2
+            : Math.max(...beside.map((pp) => top(pp) + pp.offsetHeight));
+        // The corner's bottom margin keeps lines away too.
+        const margin = parseFloat(getComputedStyle(scene).marginBottom) || 0;
+        let extra = Math.floor(rowEnd - box.bottom - margin);
+        if (extra <= 0 || extra > 600) return;
+        // Never let the corner reach into the next row: pull back if it does.
+        for (let tries = 0; tries < 3 && extra > 0; tries++) {
+            scene.style.setProperty('--extra', `${extra}px`);
+            const over = scene.getBoundingClientRect().bottom + margin - rowEnd;
+            if (over <= 0) return;
+            extra -= Math.ceil(over) + 1;
+        }
+        if (extra <= 0) scene.style.removeProperty('--extra');
     }
     // Today's posters follow the clock: on now, or over (no planning then).
     // An outdoor one says when rain is likely at its hour, from the
@@ -1047,6 +1090,7 @@
         requestAnimationFrame(() => {
             layoutSky();
             panSky();
+            fitCorner();
         });
     }
     // The shared count line: the Wall's column holds the featured events;
@@ -1103,6 +1147,10 @@
         board.insertAdjacentHTML('beforeend', next());
         gallery.append(board);
         paintStreet();
+        const fitSoon = () => requestAnimationFrame(fitCorner);
+        fitSoon();
+        window.addEventListener('resize', fitSoon);
+        document.fonts?.ready.then(fitSoon);
         gallery.insertAdjacentHTML('afterend', pastStrip(catalogue));
         main.addEventListener('click', (event) => {
             const turn = event.target.closest('[data-poster-turn]');
@@ -1194,6 +1242,7 @@
         new MutationObserver(() => {
             stamps();
             markPosters();
+            requestAnimationFrame(fitCorner);
         }).observe(list, { childList: true });
         const featuredBox = main.querySelector('#event-featured');
         if (featuredBox)

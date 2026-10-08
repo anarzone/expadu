@@ -227,6 +227,18 @@ const inside = (box, viewport) =>
                     });
                 });
                 assert.ok(flow, 'no poster flows on below the street corner');
+                // The corner ends where the row beside it ends: no bare wall.
+                const gap = await page.evaluate(() => {
+                    const scene = document.querySelector('.wall-scene').getBoundingClientRect();
+                    const below = [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')]
+                        .map((pp) => pp.getBoundingClientRect())
+                        .filter((r) => r.left < scene.right)
+                        .sort((a, b) => a.top - b.top)[0];
+                    return Math.round(below.top - scene.bottom);
+                });
+                assert.ok(gap >= 0 && gap < 48, `bare wall under the corner: ${gap}px`);
+                for (const part of ['.wall-pipe', '.wall-sockel', '.wall-bricks', '.wall-streaks'])
+                    assert.equal(await page.locator(part).first().count(), 1, `${part} is missing`);
             }
 
             // The same day on the skyline: its lights are out, and labels
@@ -358,6 +370,18 @@ const inside = (box, viewport) =>
         assert.match(await culture.getAttribute('aria-label'), /already over/);
         assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
+        // A narrower desktop still fits two posters beside the corner.
+        const narrow = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+        await narrow.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });
+        const besideCorner = await narrow.evaluate(() => {
+            const scene = document.querySelector('.wall-scene').getBoundingClientRect();
+            const rows = [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')]
+                .map((pp) => pp.getBoundingClientRect())
+                .filter((r) => r.left >= scene.right - 2);
+            return rows.filter((r) => Math.abs(r.top - rows[0].top) < 30).length;
+        });
+        assert.equal(besideCorner, 2, 'two posters beside the corner at 1280px');
+        await narrow.close();
         // The street keeps today's time and weather: a dry afternoon at
         // 13:10; at 19:30 dusk, the lantern on, rain and puddles.
         const street = await browser.newPage({ viewport: { width: 1440, height: 900 } });

@@ -105,6 +105,8 @@ body[data-page='events'] {
     );
     background-image:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.32 0 0 0 0 0.27 0 0 0 0 0.2 0 0 0 0.11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='640'%3E%3Cfilter id='m'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.008' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.3 0 0 0 0 0.2 0 0 0 0.22 -0.06'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E"),
+        linear-gradient(transparent 55%, #5a4a3012 82%, #4a3a241f),
         radial-gradient(ellipse 30% 22% at 78% 18%, #ffffff2e, transparent 70%),
         radial-gradient(ellipse 26% 30% at 18% 72%, #6b5a3a14, transparent 70%),
         radial-gradient(ellipse 34% 20% at 60% 92%, #ffffff24, transparent 70%);
@@ -293,7 +295,7 @@ main[data-view='skyline'] .wall-view--wall {
 .wall-column-body {
     position: relative;
     width: var(--column-w);
-    height: calc(var(--column-h) + var(--strip) * 2);
+    height: calc(var(--column-h) + var(--strip) * 2 + var(--extra, 0px));
     overflow: hidden;
     /* Layers of old paper round the drum. */
     background:
@@ -301,7 +303,9 @@ main[data-view='skyline'] .wall-view--wall {
         #e7dfcd;
     touch-action: pan-y;
 }
-/* Torn edges of older posters peek out above and below. */
+/* Torn edges of older posters peek out above and below; when the column
+   grows to meet the posters beside it, older posters cover its lower
+   part, faded and torn, with lines of small print. */
 .wall-column-old > span {
     position: absolute;
     display: block;
@@ -352,9 +356,40 @@ main[data-view='skyline'] .wall-view--wall {
     outline: 3px solid var(--color-focus);
     outline-offset: 4px;
 }
+.wall-column-old > span:nth-child(5),
+.wall-column-old > span:nth-child(6) {
+    bottom: calc(var(--strip) + 8px);
+    filter: saturate(0.7);
+    opacity: 0.9;
+}
+/* The lower row: two older posters, faded, a title bar and small print. */
+.wall-column-old > span:nth-child(5) {
+    left: 5%;
+    width: 43%;
+    height: max(0px, calc(var(--extra, 0px) - 30px));
+    background:
+        linear-gradient(#211d1599, #211d1599) 14% 12% / 68% 13% no-repeat,
+        linear-gradient(#211d1566, #211d1566) 14% 30% / 44% 6% no-repeat,
+        repeating-linear-gradient(180deg, transparent 0 10px, #211d1529 10px 12px) 14% 78% / 72% 34% no-repeat,
+        #e9d48a;
+    clip-path: polygon(0 0, 80% 0, 86% 5%, 93% 1%, 100% 9%, 100% 100%, 0 100%);
+    rotate: -1deg;
+}
+.wall-column-old > span:nth-child(6) {
+    right: 4%;
+    width: 45%;
+    height: max(0px, calc(var(--extra, 0px) - 46px));
+    background:
+        radial-gradient(circle at 62% 38%, transparent 20%, #ffffff66 21% 26%, transparent 27%),
+        linear-gradient(#ffffffb3, #ffffffb3) 12% 76% / 60% 10% no-repeat,
+        repeating-linear-gradient(180deg, transparent 0 10px, #ffffff3d 10px 12px) 12% 92% / 66% 12% no-repeat,
+        #9d8fc6;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 22% 100%, 14% 93%, 6% 98%, 0 90%);
+    rotate: 1.2deg;
+}
 .wall-column-face {
     position: absolute;
-    inset: var(--strip) 0;
+    inset: var(--strip) 0 calc(var(--strip) + var(--extra, 0px));
     transform-origin: center;
     will-change: transform;
 }
@@ -784,7 +819,10 @@ main[data-view='skyline'] .wall-board > .wall-sky {
         repeating-linear-gradient(180deg, transparent 0 15px, #ffffff0f 15px 16px);
     opacity: var(--wet, 0);
 }
-/* The wall: scraps of older posters, paste marks and a stencil. */
+/* The wall: water streaks, bricks where the plaster fell away, cracks,
+   torn older posters with tape and staples, stickers, paste marks, a
+   drainpipe, an enamel house number, a darker base and a stencil. It
+   dims with the street at night. */
 .wall-decor {
     position: absolute;
     inset: 0;
@@ -792,26 +830,99 @@ main[data-view='skyline'] .wall-board > .wall-sky {
     overflow: hidden;
     border-radius: inherit;
     pointer-events: none;
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.6));
+    transition: filter 400ms var(--ease-settle);
 }
-.wall-scrap {
+.wall-decor > * {
     position: absolute;
+}
+/* Rain has run down from the ledge for years. */
+.wall-streaks {
+    top: 230px;
+    left: 0;
+    right: 0;
+    height: 260px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='260'%3E%3Cg fill='%235a4a30'%3E%3Crect x='18' width='5' height='150' opacity='.07'/%3E%3Crect x='64' width='9' height='210' opacity='.05'/%3E%3Crect x='71' width='3' height='120' opacity='.07'/%3E%3Crect x='140' width='6' height='90' opacity='.06'/%3E%3Crect x='212' width='12' height='240' opacity='.04'/%3E%3Crect x='226' width='4' height='170' opacity='.07'/%3E%3Crect x='300' width='7' height='130' opacity='.05'/%3E%3Crect x='362' width='5' height='200' opacity='.06'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 420px 260px repeat-x;
+    -webkit-mask-image: linear-gradient(#000, transparent);
+    mask-image: linear-gradient(#000, transparent);
+}
+/* Plaster fallen away, showing the bricks behind. */
+.wall-bricks {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='26'%3E%3Crect width='52' height='26' fill='%23c9b9a0'/%3E%3Crect x='1' y='1' width='23' height='11' rx='1.5' fill='%23a65a40'/%3E%3Crect x='27' y='1' width='24' height='11' rx='1.5' fill='%23b4664a'/%3E%3Crect x='-12' y='14' width='24' height='11' rx='1.5' fill='%23b06248'/%3E%3Crect x='14' y='14' width='24' height='11' rx='1.5' fill='%239c533b'/%3E%3Crect x='40' y='14' width='24' height='11' rx='1.5' fill='%23b06248'/%3E%3C/svg%3E") 0 0 / 52px 26px;
+    clip-path: polygon(6% 22%, 18% 6%, 34% 12%, 47% 0, 63% 9%, 80% 4%, 94% 18%, 100% 42%, 92% 60%, 97% 82%, 82% 96%, 64% 88%, 46% 100%, 28% 92%, 12% 97%, 3% 78%, 8% 58%, 0 40%);
+    opacity: 0.85;
+    filter: drop-shadow(0 0 0 #fff);
+}
+.wall-cracks {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: none;
+}
+.wall-decor .wall-cracks path {
+    stroke: #5a4a3080 !important;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+}
+/* Torn older posters: white paper at the tears, faded print on top, and
+   a fragment of their big type. */
+.wall-scrap {
+    background: #f4efe4;
+    opacity: 0.8;
+    box-shadow: 0 1px 2px #211d1526;
+}
+.wall-scrap::after {
+    content: attr(data-print);
+    position: absolute;
+    inset: 4px 5px 6px 4px;
+    overflow: hidden;
+    padding: 2px 0 0 6px;
     background:
         radial-gradient(circle, #ffffff4d 1.5px, transparent 2px) 0 0 / 9px 9px,
         var(--scrap);
-    opacity: 0.5;
-    transition: opacity 400ms var(--ease-settle);
+    color: #211d1559;
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    clip-path: inherit;
+    filter: saturate(0.7);
 }
-.wall-scrap:nth-child(3n + 1) {
+.wall-scrap:nth-of-type(3n + 1),
+.wall-scrap:nth-of-type(3n + 1)::after {
     clip-path: polygon(0 8%, 14% 0, 32% 10%, 55% 0, 78% 12%, 100% 4%, 96% 100%, 70% 88%, 44% 100%, 20% 90%, 0 100%);
 }
-.wall-scrap:nth-child(3n + 2) {
+.wall-scrap:nth-of-type(3n + 2),
+.wall-scrap:nth-of-type(3n + 2)::after {
     clip-path: polygon(6% 0, 100% 0, 92% 30%, 100% 58%, 88% 100%, 0 96%, 8% 62%, 0 30%);
 }
-.wall-scrap:nth-child(3n) {
+.wall-scrap:nth-of-type(3n),
+.wall-scrap:nth-of-type(3n)::after {
     clip-path: polygon(0 0, 64% 0, 72% 14%, 100% 10%, 100% 100%, 30% 100%, 22% 84%, 0 90%);
 }
-.wall-paste {
+/* A strip of yellowed tape and a staple hold what's left. */
+.wall-tape {
     position: absolute;
+    z-index: 1;
+    top: -2px;
+    left: 18%;
+    width: 46px;
+    height: 14px;
+    background: #efe2b3c9;
+    rotate: -8deg;
+}
+.wall-tape::after {
+    content: '';
+    position: absolute;
+    left: 60px;
+    top: 4px;
+    width: 12px;
+    height: 2px;
+    background: #8b8d92;
+    box-shadow: 0 1px 0 #ffffff80;
+}
+.wall-paste {
     width: 240px;
     height: 320px;
     background: #ffffff1f;
@@ -821,10 +932,70 @@ main[data-view='skyline'] .wall-board > .wall-sky {
 .wall-paste:nth-of-type(even) {
     rotate: -3deg;
 }
-.wall-stencil {
-    position: absolute;
+.wall-sticker--round {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 50% 50%, transparent 9px, #211d1559 9.5px 11px, transparent 11.5px),
+        #f2c94c;
+    opacity: 0.75;
+    rotate: 12deg;
+}
+.wall-sticker--strip {
+    width: 70px;
+    height: 22px;
+    border-radius: 3px;
+    background:
+        linear-gradient(90deg, #c8463a 0 30%, transparent 30%),
+        repeating-linear-gradient(180deg, transparent 0 6px, #211d152e 6px 8px) 34% 0 / 60% 100% no-repeat,
+        #f6f1e7;
+    opacity: 0.7;
+    rotate: -6deg;
+}
+/* A drainpipe down the right-hand edge, with its brackets. */
+.wall-pipe {
+    top: 218px;
+    bottom: 0;
+    right: 10px;
+    width: 20px;
+    background:
+        repeating-linear-gradient(180deg, transparent 0 210px, #5f615c 210px 220px),
+        linear-gradient(90deg, #7f817c, #c9cbc6 38%, #a3a59f 60%, #6f716c);
+    box-shadow: 2px 0 4px #211d1526;
+}
+/* Blue enamel house number, as on Cologne's houses. */
+.wall-number {
+    top: 31%;
     right: 46px;
-    bottom: 22px;
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 34px;
+    border: 2px solid #f6f1e7;
+    border-radius: 6px;
+    outline: 2px solid #1f4e9c;
+    background: #1f4e9c;
+    color: #f6f1e7;
+    font-family: var(--font-sans);
+    font-size: 20px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px #211d1540;
+}
+/* The darker stone base along the foot of the wall. */
+.wall-sockel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 64px;
+    border-top: 3px solid #211d1517;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.18 0 0 0 0 0.15 0 0 0 0.16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E"),
+        #b5aa96;
+}
+.wall-stencil {
+    right: 46px;
+    bottom: 18px;
     color: #211d15;
     font-family: 'Poster Grotesque', var(--font-sans);
     font-size: 26px;
@@ -832,17 +1003,26 @@ main[data-view='skyline'] .wall-board > .wall-sky {
     letter-spacing: 0.16em;
     text-transform: uppercase;
     white-space: nowrap;
-    opacity: 0.2;
+    opacity: 0.32;
     rotate: -1.5deg;
     -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 11px, transparent 11px 12.5px);
     mask-image: repeating-linear-gradient(90deg, #000 0 11px, transparent 11px 12.5px);
 }
-.wall-board[data-dark] .wall-stencil {
-    color: #f3ead8;
-    opacity: 0.16;
-}
-.wall-board[data-dark] .wall-scrap {
-    opacity: 0.22;
+@media (min-width: 1000px) and (max-width: 1399px) {
+    .wall-board > .wall-scene {
+        width: 520px;
+        padding-left: 96px;
+    }
+    .wall-lantern {
+        left: -26px;
+    }
+    .wall-bench {
+        left: -40px;
+    }
+    .wall-day > .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
 }
 @media (min-width: 1000px) {
     .wall-scene {

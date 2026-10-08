@@ -5,6 +5,26 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A real wall, and no bare wall under the corner — 8 October 2026
+
+Owner review: an empty patch of wall was left under the street corner, and
+the wall should look more like a real one.
+
+- **No bare wall.** The corner now ends where the row of posters beside it
+  ends: the column grows taller to meet it, and its lower part carries a
+  row of older posters (faded, torn at a corner, a title bar and small
+  print), as a real Litfaßsäule is covered top to bottom. On desktops
+  from 1000 to 1399px the corner and the wall's posters are a little
+  smaller, so two posters fit beside it.
+- **A real wall.** Large damp patches and grime towards the foot on top of
+  the plaster's grain; water streaks run down from the ledge; the plaster
+  has fallen away to the bricks in two places; a few hairline cracks; the
+  torn older posters show white paper at the tears and a fragment of their
+  big type, held by yellowed tape and a staple; a round and a strip
+  sticker; a drainpipe with brackets down the right; a blue enamel house
+  number; a darker stone base along the foot carrying the stencil. All of
+  it dims with the street at night.
+
 ## The Wall is the Events page; it borrows the Skyline's best — 8 October 2026
 
 Owner decision: **the Wall is the Events page.** The Skyline view stays in
