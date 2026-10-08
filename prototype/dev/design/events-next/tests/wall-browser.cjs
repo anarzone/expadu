@@ -381,6 +381,20 @@ const inside = (box, viewport) =>
             return rows.filter((r) => Math.abs(r.top - rows[0].top) < 30).length;
         });
         assert.equal(besideCorner, 2, 'two posters beside the corner at 1280px');
+        // A narrow poster's back keeps every button label on one line.
+        const narrowPoster = narrow.locator('.wall-day > .pp').first();
+        await narrowPoster.locator('.pp-open').click();
+        await narrow.waitForTimeout(500);
+        const wrapped = await narrowPoster.evaluate((pp) =>
+            [...pp.querySelectorAll('.pp-back-actions > *, .pp-back-head > *')]
+                .filter((el) => el.offsetParent)
+                .filter((el) => {
+                    const line = parseFloat(getComputedStyle(el).lineHeight) || 20;
+                    return el.scrollHeight > Math.max(el.clientHeight, 52) || el.getClientRects().length > 1 || el.offsetHeight > line * 2 + 24;
+                })
+                .map((el) => el.className),
+        );
+        assert.deepEqual(wrapped, [], 'a button on the back of a narrow poster wraps');
         await narrow.close();
         // The street keeps today's time and weather: a dry afternoon at
         // 13:10; at 19:30 dusk, the lantern on, rain and puddles.

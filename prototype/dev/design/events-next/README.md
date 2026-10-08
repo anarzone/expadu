@@ -24,6 +24,11 @@ the wall should look more like a real one.
   sticker; a drainpipe with brackets down the right; a blue enamel house
   number; a darker stone base along the foot carrying the stencil. All of
   it dims with the street at night.
+- **The back of a narrow poster** (the wall's are 272–300px wide) keeps
+  its labels on one line: Add to plan and Save share a row, More about it
+  takes the next, and the head keeps its date and the way back without
+  "Back of the poster". Wider posters (the column's) keep one row. Laid
+  out by the poster's own width, so it holds in any window.
 
 ## The Wall is the Events page; it borrows the Skyline's best — 8 October 2026
 

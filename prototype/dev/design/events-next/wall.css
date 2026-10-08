@@ -1800,6 +1800,32 @@ main[data-view='skyline'] .wall-board > .wall-sky {
     width: 16px;
     height: 16px;
 }
+.pp-back-actions > * {
+    white-space: nowrap;
+}
+/* A narrow poster (the wall's are 272–300px) keeps its labels on one
+   line: Add to plan and Save share a row, More about it takes the next,
+   and the head keeps its date and the way back. */
+@container (max-width: 330px) {
+    .pp-back-note {
+        display: none;
+    }
+    .pp-back-head .pp-tape {
+        margin-right: auto;
+    }
+    .pp-back-actions {
+        flex-wrap: wrap;
+    }
+    .pp-back-plan {
+        flex: 1 1 auto;
+    }
+    .pp:not([data-when='over']) .pp-back-actions:has(.pp-back-plan) .pp-back-more {
+        flex: 1 0 100%;
+    }
+    .pp-back-actions .pp-back-more {
+        flex: 1 1 auto;
+    }
+}
 
 /* A listing without a time doesn't print one. */
 .pp.is-listing .pp-time {
