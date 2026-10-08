@@ -30,7 +30,7 @@ final class CatalogueReleaseStore
 
             return new Task($unit['authored_record']);
         }, $artifact['inventory']);
-        if (! hash_equals(CatalogueHash::of($artifact), CatalogueHash::of($this->compiler->compile($records, $artifact['mapping'], $artifact['process_titles'] ?? [])))) {
+        if (! hash_equals(CatalogueHash::of($artifact), CatalogueHash::of($this->compiler->compile($records, $artifact['mapping'], $artifact['process_titles'] ?? [], $artifact['document_terms'] ?? [])))) {
             throw new DomainException('The compiled artifact does not match its source snapshots and mappings.');
         }
 

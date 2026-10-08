@@ -254,12 +254,14 @@ tasks:
       - label: Valid study visa, if one was required for entry
         note: A visitor visa does not lead to a residence permit for study.
       - label: Immatrikulationsbescheinigung or conditional university admission
+        from: stu.enrolment
         note: 'If you''re still in study preparation: proof of the preparatory language course with its length and weekly hours (at least 18 lessons per week), or your Studienkolleg enrolment certificate.'
       - label: Studienverlaufsplan (study plan), if already in degree study
         note: Renewals additionally need a certificate of orderly study progress.
       - label: 'Finance proof, for example a Sperrkonto with {{figure:sperrkonto_students}}'
         note: The blocked account confirmation, Verpflichtungserklärung, scholarship certificate or your parents' funding declaration.
       - label: Proof of sufficient health insurance
+        from: stu.health_insurance
         note: Renewals also need your insurer's confirmation of continuous cover.
       - label: Copy of your rental contract (Mietvertrag)
     links:

@@ -43,6 +43,8 @@ final class ReviewedGuidance
             'actionable' => $variant['actionable'], 'coverage' => $variant['coverage'], 'criteria' => $variant['criteria'],
             'missing_facts' => $variant['missing_facts'], 'instructions' => $instructions,
             'actions' => $variant['actions'], 'unavailable_actions' => $variant['unavailable_actions'],
+            // Documents this step produces that other published steps need (catalogue links, not the person's progress).
+            'produces' => $variant['produces'] ?? [],
             'source_hash' => $variant['source_hash'], 'review' => $variant['review']];
     }
 }

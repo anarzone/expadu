@@ -117,6 +117,7 @@ tasks:
       - label: Employer's job-description form (Vordruck Stellenbeschreibung)
         note: The form describes the position planned for you. Ask your employer for it when you sign.
       - label: Proof of health insurance
+        from: core.health_insurance
         note: If you have an insurance card, showing it is enough; otherwise ask your insurer for a confirmation.
         tone: warn
       - label: Rental contract (Mietvertrag)

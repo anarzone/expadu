@@ -39,6 +39,7 @@ final class EvidenceRequirements
                     : (in_array('unknown', $statuses, true) ? 'unknown'
                         : (($variant['kind'] === 'option' || ($document['optional'] ?? false)) ? 'conditional' : 'required'));
                 $result[] = ['id' => $document['id'], 'label' => $document['label'], 'note' => $document['note'] ?? null,
+                    'terms' => $document['terms'] ?? [], 'produced_by' => $document['produced_by'] ?? null,
                     'evidence_kind' => $document['evidence_kind'] ?? null, 'branch' => $document['branch'] ?? null,
                     'applicability' => $applicability, 'missing_facts' => array_values(array_unique([...$scope['missing'], ...$condition['missing'], ...$branch['missing']])),
                     'reason' => $branch['status'] === 'unknown' && $branchGroups === [] ? 'branch_not_determined' : 'reviewed_conditions',

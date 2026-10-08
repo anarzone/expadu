@@ -15,8 +15,8 @@ final class CatalogueCompiler
 
     public function __construct(private FactRegistry $facts, private RuleSourcePolicy $policy, private GuidancePublication $publication, private VerifiedActionDirectory $actions) {}
 
-    /** @param list<Task> $tasks @param array<string, array>|null $mapping @param array<string, string>|null $titles */
-    public function compile(array $tasks, ?array $mapping = null, ?array $titles = null): array
+    /** @param list<Task> $tasks @param array<string, array>|null $mapping @param array<string, string>|null $titles @param array<string, string>|null $terms */
+    public function compile(array $tasks, ?array $mapping = null, ?array $titles = null, ?array $terms = null): array
     {
         $mapping ??= Yaml::parseFile(database_path('seeders/data/bureaucracy/schema/process-map.yaml'))['entries'];
         $titles ??= Yaml::parseFile(database_path('seeders/data/bureaucracy/schema/process-titles.yaml'))['titles'] ?? [];
@@ -25,6 +25,13 @@ final class CatalogueCompiler
                 throw new DomainException('Process titles are plain names: no figures, sections or amounts.');
             }
         }
+        $terms ??= Yaml::parseFile(database_path('seeders/data/bureaucracy/schema/document-terms.yaml'))['terms'] ?? [];
+        foreach ($terms as $german => $english) {
+            if (! is_string($german) || trim($german) === '' || ! is_string($english) || trim($english) === '' || preg_match('/\d|§|€/u', $english) === 1) {
+                throw new DomainException('Document terms are plain names: no figures, sections or amounts.');
+            }
+        }
+        ksort($terms);
         $byKey = [];
         foreach ($tasks as $task) {
             if (! $task instanceof Task || ! is_string($task->key) || ! preg_match('/^[a-z0-9][a-z0-9._-]*$/D', $task->key) || isset($byKey[$task->key])) {
@@ -93,7 +100,8 @@ final class CatalogueCompiler
                 $this->validateConditions($variant['applies_if'] ?? []);
             }
             $instructions = $this->items($key, 'instruction', $task->how_to_steps ?? []);
-            $documents = $this->items($key, 'document', $task->documents_required ?? []);
+            $documents = array_map(fn ($document) => [...$document, 'terms' => $this->termsIn($document, $terms)],
+                $this->items($key, 'document', $task->documents_required ?? []));
             $branches = array_values(array_unique(array_filter(array_column($instructions, 'branch'))));
             foreach ($documents as $document) {
                 if (isset($document['branch']) && ! in_array($document['branch'], $branches, true)) {
@@ -146,12 +154,42 @@ final class CatalogueCompiler
             }
             $definitions[$id]['variants'][] = $variant;
         }
+        // Which published step produces a document another step needs ("from"). A link to a
+        // producer that is not in this release is dropped rather than pointing nowhere.
+        $producers = [];
+        foreach ($definitions as $id => $definition) {
+            foreach ($definition['variants'] as $variant) {
+                $producers[$variant['id']] = $id;
+            }
+        }
+        $produces = [];
+        foreach ($definitions as $id => &$definition) {
+            foreach ($definition['variants'] as &$variant) {
+                foreach ($variant['documents'] as &$document) {
+                    $from = $document['from'] ?? null;
+                    $document['produced_by'] = is_string($from) && isset($producers[$from]) ? ['unit_id' => $from, 'process_id' => $producers[$from]] : null;
+                    if ($document['produced_by'] !== null) {
+                        $produces[$from][] = ['unit_id' => $variant['id'], 'process_id' => $id, 'document_id' => $document['id'], 'label' => $document['label']];
+                    }
+                }
+                unset($document);
+            }
+            unset($variant);
+        }
+        unset($definition);
+        foreach ($definitions as &$definition) {
+            foreach ($definition['variants'] as &$variant) {
+                $variant['produces'] = $produces[$variant['id']] ?? [];
+            }
+            unset($variant);
+        }
+        unset($definition);
         ksort($definitions);
         $titles = array_intersect_key($titles, $definitions);
         ksort($titles);
 
         return ['schema_version' => config('bureaucracy_catalogue.schema_version'), 'registry_version' => $this->facts->version(),
-            'mapping_hash' => CatalogueHash::of($mapping), 'mapping' => $mapping, 'inventory' => $inventory, 'process_titles' => $titles,
+            'mapping_hash' => CatalogueHash::of($mapping), 'mapping' => $mapping, 'inventory' => $inventory, 'process_titles' => $titles, 'document_terms' => $terms,
             'definitions' => array_map(fn ($id, $definition) => (new ProcessDefinition($id, $definition['topic'], $definition['variants'], $titles[$id] ?? null))->toArray(), array_keys($definitions), array_values($definitions))];
     }
 
@@ -170,6 +208,20 @@ final class CatalogueCompiler
         }
 
         return $record;
+    }
+
+    /** @return list<array{german: string, english: string}> glossary terms named in a document's label or note */
+    private function termsIn(array $document, array $terms): array
+    {
+        $text = mb_strtolower(($document['label'] ?? '').' '.($document['note'] ?? ''), 'UTF-8');
+        $found = [];
+        foreach ($terms as $german => $english) {
+            if (preg_match('/(?<![\p{L}])'.preg_quote(mb_strtolower($german, 'UTF-8'), '/').'(?![\p{L}])/u', $text) === 1) {
+                $found[] = ['german' => $german, 'english' => $english];
+            }
+        }
+
+        return $found;
     }
 
     /** @return list<string> */

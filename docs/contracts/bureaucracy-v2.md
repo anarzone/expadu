@@ -516,7 +516,25 @@ overdue state rather than replacing them with guessed dates.
 
 `bureaucracy.paperwork.1` returns `requirements`, `evidence` and `capabilities`.
 Each requirement has separate applicability and readiness, plus process/occurrence
-identity. Readiness is `missing`, `reported_available`, `confirmed_for_use` or
+identity.
+
+- `terms`: German document terms named in the requirement's `label` or `note`, each as
+  `{german, english}` (for example `{"german": "Mietvertrag", "english": "Rental contract"}`).
+  Show the English name with the German term the office uses. Names come from
+  `schema/document-terms.yaml`; they carry no figures or legal claims. Empty when the
+  label names no listed term.
+- `produced_by`: the published step that produces this document, as `{unit_id, process_id}`
+  (for example proof of health insurance → `{"unit_id": "core.health_insurance",
+  "process_id": "health.coverage"}`), or `null`. It is a catalogue link, not the person's
+  progress and not a prerequisite: the requirement does not wait for that step.
+- Guidance rows (`guidance[]`, `processes[].guidance[]`) carry the reverse list,
+  `produces: [{unit_id, process_id, document_id, label}]`, naming the documents other
+  published steps need from this one.
+
+Names and links never change a requirement's `id` or `semantic_hash`, so existing
+confirmations stay valid. Links exist only where a step evidently yields the document;
+the catalogue has no sourced basis for others (for example, banks or insurers needing
+the registration certificate), so it does not claim them. Readiness is `missing`, `reported_available`, `confirmed_for_use` or
 `needs_reconfirmation`. Having a matching evidence item is not confirmation for
 every application; conditional papers must not look universally mandatory.
 

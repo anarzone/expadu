@@ -108,7 +108,8 @@ tasks:
     deadline_type: none
     booking_service_key: finanzamt
     documents_required:
-      - Steuer-ID
+      - label: 'Steuer-ID'
+        from: core.steuer_id
       - ELSTER account
       - Estimates of your expected revenue and profit
     links:

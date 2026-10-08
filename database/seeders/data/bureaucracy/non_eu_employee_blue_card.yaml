@@ -173,6 +173,7 @@ tasks:
       - label: Mietvertrag + bank statement showing your current rent payment
         note: Owners instead bring the land register extract (Grundbuchauszug) + proof of monthly interest, repayment and service charges.
       - label: Proof of full health insurance — only if you are not statutorily insured
+        from: core.health_insurance
       - label: Berufsausübungserlaubnis, for regulated professions
         note: Some professions, for example human medicine, need a professional licence. Ask your employer if you are unsure.
     links:
@@ -281,7 +282,8 @@ tasks:
       - Valid passport and national D visa
       - Employment contract or binding job offer covering at least six months
       - Qualification evidence and recognition evidence where required
-      - Health-insurance evidence
+      - label: 'Health-insurance evidence'
+        from: core.health_insurance
       - Professional licence for a regulated profession, where applicable
     links:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
@@ -289,7 +291,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-09-08.1
+    content_version: 2026-10-08.1
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}

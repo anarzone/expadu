@@ -121,6 +121,7 @@ tasks:
       - label: Proof that the livelihood of all working family members is secured
         note: 'Employees: payslips for the last three months. Self-employed: last income-tax assessment, current profit-and-loss statement from the tax adviser, business registration if applicable, pension or life-insurance proof.'
       - label: Proof of full health insurance, if you are not publicly insured
+        from: core.health_insurance
     links:
       - https://www.stadt-koeln.de/service/produkte/20335/index.html
     how_to_steps:
@@ -198,6 +199,7 @@ tasks:
       - label: Employment contract and payslips for the last three months
       - label: Rental contract plus proof of current monthly housing costs (Warmmiete)
       - label: Proof of health insurance, if you are self-employed
+        from: core.health_insurance
     links:
       - https://www.stadt-koeln.de/service/produkt/allgemeine-niederlassungserlaubnis
     how_to_steps:

@@ -135,6 +135,7 @@ tasks:
       - label: Job offer + Vordruck Stellenbeschreibung (job-description form)
         note: The original of the form describing the position planned for you.
       - label: Proof of health insurance
+        from: core.health_insurance
         note: If you have an insurance card, showing it is enough; otherwise ask your insurer for a confirmation.
       - label: Two current passport photos
     links:
