@@ -191,8 +191,10 @@ Composer review items 7–16.
 - **My Plans:** the week marks Today; the date picker is one calendar button
   beside the day's heading; build notes ("Weekly planning is coming later",
   "Preview only") are gone.
-- **Loading:** "Thinking…" stands alone; there's no Cancel beside it (owner,
-  8 October). Moving to another view still stops a reply in progress.
+- **Loading:** "Thinking…", "Saving this plan…" and "Preparing your
+  replacement…" stand alone, with no Cancel (owner, 8 October): each takes a
+  moment, and an applied plan or a swap can be undone afterwards. Moving to
+  another view still stops a reply in progress.
 - **Plain words:** Try Composer offers "What's on tonight", "Getting somewhere"
   and "Registering your address"; plan changes are "Ask me first" or "Make small
   edits for me" (button: "Edit for me"); bookings and payments "always need your
@@ -303,7 +305,7 @@ The filter row combines a **Saved** toggle with **Category · Any**. Categories 
 
 `../connected/loading.js` and `loading.css` provide the reusable Expadu spark, button-sized indicator, status, content skeletons and a centred first-load treatment. See `/dev/design/loading-preview/` to inspect every variant. Composer responses and confirmation use them now; the other accepted department previews and production app have not yet been wired to this shared component.
 
-Indicators appear only after 140 ms. The scripted Composer demo intentionally waits 1.1 seconds to show the treatment, with explicitly labelled sample preparation. Production callers should finish the indicator when their real operation settles, without the sample delay. Existing responses stay visible; only the initial empty invitation gives way to skeletons. Cancel or navigating to another view aborts the pending sample operation. Repeated submission is disabled while busy. Reduced-motion settings stop the spark and skeleton animations.
+Indicators appear only after 140 ms. The scripted Composer demo intentionally waits 1.1 seconds to show the treatment, with explicitly labelled sample preparation. Production callers should finish the indicator when their real operation settles, without the sample delay. Existing responses stay visible; only the initial empty invitation gives way to skeletons. Navigating to another view aborts the pending sample operation (there's no Cancel button, owner, 8 October). Repeated submission is disabled while busy. Reduced-motion settings stop the spark and skeleton animations.
 
 Swap place also uses the preparation loader. Adding a captured place is an immediate local selection: it keeps the current cards and scroll position, preserves the typed request, and shows a checkmark and draft count without an artificial loading pause. The same View plan control stays reachable inside Saved on mobile. Pickers, removal, bookmarks and navigation also keep their direct feedback.
 

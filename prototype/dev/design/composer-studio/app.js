@@ -1395,7 +1395,7 @@
                         )
                         .insertAdjacentHTML(
                             panel ? 'afterend' : 'afterbegin',
-                            `<div id="composer-progress">${ExpaduLoading.status(label)}<button type="button" data-action="cancel-loading">Cancel</button></div>`,
+                            `<div id="composer-progress">${ExpaduLoading.status(label)}</div>`,
                         );
             },
             hide: restore,
@@ -2385,17 +2385,6 @@
                     ? 'Small plan edits will now apply straight away. You can undo them.'
                     : 'I’ll ask before changing your plan.',
             );
-            return;
-        }
-        if (el.dataset.action === 'cancel-loading') {
-            cancelLoading();
-            document
-                .querySelector(
-                    panel === 'replace'
-                        ? '[data-action="apply-replacement"]'
-                        : '#studio-request',
-                )
-                .focus();
             return;
         }
         if (
