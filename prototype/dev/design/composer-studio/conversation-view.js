@@ -45,7 +45,7 @@
                 )
                 .join('')}</dl>`;
         if (entry.kind === 'pending')
-            body = `<div class="pending-row">${ExpaduLoading.status('Thinking…')}<button class="plain-button" data-action="cancel-loading">Cancel</button></div>`;
+            body = `<div class="pending-row">${ExpaduLoading.status('Thinking…')}</div>`;
         if (entry.kind === 'cancelled' || entry.kind === 'failed')
             body += `<button class="plain-button" data-retry="${E(entry.id)}">Try again</button>`;
         if (entry.kind === 'discovery')

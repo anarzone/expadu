@@ -187,7 +187,8 @@ test('pending answers say Thinking and keep the cancel action available', () => 
     assert.match(html, /Thinking…/);
     assert.doesNotMatch(html, /Preparing a sample response/);
     assert.match(html, /role="status"/);
-    assert.match(html, /data-action="cancel-loading"/);
+    // No Cancel beside "Thinking…" (owner, 8 October).
+    assert.doesNotMatch(html, /Cancel|cancel-loading/);
 });
 
 test('answers lead with a short verdict, then their own block (the approved design)', () => {

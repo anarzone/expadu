@@ -191,7 +191,8 @@ Composer review items 7–16.
 - **My Plans:** the week marks Today; the date picker is one calendar button
   beside the day's heading; build notes ("Weekly planning is coming later",
   "Preview only") are gone.
-- **Loading:** "Thinking…" and Cancel share one line.
+- **Loading:** "Thinking…" stands alone; there's no Cancel beside it (owner,
+  8 October). Moving to another view still stops a reply in progress.
 - **Plain words:** Try Composer offers "What's on tonight", "Getting somewhere"
   and "Registering your address"; plan changes are "Ask me first" or "Make small
   edits for me" (button: "Edit for me"); bookings and payments "always need your

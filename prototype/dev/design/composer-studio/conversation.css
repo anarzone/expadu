@@ -862,14 +862,11 @@
     height: 13px;
 }
 
-/* "Thinking…" and its Cancel sit on one line. */
+/* "Thinking…" on its own (no Cancel beside it, owner, 8 October). */
 .pending-row {
     display: flex;
     align-items: center;
     gap: 16px;
-}
-.pending-row .plain-button {
-    min-height: 40px;
 }
 .studio .plan-undo {
     display: inline-flex;
