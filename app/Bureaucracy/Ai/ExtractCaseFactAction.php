@@ -188,6 +188,7 @@ final class ExtractCaseFactAction
             'settlement_permit_9' => 'Permanent residence (§9)',
             'settlement_permit_18c' => 'Permanent residence (§18c)',
             'settlement_permit_unknown' => 'Permanent residence (section not known)',
+            'none' => 'No residence title yet',
             'd_visa' => 'D visa',
             'visa_free' => 'Visa-free entry',
             'has_permit' => 'Already have a permit',

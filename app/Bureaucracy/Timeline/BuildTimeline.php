@@ -116,7 +116,7 @@ final class BuildTimeline
     private function recordedExpiries(array $facts): array
     {
         $title = $this->known($facts, 'current_residence_title') ? $facts['values']['current_residence_title'] : null;
-        $limited = $title !== null && ! in_array($title, ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown'], true);
+        $limited = $title !== null && ! in_array($title, ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown', 'none'], true);
         $documents = [];
         if ($title === 'national_d_visa' && $this->known($facts, 'visa_expires_at')) {
             $documents['visa_expires_at'] = ['visa.expiry', 'visa'];

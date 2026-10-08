@@ -13,6 +13,9 @@ final class AssessPerson
 
     private const AnchorBonus = 75;
 
+    /** Catalogue phases that only start once the person has arrived. */
+    private const AfterArrivalPhases = ['first_30_days', 'settling', 'ongoing'];
+
     private const OrientationKeys = ['citizenship_group', 'purpose', 'current_residence_title', 'entry_mode', 'sponsor', 'permit_track', 'business_kind'];
 
     public function assess(AssessmentInput $input): PersonAssessment
@@ -67,6 +70,11 @@ final class AssessPerson
                     }
                 }
                 $rank = self::urgencyRank($variant['urgency'] ?? 'medium') + ($matchesGoal ? self::GoalBonus : 0);
+                // Someone still planning the move gets no steps whose catalogue phase is after arrival;
+                // those wait, and ask nothing yet. A step without a phase is not held back.
+                $afterArrival = $evaluator->condition('arrival_planned', true, $facts, $input->at) === CriterionResult::Met
+                    && in_array($variant['kind'], ['preparation', 'action', 'verification'], true)
+                    && in_array($variant['phase'] ?? null, self::AfterArrivalPhases, true);
                 if ($criteria['status'] !== 'unmet') {
                     $priority = max($priority, $rank);
                 }
@@ -76,20 +84,20 @@ final class AssessPerson
                     'unmet' => 'not_met',
                     default => $complete ? 'requirements_met' : 'supported_preparation',
                 };
-                foreach ($criteria['missing'] as $key) {
+                foreach ($afterArrival ? [] : $criteria['missing'] as $key) {
                     $dependencies->add($key, $definition['id'], $variant['id'], $rank, $relevance['status'] === 'met');
                 }
-                if (($variant['action_requires_intent'] ?? false) && ! $confirmedIntent && $unresolvedIntent) {
+                if (! $afterArrival && ($variant['action_requires_intent'] ?? false) && ! $confirmedIntent && $unresolvedIntent) {
                     // Offer a preference/conflict review, not a legal criterion.
                     $dependencies->add('case_goal', $definition['id'], $variant['id'], $rank, $relevance['status'] === 'met');
                 }
-                if (($variant['action_requires_intent'] ?? false) && ! $confirmedIntent) {
+                if (! $afterArrival && ($variant['action_requires_intent'] ?? false) && ! $confirmedIntent) {
                     foreach ($intentMissing as $key) {
                         $dependencies->add($key, $definition['id'], $variant['id'], $rank, $relevance['status'] === 'met');
                     }
                 }
                 $anchor = (new TemporalDependencies)->anchorKey($variant, $facts);
-                if ($criteria['status'] === 'met' && $anchor !== null && $evaluator->condition($anchor, ['present' => true], $facts, $input->at)->unresolved()) {
+                if (! $afterArrival && $criteria['status'] === 'met' && $anchor !== null && $evaluator->condition($anchor, ['present' => true], $facts, $input->at)->unresolved()) {
                     $dependencies->add($anchor, $definition['id'], $variant['id'], $rank + self::AnchorBonus, $relevance['status'] === 'met');
                 }
                 $variants[] = [...$variant, 'assessment' => $assessment, 'criteria' => $criteria['criteria'],
@@ -97,7 +105,8 @@ final class AssessPerson
                     'relevance' => $relevance['status'] === 'met' ? 'relevant' : 'unknown',
                     'actionable' => $criteria['status'] === 'met' && in_array($variant['kind'], ['preparation', 'action', 'verification'], true)
                         && (! ($variant['action_requires_intent'] ?? false) || $confirmedIntent)
-                        && ! in_array($variant['type'], ['info'], true)];
+                        && ! in_array($variant['type'], ['info'], true) && ! $afterArrival,
+                    'after_arrival' => $afterArrival && $criteria['status'] === 'met'];
             }
             $coverage = $reviewedCoverages === [] ? 'review_required' : (in_array('partial', $reviewedCoverages, true) ? 'partial' : 'covered');
             $relevance = in_array('met', $relevances, true) ? 'relevant' : (in_array('unknown', $relevances, true) ? 'unknown' : ($relevances === [] ? 'unknown' : 'not_relevant'));

@@ -68,7 +68,7 @@ Schema: `bureaucracy.plan.1`. Fields are additive while the schema remains compa
 | `history` | Retained occurrences without current guidance; never silently discard old work. Same presentation fields as `processes`. |
 | `history_count` | `history.length` plus closed (`is_closed`) entries of `processes`: what a History list shows. |
 | `topics` | Topic IDs with `label`, definition, occurrence and history references. |
-| `guidance` | Reviewed text, criteria, instructions, official actions and source metadata. |
+| `guidance` | Reviewed text, criteria, instructions, official actions and source metadata, with `applies` and `after_arrival` (see “Guidance that is not a task”). |
 | `progress` | `total` and `todo`, `blocked`, `waiting`, `completed`, each with exact `count` and `ids`. |
 | `timeline` | Typed dates/appointments, with uncertainty and provenance kept separate. |
 | `attention` | Dated rows inside the product attention windows plus open-step deadlines whose date is unknown (see “Attention and coming up”). |
@@ -237,6 +237,30 @@ it is `legal_due`). `coming_up[]` holds the same row objects with
   no values.
 - `candidates_count`: all current protocol candidates, including deferred ones.
   `remaining_information_count` excludes deferred ones.
+
+### Guidance that is not a task
+
+`guidance[]` holds every unit the assessment considered for the person, with
+`definition_id` and `topic`. Each row has:
+
+- `applies`: every criterion is met (`assessment` is `requirements_met` or
+  `supported_preparation`). A row whose criteria are still unanswered or unmet is
+  `false`.
+- `after_arrival`: the person is still planning the move, the step applies, and its
+  catalogue phase is after arrival (`first_30_days`, `settling`, `ongoing`). It is not
+  `actionable`, is not proposed as a task and raises no questions until arrival.
+
+Show, by `kind`, only rows with `applies: true`:
+
+- `context`: “Good to know”. Information without steps, documents or dates. Never
+  a status, a step count or a tracking action.
+- `option`: “Options for you”. A route the person may choose, such as permanent
+  residence or the small-business VAT rule. It is never a task and never says the
+  person qualifies; the authority decides.
+- Rows with `after_arrival: true`: “After you arrive”, listed and not to-dos.
+
+`current_residence_title` has the option `none`: no German visa or residence title
+yet (entered visa-free, or not arrived). It counts as having no title with an expiry.
 
 ### Coverage units
 

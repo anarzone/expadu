@@ -60,7 +60,7 @@ final class BureaucracyDraftSchema
                     }
                 }
             }
-            if ($title === null || in_array($title, ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown'], true)) {
+            if ($title === null || in_array($title, ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown', 'none'], true)) {
                 unset($answers['residence_title_expires_at']);
             }
         }

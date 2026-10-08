@@ -118,6 +118,7 @@ test('the residence title enum registers its canonical route options', function 
         'settlement_permit_18c',
         'settlement_permit_unknown',
         'other',
+        'none',
     ]);
 });
 

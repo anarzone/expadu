@@ -282,6 +282,22 @@ class BureaucracyPersonas
                     'permit_track' => 'blue_card',
                 ],
             ],
+            [
+                // Entered visa-free, so no German visa or residence title is held yet.
+                'key' => 'case-visa-free-no-title',
+                'label' => 'Case · Entered visa-free · no residence title yet',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => 'non_eu_employee_blue_card',
+                'entry_mode' => 'visa_free',
+                'facts' => [
+                    'current_residence_title' => 'none',
+                    'case_goal' => 'blue_card',
+                    'entry_mode' => 'visa_free',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
+                ],
+            ],
         ];
     }
 

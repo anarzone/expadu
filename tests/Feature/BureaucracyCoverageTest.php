@@ -283,6 +283,8 @@ it('keeps supported investigated rules authoritative, the duplicate retired and 
             'case-settlement-unknown-holder',
             'case-work-permit-renewal',
             'case-unsupported-title',
+            // Entered visa-free: no residence title yet.
+            'case-visa-free-no-title',
         ]);
 });
 

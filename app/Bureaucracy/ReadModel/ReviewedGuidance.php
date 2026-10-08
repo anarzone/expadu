@@ -40,7 +40,12 @@ final class ReviewedGuidance
             'kind' => $variant['kind'], 'type' => $variant['type'], 'assessment' => $variant['assessment'],
             // Reviewed action steps are finished by reporting the submission; every other kind by completing the step.
             'completion_event' => $variant['kind'] === 'action' ? 'submission_recorded' : 'step_completed',
-            'actionable' => $variant['actionable'], 'coverage' => $variant['coverage'], 'criteria' => $variant['criteria'],
+            'actionable' => $variant['actionable'],
+            // Every criterion is met (not merely possible). Information and option cards show only when true.
+            'applies' => in_array($variant['assessment'], ['requirements_met', 'supported_preparation'], true),
+            // Applies, but only once the person has arrived; shown as "after you arrive", not as a to-do.
+            'after_arrival' => $variant['after_arrival'] ?? false,
+            'coverage' => $variant['coverage'], 'criteria' => $variant['criteria'],
             'missing_facts' => $variant['missing_facts'], 'instructions' => $instructions,
             'actions' => $variant['actions'], 'unavailable_actions' => $variant['unavailable_actions'],
             // Documents this step produces that other published steps need (catalogue links, not the person's progress).

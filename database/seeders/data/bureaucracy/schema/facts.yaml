@@ -1,6 +1,7 @@
 current_residence_title:
   type: enum
-  options: [national_d_visa, standard_work_permit, blue_card, family_reunification, settlement_permit_9, settlement_permit_18c, settlement_permit_unknown, other]
+  # none: entered visa-free or not arrived yet, so no German visa or residence title is held.
+  options: [national_d_visa, standard_work_permit, blue_card, family_reunification, settlement_permit_9, settlement_permit_18c, settlement_permit_unknown, other, none]
   question: Which German visa or residence title do you currently hold?
   why: Your current title changes the application route and which deadline applies.
   sensitivity: high

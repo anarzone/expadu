@@ -22,6 +22,7 @@ const residenceTitles = {
     settlement_permit_18c: 'Settlement permit · §18c',
     settlement_permit_unknown: 'Settlement permit · type unknown',
     other: 'Another title',
+    none: 'No residence title yet',
 };
 
 const yesNoUnsure = { yes: 'Yes', no: 'No', unsure: 'I’m not sure yet' };

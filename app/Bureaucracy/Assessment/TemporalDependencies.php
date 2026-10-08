@@ -11,7 +11,7 @@ final class TemporalDependencies
             if (! $this->confirmed($facts, 'current_residence_title')) {
                 return 'current_residence_title';
             }
-            if (in_array($facts['values']['current_residence_title'], ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown'], true)) {
+            if (in_array($facts['values']['current_residence_title'], ['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown', 'none'], true)) {
                 return null;
             }
         }
