@@ -180,7 +180,14 @@
         ['fresh', 'Fresh start'],
         ['returning', 'Returning user'],
         ['existing', 'Existing sample plan'],
+        ['eu', 'EU citizen, settled in'],
+        ['outside', 'Outside Cologne'],
+        ['setup', 'No profile yet'],
+        ['unavailable', 'Record unavailable'],
     ];
+    // The plan's entry states and coverage outside the city (GET /plan
+    // setup_required and record_unavailable; jurisdiction outside_coverage).
+    const entries = ['outside', 'setup', 'unavailable'];
     let own = null;
     function previewPersona(name) {
         if (!personas.some(([id]) => id === name)) return;
@@ -190,7 +197,11 @@
                 ? J.fresh()
                 : name === 'returning'
                   ? J.returning()
-                  : B.fresh();
+                  : name === 'eu'
+                    ? J.eu()
+                    : entries.includes(name)
+                      ? { ...B.blank(), entry: name }
+                      : B.fresh();
         P.hydrate(state);
         H.hydrate(state);
         G.hydrate(state);
@@ -301,6 +312,12 @@
         return `<div class="scope-summary">${E(names[state.person])}${p ? ' · ' + E(nameOf(p.id)) : ''}</div>`;
     }
     function viewMarkup() {
+        if (state.entry === 'setup')
+            return `<section class="access-blank"><h2>Tell us a little about your move first.</h2><p>A few answers about your situation let us show the tasks that apply to you.</p><div class="actions">${button('Get started', 'setup-start', 'primary')}</div></section>`;
+        if (state.entry === 'unavailable')
+            return '<section class="access-blank"><h2>Your paperwork record isn’t available right now.</h2><p>Your record is paused or being removed. Contact us if you didn’t expect this.</p></section>';
+        if (state.entry === 'outside')
+            return '<section class="access-blank"><h2>No reviewed guidance for your area yet.</h2><p>Paperwork covers Cologne so far. Nothing is guessed for another city: your answers stay, and tasks appear once your area is covered.</p></section>';
         if (!B.canEdit(state))
             return H.info(state)?.record !== undefined
                 ? BureaucracyFamilyUI.render(state, R)
@@ -504,7 +521,16 @@
             )
             .join(
                 '',
-            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}</div></section></div>${dates(plan)}${goodToKnow(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
+            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}</div>${noResidenceTask(plan) ? '<p class="process-grid-note">No residence task applies to your answers.</p>' : ''}</section></div>${dates(plan)}${goodToKnow(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
+    }
+    // An EU citizen's plan has no residence task because none applies, not
+    // because something is missing: say so.
+    function noResidenceTask(plan) {
+        const f = G.hydrate(state)?.details?.facts;
+        return (
+            f?.citizenship_group?.value === 'eu' &&
+            !plan.open.some((p) => p.topic === 'residence')
+        );
     }
     // Your own note first, then what your own paperwork is missing; never
     // a legal reason.

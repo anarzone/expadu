@@ -2577,3 +2577,10 @@ body[data-page='bureaucracy'] .sr-only {
         transition: none;
     }
 }
+
+/* "No residence task applies to your answers." (an EU citizen's plan) */
+.process-grid-note {
+    margin: 10px 2px 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}

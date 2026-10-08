@@ -365,3 +365,24 @@ test('guidance that isn’t a task: context cards for whom they apply', () => {
         ['shared.verpflichtungserklaerung'],
     );
 });
+
+test('an EU citizen’s plan: everyday tasks, and no residence task because none applies', () => {
+    const s = J.eu();
+    const p = plan(s);
+    assert.deepEqual([...p.processes.map((x) => x.occurrence_key)].sort(), [
+        'address',
+        'bank',
+        'health',
+    ]);
+    assert.ok(!p.processes.some((x) => x.topic === 'residence'));
+    assert.ok(p.processes.every((x) => x.id === null));
+});
+
+test('outside the covered city: no city guidance and nothing guessed', () => {
+    const s = { ...B.blank(), entry: 'outside' };
+    const p = plan(s);
+    assert.equal(p.coverage.state, 'outside_coverage');
+    assert.deepEqual(p.processes, []);
+    assert.deepEqual(p.guidance, []);
+    assert.equal(p.questions.question, null);
+});

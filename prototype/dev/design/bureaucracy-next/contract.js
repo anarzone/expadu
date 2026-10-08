@@ -770,6 +770,16 @@
     });
     // GET /people/{person}/plan, for the selected person.
     function plan(s) {
+        // Outside the covered city: no city guidance, nothing guessed.
+        if (s.entry === 'outside')
+            return {
+                ...empty(s),
+                questions: {
+                    ...empty(s).questions,
+                    status: 'no_more_questions',
+                },
+                coverage: { state: 'outside_coverage', units: [] },
+            };
         if (!B.canEdit(s)) return empty(s);
         P.hydrate(s);
         const local = P.projection(s).actions;

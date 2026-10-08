@@ -97,6 +97,26 @@
         });
         return s;
     }
+    // An EU citizen who has arrived: the everyday tasks open from their
+    // answers, and no residence task, because none applies.
+    function eu() {
+        const s = fresh();
+        s.scenario = 'eu';
+        s.profileId = 'eu-design-v1';
+        const o = G.hydrate(s);
+        o.started = true;
+        o.mode = 'review';
+        o.details = D.create({
+            citizenship_group: 'eu',
+            arrival_planned: false,
+            registration_status: 'not_registered',
+            health_coverage_confirmed: false,
+            bank_account_help_needed: true,
+            tax_id_available: true,
+        });
+        Object.assign(state(s), { stage: 'summary' });
+        return s;
+    }
     // What concerns this person now, in the backend's order (registry.js).
     function questions(s) {
         const r = G.hydrate(s).details;
@@ -297,6 +317,7 @@
         state,
         fresh,
         returning,
+        eu,
         questions,
         begin,
         afterAnswer,
