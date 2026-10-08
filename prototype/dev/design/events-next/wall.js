@@ -2,7 +2,7 @@
    poster set from its listing. A second view, Skyline, lights the day's
    events above Cologne and keeps the photo cards, with a poster wherever
    there's no usable picture. Filters, dates, details, saving and planning
-   are the Events page's own (../events-next/app.js); this file only swaps
+   are the Events page's own (app.js); this file only swaps
    how events are drawn. Loaded after festival.js and before app.js. */
 (function () {
     const U = ExpaduUI,

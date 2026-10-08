@@ -1,10 +1,10 @@
-// Run with: node prototype/dev/design/events-wall/tests/wall-browser.cjs
+// Run with: node prototype/dev/design/events-next/tests/wall-browser.cjs
 // (needs `python3 prototype/serve.py` on port 8765, or BASE=http://host:port).
 // The poster wall: first screen on a phone, turning a poster over, the
 // Skyline view with posters for missing pictures, past and later listings.
 const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
-const base = `${process.env.BASE || 'http://127.0.0.1:8765'}/dev/design/events-wall/`;
+const base = `${process.env.BASE || 'http://127.0.0.1:8765'}/dev/design/events-next/`;
 const inside = (box, viewport) =>
     box.x >= 0 &&
     box.y >= 0 &&

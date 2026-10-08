@@ -389,10 +389,11 @@ from the event's or venue's listing, otherwise "Not listed". Composer keeps
 the cream palette. The records now live in `connected/sample-day.js` for
 Today and Composer. Details are in `composer-studio/README.md`.
 
-**Events on the wall — owner's choice, 8 October (in review):** from the
-Events concepts canvas the owner chose Poster Press, with the Rhine skyline
-joining it and posters wherever there's no picture. A separate page,
-`events-wall/`, keeps the Events baseline unchanged until approval. Every
+**Events on the wall — owner's choice, approved and made the Events page on
+8 October 2026:** from the Events concepts canvas the owner chose Poster
+Press, with the Rhine skyline joining it and posters wherever there's no
+picture. After review as a separate page it replaced Events
+(`events-next/`; `events-wall/` forwards there). Every
 event is a poster set only from its listing (the category picks the shape,
 the hour picks the ink; unknowns stay "not listed"). The featured "Coming up"
 pick hangs on a poster column and stays put while filtering; tapping a poster
@@ -404,7 +405,8 @@ events above an illustrated Cologne and keeps photo cards, with the poster's
 art where there's no usable picture (the sample film night's illustration
 showed somewhere else). Filters, calendar, sheet and planning are the Events
 page's own. Poster lettering uses Bricolage Grotesque; the app's titles stay
-Geist while that decision is open. Details are in `events-wall/README.md`.
+Geist while that decision is open. Today keeps the Festival cards. Details are
+in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky
 "Composer · Minimize" bar is replaced by one compact row at the top of the
@@ -858,6 +860,9 @@ label are review alternatives, not a newly implemented news service.
 Review evidence and isolated scenarios: [Today notes](../today-c/README.md).
 
 ## Preferred event direction: Concept B / Festival — 29 September 2026
+
+Superseded on the Events page by "Events on the wall" (8 October 2026). Today
+still uses the Festival cards described here.
 
 The owner rejected the implemented split image/white-information cards and the
 hero disappearing on filter changes. After reviewing two visual concepts, the
