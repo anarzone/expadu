@@ -304,6 +304,14 @@ body[data-page='bureaucracy'] #main {
     border-radius: var(--radius-xl);
     padding: 3px 16px;
 }
+/* A task that just arrived from your answers: a quiet tint until you open
+   it (no repeated motion). */
+.process-summary.is-new {
+    background: var(--color-select-bg);
+}
+.process-summary.is-new .process-card-copy small {
+    color: var(--color-select-text);
+}
 .process-summary {
     display: flex;
     align-items: center;

@@ -47,7 +47,10 @@
     });
     const canEdit = (s) => s.person === 'self';
     // What the sample day's person has told us: arrived from outside the EU
-    // to work, address not registered yet (that task is still open).
+    // with a D visa to work, aiming for a Blue Card; address not registered
+    // yet; health cover not confirmed; wants help with an account; has a
+    // tax ID. Each of the plan's tasks follows from these (registry.js).
+    // The move-in date isn't known yet: the plan asks for it.
     function sampleFacts(s) {
         if (
             !root.ExpaduSampleDay ||
@@ -59,8 +62,56 @@
             arrival_planned: false,
             purpose: 'employment',
             citizenship_group: 'non_eu',
+            current_residence_title: 'national_d_visa',
+            entry_mode: 'd_visa',
+            case_goal: 'blue_card',
             registration_status: 'not_registered',
+            health_coverage_confirmed: false,
+            bank_account_help_needed: true,
+            tax_id_available: true,
         };
+    }
+    // The sample person's answer history, newest first: their first visit
+    // on 2 Sept, and a correction the next day (they'd picked the wrong way
+    // they entered). Kept permanently, as the backend keeps it.
+    function sampleHistory(s) {
+        if (!Object.keys(sampleFacts(s)).length) return [];
+        const first = '2026-09-02T18:20:00+02:00',
+            corrected = '2026-09-03T09:05:00+02:00';
+        const asserted = (key, value, at = first) => ({
+            key,
+            previous: null,
+            value,
+            operation: 'assert',
+            effectiveFrom: null,
+            at,
+            claims: [],
+            // From before this visit: not part of a run of questions.
+            seed: true,
+        });
+        return [
+            {
+                key: 'entry_mode',
+                previous: { value: 'visa_free', state: 'value' },
+                value: 'd_visa',
+                operation: 'correct',
+                effectiveFrom: null,
+                at: corrected,
+                claims: [],
+                seed: true,
+            },
+            asserted('tax_id_available', true),
+            asserted('bank_account_help_needed', true),
+            asserted('health_coverage_confirmed', false),
+            asserted('registration_status', 'not_registered'),
+            asserted('case_goal', 'blue_card'),
+            asserted('visa_expires_at', '2026-10-01'),
+            asserted('purpose', 'employment'),
+            asserted('current_residence_title', 'national_d_visa'),
+            asserted('arrival_planned', false),
+            asserted('citizenship_group', 'non_eu'),
+            asserted('entry_mode', 'visa_free'),
+        ];
     }
     const blank = () => ({
         ...fresh(),
@@ -147,6 +198,7 @@
         fresh,
         sampleAppointment,
         sampleFacts,
+        sampleHistory,
         blank,
         canEdit,
         validDate,

@@ -7,6 +7,7 @@ const ctx = vm.createContext({});
 for (const file of [
     'model.js',
     'plan.js',
+    'registry.js',
     'details-review.js',
     'family.js',
     'orientation.js',
@@ -62,18 +63,19 @@ test('starting asks only missing context and pauses after three choices', () => 
     const s = J.fresh();
     J.begin(s);
     let r = G.hydrate(s).details;
-    assert.equal(r.current, 'arrival_planned');
-    D.select(r, false);
-    assert.equal(r.facts.arrival_planned, undefined);
-    answer(s, false);
-    assert.equal(r.current, 'purpose');
-    answer(s, 'employment');
+    // The backend's orientation order: citizenship, the move, the permit.
     assert.equal(r.current, 'citizenship_group');
+    D.select(r, 'non_eu');
+    assert.equal(r.facts.citizenship_group, undefined);
     answer(s, 'non_eu');
+    assert.equal(r.current, 'arrival_planned');
+    answer(s, false);
+    assert.equal(r.current, 'current_residence_title');
+    answer(s, 'national_d_visa');
     assert.equal(J.state(s).stage, 'checkpoint');
     assert.equal(P.projection(s).total, 0);
     J.begin(s);
-    assert.equal(r.current, 'current_residence_title');
+    assert.equal(r.current, 'visa_expires_at');
 });
 test('EU and not-yet-arrived profiles are not asked to invent a residence permit', () => {
     assert.ok(J);
@@ -83,9 +85,8 @@ test('EU and not-yet-arrived profiles are not asked to invent a residence permit
     ]) {
         const s = J.fresh();
         J.begin(s);
-        answer(s, arrival);
-        answer(s, 'study');
         answer(s, citizenship);
+        answer(s, arrival);
         assert.ok(!J.questions(s).includes('current_residence_title'));
         assert.ok(!J.questions(s).includes('visa_expires_at'));
     }
@@ -95,12 +96,18 @@ test('skipping stays unanswered and a later check can revisit it', () => {
     const s = J.fresh();
     J.begin(s);
     J.skip(s);
-    assert.equal(G.hydrate(s).details.facts.arrival_planned, undefined);
-    answer(s, 'study');
+    const r = G.hydrate(s).details;
+    assert.equal(r.facts.citizenship_group, undefined);
+    assert.deepEqual([...r.deferred], ['citizenship_group']);
+    // A skipped question doesn't hold the next ones up.
+    assert.equal(r.current, 'arrival_planned');
+    answer(s, false);
     answer(s, 'unknown');
     assert.equal(J.state(s).stage, 'checkpoint');
+    // "Answer when ready" brings it back first.
+    r.deferred = [];
     J.begin(s);
-    assert.equal(G.hydrate(s).details.current, 'arrival_planned');
+    assert.equal(r.current, 'citizenship_group');
 });
 test('a life-change report never replaces a legal fact or silently marks tasks done', () => {
     assert.ok(J);
@@ -136,11 +143,11 @@ test('scenario switching preserves each journey and the existing sample workspac
     db.setItem(G.key, JSON.stringify(original));
     let s = J.activate(db, 'fresh');
     J.begin(s);
-    answer(s, false);
+    answer(s, 'non_eu');
     db.setItem(G.key, JSON.stringify(s));
     J.activate(db, 'returning');
     s = J.activate(db, 'fresh');
-    assert.equal(G.hydrate(s).details.facts.arrival_planned.value, false);
+    assert.equal(G.hydrate(s).details.facts.citizenship_group.value, 'non_eu');
     assert.equal(J.activate(db, 'existing').prepared, true);
 });
 test('Composer and page share drafts but an older scenario cannot save over the new one', () => {
@@ -148,9 +155,9 @@ test('Composer and page share drafts but an older scenario cannot save over the 
     const db = storage();
     const s = J.activate(db, 'fresh');
     J.begin(s);
-    D.select(G.hydrate(s).details, false);
+    D.select(G.hydrate(s).details, 'non_eu');
     assert.equal(G.save(s, db), true);
-    assert.equal(G.load(db).orientation.details.draft.value, false);
+    assert.equal(G.load(db).orientation.details.draft.value, 'non_eu');
     J.activate(db, 'returning');
     assert.equal(G.save(s, db), false);
 });
@@ -188,9 +195,9 @@ test('starting directly in Composer saves a new profile without seeding a sample
 test('a reported change cannot overwrite an unfinished answer or another pending change', () => {
     const s = J.fresh();
     J.begin(s);
-    D.select(G.hydrate(s).details, false);
+    D.select(G.hydrate(s).details, 'non_eu');
     assert.equal(J.report(s, 'job'), false);
-    assert.equal(G.hydrate(s).details.draft.value, false);
+    assert.equal(G.hydrate(s).details.draft.value, 'non_eu');
     const returning = J.returning();
     assert.equal(J.report(returning, 'job'), true);
     assert.equal(J.report(returning, 'home'), false);
@@ -212,13 +219,13 @@ test('a stale surface cannot erase a newer confirmed life change', () => {
 test('review navigation resumes an unfinished choice instead of discarding it', () => {
     const s = J.fresh();
     J.begin(s);
-    D.select(G.hydrate(s).details, false);
+    D.select(G.hydrate(s).details, 'non_eu');
     J.state(s).stage = 'summary';
     J.begin(s);
-    assert.equal(G.hydrate(s).details.draft.value, false);
+    assert.equal(G.hydrate(s).details.draft.value, 'non_eu');
     J.openChanges(s);
     assert.equal(J.state(s).stage, 'question');
     J.edit(s, 'purpose');
-    assert.equal(G.hydrate(s).details.current, 'arrival_planned');
-    assert.equal(G.hydrate(s).details.draft.value, false);
+    assert.equal(G.hydrate(s).details.current, 'citizenship_group');
+    assert.equal(G.hydrate(s).details.draft.value, 'non_eu');
 });

@@ -4,7 +4,12 @@
     const B = root.BureaucracyPreview,
         D = root.BureaucracyDetails,
         G = root.BureaucracyOrientation;
-    const core = ['arrival_planned', 'purpose', 'citizenship_group'];
+    // The registry's first questions (question-protocol.yaml orientation).
+    const core = [
+        'citizenship_group',
+        'arrival_planned',
+        'current_residence_title',
+    ];
     const changes = {
         job: {
             label: 'Changed jobs',
@@ -92,26 +97,10 @@
         });
         return s;
     }
+    // What concerns this person now, in the backend's order (registry.js).
     function questions(s) {
-        const facts = G.hydrate(s).details.facts;
-        const keys = [...core];
-        if (facts.arrival_planned?.value === false) {
-            if (facts.citizenship_group?.value === 'non_eu') {
-                keys.push('current_residence_title');
-                const title = facts.current_residence_title?.value;
-                if (title === 'national_d_visa') keys.push('visa_expires_at');
-                if (
-                    [
-                        'standard_work_permit',
-                        'blue_card',
-                        'family_reunification',
-                    ].includes(title)
-                )
-                    keys.push('residence_title_expires_at');
-            }
-            keys.push('registration_status');
-        }
-        return keys;
+        const r = G.hydrate(s).details;
+        return root.BureaucracyRegistry.questions(r.facts, r.deferred);
     }
     function next(s) {
         const j = state(s),
@@ -143,6 +132,8 @@
             return true;
         j.batch = 0;
         j.notice = null;
+        // A new run of questions: the pause counts from here.
+        s.interview = { mark: D.given(o.details), skips: 0 };
         if (
             !questions(s).some(
                 (k) => !o.details.facts[k] && !o.details.deferred.includes(k),
@@ -167,6 +158,10 @@
     function skip(s) {
         const r = G.hydrate(s).details;
         D.skip(r);
+        s.interview = {
+            ...s.interview,
+            skips: (s.interview?.skips || 0) + 1,
+        };
         return afterAnswer(s);
     }
     function edit(s, key) {

@@ -434,6 +434,17 @@ that scrolled away hid the exit mid-conversation and was corrected the same
 day. "Minimize" is no longer used as a label. Details are in
 `composer-studio/README.md`.
 
+**Paperwork follows the backend's questions and catalogue — owner request,
+8 October (in review):** the mock's sample guidance is the current reviewed
+catalogue, "checked against the official pages" with a date; the EU Blue Card
+lists its documents once, on its appointment step, and counts ready of
+required documents. Questions are the registry's own, asked in the backend's
+order with all its states (pause after three, left for later, didn't fit,
+answers that disagree); Your situation lists only what the backend can; tasks
+arrive as proposals from your answers. The person-level status, change flags,
+topic grid and starter run stay in the mock ahead of the backend, on the
+owner's word. Details are in `bureaucracy-next/README.md`.
+
 **Composer is the redesign mock, except the page and the request field —
 owner request, 8 October:** Composer now follows
 `connected/concepts/app-in-colour-2026-10-07/redesign/composer.html` exactly

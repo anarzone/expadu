@@ -101,16 +101,6 @@
         // health insurance proof, professional licence).
         'bc.blue_card': [1, 5, 7, 8],
     };
-    // The registry's wording for the one sample question (facts.yaml).
-    const visaQuestion = {
-        fact_key: 'visa_expires_at',
-        kind: 'answer',
-        question: 'When does your entry visa expire?',
-        why: 'We use this date to calculate your residence-application deadline.',
-        answer_schema: { type: 'date', date_semantics: 'expiry' },
-        can_skip: true,
-        can_answer_unknown: true,
-    };
     // "waiting" in the local records is the backend's waiting_authority.
     const wire = (workflow) =>
         workflow === 'waiting' ? 'waiting_authority' : workflow;
@@ -237,16 +227,34 @@
             }
             if (p.id === 'address') {
                 const d = P.registrationDeadline;
+                // Your move-in date plus the card's own days, once you've
+                // given it; until then the target waits for it.
+                const moved = answersOf(s).facts.moved_in_at;
+                const days = R().find(
+                    (r) => r.key === 'core.anmeldung',
+                )?.deadlineDays;
+                const date =
+                    moved?.state === 'value' &&
+                    B.validDate(moved.value) &&
+                    Number.isInteger(days)
+                        ? new Date(
+                              Date.parse(`${moved.value}T12:00:00Z`) +
+                                  days * 864e5,
+                          )
+                              .toISOString()
+                              .slice(0, 10)
+                        : null;
                 rows.push({
                     ...base,
                     id: `${p.id}:core.anmeldung.due`,
                     kind: 'preparation_target',
                     source_rule_id: 'core.anmeldung',
-                    date: null,
+                    date,
                     precision: 'calendar_date',
-                    state: 'date_unknown',
-                    needed_fact: d.fact,
-                    overdue: false,
+                    state: date ? 'dated' : 'date_unknown',
+                    needed_fact: date ? null : d.fact,
+                    anchor_fact: d.fact,
+                    overdue: !!date && daysFrom(date) < 0,
                     conditional: true,
                     step_id: 'core.anmeldung.complete',
                     action_id: `${p.id}:0`,
@@ -510,19 +518,119 @@
                     (b.days_remaining ?? Infinity) || a.id.localeCompare(b.id),
         );
     }
-    function questionsOf(s) {
-        const deferred = s.questionSkipped ? ['visa_expires_at'] : [];
-        const asking =
-            s.expiry === null && !s.expiryUnknown && !s.questionSkipped;
+    // Your answers as the question protocol reads them: the ones you've
+    // saved in Your situation, or, before you've opened it, the sample
+    // day's (with the visa date Paperwork keeps).
+    function answersOf(s) {
+        const G = root.BureaucracyOrientation;
+        const details = G?.allowed(s) && G.hydrate(s).details;
+        if (details)
+            return {
+                facts: details.facts,
+                deferred: details.deferred,
+                conflicts: details.conflicts || {},
+                history: details.history || [],
+            };
+        const seed = {
+            ...B.sampleFacts(s),
+            ...(B.validDate(s.expiry)
+                ? { visa_expires_at: s.expiry }
+                : s.expiryUnknown
+                  ? { visa_expires_at: 'unknown' }
+                  : {}),
+        };
+        const facts = {};
+        for (const [key, value] of Object.entries(seed))
+            facts[key] = {
+                value,
+                state: ['unknown', 'declined'].includes(value)
+                    ? value
+                    : 'value',
+            };
         return {
-            status: asking ? 'preview' : 'no_more_questions',
-            question: asking
-                ? { ...visaQuestion, process_ids: ['blue-card'] }
-                : null,
-            remaining_information_count: asking ? 1 : 0,
-            entry_state: deferred.length ? 'in_progress' : 'none',
-            deferred,
-            candidates_count: asking || deferred.length ? 1 : 0,
+            facts,
+            deferred: s.questionSkipped ? ['visa_expires_at'] : [],
+            conflicts: {},
+            history: [],
+        };
+    }
+    // plan.questions (bureaucracy-v2.md "Questions and answer changes"):
+    // at most one current question, in the registry's words. Three answers
+    // or skips in a row pause the run (paused); an answer that keeps not
+    // fitting stops it (answer_limit); two saved answers that disagree come
+    // first (resolve_conflict). Skipped questions stay deferred.
+    function questionsOf(s) {
+        const RG = root.BureaucracyRegistry;
+        // Pages that only read the plan (Today, Composer) don't load the
+        // registry or ask questions.
+        if (!RG)
+            return {
+                status: 'no_more_questions',
+                session_id: null,
+                question: null,
+                remaining_information_count: 0,
+                entry_state: 'none',
+                deferred: [],
+                candidates_count: 0,
+            };
+        const a = answersOf(s);
+        const asked = RG.questions(a.facts, a.deferred);
+        const open = asked.filter(
+            (k) => !a.facts[k] && !a.deferred.includes(k),
+        );
+        const conflict = Object.keys(a.conflicts)[0] || null;
+        const key = conflict || open[0] || null;
+        const i = s.interview || {};
+        const run =
+            a.history.filter((h) => !h.seed).length -
+            (i.mark || 0) +
+            (i.skips || 0);
+        const status = i.limit
+            ? 'answer_limit'
+            : !key
+              ? 'no_more_questions'
+              : run >= 3
+                ? 'paused'
+                : 'preview';
+        const f = key && RG.field(key);
+        return {
+            status,
+            session_id: run || a.deferred.length || i.limit ? 1 : null,
+            question:
+                status === 'preview' && f
+                    ? {
+                          fact_key: key,
+                          kind: conflict ? 'resolve_conflict' : 'answer',
+                          question: f.title,
+                          why: f.why,
+                          answer_schema: {
+                              type: f.type,
+                              options: f.options.map(([value]) => value),
+                              date_semantics:
+                                  f.type === 'date'
+                                      ? key.endsWith('_expires_at')
+                                          ? 'expiry'
+                                          : 'historical'
+                                      : null,
+                              allows_not_applicable: f.allowsNotApplicable,
+                          },
+                          process_ids: RG.processIds(a.facts, key),
+                          can_skip: true,
+                          can_answer_unknown: !conflict,
+                          ...(conflict
+                              ? { action: { type: 'review_fact_conflict' } }
+                              : {}),
+                      }
+                    : null,
+            remaining_information_count: open.length,
+            entry_state:
+                status === 'paused'
+                    ? 'paused'
+                    : run || a.deferred.length
+                      ? 'in_progress'
+                      : 'none',
+            deferred: [...a.deferred],
+            candidates_count: asked.filter((k) => !a.facts[k]).length,
         };
     }
     function coverageOf() {

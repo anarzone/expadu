@@ -37,6 +37,10 @@ window.BureaucracySource = [
             'Identity documents appropriate to your nationality and residence status',
             'Wohnungsgeberbescheinigung confirming actual move-in',
         ],
+        // deadline_type days_since_move_in, deadline_days 14: the backend
+        // dates the target from your move-in date (BuildTimeline). Data,
+        // never copy.
+        deadlineDays: 14,
         verifiedAt: '2026-09-30',
         version: '2026-09-08.1',
         source: 'https://www.stadt-koeln.de/service/produkte/00415/index.html',

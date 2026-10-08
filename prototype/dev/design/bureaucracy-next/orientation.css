@@ -281,7 +281,7 @@
 }
 #case-editor:has(.orientation)
     + .bureaucracy-view
-    :is(.getting-started, .question-card) {
+    :is(.getting-started, .question-card, .deferred-question) {
     display: none;
 }
 .studio .orientation {

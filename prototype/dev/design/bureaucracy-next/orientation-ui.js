@@ -36,7 +36,12 @@
                               ...root.BureaucracyPreview.sampleFacts(s),
                           }
                         : {};
-                o.details = D.create(known);
+                o.details = D.create(
+                    known,
+                    s.person === 'self'
+                        ? root.BureaucracyPreview.sampleHistory(s)
+                        : [],
+                );
                 // An answer to the arrival question itself carries over as
                 // you gave it.
                 if (o.answers.move_stage)
@@ -342,16 +347,22 @@
                     commit(s);
                 return;
             }
-            if (!input.matches('[data-detail-date], [data-detail-effective]'))
+            if (
+                !input.matches(
+                    '[data-detail-date], [data-detail-effective], [data-detail-number]',
+                )
+            )
                 return;
             const s = options.read(),
                 r = detailState(s);
             if (!r) return;
-            const ok = input.hasAttribute('data-detail-date')
-                ? D.select(r, input.value)
-                : D.effective(r, input.value);
+            const ok = input.hasAttribute('data-detail-number')
+                ? D.select(r, input.value === '' ? null : Number(input.value))
+                : input.hasAttribute('data-detail-date')
+                  ? D.select(r, input.value)
+                  : D.effective(r, input.value);
             if (ok && commit(s)) {
-                if (input.hasAttribute('data-detail-date')) {
+                if (input.matches('[data-detail-date], [data-detail-number]')) {
                     host.querySelectorAll('[data-detail-value]').forEach((el) =>
                         el.setAttribute('aria-pressed', 'false'),
                     );
@@ -361,6 +372,10 @@
             }
         }
         host.addEventListener('change', change);
+        // A number counts as you type it.
+        host.addEventListener('input', (event) => {
+            if (event.target.matches('[data-detail-number]')) change(event);
+        });
         host.addEventListener('click', click);
         root.addEventListener('storage', refresh);
         render(options.focus === true);

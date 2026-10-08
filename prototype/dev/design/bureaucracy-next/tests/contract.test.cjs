@@ -11,6 +11,7 @@ function load() {
     for (const file of [
         '../connected/sample-day.js',
         'source-data.js',
+        'registry.js',
         'model.js',
         'plan.js',
         'contract.js',
@@ -300,19 +301,52 @@ test('"Track task" can be undone until there is progress', () => {
 });
 
 test('the question is the registry’s; skipping defers it and "I don’t know" answers it', () => {
+    // The sample person's one open question: the move-in date, which the
+    // address registration's target waits for.
     const s = fresh();
-    B.confirmExpiry(s, null);
-    const q = plan(s).questions;
+    let q = plan(s).questions;
     assert.equal(q.status, 'preview');
+    assert.equal(q.question.fact_key, 'moved_in_at');
+    assert.equal(
+        q.question.question,
+        'When did you actually move into your current home?',
+    );
+    assert.deepEqual(q.question.process_ids, ['address.registration']);
+    assert.equal(q.question.answer_schema.type, 'date');
+    assert.equal(q.question.answer_schema.date_semantics, 'historical');
+    assert.equal(q.question.kind, 'answer');
+    // An unknown visa expiry comes first: an orientation question, for the
+    // Blue Card whose targets wait for it.
+    B.confirmExpiry(s, null);
+    q = plan(s).questions;
     assert.equal(q.question.question, 'When does your entry visa expire?');
     assert.match(q.question.why, /residence-application deadline/);
+    assert.deepEqual(q.question.process_ids, ['residence.blue_card.first']);
     s.questionSkipped = true;
-    assert.deepEqual(plan(s).questions.deferred, ['visa_expires_at']);
-    assert.equal(plan(s).questions.entry_state, 'in_progress');
+    q = plan(s).questions;
+    assert.deepEqual(q.deferred, ['visa_expires_at']);
+    assert.equal(q.entry_state, 'in_progress');
+    assert.equal(q.question.fact_key, 'moved_in_at');
     s.questionSkipped = false;
     s.expiryUnknown = true;
-    assert.equal(plan(s).questions.question, null);
+    assert.equal(plan(s).questions.question.fact_key, 'moved_in_at');
     assert.equal(C.facts(s).states.visa_expires_at, 'unknown');
+});
+
+test('three answers or skips in a row pause; an answer that keeps not fitting stops', () => {
+    const s = fresh();
+    s.interview = { mark: 0, skips: 3 };
+    let q = plan(s).questions;
+    assert.equal(q.status, 'paused');
+    assert.equal(q.question, null);
+    assert.equal(q.entry_state, 'paused');
+    // "Keep going" starts a new run.
+    s.interview = { mark: 0, skips: 0 };
+    assert.equal(plan(s).questions.status, 'preview');
+    s.interview = { limit: 'moved_in_at' };
+    q = plan(s).questions;
+    assert.equal(q.status, 'answer_limit');
+    assert.equal(q.question, null);
 });
 
 test('coverage lists every reviewed unit without claiming completeness', () => {

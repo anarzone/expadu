@@ -4,6 +4,49 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## The backend's questions, Your situation, and tasks that arrive — 8 October 2026 (in review)
+
+From the backend session's review (its points 1, 2, 8 and 9). Questions,
+answers and tasks now follow the backend's rules; `registry.js` holds them.
+
+- **Every registry question** (28, `schema/facts.yaml`) in its own words, with
+  its why, type and options: dates, choices, yes/no and whole numbers. Labels
+  and option names are UI copy, the same as the app's (`facts.ts`). No fact
+  allows "Doesn't apply to me" yet; the editor offers it only where one does.
+- **The order**: the protocol's first questions (citizenship, the move, the
+  permit, its expiry) under their own conditions, then what a still-possible
+  task needs, by the registry's priority. A task's questions come from its
+  card's `applies_if`; a skipped question doesn't hold the next ones up.
+  Which question the backend asks first is still the owner's call (the
+  backend session's point 8); this order follows the priorities.
+- **The question card** (`plan.questions`) shows the backend's states: a
+  question "For your {task} process" (by the backend's process id) with Enter
+  date or Answer, I don't know and Skip for now; "{question} left for later"
+  or "2 questions left for later · Answer when ready"; the pause after three
+  answers or skips in a row ("You've answered a few questions. The rest can
+  wait until you're ready. · Keep going"); "That answer didn't fit. You can
+  try the question again. · Try again"; and two saved answers that disagree
+  ("Review answers"). Review → Question states shows the last two.
+- **Your situation lists what the backend can**: your answers, what you left
+  for later and the current question, never answers it guesses apply. The
+  sample person's answers have a permanent history (their first visit on
+  2 Sept and a correction the next day), and "Last checked" is when an answer
+  was last confirmed. Answers given here are dated on the sample day.
+- **Tasks arrive from answers**: a task opens as a proposal once your answers
+  meet its card's conditions, marked "New from your answers" until you open
+  it; the pause says "EU Blue Card and Address registration are now in Your
+  tasks". The address registration target is dated from your move-in date
+  with the card's own days once you give it (as the backend's timeline does).
+- **Try it as a new user**: Review → Fresh start now takes answers, kept in
+  that tab only (your plan is never written; Composer stays off). The other
+  previews stay read-only.
+
+**Ahead of the backend, kept on the owner's word** (the mock is where the
+logic is checked; don't build these from it until the backend has them):
+the person-level status ("Time to check", "Needs review"), "Check after your
+change" flags, the "Explore a topic" grid and the starter questions shown as
+a run of three before the pause.
+
 ## The current catalogue, and when it was checked — 8 October 2026 (in review)
 
 From the backend session's review of the mock against the backend (its

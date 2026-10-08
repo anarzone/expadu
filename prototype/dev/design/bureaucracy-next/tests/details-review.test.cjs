@@ -6,6 +6,7 @@ const path = require('node:path');
 const ctx = vm.createContext({});
 for (const name of [
     'model.js',
+    'registry.js',
     'details-review.js',
     'family.js',
     'orientation.js',

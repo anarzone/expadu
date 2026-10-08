@@ -16,6 +16,7 @@ test('entry page versions every local asset by its content to avoid old/new prev
         'orientation.js',
         'orientation-ui.js',
         'orientation.css',
+        'registry.js',
         'details-review.js',
         'details-ui.js',
         'family.js',
@@ -72,6 +73,7 @@ test('shared time and planning controls load their dependencies before use', () 
     before('../composer-studio/conversation.js', './planning-model.js');
     before('./planning-model.js', './planning-ui.js');
     before('./planning-ui.js', './app.js');
+    before('./registry.js', './details-review.js');
     before('./details-review.js', './details-ui.js');
     before('./details-ui.js', './orientation-ui.js');
     before('./family.js', './orientation.js');

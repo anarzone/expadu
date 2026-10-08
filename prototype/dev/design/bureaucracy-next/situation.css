@@ -562,3 +562,23 @@
         gap: 10px 12px;
     }
 }
+
+/* "Address registration is now in Your tasks": what your answers opened. */
+.situation-arrived {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-size: var(--text-control);
+    line-height: 1.45;
+}
+.situation-arrived svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    margin-top: 2px;
+}

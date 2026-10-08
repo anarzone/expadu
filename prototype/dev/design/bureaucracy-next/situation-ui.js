@@ -28,9 +28,21 @@
     function facts(s, compact = false) {
         const r = G.hydrate(s).details,
             j = J.state(s);
+        // What the backend can list (your answers, what you left for later,
+        // the current question); the checkpoint shows what you've shared.
+        // This run's answers, oldest first (the history is newest first).
+        const run = D.given(r) - (s.interview?.mark || 0);
         const keys = compact
-            ? J.core
-            : [...new Set([...J.questions(s), ...j.review])];
+            ? [
+                  ...new Set(
+                      r.history
+                          .filter((h) => !h.seed)
+                          .slice(0, Math.max(0, run))
+                          .map((h) => h.key)
+                          .reverse(),
+                  ),
+              ]
+            : [...new Set([...D.listed(r).map((f) => f.key), ...j.review])];
         return `<div class="situation-facts">${keys
             .map((key) => {
                 const f = D.field(key),
@@ -40,13 +52,26 @@
             })
             .join('')}</div>`;
     }
+    // The tasks your answers just opened, before you've looked at them.
+    function arrived(s) {
+        const names = (root.BureaucracyPlan?.openedBy(s) || [])
+            .filter((id) => !s.seenTasks?.includes(id))
+            .map((id) => root.BureaucracyContract?.titleOf(id))
+            .filter(Boolean);
+        if (!names.length) return '';
+        const list =
+            names.length > 1
+                ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
+                : names[0];
+        return `<p class="situation-arrived">${I('arrow')}<span>${E(list)} ${names.length > 1 ? 'are' : 'is'} now in Your tasks, from your answers.</span></p>`;
+    }
     function intro() {
         return `<section class="situation-welcome"><div class="situation-welcome-copy"><span class="situation-emblem">${I('document')}</span><h2>A little clarity.<br>One step at a time.</h2><p>Find your next steps, keep documents together and remember important dates.</p><div class="situation-benefits"><span>${I('arrow')}Next steps</span><span>${I('document')}Documents</span><span>${I('calendar')}Dates</span></div></div><div class="situation-start"><p>A few questions to find your starting point. Skip anything you’re unsure about.</p>${button('Get started', 'start', 'arrow', true)}${button('Browse first', 'browse', 'grid')}${button('Start in Composer', 'composer-start', 'chat')}</div></section>`;
     }
     function summary(s) {
         const j = J.state(s),
             status = J.status(s);
-        return `<section class="situation-summary"><div class="situation-section-head"><div><h2>Your situation</h2><p>${j.lastChecked ? 'Last checked ' + shortDate(j.lastChecked) : 'A starting point, at your pace.'}</p></div><span class="situation-status ${status}">${I(status === 'review' ? 'info' : status === 'current' ? 'check' : 'document')}${{ review: 'Needs review', incomplete: 'Some details missing', check: 'Time to check', current: 'Answers checked' }[status]}</span></div>${j.notice ? `<p class="situation-notice" role="status">${I('check')}${E(j.notice)}</p>` : ''}${status === 'check' ? `<div class="situation-checkin"><strong>Anything changed since your last visit?</strong><p>Work, home, residence or family — a quick check keeps this useful.</p><div>${button('Nothing changed', 'unchanged', 'check')}${button('Something changed', 'changes', 'pencil')}</div></div>` : ''}${facts(s)}<div class="situation-summary-actions">${status !== 'check' ? button('Something changed', 'changes', 'pencil') : ''}${J.questions(s).some((k) => !G.hydrate(s).details.facts[k]) ? button('Continue questions', 'start', 'arrow') : ''}</div>${j.review.length ? `<p class="situation-note">${I('info')}Your previous answers are kept until you confirm an update. Your tracked tasks may also need a review.</p>` : ''}${j.changes.length ? `<details class="situation-history"><summary>${I('clock')}Reported changes ${I('down')}</summary>${j.changes.map((c) => `<div><strong>${I(J.changes[c.kind].icon)}${E(J.changes[c.kind].label)}</strong><small>${c.effectiveFrom ? 'From ' + shortDate(c.effectiveFrom) : 'Reported ' + shortDate(c.reportedAt)}</small></div>`).join('')}</details>` : ''}${root.BureaucracyDetailsUI.history(G.hydrate(s).details)}</section>`;
+        return `<section class="situation-summary"><div class="situation-section-head"><div><h2>Your situation</h2><p>${D.lastChecked(G.hydrate(s).details) || j.lastChecked ? 'Last checked ' + shortDate(D.lastChecked(G.hydrate(s).details) || j.lastChecked) : 'A starting point, at your pace.'}</p></div><span class="situation-status ${status}">${I(status === 'review' ? 'info' : status === 'current' ? 'check' : 'document')}${{ review: 'Needs review', incomplete: 'Some details missing', check: 'Time to check', current: 'Answers checked' }[status]}</span></div>${j.notice ? `<p class="situation-notice" role="status">${I('check')}${E(j.notice)}</p>` : ''}${status === 'check' ? `<div class="situation-checkin"><strong>Anything changed since your last visit?</strong><p>Work, home, residence or family — a quick check keeps this useful.</p><div>${button('Nothing changed', 'unchanged', 'check')}${button('Something changed', 'changes', 'pencil')}</div></div>` : ''}${facts(s)}<div class="situation-summary-actions">${status !== 'check' ? button('Something changed', 'changes', 'pencil') : ''}${J.questions(s).some((k) => !G.hydrate(s).details.facts[k]) ? button('Continue questions', 'start', 'arrow') : ''}</div>${j.review.length ? `<p class="situation-note">${I('info')}Your previous answers are kept until you confirm an update. Your tracked tasks may also need a review.</p>` : ''}${j.changes.length ? `<details class="situation-history"><summary>${I('clock')}Reported changes ${I('down')}</summary>${j.changes.map((c) => `<div><strong>${I(J.changes[c.kind].icon)}${E(J.changes[c.kind].label)}</strong><small>${c.effectiveFrom ? 'From ' + shortDate(c.effectiveFrom) : 'Reported ' + shortDate(c.reportedAt)}</small></div>`).join('')}</details>` : ''}${root.BureaucracyDetailsUI.history(G.hydrate(s).details)}</section>`;
     }
     function topics(s) {
         const items = [
@@ -70,7 +95,7 @@
                 { bodyOnly: true, initial: j.origin === 'starter' },
             )}`;
         if (j.stage === 'checkpoint')
-            return `<span class="situation-emblem small">${I('check')}</span><h2>A starting point for you.</h2><p class="orientation-intro">Here’s what you’ve shared. You can use the page now and add more when you need to.</p>${facts(s, true)}<div class="orientation-actions">${J.questions(s).some((k) => !r.facts[k]) ? button('Continue with details', 'start', '') : ''}${button('See my overview', 'overview', 'arrow', true)}</div><p class="situation-note">Your answers help choose the next questions. They do not establish eligibility.</p>`;
+            return `<span class="situation-emblem small">${I('check')}</span><h2>A starting point for you.</h2><p class="orientation-intro">You’ve answered a few questions. The rest can wait until you’re ready.</p>${facts(s, true)}${arrived(s)}<div class="orientation-actions">${J.questions(s).some((k) => !r.facts[k]) ? button('Keep going', 'start', '') : ''}${button('See my overview', 'overview', 'arrow', true)}</div><p class="situation-note">Your answers help choose the next questions and which tasks show. They do not establish eligibility.</p>`;
         if (j.stage === 'change-picker')
             return `<h2>What’s changed?</h2><p class="orientation-intro">Choose one to review. Your saved answers stay as they are until you confirm.</p><div class="situation-change-grid">${Object.entries(
                 J.changes,

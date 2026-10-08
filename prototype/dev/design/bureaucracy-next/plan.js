@@ -48,6 +48,15 @@
         },
     ];
     const clone = (value) => JSON.parse(JSON.stringify(value));
+    // The tasks your saved answers open (each catalogue card's applies_if,
+    // registry.js). In a profile of your own they show as proposals until
+    // you start tracking them, as the backend's processes do.
+    const openedBy = (s) => {
+        const facts = s.orientation?.details?.facts;
+        return facts && root.BureaucracyRegistry
+            ? root.BureaucracyRegistry.opened(facts)
+            : [];
+    };
     // Number each fixture report, so a submission has an event id.
     const seeded = (id, reports) =>
         reports.map((r, i) => ({ id: `${id}-report-${i + 1}`, ...clone(r) }));
@@ -74,6 +83,27 @@
             s.reports = [];
         }
         s.records = s.records || {};
+        // A task your answers opened gets its record (not started, nothing
+        // tracked) so it can show as a proposal.
+        if (s.profileKind === 'personal')
+            for (const d of definitions.filter(
+                (d) => openedBy(s).includes(d.id) && !s.records[d.id],
+            )) {
+                const { reports, ...rest } = clone(d);
+                s.records[d.id] = {
+                    ...rest,
+                    docs: d.docs.map(() => 'unknown'),
+                    workflow: 'not_started',
+                    started: false,
+                    note: '',
+                    appointment: null,
+                    submission: null,
+                    done: false,
+                    closedOn: null,
+                    base: 'not_started',
+                    reports: [],
+                };
+            }
         for (const d of definitions.filter(() => s.profileKind !== 'personal'))
             if (!s.records[d.id]) {
                 const { reports, ...rest } = clone(d);
@@ -151,7 +181,10 @@
                     records: [d.record],
                 })),
         ].filter(
-            (p) => s.profileKind !== 'personal' || s.tracked?.includes(p.id),
+            (p) =>
+                s.profileKind !== 'personal' ||
+                s.tracked?.includes(p.id) ||
+                openedBy(s).includes(p.id),
         );
     }
     function include(s, id) {
@@ -608,6 +641,10 @@
     function start(s, id) {
         const p = process(s, id);
         if (!p || p.started) return false;
+        // Started from a proposal your answers opened: it stays yours even
+        // if an answer changes later.
+        if (s.profileKind === 'personal' && !s.tracked?.includes(id))
+            (s.tracked ||= []).push(id);
         if (id === 'blue-card') {
             s.blueCardStarted = true;
             return true;
@@ -814,6 +851,7 @@
             .sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
     }
     root.BureaucracyPlan = {
+        openedBy,
         hydrate,
         include,
         definitions,

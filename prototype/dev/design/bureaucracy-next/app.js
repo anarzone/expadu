@@ -219,6 +219,18 @@
         ].some((key) => key in b.dataset) ||
         ['close-editor', 'coverage', 'close'].includes(b.dataset.case) ||
         b.dataset.situation === 'browse';
+    // A "Fresh start" preview takes answers so you can try the questions as
+    // a new user, but keeps them in this tab: nothing is written to your
+    // plan. The other previews stay read-only.
+    const sandbox = () => state.preview === 'fresh';
+    const keep = (s) => (state.preview ? sandbox() : G.save(s));
+    // In the sandbox, what would leave the page (Composer) stays off.
+    const leavesPreview = (b) =>
+        b.dataset.situation === 'composer-start' ||
+        ['helpStep', 'planStep', 'planAppointment', 'reviewDay'].some(
+            (k) => k in b.dataset,
+        ) ||
+        b.dataset.case === 'share-appointment';
     function save() {
         if (state.preview) return true;
         try {
@@ -340,7 +352,7 @@
                 : 'Paperwork';
         const persona = personas.find(([id]) => id === state.preview);
         document.querySelector('#main').innerHTML =
-            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>Read-only. Your own plan isn’t changed.</span><button data-preview-exit>Back to your plan</button></div>` : ''}<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
+            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>${persona[0] === 'fresh' ? 'Try it as a new user: your answers stay in this tab. Your own plan isn’t changed.' : 'Read-only. Your own plan isn’t changed.'}</span><button data-preview-exit>Back to your plan</button></div>` : ''}<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
                 .filter(
                     (p) =>
                         !p.denied &&
@@ -359,7 +371,7 @@
                 )
                 .join(
                     '',
-                )}<small>Read-only, like the app’s QA preview. Your plan stays as it is.</small></div></details></div>`;
+                )}<small>Read-only, like the app’s QA preview. Your plan stays as it is.</small>${allowed && !persona ? `<span class="review-tools-label">Question states</span><button data-case="qa-answer-limit">An answer that didn’t fit</button><button data-case="qa-conflict">Two answers that disagree</button><small>The backend’s other question states, for review. Your answers are kept.</small>` : ''}</div></details></div>`;
         for (const token of opened)
             document
                 .querySelector(`[data-paper-row="${CSS.escape(token)}"]`)
@@ -500,21 +512,56 @@
         const key = p.occurrence_key,
             local = P.process(state, key),
             note = p.state.report?.note,
-            reason = p.blocking_reason;
-        return `<button class="process-summary" data-process="${E(key)}"><span class="topic-icon ${local?.tone || ''}">${I(local?.icon || 'document')}</span><span class="process-card-copy"><strong>${E(nameOf(key))}</strong><small>${note ? E(note) : reason ? `Not ready yet: ${E(reason.label)}` : p.id === null ? 'Explore before you start' : `${p.progress.completed} of ${p.progress.total} steps done`}</small></span><span class="process-card-status">${badge(stateLabel(p), tone(p.state.workflow))}${I('arrow')}</span></button>`;
+            reason = p.blocking_reason,
+            // Just opened by your answers, and not looked at yet.
+            arrived =
+                p.id === null &&
+                P.openedBy(state).includes(key) &&
+                !state.seenTasks?.includes(key);
+        return `<button class="process-summary${arrived ? ' is-new' : ''}" data-process="${E(key)}"><span class="topic-icon ${local?.tone || ''}">${I(local?.icon || 'document')}</span><span class="process-card-copy"><strong>${E(nameOf(key))}</strong><small>${note ? E(note) : reason ? `Not ready yet: ${E(reason.label)}` : arrived ? 'New from your answers · explore before you start' : p.id === null ? 'Explore before you start' : `${p.progress.completed} of ${p.progress.total} steps done`}</small></span><span class="process-card-status">${badge(stateLabel(p), tone(p.state.workflow))}${I('arrow')}</span></button>`;
     }
     // plan.questions: the server's question, in the registry's words.
     // "I don't know" is an answer (unknown); "Skip for now" defers it.
     // They're different, as in the backend.
+    // plan.questions: the backend's current question, in the registry's
+    // words, and the states around it. "I don't know" is an answer
+    // (unknown); "Skip for now" leaves it for later. Both count towards
+    // the pause after three in a row.
     function question(plan) {
-        const q = plan.questions;
-        if (C.facts(state).states.visa_expires_at === 'unknown')
-            return `<div class="deferred-question"><span>${I('info')}You don’t know your visa expiry yet</span><button data-case="expiry">Add it when you know</button></div>`;
-        if (q.deferred.includes('visa_expires_at'))
-            return `<div class="deferred-question"><span>${I('info')}Visa expiry left for later</span><button data-case="expiry">Answer when ready</button></div>`;
-        if (!q.question) return '';
-        const forTask = q.question.process_ids?.[0];
-        return `<section class="question-card" aria-label="One question"><div>${forTask ? `<span class="question-context">For your ${E(nameOf(forTask))} process</span>` : ''}<h3>${E(q.question.question)}</h3><p class="question-why">${E(q.question.why)}</p></div><div class="actions">${button('Enter date', 'expiry')}${q.question.can_answer_unknown ? button('I don’t know', 'expiry-unknown') : ''}${q.question.can_skip ? button('Skip for now', 'skip') : ''}</div></section>`;
+        const q = plan.questions,
+            RG = window.BureaucracyRegistry;
+        const line = (text, label, action) =>
+            `<div class="deferred-question"><span>${I('info')}${E(text)}</span><button data-case="${action}">${E(label)}</button></div>`;
+        if (q.status === 'paused')
+            return line(
+                'You’ve answered a few questions. The rest can wait until you’re ready.',
+                'Keep going',
+                'questions-keep-going',
+            );
+        if (q.status === 'answer_limit')
+            return line(
+                'That answer didn’t fit. You can try the question again.',
+                'Try again',
+                'questions-try-again',
+            );
+        const ask = q.question;
+        if (!ask)
+            return q.deferred.length
+                ? line(
+                      q.deferred.length === 1
+                          ? `${RG.field(q.deferred[0])?.label || 'One question'} left for later`
+                          : `${q.deferred.length} questions left for later`,
+                      'Answer when ready',
+                      'questions-resume',
+                  )
+                : '';
+        // The task it's for, by the backend's process definition id.
+        const task = plan.processes.find(
+            (p) => p.definition_id === ask.process_ids?.[0],
+        );
+        const conflict = ask.kind === 'resolve_conflict';
+        const fact = `data-fact="${E(ask.fact_key)}"`;
+        return `<section class="question-card" aria-label="One question"><div>${task ? `<span class="question-context">For your ${E(task.title)} process</span>` : ''}<h3>${E(ask.question)}</h3><p class="question-why">${conflict ? 'Two of your saved answers disagree. Choose the one that’s true now.' : E(ask.why)}</p></div><div class="actions"><button type="button" class="button secondary" data-case="question-answer" ${fact}>${conflict ? 'Review answers' : ask.answer_schema.type === 'date' ? 'Enter date' : 'Answer'}</button>${ask.can_answer_unknown ? `<button type="button" class="button secondary" data-case="question-unknown" ${fact}>I don’t know</button>` : ''}${ask.can_skip ? `<button type="button" class="button secondary" data-case="question-skip" ${fact}>Skip for now</button>` : ''}</div></section>`;
     }
     const kindLabels = {
         document_expiry: 'Document expiry',
@@ -587,7 +634,7 @@
     function pauseGuide() {
         if (!guideController) return;
         G.pause(state);
-        G.save(state);
+        keep(state);
         guideController.destroy();
         guideController = null;
         const url = new URL(location.href);
@@ -608,7 +655,7 @@
         );
     }
     function startGuide(review = false) {
-        if (!G.allowed(state) || state.preview) return;
+        if (!G.allowed(state) || (state.preview && !sandbox())) return;
         if (J.applies(state)) {
             if (review === 'surface') G.review(state);
             else if (review) {
@@ -619,7 +666,7 @@
             G.begin(state);
             G.review(state);
         } else G.begin(state);
-        if (!G.save(state)) {
+        if (!keep(state)) {
             U.toast('Could not keep your place. Please try again.');
             return;
         }
@@ -639,12 +686,12 @@
             {
                 read: () => state,
                 commit: (s) => {
-                    const previousExpiry = state.expiry;
-                    const kept = G.save(s);
+                    const kept = keep(s);
                     if (kept) {
                         refreshGuideEntry();
-                        if (J.applies(state) || previousExpiry !== state.expiry)
-                            refreshGuideContext();
+                        // Answers change the question, the tasks and their
+                        // dates behind the editor.
+                        refreshGuideContext();
                     } else {
                         const latest = G.load();
                         if (latest.person === state.person) {
@@ -659,7 +706,12 @@
                 focus: true,
                 onClose: closeEditor,
                 onComposer: () =>
-                    S.go('composer', { bureaucracyGuide: state.person }),
+                    // The preview's answers stay in this tab.
+                    state.preview
+                        ? U.toast(
+                              'This preview keeps your answers in this tab, so it doesn’t use Composer.',
+                          )
+                        : S.go('composer', { bureaucracyGuide: state.person }),
                 onNavigate: (view, process) => {
                     if (state.person !== 'self') {
                         go(view === 'paperwork' ? 'paperwork' : 'overview');
@@ -734,9 +786,17 @@
                     ? 'This task is with the office. Review your checklist or update your progress when something changes.'
                     : `${c.state.workflow === 'blocked' ? `You reported a hold-up${note ? `: ${E(lower(note))}` : ''}. ` : ''}${papers ? 'Check what you have. Mark each document ready only for this task.' : 'Read the official information, then update your own checklist here.'}`;
         const official = step.sources.official[0]?.url;
-        return `<div class="step-guide"><p>${text}</p><div class="step-main-actions">${papers ? `<button class="button primary" data-paper-for="${E(key)}" ${open ? `data-paper-focus="${E(key)}:${open.index}"` : ''}>${I('document')}${open ? 'Check documents' : 'Review documents'}<span class="step-count">${step.requirements.ready}/${step.requirements.total}</span></button>` : official ? `<a class="button primary" href="${E(official)}" target="_blank" rel="noopener">${I('arrow')}Read official information</a>` : ''}<button class="step-help" data-help-step="${E(step.id)}">${I('spark')}Help with this step</button></div>${papers && open && step.status !== 'completed' ? `<div class="step-document-preview">${I('document')}<div><small>${open.conditional ? 'May be needed · check this document' : 'First document to check'}</small><strong>${E(open.label)}</strong>${termLine(plan.paperwork.requirements.find((r) => r.id === open.id)?.terms)}</div></div>` : ''}${neededBy(plan, step)}</div>${step.description ? `<details class="step-guidance"><summary>About this step ${I('down')}</summary>${paragraphs(step.description)
-            .map((x) => `<p class="review-copy">${E(x)}</p>`)
-            .join('')}<small>${E(checkedLine(step.verified_at))}</small></details>` : ''}${editable ? `<div class="step-actions"><button class="plain-button" data-plan-step="${E(step.id)}">${I('clock')}${BureaucracyPlanning.linked(S.studio(), 'bureaucracy-preparation-' + step.id) ? 'View planned time' : 'Set aside time'}</button>${submitStep && !submission && step.status !== 'completed' ? button('I’ve submitted it', 'submission') : step.status === 'blocked' ? '' : `<button class="plain-button" data-toggle-step="${E(step.id)}">${I(step.status === 'completed' ? 'back' : 'check')}${step.status === 'completed' ? 'Reopen step' : 'I’ve finished this step'}</button>`}</div><p class="step-record-note">${I('info')}Your checklist only. Nothing is sent or submitted.</p>` : ''}`;
+        return `<div class="step-guide"><p>${text}</p><div class="step-main-actions">${papers ? `<button class="button primary" data-paper-for="${E(key)}" ${open ? `data-paper-focus="${E(key)}:${open.index}"` : ''}>${I('document')}${open ? 'Check documents' : 'Review documents'}<span class="step-count">${step.requirements.ready}/${step.requirements.total}</span></button>` : official ? `<a class="button primary" href="${E(official)}" target="_blank" rel="noopener">${I('arrow')}Read official information</a>` : ''}<button class="step-help" data-help-step="${E(step.id)}">${I('spark')}Help with this step</button></div>${papers && open && step.status !== 'completed' ? `<div class="step-document-preview">${I('document')}<div><small>${open.conditional ? 'May be needed · check this document' : 'First document to check'}</small><strong>${E(open.label)}</strong>${termLine(plan.paperwork.requirements.find((r) => r.id === open.id)?.terms)}</div></div>` : ''}${neededBy(plan, step)}</div>${
+            step.description
+                ? `<details class="step-guidance"><summary>About this step ${I('down')}</summary>${paragraphs(
+                      step.description,
+                  )
+                      .map((x) => `<p class="review-copy">${E(x)}</p>`)
+                      .join(
+                          '',
+                      )}<small>${E(checkedLine(step.verified_at))}</small></details>`
+                : ''
+        }${editable ? `<div class="step-actions"><button class="plain-button" data-plan-step="${E(step.id)}">${I('clock')}${BureaucracyPlanning.linked(S.studio(), 'bureaucracy-preparation-' + step.id) ? 'View planned time' : 'Set aside time'}</button>${submitStep && !submission && step.status !== 'completed' ? button('I’ve submitted it', 'submission') : step.status === 'blocked' ? '' : `<button class="plain-button" data-toggle-step="${E(step.id)}">${I(step.status === 'completed' ? 'back' : 'check')}${step.status === 'completed' ? 'Reopen step' : 'I’ve finished this step'}</button>`}</div><p class="step-record-note">${I('info')}Your checklist only. Nothing is sent or submitted.</p>` : ''}`;
     }
     const durationText = (minutes) =>
         minutes === null
@@ -879,6 +939,24 @@
                 )}<p class="date-separation">Rules, applicability and legal dates will come from the reviewed backend. Missing coverage is not a completed plan.</p>`,
         );
     }
+    // Your saved answers (Your situation), seeded with the sample day's on
+    // first use: the same store the question card and the guide write to.
+    function answers() {
+        const o = G.hydrate(state);
+        if (!o) return null;
+        o.details ||= BureaucracyDetails.create(
+            {
+                ...(state.expiry
+                    ? { visa_expires_at: state.expiry }
+                    : state.expiryUnknown
+                      ? { visa_expires_at: 'unknown' }
+                      : {}),
+                ...B.sampleFacts(state),
+            },
+            B.sampleHistory(state),
+        );
+        return o.details;
+    }
     function personalDetails(field = null) {
         if (J.applies(state)) {
             if (field) J.edit(state, field);
@@ -889,18 +967,10 @@
         startGuide(true);
         const o = G.hydrate(state);
         if (!o) return;
-        o.details ||= BureaucracyDetails.create({
-            current_residence_title: 'national_d_visa',
-            ...(state.expiry
-                ? { visa_expires_at: state.expiry }
-                : state.expiryUnknown
-                  ? { visa_expires_at: 'unknown' }
-                  : {}),
-            ...B.sampleFacts(state),
-        });
+        answers();
         o.details.open = true;
         if (field) BureaucracyDetails.edit(o.details, field);
-        if (G.save(state)) guideController?.refresh(true);
+        if (keep(state)) guideController?.refresh(true);
     }
     function expiry() {
         personalDetails('visa_expires_at');
@@ -1015,9 +1085,11 @@
             endPreview();
             return;
         }
-        if (state.preview && !previewSafe(b)) {
+        if (state.preview && (sandbox() ? leavesPreview(b) : !previewSafe(b))) {
             U.toast(
-                'This is a read-only preview. Go back to your plan to make changes.',
+                sandbox()
+                    ? 'This preview keeps your answers in this tab, so it doesn’t use Composer.'
+                    : 'This is a read-only preview. Go back to your plan to make changes.',
             );
             return;
         }
@@ -1049,18 +1121,18 @@
             if (b.dataset.situationEdit) J.edit(state, b.dataset.situationEdit);
             else if (b.dataset.situationKeep) {
                 J.keep(state, b.dataset.situationKeep);
-                G.save(state);
+                keep(state);
                 refreshGuideContext();
                 return;
             } else if (action === 'unchanged') {
                 J.check(state);
-                G.save(state);
+                keep(state);
                 refreshGuideContext();
                 return;
             } else if (action === 'changes') J.openChanges(state);
             else if (action === 'start' || action === 'composer-start')
                 J.begin(state);
-            if (!G.save(state)) {
+            if (!keep(state)) {
                 U.toast('Could not save. Reopen your situation to try again.');
                 return;
             }
@@ -1150,6 +1222,10 @@
             return;
         }
         if (b.dataset.process) {
+            // A task that arrived from your answers is no longer new once
+            // you've looked at it.
+            if (!state.seenTasks?.includes(b.dataset.process))
+                (state.seenTasks ||= []).push(b.dataset.process);
             go('detail', b.dataset.process);
             return;
         }
@@ -1268,13 +1344,76 @@
             personalDetails(action === 'expiry' ? 'visa_expires_at' : null);
             return;
         }
-        if (action === 'skip') {
-            state.questionSkipped = true;
+        if (action === 'question-answer') {
+            personalDetails(b.dataset.fact);
+            return;
+        }
+        if (action === 'question-unknown' || action === 'question-skip') {
+            const key = b.dataset.fact,
+                r = answers();
+            if (!r || !BureaucracyDetails.edit(r, key)) return;
+            if (action === 'question-skip') {
+                BureaucracyDetails.skip(r);
+                state.interview = {
+                    ...state.interview,
+                    skips: (state.interview?.skips || 0) + 1,
+                };
+                if (key === 'visa_expires_at') state.questionSkipped = true;
+            } else {
+                BureaucracyDetails.select(r, 'unknown');
+                BureaucracyDetails.review(r);
+                BureaucracyDetails.confirm(r);
+                if (key === 'visa_expires_at') state.expiryUnknown = true;
+            }
+            r.open = false;
+            keep(state);
+            persist();
+            U.toast(
+                action === 'question-skip'
+                    ? 'Left for later.'
+                    : 'Saved as not known yet. You can add it any time.',
+            );
+            return;
+        }
+        if (
+            action === 'questions-keep-going' ||
+            action === 'questions-resume'
+        ) {
+            const r = answers();
+            if (action === 'questions-resume' && r) {
+                r.deferred = [];
+                state.questionSkipped = false;
+                keep(state);
+            }
+            // A new run of questions starts from here.
+            state.interview = {
+                mark: r ? BureaucracyDetails.given(r) : 0,
+                skips: 0,
+            };
             persist();
             return;
         }
-        if (action === 'expiry-unknown') {
-            state.expiryUnknown = true;
+        // Review only: the states the backend can put the question in.
+        if (action === 'qa-answer-limit') {
+            state.interview = {
+                ...state.interview,
+                limit: C.plan(state).questions.question?.fact_key || true,
+            };
+            persist();
+            return;
+        }
+        if (action === 'qa-conflict') {
+            const r = answers();
+            if (!r) return;
+            BureaucracyDetails.exampleConflict(r);
+            BureaucracyDetails.cancel(r);
+            r.open = false;
+            keep(state);
+            persist();
+            return;
+        }
+        if (action === 'questions-try-again') {
+            state.interview = { ...state.interview, limit: null };
             persist();
             return;
         }
