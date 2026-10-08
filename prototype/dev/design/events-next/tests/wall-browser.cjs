@@ -395,6 +395,16 @@ const inside = (box, viewport) =>
                 .map((el) => el.className),
         );
         assert.deepEqual(wrapped, [], 'a button on the back of a narrow poster wraps');
+        // There, Add to plan and Save are icons in one row with More about
+        // it; the icons keep their names for screen readers.
+        const backRow = await narrowPoster.evaluate((pp) =>
+            [...pp.querySelectorAll('.pp-back-actions > *')]
+                .filter((el) => el.offsetParent)
+                .map((el) => Math.round(el.getBoundingClientRect().top)),
+        );
+        assert.ok(backRow.every((top) => Math.abs(top - backRow[0]) < 6), 'the back actions share one row');
+        if (await narrowPoster.locator('.pp-back-plan').count())
+            assert.equal(await narrowPoster.getByRole('button', { name: 'Add to plan' }).count(), 1);
         await narrow.close();
         // The street keeps today's time and weather: a dry afternoon at
         // 13:10; at 19:30 dusk, the lantern on, rain and puddles.

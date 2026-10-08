@@ -149,7 +149,7 @@
                     .join('')}</dl>
             </div>
             <div class="pp-back-actions">
-                ${plannable ? `<button class="pp-back-plan" type="button" data-plan-item="${id}">${calendarPlus}Add to plan</button>` : ''}
+                ${plannable ? `<button class="pp-back-plan" type="button" data-plan-item="${id}" title="Add to plan">${calendarPlus}<span>Add to plan</span></button>` : ''}
                 ${gone || listing ? '' : `<button class="pp-back-save" type="button" data-save-item="${id}" aria-pressed="false" aria-label="Save ${E(item.title)}" title="Save for later">${I('bookmark')}</button>`}
                 ${listing ? (item.sourceUrl ? `<a class="pp-back-more" href="${E(item.sourceUrl)}" target="_blank" rel="noopener">City listing${I('arrow')}</a>` : '') : `<button class="pp-back-more" type="button" data-detail="${id}">More about it</button>`}
             </div>
