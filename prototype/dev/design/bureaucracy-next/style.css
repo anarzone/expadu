@@ -2584,3 +2584,56 @@ body[data-page='bureaucracy'] .sr-only {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
+
+/* Sharing your plan: who sees what, and an invitation with chosen access. */
+.sharing-grants h3,
+.sharing-invite h3 {
+    margin: 18px 0 8px;
+    font-size: var(--text-section);
+}
+.sharing-grant {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+.sharing-grant > span {
+    display: grid;
+    gap: 2px;
+}
+.sharing-grant small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.sharing-scope {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+}
+.sharing-scope input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--color-select-text);
+}
+.sharing-ready {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+}
+.sharing-ready > span {
+    display: grid;
+    flex: 1 1 200px;
+    gap: 2px;
+}
+.sharing-ready small {
+    color: var(--color-text-soft);
+}

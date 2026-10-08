@@ -194,7 +194,9 @@ test('family records are independent and pending or revoked access exposes no pl
     H.document(s, 0, 'have');
     assert.equal(H.current(s).documents[0], 'reported_available');
     s.person = 'shared-child';
-    assert.equal(H.current(s).documents[0], 'missing');
+    // Untouched by the adult's change (their health insurance card lists
+    // no documents).
+    assert.deepEqual([...H.current(s).documents], []);
     assert.equal(s.docs[0], 'confirmed_for_use');
     s.person = 'shared-adult';
     H.setPreviewAccess(s, 'revoked');

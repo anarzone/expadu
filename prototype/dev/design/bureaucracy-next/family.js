@@ -11,6 +11,7 @@
             kind: 'adult',
             record: 2,
             task: 'Address registration',
+            documents: 2,
         },
         {
             id: 'shared-child',
@@ -20,6 +21,8 @@
             kind: 'dependent',
             record: 3,
             task: 'Health insurance',
+            // The health insurance card lists no documents.
+            documents: 0,
         },
         {
             id: 'adult',
@@ -42,7 +45,7 @@
         for (const p of roster.filter((p) => p.record !== undefined)) {
             s.household[p.id] ||= {
                 access: 'edit',
-                documents: ['missing', 'missing'],
+                documents: Array(p.documents ?? 0).fill('missing'),
                 workflow: p.kind === 'adult' ? 'preparing' : 'waiting',
                 orientation: null,
                 note: '',
@@ -67,7 +70,12 @@
         return current(s)?.access === 'edit';
     }
     function document(s, index, action) {
-        if (!canEdit(s) || !Number.isInteger(index) || index < 0 || index > 1)
+        if (
+            !canEdit(s) ||
+            !Number.isInteger(index) ||
+            index < 0 ||
+            index >= current(s).documents.length
+        )
             return false;
         const p = current(s),
             old = p.documents[index];

@@ -861,8 +861,45 @@
         coverage: coverageOf(),
         paperwork: { available: false, reason: 'permission_required' },
     });
-    // GET /people/{person}/plan, for the selected person.
+    // GET /people/{person}/plan, for the selected person, as the viewer's
+    // scopes allow: without manage_evidence the paperwork is
+    // permission_required (no requirements on the steps either); without
+    // edit_facts no question is offered.
     function plan(s) {
+        const p = build(s);
+        if (!s.scopes) return p;
+        const can = (scope) => s.scopes.includes(scope);
+        return {
+            ...p,
+            scopes: [...s.scopes],
+            processes: p.processes.map((x) => ({
+                ...x,
+                steps: x.steps.map((st) =>
+                    can('manage_evidence')
+                        ? st
+                        : {
+                              ...st,
+                              requirements: null,
+                              first_open_requirement: null,
+                          },
+                ),
+            })),
+            questions: can('edit_facts')
+                ? p.questions
+                : {
+                      ...p.questions,
+                      status: 'permission_required',
+                      question: null,
+                      entry_state: null,
+                      deferred: [],
+                      candidates_count: null,
+                  },
+            paperwork: can('manage_evidence')
+                ? p.paperwork
+                : { available: false, reason: 'permission_required' },
+        };
+    }
+    function build(s) {
         // Outside the covered city: no city guidance, nothing guessed.
         if (s.entry === 'outside')
             return {

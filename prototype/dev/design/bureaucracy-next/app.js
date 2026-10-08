@@ -185,11 +185,15 @@
         ['outside', 'Outside Cologne'],
         ['setup', 'No profile yet'],
         ['unavailable', 'Record unavailable'],
+        ['shared', 'Someone you shared with'],
     ];
     // The plan's entry states and coverage outside the city (GET /plan
     // setup_required and record_unavailable; jurisdiction outside_coverage).
     const entries = ['outside', 'setup', 'unavailable'];
     let own = null;
+    // What an invitation gives (the sharing panel sets it; by default the
+    // plan and documents only).
+    let sharedScopes = ['view_plan', 'manage_evidence'];
     function previewPersona(name) {
         if (!personas.some(([id]) => id === name)) return;
         own ||= state;
@@ -204,7 +208,11 @@
                       ? J.family()
                       : entries.includes(name)
                         ? { ...B.blank(), entry: name }
-                        : B.fresh();
+                        : name === 'shared'
+                          ? // Your plan as someone you invited sees it: only
+                            // the scopes you gave them.
+                            { ...B.fresh(), scopes: [...sharedScopes] }
+                          : B.fresh();
         P.hydrate(state);
         H.hydrate(state);
         G.hydrate(state);
@@ -384,7 +392,7 @@
                 )
                 .join(
                     '',
-                )}</div></details>${allowed ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div><div class="case-navigation"><div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div></div><div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress and guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
+                )}${state.person === 'self' && allowed && !persona ? `<button data-case="sharing">${I('people')}<span>Share your plan<small>Choose who sees what</small></span></button>` : ''}</div></details>${allowed && (!state.scopes || state.scopes.includes('view_facts')) ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div><div class="case-navigation"><div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div></div><div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress and guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
                 .map(
                     ([id, label]) =>
                         `<button data-preview-persona="${id}" aria-pressed="${state.preview === id}">${E(label)}</button>`,
@@ -511,7 +519,7 @@
     }
     function overview(plan) {
         const next = plan.overview.next_actions.map((a) => stepOf(plan, a.id));
-        return `${comingUp(plan)}${J.applies(state) ? question(plan) : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question(plan)}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.progress.total}${I('arrow')}</button></div>${
+        return `${comingUp(plan)}${J.applies(state) ? question(plan) : state.scopes && !state.scopes.includes('edit_facts') ? '' : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question(plan)}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.progress.total}${I('arrow')}</button></div>${
             next.length
                 ? next.map((step) => actionRow(plan, step)).join('')
                 : '<div class="honest-empty"><h3>No next actions right now</h3><p>Your waiting work and process history are still here.</p></div>'
@@ -933,6 +941,8 @@
             : '';
     }
     function paperwork(plan) {
+        if (plan.paperwork.available === false)
+            return '<section class="access-blank"><h2>Documents aren’t shared with you.</h2><p>Ask the person whose plan this is for access to their document checklist.</p></section>';
         const all = plan.open,
             ps =
                 state.paperFilter === 'all'
@@ -955,7 +965,7 @@
             })
             .join(
                 '',
-            )}</div><p class="date-separation">${I('info')}“Ready” means you have checked it for this task. No files are uploaded or sent.</p>`;
+            )}</div><p class="date-separation">${I('info')}“Ready” means you have checked it for this task. No files are uploaded or sent.</p><p class="date-separation">${I('info')}Uploading, scanning, translating and letter writing aren’t available yet.</p>`;
     }
     function noAccess() {
         return `<section class="access-blank"><div class="status-illustration blue">${I('document')}</div><h2>${state.person === 'adult' ? 'Their plan stays private.' : 'Authorisation comes first.'}</h2><p>${state.person === 'adult' ? 'This adult has not granted access to their dossier.' : 'Dependent access is awaiting the guardian authorisation policy.'}</p><span class="access-badge">Access flow preview</span><div class="actions">${button('Return to your sample plan', 'self')}</div></section>`;
@@ -992,6 +1002,16 @@
                 )}<p class="date-separation">Rules, applicability and legal dates will come from the reviewed backend. Missing coverage is not a completed plan.</p>`,
         );
     }
+    // Who you share your plan with (a sample grant to start with).
+    const grants = () =>
+        state.grants ?? [
+            {
+                id: 'alex',
+                name: 'Alex',
+                scopes: ['view_plan', 'manage_evidence'],
+                since: '2026-09-12',
+            },
+        ];
     // Your saved answers (Your situation), seeded with the sample day's on
     // first use: the same store the question card and the guide write to.
     function answers() {
@@ -1432,6 +1452,53 @@
             );
             return;
         }
+        // Sharing: who sees what (GET /people/{p}/sharing, POST /invitations,
+        // DELETE /grants). A sample; nothing is sent.
+        if (action === 'sharing') {
+            const scopeLabels = {
+                view_plan: 'Your plan',
+                view_facts: 'Your answers',
+                edit_facts: 'Changing your answers',
+                manage_process: 'Updating progress',
+                manage_evidence: 'Your documents',
+            };
+            const check = (value, label, on = false) =>
+                `<label class="sharing-scope"><input type="checkbox" name="scope" value="${value}" ${on ? 'checked' : ''}><span>${label}</span></label>`;
+            openEditor(
+                'Share your plan',
+                `<p class="muted">People you share with see only what you choose. You can remove access at any time.</p><section class="sharing-grants"><h3>Shared now</h3>${
+                    grants().length
+                        ? grants()
+                              .map(
+                                  (g) =>
+                                      `<div class="sharing-grant"><span><strong>${E(g.name)}</strong><small>${g.scopes.map((x) => scopeLabels[x]).join(' · ')} · since ${E(date(g.since))}</small></span><button class="plain-button" data-case="sharing-remove" data-grant="${E(g.id)}">Remove access</button></div>`,
+                              )
+                              .join('')
+                        : '<p class="muted">Nobody yet.</p>'
+                }</section><form class="sharing-invite" data-sharing-invite><h3>Invite someone</h3><p class="muted">They always see your plan. Choose what else:</p>${check('view_facts', 'See your answers')}${check('edit_facts', 'Change your answers')}${check('manage_process', 'Update your progress')}${check('manage_evidence', 'Mark your documents', true)}<div class="actions"><button class="button primary" type="submit">Create invitation</button></div></form><div data-sharing-result></div><section class="sharing-grants"><h3>Your record</h3><p class="muted">Download a copy of everything Paperwork keeps about you, stop its processing, or delete it.</p><div class="actions">${button('Download a copy', 'record-export')}${button('Delete your record', 'record-erase')}</div></section>`,
+            );
+            return;
+        }
+        // POST /people/{p}/export and DELETE /people/{p}: samples here.
+        if (action === 'record-export' || action === 'record-erase') {
+            U.toast(
+                action === 'record-export'
+                    ? 'Sample: in the app this downloads a copy of your record.'
+                    : 'Sample: in the app you confirm first, then your record is erased. Nothing is deleted here.',
+            );
+            return;
+        }
+        if (action === 'sharing-remove') {
+            state.grants = grants().filter((g) => g.id !== b.dataset.grant);
+            persist();
+            U.toast('Access removed. They no longer see your plan.');
+            return;
+        }
+        if (action === 'sharing-preview') {
+            closeEditor();
+            previewPersona('shared');
+            return;
+        }
         if (action === 'question-answer') {
             personalDetails(b.dataset.fact);
             return;
@@ -1602,6 +1669,20 @@
         }
         if (e.target.id === 'workflow-choice')
             syncWorkflowFields(e.target.form);
+    });
+    // Creating an invitation: what they'll be able to do, nothing sent.
+    document.addEventListener('submit', (e) => {
+        const form = e.target.closest('[data-sharing-invite]');
+        if (!form) return;
+        e.preventDefault();
+        sharedScopes = [
+            'view_plan',
+            ...[...form.querySelectorAll('[name="scope"]:checked')].map(
+                (x) => x.value,
+            ),
+        ];
+        form.parentElement.querySelector('[data-sharing-result]').innerHTML =
+            `<div class="sharing-ready" role="status">${I('check')}<span><strong>Invitation ready (sample)</strong><small>They open it and accept; then they see only what you chose. Nothing was sent.</small></span><button class="button secondary" data-case="sharing-preview">Preview what they’ll see</button></div>`;
     });
     document.addEventListener('submit', (e) => {
         if (

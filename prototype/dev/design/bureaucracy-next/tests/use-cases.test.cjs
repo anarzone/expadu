@@ -506,3 +506,34 @@ test('your own words become a candidate answer, never saved until you confirm', 
     D.edit(r, 'purpose');
     assert.equal(D.suggest(r, 'I came to work'), false);
 });
+
+test('someone you shared with sees only what you gave them', () => {
+    const s = { ...sample(), scopes: ['view_plan', 'manage_evidence'] };
+    let p = plan(s);
+    // Plan and documents: yes. Answers and questions: no.
+    assert.ok(p.processes.length);
+    assert.equal(p.paperwork.available, true);
+    assert.equal(p.questions.status, 'permission_required');
+    assert.equal(p.questions.question, null);
+    // Without document access the paperwork is permission_required, and
+    // no step carries requirements.
+    s.scopes = ['view_plan'];
+    p = plan(s);
+    assert.deepEqual(p.paperwork, {
+        available: false,
+        reason: 'permission_required',
+    });
+    assert.ok(
+        p.processes.every((x) =>
+            x.steps.every((st) => st.requirements === null),
+        ),
+    );
+});
+
+test('a shared dependent whose task lists no documents shows none', () => {
+    const H = ctx.BureaucracyFamily;
+    const s = sample();
+    s.person = 'shared-child';
+    assert.deepEqual([...H.current(s).documents], []);
+    assert.equal(H.document(s, 0, 'have'), false);
+});

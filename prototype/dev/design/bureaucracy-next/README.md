@@ -4,6 +4,57 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## One example of everything the backend can do — 8 October 2026 (in review)
+
+The owner asked whether the mock covers every scenario the backend supports,
+end to end; the backend session listed what it never showed. One example of
+each kind is in now (it's for seeing the design, not every case). Most are
+under Review: a persona preview or Other states.
+
+- **Guidance that isn't a task** (plan.guidance, kind context): "Good to know"
+  on the overview: While your application is pending (Fiktionsbescheinigung),
+  Moving your permit to a new passport, Inviting a visitor. Each opens to the
+  card's own checked text.
+- **Withheld cards** (not machine-confirmed): only as unconfirmed coverage
+  units in Sources (the freelance residence permit, Kindergeld). Life events
+  aren't live, so they're not tasks.
+- **Another route**: Review → Joining a spouse. "Joining your family" (prepare,
+  aimed at the visa expiry; the permit appointment with its eight documents)
+  and the integration course as a low-urgency proposal. Other routes
+  (student, freelance, Opportunity Card, work permit, renewal, settlement)
+  have the same shape and aren't repeated.
+- **A relationship review** (review_relationship): in that preview, what you
+  said about your spouse differs from their own record. You keep your answer
+  or correct it; their record never changes.
+- **An EU citizen**: everyday tasks only, and "No residence task applies to
+  your answers": none applies, nothing is missing.
+- **Entry states and coverage**: No profile yet (setup_required), Record
+  unavailable, Outside Cologne (outside_coverage).
+- **Over time** (Review → Other states): an answer past its reconfirm days
+  asked again; guidance changed for a task (review_required, "Use the updated
+  steps"); guidance withdrawn (history_only, kept in History with its steps);
+  a date under review ("Being reviewed").
+- **Say it in your own words** (AI fact extraction, scripted; no AI is
+  connected): in a date question, your words become a suggested answer you
+  use or dismiss; nothing is saved until you confirm.
+- **Sharing**: the person menu → Share your plan: who has access, remove
+  access, and an invitation with chosen access; "Preview what they'll see"
+  shows your plan without Your situation or questions, and "Documents aren't
+  shared with you" without document access. Your record: download or delete
+  (samples).
+- Documents say uploading, scanning, translating and letter writing aren't
+  available yet.
+
+Left out on purpose: legal_due and authority_follow_up dates (supported, but
+no card in the release has one), the 90-day permit window of visa-free routes,
+adding a dependent and guardian approval, and correcting a recorded event
+beyond the submission date.
+
+**Ahead of the backend** (no endpoint or entity; don't build from the mock
+yet): the life-change report ("Something changed"), the person-level status,
+"Check after your change" flags, the "Explore a topic" grid and the starter
+run of three.
+
 ## Tested against the rules, person by person — 8 October 2026
 
 `tests/use-cases.test.cjs` walks six newcomers through every question they'd
