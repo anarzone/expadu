@@ -221,3 +221,23 @@ test('the sample person’s history is kept and doesn’t count as a run', () =>
     assert.equal(D.lastChecked(r), '2026-09-03T09:05:00+02:00');
     assert.equal(plan(s).questions.status, 'preview');
 });
+
+test('two answers that disagree come first, as a conflict to review', () => {
+    const s = J.fresh();
+    J.begin(s);
+    answer(s, 'non_eu');
+    const r = G.hydrate(s).details;
+    D.exampleConflict(r);
+    D.cancel(r);
+    const q = plan(s).questions;
+    assert.equal(q.question.kind, 'resolve_conflict');
+    assert.equal(q.question.fact_key, 'registration_status');
+    assert.equal(q.question.can_answer_unknown, false);
+    assert.equal(q.question.action.type, 'review_fact_conflict');
+    assert.equal(q.question.action.fact_key, 'registration_status');
+    // Each disagreeing answer says when it was given.
+    assert.deepEqual(
+        [...r.conflicts.registration_status.map((c) => c.source)],
+        ['Your answer on 2 Sept', 'Your answer on 28 Sept'],
+    );
+});

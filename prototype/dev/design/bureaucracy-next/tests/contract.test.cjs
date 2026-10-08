@@ -315,6 +315,8 @@ test('the question is the registry’s; skipping defers it and "I don’t know" 
     assert.equal(q.question.answer_schema.type, 'date');
     assert.equal(q.question.answer_schema.date_semantics, 'historical');
     assert.equal(q.question.kind, 'answer');
+    assert.equal(q.question.remaining_before_pause, 3);
+    assert.equal(q.can_resume, false);
     // An unknown visa expiry comes first: an orientation question, for the
     // Blue Card whose targets wait for it.
     B.confirmExpiry(s, null);
@@ -340,6 +342,7 @@ test('three answers or skips in a row pause; an answer that keeps not fitting st
     assert.equal(q.status, 'paused');
     assert.equal(q.question, null);
     assert.equal(q.entry_state, 'paused');
+    assert.equal(q.can_resume, true);
     // "Keep going" starts a new run.
     s.interview = { mark: 0, skips: 0 };
     assert.equal(plan(s).questions.status, 'preview');

@@ -595,6 +595,8 @@
         const f = key && RG.field(key);
         return {
             status,
+            // A pause or a stopped question can always carry on.
+            can_resume: ['paused', 'answer_limit'].includes(status),
             session_id: run || a.deferred.length || i.limit ? 1 : null,
             question:
                 status === 'preview' && f
@@ -616,9 +618,19 @@
                           },
                           process_ids: RG.processIds(a.facts, key),
                           can_skip: true,
+                          remaining_before_pause: Math.max(0, 3 - run),
                           can_answer_unknown: !conflict,
                           ...(conflict
-                              ? { action: { type: 'review_fact_conflict' } }
+                              ? {
+                                    action: {
+                                        type: 'review_fact_conflict',
+                                        fact_key: key,
+                                        required_scopes: [
+                                            'view_facts',
+                                            'edit_facts',
+                                        ],
+                                    },
+                                }
                               : {}),
                       }
                     : null,

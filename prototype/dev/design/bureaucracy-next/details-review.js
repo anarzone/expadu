@@ -206,8 +206,18 @@
     }
     function exampleConflict(r) {
         r.conflicts.registration_status = [
-            { value: 'registered', source: 'Earlier sample answer' },
-            { value: 'not_registered', source: 'Later sample answer' },
+            // Two confirmed answers, each with when it was given (the
+            // backend's fact-conflicts choices carry recorded_at).
+            {
+                value: 'registered',
+                source: 'Your answer on 2 Sept',
+                recordedAt: '2026-09-02T18:20:00+02:00',
+            },
+            {
+                value: 'not_registered',
+                source: 'Your answer on 28 Sept',
+                recordedAt: '2026-09-28T19:05:00+02:00',
+            },
         ];
         return edit(r, 'registration_status');
     }
