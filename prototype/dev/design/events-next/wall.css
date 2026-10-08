@@ -1473,29 +1473,48 @@ main[data-view='skyline'] .wall-view--wall {
     align-items: flex-start;
     translate: -17px -100%;
 }
+/* Labels are solid paper with dark text, so they read on any sky, and a
+   small tail points at their light. */
 .sky-light-label {
-    min-height: 32px;
+    position: relative;
+    min-height: 30px;
     display: inline-flex;
     align-items: center;
-    padding: 0 12px;
-    border-radius: 12px;
-    background: #1b1840c4;
+    padding: 0 11px;
+    border-radius: 10px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
     white-space: nowrap;
-    backdrop-filter: blur(8px);
+    box-shadow:
+        0 4px 14px #0f0b2e4d,
+        0 0 0 1px #211d151f;
 }
-.sky-light:hover .sky-light-label,
-.sky-light:focus-visible .sky-light-label {
-    background: var(--color-bg-surface);
-    color: var(--color-text);
+.sky-light-label::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -4px;
+    width: 9px;
+    height: 9px;
+    margin-left: -4.5px;
+    border-radius: 2px;
+    background: inherit;
+    rotate: 45deg;
+}
+.sky-light.is-start .sky-light-label::after {
+    left: 17px;
+}
+.sky-light.is-end .sky-light-label::after {
+    left: auto;
+    right: 12.5px;
+}
+.sky-when {
+    font-variant-numeric: tabular-nums;
 }
 .sky-light:focus-visible {
     outline: none;
-}
-.sky-light:focus-visible .sky-light-dot {
-    outline: 3px solid var(--color-select-bg);
-    outline-offset: 4px;
 }
 .sky-light-dot {
     width: 30px;
@@ -1507,16 +1526,18 @@ main[data-view='skyline'] .wall-view--wall {
         0 0 0 9px #ffe36347,
         0 0 40px 18px #ffe3636b;
 }
-/* Lights for another part of the day stay visible but dim. */
-.sky[data-sky='afternoon'] .sky-light:not(.is-coming):not([data-band='afternoon']),
-.sky[data-sky='evening'] .sky-light:not(.is-coming):not([data-band='evening']),
-.sky[data-sky='late'] .sky-light:not(.is-coming):not([data-band='late']) {
-    opacity: 0.5;
+/* Lights for another part of the day stay solid but unlit. */
+.sky[data-sky='afternoon'] .sky-light:not(.is-coming):not(.is-out):not([data-band='afternoon']) .sky-light-dot,
+.sky[data-sky='evening'] .sky-light:not(.is-coming):not(.is-out):not([data-band='evening']) .sky-light-dot,
+.sky[data-sky='late'] .sky-light:not(.is-coming):not(.is-out):not([data-band='late']) .sky-light-dot {
+    background: #f4e7b0;
+    box-shadow: 0 0 0 1px #211d1540;
 }
-.sky[data-sky='afternoon'] .sky-light:not([data-poster-id]):not([data-band='afternoon']) .sky-light-dot,
-.sky[data-sky='evening'] .sky-light:not([data-poster-id]):not([data-band='evening']) .sky-light-dot,
-.sky[data-sky='late'] .sky-light:not([data-poster-id]):not([data-band='late']) .sky-light-dot {
-    box-shadow: none;
+.sky[data-sky='afternoon'] .sky-light:not(.is-coming):not(.is-out):not([data-band='afternoon']) .sky-light-label,
+.sky[data-sky='evening'] .sky-light:not(.is-coming):not(.is-out):not([data-band='evening']) .sky-light-label,
+.sky[data-sky='late'] .sky-light:not(.is-coming):not(.is-out):not([data-band='late']) .sky-light-label {
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
 }
 /* The column's lights: what's coming up is a ring until its poster faces
    you, and every column light glows as much as its poster faces you. */
@@ -1526,33 +1547,26 @@ main[data-view='skyline'] .wall-view--wall {
 .sky-light.is-coming .sky-light-dot {
     width: 22px;
     height: 22px;
-    border: 3px solid var(--poster-cream);
-    background: transparent;
+    border: 3px solid var(--color-bg-surface);
+    background: #211d1540;
+    outline: 1.5px solid #211d1566;
 }
-.sky-light.is-coming .sky-light-label {
-    background: #1b184094;
-    font-weight: var(--weight-medium);
-}
-/* A coming-up light is a quiet ring until its poster faces you. */
 .sky-light.is-coming:not(.is-facing) .sky-light-label {
     display: none;
 }
-/* Labels that would overlap shorten to the time, or hide; a light always
-   names itself on hover and focus. */
-.sky-light.is-short .sky-what {
-    display: none;
+.sky-light[data-poster-id] .sky-light-dot {
+    scale: calc(0.9 + var(--facing) * 0.3);
+    box-shadow:
+        0 0 0 calc(var(--facing) * 10px) #ffe36347,
+        0 0 calc(var(--facing) * 44px) calc(var(--facing) * 20px) #ffe3636b;
 }
-.sky-light.is-quiet .sky-light-label {
-    display: none;
+.sky-light.is-facing {
+    z-index: 3;
 }
-.sky-light:is(:hover, :focus-visible) {
-    z-index: 4;
-}
-.sky-light:is(:hover, :focus-visible) .sky-light-label {
-    display: inline-flex !important;
-}
-.sky-light:is(:hover, :focus-visible) .sky-what {
-    display: inline !important;
+.sky-light.is-facing .sky-light-dot {
+    border-color: var(--color-bg-surface);
+    background: var(--festival-yellow, #ffe363);
+    outline: 0;
 }
 /* A day that has already happened: its lights are out. */
 .sky.is-past .sky-art {
@@ -1564,14 +1578,44 @@ main[data-view='skyline'] .wall-view--wall {
 .sky-light.is-out .sky-light-dot {
     width: 18px;
     height: 18px;
-    border: 2px solid #ece5d8;
-    background: #c9c1b3;
-    box-shadow: none;
+    border: 3px solid var(--color-bg-surface);
+    background: var(--color-border-strong);
+    box-shadow: 0 0 0 1px #211d1540;
 }
 .sky-light.is-out .sky-light-label {
-    background: #1b184073;
-    color: #fff6d8cc;
+    background: var(--color-bg-quiet);
+    color: #4a4438;
     font-weight: var(--weight-medium);
+}
+/* Labels that would overlap shorten to the time, or hide. */
+.sky-light.is-short .sky-what {
+    display: none;
+}
+.sky-light.is-quiet .sky-light-label {
+    display: none;
+}
+/* Pointing at a light focuses it: its full name, a cyan ring, and the
+   other lights step back. */
+.sky-light:is(:hover, :focus-visible) {
+    z-index: 5;
+}
+.sky-light:is(:hover, :focus-visible) .sky-light-label {
+    display: inline-flex !important;
+    box-shadow:
+        0 8px 22px #0f0b2e59,
+        0 0 0 2px var(--color-select-text);
+}
+.sky-light:is(:hover, :focus-visible) .sky-what {
+    display: inline !important;
+}
+.sky-light:is(:hover, :focus-visible) .sky-light-dot {
+    scale: 1.15;
+    outline: 3px solid var(--color-select-bg);
+    outline-offset: 3px;
+}
+.sky-inner:has(.sky-light:is(:hover, :focus-visible))
+    .sky-light:not(:hover):not(:focus-visible) {
+    opacity: 0.35;
 }
 /* Beside the column the sky is narrower: its title sits above the drawing. */
 @media (min-width: 701px) {
@@ -1582,24 +1626,6 @@ main[data-view='skyline'] .wall-view--wall {
     main[data-view='skyline'] .sky-head h2 {
         font-size: var(--text-display-sm);
     }
-}
-.sky-light[data-poster-id] .sky-light-dot {
-    scale: calc(0.9 + var(--facing) * 0.3);
-    box-shadow:
-        0 0 0 calc(var(--facing) * 10px) #ffe36347,
-        0 0 calc(var(--facing) * 44px) calc(var(--facing) * 20px) #ffe3636b;
-}
-.sky-light.is-facing {
-    z-index: 3;
-    opacity: 1 !important;
-}
-.sky-light.is-facing .sky-light-dot {
-    border-color: var(--color-bg-surface);
-    background: var(--festival-yellow, #ffe363);
-}
-.sky-light.is-facing .sky-light-label {
-    background: var(--color-bg-surface);
-    color: var(--color-text);
 }
 .sky-away button.is-facing {
     background: var(--color-bg-surface);

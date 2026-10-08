@@ -24,6 +24,12 @@ covered the city.
   another light shortens to its time, or hides. A light always names itself
   on hover, focus and to screen readers. Checked at 390, 1024 and 1440 with
   the column on each of its posters.
+- **Labels read on any sky.** They're solid paper with dark text and a
+  small tail pointing at their light (they were see-through dark pills,
+  hard to read on the pale afternoon sky). Past lights are grey with a white
+  ring; lights for another part of the day stay solid but unlit.
+- **Pointing at a light focuses it:** its full name with a cyan ring, a
+  bigger dot, and the other lights step back.
 - **Coming-up rings are quiet** until their poster faces you.
 - **Places off the drawing are named under it**, in a row with the
   "Illustration · places approximate" note, never over the city; a column
