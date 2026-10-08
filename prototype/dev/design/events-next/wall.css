@@ -423,6 +423,114 @@ main[data-view='skyline'] .wall-view--wall {
     font-size: var(--text-caption);
 }
 
+/* ---------- The backdrop: the hour's sky over the city ----------
+   Borrowed from the Skyline: the same sky (time, weather, sun and moon)
+   behind the Dom, Colonius and the Kranhäuser, above the wall's ledge.
+   The column's dome rises into it, like a set in front of a painted
+   backdrop. It reads the sky; nothing in it is a control. */
+.wall-board > .wall-sky {
+    display: block;
+    height: 230px;
+    margin: -36px -32px 26px;
+    border-radius: 32px 32px 0 0;
+}
+.wall-sky::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 12px;
+    background: linear-gradient(#d6cbb7, #b7ab95);
+    box-shadow: 0 6px 10px -4px #211d1540;
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.5));
+}
+.wall-sky .sky-weather {
+    position: absolute;
+    z-index: 2;
+    top: 18px;
+    right: 22px;
+}
+.wall-sky[data-light] .sky-weather {
+    color: var(--color-text);
+}
+@media (min-width: 1000px) {
+    .wall-board > .wall-scene {
+        margin-top: -202px;
+    }
+}
+main[data-view='skyline'] .wall-board > .wall-sky {
+    display: none;
+}
+
+/* ---------- Today's posters: on now, over, rain likely ---------- */
+.pp-flags {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+}
+.pp-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    box-shadow: 0 2px 6px #211d1526;
+}
+.pp-flag--now {
+    background: var(--color-text);
+    color: var(--poster-cream);
+}
+.pp-flag--now > span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--festival-yellow, #ffe363);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .pp-flag--now > span {
+        animation: pp-live 1.6s ease-out infinite;
+    }
+}
+@keyframes pp-live {
+    from {
+        box-shadow: 0 0 0 0 #ffe363b3;
+    }
+    to {
+        box-shadow: 0 0 0 8px #ffe36300;
+    }
+}
+.pp-flag--over {
+    background: #211d15cc;
+    color: var(--poster-cream);
+}
+.pp-flag--rain {
+    color: #1d5f99;
+}
+.pp-flag--rain svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+    stroke: none;
+}
+/* An event that's over: faded, and no longer plannable. */
+.pp[data-when='over'] .pp-face > .pp-art,
+.pp[data-when='over'] :is(.pp-title, .pp-time, .pp-tape) {
+    filter: saturate(0.35) brightness(0.92);
+}
+.pp[data-when='over'] :is(.pp-plan, .pp-back-plan) {
+    display: none;
+}
+
 /* ---------- The street corner ---------- */
 /* The column stands on cobbles, with an old lantern behind a bench at its
    left, a bike leaning on it and two pigeons. Drawn flat; it darkens at
@@ -2229,6 +2337,7 @@ main[data-view='skyline'] .wall-view--wall {
         display: contents;
     }
     .wall-decor,
+    .wall-board > .wall-sky,
     .wall-scene :is(.wall-lantern, .wall-bench, .wall-bike, .wall-pigeons, .wall-scene-glow) {
         display: none;
     }

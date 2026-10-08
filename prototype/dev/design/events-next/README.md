@@ -5,6 +5,28 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The Wall is the Events page; it borrows the Skyline's best — 8 October 2026
+
+Owner decision: **the Wall is the Events page.** The Skyline view stays in
+this preview as a reference, not for the app. The Wall takes what looks and
+works best from it:
+
+- **The hour's sky over the city, as the backdrop.** A band across the top
+  of the wall shows the same sky as the Skyline (time, weather, sun and
+  moon, clouds, rain, stars) behind the Dom, Colonius, Groß St. Martin and
+  the Kranhäuser, above the wall's stone ledge. The column's dome and the
+  lantern rise into it, like a set in front of a painted backdrop. Its
+  chip says what it shows: "21° Sunny · 13:10 · Sample weather".
+- **Rain warning on posters.** An outdoor event with rain likely at its
+  hour carries "Rain likely · sample forecast" under its category.
+- **Today's posters follow the clock.** "On now · until 21:00" with a
+  pulsing light while an event is on; once it's over the poster fades,
+  says "Over", and can no longer be added to a plan.
+
+The street, the backdrop and the posters all read the same hour: the
+sample day's 13:10, `?at=`, or the App in colour time switch. Phones keep
+the slim corner without the backdrop.
+
 ## The column on a street corner — 8 October 2026
 
 Owner request: no arrows under the poster column; and instead of a list,

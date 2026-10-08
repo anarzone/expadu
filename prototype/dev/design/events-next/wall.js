@@ -393,9 +393,13 @@
     const outdoors = (item) =>
         item.category === 'Outdoors' ||
         /\b(outdoors?|open[- ]air)\b/i.test(`${item.title} ${item.description || ''}`);
-    const drawing = (phase) => `<svg class="sky-art" viewBox="0 40 1376 450" aria-hidden="true" focusable="false">
-        <rect class="sky-1" width="1376" height="560"/><rect class="sky-2" y="130" width="1376" height="110"/><rect class="sky-3" y="230" width="1376" height="80"/><rect class="sky-4" y="300" width="1376" height="56"/><rect class="sky-5" y="346" width="1376" height="58"/>
-        <g class="sky-stars"><circle cx="90" cy="40" r="1.6"/><circle cx="240" cy="74" r="1.2"/><circle cx="420" cy="30" r="1.8"/><circle cx="560" cy="92" r="1.2"/><circle cx="700" cy="48" r="1.5"/><circle cx="980" cy="28" r="1.3"/><circle cx="1080" cy="82" r="1.7"/><circle cx="1310" cy="40" r="1.4"/><circle cx="350" cy="112" r="1"/><circle cx="820" cy="104" r="1.2"/><circle cx="160" cy="120" r="1"/><circle cx="620" cy="22" r="1.1"/></g>
+    // The Wall borrows the drawing as its backdrop: cut at the city's foot,
+    // set to the right, with the sky and stars running on to the left.
+    const drawing = (phase, backdrop = false) => {
+        const wide = backdrop ? 'x="-3000" width="4376"' : 'width="1376"';
+        return `<svg class="sky-art${backdrop ? ' wall-sky-art' : ''}" viewBox="0 40 1376 ${backdrop ? 364 : 450}"${backdrop ? ' preserveAspectRatio="xMaxYMax meet"' : ''} aria-hidden="true" focusable="false">
+        <rect class="sky-1" ${wide} height="560"/><rect class="sky-2" y="130" ${wide} height="110"/><rect class="sky-3" y="230" ${wide} height="80"/><rect class="sky-4" y="300" ${wide} height="56"/><rect class="sky-5" y="346" ${wide} height="58"/>
+        <g class="sky-stars">${backdrop ? '<circle cx="-120" cy="60" r="1.5"/><circle cx="-300" cy="110" r="1.2"/><circle cx="-480" cy="44" r="1.6"/><circle cx="-640" cy="96" r="1.1"/><circle cx="-60" cy="150" r="1"/>' : ''}<circle cx="90" cy="40" r="1.6"/><circle cx="240" cy="74" r="1.2"/><circle cx="420" cy="30" r="1.8"/><circle cx="560" cy="92" r="1.2"/><circle cx="700" cy="48" r="1.5"/><circle cx="980" cy="28" r="1.3"/><circle cx="1080" cy="82" r="1.7"/><circle cx="1310" cy="40" r="1.4"/><circle cx="350" cy="112" r="1"/><circle cx="820" cy="104" r="1.2"/><circle cx="160" cy="120" r="1"/><circle cx="620" cy="22" r="1.1"/></g>
         ${Sky.heavens(phase)}
         <g class="sky-far"><rect x="0" y="352" width="70" height="50"/><rect x="440" y="330" width="60" height="72"/><rect x="520" y="342" width="70" height="60"/><rect x="700" y="336" width="90" height="66"/><rect x="1040" y="344" width="80" height="58"/><rect x="1180" y="330" width="70" height="72"/><rect x="756" y="150" width="8" height="252"/><ellipse cx="760" cy="192" rx="24" ry="10"/><rect x="758.5" y="104" width="3" height="48"/><rect x="1302" y="296" width="22" height="106"/><rect x="1330" y="276" width="20" height="126"/><rect x="1354" y="306" width="22" height="96"/><circle cx="584" cy="338" r="16"/><circle cx="606" cy="332" r="20"/><circle cx="630" cy="340" r="15"/><circle cx="650" cy="336" r="13"/></g>
         <g class="sky-near"><rect x="0" y="398" width="1376" height="8"/>
@@ -424,10 +428,11 @@
             .join(
                 '',
             )}<rect x="616" y="320" width="8" height="6"/><rect x="650" y="336" width="8" height="6"/><rect x="870" y="210" width="6" height="10"/><rect x="924" y="210" width="6" height="10"/></g>
-        <rect class="sky-river" y="406" width="1376" height="154"/>
+        ${backdrop ? '' : '<rect class="sky-river" y="406" width="1376" height="154"/>'}
         <path class="sky-bridge" d="M1012 402 Q1072 330 1134 402 Q1196 330 1258 402 Q1318 330 1376 402"/><rect class="sky-bridge-deck" x="1012" y="396" width="364" height="8"/>
-        ${Sky.mistLayer}${Sky.rainLayer}
+        ${backdrop ? '' : Sky.mistLayer}${Sky.rainLayer}
     </svg>`;
+    };
     function sky(events) {
         skyEvents = events;
         const lit = events.filter((item) => stage[item.area]);
@@ -934,12 +939,15 @@
     const clampUnit01 = (value) => Math.max(0, Math.min(1, value));
     // Today's street at today's hour (the sample day's clock, ?at=, or the
     // App in colour concept's time switch) and today's weather.
+    const streetNow = () => {
+        const hour = Sky.hours(chosenTime() || nowTime);
+        const ctx = skyContext(today);
+        return { hour, ctx, st: Sky.at(ctx, hour) };
+    };
     function paintStreet() {
         const board = document.querySelector('.wall-board');
         if (!board || !today) return;
-        const hour = Sky.hours(chosenTime() || nowTime);
-        const ctx = skyContext(today);
-        const st = Sky.at(ctx, hour);
+        const { hour, ctx, st } = streetNow();
         // Puddles last a while after the rain.
         const recent = Math.max(
             ...[0, 0.5, 1, 1.5, 2].map(
@@ -959,6 +967,66 @@
         board.toggleAttribute('data-dark', dark > 0.45);
         board.toggleAttribute('data-wet', recent > 0.05);
         board.toggleAttribute('data-raining', st.rain > 0.05);
+        // The backdrop shows the same hour's sky, and says what it shows.
+        const backdrop = board.querySelector('.wall-sky');
+        if (backdrop) {
+            for (const [key, value] of Object.entries(Sky.vars(st)))
+                backdrop.style.setProperty(key, value);
+            backdrop.toggleAttribute('data-light', st.light);
+            backdrop.toggleAttribute('data-rain', st.rain > 0.01);
+            backdrop.querySelector('.sky-weather').innerHTML = Sky.chip(st, ctx);
+        }
+        markPosters();
+    }
+    // Today's posters follow the clock: on now, or over (no planning then).
+    // An outdoor one says when rain is likely at its hour, from the
+    // forecast and labelled as such.
+    const drop =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c-3.2 4.2-5.6 7.2-5.6 10.2a5.6 5.6 0 0 0 11.2 0c0-3-2.4-6-5.6-10.2Z"/></svg>';
+    function markPosters() {
+        if (!today) return;
+        const catalogue = window.ExpaduEventCatalogue?.() || [];
+        const { hour: now, ctx } = streetNow();
+        const forecast =
+            ctx.source === 'Sample weather' ? 'sample forecast' : 'forecast';
+        document.querySelectorAll('#main .pp[data-event-card]').forEach((card) => {
+            const open = card.querySelector('.pp-open');
+            if (!open) return;
+            open.dataset.label ??= open.getAttribute('aria-label');
+            card.querySelector('.pp-flags')?.remove();
+            delete card.dataset.when;
+            open.setAttribute('aria-label', open.dataset.label);
+            const item = catalogue.find((x) => x.id === card.dataset.poster);
+            if (!item || item.date !== today || !item.start) return;
+            const start = Sky.hours(item.start),
+                end = item.end ? Sky.hours(item.end) : null;
+            const when =
+                end === null ? '' : now >= end ? 'over' : now >= start ? 'now' : '';
+            const wet =
+                when !== 'over' &&
+                outdoors(item) &&
+                Sky.rainLikely(ctx.weather, item.start);
+            if (!when && !wet) return;
+            if (when) card.dataset.when = when;
+            const flags = [
+                when === 'now'
+                    ? `<span class="pp-flag pp-flag--now"><span aria-hidden="true"></span>On now · until ${E(item.end)}</span>`
+                    : when === 'over'
+                      ? '<span class="pp-flag pp-flag--over">Over</span>'
+                      : '',
+                wet
+                    ? `<span class="pp-flag pp-flag--rain">${drop}Rain likely · ${forecast}</span>`
+                    : '',
+            ].join('');
+            card.querySelector('.pp-top')?.insertAdjacentHTML(
+                'afterend',
+                `<span class="pp-flags">${flags}</span>`,
+            );
+            open.setAttribute(
+                'aria-label',
+                `${open.dataset.label}. ${when === 'now' ? `On now until ${item.end}. ` : when === 'over' ? 'Already over. ' : ''}${wet ? `Rain likely, ${forecast}.` : ''}`.trim(),
+            );
+        });
     }
 
     /* ---------- Page layout and the view switch ---------- */
@@ -1021,7 +1089,8 @@
         board.setAttribute('aria-label', 'Posters');
         // The wall, then the column on its street corner, the day's
         // posters flowing round it, and the week's notes.
-        board.innerHTML = decor;
+        const { ctx: streetCtx, st: streetSky } = streetNow();
+        board.innerHTML = `${decor}<div class="sky wall-sky"${streetSky.light ? ' data-light' : ''} style="${Sky.style(streetSky)}" aria-hidden="true">${drawing(streetSky.moon.phase, true)}<div class="sky-weather">${Sky.chip(streetSky, streetCtx)}</div></div>`;
         const scene = document.createElement('div');
         scene.className = 'wall-scene';
         scene.innerHTML = `<span class="wall-scene-glow" aria-hidden="true"></span>${lantern}${bench}`;
@@ -1122,7 +1191,13 @@
                 else delete card.dataset.stamp;
             });
         };
-        new MutationObserver(stamps).observe(list, { childList: true });
+        new MutationObserver(() => {
+            stamps();
+            markPosters();
+        }).observe(list, { childList: true });
+        const featuredBox = main.querySelector('#event-featured');
+        if (featuredBox)
+            new MutationObserver(markPosters).observe(featuredBox, { childList: true });
         window.addEventListener('expadu:change', stamps);
         window.addEventListener('storage', stamps);
         stamps();

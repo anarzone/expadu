@@ -350,7 +350,7 @@ const inside = (box, viewport) =>
         await touch.waitForTimeout(1100);
         assert.match(await film.getAttribute('class'), /is-picked/);
         assert.equal(await touch.locator('.event-sheet').count(), 0);
-        assert.match(await touch.locator('.sky-weather').innerText(), /20:00/);
+        assert.match(await touch.locator('.wall-view--skyline .sky-weather').innerText(), /20:00/);
         await film.locator('.sky-light-dot').tap();
         await touch.waitForSelector('.event-sheet');
         await touch.goto(`${base}?date=2026-09-30&view=skyline&at=21:30`, { waitUntil: 'networkidle' });
@@ -370,8 +370,26 @@ const inside = (box, viewport) =>
                 lamp: el.style.getPropertyValue('--lamp-on'),
             }));
         assert.deepEqual(await flags(), { dark: false, wet: false, raining: false, lamp: '0.000' });
+        // From the Skyline: the hour's sky over the city as the backdrop,
+        // saying what it shows, and the rain warning on the outdoor film.
+        assert.match(
+            await street.locator('.wall-board > .wall-sky .sky-weather').innerText(),
+            /21° Sunny\s+13:10 · Sample weather/,
+        );
+        const outdoorFilm = street.locator('.wall-day [data-poster="today-review-cinema"]');
+        assert.match(await outdoorFilm.locator('.pp-flag--rain').innerText(), /Rain likely · sample forecast/);
+        assert.equal(await street.locator('.pp-flag--now, .pp-flag--over').count(), 0);
         await street.goto(`${base}?date=2026-09-30&at=19:30`, { waitUntil: 'networkidle' });
         assert.deepEqual(await flags(), { dark: true, wet: true, raining: true, lamp: '1.000' });
+        // Today's posters follow the clock: on now, then over (no planning).
+        assert.match(
+            await street.locator('#event-featured [data-poster="today-review-culture"] .pp-flag--now').innerText(),
+            /On now · until 21:00/,
+        );
+        await street.goto(`${base}?date=2026-09-30&at=22:40`, { waitUntil: 'networkidle' });
+        assert.equal(await outdoorFilm.getAttribute('data-when'), 'over');
+        assert.equal(await outdoorFilm.locator('.pp-plan').isVisible(), false);
+        assert.equal(await outdoorFilm.locator('.pp-flag--rain').count(), 0);
         await street.close();
         // The App in colour concept's time switch moves the skyline too.
         const concept = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
