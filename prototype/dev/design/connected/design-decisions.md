@@ -389,6 +389,13 @@ from the event's or venue's listing, otherwise "Not listed". Composer keeps
 the cream palette. The records now live in `connected/sample-day.js` for
 Today and Composer. Details are in `composer-studio/README.md`.
 
+**Composer has one header — owner request, 8 October:** the sticky
+"Composer · Minimize" bar is replaced by one compact row at the top of the
+conversation ("✦ Composer · Wed 30 Sept · Sample day" and "← Back to
+Paperwork", naming the page Composer was opened from). It scrolls with the
+conversation; the app header stays the only sticky header. "Minimize" is no
+longer used as a label. Details are in `composer-studio/README.md`.
+
 **Paperwork reads the v2 plan contract — follows the owner's go-ahead to map
 it after the design refresh, 8 October (in review):** Paperwork renders the
 backend's `bureaucracy.plan.1` shape (`bureaucracy-next/contract.js`) instead

@@ -347,9 +347,21 @@
     if (!document.querySelector('#shell [data-static-header]'))
         document.querySelector('#shell').innerHTML =
             `<header class="app-header"><a href="../today-c/" class="brand" aria-label="Expadu home">${logo}Expadu</a><div class="header-context"><button class="city">${I('pin')}Cologne${I('down')}</button><span class="header-weather" role="img" aria-label="Sample weather, 21 degrees">${I('sun')}<strong>21°</strong></span></div><a class="my-day" href="#saved" data-nav="saved" aria-label="Open saved ideas">${I('bookmark')}<span>Saved</span><b class="header-saved-count" hidden></b></a></header><nav class="service-nav" aria-label="Main navigation">${nav.map(([path, icon, label]) => `<a data-page="${path.replace(/-(next|c)$/, '')}" href="../${path}/">${I(icon)}<span>${label}</span></a>`).join('')}</nav>`;
-    function navBar() {
-        return `<div class="studio-toolbar"><span class="workspace-name">${I('spark')}Composer</span><button type="button" class="composer-minimize" data-minimize-composer aria-label="Minimize Composer" title="Minimize Composer">${I('down')}<span>Minimize</span></button></div>`;
+    // One compact row that scrolls with the conversation: what this is and
+    // which day, and the way back to the page Composer was opened from (your
+    // conversation stays here). No second sticky bar under the app header.
+    function heading() {
+        const back = ExpaduStore.composerOrigin?.() || { name: 'Today' };
+        return `<div class="composer-heading"><p class="composer-heading-title"><span class="workspace-name">${I('spark')}Composer</span><span class="composer-heading-date">${E(shortDate(M.today()))} · Sample day</span></p><button type="button" class="composer-minimize" data-minimize-composer aria-label="Back to ${E(back.name)}. Your conversation stays in Composer." title="Back to ${E(back.name)}">${I('back')}<span>Back to ${E(back.name)}</span></button></div>`;
     }
+    // The top edge content can scroll to: under the app header while it
+    // shows, otherwise the top of the window.
+    const contentTop = () =>
+        parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue(
+                '--composer-header-top',
+            ),
+        ) || 0;
     let minimizing = false;
     function minimizeComposer() {
         if (minimizing) return;
@@ -1046,8 +1058,8 @@
         const anchorTop = anchor?.getBoundingClientRect().top;
         if (main.dataset.chapter !== chapter.id) {
             main.innerHTML =
-                navBar() +
-                `<p class="chat-section-date">${E(longDate(M.today()))} · Sample day</p><div class="chat-feed" aria-label="Conversation"></div>`;
+                heading() +
+                `<div class="chat-feed" aria-label="Conversation"></div>`;
             main.dataset.chapter = chapter.id;
             entryMarkup.clear();
         }
@@ -1180,9 +1192,7 @@
         // Your question and the reply together when they fit; otherwise the
         // start of the reply, so its card isn't hidden under the input.
         const question = [...feed.querySelectorAll('.chat-user')].at(-1);
-        const top =
-            (document.querySelector('.studio-toolbar')?.getBoundingClientRect()
-                .bottom || 0) + 12;
+        const top = contentTop() + 12;
         const bottom =
             document.querySelector('.studio-input-wrap')?.getBoundingClientRect()
                 .top || innerHeight;
@@ -1194,9 +1204,7 @@
         const target = fits ? question : reply;
         const behavior = reducedMotion() ? 'instant' : 'smooth';
         const place = () => {
-            const edge =
-                (document.querySelector('.studio-toolbar')?.getBoundingClientRect()
-                    .bottom || 0) + 12;
+            const edge = contentTop() + 12;
             const delta = target.getBoundingClientRect().top - edge;
             if (Math.abs(delta) <= 4) return false;
             window.scrollTo({ top: Math.max(0, scrollY + delta), behavior });
@@ -2708,7 +2716,7 @@
     document.addEventListener('pointerdown', (event) => {
         if (
             event.pointerType !== 'touch' ||
-            !event.target.closest('.studio-toolbar') ||
+            !event.target.closest('.composer-heading') ||
             event.target.closest('button')
         )
             return;

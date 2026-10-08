@@ -20,15 +20,18 @@ const asked = async (page, text) =>
     (await entries(page)).filter(
         (entry) => entry.role === 'user' && entry.text === text,
     ).length;
-// The newest entry sits between the toolbar and the request field.
+// The newest entry sits between the app header and the request field.
 const latestInView = (page) =>
     page.evaluate(() => {
         const last = [...document.querySelectorAll('[data-chat-entry]')].at(-1);
         if (!last) return false;
         const rect = last.getBoundingClientRect();
         const top =
-            document.querySelector('.studio-toolbar')?.getBoundingClientRect()
-                .bottom || 0;
+            parseFloat(
+                getComputedStyle(document.documentElement).getPropertyValue(
+                    '--composer-header-top',
+                ),
+            ) || 0;
         const bottom =
             document
                 .querySelector('.studio-input-wrap')
@@ -126,6 +129,16 @@ const openPanel = async (page, panel) => {
                 page.locator('[data-chat-entry]').last(),
             ).toContainText('cafés near Wiener Platz');
             await expect.poll(() => latestInView(page)).toBe(true);
+            // One compact heading that scrolls away and names the way back.
+            await expect(page.locator('.composer-heading')).toContainText(
+                'Back to Today',
+            );
+            assert.equal(
+                await page
+                    .locator('.composer-heading')
+                    .evaluate((el) => getComputedStyle(el).position),
+                'static',
+            );
             assert.equal(await asked(page, request), 1);
             await page.reload({ waitUntil: 'networkidle' });
             await expect(page.locator('.chat-feed')).toBeVisible();

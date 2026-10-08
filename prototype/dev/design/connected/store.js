@@ -166,6 +166,28 @@
             url.pathname += 'index.html';
         return url.href;
     }
+    // Where leaving Composer goes, and what that page is called: the page
+    // it was opened from, otherwise Today.
+    const pageNames = {
+        today: 'Today',
+        todayPreview: 'Today',
+        events: 'Events',
+        bureaucracy: 'Paperwork',
+        services: 'Services',
+        departures: 'Travel',
+        places: 'Places',
+        placesGuide: 'Places',
+    };
+    function composerOrigin() {
+        const url = localTarget(composerSession().origin?.url, routes.today);
+        const path = new URL(url).pathname.replace(/index\.html$/, '');
+        const key = Object.keys(pageNames).find(
+            (k) =>
+                new URL(routes[k], document.baseURI || location.href)
+                    .pathname === path,
+        );
+        return { url, name: pageNames[key] || 'Today' };
+    }
     function minimizeComposer() {
         const session = composerSession();
         const url = localTarget(session.origin?.url, routes.today);
@@ -325,6 +347,7 @@
         routes,
         go,
         minimizeComposer,
+        composerOrigin,
         restoreComposerPosition,
         isComposerMinimized,
         rememberWorkspace,

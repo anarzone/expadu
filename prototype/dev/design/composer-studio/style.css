@@ -53,41 +53,6 @@
 .studio main h1:focus {
     outline: none;
 }
-.studio-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    padding: 18px 0;
-    margin-bottom: 30px;
-}
-.studio-toolbar nav {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-.studio-toolbar nav a {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    min-height: 44px;
-    padding: 8px 13px;
-    color: var(--color-text-soft);
-    font-size: var(--text-control);
-    border-radius: var(--radius-md);
-}
-.studio-toolbar nav a svg {
-    width: 18px;
-    height: 18px;
-}
-.studio-toolbar nav a:hover {
-    background: var(--color-bg-quiet);
-}
-.studio-toolbar nav a[aria-current] {
-    color: var(--color-select-text);
-    background: var(--color-select-bg);
-    font-weight: var(--weight-semibold);
-}
 .sample-note {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
@@ -1153,25 +1118,6 @@
         width: calc(100% - 32px);
         padding-bottom: 170px;
     }
-    .studio-toolbar {
-        gap: 5px;
-        margin-bottom: 18px;
-        padding: 12px 0;
-        flex-wrap: wrap;
-    }
-    .studio-toolbar nav {
-        gap: 1px;
-        flex-wrap: nowrap;
-    }
-    .studio-toolbar nav a {
-        padding: 8px 9px;
-        font-size: var(--text-caption);
-        gap: 5px;
-    }
-    .studio-toolbar nav a svg {
-        width: 15px;
-        height: 15px;
-    }
     .sample-note {
         font-size: var(--text-micro);
         width: 100%;
@@ -1772,10 +1718,6 @@
     }
     .has-panel #input-area {
         visibility: hidden;
-    }
-    .studio .studio-toolbar {
-        flex-wrap: nowrap;
-        margin-bottom: 14px;
     }
     .studio .sample-note {
         width: auto;

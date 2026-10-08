@@ -82,9 +82,11 @@ const appointmentTrip =
                             ].at(-1);
                             const rect = last.getBoundingClientRect();
                             const top =
-                                document
-                                    .querySelector('.studio-toolbar')
-                                    ?.getBoundingClientRect().bottom || 0;
+                                parseFloat(
+                                    getComputedStyle(
+                                        document.documentElement,
+                                    ).getPropertyValue('--composer-header-top'),
+                                ) || 0;
                             const bottom =
                                 document
                                     .querySelector('.studio-input-wrap')

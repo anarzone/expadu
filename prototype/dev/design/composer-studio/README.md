@@ -41,6 +41,19 @@ pixel-identical. Tests: `tests/requests.test.cjs`,
 `tests/conversation-view.test.cjs`, `tests/journey-browser.cjs`. Screenshots:
 `docs/reviews/2026-10-07-app-in-colour/composer-built-*.png`.
 
+### One compact heading — owner request, 8 October
+
+The sticky "✦ Composer · Minimize" bar under the app header is gone (with the
+app header it took about 177px on a phone before any content). Its job is one
+compact row at the top of the conversation that scrolls with it: "✦ Composer"
+with "Wed 30 Sept · Sample day" under it, and "← Back to Paperwork" (or
+whichever page Composer was opened from; Today otherwise) on the right. The
+back button keeps the conversation, as Minimize did, and says so to screen
+readers. The separate centred date line is folded in. Content starts about 40px
+higher on phones; the app header is the only sticky header.
+`ExpaduStore.composerOrigin()` names the page. `tests/connected-browser.cjs`
+checks the heading and its "Back to Today".
+
 ### Follow-ups — 8 October
 
 - **Your day fits every desktop width.** From 1000 to 1439 px the
