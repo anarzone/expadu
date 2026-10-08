@@ -89,7 +89,7 @@
                 if (!picks.length) return null;
                 return {
                     plan,
-                    html: `<div class="around-places"><p class="around-places-title">Open near ${E(from.name.split(',')[0])} at ${E(time)}<small>Listed hours</small></p>${picks.map(({ place }) => P.card(place, { from, at, variant: 'line' })).join('')}<a class="around-places-map" href="${E(`${P.mapLink('', from)}&time=${time}`)}">${I('pin')}More nearby on the map</a></div>`,
+                    html: `<div class="around-places"><p class="around-places-title">Open near ${E(from.name.split(',')[0])} at ${E(time)}<small>Listed hours</small></p>${picks.map(({ place }) => P.card(place, { from, at, variant: 'line' })).join('')}<a class="around-places-map" href="${E(`${P.mapLink('', from)}&time=${time}`)}">${I('pin')}More nearby on the map</a><p class="around-places-source">${E(P.credit || '')}</p></div>`,
                 };
             }
             function around(content) {

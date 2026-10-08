@@ -190,7 +190,7 @@ test('pending answers say Thinking and keep the cancel action available', () => 
     assert.match(html, /data-action="cancel-loading"/);
 });
 
-test('answers lead with a short verdict, then their own block', () => {
+test('answers lead with a short verdict, then their own block (the approved design)', () => {
     const ctx = context();
     ctx.escape = (x) => String(x).replace(/</g, '&lt;');
     const trip = render(
@@ -199,7 +199,7 @@ test('answers lead with a short verdict, then their own block', () => {
             role: 'assistant',
             kind: 'trip',
             title: 'Leave now — it’s 13:10.',
-            text: 'Take line 4 at 13:14.',
+            text: 'You’ll be there at 13:48 with 12 minutes to spare.',
             trip: {
                 steps: [
                     { mode: 'walk', label: 'Walk to Neumarkt', value: '4 min' },
@@ -210,17 +210,17 @@ test('answers lead with a short verdict, then their own block', () => {
                         value: '13:14 → 13:42',
                     },
                 ],
-                note: 'I picked the 13:14.',
                 href: '../departures-next/?from=Neumarkt',
             },
         },
         ctx,
     );
+    // Verdict, the steps, then when you'll be there, then Open in Travel.
     assert.match(
         trip,
-        /<h3 class="chat-answer-title">Leave now — it’s 13:10\.<\/h3><p>Take line 4/,
+        /<h3 class="chat-answer-title">Leave now — it’s 13:10\.<\/h3><div class="answer-block answer-trip"><ol>[\s\S]*<\/ol><\/div><p>You’ll be there at 13:48/,
     );
-    assert.match(trip, /class="answer-block answer-trip"/);
+    assert.ok(trip.indexOf('Open in Travel') > trip.indexOf('You’ll be there'));
     assert.match(
         trip,
         /aria-label="Line 4">4<\/span><span>Neumarkt → Wiener Platz<\/span><b>13:14 → 13:42<\/b>/,
@@ -234,6 +234,7 @@ test('answers lead with a short verdict, then their own block', () => {
             role: 'assistant',
             kind: 'checklist',
             title: '1 of 5 documents marked ready.',
+            text: 'That’s from your own checklist.',
             record: {
                 title: 'EU Blue Card',
                 prepared: 1,
@@ -247,7 +248,12 @@ test('answers lead with a short verdict, then their own block', () => {
         checklist,
         /answer-checklist" href="\.\.\/bureaucracy-next\/"/,
     );
-    assert.match(checklist, /EU Blue Card · your records/);
+    assert.match(checklist, /Your EU Blue Card checklist · your records/);
+    // The checklist card comes before the explanation.
+    assert.ok(
+        checklist.indexOf('answer-checklist') <
+            checklist.indexOf('That’s from your own checklist.'),
+    );
     assert.match(checklist, /width:20%/);
 
     const facts = render(

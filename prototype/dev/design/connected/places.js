@@ -475,5 +475,8 @@
         cuisine,
         diets,
         wifiText,
+        // The credit OpenStreetMap's licence (ODbL) asks for where its data
+        // is shown.
+        credit: 'From OpenStreetMap contributors (ODbL), sample export of 7 Oct 2026',
     };
 })(globalThis);

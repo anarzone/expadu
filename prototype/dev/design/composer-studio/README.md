@@ -41,6 +41,39 @@ pixel-identical. Tests: `tests/requests.test.cjs`,
 `tests/conversation-view.test.cjs`, `tests/journey-browser.cjs`. Screenshots:
 `docs/reviews/2026-10-07-app-in-colour/composer-built-*.png`.
 
+### Matches the approved design — owner request, 8 October
+
+The owner asked for the approved Composer redesign to be in this mock in full.
+Compared with `connected/concepts/app-in-colour-2026-10-07/redesign/composer.html`:
+
+- **Event answers are the Events posters**, two side by side (a swipe row on
+  phones): the AI illustration with its label, Save (cyan when saved), the
+  date stamp, the title in marker lettering, the time and venue, and the
+  round orange Add to plan (a cyan tick once added). The poster opens Quick
+  look on click; it doesn't pop up on hover. "Adding one isn't a booking.
+  Composer asks before it changes your plan." follows them.
+- **The Nearby starter asks about a pharmacy**, with the nearest one's map
+  picture; the Near Wiener Platz item in Your day asks the same.
+- **"Is the cinema step-free?"** is a chip again (when tonight has the film
+  night).
+- **The trip answer** is the verdict, the steps, then "You'll be there at 13:48
+  with 12 minutes to spare. I skipped the 13:24 in your plan: it leaves only 2,
+  and official appointments need 10.", then Open in Travel.
+- **"What to bring"** is "1 of 5 documents marked ready.", your checklist card
+  ("Your EU Blue Card checklist · your records"), then the explanation.
+- **Places answers** end with an outlined Show on map and "From OpenStreetMap
+  contributors (ODbL), sample export of 7 Oct 2026": the data's licence asks
+  for that credit where it's shown (Today's "Open near" list now has it too).
+- The intro says Composer "uses the city's listings".
+
+Kept as approved rather than as drawn: the cream palette and Geist (the mock's
+white stage and Bricolage belong to the undecided colour concept), this
+page's one-row heading, the Save and Add buttons on place cards, and the
+ready count on the Paperwork starter. Screen readers now hear an answer's
+headline with its text, and a hover preview needs a moving mouse, so an
+answer appearing under a resting pointer doesn't open one. Tests:
+`tests/conversation-view.test.cjs`, `tests/journey-browser.cjs`.
+
 ### One compact heading — owner request, 8 October
 
 The sticky "✦ Composer · Minimize" bar under the app header is gone (with the

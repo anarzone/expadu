@@ -411,7 +411,7 @@
             if (entry.kind === 'event') {
                 const current = getState();
                 const ids = entry.eventIds || [entry.eventId];
-                return ids
+                const posters = ids
                     .map(eventFor)
                     .filter(Boolean)
                     .map((x) => {
@@ -424,15 +424,23 @@
                         )?.items.some((item) => item.id === id);
                         const source = /sample/i.test(x.captured || '')
                             ? 'Sample event'
-                            : `Captured listing · ${E(x.captured || '')}`;
-                        // The Events poster: an AI illustration of the
-                        // activity, labelled, with the date stamp.
+                            : `Captured listing · ${x.captured || ''}`;
+                        // The Events poster (the approved design): the AI
+                        // illustration with its label, Save, the date stamp,
+                        // the title lettered on the picture and the orange
+                        // Add to plan. Quick look opens from the poster.
                         const art = x.illustration || x.id;
                         const day = new Date(`${x.date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-                        const poster = `<div class="event-answer-poster"><img src="../events-next/photos/${E(art)}.webp" alt="" loading="lazy" onerror="this.closest('.event-answer-poster').remove()"><span class="poster-label">AI illustration · sample</span><span class="poster-stamp">${E(x.date === today() ? 'Today' : day)} ${E(x.start)}</span></div>`;
-                        return `<section class="service-card event-answer">${poster}<span class="service-type">${I('calendar')}${source}${past ? ' · past' : ''}</span><button class="service-title" data-preview="${E(id)}">${E(x.title)}</button><p>${E(x.venue)}${x.price ? ` · ${E(x.price)}` : ''}</p><div class="service-time">${I('clock')}${E(eventDate(x.date))} · ${E(x.start)}${x.end ? `–${E(x.end)}` : ''} <span>Fixed time</span></div>${past ? '<p class="detail-caution">This listing has passed. It’s shown for reference only.</p>' : ''}<div class="service-actions"><button class="plain-button" data-preview="${E(id)}">Preview event</button>${past ? '' : `<button class="studio-button light" data-add-event="${E(id)}" ${added ? 'disabled' : ''}>${added ? 'Added' : 'Add to plan'} ${I(added ? 'check' : 'plus')}</button>`}</div></section>`;
+                        const when = `${x.date === today() ? 'Today' : day} ${x.start}`;
+                        const saved = current.saved.includes(id);
+                        const meta = `${x.start}${x.end ? `–${x.end}` : ''} · ${x.venue}`;
+                        return `<article class="event-poster${past ? ' is-past' : ''}"><img src="../events-next/photos/${E(art)}.webp" alt="" loading="lazy" onerror="this.remove()"><span class="poster-label">AI illustration · sample</span><button type="button" class="event-poster-save" data-save="${E(id)}" aria-pressed="${saved}" aria-label="${saved ? 'Unsave' : 'Save'} ${E(x.title)}">${I('bookmark')}</button><button type="button" class="event-poster-open" data-preview="${E(id)}" aria-label="${E(`${x.title}, ${when}, ${x.venue}. ${source}${past ? ', past' : ''}. Quick look`)}"><span class="poster-stamp">${E(past ? `Past · ${day}` : when)}</span><span class="event-poster-title">${E(x.title)}</span><span class="event-poster-meta">${E(meta)}</span></button>${past ? '' : `<button type="button" class="event-poster-plan${added ? ' is-added' : ''}" data-add-event="${E(id)}" ${added ? 'aria-disabled="true"' : ''} aria-label="${added ? `${E(x.title)} is in your plan` : `Add ${E(x.title)} to your plan`}">${I(added ? 'check' : 'calendar-plus')}</button>`}</article>`;
                     })
                     .join('');
+                const anyOpen = ids.map(eventFor).some((x) => x && x.date >= today());
+                return posters
+                    ? `<div class="event-posters">${posters}</div>${anyOpen ? '<p class="answer-fine">Adding one isn’t a booking. Composer asks before it changes your plan.</p>' : ''}`
+                    : '';
             }
             if (entry.kind === 'journey') {
                 const q = entry.journey;
@@ -529,10 +537,19 @@
                 e.submitter,
             );
         });
+        // Only a mouse that is actually moving starts a hover preview: an
+        // answer appearing under a resting pointer mustn't open one. Posters
+        // already show their facts; they open Quick look on click only.
+        let lastMove = 0;
+        document.addEventListener('pointermove', (e) => {
+            if (e.pointerType === 'mouse') lastMove = performance.now();
+        });
         document.addEventListener('pointerover', (e) => {
             if (e.pointerType !== 'mouse' || dialog?.open) return;
+            if (performance.now() - lastMove > 150) return;
             const anchor = e.target.closest('[data-preview]');
             if (!anchor || anchor.contains(e.relatedTarget)) return;
+            if (anchor.matches('.event-poster-open')) return;
             clearTimeout(hoverTimer);
             hoverTimer = setTimeout(
                 () => preview(anchor.dataset.preview, anchor, true),

@@ -963,7 +963,22 @@
     align-items: center;
     gap: 8px 14px;
     margin-top: 12px;
-    color: #33585f;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+/* The steps end the block; what follows explains them. */
+.studio .answer-trip li:last-child {
+    border-bottom: 0;
+}
+.studio .answer-block + p {
+    margin-top: 14px;
+}
+.studio .place-answer-actions {
+    margin-top: 14px;
+}
+.studio .answer-fine {
+    margin: 10px 0 0;
+    color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
 .studio .answer-button {
@@ -1066,42 +1081,146 @@
     color: var(--color-text-soft);
 }
 
-/* Event answers carry the Events poster, labelled as an AI illustration. */
-.studio .service-card.event-answer {
+/* Event answers are the Events posters (the approved Composer design): the
+   AI illustration, labelled, with the date stamp, the title lettered on the
+   picture, Save and the orange Add to plan. Two side by side; a swipe row on
+   phones. */
+.studio .event-posters {
     display: grid;
-    grid-template-columns: 200px minmax(0, 1fr);
-    column-gap: 20px;
-    padding: 0 20px 0 0;
-    overflow: hidden;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 14px;
 }
-.studio .event-answer > :not(.event-answer-poster) {
-    grid-column: 2;
+.studio .event-posters:has(> :only-child) {
+    grid-template-columns: minmax(0, 420px);
 }
-.studio .event-answer > .service-type {
-    margin-top: 18px;
-}
-.studio .event-answer > :last-child {
-    margin-bottom: 16px;
-}
-.studio .event-answer-poster {
+.studio .event-poster {
     position: relative;
-    grid-column: 1;
-    grid-row: 1 / span 8;
-    min-height: 196px;
+    isolation: isolate;
+    height: 380px;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
     background: #2b1d3f;
+    color: #ffffff;
 }
-.studio .event-answer-poster img {
+.studio .event-poster img {
     position: absolute;
     inset: 0;
+    z-index: -2;
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-.studio .event-answer-poster::after {
+.studio .event-poster::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, #0b061866, transparent 40%, transparent 60%, #0b061880);
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, #0b061855, transparent 30%, #0b061833 52%, #0b0618e6);
+}
+.studio .event-poster .poster-label {
+    top: 14px;
+    left: 14px;
+}
+.studio .event-poster-open {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 20px 84px 20px 20px;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.studio .event-poster .poster-stamp {
+    position: static;
+}
+.studio .event-poster-title {
+    font-family: 'Festival Marker', 'Permanent Marker', var(--font-sans);
+    font-size: 30px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    overflow-wrap: break-word;
+}
+.studio .event-poster-meta {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.studio .event-poster-save,
+.studio .event-poster-plan {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-round);
+    cursor: pointer;
+}
+.studio .event-poster-save {
+    top: 10px;
+    right: 10px;
+    width: 44px;
+    height: 44px;
+    background: #ffffff33;
+    backdrop-filter: blur(10px);
+    color: #ffffff;
+}
+.studio .event-poster-save[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.studio .event-poster-plan {
+    right: 16px;
+    bottom: 16px;
+    width: 52px;
+    height: 52px;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+}
+.studio .event-poster-plan.is-added {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    cursor: default;
+}
+.studio .event-poster-save svg,
+.studio .event-poster-plan svg {
+    width: 22px;
+    height: 22px;
+}
+.studio .event-poster :is(.event-poster-open, .event-poster-save, .event-poster-plan):focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: -5px;
+}
+@media (max-width: 700px) {
+    .studio .event-posters {
+        display: flex;
+        gap: 12px;
+        margin-right: -16px;
+        padding-right: 16px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+    }
+    .studio .event-poster {
+        flex: 0 0 84%;
+        height: 340px;
+        scroll-snap-align: start;
+    }
+    .studio .event-posters:has(> :only-child) .event-poster {
+        flex-basis: 100%;
+    }
+    .studio .event-poster-title {
+        font-size: 24px;
+    }
 }
 .studio .poster-label {
     position: absolute;
@@ -1128,10 +1247,6 @@
     line-height: 1.2;
     transform: rotate(-3deg);
 }
-.studio .event-answer:not(:has(.event-answer-poster)) {
-    display: block;
-    padding: 20px;
-}
 @media (max-width: 700px) {
     .studio .chat-answer-title {
         font-size: var(--text-title);
@@ -1146,20 +1261,5 @@
     }
     .studio .answer-trip b {
         white-space: nowrap;
-    }
-    .studio .service-card.event-answer {
-        grid-template-columns: minmax(0, 1fr);
-        padding: 0 16px;
-    }
-    .studio .event-answer > :not(.event-answer-poster) {
-        grid-column: 1;
-    }
-    .studio .event-answer-poster {
-        grid-row: auto;
-        min-height: 150px;
-        margin: 0 -16px;
-    }
-    .studio .event-answer > .service-type {
-        margin-top: 14px;
     }
 }

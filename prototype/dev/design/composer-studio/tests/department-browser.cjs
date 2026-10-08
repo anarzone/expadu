@@ -164,7 +164,7 @@ const appointmentTrip =
                         'departures-next/',
                         'When should I leave for my 14:00?',
                     ),
-                ['Take line 4 at 13:14 from Neumarkt'],
+                ['13:14 → 13:42', 'You’ll be there at 13:48'],
             ],
             [
                 'Services request',

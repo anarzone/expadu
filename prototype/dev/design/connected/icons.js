@@ -27,6 +27,12 @@
     };
     Object.assign(shapes, {
         plus: '<path d="M12 4v16M4 12h16"/>',
+        // Add to plan on event posters, and step-free access (as on place
+        // cards).
+        'calendar-plus':
+            '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 2v6m10-6v6M3 11h18m-9 3v5m-2.5-2.5h5"/>',
+        wheelchair:
+            '<circle cx="12" cy="4" r="2"/><path d="M12 7v6h5l2 6M12 10H8m3 3a5 5 0 1 0 4 8"/>',
         coffee: '<path d="M3 8h14v7a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8Zm14 1h2a3 3 0 0 1 0 6h-2M6 2v3m5-3v3M2 22h18"/>',
         book: '<path d="M12 5C9 3 5 3 2 4v16c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Zm0 0v16"/>',
         water: '<path d="M2 8c3-5 5 5 9 0s6 5 11 0M2 14c3-5 5 5 9 0s6 5 11 0M2 20c3-5 5 5 9 0s6 5 11 0"/>',

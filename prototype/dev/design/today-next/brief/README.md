@@ -5,6 +5,10 @@ restores the composition in the owner's screenshot, also saved at
 [`../review/continuity-desktop.png`](../review/continuity-desktop.png).
 The daily brief and its timeline-only correction were rejected.
 
+**8 October, place credit:** the "Open near …" list ends with "From
+OpenStreetMap contributors (ODbL), sample export of 7 Oct 2026", the credit
+the data's licence asks for where it's shown.
+
 **8 October, your Paperwork records:** the visa deadline and "What to bring ·
 EU Blue Card · 1 of 5 documents ready" read Paperwork's plan
 (`BureaucracyContract.records()`), so they change when you mark a document

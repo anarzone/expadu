@@ -191,18 +191,19 @@
             .filter((x) => x.start)
             .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`))
             .slice(0, 2);
-        // The nearest café to the appointment, for its map picture.
+        // The nearest pharmacy to the appointment, for its map picture (the
+        // approved design's Nearby starter asks about a pharmacy).
         const P = window.ExpaduPlaces;
         const anchor = P?.anchors?.['wiener-platz'];
-        const cafe =
+        const nearby =
             appointment && anchor && P.near
                 ? P.near(anchor, {
-                      kinds: ['cafe'],
+                      kinds: ['pharmacy'],
                       limit: 1,
                       at: { date: today, time: appointment.end || appointment.start },
                   })[0]?.place
                 : null;
-        return { today, now, appointment, trip, record, deadlines, tonight, planned, upcoming, anchor, cafe };
+        return { today, now, appointment, trip, record, deadlines, tonight, planned, upcoming, anchor, nearby };
     }
     const eventById = (id) =>
         allEvents().find((x) => x.id === String(id).replace(/^event:/, ''));
@@ -711,14 +712,19 @@
                 kind: 'nearby',
                 tag: 'Nearby',
                 icon: 'pin',
-                label: 'Is there a café near my appointment?',
+                label: 'Is there a pharmacy near my appointment?',
                 detail: `Around ${x.anchor.name}`,
-                picture: mapPicture(x.cafe),
+                picture: mapPicture(x.nearby),
             },
         ].filter(Boolean);
         const chips = [
             ['spark', 'Plan my Saturday', 'Help me plan Saturday'],
             ['leaf', 'A little time outdoors', 'Find something outdoors for Saturday afternoon.'],
+            // Step-free access as the listings record it (only when tonight
+            // has the film night it asks about).
+            ...(x.tonight.some((e) => /cinema/i.test(e.title))
+                ? [['wheelchair', 'Is the cinema step-free?', 'Is the cinema step-free?']]
+                : []),
             ...(cards.length < 2 ? [['calendar', 'What’s on this weekend', 'What’s on this weekend?']] : []),
         ];
         const starterCards = cards.length
@@ -729,7 +735,7 @@
                   )
                   .join('')}</div>`
             : '';
-        return `<section class="studio-welcome${cards.length ? ' has-starter-cards' : ''}">${cards.length ? '' : `<div class="welcome-symbol" aria-hidden="true">${I('spark')}</div>`}${dayRow(x)}<h1>What’s on your mind?</h1><p>Ask in your own words. Composer knows your plan and says “Not listed” instead of guessing.</p>${starterCards}<div class="starter-chips" role="group" aria-label="More to ask">${chips
+        return `<section class="studio-welcome${cards.length ? ' has-starter-cards' : ''}">${cards.length ? '' : `<div class="welcome-symbol" aria-hidden="true">${I('spark')}</div>`}${dayRow(x)}<h1>What’s on your mind?</h1><p>Ask in your own words. Composer knows your plan, uses the city’s listings and says “Not listed” instead of guessing.</p>${starterCards}<div class="starter-chips" role="group" aria-label="More to ask">${chips
             .map(([icon, label, prompt]) => `<button class="starter-chip" data-prompt="${E(prompt)}">${I(icon)}<span>${E(label)}</span></button>`)
             .join('')}</div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}</section>`;
     }
@@ -776,7 +782,7 @@
             );
         if (a && x.anchor)
             rows.push(
-                `<button class="day-item" data-prompt="Is there a café near my appointment?"><span class="day-item-tile is-map">${mapPicture(x.cafe) || I('pin')}</span><span><small>After ${E(a.end || a.start)}</small><strong>Near ${E(x.anchor.name)}</strong></span></button>`,
+                `<button class="day-item" data-prompt="Is there a pharmacy near my appointment?"><span class="day-item-tile is-map">${mapPicture(x.nearby) || I('pin')}</span><span><small>After ${E(a.end || a.start)}</small><strong>Near ${E(x.anchor.name)}</strong></span></button>`,
             );
         if (x.tonight.length)
             rows.push(
@@ -805,7 +811,9 @@
                 }),
             )
             .join('');
-        return `${cards ? `<div class="place-answer">${cards}</div>` : ''}${entry.map ? `<a class="plain-button place-answer-map" href="${E(entry.map)}">${I('pin')}Show on map${I('arrow')}</a>` : ''}`;
+        // The data is OpenStreetMap's (ODbL), which asks for credit where
+        // it's shown.
+        return `${cards ? `<div class="place-answer">${cards}</div>` : ''}${cards || entry.map ? `<div class="answer-actions place-answer-actions">${entry.map ? `<a class="answer-button" href="${E(entry.map)}">${I('pin')}Show on map</a>` : ''}${cards ? `<span>${E(P.credit)}</span>` : ''}</div>` : ''}`;
     }
     function card(x) {
         const kept = state.saved.includes(x.id);
@@ -1153,7 +1161,10 @@
         const lastReply = chapter.entries
             .filter((e) => e.role === 'assistant')
             .at(-1);
-        const announcement = lastReply?.text || '';
+        // The short headline and the reply, as they read on screen.
+        const announcement = [lastReply?.title, lastReply?.text]
+            .filter(Boolean)
+            .join(' ');
         if (live.textContent !== announcement) live.textContent = announcement;
         if (panel) renderPanel();
         features.mountGuides();
@@ -1727,9 +1738,11 @@
                 });
             else
                 reply(
+                    // The posters carry the rest; the booking note follows
+                    // them.
                     topic && !matching.length
                         ? `I don’t see ${topic[1]} ${when} in the sample programme. This is what’s on.`
-                        : 'From the sample programme. Adding one to your plan isn’t a booking.',
+                        : '',
                     {
                         kind: 'event',
                         title: `${shown.length === 1 ? 'One sample event' : `${countWord(shown.length)} sample events`} ${when}.`,
@@ -1759,8 +1772,14 @@
                 const hhmm = clockText;
                 const leaveText = leaveNow ? `Leave now — it’s ${M.nowTime()}.` : `Leave by ${hhmm(best.leave)}.`;
                 const stop = j.alightStop || to;
+                // After the steps: when you'll be there, and why not the
+                // planned tram when it leaves too little time.
+                const skipped =
+                    best !== planned
+                        ? ` I skipped the ${planned.depart} in your plan: it leaves only ${spare(planned)}, and ${appointment.kind === 'official' ? 'official appointments need' : 'plans need'} ${margin}.`
+                        : '';
                 reply(
-                    `Take line ${j.line} at ${best.depart} from ${from} and you’re at your appointment by ${hhmm(best.there)}, with ${spare(best)} min to spare.`,
+                    `You’ll be there at ${hhmm(best.there)} with ${spare(best)} minutes to spare.${skipped}`,
                     {
                         kind: 'trip',
                         title: leaveText,
@@ -1775,10 +1794,6 @@
                                     ? [{ mode: 'walk', label: 'Walk to the appointment', value: `${j.walkMinutes} min` }]
                                     : []),
                             ],
-                            note:
-                                best !== planned
-                                    ? `I picked the ${best.depart}: the ${planned.depart} in your plan leaves only ${spare(planned)} min, and ${appointment.kind === 'official' ? 'official appointments need' : 'plans need'} ${margin}.`
-                                    : '',
                             href: `${ExpaduStore.routes.departures}?${new URLSearchParams({ from, to, date: M.today(), arrive: appointment.start })}`,
                         },
                     },
@@ -1809,13 +1824,11 @@
                 records().find((x) => x.id === appointment?.process) || records()[0];
             if (record?.total) {
                 state.conversation.activeDate = null;
-                const forAppointment =
-                    record.id === appointment?.process && appointment.start >= M.nowTime();
                 reply(
                     'That’s from your own checklist. I can’t give verified guidance on what the office requires; the checklist and its official sources are in Paperwork.',
                     {
                         kind: 'checklist',
-                        title: `${forAppointment ? `For your ${appointment.start}: ` : ''}${record.prepared} of ${record.total} documents marked ready.`,
+                        title: `${record.prepared} of ${record.total} documents marked ready.`,
                         record: {
                             id: record.id,
                             title: record.title,

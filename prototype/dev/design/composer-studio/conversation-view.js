@@ -14,8 +14,14 @@
         const title = entry.title
             ? `<h3 class="chat-answer-title">${E(entry.title)}</h3>`
             : '';
-        const text = title + (entry.text ? `<p>${E(entry.text)}</p>` : '');
-        let body = text;
+        const paragraph = entry.text ? `<p>${E(entry.text)}</p>` : '';
+        // The trip and your checklist lead with their block; the
+        // explanation follows it (the approved Composer design).
+        const blockFirst =
+            (entry.kind === 'trip' && entry.trip?.steps?.length) ||
+            (entry.kind === 'checklist' && entry.record);
+        const lead = title + (blockFirst ? '' : paragraph);
+        let body = lead;
         // The appointment's trip, step by step, in Travel's colour.
         if (entry.kind === 'trip' && entry.trip?.steps?.length)
             body += `<div class="answer-block answer-trip"><ol>${entry.trip.steps
@@ -23,12 +29,12 @@
                     (x) =>
                         `<li>${x.line ? `<span class="answer-line" aria-label="Line ${E(x.line)}">${E(x.line)}</span>` : I(x.mode === 'walk' ? 'walk' : 'train')}<span>${E(x.label)}</span><b>${E(x.value)}</b></li>`,
                 )
-                .join('')}</ol>${entry.trip.note ? `<p class="answer-note">${E(entry.trip.note)}</p>` : ''}<div class="answer-actions">${entry.trip.href ? `<a class="answer-button" href="${E(entry.trip.href)}">Open in Travel${I('arrow')}</a>` : ''}<span>Scheduled sample times, not live</span></div></div>`;
+                .join('')}</ol></div>${paragraph}${entry.trip.note ? `<p class="answer-note">${E(entry.trip.note)}</p>` : ''}<div class="answer-actions">${entry.trip.href ? `<a class="answer-button" href="${E(entry.trip.href)}">Open in Travel${I('arrow')}</a>` : ''}<span>Scheduled sample times, not live.</span></div>`;
         // Your own checklist's progress, linked to Paperwork. Not guidance.
         if (entry.kind === 'checklist' && entry.record) {
             const r = entry.record;
             const share = r.total ? Math.round((r.prepared / r.total) * 100) : 0;
-            body += `<a class="answer-block answer-checklist" href="${E(r.href || '#')}"><span class="answer-tile">${I('document')}</span><span><small>${E(r.title)} · your records</small><strong>${E(`${r.prepared} of ${r.total} ready`)}</strong><span class="answer-progress" aria-hidden="true"><i style="width:${share}%"></i></span></span>${I('arrow')}</a>`;
+            body += `<a class="answer-block answer-checklist" href="${E(r.href || '#')}"><span class="answer-tile">${I('document')}</span><span><small>Your ${E(r.title)} checklist · your records</small><strong>${E(`${r.prepared} of ${r.total} ready`)}</strong><span class="answer-progress" aria-hidden="true"><i style="width:${share}%"></i></span></span>${I('arrow')}</a>${paragraph}`;
         }
         // What a listing does and doesn't say.
         if (entry.kind === 'facts' && entry.facts?.length)
@@ -206,8 +212,8 @@
                 )}</div>${valid ? `<button class="plain-button" data-browse-replacements="${E(entry.id)}">Browse more places</button>` : '<p class="history-readonly">The plan has changed since these suggestions. Ask for fresh alternatives.</p>'}`;
             if (!valid)
                 body =
-                    text +
-                    `<details class="chat-plan-reference"><summary>${I('pin')}Previous alternatives · view only</summary>${body.slice(text.length)}</details>`;
+                    lead +
+                    `<details class="chat-plan-reference"><summary>${I('pin')}Previous alternatives · view only</summary>${body.slice(lead.length)}</details>`;
         }
         if (entry.kind === 'answer' && entry.plan)
             body += `<details class="chat-plan-reference"><summary>${I('calendar')}Earlier plan snapshot · ${E(dateLabel(entry.plan.date))}</summary><p class="history-readonly">Saved at the time of this reply · read only</p>${timeline(entry.plan)}</details>${!ctx.historical && (s.proposal?.date === entry.plan.date || s.plans.some((p) => p.date === entry.plan.date)) ? `<button class="plain-button" data-open-plan="${E(entry.plan.date)}">Open current plan</button>` : ''}`;
