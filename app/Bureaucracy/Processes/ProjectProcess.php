@@ -21,7 +21,9 @@ final class ProjectProcess
                 $binding = true;
             }
         }
-        $review = $proposal !== null && ($binding || $stored['catalogue_hash'] !== $proposal['catalogue_hash']
+        // Review only when this process's own steps changed (or it is being bound to an occurrence),
+        // never merely because another unit made a new catalogue release.
+        $review = $proposal !== null && ($binding
             || CatalogueHash::of($stored['step_definitions']) !== CatalogueHash::of($proposal['steps']));
         $state = $stored['state'];
         if ($proposal !== null) {

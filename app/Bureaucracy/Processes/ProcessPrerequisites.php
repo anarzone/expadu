@@ -13,7 +13,7 @@ final class ProcessPrerequisites
         $candidates = [];
         foreach ($proposals as $proposal) {
             $process = $stored[$proposal['occurrence_key']] ?? null;
-            $current = $process !== null && $process['catalogue_hash'] === $proposal['catalogue_hash']
+            $current = $process !== null
                 && CatalogueHash::of($process['step_definitions']) === CatalogueHash::of($proposal['steps'])
                 && $process['state']['workflow'] !== 'cancelled';
             foreach ($proposal['steps'] as $step) {

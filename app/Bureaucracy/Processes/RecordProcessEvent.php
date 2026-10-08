@@ -26,7 +26,9 @@ final class RecordProcessEvent
             $proposal = array_column($proposals, null, 'occurrence_key')[$current->occurrence_key] ?? null;
             // Withdrawing or cancelling the person's own reports never depends on current guidance.
             $withdrawing = in_array($type, ['appointment_cancelled', 'cancellation_reported', 'submission_retracted', 'process_untracked'], true);
-            if (! $withdrawing && ($proposal === null || $proposal['catalogue_hash'] !== $current->catalogue_hash
+            // Only this process's own steps matter: a new release that leaves them unchanged (for
+            // example a renewed source check elsewhere) is not new guidance for this person.
+            if (! $withdrawing && ($proposal === null
                 || CatalogueHash::of($proposal['steps']) !== CatalogueHash::of($current->step_definitions)
                 || ($reviewToken !== null && ! hash_equals($proposal['review_token'], $reviewToken)))) {
                 throw new ConflictHttpException('This guidance or its relevant steps changed. Review the current plan before recording progress.');

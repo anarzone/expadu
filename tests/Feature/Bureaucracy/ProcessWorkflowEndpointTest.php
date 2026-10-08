@@ -3,6 +3,7 @@
 use App\Bureaucracy\Catalogue\CatalogueCompiler;
 use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
 use App\Bureaucracy\People\EnsureAccountHolder;
+use App\Models\BureaucracyCatalogueRelease;
 use App\Models\BureaucracyProcess;
 use App\Models\Task;
 use App\Models\User;
@@ -136,4 +137,39 @@ test('the plan lists exactly the progress changes the workflow accepts from here
     ($this->report)('submission_recorded', ['occurred_on' => '2026-09-08'])->assertSuccessful();
     // After a submission: wait, the office needs something, complete or cancel; never "back to preparing".
     expect($events()->keys()->all())->toBe(['waiting_reported', 'action_required_reported', 'completion_reported', 'cancellation_reported']);
+});
+
+function activateRelease(array $tasks, array $mapping): void
+{
+    $store = app(CatalogueReleaseStore::class);
+    $current = DB::table('bureaucracy_catalogue_pointers')->where('name', 'active')->value('release_id');
+    $hash = $current ? BureaucracyCatalogueRelease::query()->whereKey($current)->value('content_hash') : null;
+    $store->activate($store->stage(app(CatalogueCompiler::class)->compile($tasks, $mapping))->id, $hash);
+}
+
+test('a new release that leaves this task unchanged never asks the person to review it', function () {
+    $task = Task::query()->where('key', 'fixture.workflow')->sole();
+    $other = Task::factory()->approvedFixture()->create(['key' => 'fixture.unrelated', 'type' => 'task', 'applies_if' => [],
+        'depends_on' => [], 'deadline_type' => 'none', 'documents_required' => [], 'how_to_steps' => [], 'links' => []])->fresh();
+    activateRelease([$task, $other], [
+        'fixture.workflow' => ['process_id' => 'fixture.workflow', 'topic' => 'residence', 'kind' => 'action', 'coverage' => 'partial'],
+        'fixture.unrelated' => ['process_id' => 'fixture.unrelated', 'topic' => 'tax', 'kind' => 'action', 'coverage' => 'partial'],
+    ]);
+
+    $process = collect($this->getJson($this->planUrl)->json('processes'))->firstWhere('id', $this->started['process_id']);
+    expect($process['guidance_state'])->toBe('current');
+    ($this->report)('preparation_started')->assertSuccessful();
+});
+
+test('a change to this task\'s own steps asks for review before more progress, and review restores it', function () {
+    $task = Task::query()->where('key', 'fixture.workflow')->sole();
+    $task->forceFill(['description' => 'Changed guidance text.', 'content_version' => 'fixture.2'])->save();
+    activateRelease([$task->fresh()], ['fixture.workflow' => ['process_id' => 'fixture.workflow', 'topic' => 'residence', 'kind' => 'action', 'coverage' => 'partial']]);
+
+    $process = collect($this->getJson($this->planUrl)->json('processes'))->firstWhere('id', $this->started['process_id']);
+    expect($process['guidance_state'])->toBe('review_required');
+    ($this->report)('preparation_started')->assertConflict();
+    $this->postJson($this->url.'/review', ['request_id' => (string) Str::uuid(), 'expected_version' => $process['version'],
+        'review_token' => $process['review_token'], 'confirmed' => true])->assertSuccessful();
+    expect(collect($this->getJson($this->planUrl)->json('processes'))->firstWhere('id', $this->started['process_id'])['guidance_state'])->toBe('current');
 });
