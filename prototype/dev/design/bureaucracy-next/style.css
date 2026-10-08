@@ -2562,6 +2562,11 @@ body[data-page='bureaucracy'] .sr-only {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
+.good-to-know .section-note {
+    margin: 4px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
 .context-topic + .context-topic {
     margin-top: 18px;
 }

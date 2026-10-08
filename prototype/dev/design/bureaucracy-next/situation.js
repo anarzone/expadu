@@ -157,6 +157,54 @@
         s.records.family.docs[3] = 'reported_available';
         return s;
     }
+    // Still planning the move, with a job offer: health insurance is the
+    // one task now; the bank account starts after arrival, so it is listed
+    // under "After you arrive" and asks nothing yet (cf1b1caa). They told
+    // us about the account when they set up their profile.
+    function planning() {
+        const s = fresh();
+        s.scenario = 'planning';
+        s.profileId = 'planning-design-v1';
+        const o = G.hydrate(s);
+        o.started = true;
+        o.mode = 'review';
+        o.details = D.create({
+            citizenship_group: 'non_eu',
+            arrival_planned: true,
+            purpose: 'employment',
+            health_coverage_confirmed: false,
+            bank_account_help_needed: true,
+        });
+        Object.assign(state(s), { stage: 'summary' });
+        return s;
+    }
+    // A Blue Card holder working towards permanent residence: 16
+    // qualifying months and B1 German. No task applies; the two settlement
+    // routes show as options, never as a decision that they qualify.
+    function settling() {
+        const s = fresh();
+        s.scenario = 'settling';
+        s.profileId = 'settling-design-v1';
+        const o = G.hydrate(s);
+        o.started = true;
+        o.mode = 'review';
+        o.details = D.create({
+            citizenship_group: 'non_eu',
+            arrival_planned: false,
+            current_residence_title: 'blue_card',
+            residence_title_expires_at: '2028-06-30',
+            purpose: 'employment',
+            case_goal: 'settlement_permit',
+            blue_card_qualifying_months: 16,
+            german_level: 'b1',
+            registration_status: 'registered',
+            health_coverage_confirmed: true,
+            bank_account_help_needed: false,
+            tax_id_available: true,
+        });
+        Object.assign(state(s), { stage: 'summary' });
+        return s;
+    }
     // What concerns this person now, in the backend's order (registry.js).
     function questions(s) {
         const r = G.hydrate(s).details;
@@ -359,6 +407,8 @@
         returning,
         eu,
         family,
+        planning,
+        settling,
         questions,
         begin,
         afterAnswer,

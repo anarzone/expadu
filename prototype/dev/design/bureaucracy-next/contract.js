@@ -592,12 +592,20 @@
             history: [],
         };
     }
-    // plan.guidance[]: the context cards that apply to you (kind context,
-    // actionable false, type info). Never processes, never a step. A card
-    // applies when every condition of any one of its applies_if groups
-    // holds (a list means one of these values; an empty group applies to
-    // everyone). The most urgent come first, then catalogue order.
-    const urgencyRank = { high: 0, medium: 1, low: 2 };
+    // plan.guidance[] (bureaucracy-v2.md "Guidance that is not a task"):
+    // the rows the assessment considered, each saying whether it applies
+    // (every criterion is met; an unanswered one isn't) and whether it
+    // waits for your arrival. The page shows context rows that apply as
+    // "Good to know", option rows that apply as "Options for you", and
+    // after_arrival rows as "After you arrive"; none is a to-do. The
+    // backend lists every unit it considered; the mock lists its cards and
+    // the steps waiting for arrival, which is what the page shows. A card's
+    // applies_if holds when every condition of any one group does (a list
+    // means one of these values; an empty group applies to everyone). The
+    // most urgent come first, then catalogue order.
+    const urgencyRank = { critical: 0, high: 1, medium: 2, normal: 2, low: 3 };
+    // process-map.yaml kinds of the steps that can wait for arrival.
+    const unitKinds = { 'fam.integration_course': 'action' };
     function guidanceOf(s) {
         const facts = answersOf(s).facts;
         const said = (k) =>
@@ -606,39 +614,69 @@
             Object.entries(group).every(([k, v]) =>
                 Array.isArray(v) ? v.includes(said(k)) : said(k) === v,
             );
-        return R()
+        const review = (r) => ({
+            verified_at: r.verifiedAt,
+            content_version: r.version,
+        });
+        const cards = R()
             .filter(
                 (r) =>
-                    r.kind === 'context' &&
-                    r.state !== 'unconfirmed' &&
-                    (r.appliesIf || [{}]).some(holds),
+                    ['context', 'option'].includes(r.kind) &&
+                    r.state !== 'unconfirmed',
             )
-            .map((r, order) => ({ r, order }))
-            .sort(
-                (a, b) =>
-                    urgencyRank[a.r.urgency] - urgencyRank[b.r.urgency] ||
-                    a.order - b.order,
-            )
-            .map(({ r }) => ({
+            .map((r) => ({
                 id: r.key,
                 definition_id: definitionOf(r),
                 title: r.definitionTitle || r.title,
                 unit_title: r.title,
                 description: r.description,
-                kind: 'context',
+                kind: r.kind,
                 type: 'info',
                 actionable: false,
+                applies: (r.appliesIf || [{}]).some(holds),
+                after_arrival: false,
                 topic: r.topic,
                 urgency: r.urgency,
                 actions: (r.official || [r.source]).map((url) => ({
                     url,
                     purpose: 'information',
                 })),
-                review: {
-                    verified_at: r.verifiedAt,
-                    content_version: r.version,
-                },
+                review: review(r),
             }));
+        // A task that applies but waits for arrival: each of its steps.
+        const RG = root.BureaucracyRegistry;
+        const waiting = (
+            RG && s.profileKind === 'personal' ? RG.afterArrival(facts) : []
+        ).flatMap((id) => {
+            const d = P.definitions.find((x) => x.id === id);
+            const task = RG.tasks.find((t) => t.id === id);
+            return (id === 'blue-card' ? [0, 1, 6] : d.records || [d.record])
+                .map((n) => R()[n])
+                .map((r) => ({
+                    id: r.key,
+                    definition_id: definitions[id].id,
+                    title: processTitles[definitions[id].id] || r.title,
+                    unit_title: r.title,
+                    description: r.description,
+                    kind: unitKinds[r.key] || 'preparation',
+                    type: 'task',
+                    actionable: false,
+                    applies: true,
+                    after_arrival: true,
+                    topic: definitions[id].topic,
+                    urgency: task.urgency,
+                    actions: [{ url: r.source, purpose: 'information' }],
+                    review: review(r),
+                }));
+        });
+        return [...cards, ...waiting]
+            .map((g, order) => ({ g, order }))
+            .sort(
+                (a, b) =>
+                    urgencyRank[a.g.urgency] - urgencyRank[b.g.urgency] ||
+                    a.order - b.order,
+            )
+            .map(({ g }) => g);
     }
     // plan.questions (bureaucracy-v2.md "Questions and answer changes"):
     // at most one current question, in the registry's words. Three answers

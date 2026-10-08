@@ -279,7 +279,14 @@ window.BureaucracySource = [
         urgency: 'high',
         // applies_if: any one group, every condition in it (a list means
         // one of these values); an empty group applies to everyone.
-        appliesIf: [{ citizenship_group: 'non_eu' }],
+        // Only a title with no reviewed rule: another title, or a settlement
+        // permit whose section you don't know (f98ed7b9).
+        appliesIf: [
+            {
+                citizenship_group: 'non_eu',
+                current_residence_title: ['other', 'settlement_permit_unknown'],
+            },
+        ],
         title: 'Verify an unrecognized title against the official source',
         description:
             'Expadu does not have a reviewed case rule for every residence title. Check the exact legal basis printed on the card or visa and confirm the route with the Cologne immigration authority before acting. General information shown here is not an eligibility decision.',
@@ -435,5 +442,64 @@ window.BureaucracySource = [
         version: '2026-10-08.1',
         source: 'https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/InhaltAblauf/inhaltablauf-node.html',
         law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__44.html',
+    },
+    // Routes you may choose (kind option, plan.guidance[]): "Options for
+    // you", never a task and never a claim that you qualify. One example:
+    // a Blue Card holder's two settlement cards, as the catalogue words
+    // them (non_eu_employee_blue_card.yaml).
+    {
+        key: 'bc.ne_fast_track',
+        kind: 'option',
+        definition: 'residence.settlement.blue_card',
+        definitionTitle: 'Permanent residence with a Blue Card',
+        topic: 'residence',
+        urgency: 'low',
+        appliesIf: [
+            {
+                citizenship_group: 'non_eu',
+                current_residence_title: 'blue_card',
+            },
+        ],
+        title: 'Blue Card fast track: permanent residence after 21 or 27 months',
+        description:
+            'Blue Card holders can get the Niederlassungserlaubnis (permanent residence)\nafter 27 months of Blue Card employment with pension or equivalent contributions and A1 German — or\nafter 21 months with B1 German. Cologne puts it as 21 or 27 months instead of three or five years.\nThe authority still checks the further conditions referenced in §18c, so keep\nyour contributions running and book a German course early. The Niederlassungserlaubnis\nfee is €113.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html',
+        official: [
+            'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html',
+            'https://www.stadt-koeln.de/service/produkte/20321/index.html',
+        ],
+    },
+    {
+        key: 'case.bc.settlement.track_21_months',
+        kind: 'option',
+        definition: 'residence.settlement.blue_card',
+        definitionTitle: 'Permanent residence with a Blue Card',
+        topic: 'residence',
+        urgency: 'medium',
+        appliesIf: [
+            {
+                citizenship_group: 'non_eu',
+                current_residence_title: 'blue_card',
+                case_goal: 'settlement_permit',
+                blue_card_qualifying_months: [
+                    12, 13, 14, 15, 16, 17, 18, 19, 20,
+                ],
+                german_level: ['b1', 'b2', 'c1', 'c2'],
+            },
+        ],
+        title: 'Track the 21-month Blue Card settlement route',
+        description:
+            'With B1 German and fewer than 21 documented qualifying months, the time\nrequirement for the 21-month Blue Card route is not yet met. Track qualifying\nemployment and pension or equivalent contributions. At 21 months, the authority\nmust still verify the remaining conditions referenced by §18c(2), including the\napplicable §9 checks. Time in Germany alone is not the statutory counter.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-07.1',
+        source: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html',
+        official: [
+            'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html',
+            'https://www.stadt-koeln.de/service/produkte/20321/index.html',
+        ],
     },
 ];

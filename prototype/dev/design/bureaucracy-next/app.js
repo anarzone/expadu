@@ -182,6 +182,8 @@
         ['existing', 'Existing sample plan'],
         ['eu', 'EU citizen, settled in'],
         ['family', 'Joining a spouse'],
+        ['planning', 'Still planning the move'],
+        ['settling', 'Blue Card holder, settling'],
         ['outside', 'Outside Cologne'],
         ['setup', 'No profile yet'],
         ['unavailable', 'Record unavailable'],
@@ -206,13 +208,17 @@
                     ? J.eu()
                     : name === 'family'
                       ? J.family()
-                      : entries.includes(name)
-                        ? { ...B.blank(), entry: name }
-                        : name === 'shared'
-                          ? // Your plan as someone you invited sees it: only
-                            // the scopes you gave them.
-                            { ...B.fresh(), scopes: [...sharedScopes] }
-                          : B.fresh();
+                      : name === 'planning'
+                        ? J.planning()
+                        : name === 'settling'
+                          ? J.settling()
+                          : entries.includes(name)
+                            ? { ...B.blank(), entry: name }
+                            : name === 'shared'
+                              ? // Your plan as someone you invited sees it: only
+                                // the scopes you gave them.
+                                { ...B.fresh(), scopes: [...sharedScopes] }
+                              : B.fresh();
         P.hydrate(state);
         H.hydrate(state);
         G.hydrate(state);
@@ -338,7 +344,7 @@
         if (J.applies(state) && state.view === 'overview')
             return (
                 JU.page(state) +
-                (plan.open.length ? overview(plan) : '') +
+                (plan.open.length ? overview(plan) : notTasks(plan)) +
                 JU.topics(state)
             );
         if (J.applies(state) && state.view === 'paperwork' && !plan.open.length)
@@ -532,7 +538,7 @@
             )
             .join(
                 '',
-            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}</div>${noResidenceTask(plan) ? '<p class="process-grid-note">No residence task applies to your answers.</p>' : ''}</section></div>${dates(plan)}${goodToKnow(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
+            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}</div>${noResidenceTask(plan) ? '<p class="process-grid-note">No residence task applies to your answers.</p>' : ''}</section></div>${dates(plan)}${afterYouArrive(plan)}${optionsForYou(plan)}${goodToKnow(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
     }
     // An EU citizen's plan has no residence task because none applies, not
     // because something is missing: say so.
@@ -611,48 +617,89 @@
         appointment: 'Appointment',
         submission_recorded: 'Submission recorded',
     };
-    // plan.guidance[]: cards that apply to you but aren't tasks (kind
-    // context), grouped by topic in the order they arrive (most urgent
-    // first). Each opens with when it was checked, then its own text and
-    // its official pages; nothing to track.
+    // plan.guidance[] rows that aren't tasks (bureaucracy-v2.md "Guidance
+    // that is not a task"): only rows that apply, in the order they arrive
+    // (most urgent first). Each opens with when it was checked, then its
+    // own text and its official pages; nothing to track.
+    // The law's own text or the office's page; numbered when a card quotes
+    // two of the same kind.
+    function guidanceLinks(actions) {
+        const kind = (a) =>
+            /gesetze-im-internet\.de/.test(a.url)
+                ? 'Legal text'
+                : 'Official page';
+        return actions
+            .map((a, i) => {
+                const same = actions.filter((b) => kind(b) === kind(a));
+                const n =
+                    same.length > 1
+                        ? ` ${actions.slice(0, i + 1).filter((b) => kind(b) === kind(a)).length}`
+                        : '';
+                return `<a href="${E(a.url)}" target="_blank" rel="noopener">${kind(a)}${n} ↗</a>`;
+            })
+            .join('');
+    }
+    // Under a heading that already names the route, a card shows only its
+    // own title.
+    function guidanceCard(g, icon, grouped = false) {
+        const title = grouped ? g.unit_title : g.title;
+        return `<details class="context-card"><summary><span class="topic-icon">${I(icon)}</span><span><strong>${E(title)}</strong>${g.unit_title !== title ? `<small>${E(g.unit_title)}</small>` : ''}</span>${I('down')}</summary><div class="context-text"><small>${E(checkedLine(g.review.verified_at))}</small>${paragraphs(
+            g.description,
+        )
+            .map((x) => `<p>${E(x)}</p>`)
+            .join(
+                '',
+            )}<div class="context-links">${guidanceLinks(g.actions)}</div></div></details>`;
+    }
+    // Context cards: "Good to know", grouped by topic.
     function goodToKnow(plan) {
-        if (!plan.guidance?.length) return '';
-        const topics = [...new Set(plan.guidance.map((g) => g.topic))];
-        // The law's own text or the office's page; numbered when a card
-        // quotes two of the same kind.
-        const links = (actions) => {
-            const kind = (a) =>
-                /gesetze-im-internet\.de/.test(a.url)
-                    ? 'Legal text'
-                    : 'Official page';
-            return actions
-                .map((a, i) => {
-                    const same = actions.filter((b) => kind(b) === kind(a));
-                    const n =
-                        same.length > 1
-                            ? ` ${actions.slice(0, i + 1).filter((b) => kind(b) === kind(a)).length}`
-                            : '';
-                    return `<a href="${E(a.url)}" target="_blank" rel="noopener">${kind(a)}${n} ↗</a>`;
-                })
-                .join('');
-        };
-        const card = (g) =>
-            `<details class="context-card"><summary><span class="topic-icon">${I('info')}</span><span><strong>${E(g.title)}</strong>${g.unit_title !== g.title ? `<small>${E(g.unit_title)}</small>` : ''}</span>${I('down')}</summary><div class="context-text"><small>${E(checkedLine(g.review.verified_at))}</small>${paragraphs(
-                g.description,
-            )
-                .map((x) => `<p>${E(x)}</p>`)
-                .join(
-                    '',
-                )}<div class="context-links">${links(g.actions)}</div></div></details>`;
-        return `<section class="good-to-know" aria-labelledby="good-heading"><div class="case-section-head"><h2 id="good-heading">Good to know <span>${plan.guidance.length}</span></h2></div>${topics
+        const rows = (plan.guidance || []).filter(
+            (g) => g.kind === 'context' && g.applies && !g.after_arrival,
+        );
+        if (!rows.length) return '';
+        const topics = [...new Set(rows.map((g) => g.topic))];
+        return `<section class="good-to-know" aria-labelledby="good-heading"><div class="case-section-head"><h2 id="good-heading">Good to know <span>${rows.length}</span></h2></div>${topics
             .map(
                 (t) =>
-                    `<div class="context-topic"><h3>${E(C.topicLabels[t] || t)}</h3><div class="context-list">${plan.guidance
+                    `<div class="context-topic"><h3>${E(C.topicLabels[t] || t)}</h3><div class="context-list">${rows
                         .filter((g) => g.topic === t)
-                        .map(card)
+                        .map((g) => guidanceCard(g, 'info'))
                         .join('')}</div></div>`,
             )
             .join('')}</section>`;
+    }
+    // No task applies, but options or what waits for your arrival do:
+    // those, and what's good to know, without an empty task list.
+    function notTasks(plan) {
+        const later = afterYouArrive(plan) + optionsForYou(plan);
+        return later ? later + goodToKnow(plan) : '';
+    }
+    // Option cards: routes you may choose, grouped by route. Never a task,
+    // never a claim that you qualify.
+    function optionsForYou(plan) {
+        const rows = (plan.guidance || []).filter(
+            (g) => g.kind === 'option' && g.applies && !g.after_arrival,
+        );
+        if (!rows.length) return '';
+        const routes = [...new Set(rows.map((g) => g.title))];
+        return `<section class="good-to-know" aria-labelledby="options-heading"><div class="case-section-head"><div><h2 id="options-heading">Options for you <span>${rows.length}</span></h2><p class="section-note">Routes you may choose. Only the authority decides.</p></div></div>${routes
+            .map(
+                (t) =>
+                    `<div class="context-topic"><h3>${E(t)}</h3><div class="context-list">${rows
+                        .filter((g) => g.title === t)
+                        .map((g) => guidanceCard(g, 'route', true))
+                        .join('')}</div></div>`,
+            )
+            .join('')}</section>`;
+    }
+    // Still planning the move: what applies but starts once you're here.
+    // Listed, not to-dos.
+    function afterYouArrive(plan) {
+        const rows = (plan.guidance || []).filter((g) => g.after_arrival);
+        if (!rows.length) return '';
+        return `<section class="good-to-know" aria-labelledby="arrive-heading"><div class="case-section-head"><div><h2 id="arrive-heading">After you arrive <span>${rows.length}</span></h2><p class="section-note">These start once you’re in Germany. Nothing to do before then.</p></div></div><div class="context-list">${rows
+            .map((g) => guidanceCard(g, 'clock'))
+            .join('')}</div></section>`;
     }
     // plan.timeline, soonest first; dates still unknown stay listed with
     // what they need.

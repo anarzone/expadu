@@ -17,6 +17,9 @@
         ['settlement_permit_18c', 'Settlement permit · §18c'],
         ['settlement_permit_unknown', 'Settlement permit · type unknown'],
         ['other', 'Another title'],
+        // Entered visa-free or not here yet (facts.yaml, cf1b1caa); the
+        // app's own label.
+        ['none', 'No residence title yet'],
     ];
     const titles = (values) =>
         values.map((v) => residenceTitles.find(([x]) => x === v));
@@ -67,6 +70,7 @@
                 'settlement_permit_18c',
                 'settlement_permit_unknown',
                 'other',
+                'none',
             ]),
             100,
             'Which German visa or residence title do you currently hold?',
@@ -473,8 +477,9 @@
                 ].includes(said(f, 'current_residence_title')),
         ],
     ];
-    // The catalogue cards' applies_if for the sample's tasks, and the facts
-    // a task's dates wait for once it applies.
+    // The catalogue cards' applies_if for the sample's tasks, the facts a
+    // task's dates wait for once it applies, and the catalogue phase of its
+    // first step.
     const tasks = [
         {
             id: 'blue-card',
@@ -489,6 +494,7 @@
             },
             // Both its targets aim for the visa expiry.
             dates: ['visa_expires_at'],
+            phase: 'arrival',
         },
         {
             id: 'address',
@@ -499,6 +505,7 @@
                 registration_status: 'not_registered',
             },
             dates: ['moved_in_at'],
+            phase: 'arrival',
         },
         {
             id: 'health',
@@ -506,6 +513,7 @@
             urgency: 'critical',
             when: { health_coverage_confirmed: false },
             dates: [],
+            phase: 'arrival',
         },
         {
             id: 'bank',
@@ -513,6 +521,7 @@
             urgency: 'high',
             when: { bank_account_help_needed: true },
             dates: [],
+            phase: 'first_30_days',
         },
         // Joining a spouse: case.family.first_permit.prepare and the
         // appointment (family reunification, a sponsor of any listed title;
@@ -538,6 +547,7 @@
                 ],
             },
             dates: ['visa_expires_at'],
+            phase: 'arrival',
         },
         {
             id: 'integration',
@@ -545,6 +555,7 @@
             urgency: 'low',
             when: { purpose: 'family', sponsor: ['non_eu', 'german'] },
             dates: [],
+            phase: 'settling',
         },
     ];
     // question-protocol.yaml (2026-10-08.1) not_asked: questions your own
@@ -576,10 +587,26 @@
                 ? !unaskable(facts, k)
                 : meets(said(facts, k), v),
         );
+    // Still planning the move: a task whose catalogue phase is after
+    // arrival waits. It isn't proposed and asks nothing until you arrive
+    // (AssessPerson, cf1b1caa). The mock holds back whole tasks; each of
+    // its after-arrival tasks starts after arrival.
+    const afterArrivalPhases = ['first_30_days', 'settling', 'ongoing'];
+    const waits = (facts, t) =>
+        said(facts, 'arrival_planned') === true &&
+        afterArrivalPhases.includes(t.phase);
     // Which sample tasks your answers open (processes are proposals until
     // you start tracking them).
     const opened = (facts) =>
-        tasks.filter((t) => applies(facts, t)).map((t) => t.id);
+        tasks
+            .filter((t) => applies(facts, t) && !waits(facts, t))
+            .map((t) => t.id);
+    // The tasks that apply but wait for your arrival: listed under "After
+    // you arrive", never as to-dos.
+    const afterArrival = (facts) =>
+        tasks
+            .filter((t) => applies(facts, t) && waits(facts, t))
+            .map((t) => t.id);
     // Every question that concerns this person now, in the order it would be
     // asked: orientation first, then what a still-possible task needs, in
     // QuestionProtocol's order (7ffc1179 on the backend branch).
@@ -617,7 +644,7 @@
             ranked.set(key, e);
         };
         for (const t of tasks)
-            if (possible(facts, t)) {
+            if (possible(facts, t) && !waits(facts, t)) {
                 for (const k of Object.keys(t.when))
                     add(
                         k,
@@ -651,6 +678,7 @@
             .filter(
                 (t) =>
                     possible(facts, t) &&
+                    !waits(facts, t) &&
                     (key in t.when ||
                         (applies(facts, t) && t.dates.includes(key))),
             )
@@ -661,6 +689,7 @@
         tasks,
         questions,
         opened,
+        afterArrival,
         processIds,
         said,
     };

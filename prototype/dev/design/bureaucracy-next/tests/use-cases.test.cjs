@@ -168,8 +168,51 @@ test('a non-EU person still planning the move', () => {
     });
     for (const k of [...permitQuestions, 'registration_status', 'moved_in_at'])
         assert.ok(!asked.includes(k), `${k} not asked before arriving`);
-    // Health and an account can matter before the move.
-    assert.deepEqual(opened.sort(), ['bank', 'health']);
+    // Health insurance starts before the move. The bank account's phase is
+    // after arrival, so it isn't proposed and asks nothing yet (cf1b1caa).
+    assert.ok(!asked.includes('bank_account_help_needed'));
+    assert.deepEqual(opened, ['health']);
+});
+
+test('still planning: what applies after arrival is listed, not a to-do', () => {
+    const s = J.planning();
+    P.hydrate(s);
+    const p = plan(s);
+    assert.deepEqual([...p.processes.map((x) => x.occurrence_key)], ['health']);
+    assert.equal(
+        p.overview.next_actions[0].title,
+        p.processes[0].steps[0].title,
+    );
+    const later = p.guidance.filter((g) => g.after_arrival);
+    assert.deepEqual([...later.map((g) => g.id)], ['core.bank_account']);
+    assert.ok(later.every((g) => g.applies && !g.actionable));
+    // Nothing is asked for it before arrival.
+    assert.ok(!J.questions(s).includes('bank_account_help_needed'));
+    // Once they've arrived, it's a task again.
+    const arrived = J.planning();
+    G.hydrate(arrived).details.facts.arrival_planned.value = false;
+    P.hydrate(arrived);
+    assert.ok(P.openedBy(arrived).includes('bank'));
+    assert.ok(!plan(arrived).guidance.some((g) => g.after_arrival));
+});
+
+test('no residence title yet: a visa-free arrival isn’t asked for its dates', () => {
+    const titles = R.field('current_residence_title').options;
+    assert.equal(titles.length, 9);
+    assert.deepEqual([...titles.at(-1)], ['none', 'No residence title yet']);
+    const { asked, opened } = walk({
+        citizenship_group: 'non_eu',
+        arrival_planned: false,
+        current_residence_title: 'none',
+        purpose: 'employment',
+        entry_mode: 'visa_free',
+        case_goal: 'blue_card',
+    });
+    assert.ok(asked.includes('current_residence_title'));
+    for (const k of ['visa_expires_at', 'residence_title_expires_at'])
+        assert.ok(!asked.includes(k), `${k} not asked`);
+    // The first Blue Card application is the D-visa route.
+    assert.ok(!opened.includes('blue-card'));
 });
 
 test('a non-EU employee who already holds a work permit', () => {
@@ -347,14 +390,18 @@ test('another person’s plan is read only and shows nothing private', () => {
     }
 });
 
-test('guidance that isn’t a task: context cards for whom they apply', () => {
+// The rows a page shows as "Good to know" and "Options for you".
+const shown = (p, kind) =>
+    p.guidance.filter((g) => g.kind === kind && g.applies && !g.after_arrival);
+
+test('guidance that isn’t a task: context cards only when every criterion is met', () => {
     const p = plan(sample());
     // The sample person (non-EU, on a D visa, aiming for the Blue Card)
-    // gets the backend's seven; the one urgent card comes first.
+    // gets the backend's six: no Opportunity Card limits (their track is
+    // never asked) and no unrecognized-title card (theirs is recognised).
     assert.deepEqual(
-        [...p.guidance.map((g) => g.id)],
+        [...shown(p, 'context').map((g) => g.id)],
         [
-            'case.bc.verify_status_source',
             'shared.citizenship',
             'shared.other_permits',
             'shared.passport_transfer',
@@ -363,15 +410,16 @@ test('guidance that isn’t a task: context cards for whom they apply', () => {
             'shared.verpflichtungserklaerung',
         ],
     );
-    assert.equal(p.guidance[0].urgency, 'high');
-    assert.equal(p.guidance[0].title, 'Checking your residence title');
-    assert.ok(p.guidance.every((g) => g.topic === 'residence'));
+    // Every card is listed, saying whether it applies.
+    const limits = p.guidance.find((g) => g.id === 'ck.work_limits');
+    assert.equal(limits.applies, false);
+    assert.ok(p.guidance.every((g) => typeof g.applies === 'boolean'));
     // Every official page the card quotes.
     assert.equal(
         p.guidance.find((g) => g.id === 'shared.long_game').actions.length,
         2,
     );
-    assert.ok(p.guidance.every((g) => !g.actionable && g.kind === 'context'));
+    assert.ok(p.guidance.every((g) => !g.actionable));
     assert.ok(
         !p.processes.some((x) =>
             x.steps.some((st) =>
@@ -382,9 +430,23 @@ test('guidance that isn’t a task: context cards for whom they apply', () => {
     // An EU citizen gets only the visitor card.
     const { s } = walk({ citizenship_group: 'eu', arrival_planned: false });
     assert.deepEqual(
-        [...plan(s).guidance.map((g) => g.id)],
+        [...shown(plan(s), 'context').map((g) => g.id)],
         ['shared.verpflichtungserklaerung'],
     );
+});
+
+test('an unrecognized title gets the urgent card to check it, first', () => {
+    for (const title of ['other', 'settlement_permit_unknown']) {
+        const { s } = walk({
+            citizenship_group: 'non_eu',
+            arrival_planned: false,
+            current_residence_title: title,
+        });
+        const cards = shown(plan(s), 'context');
+        assert.equal(cards[0].id, 'case.bc.verify_status_source', title);
+        assert.equal(cards[0].urgency, 'high');
+        assert.equal(cards[0].title, 'Checking your residence title');
+    }
 });
 
 test('a student’s cards span three topics; a settled person skips the long game', () => {
@@ -394,7 +456,7 @@ test('a student’s cards span three topics; a settled person skips the long gam
         current_residence_title: 'other',
         purpose: 'study',
     });
-    const cards = plan(student.s).guidance;
+    const cards = shown(plan(student.s), 'context');
     for (const id of [
         'stu.post_graduation',
         'stu.work_rules',
@@ -416,8 +478,36 @@ test('a student’s cards span three topics; a settled person skips the long gam
         current_residence_title: 'settlement_permit_9',
     });
     assert.ok(
-        !plan(settled.s).guidance.some((g) => g.id === 'shared.long_game'),
+        !shown(plan(settled.s), 'context').some(
+            (g) => g.id === 'shared.long_game',
+        ),
     );
+});
+
+test('options for a Blue Card holder: routes to choose, never tasks', () => {
+    const s = J.settling();
+    P.hydrate(s);
+    const p = plan(s);
+    assert.deepEqual(p.processes, []);
+    assert.deepEqual(
+        [...shown(p, 'option').map((g) => g.id)],
+        ['case.bc.settlement.track_21_months', 'bc.ne_fast_track'],
+    );
+    assert.ok(
+        shown(p, 'option').every(
+            (g) =>
+                !g.actionable &&
+                g.title === 'Permanent residence with a Blue Card',
+        ),
+    );
+    // Past 20 qualifying months, the tracking card no longer applies.
+    G.hydrate(s).details.facts.blue_card_qualifying_months.value = 22;
+    assert.deepEqual(
+        [...shown(plan(s), 'option').map((g) => g.id)],
+        ['bc.ne_fast_track'],
+    );
+    // The sample person holds a D visa: no options.
+    assert.deepEqual(shown(plan(sample()), 'option'), []);
 });
 
 test('an EU citizen’s plan: everyday tasks, and no residence task because none applies', () => {

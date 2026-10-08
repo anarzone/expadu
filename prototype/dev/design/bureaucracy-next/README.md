@@ -11,19 +11,40 @@ end to end; the backend session listed what it never showed. One example of
 each kind is in now (it's for seeing the design, not every case). Most are
 under Review: a persona preview or Other states.
 
-- **Guidance that isn't a task** (plan.guidance, kind context): "Good to know"
-  on the overview, below the tasks and dates. All twelve context cards of the
-  release are in `source-data.js` with the backend's own text, official links
-  and applies_if (any one group, every condition in it; a list means one of
-  these values). The sample person gets the backend's seven: Checking your
-  residence title (high urgency, so first), German citizenship, Other
-  residence routes, Moving your permit to a new passport, While your
-  application is pending, Permanent residence, Inviting a visitor. They are
-  grouped by topic; each opens with when it was checked, then its text and its
-  official pages ("Official page", "Legal text"). None has a status, a count
-  of steps or a button to track: they aren't to-dos. A student (Fresh start:
-  non-EU, study) also gets cards under Work and Tax; an EU citizen gets only
-  Inviting a visitor.
+- **Guidance that isn't a task** (plan.guidance, as the backend sends it
+  since cf1b1caa and f98ed7b9): every row says whether it `applies` (every
+  criterion met; an unanswered one isn't) and whether it waits for arrival
+  (`after_arrival`). The page shows only rows that apply, in three quiet
+  lists below the tasks and dates. None has a status, a count of steps or a
+  button to track: they aren't to-dos. Each opens with when it was checked,
+  then its own text and its official pages ("Official page", "Legal text").
+  - "Good to know" (kind context), grouped by topic. All twelve context cards
+    of the release are in `source-data.js` with the backend's own text,
+    official links and applies_if (any one group, every condition in it; a
+    list means one of these values). The sample person gets the backend's
+    six: German citizenship, Other residence routes, Moving your permit to a
+    new passport, While your application is pending, Permanent residence,
+    Inviting a visitor. The Opportunity Card's work limits don't show (their
+    track is never asked), and "Checking your residence title" shows only for
+    another title or a settlement permit of unknown type, first because it's
+    urgent. A student (Fresh start: non-EU, study) also gets cards under Work
+    and Tax; an EU citizen gets only Inviting a visitor.
+  - "Options for you" (kind option): routes you may choose, grouped by route;
+    never a task and never a claim that you qualify. Review → Blue Card
+    holder, settling (16 qualifying months, B1 German, aiming for permanent
+    residence): no task applies, and the two settlement cards show under
+    "Permanent residence with a Blue Card". Past 20 months the tracking card
+    no longer applies. Other options (the freelancer's small-business VAT
+    rule, a work-permit holder's §18c check) have the same shape.
+  - "After you arrive": Review → Still planning the move (non-EU, a job
+    offer). Health insurance is the one task. The bank account's catalogue
+    phase is after arrival, so it isn't proposed, asks nothing before the
+    move and is listed here; once they've arrived it's a task again. The mock
+    holds back whole tasks (each of its after-arrival tasks starts after
+    arrival); the backend does it per step.
+- **No residence title yet**: the permit question's ninth answer, for a
+  visa-free arrival or someone not here yet. It brings no permit-expiry
+  question and no Blue Card route.
 - **Withheld cards** (not machine-confirmed): only as unconfirmed coverage
   units in Sources (the freelance residence permit, Kindergeld). Life events
   aren't live, so they're not tasks.
