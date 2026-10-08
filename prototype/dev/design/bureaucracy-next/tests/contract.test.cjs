@@ -439,3 +439,41 @@ test('each task carries its own name and whether its start can still be undone',
         /already has progress/,
     );
 });
+
+test('documents carry English names for German terms and the task they come from', () => {
+    const p = plan(fresh());
+    const rows = p.paperwork.requirements;
+    const landlord = rows.find((r) => r.label.startsWith('Wohnungsgeber'));
+    assert.deepEqual(landlord.terms, [
+        {
+            german: 'Wohnungsgeberbescheinigung',
+            english: "Landlord's confirmation of move-in",
+        },
+    ]);
+    // The label itself is unchanged; no term means an empty list.
+    assert.match(landlord.label, /^Wohnungsgeberbescheinigung \(Cologne form/);
+    assert.deepEqual(
+        rows.find((r) => r.label.startsWith('Valid passport')).terms,
+        [],
+    );
+    // A catalogue link, not a prerequisite: the Blue Card's health
+    // evidence comes from Health insurance, whose step lists it back.
+    const evidence = rows.find((r) => r.label === 'Health-insurance evidence');
+    assert.deepEqual(evidence.produced_by, {
+        unit_id: 'core.health_insurance',
+        process_id: 'health.coverage',
+    });
+    assert.equal(evidence.readiness, 'missing');
+    assert.equal(rows.filter((r) => r.produced_by).length, 1);
+    const health = proc(p, 'health').steps[0];
+    assert.deepEqual(health.produces, [
+        {
+            unit_id: 'case.bc.first_application.prepare',
+            process_id: 'residence.blue_card.first',
+            document_id: 'case.bc.first_application.prepare.document.4',
+            label: 'Health-insurance evidence',
+        },
+    ]);
+    // Linking never changes the requirement's identity.
+    assert.equal(evidence.id, 'case.bc.first_application.prepare.document.4');
+});

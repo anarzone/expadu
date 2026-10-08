@@ -35,11 +35,9 @@ test('a changed expiry invalidates scoped document confirmation but no appointme
 test('unknown fact keeps known steps and other processes available', () => {
     const s = B.fresh();
     s.prepared = true;
-    s.otherProcesses.push('Another request');
     B.confirmExpiry(s, null);
     assert.equal(s.expiry, null);
     assert.equal(s.prepared, true);
-    assert.equal(s.otherProcesses.length, 1);
     assert.equal(s.docs[1], 'reported_available');
 });
 test('document availability and confirmation are separate; they do not complete the process', () => {

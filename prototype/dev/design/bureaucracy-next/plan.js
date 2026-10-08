@@ -110,12 +110,9 @@
                 note: 'Sample completion record',
             },
         ];
-        s.custom = s.custom || [];
-        if (s.otherProcesses?.length) {
-            for (const name of s.otherProcesses)
-                s.custom.push({ id: 'request-' + s.custom.length, name });
-            s.otherProcesses = [];
-        }
+        // There are no free-text tasks (owner decision, 8 Oct 2026): a
+        // person starts only what their plan suggests. Older saved
+        // free-text requests are no longer read.
         return s;
     }
     const statuses = {

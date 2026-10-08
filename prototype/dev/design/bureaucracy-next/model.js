@@ -36,7 +36,6 @@
             'missing',
             'unknown',
         ],
-        otherProcesses: [],
     });
     const canEdit = (s) => s.person === 'self';
     // What the sample day's person has told us: arrived from outside the EU

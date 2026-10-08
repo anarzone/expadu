@@ -215,14 +215,14 @@ test('cancelled processes move to retained history and leave current action coun
     );
     assert.equal(p.counts.blocked, 0);
 });
-test('old user-named requests migrate once without replacing known processes', () => {
+test('free-text requests never become tasks', () => {
+    // Owner decision, 8 Oct: a person starts only what the plan suggests.
     const s = B.fresh();
     s.otherProcesses = ['Family question'];
+    s.custom = [{ id: 'request-0', name: 'Kita place' }];
     P.hydrate(s);
-    P.hydrate(s);
-    assert.equal(s.custom.length, 1);
-    assert.equal(s.custom[0].name, 'Family question');
     assert.equal(P.projection(s).processes.length, 4);
+    assert.equal(P.process(s, 'request-0'), undefined);
     assert.equal(P.process(s, 'unknown-id'), undefined);
 });
 

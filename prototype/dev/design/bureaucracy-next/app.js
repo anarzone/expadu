@@ -193,7 +193,6 @@
             'sourceFor',
             'paperFor',
             'history',
-            'request',
             'previewExit',
             'previewPersona',
         ].some((key) => key in b.dataset) ||
@@ -248,7 +247,6 @@
             'actions',
             'history',
             'detail',
-            'request',
         ].includes(q.get('view'))
             ? q.get('view')
             : 'overview';
@@ -292,9 +290,7 @@
                 ? historyView(plan)
                 : state.view === 'detail'
                   ? detail(plan)
-                  : state.view === 'request'
-                    ? requestView()
-                    : overview(plan);
+                  : overview(plan);
     }
     function refreshGuideContext() {
         const view = document.querySelector('.bureaucracy-view');
@@ -475,7 +471,7 @@
             )
             .join(
                 '',
-            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length + state.custom.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button><button class="icon-button" data-case="add-process" aria-label="Add a task">${I('plus')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}${state.custom.map((p) => `<button class="process-summary" data-request="${E(p.id)}"><span class="topic-icon">${I('document')}</span><span class="process-card-copy"><strong>${E(p.name)}</strong><small>Guidance not connected</small></span>${I('arrow')}</button>`).join('')}</div></section></div>${dates(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
+            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}</div></section></div>${dates(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
     }
     // Your own note first, then what your own paperwork is missing; never
     // a legal reason.
@@ -682,7 +678,22 @@
     const lower = (text) => text.charAt(0).toLowerCase() + text.slice(1);
     // One step from plan.processes[].steps: its reviewed copy, its own
     // documents and what you can record for it.
-    function stepContent(c, step) {
+    // guidance[].produces: other tasks in your plan that use what this step
+    // gives you.
+    function neededBy(plan, step) {
+        const uses = (step.produces || [])
+            .map((x) => ({
+                ...x,
+                task: plan.processes.find(
+                    (p) => p.definition_id === x.process_id,
+                ),
+            }))
+            .filter((x) => x.task);
+        return uses.length
+            ? `<p class="document-source">${I('document')}<span>Also needed for ${uses.map((x) => `${E(x.task.title)} (${E(x.label)})`).join(', ')}.</span>${uses.map((x) => `<button type="button" class="plain-button" data-process="${E(x.task.occurrence_key)}">Open ${E(x.task.title)}</button>`).join('')}</p>`
+            : '';
+    }
+    function stepContent(plan, c, step) {
         const key = c.occurrence_key;
         const editable = c.id !== null && !c.is_closed;
         const papers = step.requirements?.total > 0;
@@ -701,7 +712,7 @@
                     ? 'This task is with the office. Review your checklist or update your progress when something changes.'
                     : `${c.state.workflow === 'blocked' ? `You reported a hold-up${note ? `: ${E(lower(note))}` : ''}. ` : ''}${papers ? 'Check what you have. Mark each document ready only for this task.' : 'Read the official information, then update your own checklist here.'}`;
         const official = step.sources.official[0]?.url;
-        return `<div class="step-guide"><p>${text}</p><div class="step-main-actions">${papers ? `<button class="button primary" data-paper-for="${E(key)}" ${open ? `data-paper-focus="${E(key)}:${open.index}"` : ''}>${I('document')}${open ? 'Check documents' : 'Review documents'}<span class="step-count">${step.requirements.ready}/${step.requirements.total}</span></button>` : official ? `<a class="button primary" href="${E(official)}" target="_blank" rel="noopener">${I('arrow')}Read official information</a>` : ''}<button class="step-help" data-help-step="${E(step.id)}">${I('spark')}Help with this step</button></div>${papers && open && step.status !== 'completed' ? `<div class="step-document-preview">${I('document')}<div><small>${open.conditional ? 'May be needed · check this document' : 'First document to check'}</small><strong>${E(open.label)}</strong></div></div>` : ''}</div>${step.description ? `<details class="step-guidance"><summary>About this step ${I('down')}</summary><p class="review-copy">${E(step.description)}</p><small>Historical information · current guidance needs checking</small></details>` : ''}${editable ? `<div class="step-actions"><button class="plain-button" data-plan-step="${E(step.id)}">${I('clock')}${BureaucracyPlanning.linked(S.studio(), 'bureaucracy-preparation-' + step.id) ? 'View planned time' : 'Set aside time'}</button>${submitStep && !submission && step.status !== 'completed' ? button('I’ve submitted it', 'submission') : step.status === 'blocked' ? '' : `<button class="plain-button" data-toggle-step="${E(step.id)}">${I(step.status === 'completed' ? 'back' : 'check')}${step.status === 'completed' ? 'Reopen step' : 'I’ve finished this step'}</button>`}</div><p class="step-record-note">${I('info')}Your checklist only. Nothing is sent or submitted.</p>` : ''}`;
+        return `<div class="step-guide"><p>${text}</p><div class="step-main-actions">${papers ? `<button class="button primary" data-paper-for="${E(key)}" ${open ? `data-paper-focus="${E(key)}:${open.index}"` : ''}>${I('document')}${open ? 'Check documents' : 'Review documents'}<span class="step-count">${step.requirements.ready}/${step.requirements.total}</span></button>` : official ? `<a class="button primary" href="${E(official)}" target="_blank" rel="noopener">${I('arrow')}Read official information</a>` : ''}<button class="step-help" data-help-step="${E(step.id)}">${I('spark')}Help with this step</button></div>${papers && open && step.status !== 'completed' ? `<div class="step-document-preview">${I('document')}<div><small>${open.conditional ? 'May be needed · check this document' : 'First document to check'}</small><strong>${E(open.label)}</strong>${termLine(plan.paperwork.requirements.find((r) => r.id === open.id)?.terms)}</div></div>` : ''}${neededBy(plan, step)}</div>${step.description ? `<details class="step-guidance"><summary>About this step ${I('down')}</summary><p class="review-copy">${E(step.description)}</p><small>Historical information · current guidance needs checking</small></details>` : ''}${editable ? `<div class="step-actions"><button class="plain-button" data-plan-step="${E(step.id)}">${I('clock')}${BureaucracyPlanning.linked(S.studio(), 'bureaucracy-preparation-' + step.id) ? 'View planned time' : 'Set aside time'}</button>${submitStep && !submission && step.status !== 'completed' ? button('I’ve submitted it', 'submission') : step.status === 'blocked' ? '' : `<button class="plain-button" data-toggle-step="${E(step.id)}">${I(step.status === 'completed' ? 'back' : 'check')}${step.status === 'completed' ? 'Reopen step' : 'I’ve finished this step'}</button>`}</div><p class="step-record-note">${I('info')}Your checklist only. Nothing is sent or submitted.</p>` : ''}`;
     }
     const durationText = (minutes) =>
         minutes === null
@@ -750,7 +761,7 @@
             (n, x) => n + (x.requirements?.ready || 0),
             0,
         );
-        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(nameOf(key))} progress</h2>${badge(workflow[c.state.workflow], tone(c.state.workflow))}</div>${tracked ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${c.id === null ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${undo ? `<p class="process-note">${I('info')}<span>Tracking started. Nothing is reported yet.</span><button class="plain-button" data-case="untrack">Undo</button></p>` : ''}${c.state.report?.note ? `<p class="process-note">${I(c.state.workflow === 'waiting_authority' ? 'clock' : 'info')}${E(c.state.report.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${c.progress.completed}/${c.progress.total} done</span></div>${steps.map((x) => `<details class="process-step" data-step="${E(x.id)}" ${x.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${x.status}">${I(x.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(x.title)}</strong><small>${E(P.statuses[x.status] || '')}</small>${dueChip(plan, x)}</span>${I('down')}</summary><div class="step-content">${stepContent(c, x)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${E(key)}">${I('document')}<span>Documents<small>${ready} marked ready</small></span>${I('arrow')}</button><button data-source-for="${E(key)}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${deadline ? `<a href="${E(targetSource)}" target="_blank" rel="noopener">${I('calendar')}<span>Target date<small>${E(deadline.target || 'A date to aim for')}. The date needs ${E(factLabels[deadline.needed_fact] || 'more information')}; it isn’t a confirmed legal deadline.</small></span>${I('arrow')}</a>` : ''}${key === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${key === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${tracked ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${appointment ? 'Edit' : 'Record'} appointment">${I(appointment ? 'pencil' : 'plus')}</button></div>${appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(appointment.date))} · ${E(clock(appointment))}</strong><small>${E(appointment.location?.label || 'Location not recorded')} · ${E(durationText(appointment.duration_minutes))}</small>${appointment.location && !appointment.routable ? `<small>Saved as text, so no journey can be planned to it yet.</small>` : ''}</div>${onToday(local) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${submission ? date(submission.date) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${submission ? 'Review' : 'Record'} submission">${I(submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
+        return `<div class="process-detail-heading">${back()}<div><h2 class="sr-only" id="view-heading" tabindex="-1">${E(nameOf(key))} progress</h2>${badge(workflow[c.state.workflow], tone(c.state.workflow))}</div>${tracked ? `<button class="icon-button" data-case="status" aria-label="Update progress">${I('pencil')}</button>` : ''}</div>${c.id === null ? `<section class="proposal-banner"><div><strong>Look around first.</strong><p>Start tracking when you want to save your progress.</p></div>${button('Start tracking', 'start', 'primary')}</section>` : ''}${undo ? `<p class="process-note">${I('info')}<span>Tracking started. Nothing is reported yet.</span><button class="plain-button" data-case="untrack">Undo</button></p>` : ''}${c.state.report?.note ? `<p class="process-note">${I(c.state.workflow === 'waiting_authority' ? 'clock' : 'info')}${E(c.state.report.note)}</p>` : ''}<div class="process-workspace"><div class="process-work"><section class="detail-steps"><div class="case-section-head"><h3>Steps</h3><span>${c.progress.completed}/${c.progress.total} done</span></div>${steps.map((x) => `<details class="process-step" data-step="${E(x.id)}" ${x.id === selected?.id ? 'open' : ''}><summary><span class="step-symbol ${x.status}">${I(x.status === 'completed' ? 'check' : 'document')}</span><span><strong>${E(x.title)}</strong><small>${E(P.statuses[x.status] || '')}</small>${dueChip(plan, x)}</span>${I('down')}</summary><div class="step-content">${stepContent(plan, c, x)}</div></details>`).join('')}</section><div id="process-planning"></div></div><section class="process-resources"><div class="case-section-head"><h3>For this task</h3></div><button data-paper-for="${E(key)}">${I('document')}<span>Documents<small>${ready} marked ready</small></span>${I('arrow')}</button><button data-source-for="${E(key)}">${I('info')}<span>Official information<small>Current guidance needs checking</small></span>${I('arrow')}</button>${deadline ? `<a href="${E(targetSource)}" target="_blank" rel="noopener">${I('calendar')}<span>Target date<small>${E(deadline.target || 'A date to aim for')}. The date needs ${E(factLabels[deadline.needed_fact] || 'more information')}; it isn’t a confirmed legal deadline.</small></span>${I('arrow')}</a>` : ''}${key === 'bank' ? `<a href="../services-next/?service=banks&process=bank">${I('bank')}<span>Explore bank services</span>${I('arrow')}</a>` : ''}${key === 'blue-card' ? `<button data-case="expiry">${I('calendar')}<span>Visa expiry<small class="${soon(state.expiry)?.days <= 1 ? 'is-urgent' : ''}">${E(when(state.expiry))}</small></span>${I('pencil')}</button>` : ''}</section></div>${tracked ? `<section class="process-records"><div class="case-section-head"><h3>Your appointment</h3><button class="icon-button" data-case="appointment" aria-label="${appointment ? 'Edit' : 'Record'} appointment">${I(appointment ? 'pencil' : 'plus')}</button></div>${appointment ? `<div class="appointment-summary"><span class="appointment-symbol">${I('calendar')}</span><div><strong>${E(when(appointment.date))} · ${E(clock(appointment))}</strong><small>${E(appointment.location?.label || 'Location not recorded')} · ${E(durationText(appointment.duration_minutes))}</small>${appointment.location && !appointment.routable ? `<small>Saved as text, so no journey can be planned to it yet.</small>` : ''}</div>${onToday(local) ? `<a class="button secondary" href="${E(S.routes.today)}">${I('calendar')}On Today</a>` : `<button class="button secondary" data-plan-appointment>${I('calendar')}${linked ? 'View in day' : 'Add to day'}</button>`}</div>` : `<div class="appointment-empty">${I('calendar')}<span>Already have an appointment?<small>Keep its details here, then add it to your day.</small></span><button class="plain-button" data-case="appointment">Record it</button></div>`}<div class="submission-line"><span>${I('document')}Submission <strong>${submission ? date(submission.date) : 'Not recorded'}</strong></span><button class="icon-button" data-case="submission" aria-label="${submission ? 'Review' : 'Record'} submission">${I(submission ? 'pencil' : 'plus')}</button></div></section>` : ''}${linkedAppointmentNotice(p)}`;
     }
     // plan.paperwork.requirements for one task. Applicability and readiness
     // come from the plan; "I have this" and "Ready for this task" are
@@ -767,6 +778,23 @@
                 conditional: r.applicability !== 'required',
             }));
     }
+    // "Landlord's confirmation of move-in (Wohnungsgeberbescheinigung)":
+    // the English name with the German term the office uses.
+    const termLine = (terms) =>
+        terms?.length
+            ? `<small class="document-term">${terms.map((t) => `${E(t.english)} (${E(t.german)})`).join(' · ')}</small>`
+            : '';
+    // The task a document comes from: a catalogue link, never a
+    // prerequisite or a claim about your own progress.
+    function producedLine(plan, link) {
+        if (!link) return '';
+        const from = plan.processes.find(
+            (x) => x.definition_id === link.process_id,
+        );
+        return from
+            ? `<p class="document-source">${I('document')}<span>This comes from your ${E(from.title)} task.</span><button type="button" class="plain-button" data-process="${E(from.occurrence_key)}">Open ${E(from.title)}</button></p>`
+            : '';
+    }
     function paperwork(plan) {
         const all = plan.open,
             ps =
@@ -782,7 +810,7 @@
                     docs
                         .map((d) => {
                             const token = `${key}:${d.index}`;
-                            return `<details class="document-row" data-paper-row="${E(token)}"><summary><span class="document-symbol ${d.readiness === 'confirmed_for_use' ? 'confirmed' : ''}">${I(d.readiness === 'confirmed_for_use' ? 'check' : 'document')}</span><span><strong>${E(d.label)}</strong><small>${E(ready[d.readiness])}${d.conditional ? ' · May be needed' : ''}</small></span>${I('down')}</summary><div class="document-actions"><p>${d.conditional ? 'Whether you need this depends on your situation. ' : ''}You are updating your checklist for ${E(name)}. This is not an official document check.</p>${p.id === null ? `<button class="button secondary" data-start-paper="${E(key)}">${I('plus')}Start tracking this task</button>` : `${d.readiness === 'missing' ? `<button class="button secondary" data-doc-action="${E(token)}|have">${I('document')}I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.readiness) && !d.conditional ? `<button class="button primary" data-doc-action="${E(token)}|confirm">${I('check')}Ready for this task</button>` : d.readiness === 'confirmed_for_use' ? `<span class="document-confirmed">${I('check')}Marked ready by you</span>` : ''}<button class="plain-button" data-doc-action="${E(token)}|missing">Not ready yet</button>`}<button class="document-info" data-source-for="${E(key)}">${I('info')}Check official source</button></div></details>`;
+                            return `<details class="document-row" data-paper-row="${E(token)}"><summary><span class="document-symbol ${d.readiness === 'confirmed_for_use' ? 'confirmed' : ''}">${I(d.readiness === 'confirmed_for_use' ? 'check' : 'document')}</span><span><strong>${E(d.label)}</strong>${termLine(d.terms)}<small>${E(ready[d.readiness])}${d.conditional ? ' · May be needed' : ''}</small></span>${I('down')}</summary><div class="document-actions"><p>${d.conditional ? 'Whether you need this depends on your situation. ' : ''}You are updating your checklist for ${E(name)}. This is not an official document check.</p>${producedLine(plan, d.produced_by)}${p.id === null ? `<button class="button secondary" data-start-paper="${E(key)}">${I('plus')}Start tracking this task</button>` : `${d.readiness === 'missing' ? `<button class="button secondary" data-doc-action="${E(token)}|have">${I('document')}I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.readiness) && !d.conditional ? `<button class="button primary" data-doc-action="${E(token)}|confirm">${I('check')}Ready for this task</button>` : d.readiness === 'confirmed_for_use' ? `<span class="document-confirmed">${I('check')}Marked ready by you</span>` : ''}<button class="plain-button" data-doc-action="${E(token)}|missing">Not ready yet</button>`}<button class="document-info" data-source-for="${E(key)}">${I('info')}Check official source</button></div></details>`;
                         })
                         .join('') ||
                     '<p>No document requirements in this sample record.</p>'
@@ -794,42 +822,6 @@
     }
     function noAccess() {
         return `<section class="access-blank"><div class="status-illustration blue">${I('document')}</div><h2>${state.person === 'adult' ? 'Their plan stays private.' : 'Authorisation comes first.'}</h2><p>${state.person === 'adult' ? 'This adult has not granted access to their dossier.' : 'Dependent access is awaiting the guardian authorisation policy.'}</p><span class="access-badge">Access flow preview</span><div class="actions">${button('Return to your sample plan', 'self')}</div></section>`;
-    }
-    function requestView() {
-        const p = state.custom.find((x) => x.id === state.process);
-        return `${back()}<section class="access-blank"><div class="status-illustration peach">${I('document')}</div><h2 id="view-heading" tabindex="-1">${E(p?.name || 'Your request')}</h2><p>No reviewed guidance is connected to this request. Your other processes remain available.</p><div class="actions">${p ? button('Ask Composer about it', 'ask-request', 'primary') : ''}${button('Remove this request', 'remove-request')}</div></section>`;
-    }
-    // "Add a task": tasks come from your situation, so each has reviewed
-    // guidance. The plan's suggestions you aren't tracking yet (proposals,
-    // id null) open as usual; anything else goes to Composer as a question,
-    // never saved as a task without guidance.
-    function addTask() {
-        const plan = C.plan(state);
-        const suggested = plan.processes.filter(
-            (p) => p.id === null && !p.is_closed,
-        );
-        openEditor(
-            'Add a task',
-            `<p>Tasks come from your situation, so each one has reviewed guidance. Expadu doesn’t add a task without it.</p>${
-                suggested.length
-                    ? `<div class="add-task-list">${suggested
-                          .map(
-                              (p) =>
-                                  `<button type="button" class="person-option" data-process="${E(p.occurrence_key)}">${I(P.process(state, p.occurrence_key)?.icon || 'document')}<span><strong>${E(nameOf(p.occurrence_key))}</strong><small>Suggested from your answers · not tracked yet</small></span>${I('arrow')}</button>`,
-                          )
-                          .join('')}</div>`
-                    : '<p class="muted">No other tasks are suggested from your answers yet.</p>'
-            }<div class="actions">${button('Update your situation', 'facts')}${J.applies(state) ? '<button type="button" class="button secondary" data-situation="browse">Browse topics</button>' : ''}</div><form id="task-ask-form" class="add-task-ask"><label class="form-field">Something else? Ask Composer<input name="question" maxlength="300" placeholder="What would you like help with?" required></label><p>Composer answers only from reviewed guidance. Nothing is saved as a task.</p><button class="button secondary" type="submit">${I('spark')}Ask Composer</button></form>`,
-        );
-    }
-    // A question for Composer, as if typed there.
-    function askComposer(text) {
-        const prompt = String(text || '').trim();
-        if (!prompt) return;
-        S.update((shared) => {
-            shared.prompt = prompt;
-        });
-        S.go('composer', { compose: '1' });
     }
     // What each reviewed unit covers (plan.coverage.units). None of these
     // states means you are eligible or that every case is covered.
@@ -1137,10 +1129,6 @@
             go('detail', b.dataset.process);
             return;
         }
-        if (b.dataset.request) {
-            go('request', b.dataset.request);
-            return;
-        }
         if (b.dataset.filter) {
             state.actionFilter = b.dataset.filter;
             if (state.view === 'actions') persist();
@@ -1270,20 +1258,6 @@
             chooseAppointment();
             return;
         }
-        if (action === 'add-process') {
-            addTask();
-            return;
-        }
-        if (action === 'ask-request') {
-            askComposer(state.custom.find((x) => x.id === state.process)?.name);
-            return;
-        }
-        if (action === 'remove-request') {
-            const i = state.custom.findIndex((p) => p.id === state.process);
-            if (i >= 0) state.custom.splice(i, 1);
-            go('overview');
-            return;
-        }
         if (action === 'start') {
             const key = state.process;
             if (P.start(state, key)) {
@@ -1352,12 +1326,9 @@
     });
     document.addEventListener('submit', (e) => {
         if (
-            ![
-                'appointment-form',
-                'submission-form',
-                'task-ask-form',
-                'workflow-form',
-            ].includes(e.target.id)
+            !['appointment-form', 'submission-form', 'workflow-form'].includes(
+                e.target.id,
+            )
         )
             return;
         e.preventDefault();
@@ -1412,10 +1383,6 @@
                 refuse(e.target, result.error);
                 return;
             }
-        }
-        if (e.target.id === 'task-ask-form') {
-            askComposer(d.question);
-            return;
         }
         U.close();
         persist();

@@ -4,10 +4,10 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
-## Arrival asked as itself, and Add a task — 8 October 2026 (in review)
+## Arrival asked as itself, no free-text tasks, documents explained — 8 October 2026 (in review)
 
-Owner go-ahead for the two remaining follow-ups from the backend mapping
-(C19 and "Add a task"):
+The remaining follow-ups from the backend mapping (C19 and C27), and the
+backend's document names and links (8f4074c9):
 
 - **The arrival answer is asked, not inferred (C19).** "Help me get started"
   used to ask "Are you already in Germany?" and quietly record its answer as
@@ -17,15 +17,27 @@ Owner go-ahead for the two remaining follow-ups from the backend mapping
   and "Your answer is kept in your details." The answer goes into your
   details as you gave it, and answering again updates it. "I'm not sure" is
   an unknown answer, not a guess.
-- **Add a task without an unbacked task.** The backend has no free-text task,
-  so the + no longer saves one. It opens a compact panel: tasks the plan
-  suggests that you aren't tracking yet (the sample's Bank account), Update
-  your situation to find more, and "Something else? Ask Composer", which
-  sends the question to Composer and saves nothing as a task. Requests saved
-  before stay viewable and removable, with "Ask Composer about it".
+- **No "Add a task" (owner decision, 8 October).** There's no backend
+  entity for a free-text task and none will be added: a person starts only
+  what their plan suggests (proposals). The + beside Your tasks, its panel and
+  the old "Guidance not connected" request cards and page are gone; older
+  saved requests are no longer read, and `?view=request` opens the overview.
+  Suggested tasks still appear under Your tasks ("Explore before you start").
+- **German document terms in English.** A document whose label names a
+  German term shows its English name with the term the office uses, for
+  example "Landlord's confirmation of move-in (Wohnungsgeberbescheinigung)"
+  and "Registration certificate (Meldebescheinigung)". Labels are unchanged
+  (`paperwork.requirements[].terms`).
+- **Where a document comes from.** The Blue Card's "Health-insurance
+  evidence" says "This comes from your Health insurance task" with a way to
+  open it, and the Health insurance step says "Also needed for EU Blue Card
+  (Health-insurance evidence)" (`produced_by` and `guidance[].produces`). It
+  is a catalogue link, never a prerequisite or a claim about your progress.
 
-Tests: `tests/orientation.test.cjs` covers the arrival question; the panel and
-both hand-offs were checked in the browser at 390 and 1280 px.
+Tests: `tests/orientation.test.cjs` covers the arrival question,
+`tests/contract.test.cjs` the terms and links, `tests/plan.test.cjs` that
+free-text requests never become tasks; checked in the browser at 390 and
+1280 px.
 
 ## Reads the v2 plan contract — 8 October 2026 (in review)
 
@@ -105,12 +117,12 @@ was "Tax identification number"). Step headings stay the steps' own. "Undo"
 after Start tracking follows the plan's `untrackable` flag, which confirming
 a document for the task also ends.
 
-Still open: the document English names
-and the links between tasks are next on the backend side. The backend
-catalogue has grown to about 46 cards in 30 processes (Blue Card first
-application now has four steps); this preview keeps its historical sample of
-two Blue Card steps and three other tasks. Tests: `tests/contract.test.cjs`
-(18), `tests/plan.test.cjs`.
+Nothing from the mapping is open now: the document English names and the
+links between tasks are mapped too (see above). The backend catalogue has
+grown to about 46 cards in 30 processes (Blue Card first application now has
+four steps); this preview keeps its historical sample of two Blue Card steps
+and three other tasks. Tests: `tests/contract.test.cjs` (19),
+`tests/plan.test.cjs`.
 
 ## Aligned with the v2 backend rules — 7 October 2026 (in review)
 
@@ -148,9 +160,9 @@ see:
 Already aligned: changing an answered visa or permit goes through Your
 situation with "Correct it" or "It changed". Not part of this mock: the app's
 onboarding (situation, Veedel and arrival are required there). Still open with
-the backend: data shapes (G2/G3/G7), "Add a task" (the backend suggests
-dropping it; the owner's call) and the introduction writing "arrival" without
-asking (C19).
+the backend at the time: data shapes (G2/G3/G7), "Add a task" and the
+introduction writing "arrival" without asking (C19); all three are settled
+since (8 October, above).
 
 ## Sample day, dates and a clearer header — 7 October 2026 (in review)
 

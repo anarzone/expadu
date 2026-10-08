@@ -53,6 +53,43 @@
         education: 'Education',
         driving: 'Driving',
     };
+    // Plain-English names for German document terms (schema/
+    // document-terms.yaml, 8f4074c9). Names only; labels stay as they are.
+    const documentTerms = {
+        Wohnungsgeberbescheinigung: "Landlord's confirmation of move-in",
+        Meldebescheinigung: 'Registration certificate',
+        Mietvertrag: 'Rental contract',
+        Warmmiete: 'Rent including heating and service charges',
+        Lohnsteuerbescheinigung: 'Wage tax certificate',
+        Rentenversicherungsverlauf: 'Pension insurance record',
+        Versicherungsverlauf: 'Pension insurance record',
+        Zulassungsbescheid: 'University admission letter',
+        Immatrikulationsbescheinigung: 'Certificate of enrolment',
+        Studienverlaufsplan: 'Study plan',
+        Sperrkonto: 'Blocked bank account',
+        Personalausweis: 'German identity card',
+        Berufsausübungserlaubnis: 'Licence to practise your profession',
+        'Vordruck Stellenbeschreibung': 'Job description form',
+        'Erklärung zum Beschäftigungsverhältnis': 'Declaration of employment',
+        Erstantrag: 'First application',
+        'Steuer-ID': 'Tax identification number',
+        Chancenkarte: 'Opportunity Card',
+    };
+    const termsIn = (label) =>
+        Object.entries(documentTerms)
+            .filter(([german]) => label.includes(german))
+            .map(([german, english]) => ({ german, english }));
+    // Which published step yields a document (a catalogue link, not a
+    // prerequisite: the document never waits for it, and it says nothing
+    // about your own progress). The sample's one link, by unit and position.
+    const producedBy = {
+        'case.bc.first_application.prepare': {
+            3: {
+                unit_id: 'core.health_insurance',
+                process_id: 'health.coverage',
+            },
+        },
+    };
     // Requirements whose reviewed label makes them conditional ("where
     // required", "where applicable", "if available"). Applicability is
     // data here, as in the backend, not read from the wording by the UI.
@@ -97,6 +134,19 @@
                 864e5,
         );
     const readiness = (state) => (state === 'unknown' ? 'missing' : state);
+    function producesFrom(unit) {
+        return Object.entries(producedBy).flatMap(([key, rows]) =>
+            Object.entries(rows)
+                .filter(([, link]) => link.unit_id === unit)
+                .map(([j]) => ({
+                    unit_id: key,
+                    process_id: unitDefinitions[key] || null,
+                    document_id: `${key}.document.${+j + 1}`,
+                    label:
+                        R().find((r) => r.key === key)?.documents?.[j] || null,
+                })),
+        );
+    }
     function requirementsOf(p) {
         const started = p.started;
         let index = 0;
@@ -114,6 +164,8 @@
                     applicability: conditional[r.key]?.includes(j)
                         ? 'conditional'
                         : 'required',
+                    terms: termsIn(label),
+                    produced_by: producedBy[r.key]?.[j] || null,
                     // The local record's position, for this preview's
                     // document actions.
                     index,
@@ -315,6 +367,8 @@
                 completion_event: actionSteps.includes(r.key)
                     ? 'submission_recorded'
                     : 'step_completed',
+                // guidance[].produces: what other steps need from this one.
+                produces: producesFrom(r.key),
             };
         });
         const workflow = wire(p.workflow);
@@ -729,5 +783,11 @@
             })
             .filter(Boolean);
     }
-    root.BureaucracyContract = { plan, facts, records, titleOf, topicLabels };
+    root.BureaucracyContract = {
+        plan,
+        facts,
+        records,
+        titleOf,
+        topicLabels,
+    };
 })(globalThis);

@@ -878,16 +878,35 @@ body[data-page='bureaucracy'] #main {
 .person-option > span {
     flex: 1;
 }
-/* Add a task: suggested tasks, then a question for Composer. */
-.add-task-list {
-    display: grid;
-    gap: 8px;
-    margin: 12px 0;
+/* A document's English name beside the German term the office uses. */
+.document-term {
+    display: block;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.4;
 }
-.add-task-ask {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--color-border);
+/* Where a document comes from, or which tasks use a step's result: a
+   catalogue link, never a prerequisite. */
+.document-source {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    column-gap: 8px;
+    align-items: start;
+    margin: 0 0 12px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.document-source svg {
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+}
+.document-source .plain-button {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 44px;
+    padding-inline: 0;
 }
 .person-option small {
     display: block;
