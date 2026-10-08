@@ -111,8 +111,9 @@ const inside = (box, viewport) =>
             assert.match(page.url(), /view=skyline/);
             const sky = page.locator('.wall-view--skyline');
             assert.equal(await page.locator('#event-featured').isVisible(), true);
-            assert.equal(await sky.locator('.sky-light').count(), 4);
-            assert.equal(await sky.locator('.sky-light[data-poster-id]').count(), 3);
+            assert.equal(await sky.locator('.sky-light').count(), 5);
+            assert.equal(await sky.locator('.sky-light[data-poster-id]').count(), 4);
+            assert.equal(await sky.locator('.sky-away, .sky-foot').count(), 0);
             assert.equal(
                 await sky.locator('.sky-light.is-facing').getAttribute('data-poster-id'),
                 'today-review-culture',
@@ -179,15 +180,47 @@ const inside = (box, viewport) =>
                     shown.slice(i + 1).forEach(([, q]) => (clashes += meet(r, q)));
                     dots.forEach(([d, q]) => (clashes += d !== el && meet(r, q)));
                 });
-                return {
-                    past: sky.classList.contains('is-past'),
-                    clashes,
-                    edgeInFoot: [...sky.querySelectorAll('.sky-away')].every((x) => x.closest('.sky-foot')),
-                };
+                return { past: sky.classList.contains('is-past'), clashes };
             });
             assert.equal(crowd.past, true);
             assert.equal(crowd.clashes, 0, 'skyline labels overlap');
-            assert.equal(crowd.edgeInFoot, true);
+            // With a mouse, moving from light to light focuses each in turn.
+            if (viewport.width > 700) {
+                for (const end of [0, 1]) {
+                    await page.evaluate((f) => {
+                        const s = document.querySelector('.wall-view--skyline .sky-scroll');
+                        s.scrollTo({ left: (s.scrollWidth - s.clientWidth) * f, behavior: 'instant' });
+                    }, end);
+                    await page.waitForTimeout(150);
+                    const dots = await page.evaluate(() => {
+                        const box = document
+                            .querySelector('.wall-view--skyline .sky-scroll')
+                            .getBoundingClientRect();
+                        return [...document.querySelectorAll('.wall-view--skyline .sky-light')]
+                            .map((el) => {
+                                const r = el.querySelector('.sky-light-dot').getBoundingClientRect();
+                                return {
+                                    id: el.dataset.detail || el.dataset.posterId,
+                                    x: r.x + r.width / 2,
+                                    y: r.y + r.height / 2,
+                                    inside: r.left > box.left && r.right < box.right,
+                                };
+                            })
+                            .filter((d) => d.inside)
+                            .sort((a, b) => a.x - b.x);
+                    });
+                    for (const dot of dots) {
+                        await page.mouse.move(dot.x, dot.y, { steps: 4 });
+                        const hovered = await page.evaluate(() =>
+                            [...document.querySelectorAll('.wall-view--skyline .sky-light')]
+                                .filter((el) => el.matches(':hover'))
+                                .map((el) => el.dataset.detail || el.dataset.posterId),
+                        );
+                        assert.deepEqual(hovered, [dot.id], `hovering ${dot.id}`);
+                    }
+                }
+                await page.mouse.move(2, 2);
+            }
             await page.click('[data-wall-view="wall"]');
             assert.deepEqual(errors, []);
             await page.close();

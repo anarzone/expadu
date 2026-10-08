@@ -417,7 +417,9 @@ light turns the column to it. On phones, tilting the phone leans the
 posters and the column and shifts the skyline's layers (a button turns it
 off; iPhones start it there). Past posters are weathered (faded, creased,
 torn in their own way) and a past day's skyline has its lights out; skyline
-labels never overlap and places off the drawing are named under it.
+labels never overlap. The skyline is drawn large and pans (it opens on the
+day's events and glides to the facing poster's light), with Chorweiler and
+the west drawn on the horizon instead of listed under it.
 Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky

@@ -197,13 +197,22 @@ main[data-view='skyline'] .wall-view--wall {
 
 /* The city's poster column (Litfaßsäule) holds the featured pick. */
 .wall-column {
+    --column-w: 364px;
+    --column-h: 560px;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
+/* Beside the skyline the column steps back a little, so the city is wide. */
+@media (min-width: 1000px) {
+    main[data-view='skyline'] .wall-column {
+        --column-w: 300px;
+        --column-h: 462px;
+    }
+}
 .wall-column-cap {
     position: relative;
-    width: 404px;
+    width: calc(var(--column-w) + 40px);
     height: 44px;
     border-radius: 50% 50% 8px 8px / 100% 100% 8px 8px;
     background: var(--poster-column);
@@ -250,8 +259,8 @@ main[data-view='skyline'] .wall-view--wall {
 }
 .wall-column-body {
     position: relative;
-    width: 364px;
-    height: 560px;
+    width: var(--column-w);
+    height: var(--column-h);
     margin-top: 18px;
     overflow: hidden;
     touch-action: pan-y;
@@ -310,7 +319,7 @@ main[data-view='skyline'] .wall-view--wall {
     );
 }
 .wall-column-base {
-    width: 396px;
+    width: calc(var(--column-w) + 32px);
     height: 30px;
     border-radius: 6px 6px 2px 2px;
     background: var(--poster-column);
@@ -1441,16 +1450,47 @@ main[data-view='skyline'] .wall-view--wall {
 .sky-scroll::-webkit-scrollbar {
     display: none;
 }
+.sky-scroll[data-panning] {
+    cursor: grabbing;
+}
+@media (hover: hover) and (pointer: fine) {
+    .sky-scroll {
+        cursor: grab;
+    }
+}
+/* Soft edges while there's more city beyond. */
+.sky-fade {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    bottom: 0;
+    width: 56px;
+    pointer-events: none;
+    transition: opacity var(--duration-base) var(--ease-settle);
+}
+.sky-fade--start {
+    left: 0;
+    background: linear-gradient(90deg, var(--sky-1), transparent);
+}
+.sky-fade--end {
+    right: 0;
+    background: linear-gradient(270deg, var(--sky-1), transparent);
+}
+.sky-stage[data-start='true'] .sky-fade--start,
+.sky-stage[data-end='true'] .sky-fade--end {
+    opacity: 0;
+}
 .sky-scroll:focus-visible {
     outline: 3px solid var(--color-focus);
     outline-offset: -3px;
 }
 .sky-inner {
     position: relative;
-    width: max(100%, 640px);
-    aspect-ratio: 1376 / 560;
+    height: clamp(340px, 42vh, 440px);
+    aspect-ratio: 1376 / 450;
 }
 .sky-light {
+    pointer-events: none;
     position: absolute;
     z-index: 2;
     display: flex;
@@ -1491,6 +1531,20 @@ main[data-view='skyline'] .wall-view--wall {
         0 4px 14px #0f0b2e4d,
         0 0 0 1px #211d151f;
 }
+/* A name that's fully shown can be tapped too; one that only opens on
+   hover never covers a neighbouring light. */
+.sky-light-label {
+    pointer-events: auto;
+}
+.sky-light:is(.is-quiet, .is-short, .is-coming:not(.is-facing)) .sky-light-label {
+    pointer-events: none;
+}
+.sky-light-dot::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+}
 .sky-light-label::after {
     content: '';
     position: absolute;
@@ -1517,6 +1571,8 @@ main[data-view='skyline'] .wall-view--wall {
     outline: none;
 }
 .sky-light-dot {
+    position: relative;
+    pointer-events: auto;
     width: 30px;
     height: 30px;
     border: 3px solid var(--color-bg-surface);
@@ -1575,6 +1631,10 @@ main[data-view='skyline'] .wall-view--wall {
 .sky.is-past .sky-art .sky-windows {
     opacity: 0.15;
 }
+.sky-light.is-far .sky-light-dot {
+    width: 22px;
+    height: 22px;
+}
 .sky-light.is-out .sky-light-dot {
     width: 18px;
     height: 18px;
@@ -1627,10 +1687,6 @@ main[data-view='skyline'] .wall-view--wall {
         font-size: var(--text-display-sm);
     }
 }
-.sky-away button.is-facing {
-    background: var(--color-bg-surface);
-    color: var(--color-text);
-}
 .sky-you {
     position: absolute;
     z-index: 1;
@@ -1653,41 +1709,17 @@ main[data-view='skyline'] .wall-view--wall {
     background: var(--color-paper-bg);
     transform: rotate(45deg);
 }
-/* Under the drawing: places off it, and the note. */
-.sky-foot {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 14px;
-    padding: 10px 20px 16px 24px;
-}
-.sky-away {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-.sky-away [data-poster-id]:not(.is-facing) {
-    display: none;
-}
-.sky-away button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 40px;
-    padding: 0 12px 0 14px;
-    border: 0;
-    border-radius: 12px;
-    background: #1b1840b3;
-    color: var(--poster-cream);
-    font-size: var(--text-small);
-    backdrop-filter: blur(8px);
-}
-.sky-away svg {
-    width: 16px;
-    height: 16px;
+/* The drawing pans inside its stage; the note sits on the river. */
+.sky-stage {
+    position: relative;
 }
 .sky-note {
-    margin: 0 0 0 auto;
+    position: absolute;
+    z-index: 2;
+    left: 18px;
+    bottom: 10px;
+    margin: 0;
+    pointer-events: none;
     font-size: var(--text-caption);
     opacity: 0.85;
 }
@@ -1739,8 +1771,8 @@ main[data-view='skyline'] .wall-view--wall {
         align-self: stretch;
         margin: 4px 0 18px;
     }
-    .wall-column-body {
-        height: 440px;
+    .wall-column {
+        --column-h: 440px;
     }
     .wall-board #event-list {
         margin-top: 4px;
@@ -1882,18 +1914,8 @@ main[data-view='skyline'] .wall-view--wall {
     .sky-note {
         display: none;
     }
-    .sky-foot {
-        padding: 10px 12px 14px;
-    }
-    .sky-foot:not(
-            :has(.sky-away > button:not([data-poster-id]), .sky-away > .is-facing)
-        ) {
-        display: none;
-    }
     .sky-inner {
-        width: 836px;
         height: 340px;
-        aspect-ratio: auto;
     }
     .sky-cards {
         grid-template-columns: minmax(0, 1fr);

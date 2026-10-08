@@ -5,6 +5,28 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A bigger skyline you pan — 8 October 2026
+
+Owner review: the list under the drawing ("Further north …") wasn't needed,
+the skyline itself should be bigger, and moving the mouse from one light to
+its neighbour didn't focus the neighbour.
+
+- **No list under the drawing.** Chorweiler (far north: tower blocks at the
+  right end) and the west (Junkersdorf: woods behind the city, on the
+  horizon) are drawn in, with smaller lights. The note sits on the river.
+- **The skyline is drawn large and pans.** The empty river and sky are
+  cropped; the drawing's height is set and its width follows, so it's wider
+  than its panel. It opens framing the day's events (and the facing poster)
+  when they fit, glides to the facing poster's light when you turn the
+  column to one further away, follows a mouse drag (touch scrolls), and its
+  edges fade while there's more beyond. Beside the skyline the column is a
+  little smaller, so tonight's two events fit in one view.
+- **Every light can be reached.** Only a light's dot (with a 50px hit
+  area) and a fully shown name respond to the pointer, so a focused light
+  never blocks its neighbour; lights from different districts never land on
+  the same spot. `tests/wall-browser.cjs` moves the mouse across every
+  light on the past day and checks each one is the one focused.
+
 ## Weathered past posters, and a calmer skyline — 8 October 2026
 
 Owner request, after reviewing the skyline on the past day (8 September),
@@ -31,9 +53,6 @@ covered the city.
 - **Pointing at a light focuses it:** its full name with a cyan ring, a
   bigger dot, and the other lights step back.
 - **Coming-up rings are quiet** until their poster faces you.
-- **Places off the drawing are named under it**, in a row with the
-  "Illustration · places approximate" note, never over the city; a column
-  poster's appears only while that poster faces you.
 
 `tests/wall-browser.cjs` checks the past day's posters are weathered and its
 skyline has no overlapping labels; `tests/poster-art.test.cjs` checks the
