@@ -44,6 +44,19 @@ async function ensureTracked(page: Page): Promise<void> {
     }
 }
 
+/** Bring back a paused or skipped question so a re-used account still has one to answer. */
+async function questionCard(page: Page) {
+    const card = page.locator('.question-card');
+    const resume = page.locator('.deferred-question button');
+    await expect(card.or(resume).first()).toBeVisible();
+
+    if (await resume.isVisible()) {
+        await resume.click();
+    }
+
+    return card;
+}
+
 test.describe('Paperwork', () => {
     test('the overview shows next steps, tasks and dates from the plan', async ({
         page,
@@ -199,6 +212,96 @@ test.describe('Paperwork', () => {
         await expect(sheet.locator('.source-record').first()).toBeVisible();
         await sheet.getByRole('button', { name: 'Close' }).click();
         await expect(sheet).not.toBeVisible();
+    });
+
+    test('the question card asks one question and can leave it for later', async ({
+        page,
+    }) => {
+        await openPaperwork(page);
+        const card = await questionCard(page);
+        await expect(card.locator('h3')).not.toBeEmpty();
+        await expect(card.locator('.question-why')).not.toBeEmpty();
+        await expect(
+            card.getByRole('button', { name: 'I don’t know' }),
+        ).toBeVisible();
+
+        await card.getByRole('button', { name: 'Skip for now' }).click();
+        await expect(page.locator('.toast')).toHaveText('Left for later.');
+    });
+
+    test('a question answered in Your situation is confirmed before it is saved', async ({
+        page,
+    }) => {
+        await openPaperwork(page);
+        const card = await questionCard(page);
+        const question = (await card.locator('h3').textContent()) ?? '';
+        await card
+            .getByRole('button', { name: /^(Answer|Enter date)$/ })
+            .click();
+
+        const panel = page.locator('section.orientation');
+        await expect(
+            panel.getByRole('heading', { level: 2, name: question }),
+        ).toBeVisible();
+        // The card steps aside while the same question is open here.
+        await expect(card).toBeHidden();
+
+        const review = panel.getByRole('button', { name: 'Review answer' });
+        await expect(review).toBeDisabled();
+        await panel.getByRole('button', { name: 'I’m not sure' }).click();
+        await review.click();
+        await expect(
+            panel.getByRole('heading', { name: 'Does this look right?' }),
+        ).toBeVisible();
+        await expect(panel.locator('.details-proposed')).toContainText(
+            'I’m not sure',
+        );
+        await panel.getByRole('button', { name: 'Confirm answer' }).click();
+        await expect(panel.getByText('Answer saved for you.')).toBeVisible();
+    });
+
+    test('Your situation lists answers; a correction compares old and new first', async ({
+        page,
+    }) => {
+        await openPaperwork(page);
+        await page.getByRole('button', { name: 'Your situation' }).click();
+        const panel = page.locator('section.orientation');
+        await expect(
+            panel.getByRole('heading', { name: 'Your details, at your pace.' }),
+        ).toBeVisible();
+
+        const purpose = panel.locator('.details-facts button', {
+            hasText: 'Purpose of stay',
+        });
+        await expect(purpose).toContainText('Employment');
+        await purpose.click();
+        await expect(
+            panel.getByRole('heading', { name: 'What changed?' }),
+        ).toBeVisible();
+
+        await panel.locator('.details-history summary').click();
+        await expect(panel.locator('.details-history')).toContainText(
+            'Confirmed: Employment',
+        );
+
+        await panel
+            .getByRole('button', { name: /Correct an earlier answer/ })
+            .click();
+        await expect(
+            panel.getByRole('button', { name: 'Employment' }),
+        ).toHaveAttribute('aria-pressed', 'true');
+        await panel.getByRole('button', { name: 'Study' }).click();
+        await panel.getByRole('button', { name: 'Review answer' }).click();
+        await expect(panel.locator('.details-comparison')).toContainText(
+            'Previously recorded',
+        );
+        await expect(panel.locator('.details-proposed')).toContainText('Study');
+
+        // Leave without confirming: nothing is saved.
+        await panel.getByRole('button', { name: 'All answers' }).click();
+        await expect(purpose).toContainText('Employment');
+        await page.keyboard.press('Escape');
+        await expect(panel).toHaveCount(0);
     });
 
     test('on a phone the first next step is visible without scrolling', async ({

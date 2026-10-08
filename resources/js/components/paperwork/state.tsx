@@ -11,7 +11,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import { CommandError } from './api';
-import type { Plan, Process, Requirement, Step } from './types';
+import type { Plan, Process, Question, Requirement, Step } from './types';
 
 export type View = 'overview' | 'paperwork' | 'actions' | 'history' | 'detail';
 export type ActionFilter = 'all' | 'todo' | 'blocked' | 'waiting' | 'completed';
@@ -91,6 +91,12 @@ interface Editor {
     body: ReactNode;
 }
 
+/** Your situation, opened on its summary, on one answer, or on the plan's current question. */
+export interface SituationRequest {
+    key?: string;
+    question?: Question;
+}
+
 interface PaperworkContextValue {
     plan: Plan;
     jurisdiction: string;
@@ -110,6 +116,11 @@ interface PaperworkContextValue {
     editor: Editor | null;
     openEditor: (editor: Editor) => void;
     closeEditor: () => void;
+    situation: SituationRequest | null;
+    openSituation: (request?: SituationRequest) => void;
+    closeSituation: () => void;
+    /** Fetch the latest plan after a change made outside run(). */
+    refresh: () => Promise<void>;
     processByKey: (key: string | null | undefined) => Process | undefined;
     stepById: (
         id: string | null | undefined,
@@ -144,12 +155,14 @@ export function PaperworkProvider({
     const [message, setMessage] = useState<string | null>(null);
     const [sheet, setSheet] = useState<Sheet | null>(null);
     const [editor, setEditor] = useState<Editor | null>(null);
+    const [situation, setSituation] = useState<SituationRequest | null>(null);
     const timer = useRef<number | null>(null);
 
     useEffect(() => {
         const onPop = () => {
             setLocationState(fromUrl());
             setEditor(null);
+            setSituation(null);
         };
         window.addEventListener('popstate', onPop);
 
@@ -158,6 +171,7 @@ export function PaperworkProvider({
 
     const go = useCallback((next: Partial<Location> & { view: View }) => {
         setEditor(null);
+        setSituation(null);
         setSheet(null);
         setLocationState((current) => {
             const location: Location = {
@@ -261,9 +275,18 @@ export function PaperworkProvider({
             editor,
             openEditor: (next) => {
                 setSheet(null);
+                setSituation(null);
                 setEditor(next);
             },
             closeEditor: () => setEditor(null),
+            situation,
+            openSituation: (request = {}) => {
+                setSheet(null);
+                setEditor(null);
+                setSituation(request);
+            },
+            closeSituation: () => setSituation(null),
+            refresh,
             processByKey: (key) =>
                 key ? all.find((p) => p.occurrence_key === key) : undefined,
             stepById: (id) => {
@@ -291,17 +314,21 @@ export function PaperworkProvider({
         toast,
         sheet,
         editor,
+        situation,
+        refresh,
     ]);
 
     return (
         <PaperworkContext.Provider value={value}>
-            {children}
-            <div
-                className={clsx('toast', message && 'show')}
-                role="status"
-                aria-live="polite"
-            >
-                {message}
+            <div className="paperwork-page" data-view={location.view}>
+                {children}
+                <div
+                    className={clsx('toast', message && 'show')}
+                    role="status"
+                    aria-live="polite"
+                >
+                    {message}
+                </div>
             </div>
         </PaperworkContext.Provider>
     );

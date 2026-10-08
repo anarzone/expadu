@@ -12,12 +12,13 @@ import {
     workflowLabels,
 } from './format';
 import { Icon } from './icons';
+import { Situation } from './situation';
 import { usePaperwork } from './state';
 import type { Process, TimelineRow } from './types';
 
 /** The inline editor surface: one titled section below the header, closed with Escape or ×. */
 export function InlineEditor() {
-    const { editor, closeEditor } = usePaperwork();
+    const { editor, closeEditor, situation } = usePaperwork();
     const heading = useRef<HTMLHeadingElement>(null);
     const origin = useRef<Element | null>(null);
 
@@ -48,6 +49,21 @@ export function InlineEditor() {
         (origin.current as HTMLElement).focus?.({ preventScroll: true });
         origin.current = null;
     }, [editor]);
+
+    if (situation) {
+        return (
+            <div id="case-editor">
+                <Situation
+                    key={
+                        situation.question?.fact_key ??
+                        situation.key ??
+                        'summary'
+                    }
+                    request={situation}
+                />
+            </div>
+        );
+    }
 
     if (!editor) {
         return <div id="case-editor" />;

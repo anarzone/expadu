@@ -17,7 +17,9 @@ interface Props {
 }
 
 function Workspace() {
-    const { plan, location, go, processByKey, openSheet } = usePaperwork();
+    const { plan, location, go, processByKey, openSheet, openSituation } =
+        usePaperwork();
+    const situationAllowed = plan.scopes.includes('view_facts');
     const process =
         location.view === 'detail' ? processByKey(location.process) : undefined;
     const heading = process?.title ?? 'Paperwork';
@@ -28,6 +30,20 @@ function Workspace() {
         <>
             <div className="case-top">
                 <h1 tabIndex={-1}>{heading}</h1>
+                {situationAllowed ? (
+                    <button
+                        type="button"
+                        className="icon-button case-details"
+                        aria-label="Your situation"
+                        onClick={() => openSituation()}
+                    >
+                        <Icon name="sliders" />
+                        <span className="case-details-long">
+                            Your situation
+                        </span>
+                        <span className="case-details-short">Situation</span>
+                    </button>
+                ) : null}
             </div>
             <div className="case-navigation">
                 <div className="case-tabs" aria-label="Paperwork views">
@@ -108,23 +124,21 @@ export default function Paperwork({ entry, jurisdiction }: Props) {
     return (
         <AppLayout rightPanel={null}>
             <Head title="Paperwork" />
-            <div className="paperwork-page">
-                {entry.state === 'ready' && entry.plan ? (
-                    <PaperworkProvider
-                        plan={entry.plan}
-                        jurisdiction={jurisdiction}
-                    >
-                        <Workspace />
-                    </PaperworkProvider>
-                ) : (
-                    <>
-                        <div className="case-top">
-                            <h1>Paperwork</h1>
-                        </div>
-                        <Unavailable state={entry.state} />
-                    </>
-                )}
-            </div>
+            {entry.state === 'ready' && entry.plan ? (
+                <PaperworkProvider
+                    plan={entry.plan}
+                    jurisdiction={jurisdiction}
+                >
+                    <Workspace />
+                </PaperworkProvider>
+            ) : (
+                <div className="paperwork-page">
+                    <div className="case-top">
+                        <h1>Paperwork</h1>
+                    </div>
+                    <Unavailable state={entry.state} />
+                </div>
+            )}
         </AppLayout>
     );
 }

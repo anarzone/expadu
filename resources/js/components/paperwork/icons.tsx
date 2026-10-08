@@ -14,6 +14,7 @@ import {
     IconId,
     IconInfoCircle,
     IconLayoutGrid,
+    IconMapPin,
     IconPencil,
     IconPlus,
     IconReceiptTax,
@@ -38,6 +39,8 @@ const icons = {
     pencil: IconPencil,
     plus: IconPlus,
     people: IconUsers,
+    pin: IconMapPin,
+    briefcase: IconBriefcase,
     close: IconX,
 } satisfies Record<
     string,

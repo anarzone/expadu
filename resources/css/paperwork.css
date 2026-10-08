@@ -3015,6 +3015,512 @@
         margin-top: 8px;
         font-size: var(--text-section);
     }
+
+    /* Your situation and the question card — ported from orientation.css. */
+    .orientation {
+        color: var(--ink);
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        padding: 16px 20px 20px;
+        box-shadow: 0 8px 32px rgb(33 31 23 / 5%);
+        margin-bottom: 24px;
+        max-width: 720px;
+    }
+    .orientation svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex: none;
+    }
+    .orientation button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        touch-action: manipulation;
+    }
+    .orientation-header,
+    .orientation-kicker,
+    .orientation-actions,
+    .orientation-bottom > button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .orientation-header {
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    .orientation-kicker {
+        color: var(--muted);
+        font-size: var(--text-small);
+        font-weight: var(--weight-medium);
+    }
+    .orientation-kicker > small {
+        background: var(--paper);
+        border-radius: var(--radius-sm);
+        padding: 3px 7px;
+        font-size: var(--text-micro);
+    }
+    .orientation .orientation-close {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border: 0;
+        border-radius: var(--radius-round);
+        background: var(--paper);
+    }
+    .orientation h2 {
+        margin: 0 0 8px;
+        font-size: clamp(var(--text-title-sm), 3vw, var(--text-title-lg));
+        line-height: 1.2;
+        letter-spacing: -0.035em;
+        font-weight: var(--weight-bold);
+    }
+    .orientation h2:focus {
+        outline: none;
+    }
+    .orientation p.orientation-intro {
+        color: var(--muted);
+        margin: 0 0 18px;
+        font-size: var(--text-body);
+        line-height: 1.5;
+        max-width: 52ch;
+    }
+    .orientation-options {
+        display: grid;
+        gap: 8px;
+    }
+    .orientation-options > button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        min-height: 56px;
+        border: 1px solid transparent;
+        background: var(--paper);
+        border-radius: var(--radius-lg);
+        text-align: left;
+        font-size: var(--text-section);
+        font-weight: var(--weight-semibold);
+    }
+    .orientation-option-icon {
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+    }
+    .orientation-check {
+        margin-left: auto;
+        opacity: 0;
+    }
+    .orientation-options > button[aria-pressed='true'] {
+        background: var(--blue);
+        border-color: color-mix(in srgb, var(--cyan) 28%, transparent);
+    }
+    .orientation-options > button[aria-pressed='true'] .orientation-check {
+        opacity: 1;
+    }
+    .orientation-options
+        > button[aria-pressed='true']
+        .orientation-option-icon {
+        color: var(--ink);
+    }
+    .orientation .orientation-primary {
+        background: var(--action);
+        color: var(--color-text-on-action);
+        border: 0;
+        border-radius: var(--radius-md);
+        min-height: 44px;
+        padding: 10px 16px;
+        font-size: var(--text-body);
+        font-weight: var(--weight-semibold);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .orientation .orientation-primary:disabled {
+        background: var(--paper);
+        color: var(--muted);
+        cursor: default;
+    }
+    .orientation .orientation-secondary {
+        background: transparent;
+        border: 0;
+        padding: 10px 4px;
+        min-height: 44px;
+        font-size: var(--text-control);
+    }
+    .orientation-actions {
+        justify-content: space-between;
+        margin: 14px 0 10px;
+    }
+    .orientation summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        list-style: none;
+        min-height: 44px;
+        cursor: pointer;
+        font-size: var(--text-control);
+    }
+    .orientation summary::-webkit-details-marker {
+        display: none;
+    }
+    .orientation summary > svg:last-child {
+        margin-left: auto;
+        width: 16px;
+    }
+    .orientation details[open] summary > svg:last-child {
+        transform: rotate(180deg);
+    }
+    .orientation-error {
+        font-size: var(--text-control);
+        color: var(--action);
+    }
+    .orientation-paused h2 {
+        margin-top: 12px;
+    }
+    .orientation-paused p {
+        color: var(--muted);
+        font-size: var(--text-body);
+    }
+    .orientation :is(button, summary):focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 3px;
+    }
+    .orientation :is(button, summary):focus:not(:focus-visible) {
+        outline: none;
+    }
+    #case-editor:has(.orientation)
+        + .bureaucracy-view
+        :is(.getting-started, .question-card) {
+        display: none;
+    }
+    @media (max-width: 700px) {
+        .orientation {
+            padding: 12px 16px 16px;
+            border-radius: var(--radius-xl);
+        }
+        .orientation-header {
+            margin-bottom: 8px;
+        }
+        .orientation .orientation-primary {
+            padding-inline: 12px;
+            font-size: var(--text-control);
+        }
+        .orientation-topics > div {
+            grid-template-columns: 1fr;
+        }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+        .orientation button {
+            transition:
+                background-color 160ms ease,
+                border-color 160ms ease,
+                transform 160ms ease;
+        }
+        .orientation button:active:not(:disabled) {
+            transform: scale(0.985);
+        }
+        .orientation-check,
+        .orientation summary > svg:last-child {
+            transition:
+                opacity 160ms ease,
+                transform 180ms ease;
+        }
+    }
+
+    .orientation-actions > button {
+        white-space: nowrap;
+    }
+    /* Details review stays in the same surface across Bureaucracy and Composer. */
+    .orientation .details-entry {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        text-align: left;
+        background: var(--paper);
+        border: 0;
+        border-radius: var(--radius-lg);
+        padding: 14px;
+        margin: 10px 0;
+        min-height: 60px;
+    }
+    .details-entry > span {
+        flex: 1;
+    }
+    .details-entry strong,
+    .details-entry small {
+        display: block;
+    }
+    .details-entry strong {
+        font-size: var(--text-body);
+        font-weight: var(--weight-semibold);
+    }
+    .details-entry small {
+        margin-top: 4px;
+        font-size: var(--text-caption);
+        color: var(--muted);
+        line-height: 1.4;
+    }
+    .orientation .details-back {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: none;
+        border: 0;
+        padding: 4px 0;
+        min-height: 44px;
+        font-size: var(--text-control);
+    }
+    .details-person {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        margin: 8px 0 16px;
+        font-size: var(--text-small);
+    }
+    .details-person small {
+        margin-left: auto;
+    }
+    .details-facts {
+        display: grid;
+        gap: 6px;
+        margin-top: 16px;
+    }
+    .details-facts > button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: var(--paper);
+        border: 0;
+        border-radius: var(--radius-lg);
+        text-align: left;
+        min-height: 68px;
+    }
+    .details-facts > button > span:nth-child(2) {
+        flex: 1;
+        min-width: 0;
+    }
+    .details-fact-icon {
+        color: var(--muted);
+    }
+    .details-facts small,
+    .details-facts strong {
+        display: block;
+    }
+    .details-facts small {
+        font-size: var(--text-caption);
+        color: var(--muted);
+        margin-bottom: 4px;
+    }
+    .details-facts strong {
+        font-size: var(--text-body);
+        font-weight: var(--weight-semibold);
+    }
+    .details-facts > button > svg:last-child {
+        width: 17px;
+    }
+    .details-reasons strong,
+    .details-reasons small,
+    .details-options strong {
+        display: block;
+    }
+    .details-reasons strong,
+    .details-options strong,
+    .details-uncertain strong {
+        font-weight: var(--weight-semibold);
+    }
+    .details-reasons small {
+        margin-top: 5px;
+        font-size: var(--text-small);
+        line-height: 1.45;
+        color: var(--muted);
+    }
+    .details-reasons > button > svg:last-child {
+        margin-left: auto;
+    }
+    .orientation .details-soft {
+        font-size: var(--text-small);
+        line-height: 1.5;
+        color: var(--muted);
+    }
+    .details-uncertain {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+    .details-uncertain > button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        min-height: 44px;
+        background: transparent;
+        border: 1px solid var(--line);
+        padding: 8px 10px;
+        border-radius: var(--radius-md);
+        font-size: var(--text-small);
+    }
+    .details-uncertain .orientation-check {
+        width: 16px;
+    }
+    .details-uncertain [aria-pressed='true'] {
+        background: var(--blue);
+        border-color: transparent;
+    }
+    .details-uncertain [aria-pressed='true'] .orientation-check {
+        opacity: 1;
+    }
+    .details-date {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 8px;
+        font-size: var(--text-control);
+        font-weight: var(--weight-semibold);
+        margin: 16px 0;
+    }
+    .details-date > :is(input, .shared-date) {
+        width: 100%;
+        flex-basis: 100%;
+    }
+    .details-date input {
+        font: inherit;
+        font-size: var(--text-section);
+        border: 1px solid var(--line);
+        background: var(--paper);
+        padding: 12px;
+        min-height: 48px;
+        border-radius: var(--radius-md);
+    }
+    .details-date small {
+        color: var(--muted);
+        font-weight: var(--weight-regular);
+    }
+    .details-comparison,
+    .details-claims {
+        display: grid;
+        gap: 8px;
+        margin: 18px 0;
+    }
+    .details-comparison > div,
+    .details-claims > div {
+        padding: 16px;
+        border-radius: var(--radius-lg);
+        background: var(--paper);
+    }
+    .details-comparison small,
+    .details-claims small {
+        display: block;
+        font-size: var(--text-caption);
+        color: var(--muted);
+        margin-bottom: 5px;
+    }
+    .details-comparison strong,
+    .details-claims strong {
+        display: block;
+        font-size: var(--text-section);
+        font-weight: var(--weight-semibold);
+    }
+    .details-comparison .details-proposed {
+        background: var(--blue);
+    }
+    .details-proposed small:last-child:not(:first-child) {
+        margin: 8px 0 0;
+    }
+    .details-history,
+    .details-demo {
+        margin-top: 14px;
+    }
+    .details-history > div {
+        padding: 12px;
+        background: var(--paper);
+        border-radius: var(--radius-md);
+        margin-bottom: 8px;
+    }
+    .details-history strong,
+    .details-history small {
+        display: block;
+        font-size: var(--text-small);
+    }
+    .details-history small {
+        color: var(--muted);
+        margin: 4px 0;
+    }
+    .details-history p {
+        font-size: var(--text-small);
+        margin: 6px 0;
+    }
+    .details-demo p {
+        font-size: var(--text-small);
+        color: var(--muted);
+    }
+    .details-demo summary {
+        color: var(--muted);
+        font-size: var(--text-caption);
+    }
+    .orientation .details-notice {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--blue);
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        font-size: var(--text-small);
+    }
+    .details-options > button {
+        min-height: 48px;
+        font-size: var(--text-body);
+    }
+    @media (min-width: 701px) {
+        .details-claims {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    /* Your situation sits beside the overview on wide screens, as in the prototype. */
+    @media (min-width: 1000px) {
+        &[data-view='overview']:has(#case-editor .orientation) {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            column-gap: 28px;
+            align-items: start;
+        }
+        &:has(#case-editor .orientation)
+            > :is(.case-top, .case-navigation, .case-footnote) {
+            grid-column: 1 / -1;
+        }
+        &[data-view='overview']:has(#case-editor .orientation) > #case-editor {
+            grid-column: 1;
+        }
+        &[data-view='overview']:has(#case-editor .orientation)
+            > .bureaucracy-view {
+            grid-column: 2;
+            min-width: 0;
+        }
+        &:has(#case-editor .orientation) :is(.case-overview-grid, .date-grid) {
+            grid-template-columns: 1fr;
+        }
+    }
+    .orientation .details-error {
+        color: var(--color-conflict-text);
+        font-size: var(--text-small);
+        margin: 8px 0 0;
+    }
+    .question-card .orientation-error {
+        flex-basis: 100%;
+        margin: 0;
+    }
 }
 
 /* Animations cannot be nested inside the page scope. */

@@ -1,5 +1,8 @@
 import { clsx } from 'clsx';
+import { useState } from 'react';
+import { CommandError, commands } from './api';
 import { AppointmentEditor, SubmissionEditor } from './editors';
+import { fieldLabel } from './facts';
 import {
     coverageNote,
     formatDate,
@@ -16,6 +19,7 @@ import {
     clock,
 } from './format';
 import { Icon, TopicIcon } from './icons';
+import { offerFor } from './questions';
 import { usePaperwork } from './state';
 import type { ActionFilter } from './state';
 import type { AttentionRow, Plan, Process, Step, TimelineRow } from './types';
@@ -382,6 +386,184 @@ export const statusFilters: [Exclude<ActionFilter, 'all'>, string][] = [
     ['completed', 'Done'],
 ];
 
+/**
+ * plan.questions: the server's next question, in the registry's words. "I don't know" is an
+ * answer (unknown); "Skip for now" defers it. They are different, as in the backend.
+ */
+function QuestionCard() {
+    const { plan, jurisdiction, openSituation, refresh, toast } =
+        usePaperwork();
+    const [pending, setPending] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const q = plan.questions;
+    const editable = plan.scopes.includes('edit_facts');
+
+    const act = async (command: () => Promise<unknown>, done: string) => {
+        setPending(true);
+        setError(null);
+
+        try {
+            await command();
+            await refresh();
+            toast(done);
+        } catch (e) {
+            if (e instanceof CommandError && e.status === 409) {
+                await refresh();
+            }
+
+            setError(
+                e instanceof CommandError
+                    ? e.message
+                    : 'Something went wrong. Try again in a moment.',
+            );
+        } finally {
+            setPending(false);
+        }
+    };
+
+    if (!editable) {
+        return null;
+    }
+
+    const session = q.session_id;
+
+    if ((q.status === 'paused' || q.status === 'answer_limit') && session) {
+        return (
+            <div className="deferred-question">
+                <span>
+                    <Icon name="info" />
+                    {q.status === 'paused'
+                        ? 'That’s enough questions for now.'
+                        : 'That answer didn’t fit. You can try the question again.'}
+                </span>
+                <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() =>
+                        void act(
+                            () => commands.resumeQuestions(session, false),
+                            'Questions are back on.',
+                        )
+                    }
+                >
+                    {q.status === 'paused' ? 'Keep going' : 'Try again'}
+                </button>
+            </div>
+        );
+    }
+
+    const question = q.question;
+
+    if (!question || !['answer', 'resolve_conflict'].includes(question.kind)) {
+        if (!q.deferred.length || !session) {
+            return null;
+        }
+
+        return (
+            <div className="deferred-question">
+                <span>
+                    <Icon name="info" />
+                    {q.deferred.length === 1
+                        ? `${fieldLabel(q.deferred[0])} left for later`
+                        : `${q.deferred.length} questions left for later`}
+                </span>
+                <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() =>
+                        void act(
+                            () => commands.resumeQuestions(session, true),
+                            'Skipped questions are back.',
+                        )
+                    }
+                >
+                    Answer when ready
+                </button>
+            </div>
+        );
+    }
+
+    const task = plan.processes.find(
+        (p) => p.definition_id === question.process_ids?.[0],
+    );
+    const conflict = question.kind === 'resolve_conflict';
+    const unknown = () =>
+        act(async () => {
+            const offer = await offerFor(plan, jurisdiction, question);
+            await commands.answerQuestion(
+                offer.session,
+                offer.id,
+                offer.token,
+                {
+                    state: 'unknown',
+                    value: null,
+                },
+            );
+        }, 'Saved as not known yet. You can add it any time.');
+    const skip = () =>
+        act(async () => {
+            const offer = await offerFor(plan, jurisdiction, question);
+            await commands.deferQuestion(offer.session, offer.id, offer.token);
+        }, 'Left for later.');
+
+    return (
+        <section className="question-card" aria-label="One question">
+            <div>
+                {task?.title ? (
+                    <span className="question-context">
+                        For your {task.title} process
+                    </span>
+                ) : null}
+                <h3>{question.question}</h3>
+                <p className="question-why">{question.why}</p>
+            </div>
+            <div className="actions">
+                <button
+                    type="button"
+                    className="button secondary"
+                    disabled={pending}
+                    onClick={() =>
+                        openSituation(
+                            conflict
+                                ? { key: question.fact_key }
+                                : { question },
+                        )
+                    }
+                >
+                    {conflict
+                        ? 'Review answers'
+                        : question.answer_schema.type === 'date'
+                          ? 'Enter date'
+                          : 'Answer'}
+                </button>
+                {!conflict ? (
+                    <button
+                        type="button"
+                        className="button secondary"
+                        disabled={pending}
+                        onClick={() => void unknown()}
+                    >
+                        I don’t know
+                    </button>
+                ) : null}
+                <button
+                    type="button"
+                    className="button secondary"
+                    disabled={pending}
+                    onClick={() => void skip()}
+                >
+                    Skip for now
+                </button>
+            </div>
+            {error ? (
+                <p className="orientation-error" role="alert">
+                    {error}
+                </p>
+            ) : null}
+        </section>
+    );
+}
+
 export function Overview({ onCoverage }: { onCoverage: () => void }) {
     const { plan, go, stepById } = usePaperwork();
     const open = plan.processes.filter((p) => !p.is_closed);
@@ -392,6 +574,7 @@ export function Overview({ onCoverage }: { onCoverage: () => void }) {
     return (
         <>
             <ComingUp />
+            <QuestionCard />
             <div className="case-overview-grid">
                 <section
                     className="next-actions"

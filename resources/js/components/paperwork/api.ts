@@ -1,6 +1,15 @@
 // JSON commands for the bureaucracy/v2 API. Every write carries a fresh request id
 // and the version the person last saw; the server refuses stale or replayed writes.
 
+import type {
+    Answer,
+    FactConflict,
+    FactDefinition,
+    FactHistory,
+    FactView,
+    QuestionOffer,
+} from './types';
+
 export class CommandError extends Error {
     constructor(
         message: string,
@@ -59,6 +68,27 @@ function messageFor(status: number, body: unknown): string {
     );
 }
 
+/** A private read of the person's own record (never cached). */
+export async function read<T>(url: string): Promise<T> {
+    const response = await fetch(url, {
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    });
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        throw new CommandError(
+            messageFor(response.status, data),
+            response.status,
+        );
+    }
+
+    return data as T;
+}
+
 export async function send<T = unknown>(
     method: 'POST' | 'PUT' | 'DELETE',
     url: string,
@@ -88,6 +118,18 @@ export async function send<T = unknown>(
 }
 
 const base = '/bureaucracy/v2';
+
+export const reads = {
+    facts: (personId: number) =>
+        read<FactView>(`${base}/people/${personId}/facts`),
+    schema: () => read<{ facts: FactDefinition[] }>(`${base}/facts/schema`),
+    history: (personId: number, key: string) =>
+        read<FactHistory>(`${base}/people/${personId}/facts/${key}/history`),
+    conflicts: (personId: number) =>
+        read<{ revision: number; conflicts: FactConflict[] }>(
+            `${base}/people/${personId}/fact-conflicts`,
+        ),
+};
 
 export const commands = {
     startProcess: (
@@ -162,6 +204,93 @@ export const commands = {
             bind_occurrence: bindOccurrence,
             confirmed: true,
         }),
+    startQuestions: (personId: number, jurisdiction: string) =>
+        send<{ session_id: number }>(
+            'POST',
+            `${base}/people/${personId}/question-sessions`,
+            { jurisdiction, request_id: requestId() },
+        ),
+    nextQuestion: (sessionId: number) =>
+        send<QuestionOffer>(
+            'POST',
+            `${base}/question-sessions/${sessionId}/next`,
+            {
+                request_id: requestId(),
+            },
+        ),
+    answerQuestion: (
+        sessionId: number,
+        questionId: number,
+        token: string,
+        answer: Answer,
+    ) =>
+        send(
+            'POST',
+            `${base}/question-sessions/${sessionId}/answers/${questionId}`,
+            {
+                token,
+                value: answer.value,
+                answer_state: answer.state,
+                operation: 'assert',
+            },
+        ),
+    deferQuestion: (sessionId: number, questionId: number, token: string) =>
+        send(
+            'POST',
+            `${base}/question-sessions/${sessionId}/defer/${questionId}`,
+            {
+                token,
+            },
+        ),
+    resumeQuestions: (sessionId: number, revisitDeferred: boolean) =>
+        send('POST', `${base}/question-sessions/${sessionId}/resume`, {
+            revisit_deferred: revisitDeferred,
+        }),
+    /** A real change in circumstances, or a first answer outside a question. */
+    changeFact: (
+        personId: number,
+        key: string,
+        answer: Answer,
+        effectiveFrom: string | null,
+        revision: number,
+    ) =>
+        send('PUT', `${base}/people/${personId}/facts/${key}`, {
+            value: answer.value,
+            answer_state: answer.state,
+            effective_from: effectiveFrom,
+            expected_revision: revision,
+        }),
+    /** An earlier answer that was wrong when it was given. */
+    correctFact: (
+        personId: number,
+        factId: number,
+        answer: Answer,
+        revision: number,
+    ) =>
+        send('POST', `${base}/people/${personId}/facts/${factId}/corrections`, {
+            value: answer.value,
+            answer_state: answer.state,
+            expected_revision: revision,
+        }),
+    resolveConflict: (
+        personId: number,
+        key: string,
+        answer: Answer,
+        revision: number,
+        reviewToken: string,
+    ) =>
+        send(
+            'POST',
+            `${base}/people/${personId}/fact-conflicts/${key}/resolve`,
+            {
+                value: answer.value,
+                answer_state: answer.state,
+                expected_revision: revision,
+                review_token: reviewToken,
+                request_id: requestId(),
+                confirmed: true,
+            },
+        ),
     withdrawRequirement: (
         processId: number,
         requirementId: string,

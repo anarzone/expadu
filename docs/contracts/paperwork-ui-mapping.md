@@ -99,6 +99,16 @@ Conventions
 
 ### 1.5 Your situation
 
+Built on 8 October 2026 (`resources/js/components/paperwork/situation.tsx`). The panel
+reads `GET /people/{p}/facts` and `GET /facts/schema`, plus `GET /people/{p}/fact-conflicts`
+when a state is `conflict`. It lists the answers the person has recorded, the questions they
+left for later and the plan's current question; it does not guess which other facts apply.
+Short field and option labels are UI copy in `facts.ts`; the question wording comes from the
+registry. A correction posts `/facts/{fact_id}/corrections`; a change puts `/facts/{key}`
+with an optional `effective_from`; a conflict posts `/fact-conflicts/{key}/resolve`. Answer
+history reads `/facts/{key}/history` when opened. Relationship review, check-ins and topic
+browsing are not built.
+
 | UI element | Backend source | Notes |
 |---|---|---|
 | Fact rows: label + value (situation-ui.js:28-42) | `GET /people/{p}/facts` → `revision`, `values{}`, `states{}` (`value`/`unknown`/`declined`/`not_applicable`/`conflict`/`needs_reconfirmation`/`invalid`), `evidence{key:{fact_id, source, effective_from, effective_until}}` | **MISSING**: field labels, questions and option labels outside an offered question. `answer_schema` exists only on a question candidate. Need `GET /facts/schema` (registry `question`, `why`, `type`, `options`, `date_semantics`) or a field-label map. Option display labels are UI copy today (details-review.js:4-82). |
@@ -115,6 +125,13 @@ Conventions
 | Orientation `move_stage` / `focus` (orientation.js:4-28) | **None**. These are not registry facts. | Frontend-only product orientation, or drop it. |
 
 ### 1.6 Question card / inline question flow
+
+Built on 8 October 2026 (`QuestionCard` in `overview.tsx`, `questions.ts`). The card shows
+`plan.questions.question` for `kind` `answer` and `resolve_conflict`. "Enter date" or
+"Answer" opens Your situation on that question; "I don't know" answers `unknown`; "Skip for
+now" defers. Each starts a session only when `questions.session_id` is missing or expired,
+then asks `next` for an offer. A paused session or a run of skipped questions shows one
+line with a resume action. `review_relationship` questions are not shown.
 
 | UI element | Backend source |
 |---|---|

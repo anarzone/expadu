@@ -214,19 +214,104 @@ export interface CoverageUnit {
     state: 'complete' | 'partial' | 'not_covered' | 'withdrawn' | 'unconfirmed';
 }
 
+export interface AnswerSchema {
+    type: 'date' | 'enum' | 'boolean' | 'integer' | string;
+    options: string[];
+    date_semantics?: string | null;
+    allows_not_applicable?: boolean;
+}
+
 export interface Question {
     fact_key: string;
     process_ids: string[];
+    kind: 'answer' | 'resolve_conflict' | 'review_relationship' | string;
     question: string;
     why: string;
-    answer_schema: {
-        type: 'date' | 'enum' | 'boolean' | 'integer' | string;
-        options: { value: string; label: string }[] | string[];
-        date_semantics?: string;
-        allows_not_applicable?: boolean;
-    };
+    answer_schema: AnswerSchema;
     dependency_token: string;
     deferral_token: string;
+    /** Present once this session has offered the question. */
+    id?: number;
+    token?: string;
+    can_skip?: boolean;
+    can_answer_unknown?: boolean;
+}
+
+export interface QuestionOffer {
+    status:
+        | 'offered'
+        | 'paused'
+        | 'answer_limit'
+        | 'refresh_required'
+        | 'already_handled'
+        | 'no_more_questions'
+        | string;
+    session_id: number;
+    question: (Question & { id: number; token: string }) | null;
+}
+
+export type AnswerState = 'value' | 'unknown' | 'declined' | 'not_applicable';
+
+/** What the person chose: a value, or an honest "not sure" / "prefer not to say". */
+export interface Answer {
+    state: AnswerState;
+    value: string | number | boolean | null;
+}
+
+export interface FactDefinition {
+    key: string;
+    type: AnswerSchema['type'];
+    options: string[];
+    question: string;
+    why: string;
+    date_semantics: string | null;
+    allows_not_applicable: boolean;
+    subject_scope: string;
+}
+
+export type FactState =
+    | AnswerState
+    | 'conflict'
+    | 'needs_reconfirmation'
+    | 'invalid';
+
+export interface FactView {
+    revision: number;
+    values: Record<string, string | number | boolean>;
+    states: Record<string, FactState>;
+    evidence: Record<
+        string,
+        {
+            fact_id: number;
+            effective_from: string | null;
+            checked_at: string | null;
+        }
+    >;
+}
+
+export interface FactHistory {
+    revision: number;
+    entries: {
+        fact_id: number;
+        operation: 'asserted' | 'corrected' | 'changed' | 'resolved' | string;
+        after: { answer_state: AnswerState; value: unknown };
+        before: { answer_state: AnswerState; value: unknown } | null;
+        effective_from: string | null;
+        recorded_at: string | null;
+    }[];
+}
+
+export interface FactConflict {
+    fact_key: string;
+    resolution_available: boolean;
+    choices?: {
+        fact_id: number;
+        value: unknown;
+        answer_state: AnswerState | 'invalid';
+        recorded_at: string | null;
+    }[];
+    expected_revision?: number;
+    review_token?: string;
 }
 
 export interface ProgressBucket {
@@ -247,7 +332,14 @@ export interface Plan {
         session_id: number | null;
         question: Question | null;
         deferred: string[];
-        status: string;
+        status:
+            | 'preview'
+            | 'offered'
+            | 'paused'
+            | 'answer_limit'
+            | 'no_more_questions'
+            | string;
+        remaining_information_count?: number;
     };
     actions: {
         id: string;
