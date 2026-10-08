@@ -743,7 +743,7 @@
                   )
                   .join('')}</div>`
             : '';
-        return `<section class="studio-welcome${cards.length ? ' has-starter-cards' : ''}">${cards.length ? '' : `<div class="welcome-symbol" aria-hidden="true">${I('spark')}</div>`}${dayRow(x)}<h1>What’s on your mind?</h1><p>Ask in your own words. Composer knows your plan, uses the city’s listings and says “Not listed” instead of guessing.</p>${starterCards}<div class="starter-chips" role="group" aria-label="More to ask">${chips
+        return `<section class="studio-welcome${cards.length ? ' has-starter-cards' : ''}">${cards.length ? '' : `<div class="welcome-symbol" aria-hidden="true">${I('spark')}</div>`}<h1>What’s on your mind?</h1><p>Ask in your own words. Composer knows your plan, uses the city’s listings and says “Not listed” instead of guessing.</p>${starterCards}<div class="starter-chips" role="group" aria-label="More to ask">${chips
             .map(([, label, prompt]) => `<button class="starter-chip" data-prompt="${E(prompt)}"><span>${E(label)}</span></button>`)
             .join('')}</div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}</section>`;
     }
@@ -813,7 +813,8 @@
               ? `<button class="${kind}" data-open-plan="${E(f.openPlan)}">${inner}</button>`
               : `<button class="${kind}" data-prompt="${E(f.prompt)}">${inner}</button>`;
     }
-    // Phones: the day's facts in one scrolling row above the starters.
+    // Phones: the day's facts in one scrolling row under Composer's mark,
+    // above the starters and later above the conversation, as in the mock.
     function dayRow(x) {
         const facts = dayFacts(x);
         return facts.length
@@ -1111,7 +1112,7 @@
         if (main.dataset.chapter !== chapter.id) {
             main.innerHTML =
                 heading() +
-                `<div class="chat-bar" hidden><p>Sample answers from the sample day · nothing here is live</p><button type="button" data-action="new">Start fresh</button></div><div class="chat-feed" aria-label="Conversation"></div>`;
+                `<div class="composer-day-row"></div><div class="chat-bar" hidden><p>Sample answers from the sample day · nothing here is live</p><button type="button" data-action="new">Start fresh</button></div><div class="chat-feed" aria-label="Conversation"></div>`;
             main.dataset.chapter = chapter.id;
             entryMarkup.clear();
         }
@@ -1130,6 +1131,12 @@
         }
         day.hidden = !dayHtml;
         document.body.classList.toggle('has-composer-day', !!dayHtml);
+        const row = main.querySelector('.composer-day-row');
+        const rowHtml = dayRow(todayContext());
+        if (dayMarkup.get(row) !== rowHtml) {
+            row.innerHTML = rowHtml;
+            dayMarkup.set(row, rowHtml);
+        }
         const feed = main.querySelector('.chat-feed');
         main.querySelector('.chat-bar').hidden = !chapter.entries.length;
         const empty = feed.querySelector('.studio-welcome');
@@ -1189,8 +1196,10 @@
         if (requestField.value && !requestField.style.height)
             requestField.style.height =
                 Math.min(120, requestField.scrollHeight) + 'px';
-        document.querySelector('#studio-request').placeholder =
-            'Ask, discover, or plan…';
+        document.querySelector('#studio-request').placeholder = chapter.entries
+            .length
+            ? 'Ask or add a detail…'
+            : 'Ask, discover, or plan…';
         syncPlanning();
         syncSaved();
         let live = document.querySelector('#chat-announcement');

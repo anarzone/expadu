@@ -111,6 +111,13 @@ body.studio {
     }
 }
 
+/* Phones and tablets: Your day's row stays under the mark, above the
+   starters and the conversation alike. */
+.studio .composer-day-row {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
 /* ── The start screen ────────────────────────────────────────────────── */
 .studio-welcome,
 .studio-welcome.has-starter-cards {
