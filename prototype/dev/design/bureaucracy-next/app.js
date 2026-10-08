@@ -611,26 +611,51 @@
         appointment: 'Appointment',
         submission_recorded: 'Submission recorded',
     };
-    // plan.timeline, soonest first; dates still unknown stay listed with
-    // what they need.
     // plan.guidance[]: cards that apply to you but aren't tasks (kind
-    // context). Their own checked text, a way to the official page, nothing
-    // to track.
+    // context), grouped by topic in the order they arrive (most urgent
+    // first). Each opens with when it was checked, then its own text and
+    // its official pages; nothing to track.
     function goodToKnow(plan) {
         if (!plan.guidance?.length) return '';
-        return `<section class="good-to-know" aria-labelledby="good-heading"><div class="case-section-head"><h2 id="good-heading">Good to know</h2></div><div class="context-list">${plan.guidance
-            .map(
-                (g) =>
-                    `<details class="context-card"><summary><span class="topic-icon">${I('info')}</span><span><strong>${E(g.title)}</strong><small>${E(g.unit_title)}</small></span>${I('down')}</summary><div class="context-text">${paragraphs(
-                        g.description,
-                    )
-                        .map((x) => `<p>${E(x)}</p>`)
-                        .join(
-                            '',
-                        )}<small>${E(checkedLine(g.review.verified_at))}</small><a href="${E(g.actions[0].url)}" target="_blank" rel="noopener">Official page ↗</a></div></details>`,
+        const topics = [...new Set(plan.guidance.map((g) => g.topic))];
+        // The law's own text or the office's page; numbered when a card
+        // quotes two of the same kind.
+        const links = (actions) => {
+            const kind = (a) =>
+                /gesetze-im-internet\.de/.test(a.url)
+                    ? 'Legal text'
+                    : 'Official page';
+            return actions
+                .map((a, i) => {
+                    const same = actions.filter((b) => kind(b) === kind(a));
+                    const n =
+                        same.length > 1
+                            ? ` ${actions.slice(0, i + 1).filter((b) => kind(b) === kind(a)).length}`
+                            : '';
+                    return `<a href="${E(a.url)}" target="_blank" rel="noopener">${kind(a)}${n} ↗</a>`;
+                })
+                .join('');
+        };
+        const card = (g) =>
+            `<details class="context-card"><summary><span class="topic-icon">${I('info')}</span><span><strong>${E(g.title)}</strong>${g.unit_title !== g.title ? `<small>${E(g.unit_title)}</small>` : ''}</span>${I('down')}</summary><div class="context-text"><small>${E(checkedLine(g.review.verified_at))}</small>${paragraphs(
+                g.description,
             )
-            .join('')}</div></section>`;
+                .map((x) => `<p>${E(x)}</p>`)
+                .join(
+                    '',
+                )}<div class="context-links">${links(g.actions)}</div></div></details>`;
+        return `<section class="good-to-know" aria-labelledby="good-heading"><div class="case-section-head"><h2 id="good-heading">Good to know <span>${plan.guidance.length}</span></h2></div>${topics
+            .map(
+                (t) =>
+                    `<div class="context-topic"><h3>${E(C.topicLabels[t] || t)}</h3><div class="context-list">${plan.guidance
+                        .filter((g) => g.topic === t)
+                        .map(card)
+                        .join('')}</div></div>`,
+            )
+            .join('')}</section>`;
     }
+    // plan.timeline, soonest first; dates still unknown stay listed with
+    // what they need.
     function dates(plan) {
         const rows = folded(plan.timeline).sort((a, b) =>
             (a.date || '9999').localeCompare(b.date || '9999'),

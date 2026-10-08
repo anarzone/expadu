@@ -100,46 +100,281 @@ window.BureaucracySource = [
         source: 'https://www.stadt-koeln.de/service/produkte/20321/index.html',
         law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
     },
-    // Guidance that isn't a task (kind context, plan.guidance[]): cards
-    // that apply to you are listed as "Good to know", never as processes.
+    // Guidance that isn't a task (kind context, plan.guidance[]): the
+    // release's twelve context cards, exactly as the backend returns them
+    // (title, description, official links, applies_if). Listed as "Good to
+    // know" for whom they apply, never as processes.
     {
-        key: 'shared.fiktionsbescheinigung',
+        key: 'ck.work_limits',
         kind: 'context',
-        title: 'Fiktionsbescheinigung: what that bridging paper really permits',
-        appliesIf: { citizenship_group: 'non_eu' },
+        definition: 'residence.chancenkarte',
+        definitionTitle: 'Opportunity Card (Chancenkarte)',
+        topic: 'residence',
+        urgency: 'medium',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [
+            {
+                purpose: 'employment',
+                permit_track: 'chancenkarte',
+                citizenship_group: 'non_eu',
+            },
+        ],
+        title: 'Know your Chancenkarte work limits',
         description:
-            'While a permit application is processing you may get a Fiktionsbescheinigung —\nand what it allows depends on which of its two forms you hold. The continuation\nform (§81 Abs. 4) keeps your current permit in force until the decision: you may\nkeep working if your permit allowed it, and you may travel and return while it is\nvalid. The form for a first application without a visa (§81 Abs. 3) does not\nallow work, and you may not leave Germany and re-enter on it. Check which form\nyours is before booking any flight.',
+            "While you search, the Chancenkarte only allows employment of at most 20 hours per week on average, plus trial employments of at most two weeks each that must be qualified (§20a AufenthG). The search card is issued for up to one year. With a qualifying job contract or binding offer and the Federal Employment Agency's approval, it can be extended by up to two years as a follow-up card — but only if you do not qualify for another work-related residence permit, so the plan is to move to a work permit. The card is only issued when your livelihood is secured. Typical finance requirement at issue: €13,092 for 12 months (~€1,091/month).",
         documents: [],
         verifiedAt: '2026-09-30',
         version: '2026-10-08.1',
-        source: 'https://www.stadt-koeln.de/artikel/71447/index.html',
-        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html',
+        source: 'https://www.gesetze-im-internet.de/aufenthg_2004/__20a.html',
+        official: [
+            'https://www.gesetze-im-internet.de/aufenthg_2004/__20a.html',
+        ],
+    },
+    {
+        key: 'shared.citizenship',
+        kind: 'context',
+        definition: 'residence.citizenship',
+        definitionTitle: 'German citizenship',
+        topic: 'residence',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ citizenship_group: 'non_eu' }],
+        title: 'German citizenship',
+        description:
+            'German citizenship is usually after five years of lawful residence in Germany, with German at level B1 (or a German school, study or vocational qualification) and proof of knowledge of the legal and social order, for example a passed naturalisation test (Einbürgerungstest). The fee is €255. Other conditions, such as your residence title and secured livelihood, also apply.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/service/produkt/einbuergerung-den-deutschen-staatsverband',
+        official: [
+            'https://www.stadt-koeln.de/service/produkt/einbuergerung-den-deutschen-staatsverband',
+        ],
+    },
+    {
+        key: 'shared.other_permits',
+        kind: 'context',
+        definition: 'residence.other_routes',
+        definitionTitle: 'Other residence routes',
+        topic: 'residence',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ citizenship_group: 'non_eu' }],
+        title: 'Other permit types: where to look',
+        description:
+            "Some paths we don't model in full. Here is where the law puts them. Vocational training in a company (§16a) has its own residence permit for training. Researchers (§18d) need a hosting agreement or contract with a research institution; intra-corporate transfers (§19) use the ICT Card for a temporary posting within the company group. Language courses (§16f) and searching for a training place (§17) have their own residence permits. Long-term residents of another EU country (§38a) who hold that status there can get a residence permit if they want to stay in Germany for more than 90 days. Ask the Ausländeramt which route applies to you.",
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/index.html',
+        official: [
+            'https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/index.html',
+        ],
     },
     {
         key: 'shared.passport_transfer',
         kind: 'context',
+        definition: 'residence.passport_transfer',
+        definitionTitle: 'Moving your permit to a new passport',
+        topic: 'residence',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ citizenship_group: 'non_eu' }],
         title: 'New passport? Transfer your permit (Übertrag)',
-        appliesIf: { citizenship_group: 'non_eu' },
         description:
-            'Your residence title stays valid when you get a new national passport. Carry\nboth the old and the new passport if you kept the old one. If the old passport\nnumber is printed on your residence title, contact the Ausländeramt through its\ncontact form and it will tell you the next steps; if it is not printed there,\nyou do not need to do anything. Settlement permit holders whose card shows the\npassport number book an appointment at their Bezirksausländeramt and bring your\nold passport, your new passport and a digital biometric photo. Also worth\nknowing: a residence title generally expires if you leave Germany for a reason\nthat is not temporary, or if you stay abroad for longer than six months without\na longer period set by the Ausländerbehörde. Some exceptions apply, so ask\nbefore planning long stays away.',
+            'Your residence title stays valid when you get a new national passport. Carry both the old and the new passport if you kept the old one. If the old passport number is printed on your residence title, contact the Ausländeramt through its contact form and it will tell you the next steps; if it is not printed there, you do not need to do anything. Settlement permit holders whose card shows the passport number book an appointment at their Bezirksausländeramt and bring your old passport, your new passport and a digital biometric photo. Also worth knowing: a residence title generally expires if you leave Germany for a reason that is not temporary, or if you stay abroad for longer than six months without a longer period set by the Ausländerbehörde. Some exceptions apply, so ask before planning long stays away.',
         documents: [],
         verifiedAt: '2026-09-30',
         version: '2026-10-08.1',
         source: 'https://www.stadt-koeln.de/artikel/73721/index.html',
-        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__51.html',
+        official: [
+            'https://www.stadt-koeln.de/artikel/73721/index.html',
+            'https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis',
+        ],
+    },
+    {
+        key: 'shared.fiktionsbescheinigung',
+        kind: 'context',
+        definition: 'residence.pending_application',
+        definitionTitle: 'While your application is pending',
+        topic: 'residence',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ citizenship_group: 'non_eu' }],
+        title: 'Fiktionsbescheinigung: what that bridging paper really permits',
+        description:
+            'While a permit application is processing you may get a Fiktionsbescheinigung — and what it allows depends on which of its two forms you hold. The continuation form (§81 Abs. 4) keeps your current permit in force until the decision: you may keep working if your permit allowed it, and you may travel and return while it is valid. The form for a first application without a visa (§81 Abs. 3) does not allow work, and you may not leave Germany and re-enter on it. Check which form yours is before booking any flight.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/artikel/71447/index.html',
+        official: [
+            'https://www.stadt-koeln.de/artikel/71447/index.html',
+            'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html',
+        ],
+    },
+    {
+        key: 'shared.long_game',
+        kind: 'context',
+        definition: 'residence.settlement.general',
+        definitionTitle: 'Permanent residence',
+        topic: 'residence',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [
+            {
+                citizenship_group: 'non_eu',
+                current_residence_title: [
+                    'national_d_visa',
+                    'standard_work_permit',
+                    'blue_card',
+                    'family_reunification',
+                ],
+            },
+        ],
+        title: 'The long game: permanent residency',
+        description:
+            'Germany rewards staying. A Niederlassungserlaubnis (permanent residency) is usually after holding a residence permit for five years, with secured livelihood, at least 60 months of pension contributions (in a marriage, the contributions of one spouse can count for both), German at level B1, basic knowledge of the legal and social order (usually shown with the "Leben in Deutschland" test) and sufficient housing for your household. The Cologne fee is €113. Faster routes exist: three years on a skilled-worker permit (two years with a German degree or vocational training) under §18c; 27 months on a Blue Card, or 21 months with sufficient German; three years for family members of Germans (§28). The EU variant (Daueraufenthalt-EU, §9a) also generally needs five years. When a renewal comes due, check whether you already meet these conditions.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis',
+        official: [
+            'https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis',
+            'https://www.stadt-koeln.de/service/produkt/allgemeine-niederlassungserlaubnis',
+        ],
+    },
+    {
+        key: 'famde.ne_three_years',
+        kind: 'context',
+        definition: 'residence.settlement.german_family',
+        definitionTitle: 'Permanent residence as family of a German',
+        topic: 'residence',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ purpose: 'family', sponsor: 'german' }],
+        title: 'Permanent residency after three years (§28 Abs. 2)',
+        description:
+            'If you hold a residence permit under §28(1) as the family member of a German, you can apply for a Niederlassungserlaubnis after three years. Cologne lists these conditions: the family community with your German family member continues (you live together, or you regularly care for your German children); your livelihood is secured without benefits such as Bürgergeld; you have adequate health insurance; you have no criminal convictions in Germany, since even fines can prevent it; and your German is at B1 level.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-familienangehoerige-von-deutschen-personen',
+        official: [
+            'https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-familienangehoerige-von-deutschen-personen',
+        ],
+    },
+    {
+        key: 'case.bc.verify_status_source',
+        kind: 'context',
+        definition: 'residence.status_verification',
+        definitionTitle: 'Checking your residence title',
+        topic: 'residence',
+        urgency: 'high',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ citizenship_group: 'non_eu' }],
+        title: 'Verify an unrecognized title against the official source',
+        description:
+            'Expadu does not have a reviewed case rule for every residence title. Check the exact legal basis printed on the card or visa and confirm the route with the Cologne immigration authority before acting. General information shown here is not an eligibility decision.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/service/adressen/auslaenderamt',
+        official: ['https://www.stadt-koeln.de/service/adressen/auslaenderamt'],
+    },
+    {
+        key: 'stu.post_graduation',
+        kind: 'context',
+        definition: 'residence.student.job_search',
+        definitionTitle: 'Job search after graduation',
+        topic: 'residence',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ purpose: 'study', citizenship_group: 'non_eu' }],
+        title: 'After graduation: 18 months to find your job',
+        description:
+            'After successfully completing your degree in Germany, you can get a residence permit for up to 18 months to look for a job (§20 AufenthG). Your livelihood must be secured for the whole period, and the permit cannot be extended. The job you find does not have to match your degree, as long as you meet the requirements of a permit such as the one for skilled workers with an academic qualification or the EU Blue Card. You can also use the permit to prepare self-employment.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/service/produkte/00973/index.html',
+        official: [
+            'https://www.stadt-koeln.de/service/produkte/00973/index.html',
+            'https://www.gesetze-im-internet.de/aufenthg_2004/__20.html',
+        ],
+    },
+    {
+        key: 'stu.work_rules',
+        kind: 'context',
+        definition: 'residence.student.work',
+        definitionTitle: 'Working while you study',
+        topic: 'work',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ purpose: 'study', citizenship_group: 'non_eu' }],
+        title: 'Working as a student: 140 working days per year',
+        description:
+            "Your student permit includes an Arbeitstagekonto: employment of up to 140 working days per year. For each calendar week the more favourable way of counting applies: either days with up to four hours of work count as half days, or if you work up to 20 hours in a lecture-time week, that week counts as two and a half days; outside lecture time each week counts as two and a half days however the hours are spread. Student jobs at a university or other research institution (studentische Nebentätigkeiten) don't count. Work beyond this account needs separate permission, so keep a simple tally.",
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/service/produkte/00973/index.html',
+        official: [
+            'https://www.stadt-koeln.de/service/produkte/00973/index.html',
+            'https://www.gesetze-im-internet.de/aufenthg_2004/__16b.html',
+        ],
     },
     {
         key: 'shared.verpflichtungserklaerung',
         kind: 'context',
+        definition: 'residence.visitor_sponsorship',
+        definitionTitle: 'Inviting a visitor',
+        topic: 'residence',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{}],
         title: 'Inviting family or friends to visit? Verpflichtungserklärung',
-        appliesIf: {},
         description:
-            'If you invite visa-required family or friends to visit, they can use a\nVerpflichtungserklärung to show the German embassy or consulate that their costs\nare covered. You file it at the Ausländeramt (€29 per declaration; the fee is\ncharged even if your income is not sufficient). You commit to covering public\ncosts of their stay, for five years from their entry. You need your main\nresidence in Cologne. File it at least three months before their visa appointment\n(by post, online contact form, or in person on Tuesday and Thursday mornings);\nthe embassy usually recognises it for up to six months after issue. Employees\nbring payslips for the last three months and a bank statement showing the salary;\nself-employed people bring a Steuerberater certificate or their last tax\nassessment instead.',
+            'If you invite visa-required family or friends to visit, they can use a Verpflichtungserklärung to show the German embassy or consulate that their costs are covered. You file it at the Ausländeramt (€29 per declaration; the fee is charged even if your income is not sufficient). You commit to covering public costs of their stay, for five years from their entry. You need your main residence in Cologne. File it at least three months before their visa appointment (by post, online contact form, or in person on Tuesday and Thursday mornings); the embassy usually recognises it for up to six months after issue. Employees bring payslips for the last three months and a bank statement showing the salary; self-employed people bring a Steuerberater certificate or their last tax assessment instead.',
         documents: [],
         verifiedAt: '2026-09-30',
         version: '2026-10-08.1',
         source: 'https://www.stadt-koeln.de/service/produkte/00962/index.html',
-        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__68.html',
+        official: [
+            'https://www.stadt-koeln.de/service/produkte/00962/index.html',
+        ],
+    },
+    {
+        key: 'stu.tax_return',
+        kind: 'context',
+        definition: 'tax.income_tax_return',
+        definitionTitle: 'Income tax return',
+        topic: 'tax',
+        urgency: 'low',
+        // applies_if: any one group, every condition in it (a list means
+        // one of these values); an empty group applies to everyone.
+        appliesIf: [{ purpose: 'study' }],
+        title: 'Your first tax return: you can file one yourself',
+        description:
+            'Had wage tax deducted from your pay, for example on a Werkstudent contract? §46 EStG lists cases in which an assessment is required, for example if you were paid by several employers at the same time. Otherwise you can still apply for an assessment yourself, in particular to have the withheld wage tax credited against your income tax. You apply by filing an income tax return.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.gesetze-im-internet.de/estg/__46.html',
+        official: [
+            'https://www.gesetze-im-internet.de/estg/__46.html',
+            'https://www.elster.de/eportal/start',
+        ],
     },
     // Published but withheld from the release (not machine-confirmed): the
     // backend lists them only as coverage units, title and official page.

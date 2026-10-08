@@ -362,8 +362,8 @@ test('three answers or skips in a row pause; an answer that keeps not fitting st
 
 test('coverage lists every reviewed unit without claiming completeness', () => {
     const units = plan(fresh()).coverage.units;
-    // Ten task cards, three context cards and two withheld ones.
-    assert.equal(units.length, 15);
+    // Ten task cards, twelve context cards and two withheld ones.
+    assert.equal(units.length, 24);
     assert.equal(units.filter((u) => u.state === 'unconfirmed').length, 2);
     assert.ok(units.every((u) => ['partial', 'unconfirmed'].includes(u.state)));
     assert.equal(

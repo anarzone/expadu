@@ -51,7 +51,7 @@
         {
             id: 'family',
             name: 'Joining your family',
-            records: [12, 13],
+            records: [21, 22],
             icon: 'people',
             tone: 'violet',
             initial: 'not_started',
@@ -65,7 +65,7 @@
         {
             id: 'integration',
             name: 'Integration course',
-            record: 14,
+            record: 23,
             icon: 'people',
             tone: 'green',
             initial: 'not_started',

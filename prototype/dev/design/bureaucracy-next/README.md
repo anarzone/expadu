@@ -12,9 +12,18 @@ each kind is in now (it's for seeing the design, not every case). Most are
 under Review: a persona preview or Other states.
 
 - **Guidance that isn't a task** (plan.guidance, kind context): "Good to know"
-  on the overview: While your application is pending (Fiktionsbescheinigung),
-  Moving your permit to a new passport, Inviting a visitor. Each opens to the
-  card's own checked text.
+  on the overview, below the tasks and dates. All twelve context cards of the
+  release are in `source-data.js` with the backend's own text, official links
+  and applies_if (any one group, every condition in it; a list means one of
+  these values). The sample person gets the backend's seven: Checking your
+  residence title (high urgency, so first), German citizenship, Other
+  residence routes, Moving your permit to a new passport, While your
+  application is pending, Permanent residence, Inviting a visitor. They are
+  grouped by topic; each opens with when it was checked, then its text and its
+  official pages ("Official page", "Legal text"). None has a status, a count
+  of steps or a button to track: they aren't to-dos. A student (Fresh start:
+  non-EU, study) also gets cards under Work and Tax; an EU citizen gets only
+  Inviting a visitor.
 - **Withheld cards** (not machine-confirmed): only as unconfirmed coverage
   units in Sources (the freelance residence permit, Kindergeld). Life events
   aren't live, so they're not tasks.

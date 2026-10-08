@@ -31,10 +31,9 @@
         'case.family.first_permit.prepare': 'residence.family.first',
         'fam.residence_permits': 'residence.family.first',
         'fam.integration_course': 'education.integration_course',
-        'shared.fiktionsbescheinigung': 'residence.pending_application',
-        'shared.passport_transfer': 'residence.passport_transfer',
-        'shared.verpflichtungserklaerung': 'residence.visitor_sponsorship',
     };
+    // A context card names its own definition (source-data.js).
+    const definitionOf = (r) => unitDefinitions[r.key] || r.definition || null;
     // Catalogue step kinds (process-map.yaml): an "action" step is the
     // submission, so its completion event is submission_recorded.
     const actionSteps = ['case.bc.first_application.submit'];
@@ -48,9 +47,6 @@
         'tax.identification': 'Tax ID',
         'residence.family.first': 'Joining your family',
         'education.integration_course': 'Integration course',
-        'residence.pending_application': 'While your application is pending',
-        'residence.passport_transfer': 'Moving your permit to a new passport',
-        'residence.visitor_sponsorship': 'Inviting a visitor',
     };
     // processes[].title for one of this sample's occurrences.
     const titleOf = (key) => processTitles[definitions[key]?.id] || null;
@@ -597,31 +593,47 @@
         };
     }
     // plan.guidance[]: the context cards that apply to you (kind context,
-    // actionable false, type info). Never processes, never a step.
+    // actionable false, type info). Never processes, never a step. A card
+    // applies when every condition of any one of its applies_if groups
+    // holds (a list means one of these values; an empty group applies to
+    // everyone). The most urgent come first, then catalogue order.
+    const urgencyRank = { high: 0, medium: 1, low: 2 };
     function guidanceOf(s) {
         const facts = answersOf(s).facts;
         const said = (k) =>
             facts[k]?.state === 'value' ? facts[k].value : undefined;
+        const holds = (group) =>
+            Object.entries(group).every(([k, v]) =>
+                Array.isArray(v) ? v.includes(said(k)) : said(k) === v,
+            );
         return R()
             .filter(
                 (r) =>
                     r.kind === 'context' &&
                     r.state !== 'unconfirmed' &&
-                    Object.entries(r.appliesIf || {}).every(
-                        ([k, v]) => said(k) === v,
-                    ),
+                    (r.appliesIf || [{}]).some(holds),
             )
-            .map((r) => ({
+            .map((r, order) => ({ r, order }))
+            .sort(
+                (a, b) =>
+                    urgencyRank[a.r.urgency] - urgencyRank[b.r.urgency] ||
+                    a.order - b.order,
+            )
+            .map(({ r }) => ({
                 id: r.key,
-                definition_id: unitDefinitions[r.key] || null,
-                title: processTitles[unitDefinitions[r.key]] || r.title,
+                definition_id: definitionOf(r),
+                title: r.definitionTitle || r.title,
                 unit_title: r.title,
                 description: r.description,
                 kind: 'context',
                 type: 'info',
                 actionable: false,
-                topic: 'residence',
-                actions: [{ url: r.source, purpose: 'information' }],
+                topic: r.topic,
+                urgency: r.urgency,
+                actions: (r.official || [r.source]).map((url) => ({
+                    url,
+                    purpose: 'information',
+                })),
                 review: {
                     verified_at: r.verifiedAt,
                     content_version: r.version,
@@ -787,7 +799,7 @@
                     // "Automatically checked cards").
                     r.state === 'unconfirmed'
                         ? {
-                              definition_id: unitDefinitions[r.key] || null,
+                              definition_id: definitionOf(r),
                               unit_id: r.key,
                               title: r.title,
                               content_version: null,
@@ -800,7 +812,7 @@
                               state: 'unconfirmed',
                           }
                         : {
-                              definition_id: unitDefinitions[r.key] || null,
+                              definition_id: definitionOf(r),
                               unit_id: r.key,
                               title: r.title,
                               content_version: r.version,

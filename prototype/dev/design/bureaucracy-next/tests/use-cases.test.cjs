@@ -349,19 +349,34 @@ test('another person’s plan is read only and shows nothing private', () => {
 
 test('guidance that isn’t a task: context cards for whom they apply', () => {
     const p = plan(sample());
-    // The sample person is non-EU: all three apply; none is a process.
+    // The sample person (non-EU, on a D visa, aiming for the Blue Card)
+    // gets the backend's seven; the one urgent card comes first.
     assert.deepEqual(
-        [...p.guidance.map((g) => g.title)],
+        [...p.guidance.map((g) => g.id)],
         [
-            'While your application is pending',
-            'Moving your permit to a new passport',
-            'Inviting a visitor',
+            'case.bc.verify_status_source',
+            'shared.citizenship',
+            'shared.other_permits',
+            'shared.passport_transfer',
+            'shared.fiktionsbescheinigung',
+            'shared.long_game',
+            'shared.verpflichtungserklaerung',
         ],
+    );
+    assert.equal(p.guidance[0].urgency, 'high');
+    assert.equal(p.guidance[0].title, 'Checking your residence title');
+    assert.ok(p.guidance.every((g) => g.topic === 'residence'));
+    // Every official page the card quotes.
+    assert.equal(
+        p.guidance.find((g) => g.id === 'shared.long_game').actions.length,
+        2,
     );
     assert.ok(p.guidance.every((g) => !g.actionable && g.kind === 'context'));
     assert.ok(
         !p.processes.some((x) =>
-            x.steps.some((st) => st.guidance_id.startsWith('shared.')),
+            x.steps.some((st) =>
+                p.guidance.some((g) => g.id === st.guidance_id),
+            ),
         ),
     );
     // An EU citizen gets only the visitor card.
@@ -369,6 +384,39 @@ test('guidance that isn’t a task: context cards for whom they apply', () => {
     assert.deepEqual(
         [...plan(s).guidance.map((g) => g.id)],
         ['shared.verpflichtungserklaerung'],
+    );
+});
+
+test('a student’s cards span three topics; a settled person skips the long game', () => {
+    const student = walk({
+        citizenship_group: 'non_eu',
+        arrival_planned: false,
+        current_residence_title: 'other',
+        purpose: 'study',
+    });
+    const cards = plan(student.s).guidance;
+    for (const id of [
+        'stu.post_graduation',
+        'stu.work_rules',
+        'stu.tax_return',
+    ])
+        assert.ok(
+            cards.some((g) => g.id === id),
+            id,
+        );
+    assert.deepEqual(
+        [...new Set(cards.map((g) => g.topic))],
+        ['residence', 'work', 'tax'],
+    );
+    // Its permit isn't among the long game's four.
+    assert.ok(!cards.some((g) => g.id === 'shared.long_game'));
+    const settled = walk({
+        citizenship_group: 'non_eu',
+        arrival_planned: false,
+        current_residence_title: 'settlement_permit_9',
+    });
+    assert.ok(
+        !plan(settled.s).guidance.some((g) => g.id === 'shared.long_game'),
     );
 });
 

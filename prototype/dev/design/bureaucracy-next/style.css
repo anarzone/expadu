@@ -2505,7 +2505,8 @@ body[data-page='bureaucracy'] .sr-only {
 }
 
 /* Good to know: guidance that applies to you but isn't a task (context
-   cards). A quiet list; each opens to the card's own checked text. */
+   cards), grouped by topic. A quiet list; each opens to the card's own
+   checked text and its official pages. */
 .good-to-know {
     margin-top: 28px;
 }
@@ -2554,14 +2555,28 @@ body[data-page='bureaucracy'] .sr-only {
     line-height: 1.55;
 }
 .context-text p {
+    max-width: 72ch;
     margin: 0;
 }
 .context-text small {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
-.context-text a {
-    justify-self: start;
+.context-topic + .context-topic {
+    margin-top: 18px;
+}
+.context-topic h3 {
+    margin: 0 2px 8px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.context-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+}
+.context-links a {
     color: var(--color-text);
     font-weight: var(--weight-semibold);
     text-decoration: underline;
