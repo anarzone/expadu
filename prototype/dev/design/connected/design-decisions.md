@@ -429,9 +429,13 @@ and mist from the forecast, labelled with its source, and "Weather not
 recorded" for a past day). Outdoor events with rain likely at their hour say
 so; today's lights go out when an event is over and pulse while it's on;
 pointing at (or first tapping) a light shows the sky at its hour. Then
-(owner request) the column's arrows are gone (drag, swipe or arrow keys),
-an "On the column" list is taped under it on desktop (picking one turns the
-column), and the column, list and notes stay beside a long day's posters.
+(owner request) the column's arrows are gone (drag, swipe or arrow keys)
+and, instead of a list (tried and rejected), the column stands bigger on a
+street corner: dome, gold band, stone plinth and older posters peeking out;
+cobbles, a lantern, a bench, a bike and pigeons; a plastered wall with
+scraps and a "Plakatieren verboten" stencil. The street keeps today's time
+and weather (lantern at dusk, darker at night, rain and puddles), and the
+day's posters flow round the corner and across the wall below it.
 Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky

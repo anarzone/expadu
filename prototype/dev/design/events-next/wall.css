@@ -86,79 +86,58 @@ body[data-page='events'] {
 }
 
 /* ---------- The wall ---------- */
-/* The column, what's on it and the week's notes stand together on the
-   left and stay beside you while the day's posters scroll past. */
+/* A plastered wall: a little grain, softer and lighter patches, scraps of
+   older posters and a stencil. The column stands on its street corner at
+   the left and the day's posters flow round it, then across the full
+   width below. At night the wall darkens around the lit lantern. */
 .wall-board {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: 'column day';
-    align-items: start;
-    gap: 28px 32px;
+    --wall-day: var(--color-bg-hover);
+    --wall-night: #24223a;
+    position: relative;
+    display: flow-root;
     margin-top: 14px;
-    padding: 36px 32px 28px;
+    padding: 36px 32px 72px;
     border-radius: 32px;
-    background: var(--color-bg-hover);
+    background-color: color-mix(
+        in srgb,
+        var(--wall-day),
+        var(--wall-night) calc(var(--street-dark, 0) * 88%)
+    );
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.32 0 0 0 0 0.27 0 0 0 0 0.2 0 0 0 0.11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+        radial-gradient(ellipse 30% 22% at 78% 18%, #ffffff2e, transparent 70%),
+        radial-gradient(ellipse 26% 30% at 18% 72%, #6b5a3a14, transparent 70%),
+        radial-gradient(ellipse 34% 20% at 60% 92%, #ffffff24, transparent 70%);
+    transition: background-color 400ms var(--ease-settle);
 }
-.wall-side {
-    grid-area: column;
-    position: sticky;
-    top: 84px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.wall-board > :not(.wall-decor) {
+    position: relative;
+    z-index: 1;
 }
-.wall-board #event-featured {
-    margin: 0;
+/* The list's box runs under the floated corner; the corner stays on top
+   so its column can be used. */
+.wall-board > .wall-scene {
+    z-index: 2;
 }
 .wall-board #event-list {
-    grid-area: day;
     min-width: 0;
 }
-.wall-side .wall-next {
-    width: 404px;
-    max-width: 100%;
-    margin-top: 6px;
-}
-/* A day with one poster (or none) on a wide screen: the notes go back to
-   the right of it, so neither side stands empty. */
-.wall-board #event-featured {
-    grid-area: column;
-}
+/* The notes sit beside the scene when there's room, else below it. */
 .wall-next {
-    grid-area: next;
-}
-@media (min-width: 1200px) {
-    main:not([data-view='skyline'])
-        .wall-board:not(:has(.wall-view--wall .wall-day > .pp:nth-child(2))) {
-        grid-template-columns: auto minmax(0, 1fr) minmax(300px, 380px);
-        grid-template-areas: 'column day next';
-    }
-    main:not([data-view='skyline'])
-        .wall-board:not(:has(.wall-view--wall .wall-day > .pp:nth-child(2)))
-        .wall-side {
-        display: contents;
-    }
-    main:not([data-view='skyline'])
-        .wall-board:not(:has(.wall-view--wall .wall-day > .pp:nth-child(2)))
-        .wall-next {
-        width: auto;
-        margin-top: 0;
-    }
+    display: flow-root;
+    max-width: 440px;
 }
 /* The skyline has the board to itself: the column stays on the Wall. */
-main[data-view='skyline'] .wall-board {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'day' 'column';
-}
-main[data-view='skyline'] .wall-side {
-    position: static;
-    align-items: stretch;
-}
-main[data-view='skyline'] .wall-side .wall-next {
-    width: auto;
-}
-main[data-view='skyline'] .wall-board #event-featured {
+main[data-view='skyline'] .wall-scene,
+main[data-view='skyline'] .wall-decor {
     display: none;
+}
+main[data-view='skyline'] .wall-board {
+    padding-bottom: 28px;
+    background-color: var(--wall-day);
+}
+main[data-view='skyline'] .wall-next {
+    max-width: none;
 }
 main[data-view='wall'] .wall-view--skyline,
 main[data-view='skyline'] .wall-view--wall {
@@ -169,6 +148,18 @@ main[data-view='skyline'] .wall-view--wall {
     flex-wrap: wrap;
     align-items: flex-start;
     gap: 26px 22px;
+}
+/* On desktop the day's posters are laid like words, so they flow round
+   the street corner and then use the full width below it. */
+@media (min-width: 1000px) {
+    .wall-day {
+        display: block;
+    }
+    .wall-day > .pp {
+        display: inline-block;
+        margin: 0 22px 26px 0;
+        vertical-align: top;
+    }
 }
 .wall-day > .pp:nth-child(odd) {
     rotate: 1.4deg;
@@ -232,6 +223,8 @@ main[data-view='skyline'] .wall-view--wall {
 .wall-column {
     --column-w: 364px;
     --column-h: 560px;
+    /* Older posters show above and below the one facing you. */
+    --strip: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -239,29 +232,43 @@ main[data-view='skyline'] .wall-view--wall {
 .wall-column-cap {
     position: relative;
     width: calc(var(--column-w) + 40px);
-    height: 44px;
+    height: 58px;
     border-radius: 50% 50% 8px 8px / 100% 100% 8px 8px;
-    background: var(--poster-column);
+    background:
+        radial-gradient(ellipse 40% 70% at 34% 30%, #ffffff26, transparent 70%),
+        var(--poster-column);
+    box-shadow: inset 0 -6px 0 #0000002e;
 }
 .wall-column-cap > span {
     position: absolute;
     left: 50%;
-    top: -14px;
-    width: 18px;
-    height: 18px;
-    margin-left: -9px;
-    border-radius: 50%;
+    top: -26px;
+    width: 14px;
+    height: 30px;
+    margin-left: -7px;
+    border-radius: 7px 7px 2px 2px;
     background: var(--poster-column);
 }
-.wall-column-cap::after {
+.wall-column-cap > span::before {
     content: '';
     position: absolute;
-    left: 8px;
-    right: 8px;
-    top: 46px;
-    height: 12px;
-    border-radius: 4px;
-    background: var(--poster-column-ring);
+    left: 50%;
+    top: -10px;
+    width: 16px;
+    height: 16px;
+    margin-left: -8px;
+    border-radius: 50%;
+    background: #c9a54a;
+}
+/* A band under the dome: a gold line, small arches and another line. */
+.wall-column-frieze {
+    width: calc(var(--column-w) + 20px);
+    height: 26px;
+    border-top: 3px solid #c9a54a;
+    border-bottom: 3px solid #c9a54a;
+    background:
+        radial-gradient(circle at 50% 100%, transparent 6px, #c9a54a 6.5px 8px, transparent 8.5px) 0 0 / 22px 20px repeat-x,
+        var(--poster-column);
 }
 /* A lamp under the cap, lit while an evening or night poster faces you. */
 .wall-column-cap::before {
@@ -286,10 +293,54 @@ main[data-view='skyline'] .wall-view--wall {
 .wall-column-body {
     position: relative;
     width: var(--column-w);
-    height: var(--column-h);
-    margin-top: 18px;
+    height: calc(var(--column-h) + var(--strip) * 2);
     overflow: hidden;
+    /* Layers of old paper round the drum. */
+    background:
+        repeating-linear-gradient(0deg, transparent 0 9px, #211d1508 9px 10px),
+        #e7dfcd;
     touch-action: pan-y;
+}
+/* Torn edges of older posters peek out above and below. */
+.wall-column-old > span {
+    position: absolute;
+    display: block;
+}
+.wall-column-old > span:nth-child(1) {
+    left: -4%;
+    top: 0;
+    width: 62%;
+    height: calc(var(--strip) + 14px);
+    background: #d9c26e;
+    clip-path: polygon(0 0, 100% 0, 100% 62%, 92% 80%, 84% 66%, 74% 88%, 63% 70%, 50% 100%, 36% 76%, 22% 92%, 10% 74%, 0 86%);
+}
+.wall-column-old > span:nth-child(2) {
+    right: -3%;
+    top: 0;
+    width: 52%;
+    height: calc(var(--strip) + 6px);
+    background:
+        radial-gradient(circle, #ffffff59 1.5px, transparent 2px) 0 0 / 8px 8px,
+        #9c8fc4;
+    clip-path: polygon(0 0, 100% 0, 100% 78%, 86% 100%, 70% 72%, 54% 94%, 38% 70%, 20% 92%, 0 74%);
+}
+.wall-column-old > span:nth-child(3) {
+    left: -2%;
+    bottom: 0;
+    width: 58%;
+    height: calc(var(--strip) + 10px);
+    background:
+        repeating-linear-gradient(135deg, #ffffff33 0 6px, transparent 6px 14px),
+        #b9cfb3;
+    clip-path: polygon(0 24%, 12% 6%, 26% 22%, 40% 0, 56% 18%, 72% 4%, 86% 20%, 100% 8%, 100% 100%, 0 100%);
+}
+.wall-column-old > span:nth-child(4) {
+    right: -4%;
+    bottom: 0;
+    width: 50%;
+    height: calc(var(--strip) + 4px);
+    background: #eab79c;
+    clip-path: polygon(0 18%, 14% 0, 30% 20%, 48% 4%, 66% 24%, 82% 2%, 100% 14%, 100% 100%, 0 100%);
 }
 .wall-column-body[tabindex] {
     cursor: grab;
@@ -303,7 +354,7 @@ main[data-view='skyline'] .wall-view--wall {
 }
 .wall-column-face {
     position: absolute;
-    inset: 0;
+    inset: var(--strip) 0;
     transform-origin: center;
     will-change: transform;
 }
@@ -345,10 +396,23 @@ main[data-view='skyline'] .wall-view--wall {
     );
 }
 .wall-column-base {
-    width: calc(var(--column-w) + 32px);
-    height: 30px;
-    border-radius: 6px 6px 2px 2px;
+    position: relative;
+    width: calc(var(--column-w) + 24px);
+    height: 22px;
+    border-radius: 4px 4px 0 0;
     background: var(--poster-column);
+}
+/* A stone plinth under the iron ring. */
+.wall-column-base > span {
+    position: absolute;
+    left: -14px;
+    right: -14px;
+    top: 22px;
+    height: 34px;
+    border-radius: 3px;
+    background: linear-gradient(#c8bfae, #a69d8b);
+    box-shadow: inset 0 3px 0 #ffffff40;
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.5));
 }
 .wall-column-count {
     font-variant-numeric: tabular-nums;
@@ -358,131 +422,335 @@ main[data-view='skyline'] .wall-view--wall {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
-/* What's on the column, as a programme taped to the wall beside it: a
-   small poster, when and what. Picking one turns the column to it. */
-.wall-column-index {
+
+/* ---------- The street corner ---------- */
+/* The column stands on cobbles, with an old lantern behind a bench at its
+   left, a bike leaning on it and two pigeons. Drawn flat; it darkens at
+   night, the lantern lights at dusk, and rain falls and leaves puddles. */
+.wall-scene {
     position: relative;
-    width: calc(var(--column-w) + 8px);
-    margin-top: 26px;
-    padding: 24px 12px 12px;
-    background: var(--poster-paper);
-    box-shadow:
-        0 1px 0 #211d150f,
-        0 12px 26px -16px #211d1566;
-    rotate: -0.6deg;
 }
-.wall-column-index::before {
+.wall-scene #event-featured {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+}
+.wall-scene-art,
+.wall-scene-art * {
+    stroke: none;
+}
+.wall-scene-art {
+    position: absolute;
+    z-index: 3;
+    overflow: visible;
+    pointer-events: none;
+}
+.wall-iron {
+    fill: #24302b;
+}
+.wall-lantern {
+    z-index: 1;
+    left: 0;
+    bottom: 62px;
+    width: 128px;
+    height: 700px;
+}
+.wall-lantern-glass {
+    fill: color-mix(in srgb, #d5dad0, #ffd36b calc(var(--lamp-on, 0) * 100%));
+}
+.wall-scene-glow {
+    position: absolute;
+    z-index: 0;
+    left: -86px;
+    top: 30px;
+    width: 300px;
+    height: 330px;
+    pointer-events: none;
+    background: radial-gradient(
+        circle closest-side at 50% 40%,
+        #ffd36b70,
+        #ffd36b24 45%,
+        transparent
+    );
+    opacity: var(--lamp-on, 0);
+    transition: opacity 400ms var(--ease-settle);
+}
+.wall-bench {
+    left: -22px;
+    bottom: 54px;
+    width: 150px;
+    height: 66px;
+}
+.wall-wood {
+    fill: #8b5d3e;
+}
+.wall-bike {
+    right: -34px;
+    bottom: 46px;
+    width: 160px;
+    height: 100px;
+    rotate: -6deg;
+    transform-origin: 22% 94%;
+}
+.wall-scene .wall-bike .wall-bike-wheels circle,
+.wall-scene .wall-bike .wall-bike-frame,
+.wall-scene .wall-bike .wall-bike-bits {
+    fill: none;
+    stroke: #2c2a35 !important;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.wall-scene .wall-bike .wall-bike-frame {
+    stroke: #4f6f8f !important;
+}
+.wall-bike-basket {
+    fill: #a8794f;
+}
+.wall-pigeons {
+    left: 168px;
+    bottom: 46px;
+    width: 96px;
+    height: 36px;
+}
+.wall-pigeon-body {
+    fill: #8d8f9a;
+}
+.wall-pigeon-head {
+    fill: #6f7180;
+}
+.wall-pigeon-beak {
+    fill: #d9a441;
+}
+.wall-scene .wall-pigeon-legs {
+    stroke: #c0646a !important;
+    stroke-width: 2;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .wall-pigeon.is-pecking .wall-pigeon-body {
+        transform-origin: 16px 28px;
+        animation: wall-peck 5s ease-in-out infinite;
+    }
+}
+@keyframes wall-peck {
+    0%,
+    80%,
+    100% {
+        rotate: 0deg;
+    }
+    86%,
+    92% {
+        rotate: 24deg;
+    }
+}
+/* Bench, bike and birds dim with the street; the lantern doesn't. */
+:is(.wall-bench, .wall-bike, .wall-pigeons) {
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.5));
+}
+/* Cobbles: a shadow where the wall meets them, the stones, a kerb. */
+.wall-scene-ground {
+    position: absolute;
+    z-index: 0;
+    left: -24px;
+    right: -40px;
+    bottom: 34px;
+    height: 96px;
+    background:
+        linear-gradient(#211d154d, transparent) top / 100% 14px no-repeat,
+        linear-gradient(transparent calc(100% - 12px), #d6ccb9 calc(100% - 12px)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20'%3E%3Crect width='40' height='20' fill='%23a1978a'/%3E%3Cg fill='%23c3baa8'%3E%3Crect x='1' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='21' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='11' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='-9' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='31' y='11' width='18' height='8' rx='3.5'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 26px 13px repeat-x,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20'%3E%3Crect width='40' height='20' fill='%23a1978a'/%3E%3Cg fill='%23c8bfad'%3E%3Crect x='1' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='21' y='1' width='18' height='8' rx='3.5'/%3E%3Crect x='11' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='-9' y='11' width='18' height='8' rx='3.5'/%3E%3Crect x='31' y='11' width='18' height='8' rx='3.5'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 40px 20px;
+    filter: brightness(calc(1 - var(--street-dark, 0) * 0.55));
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+}
+/* The column's shadow, and the lantern's pool of light. */
+.wall-scene-ground::before,
+.wall-scene-ground::after {
     content: '';
     position: absolute;
-    top: -10px;
-    left: 50%;
-    width: 86px;
-    height: 22px;
-    margin-left: -43px;
-    background: #efe2b3d9;
-    box-shadow: 0 1px 2px #211d1526;
+    border-radius: 50%;
+}
+.wall-scene-ground::before {
+    left: 170px;
+    top: 30px;
+    width: 420px;
+    height: 30px;
+    background: radial-gradient(ellipse, #211d1559, transparent 70%);
+}
+.wall-scene-ground::after {
+    left: 20px;
+    top: 10px;
+    width: 200px;
+    height: 60px;
+    background: radial-gradient(ellipse, #ffd36b8c, transparent 70%);
+    opacity: var(--lamp-on, 0);
+}
+/* Puddles after rain, the one in front catching the column's colour. */
+.wall-puddle {
+    position: absolute;
+    z-index: 1;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 40%, #edf3f8c4, #b9c9d866 55%, transparent 72%);
+    opacity: var(--wet, 0);
+    transition: opacity 600ms var(--ease-settle);
+}
+.wall-puddle:nth-child(1) {
+    left: 236px;
+    top: 66px;
+    width: 190px;
+    height: 24px;
+    background:
+        linear-gradient(90deg, transparent 30%, color-mix(in srgb, var(--reflect, #4b2bb8) 55%, transparent) 40% 60%, transparent 70%),
+        radial-gradient(ellipse at 50% 40%, #edf3f8c4, #b9c9d866 55%, transparent 72%);
+    -webkit-mask-image: radial-gradient(ellipse, #000 55%, transparent 72%);
+    mask-image: radial-gradient(ellipse, #000 55%, transparent 72%);
+}
+.wall-puddle:nth-child(2) {
+    left: 470px;
+    top: 72px;
+    width: 110px;
+    height: 16px;
+}
+.wall-puddle:nth-child(3) {
+    left: 150px;
+    top: 74px;
+    width: 96px;
+    height: 15px;
+}
+.wall-scene:has(.wall-column[data-ink='day']) {
+    --reflect: #ffe363;
+}
+.wall-scene:has(.wall-column[data-ink='night']) {
+    --reflect: #1b1840;
+}
+.wall-scene:has(.wall-column[data-ink='paper']) {
+    --reflect: #fff8e6;
+}
+/* Rain over the corner while it falls. */
+.wall-scene-rain {
+    position: absolute;
+    z-index: 4;
+    left: -24px;
+    right: -40px;
+    top: 0;
+    bottom: 34px;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: calc(var(--rain, 0) * 0.7);
+}
+.wall-scene-rain svg {
+    width: 100%;
+    height: 100%;
+}
+.wall-scene-rain line {
+    stroke: #dbe6f2;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .wall-board[data-raining] .wall-rain-fall {
+        animation: sky-fall 0.6s linear infinite;
+    }
+}
+/* At night the lamp under the column's dome is on too. */
+.wall-board[data-dark] .wall-column-cap::before {
+    background: var(--festival-yellow, #ffe363);
+    box-shadow: 0 0 18px 6px #ffe36380;
+}
+.wall-board[data-dark] .wall-column-glow {
+    opacity: 1;
+}
+.wall-board[data-dark] :is(.festival-credit, .wall-column-caption, .wall-day-note) {
+    color: #e9e1d0;
+}
+/* Wet posters shine. */
+.wall-board[data-wet] .pp-front::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+        linear-gradient(115deg, transparent 32%, #ffffff36 39%, transparent 46%),
+        repeating-linear-gradient(180deg, transparent 0 15px, #ffffff0f 15px 16px);
+    opacity: var(--wet, 0);
+}
+/* The wall: scraps of older posters, paste marks and a stencil. */
+.wall-decor {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+}
+.wall-scrap {
+    position: absolute;
+    background:
+        radial-gradient(circle, #ffffff4d 1.5px, transparent 2px) 0 0 / 9px 9px,
+        var(--scrap);
+    opacity: 0.5;
+    transition: opacity 400ms var(--ease-settle);
+}
+.wall-scrap:nth-child(3n + 1) {
+    clip-path: polygon(0 8%, 14% 0, 32% 10%, 55% 0, 78% 12%, 100% 4%, 96% 100%, 70% 88%, 44% 100%, 20% 90%, 0 100%);
+}
+.wall-scrap:nth-child(3n + 2) {
+    clip-path: polygon(6% 0, 100% 0, 92% 30%, 100% 58%, 88% 100%, 0 96%, 8% 62%, 0 30%);
+}
+.wall-scrap:nth-child(3n) {
+    clip-path: polygon(0 0, 64% 0, 72% 14%, 100% 10%, 100% 100%, 30% 100%, 22% 84%, 0 90%);
+}
+.wall-paste {
+    position: absolute;
+    width: 240px;
+    height: 320px;
+    background: #ffffff1f;
+    clip-path: polygon(2% 0, 98% 2%, 100% 97%, 60% 100%, 0 98%);
     rotate: 2deg;
 }
-.wall-column-index-title {
-    margin: 0 0 8px 8px;
-    color: var(--color-text-soft);
-    font-family: 'Poster Grotesque', var(--font-sans);
-    font-size: var(--text-caption);
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+.wall-paste:nth-of-type(even) {
+    rotate: -3deg;
 }
-.wall-column-index ol {
-    display: grid;
-    gap: 2px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-.wall-column-index button {
-    display: grid;
-    grid-template-columns: 34px minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    min-height: 58px;
-    padding: 6px 8px;
-    border: 0;
-    border-radius: 12px;
-    background: transparent;
-    color: var(--color-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition: background-color var(--duration-fast) var(--ease-settle);
-}
-.wall-column-index button:hover {
-    background: #211d150d;
-}
-.wall-column-index button[aria-current='true'] {
-    background: var(--color-select-bg);
-}
-.wall-column-index button:active {
-    transform: scale(0.99);
-}
-.wall-column-thumb {
-    position: relative;
-    width: 34px;
-    height: 47px;
-    overflow: hidden;
-    border-radius: 3px;
-    box-shadow: 0 1px 3px #211d1540;
-}
-/* Its title and time as faint lines, so a plain paper listing still
-   reads as a poster. */
-.wall-column-lines {
+.wall-stencil {
     position: absolute;
-    left: 5px;
-    right: 8px;
-    top: 44%;
-    height: 19px;
+    right: 46px;
+    bottom: 22px;
     color: #211d15;
-    background:
-        linear-gradient(currentColor, currentColor) 0 0 / 100% 3px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 6px / 80% 3px no-repeat,
-        linear-gradient(currentColor, currentColor) 0 16px / 45% 3px no-repeat;
-    opacity: 0.75;
-}
-.wall-column-thumb:is(.is-evening, .is-night) .wall-column-lines {
-    color: #ffe363;
-}
-/* The whole poster's art, drawn at poster size and shrunk. */
-.wall-column-thumb .pp-art {
-    inset: auto;
-    top: 0;
-    left: 0;
-    width: 272px;
-    height: 376px;
-    transform: scale(0.125);
-    transform-origin: 0 0;
-}
-.wall-column-entry {
-    display: grid;
-    min-width: 0;
-}
-.wall-column-when {
-    color: var(--color-text-soft);
-    font-size: var(--text-caption);
-    font-variant-numeric: tabular-nums;
-}
-.wall-column-index button[aria-current='true'] .wall-column-when {
-    color: var(--color-select-text);
-}
-.wall-column-what {
-    overflow: hidden;
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-    text-overflow: ellipsis;
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
     white-space: nowrap;
+    opacity: 0.2;
+    rotate: -1.5deg;
+    -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 11px, transparent 11px 12.5px);
+    mask-image: repeating-linear-gradient(90deg, #000 0 11px, transparent 11px 12.5px);
 }
-@media (max-width: 999px) {
-    .wall-column-index {
-        display: none;
+.wall-board[data-dark] .wall-stencil {
+    color: #f3ead8;
+    opacity: 0.16;
+}
+.wall-board[data-dark] .wall-scrap {
+    opacity: 0.22;
+}
+@media (min-width: 1000px) {
+    .wall-scene {
+        float: left;
+        width: 560px;
+        margin: 0 36px 28px -8px;
+        padding: 34px 0 96px 136px;
+    }
+    /* The caption sits under the pavement. */
+    .wall-scene .wall-column-caption {
+        position: absolute;
+        top: calc(100% + 72px);
+        left: 0;
+        right: 0;
+        margin: 0;
+        text-align: center;
     }
 }
 
@@ -1957,15 +2225,54 @@ main[data-view='skyline'] .wall-view--wall {
         flex-direction: column;
     }
     .wall-board,
-    main[data-view='skyline'] .wall-board,
-    .wall-side {
+    main[data-view='skyline'] .wall-board {
         display: contents;
     }
-    .wall-board #event-featured {
+    .wall-decor,
+    .wall-scene :is(.wall-lantern, .wall-bench, .wall-bike, .wall-pigeons, .wall-scene-glow) {
+        display: none;
+    }
+    .wall-scene {
         order: -1;
         width: 100%;
         align-self: stretch;
         margin: 4px 0 18px;
+        padding-bottom: 30px;
+    }
+    .wall-scene-ground {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 30px;
+    }
+    .wall-scene-ground::before {
+        left: 15%;
+        top: 2px;
+        width: 70%;
+        height: 18px;
+    }
+    .wall-puddle:nth-child(1) {
+        left: 30%;
+        top: 8px;
+        width: 40%;
+        height: 16px;
+    }
+    .wall-puddle:nth-child(2) {
+        left: 76%;
+        top: 14px;
+        width: 18%;
+        height: 10px;
+    }
+    .wall-puddle:nth-child(3) {
+        left: 6%;
+        top: 14px;
+        width: 16%;
+        height: 10px;
+    }
+    .wall-scene-rain {
+        left: 0;
+        right: 0;
+        bottom: 0;
     }
     .wall-column {
         --column-h: 440px;
@@ -1973,9 +2280,9 @@ main[data-view='skyline'] .wall-view--wall {
     .wall-board #event-list {
         margin-top: 4px;
     }
-    .wall-side .wall-next {
+    .wall-next {
         order: 1;
-        width: auto;
+        max-width: none;
         margin-top: 26px;
     }
     .wall-day {
@@ -2016,18 +2323,39 @@ main[data-view='skyline'] .wall-view--wall {
         overflow: hidden;
         clip-path: inset(50%);
     }
-    .wall-board #event-featured,
+    .wall-scene #event-featured,
     .wall-column {
         width: 100%;
         align-self: stretch;
+    }
+    /* On a phone the corner stays slim, so the filters keep their place
+       on the first screen: a thin band, narrow strips, a line of cobbles. */
+    .wall-column {
+        --strip: 8px;
     }
     .wall-column-cap {
         width: calc(100% - 8px);
         height: 24px;
     }
-    .wall-column-cap::after {
-        top: 25px;
-        height: 7px;
+    .wall-column-frieze {
+        width: calc(100% - 16px);
+        height: 8px;
+        border-width: 2px;
+        background: var(--poster-column);
+    }
+    .wall-scene {
+        padding-bottom: 16px;
+    }
+    .wall-scene-ground {
+        height: 16px;
+    }
+    .wall-scene-ground::before {
+        top: 0;
+        height: 10px;
+    }
+    .wall-puddle:nth-child(n) {
+        top: 4px;
+        height: 9px;
     }
     .wall-column-cap > span {
         display: none;
@@ -2043,8 +2371,7 @@ main[data-view='skyline'] .wall-view--wall {
     }
     .wall-column-body {
         width: calc(100% - 26px);
-        height: 340px;
-        margin-top: 10px;
+        height: calc(318px + var(--strip) * 2);
     }
     .wall-column-base {
         display: none;

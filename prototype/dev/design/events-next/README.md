@@ -5,23 +5,41 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
-## No arrows, and a fuller left side — 8 October 2026
+## The column on a street corner — 8 October 2026
 
-Owner request: remove the arrows under the poster column, and decorate the
-left side, which looked empty beside a long day of posters.
+Owner request: no arrows under the poster column; and instead of a list,
+make the scene bigger and better by decorating its surroundings (ideas 1–4
+chosen: a bigger column, a street corner, time and weather, a wall). An
+"On the column" list tried first was rejected and removed.
 
 - **No arrows.** The column turns by dragging (swiping on a phone) or the
-  arrow keys; the caption says how: "Coming up · 1 of 4 · drag to turn".
-- **"On the column", taped under it (desktop).** A paper programme with a
-  small poster, when and what for each poster on the column ("Tonight ·
-  18:30", "Tue 6 Oct · city listing"). Picking one turns the column to it
-  the short way; the poster facing you is highlighted in cyan. Phones and
-  tablets keep the swipe and the caption.
-- **The left side stays beside you.** The column, its list and the week's
-  notes stand together and stay in view while a long day of posters
-  scrolls past (when they're taller than the window, with their foot in
-  view). A day with one poster, on a wide screen, keeps its notes on the
-  right instead, so neither side stands empty.
+  arrow keys: "Coming up · 1 of 4 · drag to turn".
+- **A bigger, more real column.** A taller dome with a finial, a band of
+  small gold arches under it, a stone plinth, and torn edges of older
+  posters peeking out above and below the one facing you; the drum is old
+  paper where the posters turn away.
+- **A street corner (desktop).** The column stands on cobbles with a kerb
+  and its shadow; an old lantern behind a bench at its left, a bike
+  leaning on it, two pigeons (one pecks now and then). Drawn flat, like
+  the skyline; none of it is a control.
+- **Time and weather.** The street keeps today's hour and weather, from
+  the same clock as the skyline (the sample day's 13:10, `?at=`, or the
+  App in colour time switch): the lantern lights at dusk and casts a pool
+  of light, the wall darkens at night (text on it turns light), rain falls
+  on the corner, puddles stay a couple of hours after it and catch the
+  column's colour, and posters shine wet. At 13:10 it's a dry afternoon;
+  try `?at=19:30` for dusk in the showers or `?at=22:40` for night.
+- **A plastered wall.** The board has a little grain, softer and lighter
+  patches, faded scraps of older posters, paste marks where others were,
+  and a "Plakatieren verboten" ("no posters") stencil at its foot.
+- **The day flows round the corner.** On desktop the posters are laid like
+  words, beside the corner and then across the full width below it, so a
+  long day doesn't leave the left side empty. The corner stays above the
+  list so its column can be used.
+- **Phones** keep the column on a slim line of cobbles (with puddles and
+  rain); the lantern, bench, bike and wall stay on larger screens, so the
+  first poster, search and sort stay on the first screen, clear of
+  Composer's button.
 
 ## A sky that follows the time and the weather — 8 October 2026
 

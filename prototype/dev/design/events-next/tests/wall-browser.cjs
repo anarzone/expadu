@@ -85,8 +85,8 @@ const inside = (box, viewport) =>
             assert.ok(await poster.locator('.pp-front').isVisible());
 
             // The column carries the featured pick and the three later city
-            // listings (dates only, no planning). No arrows: it turns by
-            // drag, the arrow keys, or (on desktop) the list under it.
+            // listings (dates only, no planning). No arrows and no list: it
+            // turns by drag or the arrow keys.
             const column = page.locator('#event-featured .wall-column');
             assert.equal(await column.locator('.wall-column-face').count(), 4);
             assert.equal(await column.locator('.pp.is-listing').count(), 3);
@@ -94,24 +94,15 @@ const inside = (box, viewport) =>
                 await column.locator('.pp.is-listing :is([data-plan-item], [data-save-item])').count(),
                 0,
             );
-            assert.equal(await page.locator('[data-column-step], .wall-column-controls').count(), 0);
+            assert.equal(
+                await page.locator('[data-column-step], .wall-column-controls, .wall-column-index').count(),
+                0,
+            );
             assert.equal(await column.locator('.wall-column-count').innerText(), '1 of 4');
-            const index = column.locator('.wall-column-index');
-            if (viewport.width > 700) {
-                assert.equal(await index.locator('[data-column-to]').count(), 4);
-                await index.locator('[data-column-to="1"]').click();
-            } else {
-                assert.equal(await index.isVisible(), false);
-                await column.locator('.wall-column-body').focus();
-                await page.keyboard.press('ArrowRight');
-            }
+            await column.locator('.wall-column-body').focus();
+            await page.keyboard.press('ArrowRight');
             await page.waitForTimeout(500);
             assert.equal(await column.locator('.wall-column-count').innerText(), '2 of 4');
-            if (viewport.width > 700)
-                assert.equal(
-                    await index.locator('[aria-current="true"]').getAttribute('data-column-to'),
-                    '1',
-                );
             const front = await column.evaluate((el) =>
                 [...el.querySelectorAll('.wall-column-face')].findIndex((f) => !f.inert),
             );
@@ -222,23 +213,22 @@ const inside = (box, viewport) =>
                 0,
             );
             assert.equal(await page.locator('.wall-past').isHidden(), true);
-            // On a long day the column, its list and the notes stay beside
-            // the posters as they scroll past.
+            // On a desktop the column stands on its street corner (lantern,
+            // bench, bike, cobbles) on a plastered wall with its stencil, and
+            // a long day's posters flow round it and on below it.
             if (viewport.width > 700) {
-                await page.evaluate(() => scrollTo(0, 1000));
-                await page.waitForTimeout(300);
-                const side = await page.locator('.wall-side').boundingBox();
-                assert.ok(
-                    side.y < viewport.height && side.y + side.height > viewport.height - 40,
-                    `the side scrolled away: ${JSON.stringify(side)}`,
-                );
-                await page.evaluate(() => scrollTo(0, 0));
+                for (const part of ['.wall-lantern', '.wall-bench', '.wall-bike', '.wall-scene-ground', '.wall-stencil'])
+                    assert.equal(await page.locator(part).isVisible(), true, `${part} is missing`);
+                const flow = await page.evaluate(() => {
+                    const scene = document.querySelector('.wall-scene').getBoundingClientRect();
+                    return [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')].some((poster) => {
+                        const r = poster.getBoundingClientRect();
+                        return r.top >= scene.bottom - 2 && r.left < scene.right;
+                    });
+                });
+                assert.ok(flow, 'no poster flows on below the street corner');
             }
-            assert.equal(
-                await page.locator('.wall-view--wall .pp.is-past:not([data-wear])').count(),
-                0,
-                'every past poster is weathered',
-            );
+
             // The same day on the skyline: its lights are out, and labels
             // never overlap each other or another light.
             await page.click('[data-wall-view="skyline"]');
@@ -368,6 +358,21 @@ const inside = (box, viewport) =>
         assert.match(await culture.getAttribute('aria-label'), /already over/);
         assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
+        // The street keeps today's time and weather: a dry afternoon at
+        // 13:10; at 19:30 dusk, the lantern on, rain and puddles.
+        const street = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+        await street.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
+        const flags = () =>
+            street.locator('.wall-board').evaluate((el) => ({
+                dark: el.hasAttribute('data-dark'),
+                wet: el.hasAttribute('data-wet'),
+                raining: el.hasAttribute('data-raining'),
+                lamp: el.style.getPropertyValue('--lamp-on'),
+            }));
+        assert.deepEqual(await flags(), { dark: false, wet: false, raining: false, lamp: '0.000' });
+        await street.goto(`${base}?date=2026-09-30&at=19:30`, { waitUntil: 'networkidle' });
+        assert.deepEqual(await flags(), { dark: true, wet: true, raining: true, lamp: '1.000' });
+        await street.close();
         // The App in colour concept's time switch moves the skyline too.
         const concept = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
         await concept.goto(

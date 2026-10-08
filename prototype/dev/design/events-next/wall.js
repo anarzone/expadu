@@ -65,30 +65,14 @@
     /* ---------- The poster column: what's coming up, all the way round ----
        The featured picks, then the later listings in the same city series.
        It turns like a real Litfaßsäule: drag or swipe sideways, or the
-       arrow keys. Under it, on desktop, a list of what's on it turns it to
-       the one you pick. Only the poster facing you can be used. */
+       arrow keys. Only the poster facing you can be used. It stands on a
+       street corner (mount() builds the street around it). */
     const columnItems = (items) => [
         ...base.featured(items),
         ...laterListings(items).map((item) => ({ ...item, listing: true })),
     ];
-    // When a column poster is on: tonight, today or its date, with the time
-    // where the listing gives one.
-    const onWhen = (item) => {
-        const date =
-            item.date === today
-                ? item.start >= '17:00'
-                    ? 'Tonight'
-                    : 'Today'
-                : F.dateLabel(item.date, { weekday: 'short', month: 'short' });
-        return item.listing
-            ? `${date} · city listing`
-            : item.start
-              ? `${date} · ${item.start}`
-              : date;
-    };
     function feature(items) {
-        const onColumn = columnItems(items);
-        const posters = onColumn.map((item) =>
+        const posters = columnItems(items).map((item) =>
             item.listing
                 ? P.poster(item, { size: 'column', today, listing: true })
                 : P.poster(item, { size: 'column', ...posterOptions(item) }),
@@ -97,13 +81,14 @@
         const many = posters.length > 1;
         return `<div class="wall-column" role="region" aria-roledescription="carousel" aria-label="Coming up, independent of date filters">
             <span class="wall-column-cap" aria-hidden="true"><span></span></span>
+            <span class="wall-column-frieze" aria-hidden="true"></span>
             <div class="wall-column-body"${many ? ' tabindex="0" aria-label="Poster column. Drag sideways or use the arrow keys to turn it."' : ''}>
+                <span class="wall-column-old" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
                 ${posters.map((poster, i) => `<div class="wall-column-face" role="group" aria-roledescription="poster" aria-label="${i + 1} of ${posters.length}">${poster}</div>`).join('')}
                 <span class="wall-column-glow" aria-hidden="true"></span>
             </div>
-            <span class="wall-column-base" aria-hidden="true"></span>
+            <span class="wall-column-base" aria-hidden="true"><span></span></span>
             <p class="wall-column-caption">Coming up${many ? ` · <span class="wall-column-count" aria-live="polite">1 of ${posters.length}</span> · ${window.matchMedia?.('(pointer: coarse)').matches ? 'swipe' : 'drag'} to turn` : ' · on the poster column'}</p>
-            ${many ? `<nav class="wall-column-index" aria-label="Posters on the column"><p class="wall-column-index-title">On the column</p><ol>${onColumn.map((item, i) => `<li><button type="button" data-column-to="${i}"${i === 0 ? ' aria-current="true"' : ''}><span class="wall-column-thumb is-${P.ink(item)}">${P.art(item)}<span class="wall-column-lines"></span></span><span class="wall-column-entry"><span class="wall-column-when">${E(onWhen(item))}</span><span class="wall-column-what"${item.titleEnglish ? ' lang="de"' : ''}>${E(item.title)}</span></span></button></li>`).join('')}</ol></nav>` : ''}
         </div>`;
     }
     // The skyline is wider than its stage, so it pans: it opens on the
@@ -236,11 +221,6 @@
             });
             const counter = column.querySelector('.wall-column-count');
             if (counter) counter.textContent = `${current + 1} of ${count}`;
-            column.querySelectorAll('[data-column-to]').forEach((button) => {
-                if (Number(button.dataset.columnTo) === current)
-                    button.setAttribute('aria-current', 'true');
-                else button.removeAttribute('aria-current');
-            });
             const ink = faces[current]
                 .querySelector('.pp')
                 ?.className.match(/pp--(day|evening|night|paper)/)?.[1];
@@ -268,13 +248,6 @@
             frame = requestAnimationFrame(tick);
         }
         const go = (by) => animateTo(Math.round(pos) + by);
-        // Picking a poster from the list turns the column the short way.
-        column.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-column-to]');
-            if (!button) return;
-            const from = Math.round(pos);
-            animateTo(from + wrap(Number(button.dataset.columnTo) - from), 420);
-        });
         body.addEventListener('keydown', (event) => {
             if (event.target !== body || count < 2) return;
             const by = { ArrowLeft: -1, ArrowRight: 1 }[event.key];
@@ -657,6 +630,7 @@
         if (chosenTime() === shownTime) return;
         shownTime = chosenTime();
         redrawSky();
+        paintStreet();
     }).observe(document.documentElement, {
         attributes: true,
         attributeFilter: ['data-ac-band', 'data-ac-sample'],
@@ -919,6 +893,74 @@
         setTilt(true);
     }
 
+    /* ---------- The street around the column ----------
+       The board is a plastered wall with scraps of old posters and a
+       stencil; the column stands on a cobbled corner with a lantern, a
+       bench, a bike and two pigeons. The street keeps today's time and
+       weather, like the skyline: the lantern lights at dusk, the wall
+       darkens at night, rain falls and leaves puddles, and the posters
+       shine wet. Drawn flat, like the skyline; nothing here is a control. */
+    const lantern = `<svg class="wall-lantern wall-scene-art" viewBox="0 0 128 700" aria-hidden="true" focusable="false"><path class="wall-lantern-glass" d="M41 50h46l-8 70H49Z"/><g class="wall-iron"><path d="M44 700l4-58q16-14 32 0l4 58Z"/><rect x="58" y="150" width="12" height="494"/><rect x="51" y="598" width="26" height="11" rx="3"/><rect x="52" y="188" width="24" height="9" rx="3"/><path d="M50 151h28l-5-16H55Z"/><rect x="45" y="120" width="38" height="9" rx="2"/><path d="M63 50h2v70h-2ZM36 44h56l-28-28Z"/><rect x="33" y="43" width="62" height="7" rx="2"/><circle cx="64" cy="12" r="5"/></g></svg>`;
+    const bench = `<svg class="wall-bench wall-scene-art" viewBox="0 0 150 66" aria-hidden="true" focusable="false"><g class="wall-wood"><rect x="8" y="4" width="134" height="8" rx="2"/><rect x="8" y="16" width="134" height="8" rx="2"/><rect x="2" y="34" width="146" height="9" rx="2"/></g><g class="wall-iron"><path d="M16 2h7v64h-7ZM127 2h7v64h-7Z"/></g></svg>`;
+    const bike = `<svg class="wall-bike wall-scene-art" viewBox="0 0 160 100" aria-hidden="true" focusable="false"><g class="wall-bike-wheels"><circle cx="34" cy="70" r="25"/><circle cx="124" cy="70" r="25"/></g><path class="wall-bike-frame" d="M34 70 72 72 60 34ZM72 72l36-36-48-2M108 36l16 34M104 24l4 12"/><path class="wall-bike-bits" d="M51 31h18M97 23h15"/><rect class="wall-bike-basket" x="113" y="28" width="27" height="17" rx="3"/></svg>`;
+    const pigeon = (x, cls = '') =>
+        `<g class="wall-pigeon${cls}" transform="translate(${x} 0)"><g class="wall-pigeon-body"><ellipse cx="16" cy="22" rx="12" ry="7.5"/><path d="M5 19 0 15l2 8Z"/><circle class="wall-pigeon-head" cx="27" cy="13" r="5"/><path class="wall-pigeon-beak" d="m31 12 5 2-5 1Z"/></g><path class="wall-pigeon-legs" d="M14 29v5M19 29v5"/></g>`;
+    const pigeons = `<svg class="wall-pigeons wall-scene-art" viewBox="0 0 96 36" aria-hidden="true" focusable="false">${pigeon(0)}${pigeon(54, ' is-pecking')}</svg>`;
+    // Rain in rows 64 apart that repeat exactly, so it loops without a seam.
+    const rain = `<span class="wall-scene-rain" aria-hidden="true"><svg viewBox="0 0 640 1000" preserveAspectRatio="xMinYMin slice" focusable="false"><g class="wall-rain-fall">${Array.from({ length: 22 }, (_, c) => {
+        const x = c * 30 + ((c * 37) % 19);
+        const dy = (c * 29) % 64;
+        return Array.from({ length: 17 }, (_, r) => {
+            const y = (r - 1) * 64 + dy;
+            return `<line x1="${x}" y1="${y}" x2="${x - 4}" y2="${y + 18}"/>`;
+        }).join('');
+    }).join('')}</g></svg></span>`;
+    // Scraps of older posters and marks where others were pasted, left,
+    // top, width, height, turn and colour; then the stencil.
+    const scraps = [
+        [57, 0.6, 170, 74, -3, '#e8cf73'],
+        [95.5, 16, 96, 170, 4, '#bcaed8'],
+        [38, 47, 130, 62, 7, '#c8d8c0'],
+        [97, 62, 120, 96, -7, '#f0c3a6'],
+        [1.5, 98, 160, 56, 2, '#d9cfbb'],
+        [70, 97, 140, 60, -2, '#c9b9e0'],
+    ];
+    const decor = `<div class="wall-decor" aria-hidden="true">${scraps
+        .map(
+            ([left, top, w, h, turn, colour], i) =>
+                `<span class="wall-scrap" style="left:${left}%;top:${top}%;width:${w}px;height:${h}px;rotate:${turn}deg;--scrap:${colour};--n:${i}"></span>`,
+        )
+        .join('')}<span class="wall-paste" style="left:46%;top:22%"></span><span class="wall-paste" style="left:82%;top:40%"></span><span class="wall-paste" style="left:24%;top:78%"></span><span class="wall-stencil" lang="de">Plakatieren verboten</span></div>`;
+    const clampUnit01 = (value) => Math.max(0, Math.min(1, value));
+    // Today's street at today's hour (the sample day's clock, ?at=, or the
+    // App in colour concept's time switch) and today's weather.
+    function paintStreet() {
+        const board = document.querySelector('.wall-board');
+        if (!board || !today) return;
+        const hour = Sky.hours(chosenTime() || nowTime);
+        const ctx = skyContext(today);
+        const st = Sky.at(ctx, hour);
+        // Puddles last a while after the rain.
+        const recent = Math.max(
+            ...[0, 0.5, 1, 1.5, 2].map(
+                (back) => Sky.weatherAt(ctx.weather, Math.max(0, hour - back))?.rain || 0,
+            ),
+        );
+        const dark = clampUnit01((3 - st.height) / 12);
+        const lamp = clampUnit01((2 - st.height) / 3);
+        const values = {
+            '--street-dark': dark,
+            '--lamp-on': lamp,
+            '--wet': clampUnit01(recent * 1.6),
+            '--rain': clampUnit01(st.rain * 1.4),
+        };
+        for (const [key, value] of Object.entries(values))
+            board.style.setProperty(key, value.toFixed(3));
+        board.toggleAttribute('data-dark', dark > 0.45);
+        board.toggleAttribute('data-wet', recent > 0.05);
+        board.toggleAttribute('data-raining', st.rain > 0.05);
+    }
+
     /* ---------- Page layout and the view switch ---------- */
     function setView(next, main) {
         view = next;
@@ -977,27 +1019,21 @@
         const board = document.createElement('section');
         board.className = 'wall-board';
         board.setAttribute('aria-label', 'Posters');
-        // The column and the week's notes stand together beside the day.
-        const side = document.createElement('div');
-        side.className = 'wall-side';
-        side.append(main.querySelector('#event-featured'));
-        side.insertAdjacentHTML('beforeend', next());
-        board.append(side, main.querySelector('#event-list'));
-        // It stays in view under the app's header, or, when it's taller
-        // than the window, with its foot in view.
-        const stick = () => {
-            const header = [...document.body.querySelectorAll('body > *')].find(
-                (el) => getComputedStyle(el).position === 'sticky',
-            );
-            const space = header
-                ? header.offsetHeight + parseFloat(getComputedStyle(header).top || 0)
-                : 0;
-            side.style.top = `${Math.round(Math.min(space + 16, innerHeight - side.offsetHeight - 16))}px`;
-        };
-        window.addEventListener('resize', stick);
-        document.fonts?.ready.then(stick);
-        requestAnimationFrame(stick);
+        // The wall, then the column on its street corner, the day's
+        // posters flowing round it, and the week's notes.
+        board.innerHTML = decor;
+        const scene = document.createElement('div');
+        scene.className = 'wall-scene';
+        scene.innerHTML = `<span class="wall-scene-glow" aria-hidden="true"></span>${lantern}${bench}`;
+        scene.append(main.querySelector('#event-featured'));
+        scene.insertAdjacentHTML(
+            'beforeend',
+            `<span class="wall-scene-ground" aria-hidden="true"><span class="wall-puddle"></span><span class="wall-puddle"></span><span class="wall-puddle"></span></span>${bike}${pigeons}${rain}`,
+        );
+        board.append(scene, main.querySelector('#event-list'));
+        board.insertAdjacentHTML('beforeend', next());
         gallery.append(board);
+        paintStreet();
         gallery.insertAdjacentHTML('afterend', pastStrip(catalogue));
         main.addEventListener('click', (event) => {
             const turn = event.target.closest('[data-poster-turn]');
