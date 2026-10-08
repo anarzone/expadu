@@ -44,5 +44,8 @@ class E2ETestUserSeeder extends Seeder
                 'city' => 'cologne',
             ])
             ->save();
+
+        // Paperwork needs a published catalogue and a plan for this account.
+        $this->call(E2EPaperworkSeeder::class);
     }
 }

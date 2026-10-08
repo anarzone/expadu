@@ -123,7 +123,7 @@ test('bureaucracy page passes deadline data', function () {
     UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
     $this->actingAs($user);
 
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page

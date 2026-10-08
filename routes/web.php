@@ -306,6 +306,7 @@ $appRoutes = function () use ($appDomain) {
 
         Route::get('services', [ServicesController::class, 'index'])->name('services');
         Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
+        Route::get('bureaucracy/legacy', [BureaucracyController::class, 'legacy'])->name('bureaucracy.legacy');
         Route::put('bureaucracy/case/ai-consent', AiConsentController::class)
             ->name('bureaucracy.case.ai-consent.update');
         Route::post('bureaucracy/case/messages', CaseMessageController::class)

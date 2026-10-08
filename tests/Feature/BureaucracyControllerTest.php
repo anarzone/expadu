@@ -60,7 +60,7 @@ test('bureaucracy page renders for an onboarded user', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
-    $this->get(route('bureaucracy'))
+    $this->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('bureaucracy')
@@ -69,7 +69,7 @@ test('bureaucracy page renders for an onboarded user', function () {
 });
 
 test('bureaucracy page requires authentication', function () {
-    $this->get(route('bureaucracy'))
+    $this->get(route('bureaucracy.legacy'))
         ->assertRedirect(route('login'));
 });
 
@@ -94,7 +94,7 @@ test('live bureaucracy page exposes a source-backed verified case plan', functio
     ]);
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('bureaucracy')
@@ -141,7 +141,7 @@ test('live bureaucracy page exposes only bounded AI availability consent disclos
     BureaucracyCaseMessage::factory()->count(3)->for($case, 'case')->create();
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('casePlan.ai.available', true)
@@ -174,7 +174,7 @@ test('live bureaucracy page exposes one server-issued clarification question', f
     ]);
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('casePlan.coverage_state', 'needs_information')
@@ -220,7 +220,7 @@ test('live bureaucracy page keeps a sanitized conflict choice separate from unre
     ]);
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('casePlan.coverage_state', 'conflict')
@@ -260,7 +260,7 @@ test('an inapplicable historical task is presented as a fresh applicable step', 
     ]);
 
     $this->actingAs($user)
-        ->get(route('bureaucracy'))
+        ->get(route('bureaucracy.legacy'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('casePlan.sections.do_now.0.key', 'case.reappeared')

@@ -61,12 +61,12 @@ test('tenure and a general declaration never produce a permanent-residence sugge
     $anmeldung = Task::factory()->create(['key' => 'nee.anmeldung', 'is_published' => true]);
     UserTask::create(['user_id' => $user->id, 'task_id' => $anmeldung->id]);
 
-    $this->actingAs($user)->get(route('bureaucracy'))
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))
         ->assertInertia(fn ($page) => $page->where('settledSuggestion', false)->where('settled', false));
 
     $this->actingAs($user)->post(route('bureaucracy.settle'));
 
-    $this->actingAs($user)->get(route('bureaucracy'))
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))
         ->assertInertia(fn ($page) => $page
             ->where('settledSuggestion', false)
             ->where('settled', false)
@@ -82,7 +82,7 @@ test('a recent arrival never sees the settled suggestion', function () {
     $anmeldung = Task::factory()->create(['key' => 'nee.anmeldung', 'is_published' => true]);
     UserTask::create(['user_id' => $user->id, 'task_id' => $anmeldung->id]);
 
-    $this->actingAs($user)->get(route('bureaucracy'))
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))
         ->assertInertia(fn ($page) => $page->where('settledSuggestion', false));
 });
 
@@ -102,7 +102,7 @@ test('an opted-out info card moves to Not applicable, not the info lane', functi
     ]);
     UserTask::create(['user_id' => $user->id, 'task_id' => $info->id, 'is_applicable' => false]);
 
-    $this->actingAs($user)->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $props = $page->toArray()['props'];
         expect(collect($props['tasks']['not_applicable'])->pluck('key'))->toContain('fixture.opted-out-info');
         expect(collect($props['tasks']['info'])->pluck('key'))->not->toContain('fixture.opted-out-info');
@@ -129,7 +129,7 @@ test('an unresolved old deadline remains overdue rather than being softened by a
     ]);
     UserTask::create(['user_id' => $user->id, 'task_id' => $lapsed->id]);
 
-    $this->actingAs($user)->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks']['active'])->firstWhere('key', 'x.lapsed');
         expect($card)->not->toBeNull()
             ->and($card['deadline_tier'])->toBe('overdue');

@@ -26,7 +26,7 @@ beforeEach(function () {
 
 function documentsFor(User $user, string $taskKey): array
 {
-    $response = test()->actingAs($user)->get('/bureaucracy');
+    $response = test()->actingAs($user)->get('/bureaucracy/legacy');
     $response->assertOk();
 
     $cards = collect($response->viewData('page')['props']['tasks'])
@@ -93,7 +93,7 @@ it('never leaks the condition to the browser', function () {
     ]);
     UserTask::factory()->create(['user_id' => $nomad->id, 'task_id' => $task->id]);
 
-    $response = $this->actingAs($nomad)->get('/bureaucracy');
+    $response = $this->actingAs($nomad)->get('/bureaucracy/legacy');
     $card = collect($response->viewData('page')['props']['tasks'])
         ->flatten(1)
         ->first(fn ($c) => is_array($c) && ($c['key'] ?? null) === 'fixture.scoped-documents');

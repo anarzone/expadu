@@ -6,6 +6,8 @@ use App\Bureaucracy\Cases\CurrentCasePlan;
 use App\Bureaucracy\GuidancePublication;
 use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\PermanentResidencyEligibility;
+use App\Bureaucracy\ReadModel\AccountHolderPlan;
+use App\Bureaucracy\ReadModel\AccountPlanEntry;
 use App\Enums\DeadlineType;
 use App\Enums\TaskStatus;
 use App\Models\Task;
@@ -25,12 +27,25 @@ use Inertia\Response;
 class BureaucracyController extends Controller
 {
     /**
-     * The bureaucracy page payload. The path is recomputed from the profile
+     * Paperwork: the v2 plan for the signed-in account holder. Everything on the page comes
+     * from the plan read model; changes go through the bureaucracy/v2 JSON commands.
+     */
+    public function index(Request $request, AccountPlanEntry $entry): Response
+    {
+        return Inertia::render('paperwork', [
+            'entry' => $entry->for($request->user()),
+            'jurisdiction' => app(AccountHolderPlan::class)->jurisdiction($request->user()),
+        ]);
+    }
+
+    /**
+     * The legacy bureaucracy page, kept reachable (unlinked) while its engine is retired.
+     * The path is recomputed from the profile
      * attribute bag on every load (idempotent); cards land in lanes the
      * React side renders without further logic: active / upcoming /
      * completed / not_applicable / info / no_longer_relevant + teasers.
      */
-    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility, CurrentCasePlan $currentCasePlan): Response
+    public function legacy(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility, CurrentCasePlan $currentCasePlan): Response
     {
         $user = $request->user();
         $profile = $generator->ensure($user);

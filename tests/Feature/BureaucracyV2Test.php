@@ -31,7 +31,7 @@ test('a task is blocked while its dependency is incomplete', function () {
     ]);
 
     $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) use ($bank) {
         $cards = collect($page->toArray()['props']['tasks'])
@@ -70,7 +70,7 @@ test('completing the dependency unblocks the dependant', function () {
     ]);
 
     $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) use ($bank) {
         $cards = collect($page->toArray()['props']['tasks'])
@@ -94,7 +94,7 @@ test('unpublished tasks never reach the page', function () {
     ]);
 
     $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) use ($hidden) {
         $ids = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('task_id');
@@ -122,7 +122,7 @@ test('eu_filter excludes non-matching tasks at materialisation', function () {
     ]);
 
     $this->actingAs($user);
-    $this->get(route('bureaucracy'));
+    $this->get(route('bureaucracy.legacy'));
 
     $taskIds = $user->userTasks()->pluck('task_id');
     expect($taskIds)->toContain($enrol->id);
@@ -299,7 +299,7 @@ test('confirmed title changes update relevant tasks while a path choice cannot c
     ]);
 
     $this->actingAs($user);
-    $this->get(route('bureaucracy')); // materialises base-branch tasks
+    $this->get(route('bureaucracy.legacy')); // materialises base-branch tasks
 
     expect($user->userTasks()->pluck('task_id'))->toContain($standardOnly->id);
 
@@ -307,7 +307,7 @@ test('confirmed title changes update relevant tasks while a path choice cannot c
         ->assertRedirect();
     expect($facts->confirmedFact($case, 'current_residence_title')->value)->toBe('standard_work_permit');
     $facts->synchronizeConfirmedFacts($user, ['current_residence_title' => 'blue_card'], 'onboarding');
-    $response = $this->get(route('bureaucracy')); // recompute for the refined path
+    $response = $this->get(route('bureaucracy.legacy')); // recompute for the refined path
 
     expect($user->fresh()->bureaucracy_path)->toBe('non_eu_employee_blue_card');
     // The row is preserved (nothing a user has is deleted) — but the
@@ -345,7 +345,7 @@ test('a touched task survives a confirmed title change in the no-longer-relevant
 
     $this->actingAs($user);
     $facts->synchronizeConfirmedFacts($user, ['current_residence_title' => 'blue_card'], 'onboarding');
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) use ($standardOnly) {
         $ghosts = collect($page->toArray()['props']['tasks']['no_longer_relevant'])->pluck('task_id');
@@ -443,7 +443,7 @@ test('info cards land in their own bucket and stay out of progress', function ()
     ]);
 
     $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) use ($info) {
         $props = $page->toArray()['props'];

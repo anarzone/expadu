@@ -406,7 +406,7 @@ test('planning mode lands in the Before-you-fly phase with no firing deadlines',
         'interests' => ['parks', 'museums', 'cafes'],
     ])->assertRedirect(route('bureaucracy'));
 
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $props = $page->toArray()['props'];
         expect($props['phases']['current'])->toBe('before');
 

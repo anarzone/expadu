@@ -131,7 +131,7 @@ test('an unanswered licence question renders as a teaser, not a task', function 
     $user = User::factory()->onboarded()->create(['situation' => 'eu_employee']);
 
     $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) {
         $props = $page->toArray()['props'];
@@ -162,7 +162,7 @@ test('answering a teaser recomputes the path and logs the change', function () {
     expect($user->fresh()->profile_attributes['license_country'])->toBe('other');
     expect($user->attributeChanges()->where('attribute', 'license_country')->count())->toBe(1);
 
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
     $response->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
         expect($keys)->toContain('fixture.licence');
@@ -230,7 +230,7 @@ test('temporary housing without an occupancy date leaves timing unknown rather t
     ]);
 
     $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
@@ -261,7 +261,7 @@ test('a recorded move-in anchors the configured interval independently of arriva
         'source' => 'banner',
     ])->assertRedirect();
 
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
     $response->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
             ->firstWhere('key', 'fixture.move-in');
@@ -284,7 +284,7 @@ test('a D-visa holder sees the visa-expiry framing instead of a 90-day date', fu
     ]);
 
     $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) {
         $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
@@ -320,7 +320,7 @@ test('imported content carries substituted figures and cards explain themselves'
     ]);
 
     $this->actingAs($user);
-    $response = $this->get(route('bureaucracy'));
+    $response = $this->get(route('bureaucracy.legacy'));
 
     $response->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
@@ -344,7 +344,7 @@ test('the roadmap phase follows days since arrival', function () {
     ]);
 
     $this->actingAs($fresh);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         expect($page->toArray()['props']['phases']['current'])->toBe('first_14');
 
         return true;
@@ -356,7 +356,7 @@ test('the roadmap phase follows days since arrival', function () {
     ]);
 
     $this->actingAs($settled);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         expect($page->toArray()['props']['phases']['current'])->toBe('settled');
 
         return true;
@@ -378,7 +378,7 @@ test('life-event tasks stay dormant until the event is recorded — then wake wi
     $this->actingAs($user);
 
     // Dormant: no kita/elterngeld anywhere, and no teaser either.
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $props = $page->toArray()['props'];
         $keys = collect($props['tasks'])->flatten(1)->pluck('key');
 
@@ -397,7 +397,7 @@ test('life-event tasks stay dormant until the event is recorded — then wake wi
         'source' => 'life_event',
     ])->assertRedirect();
 
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) use ($birth) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) use ($birth) {
         $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
 
         expect($cards)->toHaveKey('fixture.child-care');
@@ -426,7 +426,7 @@ test('event-specific audience conditions avoid duplicate family and general vari
     ]);
 
     $this->actingAs($user);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
 
         expect($keys)->toContain('fixture.child-care');
@@ -448,7 +448,7 @@ test('a graduation event respects a reviewed non-EU student audience', function 
     ]);
 
     $this->actingAs($nonEuStudent);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
         expect($keys)->toContain('fixture.graduation');
 
@@ -462,7 +462,7 @@ test('a graduation event respects a reviewed non-EU student audience', function 
     ]);
 
     $this->actingAs($euStudent);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $keys = collect($page->toArray()['props']['tasks'])->flatten(1)->pluck('key');
         expect($keys)->not->toContain('fixture.graduation');
 
@@ -486,7 +486,7 @@ test('task cards resolve their office (Bezirk Bürgeramt) and document origins',
     ]);
 
     $this->actingAs($user);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
 
         // Anmeldung (a Bürgeramt service) pins no office — the concrete
@@ -517,7 +517,7 @@ test('the submit task is actionable on day one; attend waits for it', function (
     ]);
 
     $this->actingAs($user);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $cards = collect($page->toArray()['props']['tasks'])->flatten(1)->keyBy('key');
 
         expect($cards['fixture.submit']['blocked_by'])->toBe([]);
@@ -543,7 +543,7 @@ test('a booked appointment remains separate and cannot replace the configured de
         'profile_attributes' => ['entry_mode' => 'visa_free'],
     ]);
     $this->actingAs($user);
-    $this->get(route('bureaucracy')); // materialise
+    $this->get(route('bureaucracy.legacy')); // materialise
 
     $userTask = $user->userTasks()
         ->whereHas('task', fn ($q) => $q->where('key', 'fixture.appointment'))
@@ -557,7 +557,7 @@ test('a booked appointment remains separate and cannot replace the configured de
 
     expect($userTask->fresh()->absolute_deadline->toDateString())->toBe($deadline);
 
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) use ($appointment, $deadline) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) use ($appointment, $deadline) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
             ->firstWhere('key', 'fixture.appointment');
 
@@ -581,7 +581,7 @@ test('permit age alone never produces a permanent residence eligibility claim', 
     ]);
 
     $this->actingAs($eligible);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $hint = $page->toArray()['props']['eligibility'];
 
         expect($hint)->toBeNull();
@@ -595,7 +595,7 @@ test('permit age alone never produces a permanent residence eligibility claim', 
         'profile_attributes' => ['permit_held_since' => now()->subYear()->toDateString()],
     ]);
     $this->actingAs($early);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         expect($page->toArray()['props']['eligibility'])->toBeNull();
 
         return true;
@@ -612,7 +612,7 @@ test('a Blue Card path label and elapsed months do not establish qualifying serv
     ]);
 
     $this->actingAs($user);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $hint = $page->toArray()['props']['eligibility'];
 
         expect($hint)->toBeNull();
@@ -633,7 +633,7 @@ test('user:reset-journey cannot pretend a dossier is reset by clearing only the 
         'profile_attributes' => ['license_country' => 'other', 'child_born_at' => '2026-05-01'],
     ]);
     $this->actingAs($user);
-    $this->get(route('bureaucracy')); // materialise tasks + progress
+    $this->get(route('bureaucracy.legacy')); // materialise tasks + progress
     expect($user->userTasks()->count())->toBeGreaterThan(0);
     $before = $user->fresh()->getRawOriginal();
     $tasks = $user->userTasks()->get()->toArray();
@@ -664,7 +664,7 @@ test('a D-visa holder who gives the expiry date gets a real countdown', function
     ]);
 
     $this->actingAs($user);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
             ->firstWhere('key', 'fixture.visa');
 
@@ -687,7 +687,7 @@ test('without the expiry date the card offers to capture it', function () {
     ]);
 
     $this->actingAs($user);
-    $this->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks'])->flatten(1)
             ->firstWhere('key', 'fixture.visa');
 

@@ -170,7 +170,7 @@ it('surfaces an essential orientation question on the Bureaucracy page itself', 
         'profile_attributes' => [],
     ]);
 
-    $response = $this->actingAs($user)->get('/bureaucracy');
+    $response = $this->actingAs($user)->get('/bureaucracy/legacy');
 
     $response->assertSuccessful();
 
@@ -201,7 +201,7 @@ it('accepts the offered orientation answer and records the fact', function () {
         'profile_attributes' => [],
     ]);
 
-    $this->actingAs($user)->get('/bureaucracy')->assertSuccessful();
+    $this->actingAs($user)->get('/bureaucracy/legacy')->assertSuccessful();
 
     $question = BureaucracyCaseQuestion::query()
         ->where('fact_key', 'arrival_planned')
