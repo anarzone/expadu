@@ -341,12 +341,10 @@
                 : noAccess();
         const plan = C.plan(state);
         plan.open = plan.processes.filter((p) => !p.is_closed);
-        if (J.applies(state) && state.view === 'overview')
-            return (
-                JU.page(state) +
-                (plan.open.length ? overview(plan) : notTasks(plan)) +
-                JU.topics(state)
-            );
+        if (J.applies(state) && state.view === 'overview') {
+            const rest = plan.open.length ? overview(plan) : notTasks(plan);
+            return JU.page(state, !rest) + rest + JU.topics(state);
+        }
         if (J.applies(state) && state.view === 'paperwork' && !plan.open.length)
             return `<section class="situation-summary"><h2>Your documents will live here.</h2><p class="muted">Choose a task to start keeping track of what you have.</p></section>${JU.topics(state)}`;
         return state.view === 'paperwork'
@@ -523,11 +521,22 @@
             })
             .join('')}</section>`;
     }
+    // One list of tasks, each with its next step (plan.actions, soonest
+    // first), so the same work isn't listed twice. Dates already in Coming
+    // up aren't repeated on the tasks. The guided entry shows only when
+    // there's no question to answer: both lead to the same questions.
     function overview(plan) {
-        const next = plan.overview.next_actions.map((a) => stepOf(plan, a.id));
-        return `${comingUp(plan)}${J.applies(state) ? question(plan) : state.scopes && !state.scopes.includes('edit_facts') ? '' : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question(plan)}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.progress.total}${I('arrow')}</button></div>${
-            next.length
-                ? next.map((step) => actionRow(plan, step)).join('')
+        const canAsk =
+            J.applies(state) ||
+            !(state.scopes && !state.scopes.includes('edit_facts'));
+        const ask = canAsk ? question(plan) : '';
+        const entry =
+            canAsk && !J.applies(state) && !ask
+                ? `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>`
+                : '';
+        return `${comingUp(plan)}${entry}${ask}<div class="case-overview-grid"><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="plain-button" data-filter="all">All steps ${plan.progress.total}${I('arrow')}</button><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${
+            plan.open.length
+                ? plan.open.map((p) => processCard(p, plan)).join('')
                 : '<div class="honest-empty"><h3>No next actions right now</h3><p>Your waiting work and process history are still here.</p></div>'
         }<div class="plan-states" aria-label="Action progress">${Object.entries(
             P.statuses,
@@ -538,7 +547,7 @@
             )
             .join(
                 '',
-            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}</div>${noResidenceTask(plan) ? '<p class="process-grid-note">No residence task applies to your answers.</p>' : ''}</section></div>${dates(plan)}${afterYouArrive(plan)}${optionsForYou(plan)}${goodToKnow(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
+            )}</div></div>${noResidenceTask(plan) ? '<p class="process-grid-note">No residence task applies to your answers.</p>' : ''}</section>${dates(plan)}</div>${afterYouArrive(plan)}${optionsForYou(plan)}${goodToKnow(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
     }
     // An EU citizen's plan has no residence task because none applies, not
     // because something is missing: say so.
@@ -551,9 +560,11 @@
     }
     // Your own note first, then what your own paperwork is missing; never
     // a legal reason.
-    function processCard(p) {
+    function processCard(p, plan) {
         const key = p.occurrence_key,
             local = P.process(state, key),
+            // The task's next step: its first open action, soonest first.
+            next = plan?.actions.find((a) => a.occurrence_key === key),
             note = p.state.report?.note,
             reason = p.blocking_reason,
             // Just opened by your answers, and not looked at yet.
@@ -561,7 +572,7 @@
                 p.id === null &&
                 P.openedBy(state).includes(key) &&
                 !state.seenTasks?.includes(key);
-        return `<button class="process-summary${arrived ? ' is-new' : ''}" data-process="${E(key)}"><span class="topic-icon ${local?.tone || ''}">${I(local?.icon || 'document')}</span><span class="process-card-copy"><strong>${E(nameOf(key))}</strong><small>${note ? E(note) : reason ? `Not ready yet: ${E(reason.label)}` : arrived ? 'New from your answers · explore before you start' : p.id === null ? 'Explore before you start' : `${p.progress.completed} of ${p.progress.total} steps done`}</small></span><span class="process-card-status">${badge(stateLabel(p), tone(p.state.workflow))}${I('arrow')}</span></button>`;
+        return `<button class="process-summary${arrived ? ' is-new' : ''}" data-process="${E(key)}"><span class="topic-icon ${local?.tone || ''}">${I(local?.icon || 'document')}</span><span class="process-card-copy"><strong>${E(nameOf(key))}</strong>${next ? `<span class="process-next">Next: ${E(next.title)}</span>` : ''}<small>${note ? E(note) : reason ? `Not ready yet: ${E(reason.label)}` : arrived ? 'New from your answers · explore before you start' : p.id === null ? 'Explore before you start' : `${p.progress.completed} of ${p.progress.total} steps done`}</small></span><span class="process-card-status">${badge(stateLabel(p), tone(p.state.workflow))}${I('arrow')}</span></button>`;
     }
     // plan.questions: the server's question, in the registry's words.
     // "I don't know" is an answer (unknown); "Skip for now" defers it.

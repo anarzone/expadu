@@ -146,6 +146,60 @@
     border-radius: var(--radius-xl);
     margin: 12px 0 24px;
 }
+/* On the overview: one line that opens in place. */
+.situation-summary.situation-compact {
+    padding: 0;
+}
+.situation-compact > summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 12px 16px;
+    cursor: pointer;
+    list-style: none;
+    border-radius: var(--radius-xl);
+}
+.situation-compact > summary::-webkit-details-marker {
+    display: none;
+}
+.situation-compact > summary:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.situation-compact-copy {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+    min-width: 0;
+}
+.situation-compact-copy strong {
+    font-size: var(--text-section);
+}
+.situation-compact-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.situation-compact > summary > svg {
+    color: var(--color-text-soft);
+    transition: transform 200ms ease;
+}
+.situation-compact[open] > summary > svg {
+    transform: rotate(180deg);
+}
+.situation-compact-body {
+    padding: 4px 22px 22px;
+}
+@media (max-width: 420px) {
+    .situation-compact-body {
+        padding: 4px 16px 18px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .situation-compact > summary > svg {
+        transition: none;
+    }
+}
 .situation-section-head {
     display: flex;
     gap: 12px;
@@ -373,11 +427,16 @@
     color: var(--ink);
     cursor: pointer;
 }
+/* A secondary action: outlined in ink, not the selection colour. */
 .situation-topic-grid button {
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
-    padding: 0 10px;
-    background: var(--color-select-bg, #e5f5f8);
+    padding: 0 12px;
+    background: var(--color-bg-surface);
     font-weight: var(--weight-semibold);
+}
+.situation-topic-grid button:disabled {
+    border-color: transparent;
 }
 .situation-topic-grid button:disabled {
     color: var(--muted);

@@ -68,22 +68,57 @@
     function intro() {
         return `<section class="situation-welcome"><div class="situation-welcome-copy"><span class="situation-emblem">${I('document')}</span><h2>A little clarity.<br>One step at a time.</h2><p>Find your next steps, keep documents together and remember important dates.</p><div class="situation-benefits"><span>${I('arrow')}Next steps</span><span>${I('document')}Documents</span><span>${I('calendar')}Dates</span></div></div><div class="situation-start"><p>A few questions to find your starting point. Skip anything you’re unsure about.</p>${button('Get started', 'start', 'arrow', true)}${button('Browse first', 'browse', 'grid')}${button('Start in Composer', 'composer-start', 'chat')}</div></section>`;
     }
-    function summary(s) {
+    // On the overview (compact), your situation is one line that opens in
+    // place, so your plan comes first. It starts open when something needs
+    // you (a check-in, answers to review, a just-saved change) or when the
+    // plan has nothing else to show yet (expand).
+    function summary(s, compact = false, expand = false) {
         const j = J.state(s),
-            status = J.status(s);
-        return `<section class="situation-summary"><div class="situation-section-head"><div><h2>Your situation</h2><p>${D.lastChecked(G.hydrate(s).details) || j.lastChecked ? 'Last checked ' + shortDate(D.lastChecked(G.hydrate(s).details) || j.lastChecked) : 'A starting point, at your pace.'}</p></div><span class="situation-status ${status}">${I(status === 'review' ? 'info' : status === 'current' ? 'check' : 'document')}${{ review: 'Needs review', incomplete: 'Some details missing', check: 'Time to check', current: 'Answers checked' }[status]}</span></div>${j.notice ? `<p class="situation-notice" role="status">${I('check')}${E(j.notice)}</p>` : ''}${status === 'check' ? `<div class="situation-checkin"><strong>Anything changed since your last visit?</strong><p>Work, home, residence or family — a quick check keeps this useful.</p><div>${button('Nothing changed', 'unchanged', 'check')}${button('Something changed', 'changes', 'pencil')}</div></div>` : ''}${facts(s)}<div class="situation-summary-actions">${status !== 'check' ? button('Something changed', 'changes', 'pencil') : ''}${J.questions(s).some((k) => !G.hydrate(s).details.facts[k]) ? button('Continue questions', 'start', 'arrow') : ''}</div>${j.review.length ? `<p class="situation-note">${I('info')}Your previous answers are kept until you confirm an update. Your tracked tasks may also need a review.</p>` : ''}${j.changes.length ? `<details class="situation-history"><summary>${I('clock')}Reported changes ${I('down')}</summary>${j.changes.map((c) => `<div><strong>${I(J.changes[c.kind].icon)}${E(J.changes[c.kind].label)}</strong><small>${c.effectiveFrom ? 'From ' + shortDate(c.effectiveFrom) : 'Reported ' + shortDate(c.reportedAt)}</small></div>`).join('')}</details>` : ''}${root.BureaucracyDetailsUI.history(G.hydrate(s).details)}</section>`;
+            status = J.status(s),
+            r = G.hydrate(s).details,
+            checked = D.lastChecked(r) || j.lastChecked,
+            badge = `<span class="situation-status ${status}">${I(status === 'review' ? 'info' : status === 'current' ? 'check' : 'document')}${{ review: 'Needs review', incomplete: 'Some details missing', check: 'Time to check', current: 'Answers checked' }[status]}</span>`;
+        const body = `${j.notice ? `<p class="situation-notice" role="status">${I('check')}${E(j.notice)}</p>` : ''}${status === 'check' ? `<div class="situation-checkin"><strong>Anything changed since your last visit?</strong><p>Work, home, residence or family — a quick check keeps this useful.</p><div>${button('Nothing changed', 'unchanged', 'check')}${button('Something changed', 'changes', 'pencil')}</div></div>` : ''}${facts(s)}<div class="situation-summary-actions">${status !== 'check' ? button('Something changed', 'changes', 'pencil') : ''}${J.questions(s).some((k) => !G.hydrate(s).details.facts[k]) ? button('Continue questions', 'start', 'arrow') : ''}</div>${j.review.length ? `<p class="situation-note">${I('info')}Your previous answers are kept until you confirm an update. Your tracked tasks may also need a review.</p>` : ''}${j.changes.length ? `<details class="situation-history"><summary>${I('clock')}Reported changes ${I('down')}</summary>${j.changes.map((c) => `<div><strong>${I(J.changes[c.kind].icon)}${E(J.changes[c.kind].label)}</strong><small>${c.effectiveFrom ? 'From ' + shortDate(c.effectiveFrom) : 'Reported ' + shortDate(c.reportedAt)}</small></div>`).join('')}</details>` : ''}${root.BureaucracyDetailsUI.history(G.hydrate(s).details)}`;
+        if (compact) {
+            const count = Object.keys(r.facts).length;
+            const open =
+                expand ||
+                ['check', 'review'].includes(status) ||
+                j.notice ||
+                j.review.length;
+            const said =
+                status === 'current' && checked
+                    ? `Last checked ${shortDate(checked)}`
+                    : {
+                          review: 'Needs review',
+                          incomplete: 'Some details missing',
+                          check: 'Time to check',
+                          current: 'Answers checked',
+                      }[status];
+            return `<details class="situation-summary situation-compact" ${open ? 'open' : ''}><summary><span class="situation-symbol">${I('sliders')}</span><span class="situation-compact-copy"><strong>Your situation</strong><small>${count} ${count === 1 ? 'answer' : 'answers'} · ${E(said)}</small></span>${I('down')}</summary><div class="situation-compact-body">${body}</div></details>`;
+        }
+        return `<section class="situation-summary"><div class="situation-section-head"><div><h2>Your situation</h2><p>${checked ? 'Last checked ' + shortDate(checked) : 'A starting point, at your pace.'}</p></div>${badge}</div>${body}</section>`;
     }
+    // Topics you might explore: not the ones already in your plan or
+    // waiting for your arrival, so nothing is listed twice.
     function topics(s) {
+        const facts = G.hydrate(s).details?.facts || {};
+        const listed = [
+            ...(root.BureaucracyPlan?.openedBy(s) || []),
+            ...(s.tracked || []),
+            ...(root.BureaucracyRegistry?.afterArrival(facts) || []),
+        ];
         const items = [
             ['address', 'pin', 2],
             ['health', 'health', 3],
             ['bank', 'bank', 4],
             ['blue-card', 'document', 0],
-        ];
+        ].filter(([id]) => !listed.includes(id));
+        if (!items.length) return '';
         return `<section class="situation-topics"><div class="situation-section-head"><div><h2>Explore a topic</h2><p>Choose what you want to keep track of.</p></div></div><div class="situation-topic-grid">${items.map(([id, icon, index]) => `<article><span class="situation-symbol">${I(icon)}</span><strong>${E({ address: 'Address registration', health: 'Health insurance', bank: 'Bank account', 'blue-card': 'EU Blue Card' }[id])}</strong><div><a href="${E(root.BureaucracySource[index].source)}" target="_blank" rel="noopener">Official information ${I('arrow')}</a><button type="button" data-situation-topic="${id}" ${s.tracked?.includes(id) ? 'disabled' : ''}>${I(s.tracked?.includes(id) ? 'check' : 'plus')}${s.tracked?.includes(id) ? 'Tracking' : 'Track task'}</button></div></article>`).join('')}</div><p class="situation-note">Each card is checked against the official pages it quotes. Exploring a topic does not mean it applies to you.</p></section>`;
     }
-    function page(s) {
-        return G.hydrate(s).started ? summary(s) : intro();
+    function page(s, expand = false) {
+        return G.hydrate(s).started ? summary(s, true, expand) : intro();
     }
     function guide(s) {
         const j = J.state(s),

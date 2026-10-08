@@ -4,6 +4,35 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## Simpler overview, by our own UI rules — 8 October 2026 (in review)
+
+A UX check against the project's UI rules found three gaps; the owner asked
+for all three to be fixed.
+
+- **The plan comes first.** On a personal plan, Your situation is now one line
+  ("5 answers · Last checked …") that opens in place. It starts open when
+  something needs you (a check-in, answers to review, a just-saved change) or
+  when the plan has nothing else to show yet. Every persona's first task,
+  option or question is now on the first phone screen (it was 1,000–1,800px
+  down), and pages are 2.6–3.4 phone screens instead of 3.9–5.2.
+- **Colour roles (6 October).** The question card, the guided entry, the date
+  rows and the "new task" highlight use the shared ivory surface with a
+  hairline instead of the selection cyan; "Track task" is an outlined
+  secondary action. Cyan stays for selected states.
+- **Nothing listed twice.** Next steps and Your tasks are one list: each task
+  shows its next step (plan.actions, soonest first), with "All steps" and the
+  status counts beside it; on a wide screen, Dates & appointments sits beside
+  the tasks. A date already in Coming up isn't repeated on a task (the step
+  page still shows it). The guided entry ("Help me get started") shows only
+  when there's no question card, since both lead to the same questions.
+  Explore a topic leaves out topics already in your plan or waiting for your
+  arrival.
+
+Not changed in this pass (cyan section backgrounds the colour rules also
+cover; for the owner to decide): the Fresh start welcome panel, the "Look
+around first" banner, the current step's action box and the "For this task"
+panel on a task page, and the family cards.
+
 ## One example of everything the backend can do — 8 October 2026 (in review)
 
 The owner asked whether the mock covers every scenario the backend supports,
