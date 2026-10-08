@@ -66,13 +66,34 @@ Compared with `connected/concepts/app-in-colour-2026-10-07/redesign/composer.htm
   for that credit where it's shown (Today's "Open near" list now has it too).
 - The intro says Composer "uses the city's listings".
 
-Kept as approved rather than as drawn: the cream palette and Geist (the mock's
-white stage and Bricolage belong to the undecided colour concept), this
-page's one-row heading, the Save and Add buttons on place cards, and the
-ready count on the Paperwork starter. Screen readers now hear an answer's
-headline with its text, and a hover preview needs a moving mouse, so an
-answer appearing under a resting pointer doesn't open one. Tests:
-`tests/conversation-view.test.cjs`, `tests/journey-browser.cjs`.
+Screen readers hear an answer's headline with its text, and a hover preview
+needs a moving mouse, so an answer appearing under a resting pointer doesn't
+open one. Tests: `tests/conversation-view.test.cjs`, `tests/journey-browser.cjs`.
+
+### The rest of the mock, built exactly — owner request, 8 October (later)
+
+The owner asked for the mock's design exactly, with two parts kept as ours:
+the cream page and the request field pinned to the bottom of the window.
+`approved.css` (loaded last) holds the rest:
+
+- Bricolage (from `events-next/fonts/`) for "What's on your mind?", Your day's
+  title and each answer's verdict.
+- Composer's cyan mark above Your day on desktop, with "Back to …" beside it;
+  on phones the mark and "Back to …" share one short row that stays under
+  the app header. Your day's facts start with the trip to take now; the
+  chips have no icons, so the third peeks in on phones.
+- The chat bar ("Sample answers from the sample day · nothing here is live"
+  and Start fresh), questions in cyan bubbles, and each answer's parts 14px
+  apart with full-width text, as drawn.
+- **Places answers** are the mock's compact cards: the map, "Pharmacy · 50 m",
+  the name and "Listed until 18:30 · Step-free access" (beside the map on
+  phones). A card opens Quick look, which has Save and Add. The title is
+  "Three near Wiener Platz." and the note "Hours are the listed ones for
+  14:30, …".
+- The step-free facts say "Starts 20:00" for tonight, one per row on phones.
+
+One deliberate difference: the credit stays "From OpenStreetMap contributors
+(ODbL), …", the wording the data's licence asks for (the mock shortens it).
 
 ### One compact heading — owner request, 8 October
 

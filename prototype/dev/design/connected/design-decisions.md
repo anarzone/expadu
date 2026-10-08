@@ -417,6 +417,16 @@ that scrolled away hid the exit mid-conversation and was corrected the same
 day. "Minimize" is no longer used as a label. Details are in
 `composer-studio/README.md`.
 
+**Composer is the redesign mock, except the page and the request field —
+owner request, 8 October:** Composer now follows
+`connected/concepts/app-in-colour-2026-10-07/redesign/composer.html` exactly
+(Bricolage for its big titles, the cyan mark above Your day, cyan question
+bubbles, the chat bar, compact place cards with "Listed until", the posters),
+but keeps the cream page and the request field pinned to the bottom of the
+window. The cyan mark replaces the date line in the heading; "Back to …"
+stays beside it. The OpenStreetMap credit keeps the licence's full wording.
+Details are in `composer-studio/README.md`.
+
 **Paperwork reads the v2 plan contract — follows the owner's go-ahead to map
 it after the design refresh, 8 October (in review):** Paperwork renders the
 backend's `bureaucracy.plan.1` shape (`bureaucracy-next/contract.js`) instead

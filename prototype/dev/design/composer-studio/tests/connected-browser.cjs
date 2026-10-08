@@ -124,16 +124,18 @@ const openPanel = async (page, panel) => {
                 .toBe(false);
             await expect(
                 page.locator('[data-chat-entry]').last(),
-            ).toContainText('cafés near Wiener Platz');
-            await expect.poll(() => latestInView(page)).toBe(true);
-            // One compact heading that stays in view and names the way back,
-            // so minimizing is one tap from anywhere in the conversation.
-            await expect(page.locator('.composer-heading')).toContainText(
-                'Back to Today',
-            );
+            ).toContainText('Three near Wiener Platz.');
             await expect(
-                page.locator('[data-minimize-composer]'),
-            ).toBeInViewport();
+                page.locator('.nearby-answer-card').first(),
+            ).toContainText('Café · ');
+            await expect.poll(() => latestInView(page)).toBe(true);
+            // The way back stays in view and names the page (the compact
+            // heading on phones, Your day on desktop), so minimizing is one
+            // tap from anywhere in the conversation.
+            const back = page.locator('[data-minimize-composer]:visible');
+            await expect(back).toHaveCount(1);
+            await expect(back).toContainText('Back to Today');
+            await expect(back).toBeInViewport();
             assert.equal(await asked(page, request), 1);
             await page.reload({ waitUntil: 'networkidle' });
             await expect(page.locator('.chat-feed')).toBeVisible();

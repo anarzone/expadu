@@ -828,9 +828,12 @@
         if (!rows.length && !x.upcoming.length) return '';
         return `<div class="composer-day-head"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div><h2 id="composer-day-title">Your ${E(weekday(x.today))}</h2><p class="composer-day-note">${E(shortDate(x.today))} · ${E(x.now)} · Sample day. Composer plans around this. Tap one to ask.</p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${x.upcoming.length ? `<div class="day-later"><p>Coming up</p>${x.upcoming.map((u) => `<button data-nav="plans"><strong>${E(dateShort(u.date))}</strong> · ${E(u.title)}, ${E(u.start)}</button>`).join('')}</div>` : ''}<nav class="day-tools" aria-label="Your Composer"><button data-nav="plans">${I('calendar')}My Plans</button><button data-nav="saved">${I('bookmark')}Saved${state.saved.length ? ` · ${state.saved.length}` : ''}</button><button data-nav="history">${I('clock')}History</button></nav>`;
     }
-    // Places near a point (connected/places.js) use the shared photo-free
-    // card with Composer's own Quick look, Save and Add handlers.
+    // Saved places and plan items use the shared photo-free card
+    // (connected/places.js) with Composer's own Quick look, Save and Add.
     const composerPlace = { open: 'data-preview', save: 'data-save', plan: 'data-add' };
+    // Places near a point, as the approved design's compact cards: the map,
+    // kind and distance, the name, and what the listing says for that time.
+    // Each opens Quick look, where you can save or add it.
     function nearbyCards(entry) {
         const P = window.ExpaduPlaces;
         if (!P) return '';
@@ -838,19 +841,23 @@
         const cards = (entry.placeIds || [])
             .map(P.byId)
             .filter(Boolean)
-            .map((p) =>
-                P.card(p, {
-                    from,
-                    at: entry.listedAt,
-                    attrs: composerPlace,
-                    saved: state.saved.includes(p.id),
-                    added: !!state.proposal?.items.some((item) => item.id === p.id),
-                }),
-            )
+            .map((p) => {
+                const when = entry.listedAt && p.kind !== 'nature' ? P.hours(p, entry.listedAt) : null;
+                const away = from ? P.distance(p, from) : '';
+                const facts = [
+                    when?.text.replace(/^Open until/, 'Listed until'),
+                    p.wheelchair && (P.wheelchairText[p.wheelchair] || p.wheelchair),
+                    p.kind === 'library' && ['Yes', 'Public computers'].includes(P.wifiText(p))
+                        ? P.wifiText(p) === 'Yes' ? 'Wi-Fi' : 'Public computers'
+                        : '',
+                ].filter(Boolean);
+                const kind = `${p.label}${away ? ` · ${away}` : ''}`;
+                return `<li><button type="button" class="nearby-answer-card" data-preview="${E(p.id)}" aria-label="${E(p.name)}, ${E(kind)}"><span class="nearby-answer-map" aria-hidden="true">${P.icon(p.kind)}<img src="../connected/place-maps/${E(p.id)}.png" alt="" loading="lazy" decoding="async" onerror="this.remove()"></span><span class="nearby-answer-copy"><small>${E(kind)}</small><strong>${E(p.name)}</strong>${facts.length ? `<small>${E(facts.join(' · '))}</small>` : ''}</span></button></li>`;
+            })
             .join('');
         // The data is OpenStreetMap's (ODbL), which asks for credit where
         // it's shown.
-        return `${cards ? `<div class="place-answer">${cards}</div>` : ''}${cards || entry.map ? `<div class="answer-actions place-answer-actions">${entry.map ? `<a class="answer-button" href="${E(entry.map)}">${I('pin')}Show on map</a>` : ''}${cards ? `<span>${E(P.credit)}</span>` : ''}</div>` : ''}`;
+        return `${cards ? `<ul class="nearby-answer" role="list">${cards}</ul>` : ''}${cards || entry.map ? `<div class="answer-actions place-answer-actions">${entry.map ? `<a class="answer-button" href="${E(entry.map)}">${I('pin')}Show on map</a>` : ''}${cards ? `<span>${E(P.credit)}</span>` : ''}</div>` : ''}`;
     }
     function card(x) {
         const kept = state.saved.includes(x.id);
@@ -1672,7 +1679,6 @@
             const kind = green ? { many: 'Green spaces', one: 'Green space' } : P?.kinds[r.place];
             const found = P && from ? P.near(from, { kinds: green ? ['park', 'nature'] : [r.place], limit: 3, at, open: r.open }) : [];
             const many = (kind?.many || 'places').toLowerCase();
-            const one = (kind?.one || 'place').toLowerCase();
             const when = r.date === M.today() ? `at ${time}` : `on ${shortDate(r.date)} at ${time}`;
             const listedFor = afterAppointment
                 ? `${time}, when your appointment ends`
@@ -1683,15 +1689,17 @@
             const lead = found.length
                 ? `Nearest first${r.open ? `, listed as open ${when}` : ''}.`
                 : `I don’t have ${many}${r.open ? ` listed as open ${when}` : ''} near ${where} in the sample places.`;
+            // The question names the kind, so the title doesn't repeat it.
+            const short = from?.name.split(',')[0] || 'there';
             const title = found.length
-                ? `${found.length === 1 ? `One ${one}` : `${countWord(found.length)} ${many}`} near ${where}.`
+                ? `${found.length === 1 ? 'One' : countWord(found.length)} near ${short}.`
                 : 'None listed nearby.';
             // Wi-Fi is only recorded for some libraries.
             const wifi = found.filter(({ place: p }) => p.kind === 'library' && P.wifiText(p) === 'Yes');
             const names = (list) => list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list.at(-1)}` : list[0];
             const notes = [
                 found.some(({ place: p }) => p.hours?.week)
-                    ? `Opening times are the listed ones for ${listedFor}, not a live check.`
+                    ? `Hours are the listed ones for ${listedFor}, not a live check.`
                     : found.length && !green
                       ? 'Their opening times aren’t listed.'
                       : '',
@@ -1914,7 +1922,7 @@
                     facts: [
                         { label: 'Accessibility', value: access || 'Not listed', known: !!access },
                         { label: 'Admission', value: event.price || 'Not listed', known: !!event.price },
-                        { label: 'Starts', value: `${event.date === M.today() ? 'Today' : shortDate(event.date)} ${event.start}`, known: true },
+                        { label: 'Starts', value: event.date === M.today() ? event.start : `${shortDate(event.date)} ${event.start}`, known: true },
                     ],
                 },
             );
