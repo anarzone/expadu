@@ -154,7 +154,11 @@
                 ${listing ? (item.sourceUrl ? `<a class="pp-back-more" href="${E(item.sourceUrl)}" target="_blank" rel="noopener">City listing${I('arrow')}</a>` : '') : `<button class="pp-back-more" type="button" data-detail="${id}">More about it</button>`}
             </div>
         </div>`;
-        return `<article class="pp pp--size-${size} pp--${ink(item)} pp--${shape(item)}${gone ? ' is-past' : ''}${listing ? ' is-listing' : ''}" data-poster="${id}"${listing ? '' : ` data-event-card="${id}"`}>${front}${back}</article>`;
+        // A past poster wears in one of three ways, always the same for it.
+        const wear = gone
+            ? ` data-wear="${[...String(item.id)].reduce((sum, c) => sum + c.charCodeAt(0), 0) % 3}"`
+            : '';
+        return `<article class="pp pp--size-${size} pp--${ink(item)} pp--${shape(item)}${gone ? ' is-past' : ''}${listing ? ' is-listing' : ''}" data-poster="${id}"${listing ? '' : ` data-event-card="${id}"`}${wear}>${front}${back}</article>`;
     }
     // Turning a poster over keeps focus on the matching control.
     function turn(button) {

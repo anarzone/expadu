@@ -130,3 +130,13 @@ test('titles and venues are escaped, and German titles are marked', () => {
     assert.match(html, /class="pp-title" lang="de"/);
     assert.match(html, /Art &amp; more/);
 });
+
+test('a past poster wears the same way every time; others don\'t wear', () => {
+    const past = event({ date: '2026-09-08' });
+    const a = P.poster(past, { today });
+    const b = P.poster(past, { today });
+    const wear = /data-wear="([012])"/.exec(a)?.[1];
+    assert.ok(wear, 'a past poster carries data-wear');
+    assert.equal(/data-wear="([012])"/.exec(b)[1], wear);
+    assert.doesNotMatch(P.poster(event(), { today }), /data-wear/);
+});

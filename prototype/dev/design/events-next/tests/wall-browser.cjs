@@ -152,6 +152,43 @@ const inside = (box, viewport) =>
                 0,
             );
             assert.equal(await page.locator('.wall-past').isHidden(), true);
+            assert.equal(
+                await page.locator('.wall-view--wall .pp.is-past:not([data-wear])').count(),
+                0,
+                'every past poster is weathered',
+            );
+            // The same day on the skyline: its lights are out, labels never
+            // overlap each other or another light, and places off the
+            // drawing are named under it.
+            await page.click('[data-wall-view="skyline"]');
+            await page.waitForTimeout(300);
+            const crowd = await page.evaluate(() => {
+                const sky = document.querySelector('.wall-view--skyline .sky');
+                const shown = [...sky.querySelectorAll('.sky-light')]
+                    .map((el) => [el, el.querySelector('.sky-light-label')])
+                    .filter(([, l]) => getComputedStyle(l).display !== 'none')
+                    .map(([el, l]) => [el, l.getBoundingClientRect()]);
+                const dots = [...sky.querySelectorAll('.sky-light')].map((el) => [
+                    el,
+                    el.querySelector('.sky-light-dot').getBoundingClientRect(),
+                ]);
+                const meet = (a, b) =>
+                    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+                let clashes = 0;
+                shown.forEach(([el, r], i) => {
+                    shown.slice(i + 1).forEach(([, q]) => (clashes += meet(r, q)));
+                    dots.forEach(([d, q]) => (clashes += d !== el && meet(r, q)));
+                });
+                return {
+                    past: sky.classList.contains('is-past'),
+                    clashes,
+                    edgeInFoot: [...sky.querySelectorAll('.sky-away')].every((x) => x.closest('.sky-foot')),
+                };
+            });
+            assert.equal(crowd.past, true);
+            assert.equal(crowd.clashes, 0, 'skyline labels overlap');
+            assert.equal(crowd.edgeInFoot, true);
+            await page.click('[data-wall-view="wall"]');
             assert.deepEqual(errors, []);
             await page.close();
         }

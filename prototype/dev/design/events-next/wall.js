@@ -90,12 +90,19 @@
     }
     // How much each column poster faces you (0–1), for the skyline's lights.
     const facing = new Map();
+    let facingId = null;
     function applyFacing() {
+        let front = null;
         document.querySelectorAll('[data-poster-id]').forEach((el) => {
             const value = facing.get(el.dataset.posterId) || 0;
             el.style.setProperty('--facing', value.toFixed(3));
             el.classList.toggle('is-facing', value > 0.5);
+            if (value > 0.5) front = el.dataset.posterId;
         });
+        if (front !== facingId) {
+            facingId = front;
+            layoutSky();
+        }
     }
     const reducedMotion = () =>
         window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -348,11 +355,15 @@
         const column = columnItems(window.ExpaduEventCatalogue?.() || []);
         const onColumn = new Map(column.map((item, i) => [item.id, i]));
         const isToday = new Set(events.map((item) => item.id));
+        // The day's events first, then what hangs on the column.
         const all = unique([...events, ...column]);
         const lit = all.filter((item) => stage[item.area]);
         const away = all.filter(
             (item) => !stage[item.area] && offstage[item.area],
         );
+        // A day that has already happened is drawn with its lights out.
+        const past =
+            events.length > 0 && events.every((item) => F.past(item, today));
         // A light for a column poster turns the column; any other opens
         // the event.
         const target = (item) =>
@@ -372,16 +383,23 @@
             day.appointment && date === today && stage[day.appointment.location]
                 ? day.appointment
                 : null;
-        // A second event in the same district sits a step lower.
+        // Events in the same district fan out around it.
         const used = {};
+        const spots = [
+            [0, 0],
+            [6, 10],
+            [-6, 10],
+            [0, 20],
+            [9, -4],
+        ];
         const light = (item) => {
-            const step = (used[item.area] = (used[item.area] ?? -1) + 1);
-            const [x, y] = [
-                stage[item.area][0] - step * 3,
-                stage[item.area][1] + step * 12,
-            ];
+            const n = (used[item.area] = (used[item.area] ?? -1) + 1);
+            const [dx, dy] = spots[n % spots.length];
+            const x = Math.max(4, Math.min(96, stage[item.area][0] + dx));
+            const y = stage[item.area][1] + dy;
             const coming = !isToday.has(item.id);
-            return `<button type="button" class="sky-light${coming ? ' is-coming' : ''}${x > 78 ? ' is-end' : x < 16 ? ' is-start' : ''}" ${target(item)} data-band="${band(item)}" style="left:${x}%;top:${y}%" aria-label="${onColumn.has(item.id) ? 'Turn the column to ' : ''}${E(item.title)}, ${E(when(item) || 'time not listed')} at ${E(item.venue)}"><span class="sky-light-label">${when(item) ? `<span class="sky-when">${E(when(item))}</span><span class="sky-what"> · ${E(item.title)}</span>` : E(item.title)}</span><span class="sky-light-dot" aria-hidden="true"></span></button>`;
+            const out = past && !coming;
+            return `<button type="button" class="sky-light${coming ? ' is-coming' : ''}${out ? ' is-out' : ''}${x > 78 ? ' is-end' : x < 16 ? ' is-start' : ''}" ${target(item)} data-band="${band(item)}" style="left:${x}%;top:${y}%" aria-label="${onColumn.has(item.id) ? 'Turn the column to ' : ''}${E(item.title)}, ${E(when(item) || 'time not listed')} at ${E(item.venue)}${out ? ', already happened' : ''}"><span class="sky-light-label">${when(item) ? `<span class="sky-when">${E(when(item))}</span><span class="sky-what"> · ${E(item.title)}</span>` : E(item.title)}</span><span class="sky-light-dot" aria-hidden="true"></span></button>`;
         };
         const title =
             date === today
@@ -389,8 +407,23 @@
                     ? 'Cologne tonight'
                     : 'Cologne today'
                 : `Cologne on ${F.dateLabel(date, { weekday: 'short', month: 'short' })}`;
-        return `<section class="sky" data-sky="${now}" aria-label="${E(title)}, illustrated">
-            <div class="sky-head"><div><h2>${E(title)}</h2><p>${onColumn.size > 1 ? 'Turn the column and its event lights up.' : lit.length ? 'Tap a light to see what’s on there.' : 'Nothing here is drawn on the skyline.'}</p></div>
+        const lead = past
+            ? 'These have already happened, so their lights are out.'
+            : onColumn.size > 1
+              ? 'Turn the column and its event lights up.'
+              : lit.length
+                ? 'Tap a light to see what’s on there.'
+                : 'Nothing here is drawn on the skyline.';
+        // Places off the drawing are named under it, never over the city.
+        // A column poster's only shows while that poster faces you.
+        const edge = away
+            .map(
+                (item) =>
+                    `<button type="button" ${target(item)}>${E(offstage[item.area])}: ${E(item.title)} · ${E(when(item))}${I('arrow')}</button>`,
+            )
+            .join('');
+        return `<section class="sky${past ? ' is-past' : ''}" data-sky="${now}" aria-label="${E(title)}, illustrated">
+            <div class="sky-head"><div><h2>${E(title)}</h2><p>${E(lead)}</p></div>
             <div class="sky-bands" role="group" aria-label="Light the city for">${[
                 ['afternoon', 'Afternoon'],
                 ['evening', 'Evening'],
@@ -402,9 +435,57 @@
                 )
                 .join('')}</div></div>
             <div class="sky-scroll" tabindex="0" aria-label="Skyline. Scroll sideways along the Rhine."><div class="sky-inner">${skyline}${lit.map(light).join('')}${appointment ? `<span class="sky-you" style="left:${stage[appointment.location][0]}%;top:${stage[appointment.location][1] + 8}%"><span aria-hidden="true"></span>Your ${E(appointment.start)} appointment</span>` : ''}</div></div>
-            ${away.length ? `<div class="sky-away">${away.map((item) => `<button type="button" ${target(item)}>${E(offstage[item.area])}: ${E(item.title)} · ${E(when(item))}${I('arrow')}</button>`).join('')}</div>` : ''}
-            <p class="sky-note">Illustration · places approximate</p>
+            <div class="sky-foot">${edge ? `<div class="sky-away">${edge}</div>` : ''}<p class="sky-note">Illustration · places approximate</p></div>
         </section>`;
+    }
+    // Labels never pile up: the poster facing you is named first, then the
+    // day's events in time order; a label that would overlap one already
+    // placed shortens to its time, or hides (the light stays, and names
+    // itself on hover, focus and to screen readers).
+    function layoutSky() {
+        document.querySelectorAll('.wall-view--skyline .sky').forEach((sky) => {
+            if (!sky.offsetParent) return;
+            const lights = [...sky.querySelectorAll('.sky-light')];
+            const rank = (el) =>
+                el.classList.contains('is-facing')
+                    ? 0
+                    : el.classList.contains('is-coming')
+                      ? 2
+                      : 1;
+            lights.sort((a, b) => rank(a) - rank(b));
+            const placed = [
+                ...sky.querySelectorAll('.sky-head h2, .sky-head p, .sky-bands'),
+            ]
+                .map((el) => el.getBoundingClientRect())
+                .filter((r) => r.width);
+            // A label mustn't cover another light either.
+            const dots = lights.map((el) => [
+                el,
+                el.querySelector('.sky-light-dot').getBoundingClientRect(),
+            ]);
+            const overlap = (r, p) =>
+                r.left < p.right + 6 &&
+                p.left < r.right + 6 &&
+                r.top < p.bottom + 4 &&
+                p.top < r.bottom + 4;
+            const hits = (r, own) =>
+                placed.some((p) => overlap(r, p)) ||
+                dots.some(([el, d]) => el !== own && overlap(r, d));
+            for (const el of lights) {
+                el.classList.remove('is-short', 'is-quiet');
+                const label = el.querySelector('.sky-light-label');
+                if (!label || getComputedStyle(label).display === 'none') continue;
+                if (hits(label.getBoundingClientRect(), el)) {
+                    el.classList.add('is-short');
+                    if (hits(label.getBoundingClientRect(), el)) {
+                        el.classList.remove('is-short');
+                        el.classList.add('is-quiet');
+                        continue;
+                    }
+                }
+                placed.push(label.getBoundingClientRect());
+            }
+        });
     }
     // A card keeps its picture when there is one; otherwise the poster's
     // art takes the picture's place, labelled as such.
@@ -599,6 +680,7 @@
         else url.searchParams.set('view', view);
         history.replaceState(history.state, '', url);
         syncNote(main);
+        requestAnimationFrame(layoutSky);
     }
     // The shared count line says what the column holds in each view.
     let noteSource = '',
@@ -683,8 +765,11 @@
         };
         new MutationObserver(() => {
             syncPast();
+            facingId = undefined;
             applyFacing();
         }).observe(list, { childList: true });
+        window.addEventListener('resize', layoutSky);
+        document.fonts?.ready.then(layoutSky);
         const note = main.querySelector('#event-count-note');
         if (note)
             new MutationObserver(() => syncNote(main)).observe(note, {

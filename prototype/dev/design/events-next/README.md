@@ -5,6 +5,34 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Weathered past posters, and a calmer skyline — 8 October 2026
+
+Owner request, after reviewing the skyline on the past day (8 September),
+where labels piled on top of each other and "Further north/west" names
+covered the city.
+
+- **Past posters are weathered.** A day that has already happened hangs as
+  sun-faded paper with creases and a stain, and each poster wears in its own
+  way: a torn edge, a nicked side with a peeling corner, or a torn top
+  (`data-wear`, from the event, so it always looks the same). The "Already
+  taken down" strip wears the same way. Still readable; still no Save or
+  Plan.
+- **On the skyline, a past day's lights are out:** grey, unlit windows, a
+  paler city and "These have already happened, so their lights are out."
+- **Labels never pile up.** The poster facing you is named first, then the
+  day's events in time order; a label that would cover another label or
+  another light shortens to its time, or hides. A light always names itself
+  on hover, focus and to screen readers. Checked at 390, 1024 and 1440 with
+  the column on each of its posters.
+- **Coming-up rings are quiet** until their poster faces you.
+- **Places off the drawing are named under it**, in a row with the
+  "Illustration · places approximate" note, never over the city; a column
+  poster's appears only while that poster faces you.
+
+`tests/wall-browser.cjs` checks the past day's posters are weathered and its
+skyline has no overlapping labels; `tests/poster-art.test.cjs` checks the
+wear is stable and only on past posters.
+
 ## Tilt your phone — 8 October 2026
 
 Owner request. On a touch screen, tilting the phone makes the wall's posters

@@ -436,8 +436,25 @@ main[data-view='skyline'] .wall-view--wall {
     padding: 12px;
     overflow: hidden;
     color: var(--pp-text, var(--color-text));
-    filter: grayscale(0.85);
-    opacity: 0.72;
+    filter: sepia(0.4) saturate(0.45) contrast(0.9) brightness(1.04);
+}
+.wall-past-poster:nth-child(3n + 1) {
+    clip-path: polygon(0 0, 100% 0, 100% 88%, 93% 93%, 86% 88%, 78% 100%, 0 100%);
+}
+.wall-past-poster:nth-child(3n + 2) {
+    clip-path: polygon(0 5%, 7% 0, 100% 0, 100% 100%, 0 100%);
+}
+.wall-past-poster:nth-child(3n) {
+    clip-path: polygon(0 0, 80% 0, 87% 5%, 100% 3%, 100% 100%, 0 100%);
+}
+.wall-past-poster::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+        linear-gradient(103deg, transparent 46%, #ffffff40 47.5%, transparent 49%),
+        radial-gradient(circle at 25% 75%, #7a5a2a33, transparent 40%);
 }
 .wall-past-poster > .pp-art {
     z-index: 0;
@@ -856,10 +873,85 @@ main[data-view='skyline'] .wall-view--wall {
     transform: scale(0.97);
 }
 
-/* Past listings: faded, no Save or Plan. */
+/* Past listings: weathered paper, no Save or Plan. Each wears in its own
+   way (torn edge, nicked side or peeling corner, from data-wear), faded by
+   sun and rain, creased and stained. Still readable. */
 .pp.is-past {
-    filter: grayscale(0.8);
-    opacity: 0.78;
+    filter: sepia(0.35) saturate(0.55) contrast(0.92) brightness(1.03);
+    box-shadow: none;
+}
+.pp.is-past[data-wear='0'] {
+    clip-path: polygon(
+        0 0,
+        100% 0,
+        100% 84%,
+        96% 88%,
+        92% 85%,
+        87% 92%,
+        82% 88%,
+        77% 95%,
+        71% 91%,
+        66% 100%,
+        0 100%
+    );
+}
+.pp.is-past[data-wear='1'] {
+    clip-path: polygon(
+        0 4%,
+        5% 0,
+        100% 0,
+        100% 100%,
+        3% 100%,
+        0 96%,
+        0 44%,
+        3% 41%,
+        1% 38%,
+        3% 35%,
+        0 32%
+    );
+}
+.pp.is-past[data-wear='2'] {
+    clip-path: polygon(
+        0 0,
+        74% 0,
+        79% 3%,
+        83% 1%,
+        88% 6%,
+        93% 4%,
+        100% 10%,
+        100% 100%,
+        0 100%
+    );
+}
+/* Creases and a water stain over the print. */
+.pp.is-past::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background:
+        linear-gradient(103deg, transparent 46%, #ffffff3d 47.5%, transparent 49%),
+        linear-gradient(9deg, transparent 61%, #0000002b 62.5%, transparent 64%),
+        radial-gradient(circle at 22% 78%, #7a5a2a33, transparent 34%),
+        radial-gradient(circle at 80% 18%, #ffffff1f, transparent 30%);
+}
+/* A peeling corner shows the wall behind the paper. */
+.pp.is-past[data-wear='1']::after {
+    content: '';
+    position: absolute;
+    z-index: 3;
+    right: 0;
+    bottom: 0;
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(315deg, var(--color-bg-hover) 50%, #e9dcbf 50%);
+    box-shadow: -3px -3px 6px #211d1522;
+    pointer-events: none;
+}
+/* No Plan button on a past or later listing, so the facts take the width. */
+.pp:is(.is-past, .is-listing) .pp-bottom {
+    padding-right: 0;
 }
 .pp.is-past .pp-tape {
     background: transparent;
@@ -1441,9 +1533,45 @@ main[data-view='skyline'] .wall-view--wall {
     background: #1b184094;
     font-weight: var(--weight-medium);
 }
-/* A coming-up light names only its date until its poster faces you. */
-.sky-light.is-coming:not(.is-facing) .sky-what {
+/* A coming-up light is a quiet ring until its poster faces you. */
+.sky-light.is-coming:not(.is-facing) .sky-light-label {
     display: none;
+}
+/* Labels that would overlap shorten to the time, or hide; a light always
+   names itself on hover and focus. */
+.sky-light.is-short .sky-what {
+    display: none;
+}
+.sky-light.is-quiet .sky-light-label {
+    display: none;
+}
+.sky-light:is(:hover, :focus-visible) {
+    z-index: 4;
+}
+.sky-light:is(:hover, :focus-visible) .sky-light-label {
+    display: inline-flex !important;
+}
+.sky-light:is(:hover, :focus-visible) .sky-what {
+    display: inline !important;
+}
+/* A day that has already happened: its lights are out. */
+.sky.is-past .sky-art {
+    filter: saturate(0.45);
+}
+.sky.is-past .sky-art .sky-windows {
+    opacity: 0.15;
+}
+.sky-light.is-out .sky-light-dot {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ece5d8;
+    background: #c9c1b3;
+    box-shadow: none;
+}
+.sky-light.is-out .sky-light-label {
+    background: #1b184073;
+    color: #fff6d8cc;
+    font-weight: var(--weight-medium);
 }
 /* Beside the column the sky is narrower: its title sits above the drawing. */
 @media (min-width: 701px) {
@@ -1499,15 +1627,21 @@ main[data-view='skyline'] .wall-view--wall {
     background: var(--color-paper-bg);
     transform: rotate(45deg);
 }
-.sky-away {
-    position: absolute;
-    z-index: 3;
-    right: 20px;
-    bottom: 48px;
+/* Under the drawing: places off it, and the note. */
+.sky-foot {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 10px 20px 16px 24px;
+}
+.sky-away {
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
+}
+.sky-away [data-poster-id]:not(.is-facing) {
+    display: none;
 }
 .sky-away button {
     display: inline-flex;
@@ -1527,11 +1661,7 @@ main[data-view='skyline'] .wall-view--wall {
     height: 16px;
 }
 .sky-note {
-    position: absolute;
-    z-index: 3;
-    left: 28px;
-    bottom: 14px;
-    margin: 0;
+    margin: 0 0 0 auto;
     font-size: var(--text-caption);
     opacity: 0.85;
 }
@@ -1703,7 +1833,7 @@ main[data-view='skyline'] .wall-view--wall {
         left: 12px;
         right: 12px;
         top: 16px;
-        bottom: 12px;
+        height: 312px;
     }
     .sky-head > div:first-child {
         padding-left: 4px;
@@ -1726,9 +1856,13 @@ main[data-view='skyline'] .wall-view--wall {
     .sky-note {
         display: none;
     }
-    .sky-away {
-        right: 12px;
-        bottom: 70px;
+    .sky-foot {
+        padding: 10px 12px 14px;
+    }
+    .sky-foot:not(
+            :has(.sky-away > button:not([data-poster-id]), .sky-away > .is-facing)
+        ) {
+        display: none;
     }
     .sky-inner {
         width: 836px;
