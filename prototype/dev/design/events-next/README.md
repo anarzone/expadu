@@ -5,6 +5,24 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## No arrows, and a fuller left side — 8 October 2026
+
+Owner request: remove the arrows under the poster column, and decorate the
+left side, which looked empty beside a long day of posters.
+
+- **No arrows.** The column turns by dragging (swiping on a phone) or the
+  arrow keys; the caption says how: "Coming up · 1 of 4 · drag to turn".
+- **"On the column", taped under it (desktop).** A paper programme with a
+  small poster, when and what for each poster on the column ("Tonight ·
+  18:30", "Tue 6 Oct · city listing"). Picking one turns the column to it
+  the short way; the poster facing you is highlighted in cyan. Phones and
+  tablets keep the swipe and the caption.
+- **The left side stays beside you.** The column, its list and the week's
+  notes stand together and stay in view while a long day of posters
+  scrolls past (when they're taller than the window, with their foot in
+  view). A day with one poster, on a wide screen, keeps its notes on the
+  right instead, so neither side stands empty.
+
 ## A sky that follows the time and the weather — 8 October 2026
 
 Owner request: remove the Afternoon / Evening / Late switch and let the sky

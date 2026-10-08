@@ -85,7 +85,8 @@ const inside = (box, viewport) =>
             assert.ok(await poster.locator('.pp-front').isVisible());
 
             // The column carries the featured pick and the three later city
-            // listings (dates only, no planning); it turns with its arrows.
+            // listings (dates only, no planning). No arrows: it turns by
+            // drag, the arrow keys, or (on desktop) the list under it.
             const column = page.locator('#event-featured .wall-column');
             assert.equal(await column.locator('.wall-column-face').count(), 4);
             assert.equal(await column.locator('.pp.is-listing').count(), 3);
@@ -93,16 +94,31 @@ const inside = (box, viewport) =>
                 await column.locator('.pp.is-listing :is([data-plan-item], [data-save-item])').count(),
                 0,
             );
-            assert.equal(await column.locator('.wall-column-count').innerText(), '1 / 4');
-            await column.locator('[data-column-step="1"]').click();
-            await page.waitForTimeout(450);
-            assert.equal(await column.locator('.wall-column-count').innerText(), '2 / 4');
+            assert.equal(await page.locator('[data-column-step], .wall-column-controls').count(), 0);
+            assert.equal(await column.locator('.wall-column-count').innerText(), '1 of 4');
+            const index = column.locator('.wall-column-index');
+            if (viewport.width > 700) {
+                assert.equal(await index.locator('[data-column-to]').count(), 4);
+                await index.locator('[data-column-to="1"]').click();
+            } else {
+                assert.equal(await index.isVisible(), false);
+                await column.locator('.wall-column-body').focus();
+                await page.keyboard.press('ArrowRight');
+            }
+            await page.waitForTimeout(500);
+            assert.equal(await column.locator('.wall-column-count').innerText(), '2 of 4');
+            if (viewport.width > 700)
+                assert.equal(
+                    await index.locator('[aria-current="true"]').getAttribute('data-column-to'),
+                    '1',
+                );
             const front = await column.evaluate((el) =>
                 [...el.querySelectorAll('.wall-column-face')].findIndex((f) => !f.inert),
             );
             assert.equal(front, 1, 'only the poster facing you can be used');
-            await column.locator('[data-column-step="-1"]').click();
-            await page.waitForTimeout(450);
+            await column.locator('.wall-column-body').focus();
+            await page.keyboard.press('ArrowLeft');
+            await page.waitForTimeout(500);
 
             // Skyline: the city has the board to itself. Its lights are the
             // day's events and open them; the cards are the whole day, with a
@@ -206,6 +222,18 @@ const inside = (box, viewport) =>
                 0,
             );
             assert.equal(await page.locator('.wall-past').isHidden(), true);
+            // On a long day the column, its list and the notes stay beside
+            // the posters as they scroll past.
+            if (viewport.width > 700) {
+                await page.evaluate(() => scrollTo(0, 1000));
+                await page.waitForTimeout(300);
+                const side = await page.locator('.wall-side').boundingBox();
+                assert.ok(
+                    side.y < viewport.height && side.y + side.height > viewport.height - 40,
+                    `the side scrolled away: ${JSON.stringify(side)}`,
+                );
+                await page.evaluate(() => scrollTo(0, 0));
+            }
             assert.equal(
                 await page.locator('.wall-view--wall .pp.is-past:not([data-wear])').count(),
                 0,

@@ -64,14 +64,31 @@
 
     /* ---------- The poster column: what's coming up, all the way round ----
        The featured picks, then the later listings in the same city series.
-       It turns like a real Litfaßsäule: drag or swipe sideways, the arrows
-       or the arrow keys. Only the poster facing you can be used. */
+       It turns like a real Litfaßsäule: drag or swipe sideways, or the
+       arrow keys. Under it, on desktop, a list of what's on it turns it to
+       the one you pick. Only the poster facing you can be used. */
     const columnItems = (items) => [
         ...base.featured(items),
         ...laterListings(items).map((item) => ({ ...item, listing: true })),
     ];
+    // When a column poster is on: tonight, today or its date, with the time
+    // where the listing gives one.
+    const onWhen = (item) => {
+        const date =
+            item.date === today
+                ? item.start >= '17:00'
+                    ? 'Tonight'
+                    : 'Today'
+                : F.dateLabel(item.date, { weekday: 'short', month: 'short' });
+        return item.listing
+            ? `${date} · city listing`
+            : item.start
+              ? `${date} · ${item.start}`
+              : date;
+    };
     function feature(items) {
-        const posters = columnItems(items).map((item) =>
+        const onColumn = columnItems(items);
+        const posters = onColumn.map((item) =>
             item.listing
                 ? P.poster(item, { size: 'column', today, listing: true })
                 : P.poster(item, { size: 'column', ...posterOptions(item) }),
@@ -85,8 +102,8 @@
                 <span class="wall-column-glow" aria-hidden="true"></span>
             </div>
             <span class="wall-column-base" aria-hidden="true"></span>
-            ${many ? `<div class="wall-column-controls"><button type="button" data-column-step="-1" aria-label="Turn to the previous poster">${I('back')}</button><span class="wall-column-count" aria-live="polite">1 / ${posters.length}</span><button type="button" data-column-step="1" aria-label="Turn to the next poster">${I('arrow')}</button></div>` : ''}
-            <p class="wall-column-caption">Coming up${many ? ' · turn the column' : ' · on the poster column'}</p>
+            <p class="wall-column-caption">Coming up${many ? ` · <span class="wall-column-count" aria-live="polite">1 of ${posters.length}</span> · ${window.matchMedia?.('(pointer: coarse)').matches ? 'swipe' : 'drag'} to turn` : ' · on the poster column'}</p>
+            ${many ? `<nav class="wall-column-index" aria-label="Posters on the column"><p class="wall-column-index-title">On the column</p><ol>${onColumn.map((item, i) => `<li><button type="button" data-column-to="${i}"${i === 0 ? ' aria-current="true"' : ''}><span class="wall-column-thumb is-${P.ink(item)}">${P.art(item)}<span class="wall-column-lines"></span></span><span class="wall-column-entry"><span class="wall-column-when">${E(onWhen(item))}</span><span class="wall-column-what"${item.titleEnglish ? ' lang="de"' : ''}>${E(item.title)}</span></span></button></li>`).join('')}</ol></nav>` : ''}
         </div>`;
     }
     // The skyline is wider than its stage, so it pans: it opens on the
@@ -218,7 +235,12 @@
                 }
             });
             const counter = column.querySelector('.wall-column-count');
-            if (counter) counter.textContent = `${current + 1} / ${count}`;
+            if (counter) counter.textContent = `${current + 1} of ${count}`;
+            column.querySelectorAll('[data-column-to]').forEach((button) => {
+                if (Number(button.dataset.columnTo) === current)
+                    button.setAttribute('aria-current', 'true');
+                else button.removeAttribute('aria-current');
+            });
             const ink = faces[current]
                 .querySelector('.pp')
                 ?.className.match(/pp--(day|evening|night|paper)/)?.[1];
@@ -246,9 +268,12 @@
             frame = requestAnimationFrame(tick);
         }
         const go = (by) => animateTo(Math.round(pos) + by);
+        // Picking a poster from the list turns the column the short way.
         column.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-column-step]');
-            if (button) go(Number(button.dataset.columnStep));
+            const button = event.target.closest('[data-column-to]');
+            if (!button) return;
+            const from = Math.round(pos);
+            animateTo(from + wrap(Number(button.dataset.columnTo) - from), 420);
         });
         body.addEventListener('keydown', (event) => {
             if (event.target !== body || count < 2) return;
@@ -952,11 +977,26 @@
         const board = document.createElement('section');
         board.className = 'wall-board';
         board.setAttribute('aria-label', 'Posters');
-        board.append(
-            main.querySelector('#event-featured'),
-            main.querySelector('#event-list'),
-        );
-        board.insertAdjacentHTML('beforeend', next());
+        // The column and the week's notes stand together beside the day.
+        const side = document.createElement('div');
+        side.className = 'wall-side';
+        side.append(main.querySelector('#event-featured'));
+        side.insertAdjacentHTML('beforeend', next());
+        board.append(side, main.querySelector('#event-list'));
+        // It stays in view under the app's header, or, when it's taller
+        // than the window, with its foot in view.
+        const stick = () => {
+            const header = [...document.body.querySelectorAll('body > *')].find(
+                (el) => getComputedStyle(el).position === 'sticky',
+            );
+            const space = header
+                ? header.offsetHeight + parseFloat(getComputedStyle(header).top || 0)
+                : 0;
+            side.style.top = `${Math.round(Math.min(space + 16, innerHeight - side.offsetHeight - 16))}px`;
+        };
+        window.addEventListener('resize', stick);
+        document.fonts?.ready.then(stick);
+        requestAnimationFrame(stick);
         gallery.append(board);
         gallery.insertAdjacentHTML('afterend', pastStrip(catalogue));
         main.addEventListener('click', (event) => {

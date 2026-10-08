@@ -86,46 +86,76 @@ body[data-page='events'] {
 }
 
 /* ---------- The wall ---------- */
+/* The column, what's on it and the week's notes stand together on the
+   left and stay beside you while the day's posters scroll past. */
 .wall-board {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) minmax(300px, 380px);
-    grid-template-areas: 'column day next';
-    align-items: end;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'column day';
+    align-items: start;
     gap: 28px 32px;
     margin-top: 14px;
     padding: 36px 32px 28px;
     border-radius: 32px;
     background: var(--color-bg-hover);
 }
-.wall-board #event-featured {
+.wall-side {
     grid-area: column;
+    position: sticky;
+    top: 84px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.wall-board #event-featured {
     margin: 0;
-    align-self: start;
 }
 .wall-board #event-list {
     grid-area: day;
     min-width: 0;
 }
+.wall-side .wall-next {
+    width: 404px;
+    max-width: 100%;
+    margin-top: 6px;
+}
+/* A day with one poster (or none) on a wide screen: the notes go back to
+   the right of it, so neither side stands empty. */
+.wall-board #event-featured {
+    grid-area: column;
+}
 .wall-next {
     grid-area: next;
-    align-self: start;
 }
-/* A full day of posters, or a narrower desktop, puts the calendar beneath. */
-main:not([data-view='skyline']) .wall-board:has(.wall-view--wall .wall-day > .pp:nth-child(2)) {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: 'column day' 'column next';
-}
-@media (max-width: 1199px) {
-    .wall-board {
-        grid-template-columns: auto minmax(0, 1fr);
-        grid-template-areas: 'column day' 'column next';
+@media (min-width: 1200px) {
+    main:not([data-view='skyline'])
+        .wall-board:not(:has(.wall-view--wall .wall-day > .pp:nth-child(2))) {
+        grid-template-columns: auto minmax(0, 1fr) minmax(300px, 380px);
+        grid-template-areas: 'column day next';
+    }
+    main:not([data-view='skyline'])
+        .wall-board:not(:has(.wall-view--wall .wall-day > .pp:nth-child(2)))
+        .wall-side {
+        display: contents;
+    }
+    main:not([data-view='skyline'])
+        .wall-board:not(:has(.wall-view--wall .wall-day > .pp:nth-child(2)))
+        .wall-next {
+        width: auto;
+        margin-top: 0;
     }
 }
 /* The skyline has the board to itself: the column stays on the Wall. */
 main[data-view='skyline'] .wall-board {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'day' 'next';
-    align-items: start;
+    grid-template-areas: 'day' 'column';
+}
+main[data-view='skyline'] .wall-side {
+    position: static;
+    align-items: stretch;
+}
+main[data-view='skyline'] .wall-side .wall-next {
+    width: auto;
 }
 main[data-view='skyline'] .wall-board #event-featured {
     display: none;
@@ -320,44 +350,140 @@ main[data-view='skyline'] .wall-view--wall {
     border-radius: 6px 6px 2px 2px;
     background: var(--poster-column);
 }
-.wall-column-controls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 12px;
-}
-.wall-column-controls button {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: var(--color-bg-surface);
-    color: var(--color-text);
-    box-shadow: var(--shadow-flat);
-    cursor: pointer;
-}
-.wall-column-controls button:active {
-    transform: scale(0.94);
-}
-.wall-column-controls svg {
-    width: 18px;
-    height: 18px;
-}
 .wall-column-count {
-    min-width: 44px;
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
     font-variant-numeric: tabular-nums;
-    text-align: center;
 }
 .wall-column-caption {
-    margin: 10px 0 0;
+    margin: 14px 0 0;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
+}
+/* What's on the column, as a programme taped to the wall beside it: a
+   small poster, when and what. Picking one turns the column to it. */
+.wall-column-index {
+    position: relative;
+    width: calc(var(--column-w) + 8px);
+    margin-top: 26px;
+    padding: 24px 12px 12px;
+    background: var(--poster-paper);
+    box-shadow:
+        0 1px 0 #211d150f,
+        0 12px 26px -16px #211d1566;
+    rotate: -0.6deg;
+}
+.wall-column-index::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: 86px;
+    height: 22px;
+    margin-left: -43px;
+    background: #efe2b3d9;
+    box-shadow: 0 1px 2px #211d1526;
+    rotate: 2deg;
+}
+.wall-column-index-title {
+    margin: 0 0 8px 8px;
+    color: var(--color-text-soft);
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: var(--text-caption);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.wall-column-index ol {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.wall-column-index button {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 58px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-settle);
+}
+.wall-column-index button:hover {
+    background: #211d150d;
+}
+.wall-column-index button[aria-current='true'] {
+    background: var(--color-select-bg);
+}
+.wall-column-index button:active {
+    transform: scale(0.99);
+}
+.wall-column-thumb {
+    position: relative;
+    width: 34px;
+    height: 47px;
+    overflow: hidden;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px #211d1540;
+}
+/* Its title and time as faint lines, so a plain paper listing still
+   reads as a poster. */
+.wall-column-lines {
+    position: absolute;
+    left: 5px;
+    right: 8px;
+    top: 44%;
+    height: 19px;
+    color: #211d15;
+    background:
+        linear-gradient(currentColor, currentColor) 0 0 / 100% 3px no-repeat,
+        linear-gradient(currentColor, currentColor) 0 6px / 80% 3px no-repeat,
+        linear-gradient(currentColor, currentColor) 0 16px / 45% 3px no-repeat;
+    opacity: 0.75;
+}
+.wall-column-thumb:is(.is-evening, .is-night) .wall-column-lines {
+    color: #ffe363;
+}
+/* The whole poster's art, drawn at poster size and shrunk. */
+.wall-column-thumb .pp-art {
+    inset: auto;
+    top: 0;
+    left: 0;
+    width: 272px;
+    height: 376px;
+    transform: scale(0.125);
+    transform-origin: 0 0;
+}
+.wall-column-entry {
+    display: grid;
+    min-width: 0;
+}
+.wall-column-when {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+}
+.wall-column-index button[aria-current='true'] .wall-column-when {
+    color: var(--color-select-text);
+}
+.wall-column-what {
+    overflow: hidden;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+@media (max-width: 999px) {
+    .wall-column-index {
+        display: none;
+    }
 }
 
 /* The week's notes, pinned to the wall. */
@@ -1831,7 +1957,8 @@ main[data-view='skyline'] .wall-view--wall {
         flex-direction: column;
     }
     .wall-board,
-    main[data-view='skyline'] .wall-board {
+    main[data-view='skyline'] .wall-board,
+    .wall-side {
         display: contents;
     }
     .wall-board #event-featured {
@@ -1846,7 +1973,9 @@ main[data-view='skyline'] .wall-view--wall {
     .wall-board #event-list {
         margin-top: 4px;
     }
-    .wall-next {
+    .wall-side .wall-next {
+        order: 1;
+        width: auto;
         margin-top: 26px;
     }
     .wall-day {
@@ -1920,20 +2049,9 @@ main[data-view='skyline'] .wall-view--wall {
     .wall-column-base {
         display: none;
     }
-    /* The caption and the turn controls share one row. */
     .wall-column-caption {
         align-self: flex-start;
-        display: flex;
-        align-items: center;
-        min-height: 44px;
-        margin-top: 4px;
-    }
-    .wall-column-controls {
-        position: absolute;
-        right: 13px;
-        bottom: 0;
-        gap: 6px;
-        margin: 0;
+        margin-top: 10px;
     }
     .pp--size-column .pp-title {
         font-size: clamp(30px, 13cqi, 46px);
