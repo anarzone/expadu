@@ -146,8 +146,13 @@ test('an EU citizen who has arrived, registered and is insured', () => {
         health_coverage_confirmed: true,
         bank_account_help_needed: false,
     });
-    // Never asked for a German permit, or the Blue Card's questions.
-    for (const k of [...permitQuestions, 'purpose', 'case_goal', 'entry_mode'])
+    // Never asked for a German permit, or a permit route's questions.
+    for (const k of [
+        ...permitQuestions,
+        'case_goal',
+        'entry_mode',
+        'sponsor_current_title',
+    ])
         assert.ok(!asked.includes(k), `${k} not asked`);
     assert.deepEqual(opened, []);
     assert.equal(plan(s).processes.length, 0);
@@ -180,8 +185,9 @@ test('a non-EU employee who already holds a work permit', () => {
     });
     assert.ok(asked.includes('residence_title_expires_at'));
     assert.ok(!asked.includes('visa_expires_at'));
-    // The first Blue Card application is for D-visa holders only.
-    for (const k of ['purpose', 'case_goal', 'entry_mode'])
+    // The first Blue Card application and joining a spouse are for D-visa
+    // holders only.
+    for (const k of ['case_goal', 'entry_mode', 'sponsor_current_title'])
         assert.ok(!asked.includes(k), `${k} not asked`);
     assert.deepEqual(opened, ['address']);
 });
@@ -385,4 +391,52 @@ test('outside the covered city: no city guidance and nothing guessed', () => {
     assert.deepEqual(p.processes, []);
     assert.deepEqual(p.guidance, []);
     assert.equal(p.questions.question, null);
+});
+
+test('joining a spouse: the family route, and a review of what you said about them', () => {
+    const s = J.family();
+    let p = plan(s);
+    const family = p.processes.find((x) => x.occurrence_key === 'family');
+    assert.equal(family.title, 'Joining your family');
+    assert.notEqual(family.id, null);
+    assert.deepEqual(
+        [...family.steps.map((x) => x.guidance_id)],
+        ['case.family.first_permit.prepare', 'fam.residence_permits'],
+    );
+    // The appointment's documents: 2 of 8 had, none ready yet.
+    assert.deepEqual(family.steps[1].requirements, {
+        ready: 0,
+        total: 8,
+        optional: 0,
+    });
+    // Preparing aims for the visa expiry.
+    const target = p.timeline.find(
+        (t) => t.source_rule_id === 'case.family.first_permit.prepare',
+    );
+    assert.equal(target.date, '2026-11-20');
+    // The integration course is a proposal; there's no Blue Card.
+    assert.equal(
+        p.processes.find((x) => x.occurrence_key === 'integration').id,
+        null,
+    );
+    assert.ok(!p.processes.some((x) => x.occurrence_key === 'blue-card'));
+    // Their report says Blue Card; the spouse's own record says §18c.
+    const q = p.questions.question;
+    assert.equal(q.kind, 'review_relationship');
+    assert.equal(q.fact_key, 'sponsor_current_title');
+    assert.equal(q.action.type, 'review_relationships');
+    assert.deepEqual([...q.process_ids], ['residence.family.first']);
+    // Correcting the report clears the review; the spouse's record isn't
+    // theirs to change.
+    const r = G.hydrate(s).details;
+    D.edit(r, 'sponsor_current_title');
+    D.reason(r, 'correct');
+    D.select(r, 'settlement_permit_18c');
+    D.review(r);
+    D.confirm(r);
+    s.relationship.reviewed = true;
+    p = plan(s);
+    assert.notEqual(p.questions.question?.kind, 'review_relationship');
+    assert.equal(s.relationship.linked, 'settlement_permit_18c');
+    assert.equal(r.history[0].operation, 'correct');
 });

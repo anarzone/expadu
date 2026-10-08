@@ -117,6 +117,46 @@
         Object.assign(state(s), { stage: 'summary' });
         return s;
     }
+    // Joining a spouse who lives here (family reunification, non-EU
+    // sponsor). They track the family permit; the integration course is a
+    // proposal. They told us their spouse holds a Blue Card, but the
+    // spouse's own linked record says a §18c settlement permit: a review of
+    // their report (review_relationship), never of the spouse's record.
+    function family() {
+        const s = fresh();
+        s.scenario = 'family';
+        s.profileId = 'family-design-v1';
+        const o = G.hydrate(s);
+        o.started = true;
+        o.mode = 'review';
+        o.details = D.create({
+            citizenship_group: 'non_eu',
+            arrival_planned: false,
+            current_residence_title: 'national_d_visa',
+            visa_expires_at: '2026-11-20',
+            purpose: 'family',
+            entry_mode: 'd_visa',
+            case_goal: 'family_reunification_permit',
+            sponsor: 'non_eu',
+            sponsor_current_title: 'blue_card',
+            registration_status: 'registered',
+            health_coverage_confirmed: true,
+            bank_account_help_needed: false,
+            tax_id_available: true,
+        });
+        Object.assign(state(s), { stage: 'summary' });
+        s.relationship = {
+            fact: 'sponsor_current_title',
+            linked: 'settlement_permit_18c',
+            reviewed: false,
+        };
+        root.BureaucracyPlan.start(s, 'family');
+        // They have their passport and marriage certificate; nothing is
+        // checked for this task yet.
+        s.records.family.docs[0] = 'reported_available';
+        s.records.family.docs[3] = 'reported_available';
+        return s;
+    }
     // What concerns this person now, in the backend's order (registry.js).
     function questions(s) {
         const r = G.hydrate(s).details;
@@ -318,6 +358,7 @@
         fresh,
         returning,
         eu,
+        family,
         questions,
         begin,
         afterAnswer,

@@ -481,6 +481,38 @@
             when: { bank_account_help_needed: true },
             dates: [],
         },
+        // Joining a spouse: case.family.first_permit.prepare and the
+        // appointment (family reunification, a sponsor of any listed title;
+        // its situation needs purpose family), and the integration course.
+        {
+            id: 'family',
+            definition: 'residence.family.first',
+            urgency: 'critical',
+            when: {
+                purpose: 'family',
+                current_residence_title: 'national_d_visa',
+                case_goal: 'family_reunification_permit',
+                entry_mode: 'd_visa',
+                sponsor_current_title: [
+                    'national_d_visa',
+                    'standard_work_permit',
+                    'blue_card_pending',
+                    'blue_card',
+                    'settlement_permit_9',
+                    'settlement_permit_18c',
+                    'settlement_permit_unknown',
+                    'other',
+                ],
+            },
+            dates: ['visa_expires_at'],
+        },
+        {
+            id: 'integration',
+            definition: 'education.integration_course',
+            urgency: 'low',
+            when: { purpose: 'family', sponsor: ['non_eu', 'german'] },
+            dates: [],
+        },
     ];
     // question-protocol.yaml (2026-10-08.1) not_asked: questions your own
     // answers settle. Choosing the Blue Card as your goal says which
@@ -490,15 +522,26 @@
     ];
     // The cards' urgency (QuestionProtocol ranks by it); a task's own date
     // question gets a little more (AnchorBonus).
-    const urgency = { critical: 3, high: 2, normal: 1 };
+    const urgency = { critical: 3, high: 2, normal: 1, low: 0 };
     const anchorBonus = 0.5;
     // A task applies when every condition is answered as it asks.
+    // A condition is a value or a list of values (applies_if `in`).
+    const meets = (value, wanted) =>
+        Array.isArray(wanted) ? wanted.includes(value) : value === wanted;
     const applies = (facts, t) =>
-        Object.entries(t.when).every(([k, v]) => said(facts, k) === v);
+        Object.entries(t.when).every(([k, v]) => meets(said(facts, k), v));
     // A task is still possible while no answer rules it out.
+    // A task is still possible while no answer rules it out, and no
+    // condition rests on a first question that won't be asked of you (an
+    // EU citizen is never asked for a German permit, so a permit route
+    // can't open for them).
+    const unaskable = (facts, k) =>
+        orientation.some(([key, when]) => key === k && !when(facts));
     const possible = (facts, t) =>
-        Object.entries(t.when).every(
-            ([k, v]) => said(facts, k) === undefined || said(facts, k) === v,
+        Object.entries(t.when).every(([k, v]) =>
+            said(facts, k) === undefined
+                ? !unaskable(facts, k)
+                : meets(said(facts, k), v),
         );
     // Which sample tasks your answers open (processes are proposals until
     // you start tracking them).
@@ -548,7 +591,7 @@
                         urgency[t.urgency],
                         Object.entries(t.when).every(
                             ([other, v]) =>
-                                other === k || said(facts, other) === v,
+                                other === k || meets(said(facts, other), v),
                         ),
                         t,
                     );

@@ -362,8 +362,8 @@ test('three answers or skips in a row pause; an answer that keeps not fitting st
 
 test('coverage lists every reviewed unit without claiming completeness', () => {
     const units = plan(fresh()).coverage.units;
-    // Seven task cards, three context cards and two withheld ones.
-    assert.equal(units.length, 12);
+    // Ten task cards, three context cards and two withheld ones.
+    assert.equal(units.length, 15);
     assert.equal(units.filter((u) => u.state === 'unconfirmed').length, 2);
     assert.ok(units.every((u) => ['partial', 'unconfirmed'].includes(u.state)));
     assert.equal(
@@ -551,14 +551,14 @@ test('documents carry English names for German terms and the task they come from
     assert.equal(evidence.readiness, 'missing');
     assert.equal(rows.filter((r) => r.produced_by).length, 1);
     const health = proc(p, 'health').steps[0];
-    assert.deepEqual(health.produces, [
-        {
-            unit_id: 'bc.blue_card',
-            process_id: 'residence.blue_card.first',
-            document_id: 'bc.blue_card.document.8',
-            label: 'Proof of full health insurance — only if you are not statutorily insured',
-        },
-    ]);
+    // A catalogue link: every card that asks for proof of health
+    // insurance, whether or not it's in this plan (the page names only the
+    // tasks you have).
+    assert.deepEqual(
+        [...health.produces.map((x) => x.unit_id)],
+        ['bc.blue_card', 'fam.residence_permits'],
+    );
+    assert.equal(health.produces[0].document_id, 'bc.blue_card.document.8');
     // Optional for the Blue Card: only if you aren't statutorily insured.
     assert.equal(evidence.applicability, 'conditional');
     // Linking never changes the requirement's identity.

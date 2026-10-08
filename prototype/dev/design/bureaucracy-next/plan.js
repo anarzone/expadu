@@ -46,6 +46,34 @@
             docs: [],
             reports: [],
         },
+        // Joining a spouse (not part of the sample day's plan): the family
+        // permit's two steps, then the integration course.
+        {
+            id: 'family',
+            name: 'Joining your family',
+            records: [12, 13],
+            icon: 'people',
+            tone: 'violet',
+            initial: 'not_started',
+            note: '',
+            sample: false,
+            done: [false, false],
+            // The appointment's eight documents (states set by the preview).
+            docs: Array(8).fill('unknown'),
+            reports: [],
+        },
+        {
+            id: 'integration',
+            name: 'Integration course',
+            record: 14,
+            icon: 'people',
+            tone: 'green',
+            initial: 'not_started',
+            note: '',
+            sample: false,
+            docs: ['unknown', 'unknown'],
+            reports: [],
+        },
     ];
     const clone = (value) => JSON.parse(JSON.stringify(value));
     // The tasks your saved answers open (each catalogue card's applies_if,
@@ -98,13 +126,17 @@
                     note: '',
                     appointment: null,
                     submission: null,
-                    done: false,
+                    done: Array.isArray(d.done)
+                        ? d.done.map(() => false)
+                        : false,
                     closedOn: null,
                     base: 'not_started',
                     reports: [],
                 };
             }
-        for (const d of definitions.filter(() => s.profileKind !== 'personal'))
+        for (const d of definitions.filter(
+            (d) => s.profileKind !== 'personal' && d.sample !== false,
+        ))
             if (!s.records[d.id]) {
                 const { reports, ...rest } = clone(d);
                 s.records[d.id] = {
@@ -113,7 +145,9 @@
                     started: d.initial !== 'not_started',
                     appointment: null,
                     submission: null,
-                    done: false,
+                    done: Array.isArray(d.done)
+                        ? d.done.map(() => false)
+                        : false,
                     closedOn: null,
                     base: 'not_started',
                     reports: seeded(d.id, reports),
@@ -178,7 +212,7 @@
                 .filter((d) => s.records[d.id])
                 .map((d) => ({
                     ...s.records[d.id],
-                    records: [d.record],
+                    records: d.records || [d.record],
                 })),
         ].filter(
             (p) =>
@@ -209,7 +243,7 @@
                 note: '',
                 appointment: null,
                 submission: null,
-                done: false,
+                done: Array.isArray(d.done) ? d.done.map(() => false) : false,
                 closedOn: null,
                 base: 'not_started',
                 reports: [],
@@ -241,7 +275,10 @@
                                     (i === 1 && s.submitDone) ||
                                     (i === 2 && s.attended))
                               ? 'completed'
-                              : p.id !== 'blue-card' && s.records[p.id].done
+                              : p.id !== 'blue-card' &&
+                                  (Array.isArray(s.records[p.id].done)
+                                      ? s.records[p.id].done[i]
+                                      : s.records[p.id].done)
                                 ? 'completed'
                                 : p.workflow === 'blocked'
                                   ? 'blocked'
@@ -534,7 +571,9 @@
         const stepDone =
             id === 'blue-card'
                 ? s.prepared || s.submitDone || s.attended
-                : r.done;
+                : Array.isArray(r.done)
+                  ? r.done.some(Boolean)
+                  : r.done;
         return (
             !stepDone &&
             !r.reports?.length &&
@@ -554,7 +593,9 @@
     function stepsDone(s, p) {
         return p.id === 'blue-card'
             ? !!(s.prepared && s.submitDone && s.attended)
-            : !!s.records[p.id]?.done;
+            : Array.isArray(s.records[p.id]?.done)
+              ? s.records[p.id].done.every(Boolean)
+              : !!s.records[p.id]?.done;
     }
     // What "Update progress" offers from where the task is now. "Blocked"
     // is blocked_reported before a submission and "the office needs
@@ -630,7 +671,9 @@
                 s.submitDone = finishing;
             } else if (actionId === 'blue-card:2') s.attended = finishing;
             else s.prepared = finishing;
-        } else s.records[p.id].done = finishing;
+        } else if (Array.isArray(s.records[p.id].done))
+            s.records[p.id].done[Number(actionId.split(':')[1])] = finishing;
+        else s.records[p.id].done = finishing;
         // Like the backend, step work moves a task that hadn't started into
         // preparation; the office's states stay as they are.
         holder(s, p.id).reports.push({ id: reportId(p.id), event: 'step' });

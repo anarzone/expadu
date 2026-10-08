@@ -81,11 +81,15 @@ test('orientation first, then the backend’s ranking of what tasks need', () =>
             // is missing) before what decides whether other routes apply.
             'registration_status',
             'health_coverage_confirmed',
-            'entry_mode',
+            // The question more routes wait on first (Blue Card, family,
+            // integration course).
             'purpose',
+            'entry_mode',
             'case_goal',
+            'sponsor_current_title',
             // Less urgent.
             'bank_account_help_needed',
+            'sponsor',
         ],
     );
     // A task's own date question follows once it applies.
@@ -161,10 +165,11 @@ test('a new user’s tasks arrive from their answers, as proposals', () => {
         'address.registration',
     ]);
     answer(s, '2026-09-25');
-    // Then health insurance, the way in, the purpose; the goal opens the
-    // Blue Card.
+    // Then health insurance, the purpose, the way in; the goal opens the
+    // Blue Card. Working rules out the family route.
     J.begin(s);
-    for (const v of [false, 'd_visa', 'employment']) answer(s, v);
+    for (const v of [false, 'employment', 'd_visa']) answer(s, v);
+    assert.ok(!J.questions(s).includes('sponsor_current_title'));
     assert.deepEqual([...P.openedBy(s)], ['address', 'health']);
     J.begin(s);
     answer(s, 'blue_card');

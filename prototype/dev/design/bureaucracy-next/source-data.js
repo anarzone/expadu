@@ -158,4 +158,47 @@ window.BureaucracySource = [
         documents: [],
         source: 'https://www.arbeitsagentur.de/familie-und-kinder/kindergeld',
     },
+    // Joining a spouse (family reunification, non-EU sponsor): the
+    // residence.family.first steps and the integration course.
+    {
+        key: 'case.family.first_permit.prepare',
+        title: "Prepare the joining spouse's first residence application",
+        description:
+            "Prepare and file the joining spouse's own residence application before the\nnational D visa expires. Use the Cologne family-reunification checklist for the\npassport, visa, marriage evidence, housing and livelihood evidence, and other\nrequested documents. A sponsor whose Blue Card is still pending needs a separate\nauthority check; do not assume that holder-specific exceptions already apply.",
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-07.1',
+        source: 'https://www.stadt-koeln.de/service/produkte/20335/index.html',
+        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html',
+    },
+    {
+        key: 'fam.residence_permits',
+        title: 'Attend the permit appointment with the originals',
+        description:
+            'After you apply online, Cologne reviews the application and invites you to an\nappointment when it can issue the permit. Bring the originals of the documents\nbelow; Cologne may ask for further documents in individual cases.',
+        documents: [
+            'Recognised, valid national passport',
+            'Copy of the entry visa, if you needed one',
+            'Digital biometric photo',
+            'Marriage certificate (first application only)',
+            'Rental contract plus proof of the current rent',
+            'A1 German certificate for the joining spouse',
+            'Proof that the livelihood of all working family members is secured',
+            'Proof of full health insurance, if you are not publicly insured',
+        ],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/service/produkte/20335/index.html',
+    },
+    {
+        key: 'fam.integration_course',
+        title: 'Sign up for an Integration Course',
+        description:
+            "The Integrationskurs combines a German language course with an orientation course\non Germany's legal order, culture and history. The general course runs 700 lessons.\nA first residence permit for family reunification normally gives you a right to\ntake part, and that right lapses one year after the permit is issued, so sign up\nearly. If you cannot yet communicate in simple German, the Ausländerbehörde can\noblige you to attend when it issues your permit.",
+        documents: ['Residence permit', 'Passport'],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/Integrationskurse/InhaltAblauf/inhaltablauf-node.html',
+        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__44.html',
+    },
 ];

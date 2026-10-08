@@ -181,6 +181,7 @@
         ['returning', 'Returning user'],
         ['existing', 'Existing sample plan'],
         ['eu', 'EU citizen, settled in'],
+        ['family', 'Joining a spouse'],
         ['outside', 'Outside Cologne'],
         ['setup', 'No profile yet'],
         ['unavailable', 'Record unavailable'],
@@ -199,9 +200,11 @@
                   ? J.returning()
                   : name === 'eu'
                     ? J.eu()
-                    : entries.includes(name)
-                      ? { ...B.blank(), entry: name }
-                      : B.fresh();
+                    : name === 'family'
+                      ? J.family()
+                      : entries.includes(name)
+                        ? { ...B.blank(), entry: name }
+                        : B.fresh();
         P.hydrate(state);
         H.hydrate(state);
         G.hydrate(state);
@@ -233,7 +236,7 @@
     // A "Fresh start" preview takes answers so you can try the questions as
     // a new user, but keeps them in this tab: nothing is written to your
     // plan. The other previews stay read-only.
-    const sandbox = () => state.preview === 'fresh';
+    const sandbox = () => ['fresh', 'family'].includes(state.preview);
     const keep = (s) => (state.preview ? sandbox() : G.save(s));
     // In the sandbox, what would leave the page (Composer) stays off.
     const leavesPreview = (b) =>
@@ -369,7 +372,7 @@
                 : 'Paperwork';
         const persona = personas.find(([id]) => id === state.preview);
         document.querySelector('#main').innerHTML =
-            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>${persona[0] === 'fresh' ? 'Try it as a new user: your answers stay in this tab. Your own plan isn’t changed.' : 'Read-only. Your own plan isn’t changed.'}</span><button data-preview-exit>Back to your plan</button></div>` : ''}<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
+            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>${sandbox() ? 'Try it: your answers stay in this tab. Your own plan isn’t changed.' : 'Read-only. Your own plan isn’t changed.'}</span><button data-preview-exit>Back to your plan</button></div>` : ''}<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
                 .filter(
                     (p) =>
                         !p.denied &&
@@ -508,7 +511,7 @@
     }
     function overview(plan) {
         const next = plan.overview.next_actions.map((a) => stepOf(plan, a.id));
-        return `${comingUp(plan)}${J.applies(state) ? '' : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question(plan)}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.progress.total}${I('arrow')}</button></div>${
+        return `${comingUp(plan)}${J.applies(state) ? question(plan) : `<div class="getting-started"><span>${I('spark')}One step at a time.</span><button data-case="get-started">${E(G.entry(state))} ${I('arrow')}</button></div>${question(plan)}`}<div class="case-overview-grid"><section class="next-actions" aria-labelledby="next-heading"><div class="case-section-head"><div><h2 id="next-heading">Next steps</h2></div><button class="plain-button" data-filter="all">All ${plan.progress.total}${I('arrow')}</button></div>${
             next.length
                 ? next.map((step) => actionRow(plan, step)).join('')
                 : '<div class="honest-empty"><h3>No next actions right now</h3><p>Your waiting work and process history are still here.</p></div>'
@@ -586,7 +589,10 @@
             (p) => p.definition_id === ask.process_ids?.[0],
         );
         const conflict = ask.kind === 'resolve_conflict';
+        const relationship = ask.kind === 'review_relationship';
         const fact = `data-fact="${E(ask.fact_key)}"`;
+        if (relationship)
+            return `<section class="question-card" aria-label="One question"><div>${task ? `<span class="question-context">For your ${E(task.title)} process</span>` : ''}<h3>${E(ask.question)}</h3><p class="question-why">What you told us differs from your spouse’s own record. Only your answer can change here.</p></div><div class="actions"><button type="button" class="button secondary" data-case="relationship-review">Review details</button></div></section>`;
         return `<section class="question-card" aria-label="One question"><div>${task ? `<span class="question-context">For your ${E(task.title)} process</span>` : ''}<h3>${E(ask.question)}</h3><p class="question-why">${conflict ? 'Two of your saved answers disagree. Choose the one that’s true now.' : E(ask.why)}</p></div><div class="actions"><button type="button" class="button secondary" data-case="question-answer" ${fact}>${conflict ? 'Review answers' : ask.answer_schema.type === 'date' ? 'Enter date' : 'Answer'}</button>${ask.can_answer_unknown ? `<button type="button" class="button secondary" data-case="question-unknown" ${fact}>I don’t know</button>` : ''}${ask.can_skip ? `<button type="button" class="button secondary" data-case="question-skip" ${fact}>Skip for now</button>` : ''}</div></section>`;
     }
     const kindLabels = {
@@ -1389,6 +1395,41 @@
         }
         if (action === 'facts' || action === 'expiry') {
             personalDetails(action === 'expiry' ? 'visa_expires_at' : null);
+            return;
+        }
+        // review_relationship: your report about your spouse against their
+        // own linked record. Only your report changes.
+        if (action === 'relationship-review') {
+            const rel = state.relationship,
+                f = window.BureaucracyRegistry.field(rel.fact),
+                said = answers()?.facts[rel.fact]?.value;
+            openEditor(
+                'Your spouse’s residence status',
+                `<p>${E(f.title)}</p><div class="details-claims"><div><small>You told us</small><strong>${E(BureaucracyDetails.label(rel.fact, said))}</strong></div><div><small>Their own record, shared with you</small><strong>${E(BureaucracyDetails.label(rel.fact, rel.linked))}</strong></div></div><p class="muted">Changing your answer updates only what you told us. Their record stays as they keep it.</p><div class="actions">${button('Keep my answer', 'relationship-keep')}${button('Use their record’s status', 'relationship-use', 'primary')}</div>`,
+            );
+            return;
+        }
+        if (action === 'relationship-use' || action === 'relationship-keep') {
+            const rel = state.relationship,
+                r = answers();
+            if (!rel || !r) return;
+            if (action === 'relationship-use') {
+                BureaucracyDetails.edit(r, rel.fact);
+                BureaucracyDetails.reason(r, 'correct');
+                BureaucracyDetails.select(r, rel.linked);
+                BureaucracyDetails.review(r);
+                BureaucracyDetails.confirm(r);
+                r.open = false;
+            }
+            rel.reviewed = true;
+            keep(state);
+            closeEditor();
+            persist();
+            U.toast(
+                action === 'relationship-use'
+                    ? 'Your answer now matches their record. Their record is unchanged.'
+                    : 'Kept your answer. Their record is unchanged.',
+            );
             return;
         }
         if (action === 'question-answer') {

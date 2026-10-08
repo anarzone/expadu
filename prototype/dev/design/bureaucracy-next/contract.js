@@ -16,6 +16,8 @@
         health: { id: 'health.coverage', topic: 'health' },
         bank: { id: 'banking.account', topic: 'money' },
         'tax-history': { id: 'tax.identification', topic: 'tax' },
+        family: { id: 'residence.family.first', topic: 'residence' },
+        integration: { id: 'education.integration_course', topic: 'education' },
     };
     // Each reviewed unit's process definition (process-map.yaml).
     const unitDefinitions = {
@@ -26,6 +28,9 @@
         'core.health_insurance': 'health.coverage',
         'core.bank_account': 'banking.account',
         'core.steuer_id': 'tax.identification',
+        'case.family.first_permit.prepare': 'residence.family.first',
+        'fam.residence_permits': 'residence.family.first',
+        'fam.integration_course': 'education.integration_course',
         'shared.fiktionsbescheinigung': 'residence.pending_application',
         'shared.passport_transfer': 'residence.passport_transfer',
         'shared.verpflichtungserklaerung': 'residence.visitor_sponsorship',
@@ -41,6 +46,8 @@
         'health.coverage': 'Health insurance',
         'residence.blue_card.first': 'EU Blue Card',
         'tax.identification': 'Tax ID',
+        'residence.family.first': 'Joining your family',
+        'education.integration_course': 'Integration course',
         'residence.pending_application': 'While your application is pending',
         'residence.passport_transfer': 'Moving your permit to a new passport',
         'residence.visitor_sponsorship': 'Inviting a visitor',
@@ -93,6 +100,12 @@
         // "Proof of full health insurance" comes from the Health insurance
         // card (documents_required[].from: core.health_insurance).
         'bc.blue_card': {
+            7: {
+                unit_id: 'core.health_insurance',
+                process_id: 'health.coverage',
+            },
+        },
+        'fam.residence_permits': {
             7: {
                 unit_id: 'core.health_insurance',
                 process_id: 'health.coverage',
@@ -212,14 +225,19 @@
             // Every dated step row is a preparation_target: the backend has
             // no legal_due policy any more (process-map.yaml has no
             // temporal_policy since f761736d). Copy reads "Aim to … by".
-            if (p.id === 'blue-card') {
-                const known = !!expiry;
-                // Both Blue Card steps take their date from the visa expiry
-                // (deadline_type fact_date on visa_expires_at).
-                [
+            // Steps whose card dates them from the visa expiry
+            // (deadline_type fact_date on visa_expires_at): both Blue Card
+            // steps, and preparing the joining spouse's application.
+            const fromExpiry = {
+                'blue-card': [
                     ['case.bc.first_application.prepare', 0],
                     ['case.bc.first_application.submit', 1],
-                ].forEach(([unit, i]) =>
+                ],
+                family: [['case.family.first_permit.prepare', 0]],
+            }[p.id];
+            if (fromExpiry) {
+                const known = !!expiry;
+                fromExpiry.forEach(([unit, i]) =>
                     rows.push({
                         ...base,
                         id: `${p.id}:${unit}.due`,
@@ -623,7 +641,19 @@
             (k) => !a.facts[k] && !a.deferred.includes(k),
         );
         const conflict = Object.keys(a.conflicts)[0] || null;
-        const key = conflict || open[0] || null;
+        // What you told us about your sponsor differs from their own linked
+        // record (review_relationship): a review of your report, which
+        // never changes their record.
+        const rel = s.relationship;
+        const related =
+            !conflict &&
+            rel &&
+            !rel.reviewed &&
+            a.facts[rel.fact]?.state === 'value' &&
+            a.facts[rel.fact].value !== rel.linked
+                ? rel.fact
+                : null;
+        const key = conflict || related || open[0] || null;
         const i = s.interview || {};
         const run =
             a.history.filter((h) => !h.seed).length -
@@ -646,7 +676,11 @@
                 status === 'preview' && f
                     ? {
                           fact_key: key,
-                          kind: conflict ? 'resolve_conflict' : 'answer',
+                          kind: conflict
+                              ? 'resolve_conflict'
+                              : related
+                                ? 'review_relationship'
+                                : 'answer',
                           question: f.title,
                           why: f.why,
                           answer_schema: {
@@ -663,7 +697,21 @@
                           process_ids: RG.processIds(a.facts, key),
                           can_skip: true,
                           remaining_before_pause: Math.max(0, 3 - run),
-                          can_answer_unknown: !conflict,
+                          can_answer_unknown: !conflict && !related,
+                          ...(related
+                              ? {
+                                    action: {
+                                        type: 'review_relationships',
+                                        fact_key: key,
+                                        reason: 'report_mismatch',
+                                        required_scopes: [
+                                            'view_plan',
+                                            'view_facts',
+                                            'edit_facts',
+                                        ],
+                                    },
+                                }
+                              : {}),
                           ...(conflict
                               ? {
                                     action: {
