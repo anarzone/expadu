@@ -240,7 +240,7 @@ The static `P/source-data.js` must be dropped in production.
 | C24 | Synthetic conflict demo (`details-review.js:255-261`, `details-ui.js:38`) | Conflicts from `fact-conflicts` only | Remove. |
 | C25 | Static catalogue copy and verified dates (`source-data.js`, `app.js:591-605`) | `guidance[].review` / `actions` from the current release | Remove the static data. |
 | C26 | Sample-day defaults: today, appointment and "On Today" (`app.js:16`, `app.js:60-61`, `app.js:100-107`, `model.js:4-10`, `model.js:33-46`) | Real clock = `plan.evaluated_at`. Real appointments = timeline. | Remove the fixtures. |
-| C27 | Free-text "Add a task" requests (`app.js:977-983`, `app.js:1097-1102`) | No entity. No legal route may be assumed. | Remove, or add as a product decision. |
+| C27 | Free-text "Add a task" requests (`app.js:977-983`, `app.js:1097-1102`) | No entity. No legal route may be assumed. | **Decided 8 Oct 2026 (owner): remove.** No backend entity will be added. |
 | C28 | "All N" counts every action, and `remaining = all − 3` (`plan.js:203-210`) | `plan.actions` = todo only. `remaining_action_count` = todo − 3. | Use `progress.total` for "All". |
 | C29 | "First document to check" chosen as a missing/unknown-first heuristic (`plan.js:256-284`) | Allowed as presentation, but it must not imply that the document blocks the step (blocked comes from `depends_on`) | Keep the wording neutral, as in the README. |
 
