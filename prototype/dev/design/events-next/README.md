@@ -5,6 +5,46 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A sky that follows the time and the weather — 8 October 2026
+
+Owner request: remove the Afternoon / Evening / Late switch and let the sky
+follow the time of day and the weather by itself, with all five ideas
+proposed (`sky.js`, `sample-weather.js`).
+
+- **The sky follows the clock.** Today it shows now (the sample day's
+  13:10); another day, the hour its first event starts. Its colour blends
+  continuously by how high the sun stands, with sunrise and sunset worked
+  out from the date and Cologne's position (30 September: 07:29 and 19:15;
+  the October clock change is honoured). The sun crosses the drawing from
+  rising to setting and sinks behind the city; the moon shows when it's up,
+  in its real phase (from the average month, right to within about a day).
+  Windows light as it gets dark; stars come out on a clear night.
+- **Weather on the skyline.** Clouds come in as the cover grows and drift,
+  rain falls, mist lies on the river. A chip where the switch was says the
+  hour, the weather and its source: "21° Sunny · 13:10 · Sample weather".
+  The prototype's hourly weather is fictional sample data agreeing with the
+  header's 21° at 13:10; in the app it is the hourly forecast. A past day
+  says "Weather not recorded" and gets a plain sky; a day beyond the
+  forecast says "No forecast yet".
+- **Rain where it matters.** An outdoor event (category Outdoors, or a
+  listing that says outdoor or open-air) with a 50% chance of rain or more
+  at its start hour gets a drop on its light and "Rain likely at 20:00 ·
+  sample forecast" on its label. Other events are left alone: we don't know
+  whether their venues are indoors.
+- **Today's lights follow the time.** Over: lights out ("already over");
+  on now (between its start and listed end): "Now", pulsing; still to come:
+  lit. Preview another time with `?at=19:30`.
+- **A light shows its hour.** Pointing at a light, or focusing it, turns the
+  sky to its hour and that hour's weather (the sun and moon travel there);
+  leaving brings it back. On a touch screen the first tap does this and the
+  second opens the event; tapping elsewhere goes back.
+- **Reduced motion:** nothing drifts, falls or pulses, and the sky changes
+  without gliding.
+
+`tests/sky.test.cjs` checks sunrise, sunset, the clock change, the moon's
+phase, the palettes, the weather and the chip; `tests/wall-browser.cjs`
+checks the chip, the rain note, hover and tap previews and today's states.
+
 ## The skyline on its own — 8 October 2026
 
 Owner request: the Skyline view can go without the poster column, and the

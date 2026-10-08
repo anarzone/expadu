@@ -9,7 +9,8 @@
         E = U.esc,
         I = U.icon,
         F = ExpaduEvents,
-        P = ExpaduPosterArt;
+        P = ExpaduPosterArt,
+        Sky = ExpaduSky;
     const base = window.ExpaduEventFestival;
     const day = window.ExpaduSampleDay || {};
     const today = day.date || '';
@@ -359,18 +360,34 @@
         Chorweiler: [97.5, 52],
     };
     const far = new Set(['Junkersdorf', 'Chorweiler']);
-    const band = (item) =>
-        !item.start
-            ? 'evening'
-            : item.start < '17:00'
-              ? 'afternoon'
-              : item.start < '21:00'
-                ? 'evening'
-                : 'late';
-    const skyline = `<svg class="sky-art" viewBox="0 40 1376 450" aria-hidden="true" focusable="false">
+    // Where the drawn city is, for its sunrise, sunset and moon.
+    const skyPlace = {
+        name: 'Cologne',
+        lat: 50.9384,
+        lng: 6.9599,
+        timeZone: 'Europe/Berlin',
+    };
+    const weather = window.ExpaduSampleWeather || { days: {} };
+    // The sample day's clock, or another time to preview (?at=19:40).
+    const at = new URLSearchParams(location.search).get('at');
+    const nowTime = /^([01]\d|2[0-3]):[0-5]\d$/.test(at || '')
+        ? at
+        : day.time || '12:00';
+    const skyContext = (date) => ({
+        date,
+        city: skyPlace,
+        weather: weather.days?.[date] || null,
+        source: weather.source || 'Forecast',
+        past: !!today && date < today,
+    });
+    // The listing itself says it's outdoors.
+    const outdoors = (item) =>
+        item.category === 'Outdoors' ||
+        /\b(outdoors?|open[- ]air)\b/i.test(`${item.title} ${item.description || ''}`);
+    const drawing = (phase) => `<svg class="sky-art" viewBox="0 40 1376 450" aria-hidden="true" focusable="false">
         <rect class="sky-1" width="1376" height="560"/><rect class="sky-2" y="130" width="1376" height="110"/><rect class="sky-3" y="230" width="1376" height="80"/><rect class="sky-4" y="300" width="1376" height="56"/><rect class="sky-5" y="346" width="1376" height="58"/>
         <g class="sky-stars"><circle cx="90" cy="40" r="1.6"/><circle cx="240" cy="74" r="1.2"/><circle cx="420" cy="30" r="1.8"/><circle cx="560" cy="92" r="1.2"/><circle cx="700" cy="48" r="1.5"/><circle cx="980" cy="28" r="1.3"/><circle cx="1080" cy="82" r="1.7"/><circle cx="1310" cy="40" r="1.4"/><circle cx="350" cy="112" r="1"/><circle cx="820" cy="104" r="1.2"/><circle cx="160" cy="120" r="1"/><circle cx="620" cy="22" r="1.1"/></g>
-        <circle class="sky-orb-halo" cx="1062" cy="176" r="48"/><circle class="sky-orb" cx="1062" cy="176" r="30"/>
+        ${Sky.heavens(phase)}
         <g class="sky-far"><rect x="0" y="352" width="70" height="50"/><rect x="440" y="330" width="60" height="72"/><rect x="520" y="342" width="70" height="60"/><rect x="700" y="336" width="90" height="66"/><rect x="1040" y="344" width="80" height="58"/><rect x="1180" y="330" width="70" height="72"/><rect x="756" y="150" width="8" height="252"/><ellipse cx="760" cy="192" rx="24" ry="10"/><rect x="758.5" y="104" width="3" height="48"/><rect x="1302" y="296" width="22" height="106"/><rect x="1330" y="276" width="20" height="126"/><rect x="1354" y="306" width="22" height="96"/><circle cx="584" cy="338" r="16"/><circle cx="606" cy="332" r="20"/><circle cx="630" cy="340" r="15"/><circle cx="650" cy="336" r="13"/></g>
         <g class="sky-near"><rect x="0" y="398" width="1376" height="8"/>
         <rect x="50" y="232" width="34" height="168"/><rect x="50" y="232" width="132" height="42"/><polygon points="84,274 112,274 84,300"/>
@@ -400,18 +417,33 @@
             )}<rect x="616" y="320" width="8" height="6"/><rect x="650" y="336" width="8" height="6"/><rect x="870" y="210" width="6" height="10"/><rect x="924" y="210" width="6" height="10"/></g>
         <rect class="sky-river" y="406" width="1376" height="154"/>
         <path class="sky-bridge" d="M1012 402 Q1072 330 1134 402 Q1196 330 1258 402 Q1318 330 1376 402"/><rect class="sky-bridge-deck" x="1012" y="396" width="364" height="8"/>
+        ${Sky.mistLayer}${Sky.rainLayer}
     </svg>`;
     function sky(events) {
         const lit = events.filter((item) => stage[item.area]);
         // A day that has already happened is drawn with its lights out.
         const past =
             events.length > 0 && events.every((item) => F.past(item, today));
-        const when = (item) => item.start || '';
         const first = [...events].sort((a, b) =>
             String(a.start).localeCompare(String(b.start)),
         )[0];
-        const now = first ? band(first) : 'evening';
         const date = first?.date || today;
+        // Today the sky shows now; another day, the hour its first event
+        // starts. Today's lights follow the clock too: over, on now, or
+        // still to come.
+        const now = date === today ? Sky.hours(nowTime) : null;
+        const base = now ?? (first?.start ? Sky.hours(first.start) : 12);
+        const ctx = skyContext(date);
+        const st = Sky.at(ctx, base);
+        const timing = (item) => {
+            if (now === null || !item.start) return '';
+            const start = Sky.hours(item.start),
+                end = item.end ? Sky.hours(item.end) : null;
+            if (end !== null && now >= end) return 'over';
+            return now >= start && end !== null ? 'now' : '';
+        };
+        const forecast =
+            ctx.source === 'Sample weather' ? 'sample forecast' : 'forecast';
         const appointment =
             day.appointment && date === today && stage[day.appointment.location]
                 ? day.appointment
@@ -439,7 +471,23 @@
         };
         const light = (item) => {
             const [x, y] = place(item.area);
-            return `<button type="button" class="sky-light${past ? ' is-out' : ''}${far.has(item.area) ? ' is-far' : ''}${x > 78 ? ' is-end' : x < 16 ? ' is-start' : ''}" data-detail="${E(item.id)}" data-band="${band(item)}" style="left:${x}%;top:${y}%" aria-label="${E(item.title)}, ${E(when(item) || 'time not listed')} at ${E(item.venue)}${past ? ', already happened' : ''}"><span class="sky-light-label">${when(item) ? `<span class="sky-when">${E(when(item))}</span><span class="sky-what"> · ${E(item.title)}</span>` : E(item.title)}</span><span class="sky-light-dot" aria-hidden="true"></span></button>`;
+            const state = timing(item);
+            const out = past || state === 'over';
+            // Rain where it matters: an outdoor event, at its hour.
+            const wet =
+                !out &&
+                !!item.start &&
+                outdoors(item) &&
+                Sky.rainLikely(ctx.weather, item.start);
+            const when = state === 'now' ? 'Now' : item.start || '';
+            const said = [
+                `${item.title}, ${state === 'now' ? `on now until ${item.end}` : item.start || 'time not listed'} at ${item.venue}`,
+                past ? 'already happened' : state === 'over' ? 'already over' : '',
+                wet ? `rain likely at ${item.start}, ${forecast}` : '',
+            ]
+                .filter(Boolean)
+                .join(', ');
+            return `<button type="button" class="sky-light${out ? ' is-out' : ''}${state === 'now' ? ' is-now' : ''}${wet ? ' is-wet' : ''}${far.has(item.area) ? ' is-far' : ''}${x > 78 ? ' is-end' : x < 16 ? ' is-start' : ''}" data-detail="${E(item.id)}"${item.start ? ` data-start="${E(item.start)}"` : ''} style="left:${x}%;top:${y}%" aria-label="${E(said)}"><span class="sky-light-label"><span class="sky-line">${when ? `<span class="sky-when">${E(when)}</span><span class="sky-what"> · ${E(item.title)}</span>` : E(item.title)}</span>${wet ? `<span class="sky-wet">Rain likely at ${E(item.start)} · ${forecast}</span>` : ''}</span><span class="sky-light-dot" aria-hidden="true">${wet ? '<span class="sky-light-drop"></span>' : ''}</span></button>`;
         };
         const title =
             date === today
@@ -447,24 +495,20 @@
                     ? 'Cologne tonight'
                     : 'Cologne today'
                 : `Cologne on ${F.dateLabel(date, { weekday: 'short', month: 'short' })}`;
+        const point = window.matchMedia?.('(hover: hover)').matches
+            ? 'Point at'
+            : 'Tap';
         const lead = past
             ? 'These have already happened, so their lights are out.'
-            : lit.length
-              ? 'Tap a light to see what’s on there.'
-              : 'Nothing here is drawn on the skyline.';
-        return `<section class="sky${past ? ' is-past' : ''}" data-sky="${now}" aria-label="${E(title)}, illustrated">
+            : !lit.length
+              ? 'Nothing here is drawn on the skyline.'
+              : now !== null
+                ? `The sky follows the time and the weather. ${point} a light to see its hour.`
+                : `${point} a light to see the sky at its hour.`;
+        return `<section class="sky${past ? ' is-past' : ''}"${st.light ? ' data-light' : ''}${st.rain > 0.01 ? ' data-rain' : ''} data-date="${E(date)}" data-base="${base}" style="${Sky.style(st)}" aria-label="${E(title)}, illustrated">
             <div class="sky-head"><div><h2>${E(title)}</h2><p>${E(lead)}</p></div>
-            <div class="sky-bands" role="group" aria-label="Light the city for">${[
-                ['afternoon', 'Afternoon'],
-                ['evening', 'Evening'],
-                ['late', 'Late'],
-            ]
-                .map(
-                    ([id, label]) =>
-                        `<button type="button" data-sky-band="${id}" aria-pressed="${id === now}">${label}</button>`,
-                )
-                .join('')}</div></div>
-            <div class="sky-stage"><div class="sky-scroll" tabindex="0" aria-label="Skyline. Drag or scroll sideways along the Rhine."><div class="sky-inner">${skyline}${lit.map(light).join('')}${appointment ? `<span class="sky-you" style="left:${stage[appointment.location][0]}%;top:${stage[appointment.location][1] + 10}%"><span aria-hidden="true"></span>Your ${E(appointment.start)} appointment</span>` : ''}</div></div><span class="sky-fade sky-fade--start" aria-hidden="true"></span><span class="sky-fade sky-fade--end" aria-hidden="true"></span><p class="sky-note">Illustration · places approximate</p></div>
+            <div class="sky-weather">${Sky.chip(st, ctx)}</div></div>
+            <div class="sky-stage"><div class="sky-scroll" tabindex="0" aria-label="Skyline. Drag or scroll sideways along the Rhine."><div class="sky-inner">${drawing(st.moon.phase)}${lit.map(light).join('')}${appointment ? `<span class="sky-you" style="left:${stage[appointment.location][0]}%;top:${stage[appointment.location][1] + 10}%"><span aria-hidden="true"></span>Your ${E(appointment.start)} appointment</span>` : ''}</div></div><span class="sky-fade sky-fade--start" aria-hidden="true"></span><span class="sky-fade sky-fade--end" aria-hidden="true"></span><p class="sky-note">Illustration · places approximate</p></div>
         </section>`;
     }
     // Labels never pile up: the day's events are named in list order; a
@@ -476,7 +520,7 @@
             if (!sky.offsetParent) return;
             const lights = [...sky.querySelectorAll('.sky-light')];
             const placed = [
-                ...sky.querySelectorAll('.sky-head h2, .sky-head p, .sky-bands'),
+                ...sky.querySelectorAll('.sky-head h2, .sky-head p, .sky-weather'),
             ]
                 .map((el) => el.getBoundingClientRect())
                 .filter((r) => r.width);
@@ -509,6 +553,128 @@
             }
         });
     }
+    /* ---------- The sky at a light's hour ----------
+       Pointing at a light, or focusing it, turns the sky to its hour and
+       that hour's weather; the sun and moon travel there. Leaving brings
+       the sky back. On a touch screen the first tap does this and the
+       second opens the event. */
+    const skies = new WeakMap();
+    function skyOf(section) {
+        let sky = skies.get(section);
+        if (!sky) {
+            const base = Number(section.dataset.base);
+            sky = { ctx: skyContext(section.dataset.date), base, shown: base, frame: null };
+            skies.set(section, sky);
+        }
+        return sky;
+    }
+    function showHour(section, hour) {
+        const sky = skyOf(section);
+        sky.shown = hour;
+        const st = Sky.at(sky.ctx, hour);
+        for (const [key, value] of Object.entries(Sky.vars(st)))
+            section.style.setProperty(key, value);
+        section.toggleAttribute('data-light', st.light);
+        section.toggleAttribute('data-rain', st.rain > 0.01);
+        const chip = section.querySelector('.sky-weather');
+        if (chip) chip.innerHTML = Sky.chip(st, sky.ctx);
+    }
+    function turnSky(section, hour) {
+        const sky = skyOf(section);
+        cancelAnimationFrame(sky.frame);
+        const from = sky.shown;
+        if (Math.abs(hour - from) < 0.01) return;
+        if (reducedMotion()) return showHour(section, hour);
+        const start = performance.now();
+        const duration = Math.min(900, 320 + Math.abs(hour - from) * 70);
+        const tick = (now) => {
+            const t = Math.min(1, (now - start) / duration);
+            showHour(section, from + (hour - from) * (1 - Math.pow(1 - t, 3)));
+            if (t < 1) sky.frame = requestAnimationFrame(tick);
+        };
+        sky.frame = requestAnimationFrame(tick);
+    }
+    let settleTimer = null;
+    function previewLight(light) {
+        clearTimeout(settleTimer);
+        const section = light.closest('.sky');
+        if (section && light.dataset.start)
+            turnSky(section, Sky.hours(light.dataset.start));
+    }
+    // Back to the sky's own hour once no light is pointed at, focused or
+    // picked (a short wait, so moving between neighbours doesn't flicker).
+    function settleSky(delay = 140) {
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(() => {
+            document
+                .querySelectorAll('.wall-view--skyline .sky')
+                .forEach((section) => {
+                    if (
+                        section.querySelector(
+                            '.sky-light:is(:hover, :focus-visible, .is-picked)',
+                        )
+                    )
+                        return;
+                    turnSky(section, skyOf(section).base);
+                });
+        }, delay);
+    }
+    document.addEventListener('pointerover', (event) => {
+        if (event.pointerType !== 'mouse') return;
+        const light = event.target.closest?.('.sky-light');
+        if (light) previewLight(light);
+    });
+    document.addEventListener('pointerout', (event) => {
+        if (event.pointerType !== 'mouse') return;
+        if (
+            event.target.closest?.('.sky-light') &&
+            !event.relatedTarget?.closest?.('.sky-light')
+        )
+            settleSky();
+    });
+    document.addEventListener('focusin', (event) => {
+        const light = event.target.closest?.('.sky-light');
+        if (light?.matches(':focus-visible')) previewLight(light);
+    });
+    document.addEventListener('focusout', (event) => {
+        if (event.target.closest?.('.sky-light')) settleSky();
+    });
+    let lastPointer = '';
+    function unpick() {
+        const picked = document.querySelectorAll('.sky-light.is-picked');
+        if (!picked.length) return;
+        picked.forEach((el) => el.classList.remove('is-picked'));
+        settleSky(0);
+    }
+    document.addEventListener(
+        'pointerdown',
+        (event) => {
+            lastPointer = event.pointerType;
+            if (!event.target.closest?.('.sky-light')) unpick();
+        },
+        true,
+    );
+    document.addEventListener(
+        'click',
+        (event) => {
+            const light = event.target.closest?.('.sky-light');
+            if (
+                !light ||
+                !['touch', 'pen'].includes(lastPointer) ||
+                light.classList.contains('is-picked')
+            )
+                return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            document
+                .querySelectorAll('.sky-light.is-picked')
+                .forEach((el) => el.classList.remove('is-picked'));
+            light.classList.add('is-picked');
+            previewLight(light);
+        },
+        true,
+    );
+
     // A card keeps its picture when there is one; otherwise the poster's
     // art takes the picture's place, labelled as such.
     function card(item, index, distance) {
@@ -762,18 +928,7 @@
                 return;
             }
             const viewButton = event.target.closest('[data-wall-view]');
-            if (viewButton) {
-                setView(viewButton.dataset.wallView, main);
-                return;
-            }
-            const bandButton = event.target.closest('[data-sky-band]');
-            if (bandButton) {
-                const sky = bandButton.closest('.sky');
-                sky.dataset.sky = bandButton.dataset.skyBand;
-                sky.querySelectorAll('[data-sky-band]').forEach((b) =>
-                    b.setAttribute('aria-pressed', String(b === bandButton)),
-                );
-            }
+            if (viewButton) setView(viewButton.dataset.wallView, main);
         });
         // A turned poster turns back with Escape.
         main.addEventListener('keydown', (event) => {
@@ -905,7 +1060,7 @@
     }).observe(document.documentElement, { childList: true, subtree: true });
 
     window.ExpaduEventFestival = { ...base, image, feature, render, bind };
-    window.ExpaduEventWall = { mount, laterListings, hasPicture, band, stage };
+    window.ExpaduEventWall = { mount, laterListings, hasPicture, stage, skyPlace };
     // After app.js has built the page, before its own DOMContentLoaded work.
     document.addEventListener('DOMContentLoaded', mount);
 })();

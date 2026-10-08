@@ -158,10 +158,39 @@ const inside = (box, viewport) =>
                 await sky.locator('.festival-card.is-poster [data-detail="today-review-cinema"]').count(),
                 1,
             );
+            // The sky follows the sample day's clock and weather, and says
+            // so; there's no time-of-day switch any more.
+            const chip = () => sky.locator('.sky-weather').innerText();
+            assert.match(await chip(), /21° Sunny\s+13:10 · Sample weather/);
+            assert.equal(await sky.locator('.sky').getAttribute('data-light'), '');
+            assert.equal(await page.locator('[data-sky-band]').count(), 0);
+            // Rain is forecast at the outdoor film's hour; the other event's
+            // listing doesn't say it's outdoors.
+            const cinema = sky.locator('.sky-light[data-detail="today-review-cinema"]');
+            assert.match(await cinema.getAttribute('class'), /is-wet/);
+            assert.match(
+                await cinema.locator('.sky-wet').innerText(),
+                /Rain likely at 20:00 · sample forecast/,
+            );
+            assert.doesNotMatch(
+                await sky.locator('.sky-light[data-detail="today-review-culture"]').getAttribute('class'),
+                /is-wet/,
+            );
             await sky.locator('.sky').evaluate((el) =>
                 el.scrollIntoView({ block: 'center' }),
             );
-            await sky.locator('.sky-light[data-detail="today-review-cinema"]').evaluate((el) => el.click());
+            // With a mouse, pointing at a light turns the sky to its hour
+            // and weather; leaving brings it back.
+            if (viewport.width > 700) {
+                await cinema.locator('.sky-light-dot').hover();
+                await page.waitForTimeout(1100);
+                assert.match(await chip(), /15° Rain\s+20:00/);
+                assert.equal(await sky.locator('.sky').getAttribute('data-light'), null);
+                await page.mouse.move(2, 2);
+                await page.waitForTimeout(1200);
+                assert.match(await chip(), /21° Sunny\s+13:10/);
+            }
+            await cinema.evaluate((el) => el.click());
             await page.waitForSelector('.event-sheet');
             await page.keyboard.press('Escape');
             await page.click('[data-wall-view="wall"]');
@@ -206,6 +235,10 @@ const inside = (box, viewport) =>
                 return { past: sky.classList.contains('is-past'), clashes };
             });
             assert.equal(crowd.past, true);
+            assert.match(
+                await page.locator('.wall-view--skyline .sky-weather').innerText(),
+                /10:00\s+Weather not recorded/,
+            );
             assert.equal(crowd.clashes, 0, 'skyline labels overlap');
             // With a mouse, moving from light to light focuses each in turn.
             if (viewport.width > 700) {
@@ -287,6 +320,25 @@ const inside = (box, viewport) =>
             await touch.evaluate(() => document.documentElement.classList.contains('wall-tilting')),
             false,
         );
+        // Today's lights follow the clock (?at= previews another time), and
+        // on a touch screen the first tap shows a light's hour, the second
+        // opens it.
+        await touch.goto(`${base}?date=2026-09-30&view=skyline&at=19:30`, { waitUntil: 'networkidle' });
+        const culture = touch.locator('.sky-light[data-detail="today-review-culture"]');
+        assert.match(await culture.getAttribute('class'), /is-now/);
+        assert.match(await culture.locator('.sky-line').innerText(), /^Now · Street culture night$/);
+        const film = touch.locator('.sky-light[data-detail="today-review-cinema"]');
+        await film.locator('.sky-light-dot').tap();
+        await touch.waitForTimeout(1100);
+        assert.match(await film.getAttribute('class'), /is-picked/);
+        assert.equal(await touch.locator('.event-sheet').count(), 0);
+        assert.match(await touch.locator('.sky-weather').innerText(), /20:00/);
+        await film.locator('.sky-light-dot').tap();
+        await touch.waitForSelector('.event-sheet');
+        await touch.goto(`${base}?date=2026-09-30&view=skyline&at=21:30`, { waitUntil: 'networkidle' });
+        assert.match(await culture.getAttribute('class'), /is-out/);
+        assert.match(await culture.getAttribute('aria-label'), /already over/);
+        assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
         console.log('Poster wall checks passed at 390 and 1440px.');
     } finally {

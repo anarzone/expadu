@@ -1180,7 +1180,7 @@ main[data-view='skyline'] .wall-view--wall {
     html.wall-tilting .sky-art .sky-stars {
         transform: translateX(calc(var(--phone-x, 0) * -8px));
     }
-    html.wall-tilting .sky-art :is(.sky-far, .sky-orb, .sky-orb-halo) {
+    html.wall-tilting .sky-art :is(.sky-far, .sky-heavens) {
         transform: translateX(calc(var(--phone-x, 0) * -18px));
     }
     html.wall-tilting
@@ -1276,38 +1276,25 @@ main[data-view='skyline'] .wall-view--wall {
     --sky-far: #3b2a7a;
     --sky-near: #140f36;
     --sky-river: #1a2257;
-    --sky-orb: var(--poster-cream);
+    --sky-cloud: #3a3560;
+    --sky-mist-c: #6e6c90;
     --sky-window: 0.75;
     --sky-stars: 1;
+    --sky-cover: 0;
+    --sky-rain: 0;
+    --sky-mist: 0;
+    --sun-x: 0;
+    --sun-y: 600;
+    --sun-o: 0;
+    --sun-c: #ffe363;
+    --moon-x: 0;
+    --moon-y: 600;
+    --moon-o: 0;
     position: relative;
     overflow: hidden;
     border-radius: 28px;
     background: var(--sky-1);
     color: var(--poster-cream);
-}
-.sky[data-sky='afternoon'] {
-    --sky-1: #7cc6e0;
-    --sky-2: #94d1e5;
-    --sky-3: #b4dfeb;
-    --sky-4: #d6ecee;
-    --sky-5: #f3dfa6;
-    --sky-far: #6f87a8;
-    --sky-near: #2b3550;
-    --sky-river: #3f6f94;
-    --sky-orb: #ffe363;
-    --sky-window: 0;
-    --sky-stars: 0;
-}
-.sky[data-sky='late'] {
-    --sky-1: #0e0a2b;
-    --sky-2: #140f3a;
-    --sky-3: #1b1449;
-    --sky-4: #221a57;
-    --sky-5: #2c2264;
-    --sky-far: #2a2160;
-    --sky-near: #07051a;
-    --sky-river: #10153d;
-    --sky-window: 0.9;
 }
 .sky-art {
     position: absolute;
@@ -1359,20 +1346,54 @@ main[data-view='skyline'] .wall-view--wall {
     fill: var(--poster-cream);
     opacity: var(--sky-stars);
 }
-.sky-art .sky-orb {
-    fill: var(--sky-orb);
+/* The sun and moon stand where the hour puts them (the page works it out
+   and tweens it); clouds come in as the cover grows, rain and mist as the
+   forecast says. */
+.sky-art .sky-sun {
+    transform: translate(calc(var(--sun-x) * 1px), calc(var(--sun-y) * 1px));
+    opacity: var(--sun-o);
 }
-.sky-art .sky-orb-halo {
-    fill: var(--sky-orb);
-    opacity: 0.12;
+.sky-art :is(.sky-sun-disc, .sky-sun-halo) {
+    fill: var(--sun-c);
+}
+.sky-art .sky-sun-halo {
+    opacity: 0.16;
+}
+.sky-art .sky-moon {
+    transform: translate(calc(var(--moon-x) * 1px), calc(var(--moon-y) * 1px));
+    opacity: var(--moon-o);
+}
+.sky-art :is(.sky-moon-lit, .sky-moon-dark, .sky-moon-halo) {
+    fill: var(--poster-cream);
+}
+.sky-art .sky-moon-dark {
+    opacity: 0.14;
+}
+.sky-art .sky-moon-halo {
+    opacity: 0.08;
+}
+.sky-art .sky-cloud {
+    fill: var(--sky-cloud);
+    opacity: clamp(0, calc((var(--sky-cover) - var(--n) * 0.12) * 3), 0.92);
+}
+.sky-art .sky-rain {
+    opacity: calc(var(--sky-rain) * 0.55);
+}
+.sky-art .sky-rain line {
+    stroke: #dbe6f2 !important;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+}
+.sky-art .sky-mist {
+    opacity: var(--sky-mist);
 }
 @media (prefers-reduced-motion: no-preference) {
-    .sky-art rect,
-    .sky-art g,
-    .sky-art circle {
-        transition:
-            fill 280ms var(--ease-settle),
-            opacity 280ms var(--ease-settle);
+    .sky-art .sky-cloud {
+        animation: sky-drift calc(30s + var(--n) * 5s) ease-in-out infinite alternate;
+        animation-delay: calc(var(--n) * -6s);
+    }
+    .sky[data-rain] .sky-rain-fall {
+        animation: sky-fall 0.55s linear infinite;
     }
     .sky-light {
         transition: opacity 180ms var(--ease-settle);
@@ -1381,6 +1402,19 @@ main[data-view='skyline'] .wall-view--wall {
         transition:
             background-color 180ms var(--ease-settle),
             color 180ms var(--ease-settle);
+    }
+}
+@keyframes sky-drift {
+    from {
+        transform: translateX(-70px);
+    }
+    to {
+        transform: translateX(70px);
+    }
+}
+@keyframes sky-fall {
+    to {
+        transform: translateY(64px);
     }
 }
 .sky-head {
@@ -1406,8 +1440,8 @@ main[data-view='skyline'] .wall-view--wall {
     line-height: 1;
     letter-spacing: -1.2px;
 }
-.sky[data-sky='afternoon'] .sky-head,
-.sky[data-sky='afternoon'] .sky-note {
+.sky[data-light] .sky-head,
+.sky[data-light] .sky-note {
     color: var(--color-text);
 }
 .sky-head p {
@@ -1415,27 +1449,48 @@ main[data-view='skyline'] .wall-view--wall {
     font-size: var(--text-body);
     opacity: 0.9;
 }
-.sky-bands {
-    display: flex;
-    padding: 4px;
+/* What the sky is showing: the hour, its weather and where that's from.
+   It reads the sky; it isn't a control. */
+.sky-weather {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    column-gap: 10px;
+    margin: 0;
+    padding: 8px 16px 8px 12px;
     border-radius: 16px;
     background: #ffffff24;
+    font-size: var(--text-small);
+    line-height: 1.3;
     backdrop-filter: blur(10px);
 }
-.sky-bands button {
-    min-height: 40px;
-    padding: 0 14px;
-    border: 0;
-    border-radius: 12px;
-    background: transparent;
-    color: inherit;
-    font-size: var(--text-control);
-    font-weight: var(--weight-medium);
+.sky[data-light] .sky-weather {
+    background: #ffffff99;
 }
-.sky-bands button[aria-pressed='true'] {
-    background: var(--color-select-bg);
-    color: var(--color-select-text);
-    font-weight: var(--weight-semibold);
+.sky-weather-icon {
+    grid-row: span 2;
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.sky-weather-now {
+    font-weight: var(--weight-medium);
+    white-space: nowrap;
+}
+.sky-weather-now strong {
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+.sky-weather small {
+    color: inherit;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    opacity: 0.85;
 }
 .sky-scroll {
     position: relative;
@@ -1580,19 +1635,6 @@ main[data-view='skyline'] .wall-view--wall {
         0 0 0 9px #ffe36347,
         0 0 40px 18px #ffe3636b;
 }
-/* Lights for another part of the day stay solid but unlit. */
-.sky[data-sky='afternoon'] .sky-light:not(.is-out):not([data-band='afternoon']) .sky-light-dot,
-.sky[data-sky='evening'] .sky-light:not(.is-out):not([data-band='evening']) .sky-light-dot,
-.sky[data-sky='late'] .sky-light:not(.is-out):not([data-band='late']) .sky-light-dot {
-    background: #f4e7b0;
-    box-shadow: 0 0 0 1px #211d1540;
-}
-.sky[data-sky='afternoon'] .sky-light:not(.is-out):not([data-band='afternoon']) .sky-light-label,
-.sky[data-sky='evening'] .sky-light:not(.is-out):not([data-band='evening']) .sky-light-label,
-.sky[data-sky='late'] .sky-light:not(.is-out):not([data-band='late']) .sky-light-label {
-    background: var(--color-bg-quiet);
-    color: var(--color-text-soft);
-}
 /* A day that has already happened: its lights are out. */
 .sky.is-past .sky-art {
     filter: saturate(0.45);
@@ -1617,33 +1659,89 @@ main[data-view='skyline'] .wall-view--wall {
     font-weight: var(--weight-medium);
 }
 /* Labels that would overlap shorten to the time, or hide. */
-.sky-light.is-short .sky-what {
+.sky-light.is-short :is(.sky-what, .sky-wet) {
     display: none;
+}
+/* On now: the light pulses gently (a still ring with reduced motion). */
+.sky-light.is-now .sky-light-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 3px solid #ffe363;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .sky-light.is-now .sky-light-dot::after {
+        animation: sky-now 1.8s ease-out infinite;
+    }
+}
+@keyframes sky-now {
+    from {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    to {
+        transform: scale(2.3);
+        opacity: 0;
+    }
+}
+/* Rain likely at an outdoor event's hour: a drop on its light and a
+   second line on its label. */
+.sky-light-label {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    width: max-content;
+}
+.sky-line {
+    white-space: nowrap;
+}
+.sky-wet {
+    padding-bottom: 5px;
+    color: #1d5f99;
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+    line-height: 1.2;
+}
+.sky-light-drop {
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    width: 15px;
+    height: 15px;
+    border: 2px solid var(--color-bg-surface);
+    border-radius: 50% 0 50% 50%;
+    background: #3d9ad9;
+    rotate: -45deg;
 }
 .sky-light.is-quiet .sky-light-label {
     display: none;
 }
 /* Pointing at a light focuses it: its full name, a cyan ring, and the
    other lights step back. */
-.sky-light:is(:hover, :focus-visible) {
+.sky-light:is(:hover, :focus-visible, .is-picked) {
     z-index: 5;
 }
-.sky-light:is(:hover, :focus-visible) .sky-light-label {
+.sky-light:is(:hover, :focus-visible, .is-picked) .sky-light-label {
     display: inline-flex !important;
     box-shadow:
         0 8px 22px #0f0b2e59,
         0 0 0 2px var(--color-select-text);
 }
-.sky-light:is(:hover, :focus-visible) .sky-what {
+.sky-light:is(:hover, :focus-visible, .is-picked) .sky-what {
     display: inline !important;
 }
-.sky-light:is(:hover, :focus-visible) .sky-light-dot {
+.sky-light:is(:hover, :focus-visible, .is-picked) .sky-wet {
+    display: block !important;
+}
+.sky-light:is(:hover, :focus-visible, .is-picked) .sky-light-dot {
     scale: 1.15;
     outline: 3px solid var(--color-select-bg);
     outline-offset: 3px;
 }
-.sky-inner:has(.sky-light:is(:hover, :focus-visible))
-    .sky-light:not(:hover):not(:focus-visible) {
+.sky-inner:has(.sky-light:is(:hover, :focus-visible, .is-picked))
+    .sky-light:not(:hover):not(:focus-visible):not(.is-picked) {
     opacity: 0.35;
 }
 /* From tablets up, the title sits above the drawing, so the Dom's spires
@@ -1870,18 +1968,12 @@ main[data-view='skyline'] .wall-view--wall {
     .sky-head p {
         display: none;
     }
-    /* The switch stops short of the corner where Composer's button floats. */
-    .sky-bands {
+    /* The hour and its weather sit on the river, clear of the corner where
+       Composer's button floats. */
+    .sky-weather {
         position: absolute;
         left: 0;
-        right: 44px;
         bottom: 0;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .sky-bands button {
-        min-height: 44px;
-        padding: 0;
     }
     .sky-note {
         display: none;
