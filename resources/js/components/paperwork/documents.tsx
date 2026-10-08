@@ -367,14 +367,23 @@ export function Documents() {
                                     <Icon name="arrow" />
                                 </button>
                                 <span>
+                                    {/* Only required documents can be marked ready, so only they count. */}
                                     {
                                         docs.filter(
                                             (d) =>
+                                                d.applicability ===
+                                                    'required' &&
                                                 d.readiness ===
-                                                'confirmed_for_use',
+                                                    'confirmed_for_use',
                                         ).length
                                     }
-                                    /{docs.length}
+                                    /
+                                    {
+                                        docs.filter(
+                                            (d) =>
+                                                d.applicability === 'required',
+                                        ).length
+                                    }
                                 </span>
                             </div>
                             {docs.length ? (

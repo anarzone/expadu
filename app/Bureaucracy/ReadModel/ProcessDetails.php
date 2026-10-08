@@ -56,7 +56,11 @@ final class ProcessDetails
             $id = $prefix.$stepId;
             $rows = $requirements === null ? null : array_values(array_filter($requirements, fn ($row) => $row['occurrence_key'] === $process['occurrence_key']
                 && $row['source_rule_id'] === $guidance['id'] && $row['applicability'] !== 'not_required'));
-            $open = $rows === null ? null : (array_values(array_filter($rows, fn ($row) => $row['readiness'] !== 'confirmed_for_use'))[0] ?? null);
+            // Only required rows can be confirmed for use, so they alone make up the count; a
+            // conditional row ("may be needed") is shown first only once every required one is ready.
+            $required = $rows === null ? null : array_values(array_filter($rows, fn ($row) => $row['applicability'] === 'required'));
+            $unready = fn (array $list) => array_values(array_filter($list, fn ($row) => $row['readiness'] !== 'confirmed_for_use'))[0] ?? null;
+            $open = $rows === null ? null : ($unready($required) ?? $unready($rows));
             $review = $guidance['review'] ?? [];
             $steps[] = ['id' => $id, 'step_id' => $stepId, 'guidance_id' => $guidance['id'], 'title' => $guidance['title'],
                 'description' => $guidance['description'], 'status' => $this->status($process['state'], $stepId), 'step_state' => $process['state']['steps'][$stepId] ?? null,
@@ -66,7 +70,8 @@ final class ProcessDetails
                 'sources' => ['official' => array_map(fn ($action) => ['id' => $action['id'], 'url' => $action['url'], 'purpose' => $action['purpose']], $guidance['actions'] ?? []),
                     'legal' => array_values(array_map(fn ($source) => ['kind' => $source['kind'] ?? null, 'label' => $source['label'] ?? null, 'url' => $source['url'] ?? null],
                         array_filter($review['legal_sources'] ?? [], 'is_array')))],
-                'requirements' => $rows === null ? null : ['ready' => count(array_filter($rows, fn ($row) => $row['readiness'] === 'confirmed_for_use')), 'total' => count($rows)],
+                'requirements' => $rows === null ? null : ['ready' => count(array_filter($required, fn ($row) => $row['readiness'] === 'confirmed_for_use')),
+                    'total' => count($required), 'optional' => count($rows) - count($required)],
                 'first_open_requirement' => $open === null ? null : ['id' => $open['id'], 'label' => $open['label'], 'readiness' => $open['readiness'],
                     'applicability' => $open['applicability'], 'conditional' => $open['applicability'] !== 'required'],
                 'dates' => array_values(array_filter($timeline, fn ($row) => ($row['action_id'] ?? null) === $id))];

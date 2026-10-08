@@ -7,6 +7,7 @@ use App\Bureaucracy\People\EnsureAccountHolder;
 use App\Bureaucracy\Processes\ReconcileProcesses;
 use App\Bureaucracy\Processes\RecordProcessEvent;
 use App\Bureaucracy\ReadModel\PlanReadModel;
+use App\Models\BureaucracyCatalogueRelease;
 use App\Models\BureaucracyOutboxEvent;
 use App\Models\BureaucracyProcess;
 use App\Models\Task;
@@ -53,13 +54,30 @@ test('a proposal carries its reviewed title, topic label and steps in catalogue 
         ->and($prepare['verified_at'])->toBe(today()->toDateString())->and($prepare['content_version'])->toBe('synthetic-fixture.1')
         ->and(array_column($prepare['sources']['official'], 'url'))->toBe(['https://www.stadt-koeln.de/service/produkte/00415/index.html'])
         ->and(array_column($prepare['sources']['legal'], 'url'))->toContain('https://www.gesetze-im-internet.de/bmg/__17.html')
-        ->and($prepare['requirements'])->toBe(['ready' => 0, 'total' => 2])
+        ->and($prepare['requirements'])->toBe(['ready' => 0, 'total' => 2, 'optional' => 0])
         ->and($prepare['first_open_requirement'])->toMatchArray(['label' => 'Synthetic passport', 'readiness' => 'missing', 'conditional' => false]);
     $submit = $process['steps'][1];
     expect($submit['depends_on'])->toBe(['fixture.flow.zeta-prepare.complete'])->and($submit['dates'])->toHaveCount(1)
         ->and($submit['dates'][0])->toMatchArray(['state' => 'date_unknown', 'needed_fact' => 'visa_expires_at', 'date' => null, 'action_id' => $submit['id']])
         ->and($plan['history_count'])->toBe(0);
     expect([BureaucracyProcess::query()->count(), BureaucracyOutboxEvent::query()->count()])->toBe($before);
+});
+
+test('a step counts only the documents that can be marked ready, and points at a required one first', function () {
+    // A document that may be needed cannot be confirmed for use, so it must not hold the count below complete.
+    $unit = $this->units[0];
+    $unit->update(['documents_required' => [
+        ['id' => 'visa', 'label' => 'Synthetic entry visa', 'requirement_version' => '1', 'evidence_kind' => 'visa', 'optional' => true],
+        ['id' => 'passport', 'label' => 'Synthetic passport', 'requirement_version' => '1', 'evidence_kind' => 'passport'],
+    ]]);
+    $store = app(CatalogueReleaseStore::class);
+    $current = BureaucracyCatalogueRelease::query()->latest('id')->firstOrFail()->content_hash;
+    $release = $store->stage(app(CatalogueCompiler::class)->compile([$unit->fresh(), $this->units[1]], $this->mapping));
+    $store->activate($release->id, $current);
+
+    $prepare = ($this->read)()['processes'][0]['steps'][0];
+    expect($prepare['requirements'])->toBe(['ready' => 0, 'total' => 1, 'optional' => 1])
+        ->and($prepare['first_open_requirement'])->toMatchArray(['label' => 'Synthetic passport', 'applicability' => 'required', 'conditional' => false]);
 });
 
 test('each action date row names the action it applies to and the step it came from', function () {

@@ -79,7 +79,10 @@ function StepContent({ process, step }: { process: Process; step: Step }) {
         usePaperwork();
     const guidance = process.guidance.find((g) => g.id === step.guidance_id);
     const editable = canEdit && process.id !== null && !process.is_closed;
-    const papers = (step.requirements?.total ?? 0) > 0;
+    // Documents that may be needed are listed but never counted.
+    const papers =
+        (step.requirements?.total ?? 0) + (step.requirements?.optional ?? 0) >
+        0;
     const open = step.first_open_requirement;
     const submitStep = guidance?.completion_event === 'submission_recorded';
     const submission = plan.timeline.find(

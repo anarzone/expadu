@@ -114,7 +114,7 @@ export interface Step {
     review_due_at: string | null;
     content_version: string | null;
     sources: { official: OfficialAction[]; legal: SourceLink[] };
-    requirements: { ready: number; total: number } | null;
+    requirements: { ready: number; total: number; optional: number } | null;
     first_open_requirement: FirstOpenRequirement | null;
     dates: TimelineRow[];
 }
