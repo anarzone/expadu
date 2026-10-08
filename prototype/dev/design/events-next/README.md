@@ -5,6 +5,19 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Tilt your phone — 8 October 2026
+
+Owner request. On a touch screen, tilting the phone makes the wall's posters
+lean with it (with a moving highlight), the poster column lean, and the
+skyline's layers shift: stars and the far city drift against the tilt, the
+near city and its lights move with it. It follows how you hold the phone,
+which slowly becomes the new rest, so holding it at any angle settles back
+to still. A phone button beside Wall/Skyline turns it off and on (the choice
+is remembered on this device). Phones that ask for motion access (iPhone)
+start it from that button; others start it straight away. Never with reduced
+motion. `tests/wall-browser.cjs` sends tilt readings and checks the posters
+follow and the button stops it.
+
 ## The skyline answers the column — 8 October 2026
 
 Owner request. In the Skyline view the column now stands beside the city, as

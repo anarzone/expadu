@@ -155,6 +155,43 @@ const inside = (box, viewport) =>
             assert.deepEqual(errors, []);
             await page.close();
         }
+        // Phone tilt: on a touch screen the posters lean with the phone, and
+        // the tilt button turns it off.
+        const phone = await browser.newContext({
+            viewport: { width: 390, height: 844 },
+            isMobile: true,
+            hasTouch: true,
+        });
+        const touch = await phone.newPage();
+        await touch.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
+        await touch.evaluate(() => localStorage.removeItem('expadu-wall-tilt'));
+        await touch.reload({ waitUntil: 'networkidle' });
+        assert.equal(await touch.locator('[data-wall-tilt]').getAttribute('aria-pressed'), 'true');
+        const lean = async (beta, gamma) => {
+            await touch.evaluate(
+                ([beta, gamma]) =>
+                    window.dispatchEvent(
+                        new DeviceOrientationEvent('deviceorientation', { beta, gamma, alpha: 0 }),
+                    ),
+                [beta, gamma],
+            );
+            await touch.waitForTimeout(120);
+        };
+        await lean(40, 0);
+        await lean(40, 15);
+        const leaning = await touch.evaluate(() => ({
+            x: Number(getComputedStyle(document.documentElement).getPropertyValue('--phone-x')),
+            column: getComputedStyle(document.querySelector('.wall-column')).transform,
+        }));
+        assert.ok(leaning.x > 0.4, `phone tilt not followed: ${leaning.x}`);
+        assert.notEqual(leaning.column, 'none', 'the column should lean');
+        await touch.locator('[data-wall-tilt]').click();
+        assert.equal(await touch.locator('[data-wall-tilt]').getAttribute('aria-pressed'), 'false');
+        assert.equal(
+            await touch.evaluate(() => document.documentElement.classList.contains('wall-tilting')),
+            false,
+        );
+        await phone.close();
         console.log('Poster wall checks passed at 390 and 1440px.');
     } finally {
         await browser.close();

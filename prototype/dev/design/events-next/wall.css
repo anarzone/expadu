@@ -1027,6 +1027,75 @@ main[data-view='skyline'] .wall-view--wall {
     display: none;
 }
 
+/* ---------- Phone tilt ---------- */
+.wall-tilt {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+.wall-tilt[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.wall-tilt svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+@media (prefers-reduced-motion: no-preference) {
+    html.wall-tilting .wall-day > .pp {
+        transform: perspective(900px)
+            rotateY(calc(var(--phone-x, 0) * 7deg))
+            rotateX(calc(var(--phone-y, 0) * -7deg));
+        transition: transform 120ms linear;
+    }
+    html.wall-tilting .wall-day > .pp .pp-front::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background: radial-gradient(
+            circle at calc(50% + var(--phone-x, 0) * 45%)
+                calc(40% + var(--phone-y, 0) * 45%),
+            #ffffff26,
+            transparent 50%
+        );
+    }
+    html.wall-tilting .wall-column {
+        transform: perspective(1400px)
+            rotateY(calc(var(--phone-x, 0) * 6deg))
+            rotateX(calc(var(--phone-y, 0) * -3deg));
+        transition: transform 120ms linear;
+    }
+    /* The skyline in depth: stars and the far city drift against the tilt,
+       the near city and its lights move with it. */
+    html.wall-tilting .sky-art .sky-stars {
+        transform: translateX(calc(var(--phone-x, 0) * -8px));
+    }
+    html.wall-tilting .sky-art :is(.sky-far, .sky-orb, .sky-orb-halo) {
+        transform: translateX(calc(var(--phone-x, 0) * -18px));
+    }
+    html.wall-tilting
+        .sky-art
+        :is(.sky-near, .sky-windows, .sky-bridge, .sky-bridge-deck) {
+        transform: translateX(calc(var(--phone-x, 0) * 14px));
+    }
+    html.wall-tilting :is(.sky-light, .sky-you) {
+        margin-left: calc(var(--phone-x, 0) * 9px);
+    }
+}
+
 /* ---------- Your choices on the posters ---------- */
 /* Saved: a push pin. */
 .pp:has(.pp-save[aria-pressed='true'])::before {

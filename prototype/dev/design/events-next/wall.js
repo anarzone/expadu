@@ -522,6 +522,68 @@
             .join('')}</div></section>`;
     }
 
+    /* ---------- Phone tilt ----------
+       Tilt the phone: the wall's posters lean with it, the column leans and
+       the skyline's layers shift, the near city more than the far one. It
+       follows how you hold the phone, which slowly becomes the new rest.
+       Touch screens only, never with reduced motion. Phones that ask for
+       motion access (iPhone) start it from the tilt button. */
+    const phoneIcon =
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2M3.5 9a7 7 0 0 0 0 6M20.5 9a7 7 0 0 1 0 6"/></svg>';
+    const canTilt = () =>
+        typeof window.DeviceOrientationEvent !== 'undefined' &&
+        !!window.matchMedia?.('(pointer: coarse)').matches &&
+        !reducedMotion();
+    const tilt = { on: false, rest: null, frame: null, x: 0, y: 0 };
+    const clampUnit = (value) => Math.max(-1, Math.min(1, value));
+    function orientation(event) {
+        if (event.beta == null || event.gamma == null) return;
+        const rest = (tilt.rest ??= { b: event.beta, g: event.gamma });
+        rest.b += (event.beta - rest.b) * 0.02;
+        rest.g += (event.gamma - rest.g) * 0.02;
+        tilt.x = clampUnit((event.gamma - rest.g) / 25);
+        tilt.y = clampUnit((event.beta - rest.b) / 25);
+        if (tilt.frame) return;
+        tilt.frame = requestAnimationFrame(() => {
+            tilt.frame = null;
+            const style = document.documentElement.style;
+            style.setProperty('--phone-x', tilt.x.toFixed(3));
+            style.setProperty('--phone-y', tilt.y.toFixed(3));
+        });
+    }
+    function setTilt(on) {
+        tilt.on = on;
+        tilt.rest = null;
+        document.documentElement.classList.toggle('wall-tilting', on);
+        if (on) window.addEventListener('deviceorientation', orientation);
+        else {
+            window.removeEventListener('deviceorientation', orientation);
+            document.documentElement.style.removeProperty('--phone-x');
+            document.documentElement.style.removeProperty('--phone-y');
+        }
+        document
+            .querySelectorAll('[data-wall-tilt]')
+            .forEach((b) => b.setAttribute('aria-pressed', String(on)));
+        try {
+            localStorage.setItem('expadu-wall-tilt', on ? 'on' : 'off');
+        } catch {}
+    }
+    async function toggleTilt() {
+        if (tilt.on) return setTilt(false);
+        const ask = window.DeviceOrientationEvent?.requestPermission;
+        if (typeof ask === 'function') {
+            let answer = 'denied';
+            try {
+                answer = await ask.call(window.DeviceOrientationEvent);
+            } catch {}
+            if (answer !== 'granted') {
+                U.toast?.('Motion access wasn’t allowed, so the posters stay still.');
+                return;
+            }
+        }
+        setTilt(true);
+    }
+
     /* ---------- Page layout and the view switch ---------- */
     function setView(next, main) {
         view = next;
@@ -564,7 +626,7 @@
                 ([id, label, icon]) =>
                     `<button type="button" data-wall-view="${id}" aria-pressed="${id === view}">${I(icon)}<span>${label}</span></button>`,
             )
-            .join('')}</div></div>`;
+            .join('')}</div>${canTilt() ? `<button type="button" class="wall-tilt" data-wall-tilt aria-pressed="false" aria-label="Tilt the posters with your phone" title="Tilt with your phone">${phoneIcon}</button>` : ''}</div>`;
         const calendar = main.querySelector('.event-calendar');
         heading.querySelector('.wall-heading-tools').prepend(calendar);
         main.querySelector('.event-browse-heading')?.remove();
@@ -583,6 +645,10 @@
             const turn = event.target.closest('[data-poster-turn]');
             if (turn) {
                 P.turn(turn);
+                return;
+            }
+            if (event.target.closest('[data-wall-tilt]')) {
+                toggleTilt();
                 return;
             }
             const viewButton = event.target.closest('[data-wall-view]');
@@ -628,6 +694,16 @@
             });
         syncPast();
         syncNote(main);
+        let tiltChoice = null;
+        try {
+            tiltChoice = localStorage.getItem('expadu-wall-tilt');
+        } catch {}
+        if (
+            canTilt() &&
+            typeof window.DeviceOrientationEvent?.requestPermission !== 'function' &&
+            tiltChoice !== 'off'
+        )
+            setTilt(true);
         // Your choices show on the posters: Save pins one (CSS), and once
         // it's in your plan for its day it gets a stamp. A sample plan you
         // didn't make isn't stamped.

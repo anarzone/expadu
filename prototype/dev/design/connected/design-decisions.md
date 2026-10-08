@@ -413,7 +413,9 @@ towards a mouse, pin when saved and are stamped once in your plan; with
 reduced motion nothing moves by itself. Then (owner request) the skyline
 answers the column: in the Skyline view the column stands beside the city,
 the light of the poster facing you brightens as it turns, and tapping such a
-light turns the column to it. Details are in `events-next/README.md`.
+light turns the column to it. On phones, tilting the phone leans the
+posters and the column and shifts the skyline's layers (a button turns it
+off; iPhones start it there). Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky
 "Composer · Minimize" bar is replaced by one compact row at the top of the
