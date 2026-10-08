@@ -504,7 +504,7 @@
             )
             .join(
                 '',
-            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}</div></section></div>${dates(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
+            )}</div></section><section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${plan.open.length}</span></h2><div class="case-icon-actions"><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div><div class="process-grid">${plan.open.map((p) => processCard(p)).join('')}</div></section></div>${dates(plan)}${goodToKnow(plan)}<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`;
     }
     // Your own note first, then what your own paperwork is missing; never
     // a legal reason.
@@ -573,6 +573,24 @@
     };
     // plan.timeline, soonest first; dates still unknown stay listed with
     // what they need.
+    // plan.guidance[]: cards that apply to you but aren't tasks (kind
+    // context). Their own checked text, a way to the official page, nothing
+    // to track.
+    function goodToKnow(plan) {
+        if (!plan.guidance?.length) return '';
+        return `<section class="good-to-know" aria-labelledby="good-heading"><div class="case-section-head"><h2 id="good-heading">Good to know</h2></div><div class="context-list">${plan.guidance
+            .map(
+                (g) =>
+                    `<details class="context-card"><summary><span class="topic-icon">${I('info')}</span><span><strong>${E(g.title)}</strong><small>${E(g.unit_title)}</small></span>${I('down')}</summary><div class="context-text">${paragraphs(
+                        g.description,
+                    )
+                        .map((x) => `<p>${E(x)}</p>`)
+                        .join(
+                            '',
+                        )}<small>${E(checkedLine(g.review.verified_at))}</small><a href="${E(g.actions[0].url)}" target="_blank" rel="noopener">Official page ↗</a></div></details>`,
+            )
+            .join('')}</div></section>`;
+    }
     function dates(plan) {
         const rows = folded(plan.timeline).sort((a, b) =>
             (a.date || '9999').localeCompare(b.date || '9999'),

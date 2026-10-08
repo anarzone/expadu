@@ -2503,3 +2503,77 @@ body[data-page='bureaucracy'] .sr-only {
             color 160ms ease;
     }
 }
+
+/* Good to know: guidance that applies to you but isn't a task (context
+   cards). A quiet list; each opens to the card's own checked text. */
+.good-to-know {
+    margin-top: 28px;
+}
+.context-list {
+    display: grid;
+    gap: 8px;
+}
+.context-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.context-card summary {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 10px 14px 10px 10px;
+    cursor: pointer;
+    list-style: none;
+}
+.context-card summary::-webkit-details-marker {
+    display: none;
+}
+.context-card summary > span:nth-child(2) {
+    display: grid;
+    gap: 2px;
+}
+.context-card summary small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.context-card summary > svg {
+    color: var(--color-text-soft);
+    transition: transform 200ms ease;
+}
+.context-card[open] summary > svg {
+    transform: rotate(180deg);
+}
+.context-text {
+    display: grid;
+    gap: 10px;
+    padding: 0 16px 16px 66px;
+    font-size: var(--text-control);
+    line-height: 1.55;
+}
+.context-text p {
+    margin: 0;
+}
+.context-text small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.context-text a {
+    justify-self: start;
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+@media (max-width: 700px) {
+    .context-text {
+        padding: 0 14px 14px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .context-card summary > svg {
+        transition: none;
+    }
+}

@@ -26,6 +26,9 @@
         'core.health_insurance': 'health.coverage',
         'core.bank_account': 'banking.account',
         'core.steuer_id': 'tax.identification',
+        'shared.fiktionsbescheinigung': 'residence.pending_application',
+        'shared.passport_transfer': 'residence.passport_transfer',
+        'shared.verpflichtungserklaerung': 'residence.visitor_sponsorship',
     };
     // Catalogue step kinds (process-map.yaml): an "action" step is the
     // submission, so its completion event is submission_recorded.
@@ -38,6 +41,9 @@
         'health.coverage': 'Health insurance',
         'residence.blue_card.first': 'EU Blue Card',
         'tax.identification': 'Tax ID',
+        'residence.pending_application': 'While your application is pending',
+        'residence.passport_transfer': 'Moving your permit to a new passport',
+        'residence.visitor_sponsorship': 'Inviting a visitor',
     };
     // processes[].title for one of this sample's occurrences.
     const titleOf = (key) => processTitles[definitions[key]?.id] || null;
@@ -560,6 +566,38 @@
             history: [],
         };
     }
+    // plan.guidance[]: the context cards that apply to you (kind context,
+    // actionable false, type info). Never processes, never a step.
+    function guidanceOf(s) {
+        const facts = answersOf(s).facts;
+        const said = (k) =>
+            facts[k]?.state === 'value' ? facts[k].value : undefined;
+        return R()
+            .filter(
+                (r) =>
+                    r.kind === 'context' &&
+                    r.state !== 'unconfirmed' &&
+                    Object.entries(r.appliesIf || {}).every(
+                        ([k, v]) => said(k) === v,
+                    ),
+            )
+            .map((r) => ({
+                id: r.key,
+                definition_id: unitDefinitions[r.key] || null,
+                title: processTitles[unitDefinitions[r.key]] || r.title,
+                unit_title: r.title,
+                description: r.description,
+                kind: 'context',
+                type: 'info',
+                actionable: false,
+                topic: 'residence',
+                actions: [{ url: r.source, purpose: 'information' }],
+                review: {
+                    verified_at: r.verifiedAt,
+                    content_version: r.version,
+                },
+            }));
+    }
     // plan.questions (bureaucracy-v2.md "Questions and answer changes"):
     // at most one current question, in the registry's words. Three answers
     // or skips in a row pause the run (paused); an answer that keeps not
@@ -726,6 +764,7 @@
             deferred: [],
             candidates_count: null,
         },
+        guidance: [],
         coverage: coverageOf(),
         paperwork: { available: false, reason: 'permission_required' },
     });
@@ -839,6 +878,7 @@
                     row.days_remaining <= 7,
             ),
             questions,
+            guidance: guidanceOf(s),
             coverage: coverageOf(),
             paperwork: {
                 available: true,

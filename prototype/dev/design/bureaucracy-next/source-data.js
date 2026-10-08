@@ -100,4 +100,62 @@ window.BureaucracySource = [
         source: 'https://www.stadt-koeln.de/service/produkte/20321/index.html',
         law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html',
     },
+    // Guidance that isn't a task (kind context, plan.guidance[]): cards
+    // that apply to you are listed as "Good to know", never as processes.
+    {
+        key: 'shared.fiktionsbescheinigung',
+        kind: 'context',
+        title: 'Fiktionsbescheinigung: what that bridging paper really permits',
+        appliesIf: { citizenship_group: 'non_eu' },
+        description:
+            'While a permit application is processing you may get a Fiktionsbescheinigung —\nand what it allows depends on which of its two forms you hold. The continuation\nform (§81 Abs. 4) keeps your current permit in force until the decision: you may\nkeep working if your permit allowed it, and you may travel and return while it is\nvalid. The form for a first application without a visa (§81 Abs. 3) does not\nallow work, and you may not leave Germany and re-enter on it. Check which form\nyours is before booking any flight.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/artikel/71447/index.html',
+        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html',
+    },
+    {
+        key: 'shared.passport_transfer',
+        kind: 'context',
+        title: 'New passport? Transfer your permit (Übertrag)',
+        appliesIf: { citizenship_group: 'non_eu' },
+        description:
+            'Your residence title stays valid when you get a new national passport. Carry\nboth the old and the new passport if you kept the old one. If the old passport\nnumber is printed on your residence title, contact the Ausländeramt through its\ncontact form and it will tell you the next steps; if it is not printed there,\nyou do not need to do anything. Settlement permit holders whose card shows the\npassport number book an appointment at their Bezirksausländeramt and bring your\nold passport, your new passport and a digital biometric photo. Also worth\nknowing: a residence title generally expires if you leave Germany for a reason\nthat is not temporary, or if you stay abroad for longer than six months without\na longer period set by the Ausländerbehörde. Some exceptions apply, so ask\nbefore planning long stays away.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/artikel/73721/index.html',
+        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__51.html',
+    },
+    {
+        key: 'shared.verpflichtungserklaerung',
+        kind: 'context',
+        title: 'Inviting family or friends to visit? Verpflichtungserklärung',
+        appliesIf: {},
+        description:
+            'If you invite visa-required family or friends to visit, they can use a\nVerpflichtungserklärung to show the German embassy or consulate that their costs\nare covered. You file it at the Ausländeramt (€29 per declaration; the fee is\ncharged even if your income is not sufficient). You commit to covering public\ncosts of their stay, for five years from their entry. You need your main\nresidence in Cologne. File it at least three months before their visa appointment\n(by post, online contact form, or in person on Tuesday and Thursday mornings);\nthe embassy usually recognises it for up to six months after issue. Employees\nbring payslips for the last three months and a bank statement showing the salary;\nself-employed people bring a Steuerberater certificate or their last tax\nassessment instead.',
+        documents: [],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.stadt-koeln.de/service/produkte/00962/index.html',
+        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__68.html',
+    },
+    // Published but withheld from the release (not machine-confirmed): the
+    // backend lists them only as coverage units, title and official page.
+    {
+        key: 'fre.residence_permit',
+        title: 'Apply for the freelance residence permit (§21 Abs. 5)',
+        state: 'unconfirmed',
+        documents: [],
+        source: 'https://www.stadt-koeln.de/service/produkte/01083/index.html',
+        law: 'https://www.gesetze-im-internet.de/aufenthg_2004/__21.html',
+    },
+    {
+        key: 'le.kindergeld',
+        title: 'Apply for Kindergeld',
+        state: 'unconfirmed',
+        documents: [],
+        source: 'https://www.arbeitsagentur.de/familie-und-kinder/kindergeld',
+    },
 ];

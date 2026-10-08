@@ -340,3 +340,28 @@ test('another person’s plan is read only and shows nothing private', () => {
         assert.equal(P.documentAction(s, 'blue-card', 3, 'confirm'), false);
     }
 });
+
+test('guidance that isn’t a task: context cards for whom they apply', () => {
+    const p = plan(sample());
+    // The sample person is non-EU: all three apply; none is a process.
+    assert.deepEqual(
+        [...p.guidance.map((g) => g.title)],
+        [
+            'While your application is pending',
+            'Moving your permit to a new passport',
+            'Inviting a visitor',
+        ],
+    );
+    assert.ok(p.guidance.every((g) => !g.actionable && g.kind === 'context'));
+    assert.ok(
+        !p.processes.some((x) =>
+            x.steps.some((st) => st.guidance_id.startsWith('shared.')),
+        ),
+    );
+    // An EU citizen gets only the visitor card.
+    const { s } = walk({ citizenship_group: 'eu', arrival_planned: false });
+    assert.deepEqual(
+        [...plan(s).guidance.map((g) => g.id)],
+        ['shared.verpflichtungserklaerung'],
+    );
+});
