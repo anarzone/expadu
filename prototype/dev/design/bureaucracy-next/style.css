@@ -2387,6 +2387,9 @@ body[data-page='bureaucracy'] .sr-only {
     line-height: 1.45;
 }
 /* "Tracking started · Undo": the undo sits at the end of the note. */
+.process-note:has(.plain-button) {
+    align-items: center;
+}
 .process-note .plain-button {
     margin-left: auto;
     min-height: 44px;
