@@ -98,7 +98,7 @@ tasks:
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-08.2
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
@@ -164,17 +164,21 @@ tasks:
     documents_required:
       - label: Valid passport or passport substitute
       - label: Entry visa for qualified employment, where your entry required one
+        optional: true
       - label: Biometric passport photo, not older than three months
         note: Bring it to the appointment.
       - label: Employment contract or binding job offer for at least six months
       - label: Qualification proof (first application only)
         note: 'German degree certificate; OR foreign degree + certified German or English translation + Anabin extract or ZAB statement; OR a level 6 qualification recognised in Germany (for example Meister, Techniker) with its recognition; OR for IT specialists without a formal qualification: proof of at least three years of IT experience within the last seven years + CV.'
       - label: BA advance approval or the completed form "Erklärung zum Beschäftigungsverhältnis", if available
+        optional: true
       - label: Mietvertrag + bank statement showing your current rent payment
         note: Owners instead bring the land register extract (Grundbuchauszug) + proof of monthly interest, repayment and service charges.
       - label: Proof of full health insurance — only if you are not statutorily insured
+        optional: true
         from: core.health_insurance
       - label: Berufsausübungserlaubnis, for regulated professions
+        optional: true
         note: Some professions, for example human medicine, need a professional licence. Ask your employer if you are unsure.
     links:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
@@ -278,20 +282,15 @@ tasks:
       current_residence_title: national_d_visa
       case_goal: blue_card
       entry_mode: d_visa
-    documents_required:
-      - Valid passport and national D visa
-      - Employment contract or binding job offer covering at least six months
-      - Qualification evidence and recognition evidence where required
-      - label: 'Health-insurance evidence'
-        from: core.health_insurance
-      - Professional licence for a regulated profession, where applicable
+    # The documents to bring are listed once, on the appointment step (bc.blue_card).
+    documents_required: []
     links:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
     review_status: approved
     jurisdiction: de-nrw-cologne
     reviewed_by: automated_source_check
-    content_version: 2026-10-08.1
+    content_version: 2026-10-08.2
     source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
