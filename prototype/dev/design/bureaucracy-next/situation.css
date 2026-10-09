@@ -321,10 +321,12 @@
     align-items: center;
 }
 .situation-summary-actions button:first-child {
-    background: var(--color-select-bg, #e5f5f8);
+    border: 1px solid var(--color-border-strong);
+    background: var(--color-bg-surface);
 }
 .situation-checkin {
-    background: var(--color-select-bg, #e5f5f8);
+    background: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
     padding: 16px;
     border-radius: var(--radius-xl);
     margin-bottom: 18px;
