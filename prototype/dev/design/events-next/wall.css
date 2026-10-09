@@ -2800,33 +2800,60 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         width: 100%;
         align-self: stretch;
     }
-    /* On a phone the corner stays slim, so the filters keep their place
-       on the first screen: a thin band, narrow strips, a line of cobbles. */
+    /* On a phone the column stands slim on its corner, about 60% of the
+       screen as on a tablet: finial, dome, arches and a stone plinth, with
+       the wall showing on both sides. */
     .wall-column {
-        --strip: 8px;
+        --column-w: clamp(216px, calc(100vw - 150px), 260px);
+        --column-h: 310px;
+        --strip: 16px;
     }
     .wall-column-cap {
-        width: calc(100% - 8px);
+        width: calc(var(--column-w) + 32px);
+        height: 40px;
+    }
+    .wall-column-cap > span {
+        top: -20px;
+        width: 12px;
         height: 24px;
+        margin-left: -6px;
+    }
+    .wall-column-cap > span::before {
+        top: -9px;
+        width: 14px;
+        height: 14px;
+        margin-left: -7px;
     }
     .wall-column-frieze {
-        width: calc(100% - 16px);
-        height: 8px;
+        width: calc(var(--column-w) + 16px);
+        height: 18px;
         border-width: 2px;
-        background: var(--poster-column);
+        background:
+            radial-gradient(circle at 50% 100%, transparent 4px, #c9a54a 4.5px 5.5px, transparent 6px) 0 0 / 15px 14px repeat-x,
+            var(--poster-column);
+    }
+    .wall-column-base {
+        width: calc(var(--column-w) + 18px);
+        height: 14px;
+    }
+    .wall-column-base > span {
+        left: -10px;
+        right: -10px;
+        top: 14px;
+        height: 20px;
     }
     /* A thinner line of cobbles, and lighter rain across the poster. The
-       column has no finial on a phone, and the filters keep the full
-       width: the first screen puts them clear of Composer's button. */
+       filters end before Composer's button here too: Sort sits beside the
+       search, and Free and Saved are in the Category menu (events.css). */
     .wall-board {
         --street-bleed: 20px;
         --street-ground: 18px;
     }
     .wall-scene {
-        padding-top: 0;
+        padding-top: 30px;
     }
     .event-discovery > :is(.event-gallery-head, .event-controls) {
-        padding-right: 0;
+        padding-right: 52px;
     }
     .wall-scene-rain {
         opacity: calc(var(--rain, 0) * 0.4);
@@ -2839,9 +2866,6 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         top: 4px;
         height: 9px;
     }
-    .wall-column-cap > span {
-        display: none;
-    }
     .wall-column {
         position: relative;
     }
@@ -2851,19 +2875,13 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         height: 9px;
         margin-left: -4.5px;
     }
-    .wall-column-body {
-        width: calc(100% - 26px);
-        height: calc(318px + var(--strip) * 2);
-    }
-    .wall-column-base {
-        display: none;
-    }
-    .wall-column-caption {
-        align-self: flex-start;
-        margin-top: 10px;
-    }
     .pp--size-column .pp-title {
         font-size: clamp(28px, 11.5cqi, 42px);
+    }
+    /* A flag (On now, Over, Rain likely) takes a line on the slim column's
+       poster; its title gives that line back. */
+    .pp--size-column:has(.pp-flags) .pp-title {
+        font-size: clamp(20px, 9.5cqi, 36px);
     }
     .pp--size-wall {
         width: 272px;

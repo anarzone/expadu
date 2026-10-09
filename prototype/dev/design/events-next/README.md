@@ -5,6 +5,36 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A slim column, and filters clear of Composer, on a phone — 9 October 2026
+
+The owner chose both sketches.
+
+- **Filters.** Composer's button floats over the right edge of the screen.
+  On mid-height phones it used to cover Saved or Sort on the first screen:
+  6 of 15 common sizes, between about 690 and 830px tall (412×732 in
+  Chrome, 390×753 with Safari's bars hidden, 390×797 as a home-screen
+  app). On a phone the filters now end 52px before the edge:
+  - Sort sits beside the search.
+  - Category, Area and the starting point make the second row.
+  - Free and Saved are in the Category menu under "Show only". A dot on
+    Category shows when one is on.
+
+  The controls are moved, not copied, so the order for keyboards and screen
+  readers matches what you see. Tablets and desktop keep Free and Saved in
+  the search row. The button now covers no filter at any of the 15 sizes.
+- **Column.** On a phone the column stands slim, as on a tablet: about 60%
+  of the screen (216–260px), with its finial, dome, gold arches and stone
+  plinth, and the wall showing on both sides. A flagged poster ("On now",
+  "Over", "Rain likely") sets its title a little smaller, so the flag keeps
+  its own line above the tape.
+- The first screen at 390×844 still shows the poster's Add to plan, Search
+  and Sort. The browser test checks:
+  - the column's width;
+  - Sort beside the search, and Free in the Category menu with its dot;
+  - the filters moving back on a tablet;
+  - the filters ending before Composer's button at 360×720 and 390×753;
+  - the flag at dusk.
+
 ## The street on a phone — 9 October 2026
 
 The owner chose from three sketches: A put the sky above the column, B a

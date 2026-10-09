@@ -481,7 +481,11 @@ the day's posters hang on a strip of the same wall under a slim band of
 today's sky with its weather. Another day's posters hang without that sky,
 since it isn't their weather. The plaster runs edge to edge and darkens with
 the street; captions sit on the page under it so they read at every hour.
-Details are in `events-next/README.md`.
+On a phone the column stands slim, about 60% of the screen, with its finial
+and plinth. The filters end before Composer's button: Sort sits beside the
+search, and Free and Saved are in the Category menu under "Show only", with
+a dot on Category when one is on (owner's choice of two sketches, 9 October
+2026). Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky
 "Composer · Minimize" bar is replaced by one compact row at the top of the

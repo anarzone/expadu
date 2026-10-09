@@ -62,6 +62,32 @@ const inside = (box, viewport) =>
                         .map((el) => el.outerHTML.slice(0, 60));
                 }, launcher);
                 assert.deepEqual(covered, [], 'a control sits under Composer');
+                // The column stands slim, about 60% of the screen, with the
+                // wall either side. Sort sits beside the search, Free and
+                // Saved are in the Category menu (a dot on Category when one
+                // is on), and a resize to a tablet puts them back.
+                const slim = await page.evaluate(
+                    () => document.querySelector('.wall-column-body').getBoundingClientRect().width / innerWidth,
+                );
+                assert.ok(slim > 0.55 && slim < 0.68, `the column should be slim on a phone: ${slim}`);
+                assert.equal(await page.locator('.event-search-row [data-event-picker="sort"]').count(), 1);
+                await page.click('[data-event-picker="category"]');
+                await page.locator('#events-category .events-only #free-only').click();
+                assert.equal(await page.locator('#free-only').getAttribute('aria-pressed'), 'true');
+                assert.equal(
+                    await page.locator('.event-category-trigger').evaluate((el) => getComputedStyle(el, '::after').content),
+                    '""',
+                    'Category should show that Free is on',
+                );
+                await page.locator('#free-only').click();
+                await page.click('#events-category [data-close-event-picker]');
+                await page.setViewportSize({ width: 800, height: 1000 });
+                assert.equal(await page.locator('.event-search-row > #free-only + #saved-events').count(), 1);
+                assert.equal(await page.locator('.event-control-scroller [data-event-picker="sort"]').count(), 1);
+                assert.equal(await page.locator('.events-only').isHidden(), true);
+                await page.setViewportSize(viewport);
+            } else {
+                assert.equal(await page.locator('.event-search-row > #free-only + #saved-events').count(), 1);
             }
 
             // No poster's own text is cut off, here or on the past day.
@@ -396,6 +422,19 @@ const inside = (box, viewport) =>
                 at('.wall-scene-ground').bottom <= at('.wall-column-caption').top + 2;
         });
         assert.equal(order, true, 'the cobbles should sit between the column and its caption');
+        // On the slim column a flag keeps its own line: the tape doesn't
+        // cover it and no text is cut off.
+        const flagged = await touch.evaluate(() => {
+            const pp = document.querySelector('#event-featured .pp[data-poster="today-review-culture"]');
+            const at = (el) => el.getBoundingClientRect();
+            const open = pp.querySelector('.pp-front .pp-open');
+            return {
+                flag: at(pp.querySelector('.pp-flag')).bottom - at(pp.querySelector('.pp-top')).bottom,
+                tape: at(pp.querySelector('.pp-flag')).bottom - at(pp.querySelector('.pp-front .pp-tape')).top,
+                clipped: open.scrollHeight > open.clientHeight + 1,
+            };
+        });
+        assert.ok(flagged.flag <= 0.5 && flagged.tape <= 4 && !flagged.clipped, `the column poster's flag is covered: ${JSON.stringify(flagged)}`);
         // The street runs to the screen's edges: the column stands on the
         // wall's plaster, and today's posters hang on a strip of it right
         // under today's sky with the hour's weather. The plaster darkens at
@@ -462,10 +501,15 @@ const inside = (box, viewport) =>
         assert.match(await culture.getAttribute('aria-label'), /already over/);
         assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
-        // On a tablet the column's finial stands on the wall, not in the
-        // heading, and the filters stop short of Composer's button, so it
-        // covers none of them at any height.
-        for (const viewport of [{ width: 768, height: 1024 }, { width: 834, height: 1194 }]) {
+        // On phones and tablets the column's finial stands on the wall, not
+        // in the heading, and the filters stop short of Composer's button,
+        // so it covers none of them at any height.
+        for (const viewport of [
+            { width: 360, height: 720 },
+            { width: 390, height: 753 },
+            { width: 768, height: 1024 },
+            { width: 834, height: 1194 },
+        ]) {
             const tablet = await browser.newPage({ viewport, hasTouch: true });
             await tablet.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
             const fit = await tablet.evaluate(() => {

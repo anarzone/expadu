@@ -906,6 +906,76 @@ body[data-page='events'] {
         .event-control-icon {
         display: none;
     }
+    /* Sort sits beside the search, its menu under it. */
+    .event-gallery-head {
+        position: relative;
+    }
+    .event-search-row > .event-sort-control {
+        flex-shrink: 0;
+        height: var(--discovery-target);
+        border-radius: var(--radius-lg);
+        background: var(--event-control-rail);
+    }
+    .event-search-row > .event-sort-control .event-control-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    /* Free and Saved are in the Category menu, under "Show only"; a dot on
+       Category says one is on. */
+    .events-only {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+    }
+    .events-only p {
+        margin: 0 0 4px;
+        padding: 0 8px;
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .events-only :is(#free-only, #saved-events) {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        width: auto;
+        height: auto;
+        min-height: 44px;
+        padding: 8px;
+        border-radius: var(--radius-md);
+        background: transparent;
+        font-size: var(--text-control);
+    }
+    .events-only #free-only > span:last-child,
+    .events-only #saved-events .event-control-label {
+        position: static;
+        display: inline;
+        width: auto;
+        height: auto;
+        clip-path: none;
+    }
+    .events-only :is(#free-only, #saved-events)[aria-pressed='true'] {
+        background: var(--blue);
+        font-weight: var(--weight-semibold);
+    }
+    .event-category-trigger {
+        position: relative;
+    }
+    .event-controls:has(.events-only [aria-pressed='true'])
+        .event-category-trigger::after {
+        content: '';
+        position: absolute;
+        top: 8px;
+        right: 6px;
+        width: 6px;
+        height: 6px;
+        border-radius: var(--radius-round);
+        background: var(--cyan);
+    }
 }
 @media (max-width: 380px) {
     .event-control-scroller .event-category-trigger,
