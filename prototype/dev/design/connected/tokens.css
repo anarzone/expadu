@@ -52,6 +52,16 @@
     --color-conflict-border: #f2b8a8;
     --color-conflict-text: #a2300e;
 
+    /* ── Colour · event posters (the Events Wall's inks; Today reuses them,
+       owner decision 9 Oct 2026). The hour picks the ink, the category
+       the shape: see poster-art.css and events-next/poster-art.js. ────── */
+    --poster-yellow: #ffe363;
+    --poster-purple: #4b2bb8;
+    --poster-night: #1b1840;
+    --poster-paper: #fff8e6;
+    --poster-green: #1f7a4d;
+    --poster-cream: #fff6d8;
+
     /* ── Colour · section icons and brand ──────────────────────────────── */
     --color-nav-teal: #00768b; /* Today, Travel */
     --color-nav-violet: #7047ac; /* Events, Services */

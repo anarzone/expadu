@@ -156,3 +156,54 @@
     font-size: var(--text-body);
     font-weight: var(--weight-semibold);
 }
+
+/* Event posters set from each listing, as on Events (owner decision,
+   9 Oct 2026): no photo. The art carries the hour's ink and the
+   category's shape (../connected/poster-art.css); the card's words take
+   the poster's own ink, so no dark shade is needed. */
+.today-reference .event-card.is-poster {
+    background: var(--pp-ground);
+}
+.today-reference .event-card.is-poster .event-open::after {
+    display: none;
+}
+.today-reference .event-card.is-poster .event-copy {
+    color: var(--pp-text);
+}
+.today-reference .event-card.is-poster .event-copy small {
+    color: var(--pp-soft);
+}
+.today-reference .event-card.pp--day .event-save:not([aria-pressed='true']) {
+    color: var(--color-text);
+    background: #fffdf866;
+    border-color: #211d1540;
+}
+.today-reference .event-thumb {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: none;
+    color: var(--pp-text);
+    width: 42px;
+    height: 42px;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+}
+.today-reference .compact-event-open > .event-thumb {
+    width: 50px;
+    height: 50px;
+}
+/* The category's icon in the poster's ink, so a small tile still says
+   what it is. */
+.today-reference .event-thumb > svg {
+    position: relative;
+    width: 20px;
+    height: 20px;
+}
+@media (max-width: 700px) {
+    .today-reference .compact-event-open > .event-thumb {
+        width: 42px;
+        height: 46px;
+        border-radius: var(--radius-sm);
+    }
+}

@@ -112,14 +112,14 @@
                         ? 'Today'
                         : shortDate(anchor.date);
                 return `<section class="around-plan" aria-labelledby="around-plan-title"><div class="around-heading"><h3 id="around-plan-title">Also in ${E(anchor.location)}</h3><small>${kept ? 'From your saved ideas' : 'Sample idea'}</small></div>
-                    <p class="around-context">${E(dayLabel)} · ${E(anchor.title)}</p><div class="around-item"><button class="around-open" ${open}>${item.type === 'event' ? `<img src="../events-next/photos/${E(item.illustration || 'garden')}.webp" alt="" width="48" height="48" loading="lazy">` : `<span class="around-symbol">${I('pin')}</span>`}<span><strong>${E(item.title)}</strong><small>${item.type === 'event' ? `${E(item.start)}–${E(item.end || 'end TBC')}` : 'No time set'} · ${E(item.area)}</small></span></button><button class="icon-button" ${plan} aria-label="Plan ${E(item.title)}">${I('plus')}</button></div>${places ? places.html : ''}</section>`;
+                    <p class="around-context">${E(dayLabel)} · ${E(anchor.title)}</p><div class="around-item"><button class="around-open" ${open}>${item.type === 'event' ? `<span class="event-thumb pp--${ExpaduPosterArt.ink(item)}">${ExpaduPosterArt.art(item, 'pp-art--slot')}${I(ExpaduPosterArt.icon(item.category))}</span>` : `<span class="around-symbol">${I('pin')}</span>`}<span><strong>${E(item.title)}</strong><small>${item.type === 'event' ? `${E(item.start)}–${E(item.end || 'end TBC')}` : 'No time set'} · ${E(item.area)}</small></span></button><button class="icon-button" ${plan} aria-label="Plan ${E(item.title)}">${I('plus')}</button></div>${places ? places.html : ''}</section>`;
             }
             function compactEvents(items) {
                 if (!items.length) return '';
                 return `<div class="compact-events" aria-label="More sample events">${items
                     .map(
                         (item) => `<article class="compact-event">
-                    <button class="compact-event-open" data-today-event="${E(item.id)}" aria-label="Explore ${E(item.title)}"><img src="../events-next/photos/${E(item.illustration)}.webp" alt="" width="50" height="50" loading="lazy"><span><strong>${E(item.title)}</strong><small><time datetime="${item.date}T${item.start}">${item.start}</time> · ${E(item.area)}</small></span><span class="compact-category">${E(item.category)}</span></button>
+                    <button class="compact-event-open" data-today-event="${E(item.id)}" aria-label="Explore ${E(item.title)}"><span class="event-thumb pp--${ExpaduPosterArt.ink(item)}">${ExpaduPosterArt.art(item, 'pp-art--slot')}${I(ExpaduPosterArt.icon(item.category))}</span><span><strong>${E(item.title)}</strong><small><time datetime="${item.date}T${item.start}">${item.start}</time> · ${E(item.area)}</small></span><span class="compact-category">${E(item.category)}</span></button>
                     <button class="icon-button compact-save" data-today-save="${E(item.id)}" aria-pressed="${saved(item)}" aria-label="${saved(item) ? 'Unsave' : 'Save'} ${E(item.title)}">${I('bookmark')}</button><button class="icon-button compact-plan" data-today-plan="${E(item.id)}" aria-label="Plan to go to ${E(item.title)}">${I('plus')}</button>
                 </article>`,
                     )

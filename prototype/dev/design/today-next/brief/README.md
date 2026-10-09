@@ -15,6 +15,15 @@ EU Blue Card · 1 of 5 documents ready" read Paperwork's plan
 ready or record the submission in Paperwork. With nothing saved there, the
 page is pixel-identical.
 
+**9 October, event posters (owner decision):** Today's events wear the
+Events posters set from each listing, no photo: the big cards, the small
+event tiles (with the category's icon) and the event sheet's cover use
+`ExpaduPosterArt.art()` from `events-next/poster-art.js`, with the art's
+styles and poster inks shared in `connected/poster-art.css` and
+`connected/tokens.css`. The card's words take the poster's own ink; the
+sheet's Artwork line reads "Poster set by Expadu from the listing, not an
+official poster", and the footer says "Event posters set from each listing".
+
 **9 October, the 13:14 leads (owner decision):** the planned 13:24 leaves
 only 2 min to spare, too tight for an official appointment, so Today leads
 with the 13:14 as Travel and Composer do: "Leave now · 13:14 → 13:42 · at

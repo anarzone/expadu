@@ -227,13 +227,28 @@
         (S.read().savedIdeas || []).some(
             (x) => ExpaduHandoffs.key(x) === ExpaduHandoffs.key(item),
         );
-    const photo = (item, eager = false) =>
-        `<img class="event-poster-image" src="../events-next/photos/${E(item.illustration)}.webp" alt="" width="1536" height="1024" loading="${eager ? 'eager' : 'lazy'}" draggable="false">`;
+    // Events wear the Events posters set from their listing, no photo
+    // (owner decision, 9 Oct 2026): the art in a card's picture slot and
+    // as the event sheet's cover.
+    const photo = (item) => ExpaduPosterArt.art(item, 'pp-art--slot');
     const originalImage = ExpaduEventFestival.image;
     ExpaduEventFestival.image = (item, eager) =>
         item.id.startsWith('today-review-')
-            ? photo(item, eager)
+            ? ExpaduPosterArt.art(item, 'pp-art--cover')
             : originalImage(item, eager);
+    // The sheet names its artwork; say what this one is, as Events does.
+    new MutationObserver(() => {
+        const sheet = document.querySelector('.event-sheet');
+        if (!sheet || sheet.dataset.posterCredit) return;
+        if (!sheet.querySelector('.event-ticket .pp-art')) return;
+        sheet.dataset.posterCredit = 'true';
+        const row = [...sheet.querySelectorAll('.event-source dt')].find(
+            (dt) => dt.textContent === 'Artwork',
+        );
+        if (row)
+            row.nextElementSibling.textContent =
+                'Poster set by Expadu from the listing, not an official poster';
+    }).observe(document.body, { childList: true, subtree: true });
     const swatch = (label, type = '') =>
         `<span class="status-pill ${type}">${E(label)}</span>`;
     const shortDate = (date) =>
@@ -272,7 +287,7 @@
     });
 
     function eventCard(item, hero = false) {
-        return `<article class="event-card" data-event-card="${E(item.id)}">
+        return `<article class="event-card is-poster pp--${ExpaduPosterArt.ink(item)}" data-event-card="${E(item.id)}">
             <button class="event-open" data-today-event="${E(item.id)}" aria-label="Explore ${E(item.title)}">${photo(item)}<span class="event-copy"><strong>${E(item.title)}</strong><small>${item.start}–${item.end}</small><small>${E(item.venue)}</small></span></button>
             ${hero ? '<span class="event-badge">Today’s highlight · Sample</span>' : ''}
             <button class="event-save" data-today-save="${E(item.id)}" aria-pressed="${saved(item)}" aria-label="${saved(item) ? 'Unsave' : 'Save'} ${E(item.title)}" title="Save for later">${I('bookmark')}</button>

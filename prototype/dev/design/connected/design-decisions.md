@@ -17,6 +17,12 @@ owner chose the recommended answers.
   appointment 13:48 · 12 min to spare") and notes "The 13:24 in your plan
   leaves only 2 min to spare", the rule Travel and Composer already follow.
   A delayed tram is still shown as the one you're on, with its alternatives.
+- **Event posters on Today.** Today's events use the Events posters set from
+  each listing (no photo, nothing added), not AI illustrations: the hour's ink
+  and the category's shape from `events-next/poster-art.js`, styled by the
+  shared `poster-art.css` and the poster inks in `tokens.css`. Small tiles add
+  the category's icon. (Composer's event results still show illustrations;
+  align them when Composer is next revised.)
 - **One appointment record.** In the app, the appointment Paperwork records is
   the one Today, Composer and the leave-by time read: moving it in one place
   moves it everywhere. (The previews keep separate sample copies; don't copy
