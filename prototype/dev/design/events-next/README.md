@@ -5,6 +5,17 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## No events count row — 9 October 2026
+
+Owner request: the "2 events · Sample · 1 on the poster column" line above
+the wall is gone, so the wall starts right under the filters. The count is
+still announced to screen readers; the column's caption already says what it
+holds, the posters' credit and the weather chip say the programme is sample
+data, and an empty day has its own message. The line comes back only when a
+starting point is set, to say distances are in a straight line. Reset
+filters (desktop) now ends the filter row, and the phone tilt button sits on
+the pavement's left, level with the column's caption.
+
 ## The street corner fits the screen — 9 October 2026
 
 Owner request: the artwork works at every desktop size. On a desktop the

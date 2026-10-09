@@ -1965,8 +1965,19 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
     color: var(--color-text-soft);
 }
 /* Beside the events count, at the row's end. */
-.event-results-head > .wall-tilt {
-    margin-left: auto;
+/* On the pavement's left, level with the column's caption. */
+.wall-scene > .wall-tilt {
+    position: absolute;
+    z-index: 3;
+    left: 16px;
+    bottom: -12px;
+}
+@media (min-width: 1000px) {
+    .wall-scene > .wall-tilt {
+        left: 0;
+        bottom: auto;
+        top: calc(100% + 60px);
+    }
 }
 .wall-tilt[aria-pressed='true'] {
     background: var(--color-select-bg);
@@ -2958,4 +2969,33 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
     .wall-view--wall .wall-day > .pp {
         scroll-margin-left: var(--street-bleed);
     }
+}
+
+/* ---------- No events count row (owner, 9 Oct 2026) ----------
+   The count is still read out to screen readers; the row shows only
+   when it has a note the posters can't carry (straight-line distances).
+   Reset filters ends the filter row instead. */
+main[data-view='wall'] .event-results-head:not(.has-note),
+main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+.event-control-scroller > #reset-event-filters {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-md);
+    justify-content: center;
+    color: var(--action);
+}
+.event-control-scroller > #reset-event-filters[hidden] {
+    display: none;
 }

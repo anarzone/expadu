@@ -1121,20 +1121,20 @@
     }
 
     /* ---------- Page layout ---------- */
-    // The shared count line: the Wall's column holds the featured events;
-    // the Skyline shows them with the rest of the day.
+    // The shared count line, read out on the Wall (see mount()).
     let noteSource = '',
         noteWritten = null;
     function syncNote(main) {
         const note = main.querySelector('#event-count-note');
         if (!note) return;
         if (note.textContent !== noteWritten) noteSource = note.textContent;
-        const text =
-            view === 'skyline'
-                ? noteSource.replace(/^\d+ featured above( · )?/, '')
-                : noteSource.replace('featured above', 'on the poster column');
+        // The Wall's column says what it holds in its own caption, so the
+        // line keeps only what the posters can't say (straight-line
+        // distances), and shows only then.
+        const text = noteSource.replace(/^\d+ featured above( · )?/, '');
         noteWritten = text;
         if (note.textContent !== text) note.textContent = text;
+        note.closest('.event-results-head')?.classList.toggle('has-note', !!text);
     }
     function mount() {
         const main = document.querySelector('#main');
@@ -1145,14 +1145,11 @@
         heading.classList.add('wall-heading');
         // No page title on screen (owner decision, 9 Oct 2026): the date
         // leads the search row; the posters' credit says how they're set.
-        // Tilting the posters is set beside the events count, which stays
-        // still while they lean.
         heading.innerHTML = `<h1 class="sr-only">On the wall</h1><div class="wall-heading-tools"></div>`;
-        if (canTilt())
-            main.querySelector('#reset-event-filters')?.insertAdjacentHTML(
-                'beforebegin',
-                `<button type="button" class="wall-tilt" data-wall-tilt aria-pressed="false" aria-label="Tilt the posters with your phone" title="Tilt with your phone">${phoneIcon}</button>`,
-            );
+        // No events count row either (owner, 9 Oct 2026): the count is
+        // read out, not shown, and Reset filters ends the filter row.
+        const reset = main.querySelector('#reset-event-filters');
+        if (reset) main.querySelector('.event-control-scroller')?.append(reset);
         const calendar = main.querySelector('.event-calendar');
         heading.querySelector('.wall-heading-tools').prepend(calendar);
         main.querySelector('.event-search-row')?.prepend(heading);
@@ -1173,6 +1170,13 @@
             'beforeend',
             `<span class="wall-scene-ground" aria-hidden="true"><span class="wall-puddle"></span><span class="wall-puddle"></span><span class="wall-puddle"></span></span>${bike}${pigeons}${rain}`,
         );
+        // Tilting the posters starts from the pavement, level with the
+        // column's caption; it stays still while they lean.
+        if (canTilt())
+            scene.insertAdjacentHTML(
+                'beforeend',
+                `<button type="button" class="wall-tilt" data-wall-tilt aria-pressed="false" aria-label="Tilt the posters with your phone" title="Tilt with your phone">${phoneIcon}</button>`,
+            );
         board.append(scene, main.querySelector('#event-list'));
         board.insertAdjacentHTML('beforeend', next());
         gallery.append(board);
