@@ -1,5 +1,4 @@
-/* A station-wide board, drawn as the stop's departure display: every
-   departure is equally selectable, including ties. */
+/* A station-wide board: every departure is equally selectable, including ties. */
 (function (root) {
     const escape = (value) =>
         String(value).replace(
@@ -35,16 +34,6 @@
             )
             .join('');
     }
-    const minutesTo = (entry, clock) =>
-        Math.round(
-            (new Date(`${entry.date}T${entry.time}:00`) -
-                new Date(`${clock.date}T${clock.time}:00`)) /
-                60000,
-        );
-    // The board is the stop's display: its sign and clock, then each
-    // departure with the minutes until it leaves (from the board's clock,
-    // which is the sample's or a capture's, never now). `tag` adds what a
-    // departure means for the traveller, such as their appointment tram.
     function render({
         page,
         stop,
@@ -53,14 +42,13 @@
         selected,
         desktop,
         detail,
-        tag = () => '',
     }) {
         let previousDate = clock.date;
         const rows = page.rows
             .map((entry) => {
                 const dateBreak =
                     entry.date !== previousDate
-                        ? `<div class="display-day">${day(entry.date)}</div>`
+                        ? `<div class="station-day">${day(entry.date)}</div>`
                         : '';
                 previousDate = entry.date;
                 const boarding = root.TimetableModel.stops.find(
@@ -69,15 +57,20 @@
                 const mode = entry.type || boarding.mode;
                 const open = desktop && expanded === entry.id;
                 const from = stop.id === 'all' ? `From ${boarding.name}` : '';
-                const mins = minutesTo(entry, clock);
-                const when =
-                    mins <= 0 ? 'now' : mins < 60 ? `${mins} min` : entry.time;
-                const label = `Line ${entry.line} to ${entry.destination}, ${entry.time}, ${day(entry.date)}${mins > 0 && mins < 60 ? `, in ${mins} minutes` : ''}, from ${boarding.name}${entry.delayed ? ', delay in capture' : ''}`;
-                return `${dateBreak}<div class="display-entry"><button class="display-row${selected === entry.id ? ' is-selected' : ''}" data-departure="${escape(entry.id)}" aria-label="${escape(label)}" aria-expanded="${open}" ${desktop ? `aria-controls="${panelId(entry)}"` : 'aria-haspopup="dialog"'}><span class="display-line">${root.ExpaduIcon(mode === 'bus' ? 'bus' : 'train')}<strong>${escape(entry.line)}</strong></span><span class="display-dest"><strong>${escape(entry.destination)}</strong>${from ? `<small>${escape(from)}</small>` : ''}${tag(entry, mins)}${entry.delayed ? '<small class="display-delay">Delay in capture</small>' : ''}</span><span class="display-when"><strong>${when}</strong>${when !== entry.time ? `<small><time datetime="${entry.date}T${entry.time}">${entry.time}</time></small>` : ''}</span>${root.ExpaduIcon('down')}</button><div class="departure-inline" id="${panelId(entry)}" ${open ? '' : 'hidden'}>${open ? detail(entry, true) : ''}</div></div>`;
+                // Staging derives via stops from a representative static trip,
+                // not this departure. Don't present them as confirmed guidance.
+                const caption = from;
+                const delay = entry.delayed
+                    ? '<span class="station-notice">Delay in capture</span>'
+                    : '';
+                const label = `Line ${entry.line} to ${entry.destination}, ${entry.time}, ${day(entry.date)}, from ${boarding.name}${entry.delayed ? ', delay in capture' : ''}`;
+                return `${dateBreak}<div class="station-entry"><button class="station-row${selected === entry.id ? ' is-selected' : ''}" data-departure="${escape(entry.id)}" aria-label="${escape(label)}" aria-expanded="${open}" ${desktop ? `aria-controls="${panelId(entry)}"` : 'aria-haspopup="dialog"'}><span class="station-service ${mode === 'bus' ? 'bus' : 'tram'}">${root.ExpaduIcon(mode === 'bus' ? 'bus' : 'train')}<strong>${escape(entry.line)}</strong></span><span class="station-destination"><strong>${escape(entry.destination)}</strong>${caption ? `<small>${escape(caption)}</small>` : ''}${delay}</span><span class="station-time"><time datetime="${entry.date}T${entry.time}">${entry.time}</time></span>${root.ExpaduIcon('down')}</button><div class="departure-inline" id="${panelId(entry)}" ${open ? '' : 'hidden'}>${open ? detail(entry, true) : ''}</div></div>`;
             })
             .join('');
+        // The board says once where its times come from (the header says
+        // "Saved estimates" or "Sample day"), not under every row.
         const sample = stop.sampleDay && clock.date === stop.sampleDay.date;
-        return `<section class="stop-display" aria-labelledby="station-board-title"><header class="display-head"><span class="display-sign" aria-hidden="true">H</span><div><h2 id="station-board-title">${escape(stop.name.replace(/^Köln\s+/, ''))}<span class="sr-only"> departures</span></h2><small>${sample ? 'Sample clock · scheduled times' : `Saved estimates · ${day(clock.date)}`}</small></div><time class="display-clock" datetime="${clock.date}T${clock.time}">${escape(clock.time)}</time></header><div class="display-rows">${rows}</div>${page.total > page.rows.length ? `<button class="quiet-button timetable-more" data-action="more-departures">Show more departures <span>${page.total - page.rows.length}</span></button>` : ''}<p class="display-note">${root.ExpaduIcon('info')}<span>${sample ? 'Scheduled sample times' : 'Captured times'}. Minutes count from the ${sample ? 'sample' : 'capture’s'} clock, not now. Check the platform and current service before travelling.</span></p></section>`;
+        return `<section class="station-board" aria-labelledby="station-board-title"><div class="station-list-heading"><h2 id="station-board-title">Departures <span>${page.total}</span></h2></div><div class="station-column-labels" aria-hidden="true"><span>Line</span><span>Towards</span><span>Departs</span><span></span></div>${rows}${page.total > page.rows.length ? `<button class="quiet-button timetable-more" data-action="more-departures">Show more departures <span>${page.total - page.rows.length}</span></button>` : ''}<p class="station-endnote">${root.ExpaduIcon('info')}${sample ? 'Scheduled sample times' : 'Captured times'}. Check the platform and current service before travelling.</p></section>`;
     }
     root.StationBoard = { directionChoices: () => '', lineChoices, render };
 })(globalThis);

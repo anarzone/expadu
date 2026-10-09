@@ -219,13 +219,6 @@ globalThis.JourneyModel = (() => {
                   activityId: plan.id,
                   alightStop: planned.alightStop || planned.to,
                   boardingStop: capture.boardingStop,
-                  // Where the sample day puts you: a short walk from the
-                  // trip's first stop. "Your location" in the planner.
-                  here: {
-                      name: 'Your location',
-                      near: capture.boardingStop.name,
-                      walk: planned.accessWalkMinutes ?? 0,
-                  },
               }
             : null,
     };
@@ -303,17 +296,11 @@ globalThis.JourneyModel = (() => {
             .trim()
             .toLocaleLowerCase()
             .replace(/^köln\s+/, '');
-    // "Your location" starts where the sample day puts you.
-    const origin = (from) =>
-        trips.day && normal(from) === normal(trips.day.here.name)
-            ? trips.day.from
-            : from;
     const matches = (from, to) =>
-        normal(origin(from)) === 'neumarkt' && normal(to) === 'museum ludwig';
+        normal(from) === 'neumarkt' && normal(to) === 'museum ludwig';
     // Which sample a typed request asks for, if any.
-    function tripFor(start, to) {
-        if (matches(start, to)) return 'capture';
-        const from = origin(start);
+    function tripFor(from, to) {
+        if (matches(from, to)) return 'capture';
         const day = trips.day;
         return day &&
             normal(from) === normal(day.from) &&

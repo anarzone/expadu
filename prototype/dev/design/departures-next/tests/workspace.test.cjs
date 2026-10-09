@@ -1049,137 +1049,20 @@ test('ArrowUp from the filter close button reaches the last choice', () => {
     assert.equal(w.run('document.activeElement'), choices[2]);
 });
 
-test('on the sample day, Your day leads the planner with the appointment ticket and the evening ones', () => {
+test('on the sample day the planner leads with the appointment trip and Today’s timing rule', () => {
     const w = workspace('', false, false, false, true);
-    w.run('renderYourDay();');
+    w.run('renderNextTrip();');
     const card = w.element('#next-trip');
     assert.equal(card.hidden, false);
-    const html = card.innerHTML;
-    assert.match(html, /<h2 id="next-trip-title">Your day<\/h2>/);
-    assert.match(html, /Leave now/);
-    assert.match(html, /Walk 4 min to Neumarkt/);
-    assert.match(html, /Tram 4 at 13:14/);
-    assert.match(html, /Get off at Wiener Platz, 13:42/);
-    assert.match(html, /there by 13:48/);
-    assert.match(html, /12 min to spare before 14:00/);
+    assert.match(card.innerHTML, /Leave now/);
+    assert.match(card.innerHTML, /Departs<\/small><time>13:14/);
+    assert.match(card.innerHTML, /there by 13:48 · 12 min to spare/);
     assert.match(
-        html,
-        /Your plan has the 13:24, which leaves only 2 min to spare/,
+        card.innerHTML,
+        /The 13:24 in your plan leaves only 2 min to spare/,
     );
-    // The evening's trips aren't in the sample: no times are made up.
-    assert.match(
-        html,
-        /18:30<\/time>[\s\S]*Street culture night[\s\S]*Times for this trip aren’t in the sample yet/,
-    );
-    assert.match(html, /20:00<\/time>[\s\S]*Cinema under the stars/);
-    assert.doesNotMatch(html, /Rain likely/);
-    assert.match(html, /data-action="example">Explore a captured example/);
-    // With the sample forecast, rain is named, and labelled a sample.
-    w.run(
-        'window.ExpaduSampleWeather = { days: { "2026-09-30": Array.from({ length: 24 }, (_, hour) => ["rain", 15, hour >= 18 ? 70 : 0]) } }; renderYourDay();',
-    );
-    assert.match(card.innerHTML, /Rain likely at 18:30 · sample forecast/);
     assert.equal(w.run('state.stop'), 'neumarkt');
     assert.equal(w.run('state.date'), '2026-09-30');
-});
-
-test('a later ticket fills in the way there, arriving by its start', () => {
-    const w = workspace('', false, false, false, true);
-    w.run('planEvent("today-review-culture");');
-    assert.equal(w.element('#from').value, 'Your location');
-    assert.equal(w.element('#to').value, 'Rheinauhafen');
-    assert.equal(w.run('state.schedule'), 'arrive');
-    assert.equal(w.run('state.time'), '18:30');
-});
-
-test('Your location plans from where the sample day puts you', () => {
-    const w = workspace('', false, false, false, true);
-    assert.equal(w.run('J.tripFor("Your location", "Mülheim")'), 'day');
-    assert.equal(
-        w.run('J.tripFor("Your location", "Museum Ludwig")'),
-        'capture',
-    );
-    assert.equal(w.run('J.tripFor("Ehrenfeld", "Mülheim")'), null);
-    w.element('#from').value = 'Your location';
-    w.element('#to').value = 'Mülheim';
-    w.run('searchJourney();');
-    assert.match(w.element('#results').innerHTML, /2 sample routes/);
-});
-
-test('until you type, the suggestions offer your location, Home, Work and recent trips', () => {
-    const w = workspace('', false, false, false, true);
-    let saved = '[]';
-    w.run('localStorage.getItem = () => globalThis.__recent;');
-    w.run(
-        'localStorage.setItem = (key, value) => { globalThis.__recent = value; };',
-    );
-    w.run('globalThis.__recent = "[]";');
-    w.element('#from').value = '';
-    w.run('suggestions(from);');
-    let html = w.element('#suggestions').innerHTML;
-    assert.match(
-        html,
-        /data-place="Your location"[\s\S]*Sample: 4 min walk from Köln Neumarkt/,
-    );
-    assert.match(html, /data-place-setup="Home"[\s\S]*data-place-setup="Work"/);
-    assert.doesNotMatch(html, /data-recent-to/);
-    // A search is remembered, newest first, on this device only.
-    w.element('#from').value = 'Your location';
-    w.element('#to').value = 'Mülheim';
-    w.run('searchJourney();');
-    saved = w.run('globalThis.__recent');
-    assert.deepEqual(JSON.parse(saved), [
-        { from: 'Your location', to: 'Mülheim' },
-    ]);
-    w.element('#from').value = '';
-    w.run('suggestions(from);');
-    html = w.element('#suggestions').innerHTML;
-    assert.match(
-        html,
-        /data-recent-from="Your location" data-recent-to="Mülheim"/,
-    );
-    // Typing narrows the list to what matches.
-    w.element('#from').value = 'Merk';
-    w.run('suggestions(from);');
-    html = w.element('#suggestions').innerHTML;
-    assert.doesNotMatch(html, /data-place-setup|data-recent-to|Your location/);
-});
-
-test('the departure display counts down from its clock and marks your trams', () => {
-    const w = workspace('', false, true, false, true);
-    assert.equal(
-        w.run('boardTag({ date: "2026-09-30", line: "4", time: "13:14" }, 4)'),
-        '<small class="display-tag">For your 14:00 · leave now</small>',
-    );
-    assert.equal(
-        w.run('boardTag({ date: "2026-09-30", line: "4", time: "13:24" }, 14)'),
-        '<small class="display-tag is-tight">In your plan · 2 min to spare</small>',
-    );
-    assert.equal(
-        w.run('boardTag({ date: "2026-09-30", line: "9", time: "13:14" }, 4)'),
-        '',
-    );
-    const html = w.run(`StationBoard.render({
-        page: {
-            rows: [
-                { id: 'a', stopId: T.stops[0].id, line: '4', destination: 'Schlebusch', date: '2026-09-30', time: '13:14' },
-                { id: 'b', stopId: T.stops[0].id, line: '4', destination: 'Schlebusch', date: '2026-09-30', time: '14:30' },
-            ],
-            total: 2,
-        },
-        stop: { id: T.stops[0].id, name: 'Köln Neumarkt', sampleDay: { date: '2026-09-30' } },
-        clock: { date: '2026-09-30', time: '13:10' },
-        desktop: false,
-        detail: () => '',
-        tag: boardTag,
-    })`);
-    assert.match(html, /class="display-sign" aria-hidden="true">H</);
-    assert.match(html, /Neumarkt<span class="sr-only"> departures/);
-    assert.match(html, /<strong>4 min<\/strong><small><time[^>]*>13:14/);
-    assert.match(html, /For your 14:00 · leave now/);
-    // An hour or more away shows its time instead of minutes.
-    assert.match(html, /<strong>14:30<\/strong><\/span>/);
-    assert.match(html, /Minutes count from the sample clock, not now/);
 });
 
 test('opening the next trip compares both trams against the 14:00 start', () => {

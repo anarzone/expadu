@@ -129,7 +129,10 @@ body.travel-palette[data-timetable-design='station'] .timetable-departures {
     min-width: 0;
 }
 body.travel-palette[data-timetable-design='station'] #departure-cards {
-    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
 }
 .station-workspace {
     display: grid;
@@ -144,6 +147,54 @@ body.travel-palette[data-timetable-design='station'] #departure-cards {
     min-width: 0;
     position: sticky;
     top: 92px;
+}
+.station-list-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px 12px;
+}
+.station-list-heading h2 {
+    font-size: var(--text-section);
+    margin: 0;
+    letter-spacing: -0.3px;
+}
+.station-list-heading h2 span {
+    margin-left: 7px;
+    color: var(--muted);
+    font-size: var(--text-small);
+    font-weight: var(--weight-regular);
+}
+.station-list-heading > span {
+    font-size: var(--text-micro);
+    color: var(--muted);
+}
+.station-column-labels,
+.station-row {
+    display: grid;
+    grid-template-columns: 66px minmax(0, 1fr) 85px 16px;
+    gap: 16px;
+    align-items: center;
+}
+.station-column-labels {
+    padding: 0 20px 10px;
+    color: var(--muted);
+    font-size: var(--text-micro);
+    border-bottom: 1px solid var(--line);
+}
+.station-column-labels > :nth-child(3) {
+    text-align: right;
+}
+.station-entry + .station-entry {
+    border-top: 1px solid var(--line);
+}
+.station-row {
+    width: 100%;
+    min-height: 66px;
+    padding: 13px 20px;
+    text-align: left;
+    transition: background-color 140ms ease;
 }
 .station-service {
     display: inline-flex;
@@ -170,220 +221,120 @@ body.travel-palette[data-timetable-design='station'] #departure-cards {
     font-size: var(--text-body);
     font-weight: var(--weight-semibold);
 }
-/* The board is the stop's departure display: a dark panel with the stop
-   sign and the clock, each departure with the minutes until it leaves.
-   It is an object on the page, like the poster column on Events. */
-.stop-display {
-    --display-bg: #1b2023;
-    --display-ink: #ffbf3c;
-    --display-soft: #c9a35a;
-    --display-light: #f5efe0;
-    overflow: hidden;
-    border-radius: var(--radius-lg);
-    background:
-        radial-gradient(circle, #ffffff08 1px, transparent 1.5px) 0 0 / 4px 4px,
-        var(--display-bg);
-    color: var(--display-ink);
-    box-shadow:
-        inset 0 0 0 6px #2a3135,
-        0 10px 24px -14px #211d1599;
-}
-.display-head {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 18px 14px;
-    border-bottom: 1px solid #ffffff14;
-}
-/* The stop sign: a green H on a yellow disc. */
-.display-sign {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border: 2px solid #127a3c;
-    border-radius: 50%;
-    background: #f2c21b;
-    color: #127a3c;
-    font-size: 19px;
-    font-weight: 800;
-    line-height: 1;
-}
-.display-head h2 {
-    margin: 0;
-    color: var(--display-light);
-    font-size: var(--text-section);
-    font-weight: var(--weight-semibold);
-}
-.display-head small {
-    display: block;
-    color: var(--display-soft);
-    font-size: var(--text-caption);
-}
-.display-clock {
-    font-size: var(--text-title-sm);
-    font-weight: var(--weight-semibold);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.04em;
-}
-.display-entry + .display-entry {
-    border-top: 1px dashed #ffffff14;
-}
-.display-row {
-    display: grid;
-    grid-template-columns: 58px minmax(0, 1fr) auto 16px;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    min-height: 64px;
-    padding: 12px 18px;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    color: var(--display-ink);
-    text-align: left;
-    transition: background-color 140ms ease;
-}
-.display-row[aria-expanded='true'],
-.display-row.is-selected,
-.display-row:active {
-    background: #ffbf3c14;
-}
-.display-row.is-selected {
-    box-shadow: inset 3px 0 var(--display-ink);
-}
-body.travel-palette .display-row:focus-visible {
-    outline: 2px solid var(--display-ink);
-    outline-offset: -4px;
-}
-.display-line {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    min-height: 30px;
-    padding: 0 8px;
-    border: 1.5px solid var(--display-ink);
-    border-radius: 6px;
-}
-.display-line svg {
-    width: 14px;
-    height: 14px;
-    flex: none;
-}
-.display-line strong {
-    font-variant-numeric: tabular-nums;
-}
-.display-dest {
-    display: grid;
-    gap: 4px;
+.station-destination {
     min-width: 0;
 }
-.display-dest strong {
-    overflow: hidden;
-    font-size: var(--text-control);
+.station-destination > strong {
+    display: block;
+    font-size: var(--text-body);
     font-weight: var(--weight-semibold);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
 }
-.display-dest small {
-    color: var(--display-soft);
+.station-destination > small {
+    display: block;
     font-size: var(--text-caption);
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.35;
 }
-/* What a departure means for you: your appointment's tram, the plan's. */
-.display-dest .display-tag {
-    justify-self: start;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: #def5f8;
-    color: #00566a;
-    font-weight: var(--weight-semibold);
+.station-notice {
+    display: block;
+    font-size: var(--text-micro);
+    color: #87500d;
+    margin-top: 3px;
 }
-.display-dest .display-tag.is-tight {
-    background: #fff1d6;
-    color: #7a4100;
+.station-time {
+    text-align: right;
 }
-.display-dest .display-delay {
-    color: #ff9e80;
-}
-.display-when {
-    display: grid;
-    justify-items: end;
-}
-.display-when strong {
+.station-time time {
+    display: block;
+    /* Data is never heavier than its section title. */
     font-size: var(--text-section);
     font-weight: var(--weight-semibold);
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    letter-spacing: -0.5px;
 }
-.display-when small {
-    color: var(--display-soft);
-    font-size: var(--text-caption);
-    font-variant-numeric: tabular-nums;
+.station-time small {
+    display: block;
+    color: var(--muted);
+    font-size: var(--text-micro);
+    margin-top: 2px;
 }
-.display-row > svg {
-    width: 16px;
-    height: 16px;
-    color: var(--display-soft);
+.station-row > svg {
+    width: 14px;
+    height: 14px;
+    color: var(--muted);
     transition: transform 160ms ease;
 }
-.display-row[aria-expanded='true'] > svg {
+.station-row[aria-expanded='true'] > svg {
     transform: rotate(180deg);
 }
-.display-day {
-    padding: 10px 18px;
-    border-top: 1px solid #ffffff14;
-    color: var(--display-light);
-    font-size: var(--text-caption);
+.station-row[aria-expanded='true'],
+.station-row:active {
+    background: var(--blue);
 }
-.display-note {
+body.travel-palette[data-timetable-design='station']
+    .station-entry
+    .departure-inline {
+    padding: 4px 20px 18px 102px;
+    background: var(--surface);
+}
+.station-day {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: var(--ink-soft);
+    font-size: var(--text-caption);
+    background: var(--paper);
+}
+.station-endnote {
     display: flex;
     align-items: flex-start;
     gap: 7px;
+    padding: 14px 20px;
     margin: 0;
-    padding: 12px 18px 16px;
-    border-top: 1px solid #ffffff14;
-    color: var(--display-soft);
+    border-top: 1px solid var(--line);
+    color: var(--muted);
     font-size: var(--text-micro);
     line-height: 1.5;
 }
-.display-note svg {
+.station-endnote svg {
     flex: none;
     width: 15px;
     height: 15px;
 }
-body.travel-palette[data-timetable-design='station']
-    .stop-display
-    .timetable-more {
+body.travel-palette[data-timetable-design='station'] .timetable-more {
     width: 100%;
     justify-content: center;
-    min-height: 48px;
     padding: 12px;
-    border-top: 1px solid #ffffff14;
+    min-height: 48px;
+    border-top: 1px solid var(--line);
     border-radius: 0;
-    background: transparent;
-    color: var(--display-ink);
+    color: var(--teal);
 }
-/* An opened departure on desktop reads on paper, below its row. */
-body.travel-palette[data-timetable-design='station']
-    .display-entry
-    .departure-inline {
-    padding: 4px 20px 18px 88px;
-    background: var(--surface);
-    color: var(--ink);
-}
-@media (hover: hover) {
-    .display-row:hover {
-        background: #ffffff0a;
-    }
+.station-workspace.has-map .station-row,
+.station-workspace.has-map .station-column-labels {
+    gap: 12px;
+    grid-template-columns: 60px minmax(0, 1fr) 70px 14px;
 }
 body.travel-palette[data-timetable-design='station']
-    :is(.station-views button, .station-lines button):focus-visible {
+    :is(
+        .station-row,
+        .station-views button,
+        .station-lines button
+    ):focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: -3px;
 }
 @media (hover: hover) {
+    .station-row:hover {
+        background: var(--paper);
+    }
+    .station-row[aria-expanded='true']:hover {
+        background: var(--blue);
+    }
     .station-lines button:not([aria-pressed='true']):hover {
         background: var(--surface);
     }
@@ -432,13 +383,18 @@ body.travel-palette[data-timetable-design='station']
         grid-row: 1;
         --station-map-height: 230px;
     }
-    #departure-cards .display-row {
-        grid-template-columns: 52px minmax(0, 1fr) auto 14px;
-        gap: 10px;
-        padding: 12px 14px;
+    .station-list-heading {
+        padding: 14px 12px 10px;
     }
-    .display-head {
-        padding: 14px;
+    .station-column-labels {
+        display: none;
+    }
+    .station-row,
+    .station-workspace.has-map .station-row {
+        grid-template-columns: 51px minmax(0, 1fr) 59px 12px;
+        gap: 9px;
+        padding: 12px;
+        min-height: 66px;
     }
     .station-service {
         padding: 6px 5px;
@@ -451,10 +407,22 @@ body.travel-palette[data-timetable-design='station']
     .station-service strong {
         font-size: var(--text-control);
     }
+    .station-destination > strong {
+        font-size: var(--text-control);
+    }
+    .station-destination > small {
+        font-size: var(--text-micro);
+    }
+    .station-time time {
+        font-size: var(--text-section);
+    }
     body.travel-palette[data-timetable-design='station']
-        .display-entry
+        .station-entry
         .departure-inline {
         padding: 4px 12px 16px;
+    }
+    .station-endnote {
+        padding: 12px;
     }
     .station-lines {
         scrollbar-width: none;
@@ -467,10 +435,16 @@ body.travel-palette[data-timetable-design='station']
     .station-views {
         margin-left: 0;
     }
+    .station-row,
+    .station-workspace.has-map .station-row {
+        gap: 7px;
+        padding: 11px 9px;
+        grid-template-columns: 48px minmax(0, 1fr) 55px 10px;
+    }
 }
 @media (prefers-reduced-motion: reduce) {
-    .display-row,
-    .display-row > svg,
+    .station-row,
+    .station-row > svg,
     .station-lines button {
         transition: none;
     }

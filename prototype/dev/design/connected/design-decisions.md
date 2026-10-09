@@ -125,23 +125,6 @@ states. Keep photographic overlays and meaningful status colours distinct.
 The opt-in palette now covers these roles; contrast measurements and desktop/
 phone checks are recorded in `docs/reviews/2026-10-03-palette/`.
 
-**Travel: Your day, your location and a stop display — owner request,
-9 October 2026:** after an end-user review, the owner chose three sketches
-and asked for all of them.
-- On the sample day the planner leads with Your day: the day's trips as
-  tickets, the appointment with how to get there and Start, and the evening
-  events without made-up times but with the labelled sample forecast. It
-  replaces the captured night example, which stays one link away.
-- From starts at "Your location" (the sample day's start, near Köln
-  Neumarkt), and its suggestions offer your location, Home, Work and your own
-  recent trips.
-- The timetable is the stop's departure display: stop sign, clock, minutes to
-  each departure from the sample or capture clock, and the traveller's trams
-  marked. It is an object on the page, like the Events poster column, not a
-  separate palette. On desktop it stands beside the stop map.
-
-Details are in `departures-next/README.md`.
-
 **Travel warm paper & Lagoon — owner review, 4 October (adopted for every page on 6 October):** following a review of
 the local app's actual colours in `resources/css/app.css`, apply its cream
 neutrals to Travel only: canvas `#faf6ee`, header and raised surfaces `#fffdf8`,

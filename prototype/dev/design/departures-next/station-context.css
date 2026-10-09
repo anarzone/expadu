@@ -27,6 +27,9 @@
     width: 15px;
     height: 15px;
 }
+.station-row.is-selected {
+    box-shadow: inset 3px 0 var(--teal);
+}
 .service-preference {
     display: flex;
     align-items: flex-start;
