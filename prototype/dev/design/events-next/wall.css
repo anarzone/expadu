@@ -1020,6 +1020,21 @@ main[data-view='skyline'] .wall-board > .wall-sky {
     }
 }
 @media (min-width: 1000px) {
+    /* The corner and the posters beside it scale to the screen's height
+       (fitWall in wall.js sets --wall-fit). */
+    .wall-scene,
+    .wall-view--wall .wall-day > .pp {
+        zoom: var(--wall-fit, 1);
+    }
+    /* The caption is text, not art: it keeps its size. */
+    .wall-scene .wall-column-caption {
+        font-size: calc(var(--text-caption) / var(--wall-fit, 1));
+    }
+    /* The sky above shrinks with them, so the picture keeps its
+       proportions. */
+    .wall-board > .wall-sky {
+        height: calc(230px * var(--wall-fit, 1));
+    }
     .wall-scene {
         float: left;
         width: 560px;

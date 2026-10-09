@@ -5,6 +5,23 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The street corner fits the screen — 9 October 2026
+
+Owner request: the artwork works at every desktop size. On a desktop the
+corner (column, lantern, bench, bike, cobbles), the posters on the wall and
+the sky above scale together to the screen's height (`fitWall` in `wall.js`
+sets `--wall-fit`; CSS `zoom` in `wall.css`), so the whole picture, from the
+wall's top edge to the caption under the column, fits under the header when
+you scroll to it: 0.68 at 1280 × 720, 0.74 on a 14-inch laptop (1512 × 765),
+0.89 at 1440 × 900, full size from about 1000px tall. It never grows past its
+drawn size or shrinks below 0.62; the column's caption keeps its text size.
+The column still lengthens to meet the posters beside it (measured with
+their scale) and turns by drag at any scale. Phones are unchanged.
+
+No page title on screen (owner decision, the same day): the date chip leads
+the search row; on a phone Sort joins the starting point's row and tilting
+sits beside the events count.
+
 ## The Wall only — 9 October 2026
 
 Owner reminder: the Events page is the Wall, and the Skyline stays only in

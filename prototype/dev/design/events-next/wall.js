@@ -282,7 +282,10 @@
                     body.setPointerCapture(event.pointerId);
                 }
                 event.preventDefault();
-                pos = drag.pos - dx / ((body.clientWidth / 2) * step);
+                // On-screen width: the corner may be scaled to the screen.
+                pos =
+                    drag.pos -
+                    dx / ((body.getBoundingClientRect().width / 2) * step);
                 drag.samples.push([performance.now(), pos]);
                 if (drag.samples.length > 6) drag.samples.shift();
                 paint();
@@ -991,31 +994,68 @@
     // The corner ends where the row of posters beside it ends, so no bare
     // wall is left under it: the column grows taller, its lower part
     // covered in older posters, as a real Litfaßsäule is top to bottom.
+    // On a desktop the corner (the column and its street) and the posters
+    // beside it scale to the screen's height, so the column shows from its
+    // dome to its caption under the header on a laptop as on a large
+    // screen; never larger than drawn, never so small the type suffers.
+    function fitWall(scene) {
+        const board = scene.closest('.wall-board');
+        board?.style.removeProperty('--wall-fit');
+        if (!board || getComputedStyle(scene).float === 'none') return;
+        const header =
+            document.querySelector('.app-header')?.offsetHeight || 0;
+        const room = window.innerHeight - header - 16;
+        // The whole picture: from the wall's top edge, with the sky, down
+        // to the caption under the column's pavement.
+        // Measured after each step, since the board's own padding and the
+        // sky don't scale.
+        const caption = scene.querySelector('.wall-column-caption') || scene;
+        const span = () =>
+            caption.getBoundingClientRect().bottom -
+            board.getBoundingClientRect().top;
+        let fit = 1;
+        for (let step = 0; step < 3; step++) {
+            const now = span();
+            if (now <= room + 1 || fit <= 0.62) break;
+            fit = Math.max(0.62, fit * (room / now));
+            board.style.setProperty('--wall-fit', fit.toFixed(3));
+        }
+    }
     function fitCorner() {
         const scene = document.querySelector('.wall-scene');
         if (!scene) return;
         scene.style.removeProperty('--extra');
-        if (!scene.offsetParent || getComputedStyle(scene).float === 'none') return;
+        if (!scene.offsetParent) return;
+        fitWall(scene);
+        if (getComputedStyle(scene).float === 'none') return;
+        // Measured on screen; the column's length is set before scaling.
+        const zoom = parseFloat(getComputedStyle(scene).zoom) || 1;
         const box = scene.getBoundingClientRect();
         const posters = [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')];
         // The first poster that starts below the corner begins the next row.
         const next = posters.find((pp) => pp.getBoundingClientRect().left < box.right - 2);
         const beside = posters.filter((pp) => pp.getBoundingClientRect().left >= box.right - 2);
         if (!beside.length) return;
-        const top = (el) => el.offsetParent.getBoundingClientRect().top + el.offsetTop;
+        // Offsets ignore the poster's tilt; each poster's own scale (the
+        // screen fit) still applies to them.
+        const scale = (el) => parseFloat(getComputedStyle(el).zoom) || 1;
+        const top = (el) =>
+            el.offsetParent.getBoundingClientRect().top + el.offsetTop * scale(el);
         const rowEnd = next
             ? top(next) - 2
-            : Math.max(...beside.map((pp) => top(pp) + pp.offsetHeight));
+            : Math.max(...beside.map((pp) => top(pp) + pp.offsetHeight * scale(pp)));
         // The corner's bottom margin keeps lines away too.
-        const margin = parseFloat(getComputedStyle(scene).marginBottom) || 0;
-        let extra = Math.floor(rowEnd - box.bottom - margin);
-        if (extra <= 0 || extra > 600) return;
+        const margin =
+            (parseFloat(getComputedStyle(scene).marginBottom) || 0) * zoom;
+        let extra = Math.floor((rowEnd - box.bottom - margin) / zoom);
+        // Measured on screen: scaled posters fit more rows beside it.
+        if (extra <= 0 || extra * zoom > 900) return;
         // Never let the corner reach into the next row: pull back if it does.
         for (let tries = 0; tries < 3 && extra > 0; tries++) {
             scene.style.setProperty('--extra', `${extra}px`);
             const over = scene.getBoundingClientRect().bottom + margin - rowEnd;
             if (over <= 0) return;
-            extra -= Math.ceil(over) + 1;
+            extra -= Math.ceil(over / zoom) + 1;
         }
         if (extra <= 0) scene.style.removeProperty('--extra');
     }

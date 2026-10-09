@@ -1005,6 +1005,11 @@ body[data-page='events'] {
     }
 }
 @media (max-width: 380px) {
+    /* Sort shares this row with the starting point (the date leads the
+       search row), so the gaps tighten to keep Area clear of Composer. */
+    .event-control-scroller {
+        gap: 6px;
+    }
     .event-control-scroller .event-category-trigger,
     .event-control-scroller [data-event-picker='area'] {
         padding-inline: 8px 6px;
