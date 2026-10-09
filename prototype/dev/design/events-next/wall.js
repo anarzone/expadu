@@ -1,9 +1,10 @@
 /* Events as a poster wall (owner's choice, 8 October): every event is a
-   poster set from its listing. A second view, Skyline, lights the day's
-   events above Cologne, big and on its own, and keeps the photo cards,
-   with a poster wherever there's no usable picture. Filters, dates, details, saving and planning
-   are the Events page's own (app.js); this file only swaps
-   how events are drawn. Loaded after festival.js and before app.js. */
+   poster set from its listing. The Wall is the Events page; the page
+   offers no other view. The Skyline, which lights the day's events above
+   Cologne and keeps the photo cards, stays in the preview as a reference
+   only, at ?view=skyline. Filters, dates, details, saving and planning are
+   the Events page's own (app.js); this file only swaps how events are
+   drawn. Loaded after festival.js and before app.js. */
 (function () {
     const U = ExpaduUI,
         E = U.esc,
@@ -14,13 +15,10 @@
     const base = window.ExpaduEventFestival;
     const day = window.ExpaduSampleDay || {};
     const today = day.date || '';
-    const views = ['wall', 'skyline'];
-    let view = new URLSearchParams(location.search).get('view');
-    try {
-        if (!views.includes(view))
-            view = sessionStorage.getItem('expadu-event-view');
-    } catch {}
-    if (!views.includes(view)) view = 'wall';
+    const view =
+        new URLSearchParams(location.search).get('view') === 'skyline'
+            ? 'skyline'
+            : 'wall';
 
     // Pictures Events may show: the labelled AI illustrations, or approved
     // provider media. The sample film night's illustration shows mountains
@@ -1082,27 +1080,7 @@
         });
     }
 
-    /* ---------- Page layout and the view switch ---------- */
-    function setView(next, main) {
-        view = next;
-        main.dataset.view = view;
-        main.querySelectorAll('[data-wall-view]').forEach((b) =>
-            b.setAttribute('aria-pressed', String(b.dataset.wallView === view)),
-        );
-        try {
-            sessionStorage.setItem('expadu-event-view', view);
-        } catch {}
-        const url = new URL(location.href);
-        if (view === 'wall') url.searchParams.delete('view');
-        else url.searchParams.set('view', view);
-        history.replaceState(history.state, '', url);
-        syncNote(main);
-        requestAnimationFrame(() => {
-            layoutSky();
-            panSky();
-            fitCorner();
-        });
-    }
+    /* ---------- Page layout ---------- */
     // The shared count line: the Wall's column holds the featured events;
     // the Skyline shows them with the rest of the day.
     let noteSource = '',
@@ -1125,15 +1103,7 @@
         main.dataset.view = view;
         const heading = main.querySelector('.events-page-heading');
         heading.classList.add('wall-heading');
-        heading.innerHTML = `<div class="wall-heading-text"><h1>On the wall</h1><p>Every poster is set from its listing. Nothing added.</p></div><div class="wall-heading-tools"><div class="wall-views" role="group" aria-label="Show events as">${[
-            ['wall', 'Wall', 'grid'],
-            ['skyline', 'Skyline', 'pin'],
-        ]
-            .map(
-                ([id, label, icon]) =>
-                    `<button type="button" data-wall-view="${id}" aria-pressed="${id === view}">${I(icon)}<span>${label}</span></button>`,
-            )
-            .join('')}</div>${canTilt() ? `<button type="button" class="wall-tilt" data-wall-tilt aria-pressed="false" aria-label="Tilt the posters with your phone" title="Tilt with your phone">${phoneIcon}</button>` : ''}</div>`;
+        heading.innerHTML = `<div class="wall-heading-text"><h1>On the wall</h1><p>Every poster is set from its listing. Nothing added.</p></div><div class="wall-heading-tools">${canTilt() ? `<button type="button" class="wall-tilt" data-wall-tilt aria-pressed="false" aria-label="Tilt the posters with your phone" title="Tilt with your phone">${phoneIcon}</button>` : ''}</div>`;
         const calendar = main.querySelector('.event-calendar');
         heading.querySelector('.wall-heading-tools').prepend(calendar);
         main.querySelector('.event-browse-heading')?.remove();
@@ -1182,8 +1152,6 @@
                 toggleTilt();
                 return;
             }
-            const viewButton = event.target.closest('[data-wall-view]');
-            if (viewButton) setView(viewButton.dataset.wallView, main);
         });
         // A turned poster turns back with Escape.
         main.addEventListener('keydown', (event) => {

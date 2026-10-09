@@ -29,6 +29,12 @@ const inside = (box, viewport) =>
                 () => document.documentElement.scrollWidth,
             );
             assert.ok(width <= viewport.width, `sideways scroll at ${viewport.width}px`);
+            // The Wall is the Events page: no switch to another view, even
+            // if one was chosen in an earlier visit.
+            assert.equal(await page.locator('[data-wall-view]').count(), 0, 'the page offers a view switch');
+            await page.evaluate(() => sessionStorage.setItem('expadu-event-view', 'skyline'));
+            await page.reload({ waitUntil: 'networkidle' });
+            assert.equal(await page.locator('#main').getAttribute('data-view'), 'wall');
 
             // The column's poster and its Add to plan, and the filters, are on
             // the first screen of a phone. Composer's button covers no icon
@@ -164,11 +170,12 @@ const inside = (box, viewport) =>
             await page.keyboard.press('ArrowLeft');
             await page.waitForTimeout(500);
 
-            // Skyline: the city has the board to itself. Its lights are the
-            // day's events and open them; the cards are the whole day, with a
+            // Skyline, kept in the preview as a reference at ?view=skyline:
+            // the city has the board to itself. Its lights are the day's
+            // events and open them; the cards are the whole day, with a
             // poster for the film night, which has no usable picture.
-            await page.click('[data-wall-view="skyline"]');
-            assert.match(page.url(), /view=skyline/);
+            await page.goto(`${base}?date=2026-09-30&view=skyline`, { waitUntil: 'networkidle' });
+            assert.equal(await page.locator('#main').getAttribute('data-view'), 'skyline');
             const sky = page.locator('.wall-view--skyline');
             assert.equal(await page.locator('#event-featured').isVisible(), false);
             assert.equal(await sky.locator('.sky-light').count(), 2);
@@ -192,27 +199,6 @@ const inside = (box, viewport) =>
                 await page.locator('#event-count-note').innerText(),
                 /featured|column/,
             );
-            // On a phone the city opens the board and nothing on the first
-            // screen sits under Composer's button.
-            if (viewport.width < 700) {
-                await page.evaluate(() => scrollTo(0, 0));
-                const under = await page.evaluate(() => {
-                    const fab = document.querySelector('.composer-launcher').getBoundingClientRect();
-                    return [...document.querySelectorAll('#main button, #main input, #main a')]
-                        .map((el) => [el, el.getBoundingClientRect()])
-                        .filter(
-                            ([, r]) =>
-                                r.width &&
-                                r.bottom <= innerHeight &&
-                                r.x < fab.right &&
-                                fab.x < r.right &&
-                                r.y < fab.bottom &&
-                                fab.y < r.bottom,
-                        )
-                        .map(([el]) => el.outerHTML.slice(0, 60));
-                });
-                assert.deepEqual(under, [], 'a skyline control sits under Composer');
-            }
             assert.equal(await sky.locator('.festival-card').count(), 2);
             assert.equal(
                 await sky.locator('.festival-card.is-poster [data-detail="today-review-cinema"]').count(),
@@ -271,7 +257,6 @@ const inside = (box, viewport) =>
             assert.equal(await sheet.locator('.event-know dd.is-unknown').count(), 0);
             assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed: admission, language/);
             await page.keyboard.press('Escape');
-            await page.click('[data-wall-view="wall"]');
 
             // The captured past day: faded posters, no Save or Plan.
             await page.goto(`${base}?date=2026-09-08`, {
@@ -315,7 +300,7 @@ const inside = (box, viewport) =>
 
             // The same day on the skyline: its lights are out, and labels
             // never overlap each other or another light.
-            await page.click('[data-wall-view="skyline"]');
+            await page.goto(`${base}?date=2026-09-08&view=skyline`, { waitUntil: 'networkidle' });
             await page.waitForTimeout(300);
             const crowd = await page.evaluate(() => {
                 const sky = document.querySelector('.wall-view--skyline .sky');
@@ -382,7 +367,6 @@ const inside = (box, viewport) =>
                 }
                 await page.mouse.move(2, 2);
             }
-            await page.click('[data-wall-view="wall"]');
             assert.deepEqual(errors, []);
             await page.close();
         }
@@ -636,21 +620,21 @@ const inside = (box, viewport) =>
         assert.equal(await outdoorFilm.locator('.pp-plan').isVisible(), false);
         assert.equal(await outdoorFilm.locator('.pp-flag--rain').count(), 0);
         await street.close();
-        // The App in colour concept's time switch moves the skyline too.
+        // The App in colour concept's time switch moves the Wall's sky and
+        // today's posters too.
         const concept = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
         await concept.goto(
             `${base.replace('events-next/', 'connected/concepts/app-in-colour-2026-10-07/')}?page=events&width=desktop&mode=concept`,
             { waitUntil: 'networkidle' },
         );
         const framed = concept.frameLocator('iframe');
-        await framed.locator('[data-wall-view="skyline"]').click();
         await concept.getByRole('button', { name: 'Night', exact: true }).click();
         await concept.waitForTimeout(1200);
-        assert.match(await framed.locator('.wall-view--skyline .sky-weather').innerText(), /22:30/);
-        assert.equal(await framed.locator('.wall-view--skyline .sky-light.is-out').count(), 2);
+        assert.match(await framed.locator('.wall-board > .wall-sky .sky-weather').innerText(), /22:30/);
+        assert.equal(await framed.locator('.pp[data-when="over"]').count(), 2);
         await concept.getByRole('button', { name: '13:10', exact: true }).click();
         await concept.waitForTimeout(1200);
-        assert.match(await framed.locator('.wall-view--skyline .sky-weather').innerText(), /13:10/);
+        assert.match(await framed.locator('.wall-board > .wall-sky .sky-weather').innerText(), /13:10/);
         await concept.close();
         console.log('Poster wall checks passed at 390 and 1440px.');
     } finally {

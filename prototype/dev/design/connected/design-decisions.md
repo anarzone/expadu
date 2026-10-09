@@ -464,7 +464,8 @@ scraps and a "Plakatieren verboten" stencil. The street keeps today's time
 and weather (lantern at dusk, darker at night, rain and puddles), and the
 day's posters flow round the corner and across the wall below it.
 **Owner decision, 8 October 2026: the Wall is the Events page.** The Skyline
-view stays in the preview as a reference only, not for the app; the Wall
+view stays in the preview as a reference only, not for the app (since
+9 October the page has no switch to it; it opens only at `?view=skyline`); the Wall
 borrows its best parts: the hour's sky over the city as the backdrop above
 the street corner (with the weather chip), the rain warning on outdoor
 posters, and today's posters following the clock ("On now", "Over"). Then

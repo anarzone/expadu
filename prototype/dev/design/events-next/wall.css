@@ -55,36 +55,6 @@ body[data-page='events'] {
 .wall-heading #event-calendar-toggle > svg:first-child {
     display: none;
 }
-.wall-views {
-    display: flex;
-    padding: 4px;
-    border-radius: 14px;
-    background: var(--color-bg-quiet);
-}
-.wall-views button {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 40px;
-    padding: 0 14px;
-    border: 0;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--color-text-soft);
-    font-size: var(--text-control);
-    font-weight: var(--weight-medium);
-}
-.wall-views button svg {
-    width: 18px;
-    height: 18px;
-}
-.wall-views button[aria-pressed='true'] {
-    background: var(--color-bg-surface);
-    color: var(--color-text);
-    font-weight: var(--weight-semibold);
-    box-shadow: var(--event-selection-shadow, 0 1px 3px #211d151f);
-}
-
 /* ---------- The wall ---------- */
 /* A plastered wall: a little grain, softer and lighter patches, scraps of
    older posters and a stencil. The column stands on its street corner at
@@ -2784,16 +2754,6 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
     }
     .wall-heading-tools {
         gap: 8px;
-    }
-    .wall-views button {
-        padding: 0 10px;
-    }
-    .wall-views button span {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
     }
     .wall-scene #event-featured,
     .wall-column {

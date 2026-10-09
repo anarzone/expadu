@@ -5,6 +5,22 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The Wall only — 9 October 2026
+
+Owner reminder: the Events page is the Wall, and the Skyline stays only in
+this preview, as a reference. The page no longer offers the Wall / Skyline
+switch. The Skyline opens only at `?view=skyline`, and a view remembered
+from an earlier visit is ignored.
+
+The Wall keeps what the owner chose to borrow from the Skyline on
+8 October: the hour's sky over the city, the weather chip, rain warnings
+and today's states. The App in colour concept's time switch now previews
+the Wall's sky and street.
+
+The browser test checks that the page has no view switch, even with a
+remembered Skyline. It reaches the Skyline by its address. Its phone
+first-screen check was dropped, because the Skyline isn't the Events page.
+
 ## Filters to the edge, on a phone — 9 October 2026
 
 Owner request: the search could be bigger, and the right side of the
@@ -429,7 +445,8 @@ there's no picture.
   German Unity Day) is pinned as a note, with the person's own plan that day.
 - **Already taken down.** The captured 8 September programme, faded, with a
   link to that day. Its posters carry "Past" and no Save or Plan.
-- **Skyline view** (Wall / Skyline switch, kept in the URL as `?view=skyline`).
+- **Skyline view**, a reference in this preview only, at `?view=skyline`
+  (since 9 October the page has no switch to it).
   An illustrated Cologne skyline (the Kranhäuser, Groß St. Martin, the TV
   tower, the Dom and the Hohenzollern bridge) with the day's events as lights
   above their district, and the person's 14:00 appointment marked. Afternoon,
@@ -452,8 +469,8 @@ photo cards.
 ### Files
 
 - `poster-art.js`: the poster generator (ink, shape, front, back, turn).
-- `wall.js`: the column, the wall, the later listings, the past strip, the
-  skyline and the view switch.
+- `wall.js`: the column, the wall, the later listings, the past strip, and
+  the skyline kept for reference (`?view=skyline`).
 - `wall.css`: posters, column, wall, skyline and the phone layout.
 - `fonts/`: links to the self-hosted Bricolage Grotesque in `public/fonts/`.
 
