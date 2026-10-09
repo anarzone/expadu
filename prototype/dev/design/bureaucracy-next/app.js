@@ -1831,10 +1831,23 @@
         persist();
     });
     render();
-    if (personas.some(([id]) => id === requestedScenario))
+    // ?scenario=existing is a link to your own plan (Today and Composer
+    // link a task with it): it opens at that task, not as a read-only
+    // preview. Any other persona opens its preview.
+    if (
+        requestedScenario !== 'existing' &&
+        personas.some(([id]) => id === requestedScenario)
+    )
         previewPersona(requestedScenario);
     const initial = new URLSearchParams(location.search);
-    if (initial.has('guide') && (!J.applies(state) || G.hydrate(state).started))
+    // ?guide=details opens Your situation, as the header's button does
+    // (Today's "Your situation · Review details").
+    if (initial.get('guide') === 'details' && B.canEdit(state))
+        personalDetails();
+    else if (
+        initial.has('guide') &&
+        (!J.applies(state) || G.hydrate(state).started)
+    )
         startGuide(
             J.applies(state) ? 'surface' : initial.get('guide') === 'review',
         );

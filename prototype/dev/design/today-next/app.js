@@ -449,7 +449,7 @@
                         `<a class="paperwork-row" href="${processURL(record.id)}">${I('document')}<span><strong>${E(record.title)}</strong><small>Review your checklist</small></span></a>`,
                 )
                 .join('')}
-            <a class="situation-link" href="${S.routes.bureaucracy}?person=self&view=overview">Your situation<span>Review details</span></a></div>
+            <a class="situation-link" href="${S.routes.bureaucracy}?person=self&view=overview&guide=details">Your situation<span>Review details</span></a></div>
         </section>`;
     }
     function cityHelp() {
