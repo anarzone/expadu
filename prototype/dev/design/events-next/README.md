@@ -5,6 +5,17 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Filter panels match the shared pickers — 9 October 2026
+
+Owner correction: on a desktop the Area and Starting point panels took the
+width of the small control group (about 200px), so names and the field's
+hint wrapped. They now open at the shared picker width (320px) from the
+row's right edge, styled like Places' pickers: hairline border, 16px corners,
+13px heading and rows, a 16px address field, the selected row cyan with a
+teal check, the chosen travel mode cyan with a teal underline. An open
+control is only pressed (neutral) on every screen; cyan means a value is
+chosen.
+
 ## No events count row — 9 October 2026
 
 Owner request: the "2 events · Sample · 1 on the poster column" line above
