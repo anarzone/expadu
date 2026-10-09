@@ -29,6 +29,14 @@ owner chose the recommended answers.
   "Explore a topic" and the starter's "1 of 3". The preview hides them by
   default; Review → "Show features planned for later" shows them. See
   `bureaucracy-next/README.md`.
+- **No page titles on screen.** Today ("Today, Anar."), Events ("On the wall"),
+  Paperwork, Travel and Services show no title row: the navigation already says
+  where you are, and empty rows push the content down (on a 14-inch laptop the
+  first poster was cut off). Each keeps its title for screen readers. Today's
+  date moved beside "Your day" and its sample switcher to the footer; Events'
+  date leads the search row; Paperwork's views share a row with whose plan and
+  Your situation; Travel's Saved joins its views. A task's name on its own page
+  is content and stays.
 - **One appointment record.** In the app, the appointment Paperwork records is
   the one Today, Composer and the leave-by time read: moving it in one place
   moves it everywhere. (The previews keep separate sample copies; don't copy
@@ -1064,7 +1072,7 @@ vehicles, live routing and backend integration remain deferred. See
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | One app shell                   | Reuse `#shell`, `connected/ui.js`, `shell-review.css`, `scroll-header.js`, `location-popover.*` and `menu-colors.css`. Keep the same brand, city/weather context, Saved action and department navigation geometry.                                                | [Connected notes](README.md), [Today C](../today-c/README.md)                                                           |
 | Shared colour language          | Geist; Travel's cream canvas, warm off-white surfaces, dark primary text, cyan selected surfaces, orange actions (one palette since 6 October, `tokens.css`). Use the actual shared variables and components. Muted colour is supporting information, not every control. Do not invent a page-specific palette or blue-accent system. | [Connected interaction direction, 19 September](README.md#interaction-direction--19-september-2026), `shell-review.css` |
-| One page heading                | Page titles belong in content, not a second header. Utility pages have no widgets rail. Today alone has its greeting and overview.                                                                                                                                | Project `AGENTS.md`, [Today C](../today-c/README.md)                                                                    |
+| No page title on screen         | The navigation already says where you are, so no page shows a title row (owner decision, 9 Oct 2026; this replaces Today's greeting too). Each page keeps its `<h1>` for screen readers (`.sr-only`); its first row is its own controls. Spend space only where it carries something. Utility pages have no widgets rail. | Project `AGENTS.md`, [Today C](../today-c/README.md)                                                                    |
 | Compact mobile discovery        | Search and the first useful item take priority. Reveal optional choices on demand. Keep titles compact; text, targets and first-item actions remain usable.                                                                                                       | [Connected interaction direction](README.md#interaction-direction--19-september-2026), `places-next/filters.css`        |
 | Contextual preferences          | Category, area, starting point/mode and sort are separate compact controls. Use the existing anchored pickers, one open at a time; outside interaction and Escape dismiss. Do not replace them with a large expanding form or a new modal.                        | Same 19 September decision; `places-next/app.js`, `filters.css`                                                         |
 | Selection colours carry meaning | Selected picker rows use cyan; retain the approved contextual filter styles. Orange is used for actions; category selections use the existing cyan surface. Reuse these styles rather than choosing accents per page.                                             | `places-next/filters.css`, `connected/discovery.css`                                                                    |

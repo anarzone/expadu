@@ -279,6 +279,10 @@ main {
 .page-navigation {
     margin-bottom: 24px;
 }
+/* The sample note and Saved journeys sit together at the row's end. */
+.page-navigation .sample-label {
+    margin-left: auto;
+}
 .icon-button {
     position: relative;
     display: inline-flex;

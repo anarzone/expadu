@@ -41,6 +41,13 @@ body[data-page='events'] {
     align-items: center;
     gap: 10px;
 }
+/* The date leads the search row. */
+.event-search-row > .wall-heading {
+    display: flex;
+    flex: none;
+    margin: 0;
+    padding: 0;
+}
 .wall-heading #event-calendar-toggle {
     padding: 0 12px 0 14px;
     background: var(--festival-yellow, #ffe363);
@@ -1941,6 +1948,10 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
     border-radius: 14px;
     background: var(--color-bg-quiet);
     color: var(--color-text-soft);
+}
+/* Beside the events count, at the row's end. */
+.event-results-head > .wall-tilt {
+    margin-left: auto;
 }
 .wall-tilt[aria-pressed='true'] {
     background: var(--color-select-bg);

@@ -26,6 +26,37 @@ body[data-page='bureaucracy'] #main {
 .case-top .icon-button {
     flex: none;
 }
+/* Without a visible title the views lead the row; whose plan and Your
+   situation sit at its end. */
+.case-top.is-untitled {
+    margin-bottom: 18px;
+}
+.case-top.is-untitled .person-picker {
+    margin-left: auto;
+}
+/* On a phone the one row stays one row: the views without their icons and
+   Your situation as its icon (its name stays for screen readers). */
+@media (max-width: 480px) {
+    .case-top.is-untitled {
+        gap: 8px;
+    }
+    .case-top.is-untitled .case-tabs svg {
+        display: none;
+    }
+    .case-top.is-untitled .case-tabs button {
+        padding-inline: 12px;
+    }
+    .case-top.is-untitled
+        .case-details
+        :is(.case-details-long, .case-details-short) {
+        display: none;
+    }
+    .case-top.is-untitled .case-details {
+        width: 44px;
+        padding: 0;
+        justify-content: center;
+    }
+}
 .person-picker {
     position: relative;
 }

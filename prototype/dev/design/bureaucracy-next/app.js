@@ -385,8 +385,13 @@
                 ? nameOf(current().id)
                 : 'Paperwork';
         const persona = personas.find(([id]) => id === state.preview);
+        // No page title on screen (owner decision, 9 Oct 2026): the
+        // navigation already says where you are, so the views share one row
+        // with whose plan and Your situation. A task's own name stays.
+        const titled = heading !== 'Paperwork';
+        const tabs = `<div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div>`;
         document.querySelector('#main').innerHTML =
-            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>${sandbox() ? 'Try it: your answers stay in this tab. Your own plan isn’t changed.' : 'Read-only. Your own plan isn’t changed.'}</span><button data-preview-exit>Back to your plan</button></div>` : ''}<div class="case-top"><h1>${E(heading)}</h1><details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
+            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>${sandbox() ? 'Try it: your answers stay in this tab. Your own plan isn’t changed.' : 'Read-only. Your own plan isn’t changed.'}</span><button data-preview-exit>Back to your plan</button></div>` : ''}<div class="case-top${titled ? '' : ' is-untitled'}"><h1${titled ? '' : ' class="sr-only"'}>${E(heading)}</h1>${titled ? '' : tabs}<details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
                 .filter(
                     (p) =>
                         !p.denied &&
@@ -398,7 +403,7 @@
                 )
                 .join(
                     '',
-                )}${state.person === 'self' && allowed && !persona ? `<button data-case="sharing">${I('people')}<span>Share your plan<small>Choose who sees what</small></span></button>` : ''}</div></details>${allowed && (!state.scopes || state.scopes.includes('view_facts')) ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div><div class="case-navigation"><div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div></div><div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress and guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
+                )}${state.person === 'self' && allowed && !persona ? `<button data-case="sharing">${I('people')}<span>Share your plan<small>Choose who sees what</small></span></button>` : ''}</div></details>${allowed && (!state.scopes || state.scopes.includes('view_facts')) ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div>${titled ? `<div class="case-navigation">${tabs}</div>` : ''}<div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress and guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
                 .map(
                     ([id, label]) =>
                         `<button data-preview-persona="${id}" aria-pressed="${state.preview === id}">${E(label)}</button>`,

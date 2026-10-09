@@ -77,16 +77,17 @@ const inside = (box, viewport) =>
                 }, launcher);
                 assert.deepEqual(covered, [], 'a control sits under Composer');
                 // The column stands slim, about 60% of the screen, with the
-                // wall either side. Sort leads the search row and the starting
-                // point the second row; the search and Area run to the edge.
+                // wall either side. The date leads the search row (no page
+                // title, owner decision 9 Oct 2026); Sort and the starting
+                // point lead the second row; the search and Area run to the edge.
                 // Free and Saved are in the Category menu (a dot on Category
                 // when one is on), and a resize to a tablet puts them back.
                 const slim = await page.evaluate(
                     () => document.querySelector('.wall-column-body').getBoundingClientRect().width / innerWidth,
                 );
                 assert.ok(slim > 0.55 && slim < 0.68, `the column should be slim on a phone: ${slim}`);
-                assert.equal(await page.locator('.event-search-row > [data-event-picker="sort"]:first-child + .event-search').count(), 1);
-                assert.equal(await page.locator('.event-control-scroller > [data-event-picker="travel"]:first-child').count(), 1);
+                assert.equal(await page.locator('.event-search-row > .wall-heading:first-child + .event-search').count(), 1);
+                assert.equal(await page.locator('.event-control-scroller > [data-event-picker="sort"]:first-child + [data-event-picker="travel"]').count(), 1);
                 const edges = await page.evaluate(() => {
                     const main = document.querySelector('#main');
                     const edge = main.getBoundingClientRect().right - parseFloat(getComputedStyle(main).paddingRight);
@@ -206,6 +207,10 @@ const inside = (box, viewport) =>
             );
             // The sky follows the sample day's clock and weather, and says
             // so; there's no time-of-day switch any more.
+            // Pointing at a light turns the sky to its hour: keep the
+            // pointer off the skyline (it stays where the last click was).
+            await page.mouse.move(0, 0);
+            await page.waitForTimeout(900);
             const chip = () => sky.locator('.sky-weather').innerText();
             assert.match(await chip(), /21° Sunny\s+13:10 · Sample weather/);
             assert.equal(await sky.locator('.sky').getAttribute('data-light'), '');

@@ -29,7 +29,7 @@
         lawyers: 'Find a lawyer',
     };
     document.querySelector('#main').innerHTML =
-        `<div class="page-title"><div><h1>Services</h1><p>Help for everyday life.</p></div><span class="service-sample">Preview</span></div><div class="services-layout"><nav class="service-choices" aria-label="Service categories">${M.categories.map((c) => `<button class="service-choice" data-service="${c.id}" aria-pressed="${c.id === category}">${I(c.icon)}<span>${c.title}</span></button>`).join('')}</nav><section class="service-content"><div class="service-workspace" id="service-workspace"></div><div id="brief-recap"></div></section></div>`;
+        `<h1 class="sr-only">Services</h1><div class="services-layout"><nav class="service-choices" aria-label="Service categories">${M.categories.map((c) => `<button class="service-choice" data-service="${c.id}" aria-pressed="${c.id === category}">${I(c.icon)}<span>${c.title}</span></button>`).join('')}</nav><section class="service-content"><div class="service-workspace" id="service-workspace"></div><div id="brief-recap"></div></section></div>`;
     if (new URLSearchParams(location.search).get('process') === 'bank') {
         document
             .querySelector('#main')

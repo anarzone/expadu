@@ -8,7 +8,7 @@
         />
         <meta name="color-scheme" content="light" />
         <title>Expadu — Travel</title>
-        <link rel="stylesheet" href="./style.css?v=52bc8d5ab714" />
+        <link rel="stylesheet" href="./style.css?v=b7d667bd97ce" />
         <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
         <script defer src="./departure-data.js?v=05fcba8c8280"></script>
         <script defer src="../connected/sample-day.js?v=62b707facdee"></script>
@@ -314,20 +314,9 @@
         </div>
         <!-- shared-header:end -->
         <main id="main">
-            <div class="page-heading">
-                <h1>Travel</h1>
-                <button
-                    class="icon-button saved-trigger"
-                    data-action="saved"
-                    aria-label="Saved journeys"
-                    title="Saved journeys"
-                >
-                    <span data-icon="bookmark"
-                        ><svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M6 3h12v18l-6-4-6 4V3Z" /></svg></span
-                    ><span id="saved-count" hidden></span>
-                </button>
-            </div>
+            <!-- No page title on screen (owner decision, 9 Oct 2026); Saved
+                 journeys joins the views. -->
+            <h1 class="sr-only">Travel</h1>
             <div class="page-navigation">
                 <div
                     class="view-switch segmented"
@@ -368,6 +357,17 @@
                 >
                     <span data-icon="info"></span
                     ><span class="sample-label-text">Sample</span>
+                </button>
+                <button
+                    class="icon-button saved-trigger"
+                    data-action="saved"
+                    aria-label="Saved journeys"
+                    title="Saved journeys"
+                >
+                    <span data-icon="bookmark"
+                        ><svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M6 3h12v18l-6-4-6 4V3Z" /></svg></span
+                    ><span id="saved-count" hidden></span>
                 </button>
             </div>
             <div id="journey-view">

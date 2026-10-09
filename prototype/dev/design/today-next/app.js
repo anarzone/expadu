@@ -428,7 +428,7 @@
         const links = window.TodayContent
             ? TodayContent.connections(active)
             : {};
-        return `<section class="day-panel ${active.length ? '' : 'has-no-plans'}" aria-labelledby="your-day"><div class="day-heading"><h2 id="your-day">Your day</h2>${active.length > 1 ? `<small>${active.length} plans</small>` : ''}</div>
+        return `<section class="day-panel ${active.length ? '' : 'has-no-plans'}" aria-labelledby="your-day"><div class="day-heading"><h2 id="your-day">Your day</h2><small>${dayLabel()}${active.length > 1 ? ` · ${active.length} plans` : ''}</small></div>
             ${
                 active.length
                     ? `<div class="agenda">${active
@@ -593,9 +593,14 @@
             ? `<section class="today-welcome" aria-labelledby="welcome-title"><div><span class="welcome-symbol">${I('spark')}</span><h2 id="welcome-title">What can we help you with?</h2><p>Make a plan, find your way, or get settled.</p></div><div class="welcome-choices"><button data-today-prompt="day">${I('plus')}Plan my day</button><a href="${S.routes.departures}">${I('train')}Find a route</a><button data-today-prompt="paperwork">${I('document')}Help me settle in</button></div></section>`
             : '';
     }
+    // No page title on screen (owner decision, 9 Oct 2026): the navigation
+    // already says where you are. Screen readers still get it.
     function greeting() {
-        return `<header class="today-greeting"><div class="greeting-copy"><h1>Today, ${E(day.person)}<span>.</span></h1><p>Wed 30 Sept <span>Sample day</span></p></div><div class="greeting-tools"></div></header>`;
+        return `<h1 class="sr-only">Today, ${E(day.person)}</h1>`;
     }
+    // The day the page shows, beside "Your day".
+    const dayLabel = () =>
+        `${new Date(`${day.date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · Sample day`;
     function comingUp() {
         const upcoming = day.upcoming
             .filter((item) => item.date > day.date)
@@ -678,7 +683,7 @@
                     ${columnFlow ? `<div id="support-continuity-slot">${renderedContinuation.support}</div>` : ''}
                 </div>
             </div>${columnFlow ? '' : `<div id="continuity-slot">${continuity(content)}</div>`}</div>`;
-        main.querySelector('.greeting-tools').append(reviewControls);
+        document.querySelector('.preview-foot')?.prepend(reviewControls);
         reviewControls.hidden = false;
         enrichment?.arrange(contentPriority);
         bindRail();

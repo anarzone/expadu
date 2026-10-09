@@ -640,9 +640,10 @@
             main.querySelector(id),
         );
         if (phone) {
-            row.prepend(sort);
-            scroller.prepend(travel);
-            main.querySelector('.event-gallery-head').append(sortPanel);
+            // The date leads the search row (no page title, owner decision
+            // 9 Oct 2026), so Sort joins the starting point's row.
+            scroller.prepend(sort, travel);
+            main.querySelector('.event-controls').append(sortPanel);
             only.querySelector('.events-options').append(...toggles);
         } else {
             scroller.append(travel, sort);
@@ -650,6 +651,12 @@
             row.append(...toggles);
         }
         only.hidden = !phone;
+        // Beside the date on a phone the box is short; its label still
+        // says "Search events".
+        main.querySelector('#event-search')?.setAttribute(
+            'placeholder',
+            phone ? 'Search' : 'Search events',
+        );
     }
     placeFilters();
     phoneFilters?.addEventListener('change', () => {

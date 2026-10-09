@@ -1103,9 +1103,19 @@
         main.dataset.view = view;
         const heading = main.querySelector('.events-page-heading');
         heading.classList.add('wall-heading');
-        heading.innerHTML = `<div class="wall-heading-text"><h1>On the wall</h1><p>Every poster is set from its listing. Nothing added.</p></div><div class="wall-heading-tools">${canTilt() ? `<button type="button" class="wall-tilt" data-wall-tilt aria-pressed="false" aria-label="Tilt the posters with your phone" title="Tilt with your phone">${phoneIcon}</button>` : ''}</div>`;
+        // No page title on screen (owner decision, 9 Oct 2026): the date
+        // leads the search row; the posters' credit says how they're set.
+        // Tilting the posters is set beside the events count, which stays
+        // still while they lean.
+        heading.innerHTML = `<h1 class="sr-only">On the wall</h1><div class="wall-heading-tools"></div>`;
+        if (canTilt())
+            main.querySelector('#reset-event-filters')?.insertAdjacentHTML(
+                'beforebegin',
+                `<button type="button" class="wall-tilt" data-wall-tilt aria-pressed="false" aria-label="Tilt the posters with your phone" title="Tilt with your phone">${phoneIcon}</button>`,
+            );
         const calendar = main.querySelector('.event-calendar');
         heading.querySelector('.wall-heading-tools').prepend(calendar);
+        main.querySelector('.event-search-row')?.prepend(heading);
         main.querySelector('.event-browse-heading')?.remove();
         const gallery = main.querySelector('.event-gallery');
         const board = document.createElement('section');

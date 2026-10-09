@@ -935,12 +935,14 @@ body[data-page='events'] {
         left: 0;
         right: auto;
     }
+    .event-control-scroller > .event-sort-control,
     .event-search-row > .event-sort-control {
         flex-shrink: 0;
         height: var(--discovery-target);
         border-radius: var(--radius-lg);
         background: var(--event-control-rail);
     }
+    .event-control-scroller > .event-sort-control .event-control-label,
     .event-search-row > .event-sort-control .event-control-label {
         position: absolute;
         width: 1px;
@@ -1009,7 +1011,7 @@ body[data-page='events'] {
         gap: 4px;
     }
 }
-@media (max-width: 359px) {
+@media (max-width: 480px) {
     .event-control-scroller .event-category-trigger .event-control-icon,
     .event-control-scroller [data-event-picker='area'] .event-control-icon {
         display: none;

@@ -2484,3 +2484,17 @@ body[data-page='composer'] main {
         animation: none;
     }
 }
+
+/* Visually hidden, still read by screen readers: page titles (no title row
+   on screen, owner decision 9 Oct 2026) and labels. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
