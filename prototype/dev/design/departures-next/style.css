@@ -445,6 +445,16 @@ main {
     height: 1px;
     background: linear-gradient(to right, var(--line), transparent);
 }
+/* The whole field puts the cursor in its box, not only the text line. */
+.field label::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+}
+.field input {
+    position: relative;
+    z-index: 1;
+}
 .field label {
     grid-column: 2;
     color: var(--muted);

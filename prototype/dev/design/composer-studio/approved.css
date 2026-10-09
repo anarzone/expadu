@@ -96,14 +96,16 @@ body.studio {
         background: var(--color-bg-surface);
     }
     .day-later {
-        gap: 4px;
+        gap: 0;
         padding: 2px 4px;
     }
     .day-later p {
         font-size: var(--text-small);
     }
+    /* Touch-sized rows (44px), the whole width of the panel. */
     .day-later button {
-        min-height: 0;
+        width: 100%;
+        min-height: 44px;
     }
     .day-tools {
         gap: 4px 16px;
