@@ -382,8 +382,8 @@ const inside = (box, viewport) =>
         // on a touch screen the first tap shows a light's hour, the second
         // opens it.
         // At dusk on a phone the column's caption stays dark on the cream
-        // page (the dark wall is only on larger screens), and the cobbles
-        // lie right under the column, above the caption.
+        // page under the wall, and the cobbles lie right under the column,
+        // above the caption.
         await touch.goto(`${base}?date=2026-09-30&at=19:30`, { waitUntil: 'networkidle' });
         const caption = await touch.locator('.wall-column-caption').evaluate((el) => {
             const [r, g, b] = getComputedStyle(el).color.match(/\d+/g).map(Number);
@@ -396,7 +396,56 @@ const inside = (box, viewport) =>
                 at('.wall-scene-ground').bottom <= at('.wall-column-caption').top + 2;
         });
         assert.equal(order, true, 'the cobbles should sit between the column and its caption');
+        // The street runs to the screen's edges: the column stands on the
+        // wall's plaster, and today's posters hang on a strip of it right
+        // under today's sky with the hour's weather. The plaster darkens at
+        // dusk; the captions sit on the page under it, not on it.
+        const plaster = async () =>
+            touch.evaluate(() => {
+                const at = (s) => document.querySelector(s)?.getBoundingClientRect();
+                const sky = document.querySelector('.wall-board > .wall-sky');
+                const scene = at('.wall-scene');
+                const wall = getComputedStyle(document.querySelector('.wall-scene'), '::before');
+                // How light the wall is: the plaster colour, the last layer.
+                const shade = (el, pseudo) => {
+                    const image = getComputedStyle(el, pseudo).backgroundImage;
+                    const tail = image.slice(image.lastIndexOf('linear-gradient'));
+                    const srgb = tail.match(/color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/);
+                    const rgb = tail.match(/rgba?\((\d+), (\d+), (\d+)/);
+                    return srgb ? +srgb[1] + +srgb[2] + +srgb[3] : (+rgb[1] + +rgb[2] + +rgb[3]) / 255;
+                };
+                const day = document.querySelector('.wall-view--wall .wall-day');
+                return {
+                    edges: [scene.left, scene.right, day?.getBoundingClientRect().left, day?.getBoundingClientRect().right],
+                    sky: sky.offsetParent ? Math.abs(at('.wall-board > .wall-sky').bottom - day.getBoundingClientRect().top) : null,
+                    chip: sky.querySelector('.sky-weather').innerText.replace(/\s+/g, ' '),
+                    wallEnd: scene.bottom - parseFloat(wall.bottom),
+                    caption: at('.wall-scene .wall-column-caption').top,
+                    dayEnd: day?.getBoundingClientRect().bottom,
+                    credit: at('.wall-view--wall .festival-credit')?.top,
+                    shade: shade(document.querySelector('.wall-scene'), '::before'),
+                    dayShade: day && shade(day),
+                };
+            });
+        const dusk = await plaster();
+        assert.deepEqual(dusk.edges, [0, 390, 0, 390], 'the plaster should reach the screen edges');
+        assert.ok(dusk.sky !== null && dusk.sky <= 1, 'today’s sky should sit right over the day’s posters');
+        assert.match(dusk.chip, /16° Showers 19:30 · Sample weather/);
+        assert.ok(dusk.wallEnd <= dusk.caption && dusk.dayEnd <= dusk.credit, 'a caption sits on the plaster');
+        assert.ok(Math.abs(dusk.shade - dusk.dayShade) < 0.01, 'the two strips of wall should match');
+        await touch.goto(`${base}?date=2026-09-30&at=13:10`, { waitUntil: 'networkidle' });
+        assert.ok((await plaster()).shade > dusk.shade + 0.5, 'the plaster should darken at dusk');
+        // Another day's posters hang without today's sky: it isn't their weather.
+        await touch.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });
+        const pastDay = await plaster();
+        assert.equal(pastDay.sky, null, 'today’s sky should not hang over another day');
+        assert.deepEqual(pastDay.edges, [0, 390, 0, 390]);
         await touch.goto(`${base}?date=2026-09-30&view=skyline&at=19:30`, { waitUntil: 'networkidle' });
+        assert.equal(
+            await touch.locator('.wall-board > .wall-sky').isVisible(),
+            false,
+            'the Skyline has its own sky',
+        );
         const culture = touch.locator('.sky-light[data-detail="today-review-culture"]');
         assert.match(await culture.getAttribute('class'), /is-now/);
         assert.match(await culture.locator('.sky-line').innerText(), /^Now · Street culture night$/);

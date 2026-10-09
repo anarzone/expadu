@@ -5,6 +5,35 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The street on a phone — 9 October 2026
+
+The owner chose from three sketches: A put the sky above the column, B a
+wall for the day's posters, and C was B plus the column on plaster. The
+choice was C, with the column as it already looks on phones.
+
+- On phones and tablets (up to 999px) the column stands on the wall's
+  plaster at the top of the page, with cobbles at its foot. Below the
+  filters, the day's posters hang on a strip of the same wall, also with
+  cobbles at its foot.
+- A slim band of today's sky over the city runs above today's posters,
+  with its weather chip ("16° Showers · 19:30 · Sample weather"). Another
+  day's posters hang without it, because that weather isn't theirs. A day
+  with no posters shows no wall.
+- The plaster and the row of posters run to the screen's edges. The
+  plaster darkens with the street at dusk and at night; the posters don't.
+- The column's caption and the credit sit on the page under the plaster.
+  On the plaster they dropped to about 2.6:1 contrast at dusk and dawn. On
+  the page they read at 5.3:1 at every hour.
+- On tablets the column's caption had been hidden behind its stone plinth.
+  It now shows under the cobbles.
+- The phone's first screen is unchanged. The column's poster and its Add
+  to plan, search and sort are all visible. Nothing sits under Composer,
+  and there is no sideways scroll. The browser test checks:
+  - the plaster reaching the screen's edges;
+  - today's sky only over today's posters, with its chip;
+  - the captions off the plaster;
+  - the plaster darkening at dusk.
+
 ## The phone Wall, checked — 8 October 2026
 
 - At dusk and night the column's caption and the credit stayed light for

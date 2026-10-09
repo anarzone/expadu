@@ -448,7 +448,13 @@ left under the corner: the column grows to meet the row beside it. The
 Events page: the Wall's colours, the poster's art, tape and time on its
 cover, "Add to plan", today's state, rain and fit first, unknown facts on
 one line, and no planning once an event is over. Today's sheet is
-unchanged. Details are in `events-next/README.md`.
+unchanged. On phones and tablets (owner's choice of three sketches,
+9 October 2026) the column stands on the wall's plaster. Below the filters,
+the day's posters hang on a strip of the same wall under a slim band of
+today's sky with its weather. Another day's posters hang without that sky,
+since it isn't their weather. The plaster runs edge to edge and darkens with
+the street; captions sit on the page under it so they read at every hour.
+Details are in `events-next/README.md`.
 
 **Composer has one header — owner request, 8 October:** the sticky
 "Composer · Minimize" bar is replaced by one compact row at the top of the

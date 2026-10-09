@@ -1032,6 +1032,14 @@
         const { hour: now, ctx } = streetNow();
         const forecast =
             ctx.source === 'Sample weather' ? 'sample forecast' : 'forecast';
+        // On a phone the day's posters hang under the street's sky, which is
+        // today's: it shows only over today's posters.
+        document.querySelector('.wall-board')?.toggleAttribute(
+            'data-today-posters',
+            [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')].some(
+                (card) => catalogue.find((x) => x.id === card.dataset.poster)?.date === today,
+            ),
+        );
         document.querySelectorAll('#main .pp[data-event-card]').forEach((card) => {
             const open = card.querySelector('.pp-open');
             if (!open) return;
