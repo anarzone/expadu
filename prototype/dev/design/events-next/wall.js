@@ -1002,11 +1002,13 @@
         const board = scene.closest('.wall-board');
         board?.style.removeProperty('--wall-fit');
         if (!board || getComputedStyle(scene).float === 'none') return;
-        const header =
-            document.querySelector('.app-header')?.offsetHeight || 0;
-        const room = window.innerHeight - header - 16;
-        // The whole picture: from the wall's top edge, with the sky, down
-        // to the caption under the column's pavement.
+        // The whole picture, from the wall's top edge, with the sky, down
+        // to the caption under the column's pavement, fits the first
+        // screen under the date and filters (owner, 9 Oct 2026).
+        const room =
+            window.innerHeight -
+            (board.getBoundingClientRect().top + window.scrollY) -
+            16;
         // Measured after each step, since the board's own padding and the
         // sky don't scale.
         const caption = scene.querySelector('.wall-column-caption') || scene;
@@ -1016,8 +1018,8 @@
         let fit = 1;
         for (let step = 0; step < 3; step++) {
             const now = span();
-            if (now <= room + 1 || fit <= 0.62) break;
-            fit = Math.max(0.62, fit * (room / now));
+            if (now <= room + 1 || fit <= 0.55) break;
+            fit = Math.max(0.55, fit * (room / now));
             board.style.setProperty('--wall-fit', fit.toFixed(3));
         }
     }

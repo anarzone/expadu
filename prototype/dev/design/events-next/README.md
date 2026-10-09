@@ -22,10 +22,12 @@ Owner request: the artwork works at every desktop size. On a desktop the
 corner (column, lantern, bench, bike, cobbles), the posters on the wall and
 the sky above scale together to the screen's height (`fitWall` in `wall.js`
 sets `--wall-fit`; CSS `zoom` in `wall.css`), so the whole picture, from the
-wall's top edge to the caption under the column, fits under the header when
-you scroll to it: 0.68 at 1280 × 720, 0.74 on a 14-inch laptop (1512 × 765),
-0.89 at 1440 × 900, full size from about 1000px tall. It never grows past its
-drawn size or shrinks below 0.62; the column's caption keeps its text size.
+wall's top edge to the caption under the column, fits the first screen
+under the date and filters, without scrolling (owner follow-up, the same
+day): 0.59 at 1280 × 720, 0.64 at 1366 × 768 and 1512 × 765, 0.76 at
+1497 × 863, 0.80 at 1440 × 900, 0.90 at 1512 × 982, full size at 1920 ×
+1080. It never grows past its drawn size or shrinks below 0.55; the column's
+caption keeps its text size.
 The column still lengthens to meet the posters beside it (measured with
 their scale) and turns by drag at any scale. Phones are unchanged.
 
