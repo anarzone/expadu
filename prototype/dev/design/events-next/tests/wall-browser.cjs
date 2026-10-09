@@ -547,6 +547,46 @@ const inside = (box, viewport) =>
             );
             await tablet.close();
         }
+        // On phones and tablets each picker is a bottom sheet over a scrim,
+        // wholly on screen; the scrim closes it without reaching the page,
+        // and so does a drag down on its top edge.
+        const sheets = await browser.newPage({
+            viewport: { width: 390, height: 844 },
+            hasTouch: true,
+            isMobile: true,
+        });
+        await sheets.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
+        for (const id of ['category', 'area', 'travel', 'sort']) {
+            await sheets.tap(`[data-event-picker="${id}"]`);
+            await sheets.waitForTimeout(400);
+            const box = await sheets.locator(`#events-${id}`).boundingBox();
+            assert.ok(
+                box.y >= 0 && Math.abs(box.y + box.height - 844) < 1 && box.width === 390,
+                `the ${id} sheet isn't a bottom sheet: ${JSON.stringify(box)}`,
+            );
+            await sheets.tap('.events-sheet-scrim', { position: { x: 20, y: 40 } });
+            await sheets.waitForTimeout(350);
+            assert.ok(await sheets.locator(`#events-${id}`).isHidden(), `the scrim leaves ${id} open`);
+            assert.ok(await sheets.locator('.events-sheet-scrim').isHidden());
+            assert.match(sheets.url(), /events-next\/\?date=2026-09-30$/, 'the tap reached the page');
+        }
+        await sheets.tap('[data-event-picker="area"]');
+        await sheets.waitForTimeout(400);
+        const handle = await sheets.locator('#events-area header').boundingBox();
+        const cdp = await sheets.context().newCDPSession(sheets);
+        const at = (y) => [{ x: handle.x + 60, y }];
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at(handle.y + 10) });
+        for (let step = 1; step <= 6; step++) {
+            await cdp.send('Input.dispatchTouchEvent', {
+                type: 'touchMove',
+                touchPoints: at(handle.y + 10 + step * 25),
+            });
+            await sheets.waitForTimeout(30);
+        }
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await sheets.waitForTimeout(400);
+        assert.ok(await sheets.locator('#events-area').isHidden(), 'dragging the sheet down leaves it open');
+        await sheets.close();
         // A narrower desktop still fits two posters beside the corner.
         const narrow = await browser.newPage({ viewport: { width: 1280, height: 900 } });
         await narrow.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });

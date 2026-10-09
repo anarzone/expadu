@@ -112,7 +112,7 @@
                 )}</div></fieldset><div class="events-popover-foot"><small>Used for distances and directions.</small><button type="submit">Done</button></div></form>`,
         )}
         ${picker('sort', 'Sort events', `<div class="events-options"><button data-event-sort="Soonest" aria-pressed="false">Soonest first</button><button data-event-sort="Evening first" aria-pressed="false">Evening first</button><button data-event-sort="Closest" aria-pressed="false" hidden>Closest first</button></div>`)}
-        </div></section><div class="event-results-head"><div class="event-results-count"><span id="event-count" role="status"></span><span class="event-sample" title="Captured sample programme">Sample</span><span id="event-count-note"></span></div><button id="reset-event-filters" aria-label="Reset event filters" title="Reset filters" hidden>${controlIcon('reset')}</button></div><section id="event-list" aria-label="Events"></section></section>`;
+        </div></section><div class="event-results-head"><div class="event-results-count"><span id="event-count" role="status"></span><span class="event-sample" title="Captured sample programme">Sample</span><span id="event-count-note"></span></div><button id="reset-event-filters" aria-label="Reset event filters" title="Reset filters" hidden>${controlIcon('reset')}</button></div><section id="event-list" aria-label="Events"></section></section><div class="events-sheet-scrim" hidden></div>`;
     const main = document.querySelector('#main'),
         weekStrip = main.querySelector('.event-week');
     const featured = main.querySelector('#event-featured');
@@ -201,14 +201,37 @@
             window.ExpaduMotion?.reveal(weekStrip, direction);
         }
     }
+    // On phones and tablets the pickers are bottom sheets over a light
+    // scrim: they slide up, and close by the scrim, Escape, Done or a drag
+    // down on their top edge.
+    const asSheet = () =>
+        !!window.matchMedia?.('(max-width: 999px)').matches;
+    const scrim = main.querySelector('.events-sheet-scrim');
+    function sheetMotion(element, frames, options, done) {
+        if (window.ExpaduMotion) window.ExpaduMotion.run(element, frames, options, done);
+        else done?.();
+    }
     function closePicker(focus = false) {
         if (!activePicker) return;
         const trigger = main.querySelector(
             `[data-event-picker="${activePicker}"]`,
         );
-        main.querySelector(`#events-${activePicker}`).hidden = true;
+        const panel = main.querySelector(`#events-${activePicker}`);
         trigger.setAttribute('aria-expanded', 'false');
         activePicker = null;
+        if (asSheet() && scrim) {
+            const from = panel.style.transform || 'translateY(0)';
+            panel.style.transform = '';
+            sheetMotion(
+                panel,
+                [{ transform: from }, { transform: 'translateY(100%)' }],
+                { duration: 180, easing: 'ease-in' },
+                () => (panel.hidden = true),
+            );
+            sheetMotion(scrim, [{ opacity: 1 }, { opacity: 0 }], { duration: 180 }, () => {
+                if (!activePicker) scrim.hidden = true;
+            });
+        } else panel.hidden = true;
         if (focus) trigger.focus({ preventScroll: true });
     }
     function openPicker(id) {
@@ -232,11 +255,62 @@
             'aria-expanded',
             'true',
         );
+        if (asSheet() && scrim) {
+            scrim.hidden = false;
+            sheetMotion(scrim, [{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
+            sheetMotion(
+                panel,
+                [{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }],
+                { duration: 280 },
+            );
+            // No keyboard straight away: it would cover the sheet.
+            (
+                panel.querySelector('.events-options button[aria-pressed="true"]') ||
+                panel
+            ).focus?.({ preventScroll: true });
+            return;
+        }
         window.ExpaduMotion?.reveal(panel);
         panel
             .querySelector('.events-options button[aria-pressed="true"], input')
             ?.focus({ preventScroll: true });
     }
+    // Drag a sheet down by its top edge to close it.
+    (function sheetDrag() {
+        let drag = null;
+        main.querySelectorAll('.events-popover').forEach((panel) => {
+            panel.setAttribute('tabindex', '-1');
+            panel.addEventListener('pointerdown', (event) => {
+                if (
+                    !asSheet() ||
+                    event.button > 0 ||
+                    !event.target.closest('header') ||
+                    event.target.closest('button')
+                )
+                    return;
+                drag = { panel, id: event.pointerId, y: event.clientY, at: event.timeStamp, dy: 0 };
+                panel.setPointerCapture?.(event.pointerId);
+            });
+            panel.addEventListener('pointermove', (event) => {
+                if (drag?.id !== event.pointerId) return;
+                drag.dy = Math.max(0, event.clientY - drag.y);
+                panel.style.transform = `translateY(${drag.dy}px)`;
+            });
+            const release = (event) => {
+                if (drag?.id !== event.pointerId) return;
+                const { dy, at } = drag;
+                drag = null;
+                const fast = dy / Math.max(1, event.timeStamp - at) > 0.5;
+                if (dy > 80 || (fast && dy > 32)) return closePicker(true);
+                const from = panel.style.transform;
+                panel.style.transform = '';
+                if (dy)
+                    sheetMotion(panel, [{ transform: from }, { transform: 'translateY(0)' }], { duration: 200 });
+            };
+            panel.addEventListener('pointerup', release);
+            panel.addEventListener('pointercancel', release);
+        });
+    })();
     function syncTravel() {
         const brief = S.read().brief;
         const from = (brief.from || '').trim();
@@ -604,6 +678,9 @@
         )
             setCalendarOpen(false);
         if (!activePicker) return;
+        // A tap on the scrim closes on its click, so the tap can't fall
+        // through to the page once the scrim has gone.
+        if (e.target === scrim && e.type !== 'click') return;
         const panel = main.querySelector(`#events-${activePicker}`);
         const trigger = main.querySelector(
             `[data-event-picker="${activePicker}"]`,

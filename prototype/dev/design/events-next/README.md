@@ -5,6 +5,19 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Pickers are bottom sheets on phones and tablets — 9 October 2026
+
+Owner request. Below 1000px the filter row sits low on the first screen, so
+Category, Area, Starting point and Sort opened mostly below the fold. Each
+is now a bottom sheet (full width on a phone, 560px centred on a tablet),
+like Today's sheets and the Event sheet: it slides up over a light scrim
+with no blur, and closes with the scrim, the close button, Escape, Done or a
+drag down on its top edge (handle). The page's tap can't fall through the
+scrim. The address field isn't focused on opening, so the keyboard doesn't
+cover the sheet. Reduced motion skips the slide. Desktop keeps the anchored
+panels. `tests/wall-browser.cjs` checks each sheet sits on the screen's
+bottom edge and closes by the scrim and by dragging.
+
 ## Filter panels match the shared pickers — 9 October 2026
 
 Owner correction: on a desktop the Area and Starting point panels took the

@@ -1047,3 +1047,63 @@ body[data-page='events'] {
         display: none;
     }
 }
+
+/* ---------- Pickers as bottom sheets (owner request, 9 October 2026) ----------
+   On phones and tablets the filter row sits low on the first screen, so a
+   panel anchored under it ran off the bottom. Each picker is a bottom sheet
+   instead, like Today's and the Event sheet: light scrim, no blur, a handle
+   on the top edge to drag down. */
+.events-sheet-scrim {
+    display: none;
+}
+@media (max-width: 999px) {
+    .events-sheet-scrim:not([hidden]) {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: #0005;
+        touch-action: none;
+    }
+    .event-controls > .events-popover:is(#events-area, #events-travel, #events-sort, #events-category) {
+        position: fixed;
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 81;
+        width: min(100%, 560px);
+        max-height: calc(100dvh - 40px);
+        margin-inline: auto;
+        padding: 22px 16px max(20px, env(safe-area-inset-bottom));
+        border: 0;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        box-shadow: var(--shadow-sheet);
+    }
+    .events-popover:focus {
+        outline: none;
+    }
+    /* The top edge is the handle. */
+    .events-popover header {
+        position: relative;
+        touch-action: none;
+    }
+    .events-popover header::before {
+        content: '';
+        position: absolute;
+        top: -14px;
+        left: calc(50% - 18px);
+        width: 36px;
+        height: 4px;
+        border-radius: var(--radius-pill);
+        background: var(--color-border-strong);
+        opacity: 0.5;
+    }
+    #events-sort header {
+        padding-left: 0;
+    }
+    #events-sort .events-options button {
+        padding-inline: 8px;
+    }
+}
+
