@@ -210,3 +210,29 @@ Why: Today's cards say what each thing is; nothing shows how the day fits
 together, or that the afternoon is open. The ribbon adds that in about 90px
 on desktop, and the bar keeps the time-critical action in view while you
 browse events lower down. Screenshots: `docs/reviews/2026-10-07-app-in-colour/today-ribbon-*.png`.
+
+## Travel: your day, your location and a stop display (concept, 9 October)
+
+**Status: concept for review, not approved.** The Travel page is unchanged.
+This concept was built straight into the Travel mock by mistake and then
+reverted. It is now compared here first.
+
+`travel-day.js` (with `travel-day.css`, everything under `html.tc`) is added
+to the approved Travel page. In the viewer, choose **Travel · your day** or
+**Travel · stop display** (`?page=travel-day` / `?page=travel-display`).
+Current and concept are on the Design canvas, in the two Travel rows.
+
+- **Your day.** The sample day's trips as tickets:
+  - the 14:00 appointment with how to get there (leave now, walk to
+    Neumarkt, tram 4 at 13:14, 12 min to spare, the plan's tight 13:24) and
+    Start;
+  - the evening's events, with no made-up times but with the labelled sample
+    forecast.
+
+  They take the captured night example's place, which stays one link away.
+- **Your location.** From starts where the sample day puts you, near Köln
+  Neumarkt. The suggestions offer your location, Home and Work (not
+  connected) and your own recent trips.
+- **A stop display.** The timetable becomes the stop's dark display: the
+  sign, the clock, minutes to each departure from the sample clock, and your
+  appointment's trams marked. On desktop it stands beside the stop map.

@@ -1,0 +1,460 @@
+/* Travel concept (travel-day.js): Your day, your location, a stop display.
+   Scoped under html.tc: without the script the page is unchanged. */
+html.tc #next-trip,
+html.tc #journey-start {
+    display: none !important;
+}
+html.tc body.has-results .tc-day {
+    display: none;
+}
+html.tc .tc-day {
+    display: grid;
+    gap: 12px;
+    margin: 0 0 24px;
+}
+html.tc .tc-day-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+html.tc .tc-day-head h2 {
+    margin: 0;
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+}
+html.tc .tc-day-head span {
+    color: var(--color-text-muted);
+    font-size: var(--text-caption);
+    white-space: nowrap;
+}
+html.tc .tc-example {
+    justify-self: start;
+    min-height: 44px;
+    font-size: var(--text-small);
+}
+html.tc .tc-hint {
+    color: var(--color-text-muted);
+    font-weight: var(--weight-regular);
+}
+html.tc .tc-hint[hidden] {
+    display: none;
+}
+html.tc .tc-quick {
+    border-bottom: 1px solid var(--line);
+}
+html.tc .tc-quick button > svg {
+    color: var(--teal);
+}
+html.tc #departure-cards {
+    border: 0;
+    background: transparent;
+    overflow: visible;
+}
+html.tc .day-tickets {
+    display: grid;
+    gap: 12px;
+}
+html.tc .day-ticket {
+    display: grid;
+    gap: 10px;
+    padding: 14px 16px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+html.tc .day-ticket.is-next {
+    border-color: var(--teal);
+    box-shadow: 0 6px 18px -12px #00768b66;
+}
+html.tc .ticket-head {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--color-border);
+}
+/* The perforation's notches, cut into the ticket's edges. */
+html.tc .ticket-head::before,
+html.tc .ticket-head::after {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-bg-canvas);
+}
+html.tc .ticket-head::before {
+    left: -24px;
+    clip-path: inset(0 0 0 50%);
+}
+html.tc .ticket-head::after {
+    right: -24px;
+    clip-path: inset(0 50% 0 0);
+}
+html.tc .day-ticket.is-next .ticket-head::before,
+html.tc .day-ticket.is-next .ticket-head::after {
+    border-color: var(--teal);
+}
+html.tc .ticket-head > time {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+}
+html.tc .ticket-head > span {
+    display: grid;
+    min-width: 0;
+}
+html.tc .ticket-head strong {
+    font-weight: var(--weight-semibold);
+}
+html.tc .ticket-head small {
+    color: var(--color-text-muted);
+    font-size: var(--text-small);
+}
+html.tc .ticket-head .ticket-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+html.tc .ticket-leave {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin: 0;
+}
+html.tc .ticket-leave strong {
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+}
+html.tc .ticket-leave time {
+    color: var(--color-text-muted);
+    font-size: var(--text-small);
+    font-variant-numeric: tabular-nums;
+}
+html.tc .ticket-legs {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0 0 0 4px;
+    list-style: none;
+}
+html.tc .ticket-legs li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 34px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+html.tc .ticket-legs li > svg {
+    justify-self: center;
+    width: 18px;
+    height: 18px;
+    color: var(--teal);
+}
+html.tc .ticket-legs li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 28px;
+    height: 10px;
+    border-left: 2px dotted var(--teal);
+}
+html.tc .ticket-legs .is-ride {
+    color: var(--color-text);
+    font-size: var(--text-control);
+}
+html.tc .ticket-legs .is-ride span {
+    display: grid;
+}
+html.tc .ticket-legs .is-ride small {
+    color: var(--color-text-muted);
+    font-size: var(--text-caption);
+}
+html.tc .ticket-spare,
+html.tc .ticket-note,
+html.tc .ticket-weather {
+    margin: 0;
+    font-size: var(--text-small);
+}
+html.tc .ticket-spare {
+    color: var(--color-select-text);
+    font-weight: var(--weight-medium);
+}
+html.tc .ticket-advice {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+    font-size: var(--text-small);
+    line-height: var(--leading-body);
+}
+html.tc .ticket-note {
+    color: var(--color-text-muted);
+}
+html.tc .ticket-weather {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-select-text);
+}
+html.tc .ticket-weather svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+html.tc .ticket-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+html.tc .ticket-actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+}
+html.tc .ticket-actions button svg {
+    width: 18px;
+    height: 18px;
+}
+/* From starts at your location; its suggestions lead with your location,
+   Home and Work, and your recent trips. */
+
+/* The board is the stop's departure display: a dark panel with the stop
+   sign and the clock, each departure with the minutes until it leaves.
+   It is an object on the page, like the poster column on Events. */
+html.tc .stop-display {
+    --display-bg: #1b2023;
+    --display-ink: #ffbf3c;
+    --display-soft: #c9a35a;
+    --display-light: #f5efe0;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background:
+        radial-gradient(circle, #ffffff08 1px, transparent 1.5px) 0 0 / 4px 4px,
+        var(--display-bg);
+    color: var(--display-ink);
+    box-shadow:
+        inset 0 0 0 6px #2a3135,
+        0 10px 24px -14px #211d1599;
+}
+html.tc .display-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid #ffffff14;
+}
+/* The stop sign: a green H on a yellow disc. */
+html.tc .display-sign {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 2px solid #127a3c;
+    border-radius: 50%;
+    background: #f2c21b;
+    color: #127a3c;
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1;
+}
+html.tc .display-head h2 {
+    margin: 0;
+    color: var(--display-light);
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+}
+html.tc .display-head small {
+    display: block;
+    color: var(--display-soft);
+    font-size: var(--text-caption);
+}
+html.tc .display-clock {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+}
+html.tc .display-entry + .display-entry {
+    border-top: 1px dashed #ffffff14;
+}
+html.tc .display-row {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr) auto 16px;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 64px;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--display-ink);
+    text-align: left;
+    transition: background-color 140ms ease;
+}
+html.tc .display-row[aria-expanded='true'],
+html.tc .display-row.is-selected,
+html.tc .display-row:active {
+    background: #ffbf3c14;
+}
+html.tc .display-row.is-selected {
+    box-shadow: inset 3px 0 var(--display-ink);
+}
+html.tc .display-row:focus-visible {
+    outline: 2px solid var(--display-ink);
+    outline-offset: -4px;
+}
+html.tc .display-line {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 30px;
+    padding: 0 8px;
+    border: 1.5px solid var(--display-ink);
+    border-radius: 6px;
+}
+html.tc .display-line svg {
+    width: 14px;
+    height: 14px;
+    flex: none;
+}
+html.tc .display-line strong {
+    font-variant-numeric: tabular-nums;
+}
+html.tc .display-dest {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+html.tc .display-dest strong {
+    overflow: hidden;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+html.tc .display-dest small {
+    color: var(--display-soft);
+    font-size: var(--text-caption);
+}
+/* What a departure means for you: your appointment's tram, the plan's. */
+html.tc .display-dest .display-tag {
+    justify-self: start;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #def5f8;
+    color: #00566a;
+    font-weight: var(--weight-semibold);
+}
+html.tc .display-dest .display-tag.is-tight {
+    background: #fff1d6;
+    color: #7a4100;
+}
+html.tc .display-dest .display-delay {
+    color: #ff9e80;
+}
+html.tc .display-when {
+    display: grid;
+    justify-items: end;
+}
+html.tc .display-when strong {
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+html.tc .display-when small {
+    color: var(--display-soft);
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+}
+html.tc .display-row > svg {
+    width: 16px;
+    height: 16px;
+    color: var(--display-soft);
+    transition: transform 160ms ease;
+}
+html.tc .display-row[aria-expanded='true'] > svg {
+    transform: rotate(180deg);
+}
+html.tc .display-day {
+    padding: 10px 18px;
+    border-top: 1px solid #ffffff14;
+    color: var(--display-light);
+    font-size: var(--text-caption);
+}
+html.tc .display-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin: 0;
+    padding: 12px 18px 16px;
+    border-top: 1px solid #ffffff14;
+    color: var(--display-soft);
+    font-size: var(--text-micro);
+    line-height: 1.5;
+}
+html.tc .display-note svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+}
+html.tc
+    body.travel-palette[data-timetable-design='station']
+    .stop-display
+    .timetable-more {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px;
+    border-top: 1px solid #ffffff14;
+    border-radius: 0;
+    background: transparent;
+    color: var(--display-ink);
+}
+/* An opened departure on desktop reads on paper, below its row. */
+html.tc
+    body.travel-palette[data-timetable-design='station']
+    .display-entry
+    .departure-inline {
+    padding: 4px 20px 18px 88px;
+    background: var(--surface);
+    color: var(--ink);
+}
+@media (hover: hover) {
+    html.tc .display-row:hover {
+        background: #ffffff0a;
+    }
+}
+@media (max-width: 999px) {
+    html.tc #departure-cards .display-row {
+        grid-template-columns: 52px minmax(0, 1fr) auto 14px;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+    html.tc .display-head {
+        padding: 14px;
+    }
+}
