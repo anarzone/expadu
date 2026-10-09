@@ -86,7 +86,7 @@
                 <span class="wall-column-glow" aria-hidden="true"></span>
             </div>
             <span class="wall-column-base" aria-hidden="true"><span></span></span>
-            <p class="wall-column-caption">Coming up${many ? ` · <span class="wall-column-count" aria-live="polite">1 of ${posters.length}</span> · ${window.matchMedia?.('(pointer: coarse)').matches ? 'swipe' : 'drag'} to turn` : ' · on the poster column'}</p>
+            <p class="wall-column-caption"><span class="wall-column-lead">Coming up · </span>${many ? `<span class="wall-column-count" aria-live="polite">1 of ${posters.length}</span> · ${window.matchMedia?.('(pointer: coarse)').matches ? 'swipe' : 'drag'} to turn` : 'on the poster column'}</p>
         </div>`;
     }
     // The skyline is wider than its stage, so it pans: it opens on the
@@ -1001,7 +1001,8 @@
     function fitWall(scene) {
         const board = scene.closest('.wall-board');
         board?.style.removeProperty('--wall-fit');
-        if (!board || getComputedStyle(scene).float === 'none') return;
+        // Phones and tablets scroll the corner; only a desktop fits it.
+        if (!board || !window.matchMedia?.('(min-width: 1000px)').matches) return;
         // The whole picture, from the wall's top edge, with the sky, down
         // to the caption under the column's pavement, fits the first
         // screen under the date and filters (owner, 9 Oct 2026).

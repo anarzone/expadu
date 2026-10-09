@@ -2999,3 +2999,222 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
 .event-control-scroller > #reset-event-filters[hidden] {
     display: none;
 }
+
+/* ---------- Phones and tablets: the desktop's street corner, smaller ----------
+   Owner request, 9 October 2026. The filters lead the page; under them one
+   board, as on a desktop: today's sky (when the posters are today's), the
+   wall, the column standing at its left on its cobbles and the day's
+   posters pasted beside it, then across the full width below it. On a
+   phone the column and the posters share one compact width, so a poster
+   fits beside the column and two side by side below it. */
+@media (max-width: 999px) {
+    main[data-view='wall'] .wall-board {
+        --corner-w: 260px;
+        --corner-gap: 16px;
+        display: flow-root;
+        margin: 6px calc(var(--street-bleed) * -1) 0;
+        padding: 18px var(--street-bleed) 28px;
+        border-radius: 0;
+    }
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        height: 96px;
+        margin: -18px calc(var(--street-bleed) * -1) 18px;
+    }
+    main[data-view='wall'] .wall-scene {
+        order: 0;
+        float: left;
+        align-self: auto;
+        margin: 0 var(--corner-gap) 14px 0;
+        padding: 40px 0 0;
+    }
+    /* The column's dome rises in front of the sky, as on a desktop. */
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky + .wall-scene {
+        margin-top: -64px;
+    }
+    main[data-view='wall'] .wall-scene::before {
+        content: none;
+    }
+    main[data-view='wall'] .wall-scene #event-featured,
+    main[data-view='wall'] .wall-column {
+        width: auto;
+        align-self: auto;
+    }
+    main[data-view='wall'] .wall-column {
+        --column-w: var(--corner-w);
+        --column-h: calc(var(--corner-w) * 1.45);
+    }
+    main[data-view='wall'] .wall-scene .wall-column-caption {
+        max-width: calc(var(--corner-w) + 32px);
+        text-align: center;
+    }
+    /* Tilting starts under the caption; the column leans, the button
+       stays put. */
+    main[data-view='wall'] .wall-scene:has(> .wall-tilt) {
+        margin-bottom: 64px;
+    }
+    main[data-view='wall'] .wall-scene > .wall-tilt {
+        left: calc(50% - 22px);
+        bottom: -52px;
+    }
+    /* The posters are laid like words, round the corner and then below. */
+    main[data-view='wall'] .wall-view--wall .wall-day {
+        display: block;
+        overflow: visible;
+        margin: 0;
+        padding: 0;
+        background: none;
+        scroll-snap-type: none;
+    }
+    main[data-view='wall'] .wall-view--wall .wall-day > .pp {
+        display: inline-block;
+        margin: 2px 14px 22px 0;
+        vertical-align: top;
+    }
+    main[data-view='wall'] .wall-next,
+    main[data-view='wall'] .wall-view--wall > :not(.wall-day) {
+        clear: both;
+    }
+    main[data-view='wall'] .wall-next {
+        margin-top: 8px;
+    }
+    /* A day without posters says so beside the column, not under it. */
+    main[data-view='wall'] #event-list > .event-empty {
+        display: flow-root;
+    }
+}
+@media (max-width: 700px) {
+    /* Two widths, the column's 32px of dome, the 12px gap, a poster's
+       10px margin and the space between posters fill the wall's width. */
+    main[data-view='wall'] .wall-board {
+        --corner-gap: 12px;
+        container-type: inline-size;
+    }
+    main[data-view='wall'] .wall-board > * {
+        --corner-w: clamp(124px, calc((100cqi - 60px) / 2), 190px);
+    }
+    main[data-view='wall'] .wall-view--wall .wall-day > .pp--size-wall {
+        width: var(--corner-w);
+        height: calc(var(--corner-w) * 1.7);
+    }
+    main[data-view='wall'] .wall-column {
+        --column-h: calc(var(--corner-w) * 1.95);
+    }
+    /* The column's region is already named "Coming up"; the caption keeps
+       to the count and the gesture, on one line. */
+    main[data-view='wall'] .wall-scene .wall-column-caption {
+        white-space: nowrap;
+    }
+    main[data-view='wall'] .wall-column-lead {
+        display: none;
+    }
+    main[data-view='wall'] .wall-view--wall .wall-day > .pp {
+        margin-right: 10px;
+    }
+    /* Compact posters: the same poster, set for about 150px. */
+    main[data-view='wall'] .wall-board .pp-open {
+        padding: 9px 10px 10px;
+    }
+    main[data-view='wall'] .wall-board .pp-top {
+        min-height: 30px;
+    }
+    /* A flag (On now, Rain likely) takes its own line under the
+       category, clear of the save button. */
+    main[data-view='wall'] .wall-board .pp-top:has(.pp-flags) {
+        gap: 4px;
+        padding-right: 0;
+    }
+    main[data-view='wall'] .wall-board .pp-top:has(.pp-flags) .pp-category {
+        margin-right: 100%;
+    }
+    main[data-view='wall'] .wall-board .pp-top + * {
+        margin-top: 6px;
+    }
+    main[data-view='wall'] .wall-board .pp-category {
+        height: 22px;
+        gap: 4px;
+        padding: 0 8px;
+        font-size: var(--text-micro);
+    }
+    main[data-view='wall'] .wall-board .pp-category svg {
+        width: 12px;
+        height: 12px;
+    }
+    main[data-view='wall'] .wall-board .pp-flag {
+        min-height: 20px;
+        gap: 4px;
+        padding: 3px 7px;
+        font-size: var(--text-micro);
+        line-height: 1.15;
+    }
+    main[data-view='wall'] .wall-board .pp-tape {
+        flex: none;
+        padding: 2px 7px 0;
+        font-size: 11px;
+        white-space: nowrap;
+    }
+    main[data-view='wall'] .wall-board .pp .pp-title {
+        margin-top: 6px;
+        font-size: clamp(14px, 12cqi, 26px);
+    }
+    main[data-view='wall'] .wall-board .pp:has(.pp-flags) .pp-title {
+        font-size: clamp(14px, 10.5cqi, 24px);
+    }
+    /* A past poster can't be planned; its long title keeps the room. */
+    main[data-view='wall'] .wall-board .pp.is-past .pp-translation {
+        display: none;
+    }
+    main[data-view='wall'] .wall-board .pp-translation,
+    main[data-view='wall'] .wall-board .pp-meta,
+    main[data-view='wall'] .wall-board .pp-price {
+        font-size: var(--text-micro);
+    }
+    /* The lines use the poster's width; only the last one, the price,
+       keeps clear of Add to plan in the corner. */
+    main[data-view='wall'] .wall-board .pp-bottom {
+        gap: 2px;
+        padding-top: 8px;
+        padding-right: 0;
+    }
+    main[data-view='wall'] .wall-board .pp-price {
+        min-height: 30px;
+        padding-right: 40px;
+    }
+    main[data-view='wall'] .wall-board .pp-time {
+        font-size: clamp(20px, 16cqi, 32px);
+        -webkit-text-stroke-width: 1.5px;
+    }
+    main[data-view='wall'] .wall-board .pp--paper .pp-time {
+        font-size: var(--text-caption);
+        -webkit-text-stroke-width: 0;
+    }
+    /* Smaller buttons, with the full touch target round them. */
+    main[data-view='wall'] .wall-board .pp-save {
+        top: 8px;
+        right: 8px;
+        width: 30px;
+        height: 30px;
+    }
+    main[data-view='wall'] .wall-board .pp-save svg {
+        width: 15px;
+        height: 15px;
+    }
+    main[data-view='wall'] .wall-board .pp-plan {
+        right: 9px;
+        bottom: 9px;
+        width: 36px;
+        height: 36px;
+        box-shadow: 0 4px 10px #c23b0e59;
+    }
+    main[data-view='wall'] .wall-board .pp-plan svg {
+        width: 17px;
+        height: 17px;
+    }
+    main[data-view='wall'] .wall-board :is(.pp-save, .pp-plan)::after {
+        content: '';
+        position: absolute;
+        inset: -7px;
+    }
+    main[data-view='wall'] .wall-board .pp-plan::after {
+        inset: -4px;
+    }
+}

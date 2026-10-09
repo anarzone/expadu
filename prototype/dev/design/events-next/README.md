@@ -5,6 +5,25 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Phones and tablets get the desktop's street corner — 9 October 2026
+
+Owner request: on a phone the Wall reads like a smaller desktop. The filters
+lead the page; under them one wall runs to the screen's edges with today's
+sky along its top (today's posters only, as before), the poster column
+standing at its left in front of it and the day's posters pasted beside it,
+then two across below it. On a phone the column and the posters share one
+compact width (`--corner-w`, from the wall's own width in container units,
+124–190px), and the posters are set for it: smaller category and flags (a
+flag takes its own line), 11px place and price lines across the full width
+with only the price clear of a 36px Add to plan, and 30px save, both with a
+44px touch area. A past poster drops its translation on a phone. The
+caption keeps to "1 of 4 · swipe to turn" (the column's region is named
+"Coming up"); the tilt button sits under it. Tablets use the same
+composition with a 260px column and full-size posters. Only a desktop fits
+the corner to the screen's height. `tests/wall-browser.cjs` checks the
+filters lead, the column is about 40% of the screen with a poster beside it,
+the wall reaches the edges and no poster's text is cut off.
+
 ## Pickers are bottom sheets on phones and tablets — 9 October 2026
 
 Owner request. Below 1000px the filter row sits low on the first screen, so

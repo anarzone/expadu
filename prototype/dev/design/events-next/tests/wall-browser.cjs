@@ -76,16 +76,28 @@ const inside = (box, viewport) =>
                         .map((el) => el.outerHTML.slice(0, 60));
                 }, launcher);
                 assert.deepEqual(covered, [], 'a control sits under Composer');
-                // The column stands slim, about 60% of the screen, with the
-                // wall either side. The date leads the search row (no page
+                // As on a desktop (owner request, 9 Oct 2026): the filters
+                // lead, then one wall with the column at its left, about 40%
+                // of the screen, and the day's poster pasted beside it. The
+                // date leads the search row (no page
                 // title, owner decision 9 Oct 2026); Sort and the starting
                 // point lead the second row; the search and Area run to the edge.
                 // Free and Saved are in the Category menu (a dot on Category
                 // when one is on), and a resize to a tablet puts them back.
-                const slim = await page.evaluate(
-                    () => document.querySelector('.wall-column-body').getBoundingClientRect().width / innerWidth,
-                );
-                assert.ok(slim > 0.55 && slim < 0.68, `the column should be slim on a phone: ${slim}`);
+                const corner = await page.evaluate(() => {
+                    const at = (s) => document.querySelector(s).getBoundingClientRect();
+                    const scene = at('.wall-scene'),
+                        body = at('.wall-column-body'),
+                        poster = at('.wall-view--wall .wall-day > .pp');
+                    return {
+                        slim: body.width / innerWidth,
+                        filtersFirst: at('.event-controls').bottom <= at('.wall-board').top,
+                        beside: poster.left >= scene.right - 2 && poster.top < body.bottom,
+                    };
+                });
+                assert.ok(corner.slim > 0.3 && corner.slim < 0.45, `the column should be slim on a phone: ${corner.slim}`);
+                assert.ok(corner.filtersFirst, 'the filters should lead the page, above the wall');
+                assert.ok(corner.beside, "the day's poster should hang beside the column");
                 assert.equal(await page.locator('.event-search-row > .wall-heading:first-child + .event-search').count(), 1);
                 assert.equal(await page.locator('.event-control-scroller > [data-event-picker="sort"]:first-child + [data-event-picker="travel"]').count(), 1);
                 const edges = await page.evaluate(() => {
@@ -442,50 +454,36 @@ const inside = (box, viewport) =>
             };
         });
         assert.ok(flagged.flag <= 0.5 && flagged.tape <= 4 && !flagged.clipped, `the column poster's flag is covered: ${JSON.stringify(flagged)}`);
-        // The street runs to the screen's edges: the column stands on the
-        // wall's plaster, and today's posters hang on a strip of it right
-        // under today's sky with the hour's weather. The plaster darkens at
-        // dusk; the captions sit on the page under it, not on it.
+        // One wall runs to the screen's edges, as on a desktop: today's sky
+        // with the hour's weather along its top, the column and the day's
+        // posters on its plaster. The plaster darkens at dusk.
         const plaster = async () =>
             touch.evaluate(() => {
-                const at = (s) => document.querySelector(s)?.getBoundingClientRect();
-                const sky = document.querySelector('.wall-board > .wall-sky');
-                const scene = at('.wall-scene');
-                const wall = getComputedStyle(document.querySelector('.wall-scene'), '::before');
-                // How light the wall is: the plaster colour, the last layer.
-                const shade = (el, pseudo) => {
-                    const image = getComputedStyle(el, pseudo).backgroundImage;
-                    const tail = image.slice(image.lastIndexOf('linear-gradient'));
-                    const srgb = tail.match(/color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/);
-                    const rgb = tail.match(/rgba?\((\d+), (\d+), (\d+)/);
-                    return srgb ? +srgb[1] + +srgb[2] + +srgb[3] : (+rgb[1] + +rgb[2] + +rgb[3]) / 255;
-                };
-                const day = document.querySelector('.wall-view--wall .wall-day');
+                const board = document.querySelector('.wall-board');
+                const sky = board.querySelector(':scope > .wall-sky');
+                const at = (el) => el.getBoundingClientRect();
+                // How light the wall is: its plaster colour.
+                const colour = getComputedStyle(board).backgroundColor;
+                const srgb = colour.match(/color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/);
+                const rgb = colour.match(/rgba?\((\d+), (\d+), (\d+)/);
                 return {
-                    edges: [scene.left, scene.right, day?.getBoundingClientRect().left, day?.getBoundingClientRect().right],
-                    sky: sky.offsetParent ? Math.abs(at('.wall-board > .wall-sky').bottom - day.getBoundingClientRect().top) : null,
+                    edges: [at(board).left, at(board).right],
+                    sky: sky.offsetParent ? Math.abs(at(sky).top - at(board).top) : null,
                     chip: sky.querySelector('.sky-weather').innerText.replace(/\s+/g, ' '),
-                    wallEnd: scene.bottom - parseFloat(wall.bottom),
-                    caption: at('.wall-scene .wall-column-caption').top,
-                    dayEnd: day?.getBoundingClientRect().bottom,
-                    credit: at('.wall-view--wall .festival-credit')?.top,
-                    shade: shade(document.querySelector('.wall-scene'), '::before'),
-                    dayShade: day && shade(day),
+                    shade: srgb ? +srgb[1] + +srgb[2] + +srgb[3] : (+rgb[1] + +rgb[2] + +rgb[3]) / 255,
                 };
             });
         const dusk = await plaster();
-        assert.deepEqual(dusk.edges, [0, 390, 0, 390], 'the plaster should reach the screen edges');
-        assert.ok(dusk.sky !== null && dusk.sky <= 1, 'today’s sky should sit right over the day’s posters');
+        assert.deepEqual(dusk.edges, [0, 390], 'the wall should reach the screen edges');
+        assert.ok(dusk.sky !== null && dusk.sky <= 1, 'today’s sky should run along the wall’s top');
         assert.match(dusk.chip, /16° Showers 19:30 · Sample weather/);
-        assert.ok(dusk.wallEnd <= dusk.caption && dusk.dayEnd <= dusk.credit, 'a caption sits on the plaster');
-        assert.ok(Math.abs(dusk.shade - dusk.dayShade) < 0.01, 'the two strips of wall should match');
         await touch.goto(`${base}?date=2026-09-30&at=13:10`, { waitUntil: 'networkidle' });
         assert.ok((await plaster()).shade > dusk.shade + 0.5, 'the plaster should darken at dusk');
         // Another day's posters hang without today's sky: it isn't their weather.
         await touch.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });
         const pastDay = await plaster();
         assert.equal(pastDay.sky, null, 'today’s sky should not hang over another day');
-        assert.deepEqual(pastDay.edges, [0, 390, 0, 390]);
+        assert.deepEqual(pastDay.edges, [0, 390]);
         await touch.goto(`${base}?date=2026-09-30&view=skyline&at=19:30`, { waitUntil: 'networkidle' });
         assert.equal(
             await touch.locator('.wall-board > .wall-sky').isVisible(),
