@@ -26,6 +26,13 @@ choice was C, with the column as it already looks on phones.
   the page they read at 5.3:1 at every hour.
 - On tablets the column's caption had been hidden behind its stone plinth.
   It now shows under the cobbles.
+- On tablets the wall starts above the column's finial; the finial had been
+  poking into the heading beside the Skyline toggle. The two filter rows
+  also stop 40px short of the right edge, where Composer's button floats.
+  Before, the button covered Saved or Sort on tablets between about 970
+  and 1120px tall (768×1024, 810×1080, 744×1133). Phones keep full-width
+  filters, since their first screen already keeps the button clear of
+  them.
 - The phone's first screen is unchanged. The column's poster and its Add
   to plan, search and sort are all visible. Nothing sits under Composer,
   and there is no sideways scroll. The browser test checks:

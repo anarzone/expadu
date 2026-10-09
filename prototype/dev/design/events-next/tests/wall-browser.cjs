@@ -462,6 +462,32 @@ const inside = (box, viewport) =>
         assert.match(await culture.getAttribute('aria-label'), /already over/);
         assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
+        // On a tablet the column's finial stands on the wall, not in the
+        // heading, and the filters stop short of Composer's button, so it
+        // covers none of them at any height.
+        for (const viewport of [{ width: 768, height: 1024 }, { width: 834, height: 1194 }]) {
+            const tablet = await browser.newPage({ viewport, hasTouch: true });
+            await tablet.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
+            const fit = await tablet.evaluate(() => {
+                const at = (s) => document.querySelector(s).getBoundingClientRect();
+                const finial = at('.wall-column-cap > span').top - 10;
+                return {
+                    finial: finial >= at('.wall-scene').top,
+                    filters: Math.max(
+                        ...[...document.querySelectorAll('.event-discovery :is(button, input)')]
+                            .filter((el) => el.offsetParent)
+                            .map((el) => el.getBoundingClientRect().right),
+                    ),
+                    composer: at('.composer-launcher').left,
+                };
+            });
+            assert.ok(fit.finial, `the column's finial rises above the wall at ${viewport.width}px`);
+            assert.ok(
+                fit.filters <= fit.composer,
+                `a filter reaches under Composer's button at ${viewport.width}px: ${fit.filters} > ${fit.composer}`,
+            );
+            await tablet.close();
+        }
         // A narrower desktop still fits two posters beside the corner.
         const narrow = await browser.newPage({ viewport: { width: 1280, height: 900 } });
         await narrow.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });

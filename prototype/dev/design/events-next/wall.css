@@ -2687,11 +2687,17 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
                 color-mix(in srgb, var(--wall-day), var(--wall-night) calc(var(--street-dark, 0) * 88%)) 0 0
             );
     }
+    /* The wall starts above the column's finial. */
     .wall-scene {
         order: -1;
         align-self: stretch;
         margin: 4px calc(var(--street-bleed) * -1) 18px;
-        padding: 0 var(--street-bleed);
+        padding: 44px var(--street-bleed) 0;
+    }
+    /* Composer's button floats over the content's right edge; the filters
+       stop short of it, so it never covers one at any height. */
+    .event-discovery > :is(.event-gallery-head, .event-controls) {
+        padding-right: 40px;
     }
     .wall-scene::before {
         content: '';
@@ -2809,10 +2815,18 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         border-width: 2px;
         background: var(--poster-column);
     }
-    /* A thinner line of cobbles, and lighter rain across the poster. */
+    /* A thinner line of cobbles, and lighter rain across the poster. The
+       column has no finial on a phone, and the filters keep the full
+       width: the first screen puts them clear of Composer's button. */
     .wall-board {
         --street-bleed: 20px;
         --street-ground: 18px;
+    }
+    .wall-scene {
+        padding-top: 0;
+    }
+    .event-discovery > :is(.event-gallery-head, .event-controls) {
+        padding-right: 0;
     }
     .wall-scene-rain {
         opacity: calc(var(--rain, 0) * 0.4);
