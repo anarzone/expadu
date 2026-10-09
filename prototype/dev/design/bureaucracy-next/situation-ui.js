@@ -15,6 +15,20 @@
                 })[c],
         );
     const I = (n) => root.ExpaduIcon(n);
+    // Features the backend doesn't support yet stay out of the first
+    // version (owner decision, 9 Oct 2026): reporting a change ("Something
+    // changed") and its "Check after your change" flags, the person-level
+    // status (Time to check, Needs review, Last checked), "Explore a topic"
+    // and the starter run's "1 of 3". Review → "Show features planned for
+    // later" brings them back to look at.
+    const later = () => {
+        try {
+            return root.localStorage?.getItem(LATER) === 'show';
+        } catch {
+            return false;
+        }
+    };
+    const LATER = 'expadu-bureaucracy-later';
     const button = (label, action, icon = '', primary = false) =>
         `<button type="button" class="${primary ? 'orientation-primary' : 'orientation-secondary'}" data-situation="${action}">${icon ? I(icon) : ''}${label}</button>`;
     const shortDate = (value) =>
@@ -47,7 +61,7 @@
             .map((key) => {
                 const f = D.field(key),
                     fact = r.facts[key],
-                    review = j.review.includes(key);
+                    review = later() && j.review.includes(key);
                 return `<div class="situation-fact ${review ? 'needs-review' : ''}"><button type="button" data-situation-edit="${key}"><span class="situation-symbol">${I(f.icon)}</span><span><small>${E(f.label)}</small><strong>${E(D.label(key, fact?.value))}</strong></span>${I(fact ? 'pencil' : 'plus')}</button>${review ? `<div class="situation-fact-review"><span>Check after your change</span>${fact ? `<button type="button" data-situation-keep="${key}">Still correct</button>` : ''}</div>` : ''}</div>`;
             })
             .join('')}</div>`;
@@ -66,7 +80,7 @@
         return `<p class="situation-arrived">${I('arrow')}<span>${E(list)} ${names.length > 1 ? 'are' : 'is'} now in Your tasks, from your answers.</span></p>`;
     }
     function intro() {
-        return `<section class="situation-welcome"><div class="situation-welcome-copy"><span class="situation-emblem">${I('document')}</span><h2>A little clarity.<br>One step at a time.</h2><p>Find your next steps, keep documents together and remember important dates.</p><div class="situation-benefits"><span>${I('arrow')}Next steps</span><span>${I('document')}Documents</span><span>${I('calendar')}Dates</span></div></div><div class="situation-start"><p>A few questions to find your starting point. Skip anything you’re unsure about.</p>${button('Get started', 'start', 'arrow', true)}${button('Browse first', 'browse', 'grid')}${button('Start in Composer', 'composer-start', 'chat')}</div></section>`;
+        return `<section class="situation-welcome"><div class="situation-welcome-copy"><span class="situation-emblem">${I('document')}</span><h2>A little clarity.<br>One step at a time.</h2><p>Find your next steps, keep documents together and remember important dates.</p><div class="situation-benefits"><span>${I('arrow')}Next steps</span><span>${I('document')}Documents</span><span>${I('calendar')}Dates</span></div></div><div class="situation-start"><p>A few questions to find your starting point. Skip anything you’re unsure about.</p>${button('Get started', 'start', 'arrow', true)}${later() ? button('Browse first', 'browse', 'grid') : ''}${button('Start in Composer', 'composer-start', 'chat')}</div></section>`;
     }
     // On the overview (compact), your situation is one line that opens in
     // place, so your plan comes first. It starts open when something needs
@@ -74,34 +88,47 @@
     // plan has nothing else to show yet (expand).
     function summary(s, compact = false, expand = false) {
         const j = J.state(s),
-            status = J.status(s),
+            full = J.status(s),
+            // The first version knows only whether details are missing.
+            status = later()
+                ? full
+                : full === 'incomplete'
+                  ? 'incomplete'
+                  : 'current',
             r = G.hydrate(s).details,
-            checked = D.lastChecked(r) || j.lastChecked,
-            badge = `<span class="situation-status ${status}">${I(status === 'review' ? 'info' : status === 'current' ? 'check' : 'document')}${{ review: 'Needs review', incomplete: 'Some details missing', check: 'Time to check', current: 'Answers checked' }[status]}</span>`;
-        const body = `${j.notice ? `<p class="situation-notice" role="status">${I('check')}${E(j.notice)}</p>` : ''}${status === 'check' ? `<div class="situation-checkin"><strong>Anything changed since your last visit?</strong><p>Work, home, residence or family — a quick check keeps this useful.</p><div>${button('Nothing changed', 'unchanged', 'check')}${button('Something changed', 'changes', 'pencil')}</div></div>` : ''}${facts(s)}<div class="situation-summary-actions">${status !== 'check' ? button('Something changed', 'changes', 'pencil') : ''}${J.questions(s).some((k) => !G.hydrate(s).details.facts[k]) ? button('Continue questions', 'start', 'arrow') : ''}</div>${j.review.length ? `<p class="situation-note">${I('info')}Your previous answers are kept until you confirm an update. Your tracked tasks may also need a review.</p>` : ''}${j.changes.length ? `<details class="situation-history"><summary>${I('clock')}Reported changes ${I('down')}</summary>${j.changes.map((c) => `<div><strong>${I(J.changes[c.kind].icon)}${E(J.changes[c.kind].label)}</strong><small>${c.effectiveFrom ? 'From ' + shortDate(c.effectiveFrom) : 'Reported ' + shortDate(c.reportedAt)}</small></div>`).join('')}</details>` : ''}${root.BureaucracyDetailsUI.history(G.hydrate(s).details)}`;
+            checked = later() ? D.lastChecked(r) || j.lastChecked : null,
+            badge =
+                !later() && status === 'current'
+                    ? ''
+                    : `<span class="situation-status ${status}">${I(status === 'review' ? 'info' : status === 'current' ? 'check' : 'document')}${{ review: 'Needs review', incomplete: 'Some details missing', check: 'Time to check', current: 'Answers checked' }[status]}</span>`;
+        const body = `${j.notice ? `<p class="situation-notice" role="status">${I('check')}${E(j.notice)}</p>` : ''}${status === 'check' ? `<div class="situation-checkin"><strong>Anything changed since your last visit?</strong><p>Work, home, residence or family — a quick check keeps this useful.</p><div>${button('Nothing changed', 'unchanged', 'check')}${button('Something changed', 'changes', 'pencil')}</div></div>` : ''}${facts(s)}<div class="situation-summary-actions">${later() && status !== 'check' ? button('Something changed', 'changes', 'pencil') : ''}${J.questions(s).some((k) => !G.hydrate(s).details.facts[k]) ? button('Continue questions', 'start', 'arrow') : ''}</div>${later() && j.review.length ? `<p class="situation-note">${I('info')}Your previous answers are kept until you confirm an update. Your tracked tasks may also need a review.</p>` : ''}${later() && j.changes.length ? `<details class="situation-history"><summary>${I('clock')}Reported changes ${I('down')}</summary>${j.changes.map((c) => `<div><strong>${I(J.changes[c.kind].icon)}${E(J.changes[c.kind].label)}</strong><small>${c.effectiveFrom ? 'From ' + shortDate(c.effectiveFrom) : 'Reported ' + shortDate(c.reportedAt)}</small></div>`).join('')}</details>` : ''}${root.BureaucracyDetailsUI.history(G.hydrate(s).details)}`;
         if (compact) {
             const count = Object.keys(r.facts).length;
             const open =
                 expand ||
                 ['check', 'review'].includes(status) ||
                 j.notice ||
-                j.review.length;
-            const said =
-                status === 'current' && checked
-                    ? `Last checked ${shortDate(checked)}`
-                    : {
-                          review: 'Needs review',
-                          incomplete: 'Some details missing',
-                          check: 'Time to check',
-                          current: 'Answers checked',
-                      }[status];
-            return `<details class="situation-summary situation-compact" ${open ? 'open' : ''}><summary><span class="situation-symbol">${I('sliders')}</span><span class="situation-compact-copy"><strong>Your situation</strong><small>${count} ${count === 1 ? 'answer' : 'answers'} · ${E(said)}</small></span>${I('down')}</summary><div class="situation-compact-body">${body}</div></details>`;
+                (later() && j.review.length);
+            const said = !later()
+                ? status === 'incomplete'
+                    ? 'Some details missing'
+                    : ''
+                : status === 'current' && checked
+                  ? `Last checked ${shortDate(checked)}`
+                  : {
+                        review: 'Needs review',
+                        incomplete: 'Some details missing',
+                        check: 'Time to check',
+                        current: 'Answers checked',
+                    }[status];
+            return `<details class="situation-summary situation-compact" ${open ? 'open' : ''}><summary><span class="situation-symbol">${I('sliders')}</span><span class="situation-compact-copy"><strong>Your situation</strong><small>${count} ${count === 1 ? 'answer' : 'answers'}${said ? ` · ${E(said)}` : ''}</small></span>${I('down')}</summary><div class="situation-compact-body">${body}</div></details>`;
         }
         return `<section class="situation-summary"><div class="situation-section-head"><div><h2>Your situation</h2><p>${checked ? 'Last checked ' + shortDate(checked) : 'A starting point, at your pace.'}</p></div>${badge}</div>${body}</section>`;
     }
     // Topics you might explore: not the ones already in your plan or
     // waiting for your arrival, so nothing is listed twice.
     function topics(s) {
+        if (!later()) return '';
         const facts = G.hydrate(s).details?.facts || {};
         const listed = [
             ...(root.BureaucracyPlan?.openedBy(s) || []),
@@ -124,7 +151,7 @@
         const j = J.state(s),
             r = G.hydrate(s).details;
         if (j.stage === 'question')
-            return `<div class="situation-progress"><span>${j.origin === 'starter' ? 'Your starting point' : 'Review an answer'}</span>${j.origin === 'starter' ? `<span>${Math.min(j.batch + 1, 3)} of 3</span>` : ''}</div>${root.BureaucracyDetailsUI.markup(
+            return `<div class="situation-progress"><span>${j.origin === 'starter' ? 'Your starting point' : 'Review an answer'}</span>${j.origin === 'starter' && later() ? `<span>${Math.min(j.batch + 1, 3)} of 3</span>` : ''}</div>${root.BureaucracyDetailsUI.markup(
                 r,
                 'You',
                 { bodyOnly: true, initial: j.origin === 'starter' },
@@ -152,5 +179,5 @@
             `<div class="orientation-actions">${button('Back to overview', 'overview', 'back')}</div>`
         );
     }
-    root.BureaucracySituationUI = { page, guide, topics };
+    root.BureaucracySituationUI = { page, guide, topics, later, LATER };
 })(globalThis);

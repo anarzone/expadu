@@ -4,6 +4,25 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## The first version, and what's planned for later — 9 October 2026
+
+Owner decision: what the backend doesn't support yet stays out of the first
+version. The preview now shows that first version by default; Review →
+"Show features planned for later" brings the rest back to look at (a
+per-viewer setting, `expadu-bureaucracy-later` in this browser).
+
+Planned for later (no endpoint or entity yet; don't build them now):
+
+- reporting a change ("Something changed", the change picker and its
+  "Reported changes" list) and the "Check after your change" flags it raises;
+- the person-level status: "Time to check" and its check-in, "Needs review",
+  "Answers checked" and "Last checked". The first version says only "Some
+  details missing", which the plan's open questions already tell;
+- "Explore a topic" with "Track task", and the welcome's "Browse first" that
+  leads to it;
+- the starter questions' "1 of 3" counter (the pause after three answers
+  stays: the backend pauses the run).
+
 ## Simpler overview, by our own UI rules — 8 October 2026 (in review)
 
 A UX check against the project's UI rules found three gaps; the owner asked

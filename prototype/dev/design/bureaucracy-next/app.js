@@ -245,7 +245,9 @@
             'previewExit',
             'previewPersona',
         ].some((key) => key in b.dataset) ||
-        ['close-editor', 'coverage', 'close'].includes(b.dataset.case) ||
+        ['close-editor', 'coverage', 'close', 'toggle-later'].includes(
+            b.dataset.case,
+        ) ||
         b.dataset.situation === 'browse';
     // A "Fresh start" preview takes answers so you can try the questions as
     // a new user, but keeps them in this tab: nothing is written to your
@@ -403,7 +405,7 @@
                 )
                 .join(
                     '',
-                )}<small>Read-only, like the app’s QA preview. Your plan stays as it is.</small>${allowed && !persona ? `<span class="review-tools-label">Other states</span><button data-case="qa-answer-limit">An answer that didn’t fit</button><button data-case="qa-conflict">Two answers that disagree</button><button data-case="qa-reconfirm">An answer to confirm again</button><button data-case="qa-changed">Guidance changed for a task</button><button data-case="qa-withdrawn">Guidance withdrawn for a task</button><button data-case="qa-date-review">A date under review</button><small>States the backend can be in, for review. Your answers are kept.</small>` : ''}</div></details></div>`;
+                )}<small>Read-only, like the app’s QA preview. Your plan stays as it is.</small>${allowed && !persona ? `<span class="review-tools-label">Other states</span><button data-case="qa-answer-limit">An answer that didn’t fit</button><button data-case="qa-conflict">Two answers that disagree</button><button data-case="qa-reconfirm">An answer to confirm again</button><button data-case="qa-changed">Guidance changed for a task</button><button data-case="qa-withdrawn">Guidance withdrawn for a task</button><button data-case="qa-date-review">A date under review</button><small>States the backend can be in, for review. Your answers are kept.</small>` : ''}<span class="review-tools-label">Planned for later</span><button data-case="toggle-later" aria-pressed="${JU.later()}">${JU.later() ? 'Hide' : 'Show'} features planned for later</button><small>Not in the first version: reporting a change, your situation’s status, Explore a topic and the starter’s “1 of 3”.</small></div></details></div>`;
         for (const token of opened)
             document
                 .querySelector(`[data-paper-row="${CSS.escape(token)}"]`)
@@ -1632,6 +1634,23 @@
             return;
         }
         // Review only: the states the backend can put the question in.
+        // Review: show or hide what's planned for later (not in the first
+        // version, owner decision 9 Oct 2026). A per-viewer preference.
+        if (action === 'toggle-later') {
+            try {
+                if (JU.later()) localStorage.removeItem(JU.LATER);
+                else localStorage.setItem(JU.LATER, 'show');
+            } catch {
+                /* Without storage the first version stays. */
+            }
+            render();
+            document
+                .querySelector('[data-case="toggle-later"]')
+                ?.closest('details')
+                ?.setAttribute('open', '');
+            document.querySelector('[data-case="toggle-later"]')?.focus();
+            return;
+        }
         if (action === 'qa-answer-limit') {
             state.interview = {
                 ...state.interview,

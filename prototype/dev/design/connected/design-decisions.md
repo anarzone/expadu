@@ -23,6 +23,12 @@ owner chose the recommended answers.
   shared `poster-art.css` and the poster inks in `tokens.css`. Small tiles add
   the category's icon. (Composer's event results still show illustrations;
   align them when Composer is next revised.)
+- **Paperwork's first version** leaves out what the backend doesn't support
+  yet: reporting a change and its "Check after your change" flags, the
+  person-level status ("Time to check", "Needs review", "Last checked"),
+  "Explore a topic" and the starter's "1 of 3". The preview hides them by
+  default; Review → "Show features planned for later" shows them. See
+  `bureaucracy-next/README.md`.
 - **One appointment record.** In the app, the appointment Paperwork records is
   the one Today, Composer and the leave-by time read: moving it in one place
   moves it everywhere. (The previews keep separate sample copies; don't copy
