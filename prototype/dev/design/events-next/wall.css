@@ -2843,8 +2843,8 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         height: 20px;
     }
     /* A thinner line of cobbles, and lighter rain across the poster. The
-       filters end before Composer's button here too: Sort sits beside the
-       search, and Free and Saved are in the Category menu (events.css). */
+       filters run to the edge again: on a phone only their empty ends sit
+       under Composer's button (events.css). */
     .wall-board {
         --street-bleed: 20px;
         --street-ground: 18px;
@@ -2853,7 +2853,7 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         padding-top: 30px;
     }
     .event-discovery > :is(.event-gallery-head, .event-controls) {
-        padding-right: 52px;
+        padding-right: 0;
     }
     .wall-scene-rain {
         opacity: calc(var(--rain, 0) * 0.4);

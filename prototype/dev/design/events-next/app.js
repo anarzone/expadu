@@ -620,27 +620,32 @@
         closePicker();
         setCalendarOpen(false);
     });
-    // On a phone the filters end before Composer's button, which floats at
-    // the right edge: Sort sits beside the search, and Free and Saved move
-    // into the Category menu under "Show only". Wider screens keep them in
-    // the search row. Moving the controls keeps their order for keyboards
-    // and screen readers.
+    // On a phone Composer's button floats over the right edge, so no small
+    // button may sit there: Sort leads the search row and the starting
+    // point leads Category and Area, while the search and the pickers
+    // stretch to the edge (their text stops short of it). Free and Saved
+    // move into the Category menu under "Show only". Wider screens keep the
+    // usual order. Moving the controls keeps their order for keyboards and
+    // screen readers.
     const phoneFilters = window.matchMedia?.('(max-width: 700px)');
     function placeFilters() {
         const phone = !!phoneFilters?.matches;
         const row = main.querySelector('.event-search-row');
         const only = main.querySelector('.events-only');
         const sort = main.querySelector('[data-event-picker="sort"]');
+        const travel = main.querySelector('[data-event-picker="travel"]');
+        const scroller = main.querySelector('.event-control-scroller');
         const sortPanel = main.querySelector('#events-sort');
         const toggles = ['#free-only', '#saved-events'].map((id) =>
             main.querySelector(id),
         );
         if (phone) {
-            row.append(sort);
+            row.prepend(sort);
+            scroller.prepend(travel);
             main.querySelector('.event-gallery-head').append(sortPanel);
             only.querySelector('.events-options').append(...toggles);
         } else {
-            main.querySelector('.event-control-scroller').append(sort);
+            scroller.append(travel, sort);
             main.querySelector('.event-controls').append(sortPanel);
             row.append(...toggles);
         }

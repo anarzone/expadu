@@ -5,16 +5,36 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Filters to the edge, on a phone — 9 October 2026
+
+Owner request: the search could be bigger, and the right side of the
+filters looked empty. Both rows run to the edge again, and Composer's button
+still covers nothing that matters:
+
+- Sort leads the search row, and the starting point leads Category and
+  Area. These icon buttons sit in a column on the left.
+- The search field and Area stretch to the right edge. Their text, the
+  search's clear button and Area's arrow stop 52px short of it, so the
+  button only ever floats over an empty end. On a 390px phone the search
+  field is 52px wider.
+- The Sort and starting-point menus open under their buttons, on the left.
+
+The browser test now checks what each control shows (its icon, label or
+typed text), not its box. It also checks that the search and Area reach
+the edge. Composer's button covers none of them at any of the 15 phone
+sizes.
+
 ## A slim column, and filters clear of Composer, on a phone — 9 October 2026
 
-The owner chose both sketches.
+The owner chose both sketches. (The filter rows were refined the same day;
+see above.)
 
 - **Filters.** Composer's button floats over the right edge of the screen.
   On mid-height phones it used to cover Saved or Sort on the first screen:
   6 of 15 common sizes, between about 690 and 830px tall (412×732 in
   Chrome, 390×753 with Safari's bars hidden, 390×797 as a home-screen
-  app). On a phone the filters now end 52px before the edge:
-  - Sort sits beside the search.
+  app). On a phone:
+  - Sort sits in the search row.
   - Category, Area and the starting point make the second row.
   - Free and Saved are in the Category menu under "Show only". A dot on
     Category shows when one is on.
@@ -30,9 +50,9 @@ The owner chose both sketches.
 - The first screen at 390×844 still shows the poster's Add to plan, Search
   and Sort. The browser test checks:
   - the column's width;
-  - Sort beside the search, and Free in the Category menu with its dot;
+  - Sort in the search row, and Free in the Category menu with its dot;
   - the filters moving back on a tablet;
-  - the filters ending before Composer's button at 360×720 and 390×753;
+  - the filters staying clear of Composer's button at 360×720 and 390×753;
   - the flag at dusk.
 
 ## The street on a phone — 9 October 2026

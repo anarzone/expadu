@@ -906,9 +906,34 @@ body[data-page='events'] {
         .event-control-icon {
         display: none;
     }
-    /* Sort sits beside the search, its menu under it. */
+    /* Composer's button floats over the right edge: Sort and the starting
+       point lead their rows, and the search, Category and Area stretch to
+       the edge with their text stopping short of it, so the button only
+       ever covers an empty end. Menus open under their buttons. */
     .event-gallery-head {
         position: relative;
+    }
+    .event-search {
+        padding-right: 60px;
+    }
+    .event-control-scroller > .event-travel-control {
+        margin-left: 0;
+    }
+    .event-control-scroller > .event-category-trigger {
+        flex: none;
+    }
+    .event-control-scroller > .event-filter-group {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+    .event-filter-group > [data-event-picker='area'] {
+        width: 100%;
+        padding-right: 52px;
+    }
+    #events-sort,
+    #events-travel {
+        left: 0;
+        right: auto;
     }
     .event-search-row > .event-sort-control {
         flex-shrink: 0;

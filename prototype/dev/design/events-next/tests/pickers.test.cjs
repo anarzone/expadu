@@ -35,6 +35,7 @@ function setup(search = '') {
                 },
                 dispatchEvent() {},
                 append() {},
+                prepend() {},
                 focus() {
                     this.focused = true;
                 },

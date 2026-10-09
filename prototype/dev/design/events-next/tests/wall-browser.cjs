@@ -31,7 +31,9 @@ const inside = (box, viewport) =>
             assert.ok(width <= viewport.width, `sideways scroll at ${viewport.width}px`);
 
             // The column's poster and its Add to plan, and the filters, are on
-            // the first screen of a phone; nothing sits under Composer.
+            // the first screen of a phone. Composer's button covers no icon
+            // button, label or typed text; it may float over the empty end
+            // of a field that runs to the edge.
             if (viewport.width < 700) {
                 const plan = await page
                     .locator('#event-featured .pp-plan')
@@ -53,24 +55,40 @@ const inside = (box, viewport) =>
                         r.y < fab.y + fab.height &&
                         fab.y < r.y + r.height &&
                         r.y + r.height <= innerHeight;
+                    const shown = (el) =>
+                        el.tagName === 'INPUT' || el.getBoundingClientRect().width <= 64
+                            ? [el]
+                            : [...el.querySelectorAll('svg, span')].filter(
+                                  (x) => x.tagName === 'svg' || x.textContent.trim(),
+                              );
                     return [
                         ...document.querySelectorAll(
                             '#main button, #main input, #main a',
                         ),
                     ]
-                        .filter((el) => hit(el.getBoundingClientRect()))
+                        .filter((el) => shown(el).some((x) => hit(x.getBoundingClientRect())))
                         .map((el) => el.outerHTML.slice(0, 60));
                 }, launcher);
                 assert.deepEqual(covered, [], 'a control sits under Composer');
                 // The column stands slim, about 60% of the screen, with the
-                // wall either side. Sort sits beside the search, Free and
-                // Saved are in the Category menu (a dot on Category when one
-                // is on), and a resize to a tablet puts them back.
+                // wall either side. Sort leads the search row and the starting
+                // point the second row; the search and Area run to the edge.
+                // Free and Saved are in the Category menu (a dot on Category
+                // when one is on), and a resize to a tablet puts them back.
                 const slim = await page.evaluate(
                     () => document.querySelector('.wall-column-body').getBoundingClientRect().width / innerWidth,
                 );
                 assert.ok(slim > 0.55 && slim < 0.68, `the column should be slim on a phone: ${slim}`);
-                assert.equal(await page.locator('.event-search-row [data-event-picker="sort"]').count(), 1);
+                assert.equal(await page.locator('.event-search-row > [data-event-picker="sort"]:first-child + .event-search').count(), 1);
+                assert.equal(await page.locator('.event-control-scroller > [data-event-picker="travel"]:first-child').count(), 1);
+                const edges = await page.evaluate(() => {
+                    const main = document.querySelector('#main');
+                    const edge = main.getBoundingClientRect().right - parseFloat(getComputedStyle(main).paddingRight);
+                    return ['.event-search', '[data-event-picker="area"]'].map(
+                        (s) => Math.round(edge - document.querySelector(s).getBoundingClientRect().right),
+                    );
+                });
+                assert.deepEqual(edges, [0, 0], 'the search and Area should run to the edge');
                 await page.click('[data-event-picker="category"]');
                 await page.locator('#events-category .events-only #free-only').click();
                 assert.equal(await page.locator('#free-only').getAttribute('aria-pressed'), 'true');
@@ -502,8 +520,9 @@ const inside = (box, viewport) =>
         assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
         // On phones and tablets the column's finial stands on the wall, not
-        // in the heading, and the filters stop short of Composer's button,
-        // so it covers none of them at any height.
+        // in the heading, and what the filters show (icon buttons, labels,
+        // typed text) stops short of Composer's button, so it covers none of
+        // it at any height.
         for (const viewport of [
             { width: 360, height: 720 },
             { width: 390, height: 753 },
@@ -520,6 +539,13 @@ const inside = (box, viewport) =>
                     filters: Math.max(
                         ...[...document.querySelectorAll('.event-discovery :is(button, input)')]
                             .filter((el) => el.offsetParent)
+                            .flatMap((el) =>
+                                el.tagName === 'INPUT' || el.getBoundingClientRect().width <= 64
+                                    ? [el]
+                                    : [...el.querySelectorAll('svg, span')].filter(
+                                          (x) => x.tagName === 'svg' || x.textContent.trim(),
+                                      ),
+                            )
                             .map((el) => el.getBoundingClientRect().right),
                     ),
                     composer: at('.composer-launcher').left,
