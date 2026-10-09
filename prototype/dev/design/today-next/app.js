@@ -281,19 +281,22 @@
     }
     const inMinutes = (value) =>
         value <= 0 ? 'now' : value < 60 ? `in ${value} min` : '';
+    // The tram to take leads (leaveBy's take): the earlier one when the
+    // planned one is too tight, as Travel and Composer lead.
     function leaveLine(item) {
         const plan = window.TodayContent?.leaveBy(item, M.minutes(day.time));
-        if (!plan) return { caption: '', advice: '', spare: '' };
-        const when = inMinutes(plan.leaveIn);
-        const caption = `<span class="route-leave">${I('walk')}<strong>${plan.leaveIn <= 0 ? 'Leave now' : `Leave by ${plan.leave}`}</strong>${when && plan.leaveIn > 0 ? `<small>${when}</small>` : ''}</span>`;
+        if (!plan) return { caption: '', advice: '', spare: '', take: null };
+        const take = plan.take;
+        const when = inMinutes(take.leaveIn);
+        const caption = `<span class="route-leave">${I('walk')}<strong>${take.leaveIn <= 0 ? 'Leave now' : `Leave by ${take.leave}`}</strong>${when && take.leaveIn > 0 ? `<small>${when}</small>` : ''}</span>`;
         const spare =
-            plan.spare !== null && plan.spare >= 0
-                ? ` · ${plan.spare} min to spare`
+            take.spare !== null && take.spare >= 0
+                ? ` · ${take.spare} min to spare`
                 : '';
         const advice = plan.tight
-            ? `<p class="route-advice" role="note"><strong>Only ${plan.spare} min to spare.</strong> ${plan.earlier ? `${plan.earlier.leaveIn <= 0 ? 'Leave now' : `Leave by ${plan.earlier.leave}`} for the ${E(plan.earlier.depart)} and arrive with ${plan.earlier.spare} min to spare.` : `Allow about ${plan.margin} min for finding the room${item.kind === 'official' ? ' and security checks' : ''}.`}</p>`
+            ? `<p class="route-advice" role="note">${plan.earlier ? `The ${E(M.travel(item).departure)} in your plan leaves only ${plan.spare} min to spare.` : `<strong>Only ${plan.spare} min to spare.</strong> Allow about ${plan.margin} min for finding the room${item.kind === 'official' ? ' and security checks' : ''}.`}</p>`
             : '';
-        return { caption, advice, spare };
+        return { caption, advice, spare, take: plan.earlier ? take : null };
     }
     function alternativesList(item) {
         const j = item.journey,
@@ -328,14 +331,18 @@
         const recover = delayed && travel.lateMinutes > 0;
         const leave =
             travel.stale || recover
-                ? { caption: '', advice: '', spare: '' }
+                ? { caption: '', advice: '', spare: '', take: null }
                 : leaveLine(item);
+        const departs = leave.take?.depart || travel.departure,
+            atStop = leave.take?.arrive || travel.stationArrival,
+            atAppointment =
+                leave.take?.atAppointment || travel.destinationArrival;
         const times = travel.stale
             ? `<div class="route-unknown">${I('train')}<span><strong>Check this journey</strong><small>Recheck for your current plan</small></span></div>`
-            : `<div class="route-times">${I('train')}<span class="route-time"><small>Departs</small>${delayed ? `<del>${j.depart}</del>` : ''}<b>${E(travel.departure || '—')}</b></span><span class="route-connector" aria-hidden="true"><i></i></span><span class="route-time"><small>At stop</small>${delayed ? `<del>${j.arrive}</del>` : ''}<b>${E(travel.stationArrival || '—')}</b></span></div>`;
-        return `<button class="route-summary" data-today-route="${id}" aria-label="Journey to ${E(item.title)}: ${travel.stale ? 'status unavailable' : `departs ${travel.departure}, arrives at stop ${travel.stationArrival}`}" aria-haspopup="dialog">
+            : `<div class="route-times">${I('train')}<span class="route-time"><small>Departs</small>${delayed ? `<del>${j.depart}</del>` : ''}<b>${E(departs || '—')}</b></span><span class="route-connector" aria-hidden="true"><i></i></span><span class="route-time"><small>At stop</small>${delayed ? `<del>${j.arrive}</del>` : ''}<b>${E(atStop || '—')}</b></span></div>`;
+        return `<button class="route-summary" data-today-route="${id}" aria-label="Journey to ${E(item.title)}: ${travel.stale ? 'status unavailable' : `departs ${departs}, arrives at stop ${atStop}`}" aria-haspopup="dialog">
             ${leave.caption}<span class="route-caption">${delayed ? swatch(`${j.delay} min delay`, 'warning') + swatch('Simulated', 'sample') : ''}<strong>${travel.stale ? `Journey to ${E(item.location)}` : `Line ${E(j.line)} · ${E(j.from)} → ${E(alightStop(j))}`}</strong></span>
-            ${times}<span class="route-foot">${travel.destinationArrival ? `${j.walkMinutes} min walk · <strong>${delayed ? 'Est. ' : ''}at appointment ${travel.destinationArrival}</strong>${leave.spare}` : 'Arrival at appointment needs checking'}</span>
+            ${times}<span class="route-foot">${travel.destinationArrival ? `${j.walkMinutes} min walk · <strong>${delayed ? 'Est. ' : ''}at appointment ${atAppointment}</strong>${leave.spare}` : 'Arrival at appointment needs checking'}</span>
             ${!delayed && !travel.stale ? '<span class="route-foot">Scheduled · no live status</span>' : ''}
         </button>${leave.advice}${
             travel.stale
@@ -856,8 +863,16 @@
     const sheet = (html) => `<div class="today-sheet">${html}</div>`;
     function journeySteps(item, plan) {
         const j = item.journey,
-            t = M.travel(item),
             delayed = j.delay > 0;
+        // The tram to take, when it isn't the planned one.
+        const lead = plan?.tight && plan.earlier ? plan.earlier : null;
+        const t = lead
+            ? {
+                  departure: lead.depart,
+                  stationArrival: lead.arrive,
+                  destinationArrival: lead.atAppointment,
+              }
+            : M.travel(item);
         const step = (icon, title, detail, time) =>
             `<li class="is-${icon}"><span class="sheet-step-icon">${I(icon)}</span><span class="sheet-step-copy"><strong>${title}</strong>${detail ? `<small>${detail}</small>` : ''}</span>${time ? `<span class="sheet-step-time">${time}</span>` : ''}</li>`;
         return `<ol class="sheet-steps" aria-label="Journey, step by step">${[
@@ -866,7 +881,7 @@
                       'walk',
                       `Walk to ${E(j.from)}`,
                       `${j.accessWalkMinutes} min`,
-                      plan ? plan.leave : '',
+                      plan ? (lead || plan).leave : '',
                   )
                 : '',
             step(
@@ -897,11 +912,12 @@
             : window.TodayContent?.leaveBy(item, M.minutes(day.time));
         const delayed = !t.stale && j.delay > 0;
         const late = delayed && t.lateMinutes > 0;
-        const timing = plan
+        const take = plan?.take;
+        const timing = take
             ? [
-                  plan.leaveIn > 0 ? inMinutes(plan.leaveIn) : '',
-                  plan.spare !== null && plan.spare >= 0
-                      ? `${plan.spare} min to spare before ${item.start}`
+                  take.leaveIn > 0 ? inMinutes(take.leaveIn) : '',
+                  take.spare !== null && take.spare >= 0
+                      ? `${take.spare} min to spare before ${item.start}`
                       : '',
               ]
                   .filter(Boolean)
@@ -912,7 +928,7 @@
             : late
               ? `<div class="sheet-lead is-late"><span>On this train</span><strong>${t.lateMinutes} min late</strong><small>Estimated at ${E(item.title)} ${t.destinationArrival} · it starts ${item.start}</small></div>`
               : plan
-                ? `<div class="sheet-lead"><span>Leave by</span><strong>${plan.leaveIn <= 0 ? 'Now' : plan.leave}</strong>${timing ? `<small>${timing}</small>` : ''}${plan.tight && plan.earlier ? `<p class="sheet-lead-tip"><strong>Tight for this appointment.</strong> ${plan.earlier.leaveIn <= 0 ? 'Leave now' : `Leave by ${plan.earlier.leave}`} for the ${E(plan.earlier.depart)} and arrive with ${plan.earlier.spare} min to spare.</p>` : ''}</div>`
+                ? `<div class="sheet-lead"><span>Leave by</span><strong>${take.leaveIn <= 0 ? 'Now' : take.leave}</strong>${timing ? `<small>${timing}</small>` : ''}${plan.tight && plan.earlier ? `<p class="sheet-lead-tip">The ${E(t.departure)} in your plan leaves only ${plan.spare} min to spare.</p>` : ''}</div>`
                 : '';
         let fallback = '';
         if (delayed && (j.alternatives || []).length)
@@ -971,11 +987,11 @@
                       'data-today-route',
                       'train',
                       plan
-                          ? plan.leaveIn <= 0
+                          ? plan.take.leaveIn <= 0
                               ? 'Leave now'
-                              : `Leave by ${plan.leave}`
+                              : `Leave by ${plan.take.leave}`
                           : `Line ${E(item.journey.line)}`,
-                      `Line ${E(item.journey.line)} from ${E(item.journey.from)} · ${t.destinationArrival ? `there ≈ ${t.destinationArrival}` : 'arrival needs checking'}`,
+                      `Line ${E(item.journey.line)} from ${E(item.journey.from)} · ${(plan?.take.atAppointment || t.destinationArrival) ? `there ≈ ${plan?.take.atAppointment || t.destinationArrival}` : 'arrival needs checking'}`,
                   );
         const status = ['Pending', 'Proposal'].includes(item.planStatus)
             ? 'To review'

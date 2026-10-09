@@ -173,11 +173,23 @@
             if (earlierLeave >= now)
                 earlier = {
                     depart: j.earlier.depart,
+                    arrive: j.earlier.arrive,
+                    atAppointment: clock(earlierArrival),
                     leave: clock(earlierLeave),
                     leaveIn: earlierLeave - now,
                     spare: minutes(item.start) - earlierArrival,
                 };
         }
+        // The tram to take: the earlier one when the planned one is too
+        // tight, as Travel and Composer lead (owner decision, 9 Oct 2026).
+        const take = earlier || {
+            depart: t.departure,
+            arrive: t.stationArrival,
+            atAppointment: t.destinationArrival,
+            leave: clock(leave),
+            leaveIn: leave - now,
+            spare,
+        };
         return {
             leave: clock(leave),
             leaveIn: leave - now,
@@ -185,6 +197,7 @@
             margin,
             tight,
             earlier,
+            take,
         };
     }
     // Travel between consecutive plans in different places.

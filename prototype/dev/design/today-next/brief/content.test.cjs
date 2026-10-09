@@ -369,6 +369,11 @@ test('leave-by allows an official appointment a wider margin and offers an earli
     assert.equal(plan.tight, true);
     assert.equal(plan.earlier.depart, '13:14');
     assert.equal(plan.earlier.spare, 12);
+    // The 13:14 leads, as in Travel and Composer (owner decision, 9 Oct).
+    assert.equal(plan.take.depart, '13:14');
+    assert.equal(plan.take.arrive, '13:42');
+    assert.equal(plan.take.atAppointment, '13:48');
+    assert.equal(plan.take.leaveIn, 0);
     // An informal plan with the same journey is not considered tight.
     day.agenda[0].kind = undefined;
     day.agenda[0].journey.walkMinutes = 3;

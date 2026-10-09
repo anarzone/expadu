@@ -7,6 +7,21 @@ in the design work; it is not a new visual direction. Later explicit owner
 decisions take precedence. Keep the implementation examples and this record in
 sync when a decision changes.
 
+## Before implementing Today and Paperwork — owner decisions, 9 October 2026
+
+A deep test of both pages at 390px and 1280px left three open questions; the
+owner chose the recommended answers.
+
+- **The 13:14 leads.** The planned 13:24 leaves only 2 min to spare before an
+  official appointment, so Today leads with the 13:14 ("Leave now · at
+  appointment 13:48 · 12 min to spare") and notes "The 13:24 in your plan
+  leaves only 2 min to spare", the rule Travel and Composer already follow.
+  A delayed tram is still shown as the one you're on, with its alternatives.
+- **One appointment record.** In the app, the appointment Paperwork records is
+  the one Today, Composer and the leave-by time read: moving it in one place
+  moves it everywhere. (The previews keep separate sample copies; don't copy
+  that.)
+
 ## Which design is current
 
 - **Today:** the latest working UI review is `today-next/brief/`: the restored

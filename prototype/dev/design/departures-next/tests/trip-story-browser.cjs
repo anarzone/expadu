@@ -25,6 +25,16 @@ const base = 'http://127.0.0.1:8765/dev/design/';
                     .innerText(),
                 'Line 4 · Neumarkt → Wiener Platz',
             );
+            // Both lead with the 13:14; the planned 13:24 is too tight for
+            // an official appointment (owner decision, 9 Oct 2026).
+            assert.match(
+                await page.locator('.route-summary').first().innerText(),
+                /Leave now[\s\S]*13:14[\s\S]*13:42[\s\S]*12 min to spare/,
+            );
+            assert.equal(
+                await page.locator('.route-advice').first().innerText(),
+                'The 13:24 in your plan leaves only 2 min to spare.',
+            );
 
             await page.goto(base + 'departures-next/', {
                 waitUntil: 'networkidle',
@@ -32,6 +42,10 @@ const base = 'http://127.0.0.1:8765/dev/design/';
             assert.match(
                 await page.locator('.next-trip-name').innerText(),
                 /Neumarkt → Wiener Platz/,
+            );
+            assert.match(
+                await page.locator('.next-trip-times').innerText(),
+                /13:14[\s\S]*13:42/,
             );
             assert.equal(
                 await page.locator('.sample-endpoints').innerText(),

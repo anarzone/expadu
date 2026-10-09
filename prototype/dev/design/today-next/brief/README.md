@@ -15,11 +15,18 @@ EU Blue Card · 1 of 5 documents ready" read Paperwork's plan
 ready or record the submission in Paperwork. With nothing saved there, the
 page is pixel-identical.
 
+**9 October, the 13:14 leads (owner decision):** the planned 13:24 leaves
+only 2 min to spare, too tight for an official appointment, so Today leads
+with the 13:14 as Travel and Composer do: "Leave now · 13:14 → 13:42 · at
+appointment 13:48 · 12 min to spare", and notes "The 13:24 in your plan leaves
+only 2 min to spare." The journey sheet and the plan's details follow the same
+tram (`leaveBy().take` in `content.js`). A delayed tram is still shown as the
+one you're on, with its alternatives.
+
 **7 October, one trip story:** the journey card, its "Get off at" step and the
 journey sheet name the tram stops ("Line 4 · Neumarkt → Wiener Platz"), as
-Travel does; the appointment itself is still in Mülheim. Which tram leads
-(the planned 13:24 here, the 13:14 in Travel) is waiting for the owner's
-decision. `departures-next/tests/trip-story-browser.cjs` checks both pages.
+Travel does; the appointment itself is still in Mülheim.
+`departures-next/tests/trip-story-browser.cjs` checks both pages.
 
 **7 October:** the Check departures board shows Köln Neumarkt at the sample
 day's clock (line 4 at 13:14 and 13:24, "Sample day · 13:10"), matching the
