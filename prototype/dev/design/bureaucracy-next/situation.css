@@ -102,7 +102,7 @@
     flex-wrap: wrap;
     gap: 10px;
     padding: 22px;
-    background: var(--color-select-bg, #e5f5f8);
+    border-top: 1px solid var(--color-border);
 }
 .situation-start h3 {
     margin: 0;

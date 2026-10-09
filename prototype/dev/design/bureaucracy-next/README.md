@@ -28,10 +28,11 @@ for all three to be fixed.
   Explore a topic leaves out topics already in your plan or waiting for your
   arrival.
 
-Not changed in this pass (cyan section backgrounds the colour rules also
-cover; for the owner to decide): the Fresh start welcome panel, the "Look
-around first" banner, the current step's action box and the "For this task"
-panel on a task page, and the family cards.
+The owner then asked for the remaining cyan surfaces too: the Fresh start
+welcome panel (now divided by a hairline), the "Look around first" banner, the
+current step's action box and the "For this task" panel on a task page, and
+the family card use the ivory surface with a hairline; a family member's
+portrait uses Paperwork lavender.
 
 ## One example of everything the backend can do — 8 October 2026 (in review)
 
