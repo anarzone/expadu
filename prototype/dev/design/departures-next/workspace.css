@@ -1267,137 +1267,175 @@ body.travel-palette .details-toggle:active {
         padding-inline: 8px;
     }
 }
-/* Sample day: the appointment trip leads the planner, in Today's journey
-   language (cyan journey block, amber for a tight connection). */
+/* Your day leads the planner on the sample day: the day's trips as
+   tickets, a stub with the time, a perforation, then how to get there. On
+   desktop it fills the right column beside the form until there's a search. */
 body.travel-palette .next-trip {
     display: grid;
-    gap: 10px;
-    margin: 0 0 24px;
-    padding: 16px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-surface);
+    gap: 12px;
+    margin: 0;
 }
 body.travel-palette .next-trip[hidden] {
     display: none;
 }
-.next-trip-head {
+.your-day-head {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
 }
-.next-trip-head h2 {
+.your-day-head h2 {
     margin: 0;
     font-size: var(--text-section);
     font-weight: var(--weight-semibold);
 }
-.next-trip-head span {
+.your-day-head span {
     color: var(--color-text-muted);
     font-size: var(--text-caption);
     white-space: nowrap;
 }
-.next-trip-plan {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin: 0;
-    font-size: var(--text-body);
+.day-tickets {
+    display: grid;
+    gap: 12px;
 }
-.next-trip-plan time {
+.day-ticket {
+    display: grid;
+    gap: 10px;
+    padding: 14px 16px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.day-ticket.is-next {
+    border-color: var(--teal);
+    box-shadow: 0 6px 18px -12px #00768b66;
+}
+.ticket-head {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--color-border);
+}
+/* The perforation's notches, cut into the ticket's edges. */
+.ticket-head::before,
+.ticket-head::after {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-bg-canvas);
+}
+.ticket-head::before {
+    left: -24px;
+    clip-path: inset(0 0 0 50%);
+}
+.ticket-head::after {
+    right: -24px;
+    clip-path: inset(0 50% 0 0);
+}
+.day-ticket.is-next .ticket-head::before,
+.day-ticket.is-next .ticket-head::after {
+    border-color: var(--teal);
+}
+.ticket-head > time {
+    font-size: var(--text-title-sm);
     font-weight: var(--weight-semibold);
     font-variant-numeric: tabular-nums;
 }
-.next-trip-plan strong {
+.ticket-head > span {
+    display: grid;
+    min-width: 0;
+}
+.ticket-head strong {
     font-weight: var(--weight-semibold);
 }
-.next-trip-plan small {
-    margin-left: 6px;
+.ticket-head small {
     color: var(--color-text-muted);
     font-size: var(--text-small);
 }
-.next-trip-route {
-    display: grid;
-    gap: 8px;
-    padding: 12px 14px;
-    border-radius: var(--radius-md);
+.ticket-head .ticket-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
     background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
 }
-.next-trip-route p {
-    margin: 0;
-}
-.next-trip-leave {
+.ticket-leave {
     display: flex;
     align-items: baseline;
     gap: 8px;
+    margin: 0;
 }
-.next-trip-leave strong {
-    font-size: var(--text-body);
-    font-weight: var(--weight-semibold);
-}
-.next-trip-leave span {
-    color: var(--color-select-text);
-    font-size: var(--text-small);
-}
-.next-trip-name {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: var(--text-control);
-    font-weight: var(--weight-medium);
-}
-.next-trip-name .line-badge {
-    width: auto;
-    min-height: 28px;
-    padding: 0 8px;
-    background: var(--color-bg-surface);
-}
-.next-trip-times {
-    display: grid;
-    grid-template-columns: auto minmax(24px, 1fr) auto;
-    align-items: end;
-    gap: 12px;
-}
-.next-trip-times > span:not(.next-trip-track) {
-    display: grid;
-    gap: 2px;
-}
-.next-trip-times > span:last-child {
-    text-align: right;
-}
-.next-trip-times small {
-    color: var(--color-text-soft);
-    font-size: var(--text-caption);
-}
-.next-trip-times time {
+.ticket-leave strong {
     font-size: var(--text-section);
     font-weight: var(--weight-semibold);
+}
+.ticket-leave time {
+    color: var(--color-text-muted);
+    font-size: var(--text-small);
     font-variant-numeric: tabular-nums;
 }
-.next-trip-track {
-    position: relative;
-    height: 2px;
-    margin-bottom: 11px;
-    border-radius: var(--radius-pill);
-    background: var(--color-select-text);
+.ticket-legs {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0 0 0 4px;
+    list-style: none;
 }
-.next-trip-track::after {
+.ticket-legs li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 34px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.ticket-legs li > svg {
+    justify-self: center;
+    width: 18px;
+    height: 18px;
+    color: var(--teal);
+}
+.ticket-legs li:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 50%;
-    right: 0;
-    width: 7px;
-    height: 7px;
-    border-top: 2px solid var(--color-select-text);
-    border-right: 2px solid var(--color-select-text);
-    transform: translateY(-50%) rotate(45deg);
+    left: 12px;
+    top: 28px;
+    height: 10px;
+    border-left: 2px dotted var(--teal);
 }
-.next-trip-route small {
-    color: var(--color-text-soft);
+.ticket-legs .is-ride {
+    color: var(--color-text);
+    font-size: var(--text-control);
+}
+.ticket-legs .is-ride span {
+    display: grid;
+}
+.ticket-legs .is-ride small {
+    color: var(--color-text-muted);
     font-size: var(--text-caption);
-    line-height: var(--leading-body);
 }
-.next-trip-advice {
+.ticket-spare,
+.ticket-note,
+.ticket-weather {
+    margin: 0;
+    font-size: var(--text-small);
+}
+.ticket-spare {
+    color: var(--color-select-text);
+    font-weight: var(--weight-medium);
+}
+.ticket-advice {
     margin: 0;
     padding: 8px 12px;
     border-radius: var(--radius-md);
@@ -1406,69 +1444,77 @@ body.travel-palette .next-trip[hidden] {
     font-size: var(--text-small);
     line-height: var(--leading-body);
 }
-.next-trip-action {
+.ticket-note {
+    color: var(--color-text-muted);
+}
+.ticket-weather {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-select-text);
+}
+.ticket-weather svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.ticket-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.ticket-actions button {
     display: inline-flex;
     align-items: center;
+    gap: 8px;
+    min-height: 44px;
+}
+.ticket-actions button svg {
+    width: 18px;
+    height: 18px;
+}
+body.travel-palette .day-example {
     justify-self: start;
-    gap: 6px;
-    min-height: var(--touch-target);
-    padding: 0 16px;
-    border: 1px solid var(--color-text);
-    border-radius: var(--radius-pill);
-    background: transparent;
-    color: var(--color-text);
-    font: inherit;
-    font-size: var(--text-control);
-    font-weight: var(--weight-semibold);
-    cursor: pointer;
-    transition: background-color 120ms var(--ease);
+    min-height: 44px;
+    font-size: var(--text-small);
 }
-.next-trip-action svg {
-    width: 16px;
-    height: 16px;
+/* From starts at your location; its suggestions lead with your location,
+   Home and Work, and your recent trips. */
+.from-hint {
+    color: var(--color-text-muted);
+    font-weight: var(--weight-regular);
 }
-.next-trip-action:active {
-    background: var(--color-bg-hover);
+.from-hint[hidden] {
+    display: none;
 }
-@media (hover: hover) {
-    .next-trip-action:hover {
-        background: var(--color-bg-quiet);
-    }
+body.travel-palette .suggestion-quick {
+    border-bottom: 1px solid var(--line);
 }
-/* Desktop: the trip sits across both planner columns. */
+body.travel-palette .suggestion-quick button > svg {
+    color: var(--teal);
+}
 @media (min-width: 1000px) {
+    body.travel-palette .journey-intro-grid {
+        row-gap: 0;
+    }
+    body.travel-palette .journey-desk {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+    }
     body.travel-palette .next-trip {
-        grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.5fr);
-        column-gap: 36px;
-        align-items: start;
-        margin-bottom: 32px;
-        padding: 20px 24px;
-    }
-    .next-trip-head {
-        grid-column: 1 / -1;
-    }
-    .next-trip-plan {
-        grid-column: 1;
-        flex-direction: column;
-        gap: 2px;
-    }
-    .next-trip-plan time {
-        font-size: var(--text-section);
-    }
-    .next-trip-plan small {
-        display: block;
-        margin-left: 0;
-    }
-    .next-trip-route {
         grid-column: 2;
-        grid-row: 2 / span 2;
+        grid-row: 1;
+        padding: 0 0 8px 36px;
+        border-left: 1px solid var(--line);
     }
-    .next-trip-advice {
+    body.travel-palette .journey-results {
         grid-column: 2;
-    }
-    .next-trip-action {
-        grid-column: 1;
-        grid-row: 3;
+        grid-row: 2;
     }
 }
 /* The sample day holds only the appointment trip's departures. */
@@ -1492,11 +1538,6 @@ body.travel-palette .next-trip[hidden] {
 .timetable-scope .quiet-button {
     grid-column: 2;
     justify-self: start;
-}
-@media (prefers-reduced-motion: reduce) {
-    .next-trip-action {
-        transition: none;
-    }
 }
 /* Journey preferences: aligned walking choices and a light "off" switch
    (the shared palette greys it, which reads as "on"). */
@@ -1545,22 +1586,6 @@ body.travel-palette :is(.stop-nearby, .step-nearby) svg {
 }
 body.travel-palette .stop-nearby[hidden] {
     display: none;
-}
-/* Phones: a tighter trip card, so the form's controls sit clear of the
-   floating Composer button on the first screen. */
-@media (max-width: 700px) {
-    body.travel-palette .next-trip {
-        gap: 8px;
-        margin-bottom: 20px;
-        padding: 14px;
-    }
-    .next-trip-route {
-        gap: 6px;
-        padding: 10px 12px;
-    }
-    .next-trip-advice {
-        padding: 6px 10px;
-    }
 }
 /* Phones: the floating Composer button sits at the bottom right, so the
    preferences button stays beside the time instead of at the right edge. */

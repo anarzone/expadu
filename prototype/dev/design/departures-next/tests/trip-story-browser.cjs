@@ -1,10 +1,10 @@
 // Run with: node prototype/dev/design/departures-next/tests/trip-story-browser.cjs
 // (needs `python3 prototype/serve.py` on port 8765).
 // Today and Travel name the appointment trip's stops the same way, and
-// Travel's late-night capture says when it was captured beside its times.
+// Travel's link to its late-night capture says when it was captured.
 const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
-const base = 'http://127.0.0.1:8765/dev/design/';
+const base = `${process.env.BASE || 'http://127.0.0.1:8765'}/dev/design/`;
 (async () => {
     const browser = await chromium.launch();
     try {
@@ -40,16 +40,14 @@ const base = 'http://127.0.0.1:8765/dev/design/';
                 waitUntil: 'networkidle',
             });
             assert.match(
-                await page.locator('.next-trip-name').innerText(),
-                /Neumarkt → Wiener Platz/,
-            );
-            assert.match(
-                await page.locator('.next-trip-times').innerText(),
-                /13:14[\s\S]*13:42/,
+                await page
+                    .locator('.day-ticket.is-next .ticket-legs')
+                    .innerText(),
+                /Neumarkt[\s\S]*Tram 4 at 13:14[\s\S]*Wiener Platz, 13:42/,
             );
             assert.equal(
-                await page.locator('.sample-endpoints').innerText(),
-                'Köln Neumarkt → Museum Ludwig · captured Mon 7 Sept at 23:37. These are that night’s times, not today’s.',
+                await page.locator('.day-example').innerText(),
+                'Explore a captured example (Mon 7 Sept at 23:37)',
             );
             assert.deepEqual(errors, []);
             await page.close();

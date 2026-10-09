@@ -483,6 +483,68 @@ const searchPlaces = [
     { name: 'Merkenich Mitte', detail: 'Tram stop · Line 12', icon: 'train' },
     { name: 'Merkenich', detail: 'Bus stop · Line 121', icon: 'bus' },
 ];
+// "Your location" is where the sample day puts you (J.day.here).
+const isHere = (value) =>
+    !!J.day &&
+    value.trim().toLocaleLowerCase() === J.day.here.name.toLocaleLowerCase();
+function syncFromHint() {
+    const hint = $('.from-hint');
+    if (!hint) return;
+    hint.hidden = !isHere(from.value);
+    if (J.day) hint.textContent = ` · sample: near ${J.day.here.near}`;
+}
+// Recent trips are the traveller's own searches, kept on this device.
+const recentKey = 'expadu-travel-recent';
+function recentTrips() {
+    try {
+        return JSON.parse(globalThis.localStorage?.getItem(recentKey) || '[]');
+    } catch {
+        return [];
+    }
+}
+function rememberTrip() {
+    const trip = { from: from.value.trim(), to: to.value.trim() };
+    const list = [
+        trip,
+        ...recentTrips().filter(
+            (item) => item.from !== trip.from || item.to !== trip.to,
+        ),
+    ].slice(0, 3);
+    try {
+        globalThis.localStorage?.setItem(recentKey, JSON.stringify(list));
+    } catch {}
+}
+// Until you type, your location, Home and Work, and your recent trips lead
+// the suggestions.
+function quickSuggestions(field, query) {
+    const here = J.day?.here;
+    const items = [];
+    if (
+        field === from &&
+        here &&
+        !isHere(from.value) &&
+        here.name.toLocaleLowerCase().includes(query)
+    )
+        items.push(
+            `<button type="button" data-place="${safe(here.name)}">${icon('locate')}<span class="suggestion-copy"><strong>${safe(here.name)}</strong><small>Sample: ${here.walk} min walk from ${safe(here.near)}</small></span></button>`,
+        );
+    if (!query) {
+        for (const [name, symbol] of [
+            ['Home', 'home'],
+            ['Work', 'briefcase'],
+        ])
+            items.push(
+                `<button type="button" data-place-setup="${name}">${icon(symbol)}<span class="suggestion-copy"><strong>${name}</strong><small>Add an address</small></span></button>`,
+            );
+        for (const trip of recentTrips())
+            items.push(
+                `<button type="button" data-recent-from="${safe(trip.from)}" data-recent-to="${safe(trip.to)}">${icon('clock')}<span class="suggestion-copy"><strong>${safe(trip.to)}</strong><small>Recent · from ${safe(trip.from)}</small></span></button>`,
+            );
+    }
+    return items.length
+        ? `<div class="suggestion-quick">${items.join('')}</div>`
+        : '';
+}
 function hideSuggestions() {
     $('#suggestions').hidden = true;
     from.setAttribute('aria-expanded', 'false');
@@ -494,14 +556,16 @@ function suggestions(field) {
     const found = searchPlaces.filter(
         (place) => !query || place.name.toLocaleLowerCase().includes(query),
     );
+    const quick = quickSuggestions(field, query);
     $('#suggestions').innerHTML = found.length
-        ? `${found
+        ? `${quick}${found
               .map(
                   (place) =>
                       `<button type="button" data-place="${safe(place.name)}" title="${safe(`${place.name} · ${place.detail}`)}">${icon(place.icon)}<span class="suggestion-copy"><strong>${safe(place.name)}</strong><small>${safe(place.detail)}</small></span></button>`,
               )
               .join('')}<span class="suggestion-note">Sample locations</span>`
-        : '<p>No matching sample location. You can keep the place name you entered.</p>';
+        : quick ||
+          '<p>No matching sample location. You can keep the place name you entered.</p>';
     $('#suggestions').hidden = false;
     from.setAttribute('aria-expanded', String(field === from));
     to.setAttribute('aria-expanded', String(field === to));
@@ -591,7 +655,9 @@ function renderPlanner() {
         'aria-label',
         `Edit journey from ${from.value} to ${to.value}`,
     );
-    $('#journey-start').hidden = state.results;
+    // On the sample day, Your day replaces the captured example (still one
+    // link away).
+    $('#journey-start').hidden = state.results || !!J.day;
     const nextTrip = $('#next-trip');
     if (nextTrip) nextTrip.hidden = state.results || !J.day;
 }
@@ -618,6 +684,7 @@ function searchJourney() {
         (!from.value.trim() ? from : to).focus();
         return;
     }
+    rememberTrip();
     state.results = true;
     state.boardRoute = null;
     boardingReturn = null;
@@ -684,30 +751,94 @@ function renderSampleRoutes() {
         .map((route) => option(route, routes, true))
         .join('');
 }
-// The sample day's appointment trip leads the planner: the tram to take now,
-// with Today's rule for tight official appointments.
-function renderNextTrip() {
-    const panel = $('#next-trip');
+// The appointment trip's trams: the one in the plan, and the one to take
+// under Today's rule for tight official appointments.
+function dayChoice() {
     const trip = J.day;
-    if (!panel) return;
-    panel.hidden = !trip || state.results;
-    if (!trip) return;
+    if (!trip) return null;
     const spare = (route) => minutesOf(trip.start) - minutesOf(route.arrive);
     const margin = trip.kind === 'official' ? 10 : 5;
     const planned = J.dayRoutes.find((route) => route.inPlan);
     const earlier = J.dayRoutes.find((route) => !route.inPlan);
     const best = spare(planned) < margin && earlier ? earlier : planned;
     const tram = (route) => route.legs.find((leg) => leg.mode === 'transit');
+    return { trip, spare, planned, best, tram };
+}
+// The sample forecast at an hour, when rain is likely (Events reads the same).
+function rainAt(date, time) {
+    const hour =
+        window.ExpaduSampleWeather?.days?.[date]?.[Number(time.slice(0, 2))];
+    return !!hour && hour[2] >= 50;
+}
+const rainIcon =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 15a4 4 0 1 1 1-7.9A5 5 0 0 1 17.5 9 3.5 3.5 0 0 1 17 15H7Z"/><path d="m8 18-1 2m5-2-1 2m5-2-1 2"/></svg>';
+// Your day leads the planner: the sample day's trips as tickets. The next
+// one says how to get there; later ones say their times aren't in the
+// sample yet, and when the sample forecast has rain.
+function renderYourDay() {
+    const panel = $('#next-trip');
+    if (!panel) return;
+    const choice = dayChoice();
+    panel.hidden = !choice || state.results;
+    // Your day takes the captured example's place (one link away).
+    const example = $('#journey-start');
+    if (example) example.hidden = state.results || !!choice;
+    if (!choice) return;
+    const { trip, spare, planned, best, tram } = choice;
     const leaveIn = minutesOf(best.depart) - minutesOf(trip.time);
-    const walk = best.legs.at(-1).mode === 'walk' ? best.legs.at(-1) : null;
-    panel.innerHTML = `<div class="next-trip-head"><h2 id="next-trip-title">Your next trip</h2><span>Sample day · ${trip.time}</span></div>
-        <p class="next-trip-plan"><time>${trip.start}</time><span><strong>${safe(trip.place)}</strong><small>${safe(trip.to)}</small></span></p>
-        <div class="next-trip-route"><p class="next-trip-leave"><strong>${leaveIn <= 0 ? 'Leave now' : `Leave by ${best.depart}`}</strong>${leaveIn > 0 ? `<span>in ${leaveIn} min</span>` : ''}</p>
-            <p class="next-trip-name"><span class="line-badge tram">${icon('train')}<strong>${safe(best.line)}</strong></span>${safe(placeName(trip.from))} → ${safe(tram(best).stop)}</p>
-            <p class="next-trip-times"><span><small>Departs</small><time>${tram(best).time}</time></span><span class="next-trip-track" aria-hidden="true"></span><span><small>At stop</small><time>${tram(best).alight}</time></span></p>
-            <small>${walk ? `${walk.duration} min walk · ` : ''}there by ${best.arrive} · ${spare(best)} min to spare</small></div>
-        ${best !== planned ? `<p class="next-trip-advice">The ${tram(planned).time} in your plan leaves only ${spare(planned)} min to spare.</p>` : ''}
-        <button type="button" class="next-trip-action" data-action="next-trip">See both trams${icon('arrow')}</button>`;
+    const first = best.legs[0].mode === 'walk' ? best.legs[0] : null;
+    const last = best.legs.at(-1).mode === 'walk' ? best.legs.at(-1) : null;
+    const ride = tram(best);
+    const later = (window.ExpaduSampleDay?.events || []).filter(
+        (event) =>
+            event.date === trip.date &&
+            minutesOf(event.start) > minutesOf(trip.time),
+    );
+    const appointment = `<article class="day-ticket is-next" aria-labelledby="ticket-${safe(trip.activityId)}">
+        <header class="ticket-head"><time>${trip.start}</time><span><strong id="ticket-${safe(trip.activityId)}">${safe(trip.place)}</strong><small>${safe(trip.to)} · ${safe(ride.stop)}</small></span><span class="ticket-badge">Next</span></header>
+        <p class="ticket-leave"><strong>${leaveIn <= 0 ? 'Leave now' : `Leave in ${leaveIn} min`}</strong><time>${best.depart}</time></p>
+        <ol class="ticket-legs">${first ? `<li>${icon('walk')}<span>Walk ${first.duration} min to ${safe(placeName(J.day.boardingStop.name))}</span></li>` : ''}<li class="is-ride">${icon('train')}<span><strong>Tram ${safe(best.line)} at ${ride.time}</strong><small>Get off at ${safe(ride.stop)}, ${ride.alight} · ${safe(ride.detail.replace(/^Towards\b/, 'towards'))}</small></span></li>${last ? `<li>${icon('walk')}<span>Walk ${last.duration} min · there by ${best.arrive}</span></li>` : ''}</ol>
+        <p class="ticket-spare">${spare(best)} min to spare before ${trip.start}</p>
+        ${best !== planned ? `<p class="ticket-advice">Your plan has the ${tram(planned).time}, which leaves only ${spare(planned)} min to spare. The ${ride.time} is safer.</p>` : ''}
+        <div class="ticket-actions"><button type="button" class="primary" data-action="start-day-trip">${icon('route')}Start</button><button type="button" class="quiet-button" data-action="next-trip">Both trams</button></div>
+    </article>`;
+    const tickets = later
+        .map(
+            (
+                event,
+            ) => `<article class="day-ticket" aria-labelledby="ticket-${safe(event.id)}">
+        <header class="ticket-head"><time>${event.start}</time><span><strong id="ticket-${safe(event.id)}">${safe(event.title)}</strong><small>${safe(event.venue)}${event.area ? ` · ${safe(event.area)}` : ''}</small></span></header>
+        <p class="ticket-note">Times for this trip aren’t in the sample yet.</p>
+        ${rainAt(event.date, event.start) ? `<p class="ticket-weather">${rainIcon}Rain likely at ${event.start} · sample forecast</p>` : ''}
+        <div class="ticket-actions"><button type="button" class="quiet-button" data-action="plan-event" data-event-id="${safe(event.id)}">${icon('route')}Plan the way</button></div>
+    </article>`,
+        )
+        .join('');
+    panel.innerHTML = `<div class="your-day-head"><h2 id="next-trip-title">Your day</h2><span>${boardDateLabel(trip.date)} · sample day · ${trip.time}</span></div>
+        <div class="day-tickets">${appointment}${tickets}</div>
+        <button type="button" class="text-action day-example" data-action="example">Explore a captured example (${boardDateLabel(J.capture.date)} at ${J.capture.time})</button>`;
+}
+// A later ticket fills in the trip there, arriving by its start.
+function planEvent(id) {
+    const event = window.ExpaduSampleDay?.events?.find(
+        (item) => item.id === id,
+    );
+    if (!event) return;
+    if (!from.value.trim() && J.day) from.value = J.day.here.name;
+    to.value = event.venue;
+    Object.assign(state, {
+        schedule: 'arrive',
+        date: event.date,
+        time: event.start,
+    });
+    syncControls();
+    syncFromHint();
+    hideSuggestions();
+    $('#journey-form').scrollIntoView?.({
+        behavior: 'smooth',
+        block: 'center',
+    });
+    $('.find-routes')?.focus({ preventScroll: true });
 }
 // Opens the appointment trip as Today hands it over, without a page load.
 function openNextTrip() {
@@ -1316,6 +1447,25 @@ function switchStationView(view) {
         $(`[data-station-view="${view}"]`)?.focus({ preventScroll: true });
     });
 }
+// On the sample day the display marks the appointment's trams: the one to
+// take, with when to leave from your location, and the one in the plan.
+function boardTag(entry, minutes) {
+    const choice = dayChoice();
+    if (
+        !choice ||
+        entry.date !== choice.trip.date ||
+        entry.line !== choice.best.line
+    )
+        return '';
+    const { trip, spare, planned, best, tram } = choice;
+    if (entry.time === tram(best).time) {
+        const leave = minutes - J.day.here.walk;
+        return `<small class="display-tag">For your ${trip.start} · ${leave <= 0 ? 'leave now' : `leave in ${leave} min`}</small>`;
+    }
+    if (best !== planned && entry.time === tram(planned).time)
+        return `<small class="display-tag is-tight">In your plan · ${spare(planned)} min to spare</small>`;
+    return '';
+}
 function renderDepartures() {
     const stop = timetableStop(),
         clock = timetableClock();
@@ -1388,6 +1538,7 @@ function renderDepartures() {
                 selected: state.boardSelected,
                 desktop: desktopPlanner.matches,
                 detail: departureContent,
+                tag: boardTag,
             }) + sampleDayScope(stop, clock);
         return;
     }
@@ -1714,6 +1865,11 @@ function action(name, button) {
     else if (name === 'close-popover') closePopover(true);
     else if (name === 'saved') openSaved();
     else if (name === 'example') example();
+    else if (name === 'start-day-trip') {
+        const choice = dayChoice();
+        openNextTrip();
+        if (choice) selectedRoute(choice.best.id);
+    } else if (name === 'plan-event') planEvent(button.dataset.eventId);
     else if (name === 'restore-request') restoreRequest();
     else if (name === 'swap') {
         state.boardingStop = null;
@@ -1721,6 +1877,7 @@ function action(name, button) {
         const previous = from.value;
         from.value = to.value;
         to.value = previous;
+        syncFromHint();
         hideSuggestions();
         state.results = false;
         $('#results').hidden = true;
@@ -1886,7 +2043,17 @@ document.addEventListener('click', (event) => {
             button.dataset.value,
         );
     else if (button.dataset.view) setView(button.dataset.view);
-    else if (button.dataset.place) {
+    else if (button.dataset.placeSetup) {
+        hideSuggestions();
+        toast(
+            `Saving ${button.dataset.placeSetup} isn’t connected in this preview.`,
+        );
+    } else if (button.dataset.recentTo) {
+        from.value = button.dataset.recentFrom;
+        to.value = button.dataset.recentTo;
+        syncFromHint();
+        searchJourney();
+    } else if (button.dataset.place) {
         if (
             searchField === from &&
             searchField.value !== button.dataset.place
@@ -1895,6 +2062,7 @@ document.addEventListener('click', (event) => {
             state.boardingRoute = null;
         }
         searchField.value = button.dataset.place;
+        syncFromHint();
         syncServicePreference();
         syncComposerHelper();
         hideSuggestions();
@@ -2123,6 +2291,7 @@ document.addEventListener('input', (event) => {
         }
         syncServicePreference();
         syncComposerHelper();
+        syncFromHint();
         suggestions(event.target);
         $('#form-error').hidden = true;
         if (state.results) {
@@ -2259,12 +2428,20 @@ window.addEventListener('resize', positionPopover);
 window.addEventListener('scroll', positionPopover, true);
 window.visualViewport?.addEventListener('resize', positionPopover);
 new ResizeObserver(positionPopover).observe(popover);
+// On desktop the display stands beside the stop's map.
+if (desktopPlanner.matches && window.StationCapture) state.stationView = 'map';
 drawIcons();
 syncControls();
 renderDepartures();
 savedCount();
 renderSampleRoutes();
-renderNextTrip();
+renderYourDay();
+// From starts at your location on the sample day, unless a handoff (Today,
+// Composer, a saved trip) has already filled it.
+document.addEventListener('DOMContentLoaded', () => {
+    if (J.day && !from.value.trim()) from.value = J.day.here.name;
+    syncFromHint();
+});
 // A Today shortcut opens the existing board without manufacturing current times.
 const todayEntry = new URLSearchParams(location.search);
 if (todayEntry.get('view') === 'timetable') {

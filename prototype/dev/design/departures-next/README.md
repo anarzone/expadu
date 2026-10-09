@@ -11,6 +11,51 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Your day, your location and a stop display — 9 October 2026
+
+From the owner's end-user review ("soulless and empty"). The owner chose
+three sketches (A–C) and asked for all three to be built.
+
+- **Your day (A).** On the sample day the planner leads with the day's trips
+  as tickets: a stub with the time, a perforated edge, then how to get there.
+  - **14:00 Blue Card appointment** ("Next"): Leave now · walk 4 min to
+    Neumarkt · tram 4 at 13:14, get off at Wiener Platz at 13:42 · walk 6 min,
+    there by 13:48, 12 min to spare. It notes that the plan's 13:24 leaves
+    only 2 min, under Today's rule. **Start** opens that journey and **Both
+    trams** compares the two.
+  - **18:30 Street culture night and 20:00 Cinema under the stars** say their
+    times aren't in the sample yet; no leave-by time is made up. They carry
+    "Rain likely · sample forecast" from the sample weather Events uses
+    (`events-next/sample-weather.js`). **Plan the way** fills in the trip,
+    arriving by the start.
+  - The captured night example is one link away ("Explore a captured
+    example (Mon 7 Sept at 23:37)"). On phones Your day comes first; on
+    desktop it fills the right column beside the form until there's a
+    search.
+- **Start from where you are (B).** From starts at "Your location": where
+  the sample day puts you, a 4-minute walk from Köln Neumarkt (`J.day.here`).
+  The trip model plans from there, and the From label says it's a sample.
+  Until you type, the suggestions offer your location, Home and Work (saving
+  them isn't connected in this preview, and it says so) and your three most
+  recent trips. Recent trips are your own searches, kept on this device.
+- **A departure display (C).** The timetable is drawn as the stop's display:
+  a dark panel with the yellow-and-green "H" stop sign and the clock, and
+  each departure with the minutes until it leaves. On the sample day the
+  13:14 is marked "For your 14:00 · leave now" (the walk from your location
+  is counted) and the 13:24 "In your plan · 2 min to spare". The 4 October
+  capture counts from that night's 22:19. The display says the minutes count
+  from the sample or capture clock, not now. On desktop it opens beside the
+  stop's map. Tapping a departure still opens its details. The old board
+  list's styles are gone.
+- Checks:
+  - unit tests for Your day, Plan the way, Your location, the suggestions,
+    recent trips and the display's tags and countdown;
+  - `tests/travel-day-browser.cjs` at 390 and 1440;
+  - `tests/trip-story-browser.cjs`, updated for the tickets.
+
+  Composer's button covers no control on the first screen at any of the 15
+  phone sizes checked.
+
 ## The captured example says it's from late at night — 7 October 2026
 
 Travel opens on the sample day at 13:10, but "Explore a captured example"
