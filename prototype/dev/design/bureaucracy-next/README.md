@@ -4,6 +4,42 @@ Open `http://127.0.0.1:8765/dev/design/bureaucracy-next/`.
 
 The UI review covers Overview, process details, inline Paperwork and Composer planning. This remains a local clickable prototype, not a production Bureaucracy client.
 
+## Design pass: colour, search and filters — 10 October 2026
+
+Owner request: the page looked grey everywhere and had no search or proper
+filters; the data itself is for the real app.
+
+- **Paperwork's own colours, within the shared roles.** Every Paperwork icon
+  (tasks, steps, dates, documents, Good to know, Your situation, the welcome)
+  is lavender with a violet glyph; a finished step or a ready document is
+  solid violet. Statuses: working on it in violet, blocked in attention amber,
+  waiting quiet lavender, done solid violet, not started outlined. Each
+  tracked task has a slim violet progress bar. Cyan is left only for what's
+  selected (the current view, a chosen filter) — `tests/design-browser.cjs`
+  checks nothing else uses it.
+- **Outlined controls, not grey fills.** The views are a segmented control
+  with the chosen one in cyan; whose plan and Your situation are outlined
+  pills. Tasks and dates share one ivory card with hairlines between rows;
+  the preview note is ivory with a hairline.
+- **One search** beside the views (its own row on a phone) finds tasks (by
+  name and every step), dates, documents (English and German terms) and
+  Good to know, as you type; matching documents link to Documents, which
+  filters by the same search. Escape or Clear empties it.
+- **Filters in place.** Your tasks: All · To do · Waiting · Blocked (only the
+  ones with tasks). Documents: a chip per task (replacing the browser's
+  list) and Any status · Not ready · You have it · Ready.
+- **Documents** has no page title; tasks without documents are named in one
+  line instead of empty cards; the groups sit in balanced columns.
+- **A task's page** leads with "Your overview", then its name with its status
+  and the edit button; the Overview/Documents views aren't repeated there.
+- **Phone first screen.** The question's answer is its one orange action and
+  "Skip for now" is quiet, so the three fit on one line; Coming up and the
+  question are tighter, so the first task shows on the first screen. Task
+  rows show their status under the words (the whole row opens the task);
+  dates put their day under their name; a step's actions start at the left,
+  clear of Composer's button.
+- Your situation's "Health insurance" uses the health icon, not a tick.
+
 ## The first version, and what's planned for later — 9 October 2026
 
 Owner decision: what the backend doesn't support yet stays out of the first

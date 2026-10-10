@@ -2691,3 +2691,493 @@ body[data-page='bureaucracy'] .sr-only {
 .sharing-ready small {
     color: var(--color-text-soft);
 }
+
+/* ---------- Design pass — 10 October 2026 (owner request) ----------
+   Paperwork in its own colours within the shared roles: lavender for its
+   icons, statuses and progress, cyan only for what's selected, outlined
+   controls instead of grey fills, one ivory surface with hairlines for
+   every card. Search and filters sit at the top, and cards are tighter so
+   a phone's first screen shows more. */
+
+/* Paperwork's icons: lavender with a violet glyph; done is solid violet. */
+body[data-page='bureaucracy']
+    :is(.topic-icon, .timeline-icon, .step-symbol, .document-symbol, .situation-symbol, .details-fact-icon, .situation-emblem) {
+    background: var(--color-paper-bg);
+    color: var(--color-paper-text);
+}
+body[data-page='bureaucracy']:is(.today-palette, *)
+    .bureaucracy-view
+    :is(.step-symbol.completed, .document-symbol.confirmed.confirmed) {
+    background: var(--color-paper-text);
+    color: var(--color-text-on-action);
+}
+body[data-page='bureaucracy']:is(.today-palette, *)
+    .bureaucracy-view
+    .paper-process-link
+    > svg:first-child {
+    color: var(--color-paper-text);
+}
+
+/* Statuses: working on it in Paperwork's violet, blocked in attention,
+   waiting quiet, done solid, not started outlined. */
+body[data-page='bureaucracy']:is(.today-palette, *) .state-badge:not(.blocked, .waiting, .completed, .not_started) {
+    background: var(--color-paper-bg);
+    color: var(--color-paper-text);
+    font-weight: var(--weight-semibold);
+}
+body[data-page='bureaucracy']:is(.today-palette, *) .state-badge.waiting.waiting {
+    background: var(--color-paper-bg-quiet);
+    color: var(--color-text-soft);
+}
+body[data-page='bureaucracy']:is(.today-palette, *) .state-badge.blocked.blocked {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+body[data-page='bureaucracy']:is(.today-palette, *) .state-badge.completed.completed {
+    background: var(--color-paper-text);
+    color: var(--color-text-on-action);
+}
+body[data-page='bureaucracy']:is(.today-palette, *) .state-badge.not_started.not_started {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--color-border);
+    color: var(--color-text-soft);
+}
+
+/* Each tracked task's progress: Paperwork's progress indicator. */
+.process-progress {
+    display: block;
+    width: min(100%, 180px);
+    height: 4px;
+    margin-top: 8px;
+    border-radius: var(--radius-pill);
+    background: var(--color-paper-bg);
+    overflow: hidden;
+}
+.process-progress i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-paper-text);
+}
+
+/* Controls: the views as a segmented control (the chosen one cyan),
+   whose plan and Your situation outlined, not grey. */
+body[data-page='bureaucracy'] .case-tabs {
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+body[data-page='bureaucracy'] .case-tabs [aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-text);
+    box-shadow: none;
+}
+body[data-page='bureaucracy'] .case-top .person-picker summary,
+body[data-page='bureaucracy'] .case-top .case-details {
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+body[data-page='bureaucracy'] .case-top .person-picker summary:hover,
+body[data-page='bureaucracy'] .case-top .case-details:hover {
+    background: var(--color-bg-quiet);
+}
+
+/* One search over the plan, beside the views. */
+.case-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 240px;
+    min-width: 0;
+    max-width: 440px;
+    height: 44px;
+    padding: 0 4px 0 14px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+    color: var(--color-text-soft);
+}
+.case-search:focus-within {
+    box-shadow: inset 0 0 0 2px var(--color-focus);
+}
+.case-search > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+.case-search input {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 16px;
+    outline: none;
+}
+/* The field's rounded edge is its focus ring; no second ring inside. */
+body[data-page='bureaucracy'] .case-search input:is(:focus, :focus-visible) {
+    outline: none;
+    box-shadow: none;
+}
+.case-search input::placeholder {
+    color: var(--color-text-soft);
+}
+.case-search input::-webkit-search-cancel-button {
+    display: none;
+}
+.case-search-clear {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--radius-round);
+    color: var(--color-text-soft);
+}
+.case-search-clear[hidden] {
+    display: none;
+}
+.case-search-clear svg {
+    width: 16px;
+    height: 16px;
+}
+.search-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 14px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.search-summary .plain-button,
+.search-empty .plain-button {
+    min-height: 40px;
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.search-empty {
+    margin-top: 8px;
+}
+/* Documents the search found, one tap from the Documents view. */
+.search-docs {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+    color: var(--color-text);
+    text-align: left;
+}
+.search-docs > svg:first-child {
+    flex: none;
+    box-sizing: border-box;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    border-radius: var(--radius-md);
+    background: var(--color-paper-bg);
+    color: var(--color-paper-text);
+}
+.search-docs > svg:last-child {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+.search-docs > span {
+    display: grid;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.search-docs strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.search-docs small {
+    overflow: hidden;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Filters that work in place: compact chips, the chosen one cyan. */
+.case-chips {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 12px;
+    padding: 1px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.case-chips::-webkit-scrollbar {
+    display: none;
+}
+.case-chips button {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+    color: var(--color-text);
+    font-size: var(--text-control);
+    white-space: nowrap;
+}
+.case-chips button span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-variant-numeric: tabular-nums;
+}
+.case-chips [aria-pressed='true'] {
+    background: var(--color-select-bg);
+    box-shadow: none;
+    font-weight: var(--weight-semibold);
+}
+.case-chips [aria-pressed='true'] span {
+    color: var(--color-select-text);
+}
+@media (prefers-reduced-motion: no-preference) {
+    .case-chips button,
+    .case-search {
+        transition:
+            background-color 160ms ease,
+            box-shadow 160ms ease;
+    }
+}
+
+/* Tasks and dates: the same ivory card with hairlines between rows. */
+body[data-page='bureaucracy'] :is(.process-grid, .paperwork-group) {
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+body[data-page='bureaucracy'] .process-summary + .process-summary {
+    border-top-color: var(--color-border);
+}
+body[data-page='bureaucracy'] .date-grid {
+    gap: 0;
+    padding: 3px 16px;
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+body[data-page='bureaucracy'] .date-grid .timeline-row {
+    padding: 14px 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+body[data-page='bureaucracy'] .date-grid .timeline-row + .timeline-row {
+    border-top: 1px solid var(--color-border);
+}
+@media (min-width: 1000px) {
+    .case-overview-grid.is-single {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Coming up and the question: tighter, so more fits on the first screen.
+   The answer is the question's main action; Skip for now is quiet. */
+body[data-page='bureaucracy'] .coming-row {
+    min-height: 56px;
+    padding: 8px 14px;
+}
+body[data-page='bureaucracy'] .question-card {
+    gap: 12px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+}
+body[data-page='bureaucracy'] .question-card .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+body[data-page='bureaucracy'] .question-card .button.primary {
+    border-color: transparent;
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+}
+.question-skip {
+    min-height: 44px;
+    padding: 0 8px;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+}
+
+/* The preview note: the shared surface with a hairline, not cyan. */
+body[data-page='bureaucracy'] .persona-preview {
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+body[data-page='bureaucracy'] .persona-preview > svg {
+    color: var(--color-paper-text);
+}
+
+/* A task's page: the way back first, then its name with its status. */
+.case-back .view-back {
+    margin-bottom: 2px;
+}
+.case-top:not(.is-untitled) h1 {
+    flex: 0 1 auto;
+}
+.case-title-status {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.case-top:not(.is-untitled) .person-picker {
+    margin-left: auto;
+}
+
+/* Documents: chips instead of the browser's list, balanced columns, and
+   tasks without documents named once below. */
+.paperwork-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 16px;
+    margin-bottom: 6px;
+}
+.paperwork-filters .case-chips {
+    max-width: 100%;
+}
+/* The status chips after the task chips, set apart by a hairline. */
+.paperwork-filters .case-chips + .case-chips {
+    padding-left: 16px;
+    box-shadow: inset 1px 0 0 var(--color-border);
+}
+@media (max-width: 700px) {
+    .paperwork-filters .case-chips + .case-chips {
+        padding-left: 1px;
+        box-shadow: none;
+    }
+}
+body[data-page='bureaucracy'] .paperwork-groups {
+    display: block;
+    columns: 2 380px;
+    column-gap: 20px;
+}
+body[data-page='bureaucracy'] .paperwork-group {
+    break-inside: avoid;
+    margin-bottom: 20px;
+}
+.paper-count {
+    color: var(--color-paper-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+.paperwork-none {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 12px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.paperwork-none svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+
+/* Phones: the search on its own row under the views; task rows show their
+   status under the words (the whole row opens the task, so no arrow sits
+   under Composer's button); dates put their day under their name. */
+@media (max-width: 700px) {
+    .case-top.is-searchable {
+        flex-wrap: wrap;
+        row-gap: 10px;
+    }
+    .case-top.is-searchable .case-search {
+        order: 10;
+        flex: 1 1 100%;
+        max-width: none;
+    }
+    .case-top.is-searchable .case-tabs {
+        width: auto;
+        flex: 1 1 auto;
+    }
+    .case-top:not(.is-untitled) {
+        flex-wrap: wrap;
+    }
+    .case-top:not(.is-untitled) .case-title-status {
+        order: 10;
+        flex: 1 1 100%;
+    }
+    body[data-page='bureaucracy'] .process-summary {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr);
+        column-gap: 12px;
+        align-items: start;
+    }
+    body[data-page='bureaucracy'] .process-card-status {
+        grid-column: 2;
+        margin-top: 6px;
+    }
+    body[data-page='bureaucracy'] .process-card-status .state-badge {
+        display: inline-flex;
+    }
+    body[data-page='bureaucracy'] .process-card-status > svg {
+        display: none;
+    }
+    body[data-page='bureaucracy'] .date-grid .timeline-row {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+        column-gap: 12px;
+        row-gap: 4px;
+        align-items: center;
+    }
+    body[data-page='bureaucracy'] .date-grid .timeline-row > .timeline-icon {
+        grid-row: 1 / span 2;
+    }
+    body[data-page='bureaucracy'] .date-grid .timeline-date {
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0 6px;
+        text-align: left;
+        font-size: var(--text-control);
+    }
+    body[data-page='bureaucracy'] .date-grid .timeline-date em,
+    body[data-page='bureaucracy'] .date-grid .timeline-date small {
+        display: inline;
+        margin: 0;
+    }
+    body[data-page='bureaucracy'] .date-grid .timeline-row > svg:last-child {
+        grid-column: 3;
+        grid-row: 1 / span 2;
+    }
+    body[data-page='bureaucracy'] .question-card {
+        padding: 14px 16px;
+    }
+    body[data-page='bureaucracy'] .question-card .button {
+        padding: 8px 12px;
+    }
+    body[data-page='bureaucracy'] .question-card .question-skip {
+        padding: 0 6px;
+    }
+    body[data-page='bureaucracy'] .coming-when {
+        flex-basis: 74px;
+    }
+    /* A step's actions start at the left, clear of Composer's button. */
+    body[data-page='bureaucracy'] .step-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+    }
+}

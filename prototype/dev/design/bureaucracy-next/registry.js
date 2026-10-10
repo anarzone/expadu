@@ -207,7 +207,7 @@
         [
             'health_coverage_confirmed',
             'Health insurance',
-            'check',
+            'health',
             'boolean',
             [
                 [true, 'Confirmed with my insurer'],
