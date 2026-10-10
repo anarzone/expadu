@@ -45,6 +45,14 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
   (`station-board.js`, `stop-discovery.js` and their styles are no longer
   loaded). `timetable.js` stays for the service hand-off and Today's brief.
 
+- **Your next trip leads Nearby** (moved from Plan a trip). Today's rule
+  still picks the 13:14 (12 min spare) over the planned 13:24 (2 min). Phones
+  show a compact card; desktops add the route line, the shared sample weather
+  (`events-next/sample-weather.js`, labelled) and Later today, where each
+  evening plan opens its way there. **I'm on my way** starts the trip's
+  step-by-step preview; **Other ways** lists the 13:24 and says bike or walk
+  times aren't in the sample, with "Compare them in Plan a trip".
+
 Data: `nearby.js` (model, `tests/nearby.test.cjs`), `nearby-ui.js` (view),
 `nearby.css`. No times, platforms or lift states are invented. Browser check:
 `tests/nearby-browser.cjs` at 390 and 1440px (360 and 800px checked by hand).

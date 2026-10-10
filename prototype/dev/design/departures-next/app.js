@@ -13,6 +13,7 @@ const state = {
     // A journey's boarding stop opened in Nearby, with a way back.
     boardRoute: null,
     boardingStop: null,
+    tripOthers: false,
     boardingRoute: null,
     routeMode: 'transit',
     sort: 'arrival',
@@ -662,30 +663,77 @@ function renderSampleRoutes() {
         .map((route) => option(route, routes, true))
         .join('');
 }
-// The sample day's appointment trip leads the planner: the tram to take now,
-// with Today's rule for tight official appointments.
-function renderNextTrip() {
-    const panel = $('#next-trip');
-    const trip = J.day;
-    if (!panel) return;
-    panel.hidden = !trip || state.results;
-    if (!trip) return;
+// The sample day's appointment trip leads Nearby: the tram to take now, with
+// Today's rule for tight official appointments (owner-approved design).
+const skies = {
+    clear: 'Clear',
+    partly: 'Partly cloudy',
+    cloudy: 'Cloudy',
+    showers: 'Showers',
+    rain: 'Rain',
+    mist: 'Mist',
+};
+// The shared sample weather at a sample-day clock, or nothing.
+function sampleWeather(date, time) {
+    const hours = window.ExpaduSampleWeather?.days?.[date];
+    const hour = hours?.[Number(time.slice(0, 2))];
+    if (!hour) return null;
+    const [sky, degrees, rain] = hour;
+    return { sky: skies[sky] || sky, degrees, rain, wet: rain >= 50 };
+}
+function nextTripChoice(trip = J.day) {
     const spare = (route) => minutesOf(trip.start) - minutesOf(route.arrive);
     const margin = trip.kind === 'official' ? 10 : 5;
     const planned = J.dayRoutes.find((route) => route.inPlan);
     const earlier = J.dayRoutes.find((route) => !route.inPlan);
     const best = spare(planned) < margin && earlier ? earlier : planned;
+    return { best, planned, spare };
+}
+function renderNextTrip() {
+    const panel = $('#next-trip');
+    const trip = J.day;
+    if (!panel) return;
+    panel.hidden = !trip;
+    if (!trip) return;
+    const { best, planned, spare } = nextTripChoice(trip);
     const tram = (route) => route.legs.find((leg) => leg.mode === 'transit');
+    const ride = tram(best);
+    const walkIn = best.legs[0].mode === 'walk' ? best.legs[0].duration : 0;
+    const walkOut = best.legs.at(-1).mode === 'walk' ? best.legs.at(-1).duration : 0;
     const leaveIn = minutesOf(best.depart) - minutesOf(trip.time);
-    const walk = best.legs.at(-1).mode === 'walk' ? best.legs.at(-1) : null;
-    panel.innerHTML = `<div class="next-trip-head"><h2 id="next-trip-title">Your next trip</h2><span>Sample day · ${trip.time}</span></div>
-        <p class="next-trip-plan"><time>${trip.start}</time><span><strong>${safe(trip.place)}</strong><small>${safe(trip.to)}</small></span></p>
-        <div class="next-trip-route"><p class="next-trip-leave"><strong>${leaveIn <= 0 ? 'Leave now' : `Leave by ${best.depart}`}</strong>${leaveIn > 0 ? `<span>in ${leaveIn} min</span>` : ''}</p>
-            <p class="next-trip-name"><span class="line-badge tram">${icon('train')}<strong>${safe(best.line)}</strong></span>${safe(placeName(trip.from))} → ${safe(tram(best).stop)}</p>
-            <p class="next-trip-times"><span><small>Departs</small><time>${tram(best).time}</time></span><span class="next-trip-track" aria-hidden="true"></span><span><small>At stop</small><time>${tram(best).alight}</time></span></p>
-            <small>${walk ? `${walk.duration} min walk · ` : ''}there by ${best.arrive} · ${spare(best)} min to spare</small></div>
-        ${best !== planned ? `<p class="next-trip-advice">The ${tram(planned).time} in your plan leaves only ${spare(planned)} min to spare.</p>` : ''}
-        <button type="button" class="next-trip-action" data-action="next-trip">See both trams${icon('arrow')}</button>`;
+    const look = window.NearbyModel?.look(best.line, 'tram') || { colour: 'var(--color-select-text)', tint: 'var(--color-select-bg)', ink: '#fff' };
+    const total = walkIn + ride.duration + walkOut;
+    const weather = sampleWeather(trip.date, best.depart);
+    const later = (window.ExpaduSampleDay?.events || [])
+        .filter((event) => event.start > trip.start)
+        .map((event) => ({ event, weather: sampleWeather(trip.date, event.start) }));
+    const others = [
+        planned !== best
+            ? `<li><span><strong>The ${tram(planned).time} tram ${safe(planned.line)}</strong><small>In your plan · there ${planned.arrive}</small></span><span class="nearby-tag is-late">Only ${spare(planned)} min spare</span></li>`
+            : '',
+        '<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li>',
+    ].join('');
+    panel.setAttribute('style', `--line:${look.colour};--tint:${look.tint};--ink:${look.ink}`);
+    panel.innerHTML = `<div class="next-trip-main">
+            <p class="next-trip-eyebrow">Next · ${safe(trip.place)} · ${trip.start} · ${safe(trip.to)}</p>
+            <div class="next-trip-lead"><h2 id="next-trip-title">${leaveIn <= 0 ? 'Leave now' : `Leave at ${best.depart}`}</h2><span class="next-trip-badge">${safe(best.line)}</span><span class="next-trip-from">${ride.time} from ${safe(placeName(trip.from))}</span></div>
+            <p class="next-trip-sub">Tram ${safe(best.line)} leaves ${safe(placeName(trip.from))} at ${ride.time}.${walkIn ? ` It’s a ${walkIn} min walk.` : ''}</p>
+            <p class="next-trip-there">There ${best.arrive} · ${spare(best)} min spare</p>
+            <div class="next-trip-line" aria-hidden="true" style="--walk-in:${walkIn};--ride:${ride.duration};--walk-out:${walkOut}">
+                <span class="next-trip-stop" style="left:${((walkIn / total) * 100).toFixed(1)}%">${safe(placeName(trip.from))} ${ride.time}</span>
+                <span class="next-trip-stop is-end" style="right:${((walkOut / total) * 100).toFixed(1)}%">${safe(ride.stop)} ${ride.alight}</span>
+                <span class="next-trip-track"><i class="is-you"></i><b class="is-walk"></b><i class="is-board"></i><b class="is-ride"><span>${safe(best.line)}</span></b><i class="is-board"></i><b class="is-walk is-out"></b><i class="is-there"></i></span>
+                <span class="next-trip-end">You · ${best.depart}</span><span class="next-trip-end is-there">There ${best.arrive}</span>
+            </div>
+            <p class="next-trip-chips"><span>${spare(best)} min spare</span>${weather ? `<span>${icon('sun')}${weather.sky}, ${weather.degrees}° · sample weather</span>` : ''}</p>
+        </div>
+        <div class="next-trip-side">
+            <button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${best.id}">${icon('play')}I’m on my way</button>
+            <small class="next-trip-hint">Your phone takes the trip from here, one step at a time.</small>
+            <button type="button" class="text-action next-trip-toggle" data-action="trip-others" aria-expanded="${state.tripOthers}" aria-controls="next-trip-others">Other ways${icon('down')}</button>
+            <div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div>
+            ${later.length ? `<div class="next-trip-later"><h3>Later today</h3><ul>${later.map(({ event, weather: w }) => `<li><button type="button" data-action="plan-way" data-place="${safe(event.venue || event.title)}" aria-label="Plan the way to ${safe(event.title)}, ${event.start}"><time>${event.start}</time><span><strong>${safe(event.title)}</strong><small>${safe(event.venue || '')}${w?.wet ? ` · ${w.sky.toLowerCase()} likely (sample)` : ''}</small></span>${icon('arrow')}</button></li>`).join('')}</ul></div>` : ''}
+        </div>`;
 }
 // Opens the appointment trip as Today hands it over, without a page load.
 function openNextTrip() {
@@ -1111,7 +1159,23 @@ function action(name, button) {
             'Service choice removed. Your trip details are kept.';
         syncServicePreference();
         from.focus({ preventScroll: true });
-    } else if (name === 'next-trip') openNextTrip();
+    } else if (name === 'next-trip') {
+        setView('journey');
+        openNextTrip();
+    } else if (name === 'trip-start') simulate(button.dataset.tripRoute);
+    else if (name === 'trip-others') {
+        state.tripOthers = !state.tripOthers;
+        renderNextTrip();
+        $('[data-action="trip-others"]')?.focus({ preventScroll: true });
+    } else if (name === 'plan-way') {
+        // A later plan: start a request to it from the sample day's stop.
+        if (from.value.trim() || to.value.trim())
+            previousRequest = captureRequest();
+        from.value = J.day?.from || '';
+        to.value = button.dataset.place;
+        setView('journey');
+        searchJourney();
+    }
     else if (name === 'from-departures') showStop(button.dataset.stopId);
     else if (name === 'return-journey') {
         returnFromTimetable();

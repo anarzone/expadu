@@ -39,16 +39,18 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             await page.goto(base + 'departures-next/', {
                 waitUntil: 'networkidle',
             });
-            // Travel opens on Nearby; the trip is under Plan a trip.
+            // Travel opens on Nearby, led by the appointment trip.
+            assert.match(
+                await page.locator('.next-trip-lead').innerText(),
+                /Leave now/,
+            );
+            assert.match(
+                await page.locator('#next-trip').innerText(),
+                width >= 1000
+                    ? /Neumarkt 13:14[\s\S]*Wiener Platz 13:42/
+                    : /13:14 from Neumarkt[\s\S]*There 13:48 · 12 min spare/,
+            );
             await page.getByRole('button', { name: 'Plan a trip' }).first().click();
-            assert.match(
-                await page.locator('.next-trip-name').innerText(),
-                /Neumarkt → Wiener Platz/,
-            );
-            assert.match(
-                await page.locator('.next-trip-times').innerText(),
-                /13:14[\s\S]*13:42/,
-            );
             assert.equal(
                 await page.locator('.sample-endpoints').innerText(),
                 'Köln Neumarkt → Museum Ludwig · captured Mon 7 Sept at 23:37. These are that night’s times, not today’s.',

@@ -40,6 +40,20 @@ const status = (page) => page.locator('.nearby-count [role="status"]').innerText
                 );
             if (shots) await page.screenshot({ path: `${shots}/nearby-${width}.png` });
 
+            // The appointment trip leads: other ways open in place, and
+            // "I'm on my way" starts the trip's step-by-step preview.
+            await page.getByRole('button', { name: 'Other ways' }).click();
+            assert.match(
+                await page.locator('#next-trip-others').innerText(),
+                /The 13:24 tram 4[\s\S]*Only 2 min spare[\s\S]*Bike or walk/,
+            );
+            await page.getByRole('button', { name: 'Other ways' }).click();
+            await page.getByRole('button', { name: 'I’m on my way' }).click();
+            await page.locator('#journey-navigation').waitFor();
+            assert.equal(await page.locator('#journey-navigation').evaluate((d) => d.open), true);
+            await page.keyboard.press('Escape');
+            await page.locator('#journey-navigation').waitFor({ state: 'hidden' }).catch(() => {});
+
             // Filters open in place and combine.
             await page.getByRole('button', { name: 'Leaving via' }).click();
             await page.locator('.nearby-option', { hasText: 'Heumarkt' }).click();
@@ -82,6 +96,15 @@ const status = (page) => page.locator('.nearby-count [role="status"]').innerText
                 await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
                 true,
             );
+            // A later plan is one tap from its way there.
+            if (wide) {
+                await page.locator('.nearby-stop').click();
+                await page.getByRole('option', { name: /Neumarkt/ }).click();
+                await page.getByRole('button', { name: /Plan the way to Cinema under the stars/ }).click();
+                assert.equal(await page.locator('#journey-view').isVisible(), true);
+                assert.equal(await page.locator('#to').inputValue(), 'Stadtgarten');
+                await page.getByRole('button', { name: 'Nearby' }).first().click();
+            }
             // Plan a trip is one tab away; a trip hand-off opens it directly.
             await page.getByRole('button', { name: 'Plan a trip' }).first().click();
             assert.equal(await page.locator('#journey-view').isVisible(), true);

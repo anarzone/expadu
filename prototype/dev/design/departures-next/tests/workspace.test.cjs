@@ -601,18 +601,26 @@ test('empty journey results offer journey controls instead of a dominant Compose
     assert.match(markup, /Explore sample routes/);
 });
 
-test('on the sample day the planner leads with the appointment trip and Today’s timing rule', () => {
+test('on the sample day Nearby leads with the appointment trip and Today’s timing rule', () => {
     const w = workspace('', false, false, false, true);
     w.run('renderNextTrip();');
     const card = w.element('#next-trip');
     assert.equal(card.hidden, false);
-    assert.match(card.innerHTML, /Leave now/);
-    assert.match(card.innerHTML, /Departs<\/small><time>13:14/);
-    assert.match(card.innerHTML, /there by 13:48 · 12 min to spare/);
+    assert.match(card.innerHTML, /Next · Blue Card appointment · 14:00 · Mülheim/);
+    assert.match(card.innerHTML, /<h2 id="next-trip-title">Leave now<\/h2>/);
+    assert.match(card.innerHTML, /13:14 from Neumarkt/);
+    assert.match(card.innerHTML, /There 13:48 · 12 min spare/);
+    assert.match(card.innerHTML, /data-action="trip-start" data-trip-route="day-1314"/);
+    // The planned 13:24 is an other way, too tight for an official appointment.
     assert.match(
         card.innerHTML,
-        /The 13:24 in your plan leaves only 2 min to spare/,
+        /The 13:24 tram 4<\/strong><small>In your plan · there 13:58[\s\S]*Only 2 min spare/,
     );
+    assert.match(card.innerHTML, /Bike or walk<\/strong><small>Times aren’t in the sample/);
+    // The evening's plans follow, each a way to plan the trip there.
+    assert.match(card.innerHTML, /18:30<\/time><span><strong>Street culture night/);
+    assert.match(card.innerHTML, /Plan the way to Cinema under the stars, 20:00/);
+    assert.match(card.innerHTML, /data-action="plan-way" data-place="Stadtgarten"/);
     assert.equal(w.run('state.date'), '2026-09-30');
 });
 
