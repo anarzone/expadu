@@ -11,6 +11,44 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Nearby replaces Timetable — 10 October 2026 (owner-approved design)
+
+The owner approved the combined Travel design on the "Travel directions"
+canvas (rows 4–9). This first slice brings in **Nearby**; the plan for the
+rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
+
+- **Travel opens on Nearby**, the closest station. Tabs are Nearby · Plan a
+  trip. A trip hand-off (`from`, `to`, `route`, `service`) still opens Plan a
+  trip; Today's `?view=timetable&stop=` opens Nearby on that stop, and an
+  unknown stop keeps Neumarkt.
+- **By boarding area.** Neumarkt's ten KVB point records form three areas:
+  points that list a shared line belong together (1·7·9, 3·4·16·18,
+  136·146). The capture doesn't say which point a departure uses, so a line
+  belongs to its area, never to one point, and the map says so.
+- **Line cards** show both directions with rounded minutes from the 4 Oct
+  22:19 capture, and delays as recorded. Phones open a line in place; desktops
+  show it beside the list with the map. Pin keeps a line first in its area
+  (this browser only).
+- **Filters open in place:** type, lines, leaving via (the first stop after
+  the station, from the capture), next 10/30/60 min, delayed and step-free.
+  Lift status isn't in the preview, so step-free says it hides nothing yet.
+- **Map:** List | Map on phones, beside the list on desktop. One label per
+  area; labels move aside rather than cover each other. Without the map, the
+  areas stay choosable.
+- **Stop picker:** Neumarkt and the 7 Sept Merkenich captures, each with its
+  own clock. Stops without recorded points say so instead of showing a map.
+- **Line colours:** KVB's, darkened where white text needs 4.5:1 (as approved
+  on the canvas); unlisted lines use the travel colour, buses grey. The colour
+  roles in `design-decisions.md` still describe cyan line badges; that entry
+  waits for the owner.
+- **Removed:** the station board, its time paging and filter menus
+  (`station-board.js`, `stop-discovery.js` and their styles are no longer
+  loaded). `timetable.js` stays for the service hand-off and Today's brief.
+
+Data: `nearby.js` (model, `tests/nearby.test.cjs`), `nearby-ui.js` (view),
+`nearby.css`. No times, platforms or lift states are invented. Browser check:
+`tests/nearby-browser.cjs` at 390 and 1440px (360 and 800px checked by hand).
+
 ## The captured example says it's from late at night — 7 October 2026
 
 Travel opens on the sample day at 13:10, but "Explore a captured example"

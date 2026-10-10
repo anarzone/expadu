@@ -97,7 +97,7 @@ function workspace(
         'timetable.js',
         'journey-ui.js',
         'icons.js',
-        ...(station ? ['station-board.js', 'service-context.js'] : []),
+        ...(station ? ['nearby.js', 'nearby-ui.js', 'service-context.js'] : []),
         'app.js',
     ]) {
         let source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
@@ -186,24 +186,21 @@ test('changing travel mode preserves the existing controls and keyboard focus', 
         ['false', 'false', 'true'],
     );
 });
-test('Today timetable entry opens the requested stop using its captured clock', () => {
-    const w = workspace(
-        '?view=timetable&stop=neumarkt&date=2026-10-03&time=14:00',
-    );
+test('Today’s stop shortcut opens Nearby on that stop', () => {
+    const w = workspace('?view=timetable&stop=mitte', false, true, true);
     assert.equal(w.run('state.view'), 'stop');
-    assert.equal(w.run('state.stop'), 'neumarkt');
-    assert.equal(w.run('state.boardDate'), '2026-09-07');
-    assert.equal(
-        w.run('state.boardTime'),
-        w.run('T.stops.find((stop) => stop.id === "neumarkt").capture.time'),
-    );
+    assert.equal(w.run('nearbyView.state.stop'), 'mitte');
     assert.equal(w.element('#journey-view').hidden, true);
     assert.equal(w.element('#departures').hidden, false);
 });
-test('unknown Today stop identifiers cannot create a fabricated timetable', () => {
-    const w = workspace('?view=timetable&stop=unknown');
-    assert.equal(w.run('state.stop'), 'mitte');
-    assert.equal(workspace('?view=unknown').run('state.view'), 'journey');
+test('Travel opens on Nearby; an unknown stop keeps the closest station', () => {
+    const w = workspace('?view=timetable&stop=unknown', false, true, true);
+    assert.equal(w.run('nearbyView.state.stop'), 'neumarkt');
+    assert.equal(workspace('').run('state.view'), 'stop');
+    assert.equal(workspace('?view=unknown').run('state.view'), 'stop');
+    // A trip hand-off still opens Plan a trip.
+    assert.equal(workspace('?to=Mülheim').run('state.view'), 'journey');
+    assert.equal(workspace('?route=r18').run('state.view'), 'journey');
 });
 test('a route opens the same navigation workspace on mobile and desktop', () => {
     for (const desktop of [false, true]) {
@@ -284,22 +281,23 @@ test('resuming a preview retains progress and switching routes asks before repla
         'Switch journey preview?',
     );
 });
-test('viewing a boarding timetable keeps the original journey and arrival requirements', () => {
-    const w = workspace();
+test('a journey’s boarding stop opens Nearby and keeps the journey’s requirements', () => {
+    const w = workspace('', false, true, true);
+    w.run('closeSheet = (done) => done?.();');
     w.run(
-        'closeSheet = (done) => done?.(); setView = (view) => { state.view = view; };',
-    );
-    w.run(
-        'Object.assign(state, { selected: "r18", schedule: "arrive", date: "2026-09-08", time: "00:05", maxWalk: 15 }); openBoardingStop({ dataset: { boardRoute: "r18", boardStop: "neumarkt", boardTime: "23:47" } });',
+        'Object.assign(state, { selected: "r18", schedule: "arrive", date: "2026-09-08", time: "00:05", maxWalk: 15 }); setView("journey"); openBoardingStop({ dataset: { boardRoute: "r18", boardStop: "neumarkt", boardTime: "23:47" } });',
     );
     assert.equal(w.run('state.view'), 'stop');
     assert.equal(w.run('state.boardRoute'), 'r18');
-    assert.equal(w.run('state.boardDate'), '2026-09-07');
-    assert.equal(w.run('state.boardTime'), '23:47');
+    assert.equal(w.run('nearbyView.state.stop'), 'neumarkt');
+    assert.equal(w.element('.board-return').hidden, false);
     assert.equal(w.run('state.schedule'), 'arrive');
     assert.equal(w.run('state.date'), '2026-09-08');
     assert.equal(w.run('state.time'), '00:05');
     assert.equal(w.run('state.maxWalk'), 15);
+    w.run('returnFromTimetable();');
+    assert.equal(w.run('state.view'), 'journey');
+    assert.equal(w.run('state.boardRoute'), null);
 });
 test('planning from an overnight departure keeps its exact date, time and the existing destination', () => {
     const w = workspace();
@@ -424,139 +422,24 @@ test('opening a different preview invalidates an older timetable return', () => 
     `);
     assert.equal(w.run('restoredOldPreview'), false);
 });
-test('timetable reports captured time and filters chronological rows by direction', () => {
-    const w = workspace();
-    w.run(
-        'state.stop = "mitte"; state.boardDirection = T.entries.find(entry => entry.stopId === "mitte").serviceId; renderDepartures();',
-    );
-    assert.match(
-        w.element('#timetable-time-label').textContent,
-        /7 Sept.*23:15/,
-    );
-    assert.doesNotMatch(w.element('#timetable-time-label').textContent, /Now/);
-    assert.equal(
-        (
-            w.element('#departure-cards').innerHTML.match(/data-departure=/g) ||
-            []
-        ).length,
-        3,
-    );
-});
-test('desktop departure details expand inline and retain captured delay warnings', () => {
-    const w = workspace('', true);
-    w.run(
-        'state.stop = "neumarkt"; timetableNow(); renderDepartures(); const chosen = T.entries.find(entry => entry.routeId === "r7"); departureDetails(chosen.id);',
-    );
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /aria-expanded="true"/,
-    );
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /Delay flagged in this capture/,
-    );
-    assert.equal(w.element('#sheet').open, false);
-    w.run('departureDetails(chosen.id);');
-    assert.equal(w.run('state.boardExpanded'), null);
-});
-
-test('station direction filtering retains every captured time including overnight services', () => {
-    const w = workspace('?view=timetable', true, true);
-    const button = { dataset: { boardDirection: '12-zollstock' } };
-    w.emit('click', { target: { closest: () => button } });
-    const html = w.element('#departure-cards').innerHTML;
-    assert.equal(w.run('state.boardDirection'), '12-zollstock');
-    assert.match(html, /<time datetime="2026-09-07T23:26">23:26<\/time>/);
-    assert.doesNotMatch(html, /station-clock|station-feature|Next departure/);
-    assert.doesNotMatch(html, /<strong>Merkenich<\/strong>/);
-    assert.match(html, /23:56/);
-    assert.match(html, /Tue 8 Sept/);
-    assert.match(html, /00:26/);
-    assert.equal((html.match(/data-departure=/g) || []).length, 3);
-    assert.equal(
-        w.element('[data-board-direction="12-zollstock"]').focused,
-        true,
-    );
-});
-test('station line filtering keeps a single delayed departure selectable without inventing later services', () => {
-    const w = workspace('?view=timetable&stop=neumarkt', true, true);
-    assert.equal(w.element('#station-directions').hidden, true);
-    const button = { dataset: { boardFilterChoice: 'line', value: '16' } };
-    w.emit('click', { target: { closest: () => button } });
-    const html = w.element('#departure-cards').innerHTML;
-    assert.match(html, /<time datetime="2026-09-07T23:54">23:54<\/time>/);
-    assert.match(html, /Delay in capture/);
-    assert.doesNotMatch(html, /data-action="more-departures"/);
-    assert.equal((html.match(/data-departure=/g) || []).length, 1);
-});
-
-test('the station capture starts at Neumarkt and gives tied departures independent disclosures', () => {
-    const w = workspace('?view=timetable', true, true, true);
-    assert.equal(w.run('state.stop'), 'neumarkt');
-    assert.equal(w.element('#at-stop-title').textContent, 'Neumarkt');
-    assert.equal(w.run('timetableClock().date'), '2026-10-04');
-    assert.equal(w.run('timetableClock().time'), '22:19');
-    assert.match(w.element('#board-meta').textContent, /estimates.*not live/i);
-    w.run('state.boardLimit = 30; renderDepartures();');
-    let html = w.element('#departure-cards').innerHTML;
-    assert.equal((html.match(/data-departure=/g) || []).length, 16);
-    assert.equal((html.match(/datetime="2026-10-04T22:30"/g) || []).length, 4);
-    const panels = [...html.matchAll(/aria-controls="([^"]+)"/g)].map(
-        (match) => match[1],
-    );
-    assert.equal(panels.length, 16);
-    assert.equal(new Set(panels).size, 16);
-    assert.doesNotMatch(html, /station-clock|station-feature|Next departure/);
-    const first = w.run(
-        'T.entries.find(entry => entry.stopId === "neumarkt" && entry.time === "22:19").id',
-    );
-    const second = w.run(
-        'T.entries.filter(entry => entry.stopId === "neumarkt" && entry.time === "22:19")[1].id',
-    );
-    w.run(`departureDetails(${JSON.stringify(first)});`);
-    html = w.element('#departure-cards').innerHTML;
-    assert.equal((html.match(/aria-expanded="true"/g) || []).length, 1);
-    assert.ok(html.includes(`data-departure="${first}"`));
-    w.run(`departureDetails(${JSON.stringify(second)});`);
-    html = w.element('#departure-cards').innerHTML;
-    assert.equal((html.match(/aria-expanded="true"/g) || []).length, 1);
-    assert.equal(w.run('state.boardExpanded'), second);
-    assert.match(html, /Platform and live delays unavailable/);
-    assert.match(html, /Estimate from a saved capture/);
-});
-
-test('the station board is Travel’s timetable; its data loads before the model', () => {
+test('Nearby is Travel’s first view; its data loads before it', () => {
     const page = fs.readFileSync(
         path.join(__dirname, '..', 'index.html'),
         'utf8',
     );
-    assert.ok(page.indexOf('./station-data.js') >= 0);
     assert.ok(
         page.indexOf('./station-data.js') < page.indexOf('./timetable.js'),
     );
+    assert.ok(page.indexOf('./nearby.js') < page.indexOf('./nearby-ui.js'));
+    assert.ok(page.indexOf('./nearby-ui.js') < page.indexOf('./app.js'));
+    assert.ok(
+        page.indexOf('data-view="stop"') < page.indexOf('data-view="journey"'),
+    );
+    assert.doesNotMatch(page, /station-board\.js|stop-discovery\.js/);
     // The old address forwards to the same page, keeping its query.
     assert.match(
         fs.readFileSync(path.join(__dirname, '..', 'station.html'), 'utf8'),
         /location\.replace\('\.\/' \+ location\.search/,
-    );
-    const w = workspace('?view=timetable', false, true, true);
-    const types = w.element('#board-types').innerHTML;
-    assert.match(types, /data-board-type="tram"/);
-    assert.match(types, /data-board-type="bus"/);
-    assert.doesNotMatch(types, /data-board-type="rail"/);
-});
-test('station board returns an honest empty state outside the captured window', () => {
-    const w = workspace('?view=timetable', false, true);
-    w.run(
-        'state.boardMode = "date"; state.boardDate = "2026-10-04"; state.boardTime = "12:00"; renderDepartures();',
-    );
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /No captured times here/,
-    );
-    assert.doesNotMatch(
-        w.element('#departure-cards').innerHTML,
-        /station-clock/,
     );
 });
 test('a selected captured journey departure hands off its exact boarding time and route', () => {
@@ -568,214 +451,6 @@ test('a selected captured journey departure hands off its exact boarding time an
     assert.equal(w.run('state.boardingRoute'), 'r9');
     assert.equal(w.run('state.time'), '23:38');
     assert.equal(w.element('#from').value, 'Köln Neumarkt');
-});
-
-test('choosing a later departure beyond the first all-stop page reveals its expanded row', () => {
-    const w = workspace('?view=timetable', true, true);
-    w.run('departureDetails("12-merkenich:2026-09-07:23:23");');
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /data-select-departure="12-merkenich:2026-09-08:00:23"/,
-    );
-    // A real DOM cannot find a row that the current page has not rendered.
-    w.run(
-        'const query = document.querySelector; document.querySelector = selector => selector.startsWith("[data-departure=") && !query("#departure-cards").innerHTML.includes(selector.slice(1, -1)) ? null : query(selector);',
-    );
-    w.run('departureDetails("12-merkenich:2026-09-08:00:23", true);');
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /data-departure="12-merkenich:2026-09-08:00:23"[^>]*aria-expanded="true"/,
-    );
-    assert.equal(w.run('state.boardLimit'), 15);
-    assert.equal(w.run('state.boardMode'), 'now');
-    assert.equal(w.run('timetableClock().date'), '2026-09-07');
-    assert.equal(w.run('timetableClock().time'), '23:15');
-});
-
-test('later departure paging uses the current filtered scope without changing its requested clock', () => {
-    const w = workspace('?view=timetable', true, true);
-    w.run(
-        'Object.assign(state, { boardType: "tram", boardLine: "12", boardDirection: "12-merkenich", boardStatus: "all", boardMode: "date", boardDate: "2026-09-07", boardTime: "23:20", boardLimit: 1 }); renderDepartures(); departureDetails("12-merkenich:2026-09-08:00:23", true);',
-    );
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /data-departure="12-merkenich:2026-09-08:00:23"[^>]*aria-expanded="true"/,
-    );
-    assert.equal(w.run('state.boardLimit'), 3);
-    assert.equal(w.run('state.boardType'), 'tram');
-    assert.equal(w.run('state.boardLine'), '12');
-    assert.equal(w.run('state.boardDirection'), '12-merkenich');
-    assert.equal(w.run('state.boardStatus'), 'all');
-    assert.equal(w.run('timetableClock().date'), '2026-09-07');
-    assert.equal(w.run('timetableClock().time'), '23:20');
-});
-
-test('a departure outside the active filters opens exact details without silently clearing filters', () => {
-    const w = workspace('?view=timetable', true, true);
-    w.run(
-        'Object.assign(state, { boardStatus: "delayed", boardMode: "date", boardDate: "2026-09-07", boardTime: "23:20" }); renderDepartures(); openSheet = (title, body) => { document.querySelector("#sheet-title").textContent = title; document.querySelector("#sheet-body").innerHTML = body; }; departureDetails("12-merkenich:2026-09-08:00:23", true);',
-    );
-    assert.equal(w.element('#sheet-title').textContent, 'Departure details');
-    assert.match(
-        w.element('#sheet-body').innerHTML,
-        /data-origin-departure="12-merkenich:2026-09-08:00:23"/,
-    );
-    assert.equal(w.run('state.boardStatus'), 'delayed');
-    assert.equal(w.run('state.boardExpanded'), null);
-    assert.equal(w.run('timetableClock().date'), '2026-09-07');
-    assert.equal(w.run('timetableClock().time'), '23:20');
-});
-
-test('the historical all-stop board identifies each boarding stop and exposes only captured departure types', () => {
-    const w = workspace('?view=timetable', false, true);
-    assert.equal(w.run('state.stop'), 'all');
-    assert.equal(w.element('#at-stop-title').textContent, 'All sample stops');
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /<small>From Merkenich Mitte<\/small>/,
-    );
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /<small>From Merkenich<\/small>/,
-    );
-    const types = w.element('#board-types').innerHTML;
-    assert.match(types, /data-board-type="tram"/);
-    assert.match(types, /data-board-type="bus"/);
-    assert.doesNotMatch(types, /data-board-type="rail"/);
-    assert.equal(w.element('#board-filters').hidden, true);
-});
-
-test('station departure type resets incompatible filters while retaining the station and chosen clock', () => {
-    const w = workspace('?view=timetable', true, true, true);
-    w.run(
-        'state.boardLine = "16"; state.boardDirection = "neumarkt-capture-7"; state.boardMode = "date"; state.boardDate = "2026-10-04"; state.boardTime = "22:20";',
-    );
-    const button = { dataset: { boardType: 'bus' } };
-    w.emit('click', { target: { closest: () => button } });
-    assert.equal(w.run('state.stop'), 'neumarkt');
-    assert.equal(w.run('state.boardType'), 'bus');
-    assert.equal(w.run('state.boardLine'), 'all');
-    assert.equal(w.run('state.boardDirection'), 'all');
-    assert.equal(w.run('state.boardDate'), '2026-10-04');
-    assert.equal(w.run('state.boardTime'), '22:20');
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /<strong>136<\/strong>/,
-    );
-    assert.doesNotMatch(
-        w.element('#departure-cards').innerHTML,
-        /<strong>16<\/strong>|<strong>121<\/strong>/,
-    );
-    assert.equal(w.element('[data-board-type="bus"]').focused, true);
-});
-
-test('optional timetable filters open inline, retain active choices when closed and recover empty results', () => {
-    const w = workspace('?view=timetable', false, true);
-    w.run('action("board-filters", $("[data-action=board-filters]"));');
-    assert.equal(w.element('#board-filters').hidden, false);
-    const statusChoice = {
-        dataset: { boardFilterChoice: 'status', value: 'delayed' },
-    };
-    w.emit('click', { target: { closest: () => statusChoice } });
-    assert.equal(w.run('state.boardStatus'), 'delayed');
-    assert.match(
-        w.element('[data-action="board-filters"]').innerHTML,
-        /board-filter-count">1/,
-    );
-    w.run('action("board-filters", $("[data-action=board-filters]"));');
-    assert.equal(w.element('#board-filters').hidden, true);
-    assert.equal(w.run('state.boardStatus'), 'delayed');
-    const button = { dataset: { boardType: 'bus' } };
-    w.emit('click', { target: { closest: () => button } });
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /No matching captured departures/,
-    );
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /Missing delay information/,
-    );
-    w.run('action("clear-board-filters", $("clear"));');
-    assert.equal(w.run('state.boardStatus'), 'all');
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /<strong>121<\/strong>/,
-    );
-    assert.equal(w.element('[data-action="board-filters"]').focused, true);
-});
-
-test('station filters keep the selected direction readable after closing options', () => {
-    const w = workspace('?view=timetable', true, true, true);
-    w.run(
-        'state.boardLine = "1"; state.boardDirection = T.entries.find(row => row.line === "1" && row.destination === "Weiden West").serviceId; state.boardStatus = "delayed"; renderDepartures();',
-    );
-    assert.match(
-        w.element('#station-active-filters').innerHTML,
-        /Towards Weiden West/,
-    );
-    assert.match(
-        w.element('#station-active-filters').innerHTML,
-        /Delay notices/,
-    );
-    w.run('clearStationFilter("direction");');
-    assert.equal(w.run('state.boardDirection'), 'all');
-    assert.equal(w.run('state.boardLine'), '1');
-    assert.equal(w.run('state.boardStatus'), 'delayed');
-});
-
-test('station map summary retains the chosen departure and drops it when filters exclude it', () => {
-    const w = workspace('?view=timetable', true, true, true);
-    w.run(
-        'state.stationView = "map"; const chosen = T.entries.find(row => row.line === "1" && row.destination === "Brück"); departureDetails(chosen.id);',
-    );
-    assert.match(w.element('#station-service-summary').innerHTML, /Brück/);
-    assert.match(w.element('#station-service-summary').innerHTML, /22:30/);
-    w.run('chooseStationLine("136", false);');
-    assert.equal(w.run('state.boardSelected'), null);
-    assert.match(
-        w.element('#station-service-summary').innerHTML,
-        /Daimlerstr\./,
-    );
-    assert.doesNotMatch(
-        w.element('#station-service-summary').innerHTML,
-        /Brück/,
-    );
-});
-
-test('clearing a line filter retains a later selected service beyond the first page', () => {
-    const w = workspace('?view=timetable', true, true, true);
-    w.run(
-        'chooseStationLine("16", false); const entry = T.entries.find(row => row.line === "16" && row.destination === "Sürth"); departureDetails(entry.id); chooseStationLine("all", false);',
-    );
-    assert.equal(w.run('state.boardSelected'), 'neumarkt-capture-16:0');
-    assert.match(w.element('#station-service-summary').innerHTML, /Sürth/);
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /is-selected[^>]*data-departure="neumarkt-capture-16:0"/,
-    );
-});
-
-test('choosing a departure on mobile immediately updates its selected row behind the sheet', () => {
-    const w = workspace('?view=timetable', false, true, true);
-    w.run('openSheet = () => {}; departureDetails("neumarkt-capture-2:0");');
-    assert.equal(w.run('state.boardSelected'), 'neumarkt-capture-2:0');
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /is-selected[^>]*data-departure="neumarkt-capture-2:0"/,
-    );
-});
-
-test('excluding a selected service also clears its map-line hint', () => {
-    const w = workspace('?view=timetable', true, true, true);
-    w.run(
-        'departureDetails("neumarkt-capture-1:0"); state.boardStatus = "delayed"; renderDepartures();',
-    );
-    assert.equal(w.run('state.boardSelected'), null);
-    assert.equal(w.run('state.stationMapLine'), null);
-    assert.doesNotMatch(
-        w.element('#station-service-summary').innerHTML,
-        /Zündorf/,
-    );
 });
 
 test('resetting a journey clears the previous service status message', () => {
@@ -926,129 +601,6 @@ test('empty journey results offer journey controls instead of a dominant Compose
     assert.match(markup, /Explore sample routes/);
 });
 
-test('custom direction choices filter results and keep the selected label on the trigger', () => {
-    const w = workspace('?view=timetable&stop=mitte', true, true);
-    const button = {
-        dataset: { boardFilterChoice: 'direction', value: '12-zollstock' },
-    };
-    w.emit('click', { target: { closest: () => button } });
-    assert.equal(w.run('state.boardDirection'), '12-zollstock');
-    assert.match(w.element('#departure-cards').innerHTML, /23:26/);
-    assert.doesNotMatch(
-        w.element('#departure-cards').innerHTML,
-        /<strong>Merkenich<\/strong>/,
-    );
-    assert.equal(
-        w.element('#board-direction').attributes['aria-label'],
-        'Direction: Zollstock',
-    );
-    assert.equal(w.element('#board-direction').focused, true);
-    const clear = { dataset: { boardFilterChoice: 'direction', value: 'all' } };
-    w.emit('click', { target: { closest: () => clear } });
-    assert.match(
-        w.element('#departure-cards').innerHTML,
-        /<strong>Merkenich<\/strong>/,
-    );
-    assert.equal(
-        w.element('#board-direction').attributes['aria-label'],
-        'Direction: All directions',
-    );
-});
-
-test('filter choices reject services outside the current stop instead of applying stale values', () => {
-    const w = workspace('?view=timetable&stop=mitte', true, true);
-    w.run('state.boardDirection = "12-zollstock"; renderDepartures();');
-    const before = w.element('#departure-cards').innerHTML;
-    for (const [key, value] of [
-        ['direction', 'unavailable'],
-        ['line', '16'],
-        ['status', 'on-time'],
-        ['invalid', 'all'],
-    ]) {
-        const button = { dataset: { boardFilterChoice: key, value } };
-        w.emit('click', { target: { closest: () => button } });
-    }
-    assert.equal(w.run('state.boardDirection'), '12-zollstock');
-    assert.equal(w.run('state.boardLine'), 'all');
-    assert.equal(w.run('state.boardStatus'), 'all');
-    assert.equal(w.element('#departure-cards').innerHTML, before);
-});
-
-function filterMenu() {
-    const w = workspace('?view=timetable&stop=mitte', true, true);
-    const popover = w.element('#journey-popover');
-    const choices = ['all', '12-merkenich', '12-zollstock'].map((value) =>
-        w.element(`choice-${value}`),
-    );
-    popover.contains = (target) =>
-        target === popover || choices.includes(target);
-    popover.querySelector = () => choices[0];
-    popover.querySelectorAll = () => choices;
-    return { w, popover, choices };
-}
-
-test('filter menu opens at its trigger and Escape restores focus without changing selection', () => {
-    const { w, popover, choices } = filterMenu();
-    const trigger = w.element('#board-direction');
-    trigger.dataset.boardFilter = 'direction';
-    trigger.closest = () => trigger;
-    w.emit('click', { target: trigger });
-    assert.equal(popover.hidden, false);
-    assert.equal(trigger.attributes['aria-expanded'], 'true');
-    assert.equal(w.element('#popover-title').textContent, 'Direction');
-    assert.match(w.element('#popover-body').innerHTML, /Merkenich/);
-    assert.match(w.element('#popover-body').innerHTML, /Zollstock/);
-    assert.equal(choices[0].focused, true);
-    let prevented = false;
-    w.emit('keydown', {
-        key: 'Escape',
-        target: choices[0],
-        preventDefault() {
-            prevented = true;
-        },
-    });
-    assert.equal(popover.hidden, true);
-    assert.equal(trigger.attributes['aria-expanded'], 'false');
-    assert.equal(w.run('state.boardDirection'), 'all');
-    assert.equal(w.run('document.activeElement'), trigger);
-    assert.equal(prevented, true);
-});
-
-test('filter menus support arrows, Home and End; tabbing outside dismisses them', () => {
-    const { w, popover, choices } = filterMenu();
-    w.run('showBoardFilter("direction", $("#board-direction"));');
-    const key = (value) =>
-        w.emit('keydown', {
-            key: value,
-            target: w.run('document.activeElement'),
-            preventDefault() {},
-        });
-    key('ArrowDown');
-    assert.equal(w.run('document.activeElement'), choices[1]);
-    key('End');
-    assert.equal(w.run('document.activeElement'), choices[2]);
-    key('ArrowDown');
-    assert.equal(w.run('document.activeElement'), choices[0]);
-    key('ArrowUp');
-    assert.equal(w.run('document.activeElement'), choices[2]);
-    key('Home');
-    assert.equal(w.run('document.activeElement'), choices[0]);
-    w.element('outside-filter').focus();
-    assert.equal(popover.hidden, true);
-    assert.equal(w.run('state.boardDirection'), 'all');
-});
-
-test('ArrowUp from the filter close button reaches the last choice', () => {
-    const { w, popover, choices } = filterMenu();
-    const close = w.element('filter-close');
-    popover.contains = (target) =>
-        target === popover || target === close || choices.includes(target);
-    w.run('showBoardFilter("direction", $("#board-direction"));');
-    close.focus();
-    w.emit('keydown', { key: 'ArrowUp', target: close, preventDefault() {} });
-    assert.equal(w.run('document.activeElement'), choices[2]);
-});
-
 test('on the sample day the planner leads with the appointment trip and Today’s timing rule', () => {
     const w = workspace('', false, false, false, true);
     w.run('renderNextTrip();');
@@ -1061,7 +613,6 @@ test('on the sample day the planner leads with the appointment trip and Today’
         card.innerHTML,
         /The 13:24 in your plan leaves only 2 min to spare/,
     );
-    assert.equal(w.run('state.stop'), 'neumarkt');
     assert.equal(w.run('state.date'), '2026-09-30');
 });
 
@@ -1087,56 +638,6 @@ test('opening the next trip compares both trams against the 14:00 start', () => 
         w.element('#results').innerHTML,
         /No cycling route in this sample[\s\S]*data-route-mode="transit"/,
     );
-});
-
-test('the sample-day timetable says it only holds the trip’s line', () => {
-    const w = workspace('', false, false, false, true);
-    w.run('renderDepartures();');
-    assert.equal(w.element('#board-meta').textContent, 'Sample day · not live');
-    assert.equal(
-        w.element('#board-filter-summary').textContent,
-        '2 sample departures',
-    );
-    const cards = w.element('#departure-cards').innerHTML;
-    assert.match(cards, /Only line 4, for your appointment trip/);
-    assert.match(cards, /data-action="timetable-capture"/);
-    w.run('action("timetable-capture", $("#timetable-capture-trigger"));');
-    assert.equal(w.run('state.boardDate'), '2026-09-07');
-    assert.match(
-        w.element('#board-filter-summary').textContent,
-        /5 captured departures/,
-    );
-});
-
-test('one Neumarkt: the station board opens on the sample day with only its line', () => {
-    const w = workspace('?view=timetable', false, true, true, true);
-    w.run('renderDepartures();');
-    assert.equal(w.run('state.stop'), 'neumarkt');
-    assert.equal(w.run('timetableClock().date'), '2026-09-30');
-    assert.equal(w.element('#board-meta').textContent, 'Sample day · not live');
-    assert.equal(
-        w.element('#board-filter-summary').textContent,
-        '2 sample departures',
-    );
-    const html = w.element('#departure-cards').innerHTML;
-    assert.doesNotMatch(html, /<small>Estimated<\/small>|Time in capture/);
-    assert.match(html, /Scheduled sample times/);
-    const lines = w.element('#station-lines').innerHTML;
-    assert.match(lines, /data-station-line="4"/);
-    assert.doesNotMatch(lines, /data-station-line="7"/);
-    w.run('action("timetable-capture", $("#capture-trigger"));');
-    assert.equal(w.run('timetableClock().date'), '2026-10-04');
-    assert.equal(
-        w.element('#board-filter-summary').textContent,
-        '16 captured departures',
-    );
-    // A sample-day departure is never mistaken for the station capture.
-    w.run(`
-        closeSheet = done => done?.();
-        const sample = T.entries.find(row => row.sampleDay);
-        useStop(sample.stopId, sample.id);
-    `);
-    assert.equal(w.run('state.servicePreference'), null);
 });
 
 test('the captured example follows the travel mode', () => {

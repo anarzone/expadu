@@ -4,7 +4,7 @@
 // Travel's late-night capture says when it was captured beside its times.
 const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
-const base = 'http://127.0.0.1:8765/dev/design/';
+const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
 (async () => {
     const browser = await chromium.launch();
     try {
@@ -39,6 +39,8 @@ const base = 'http://127.0.0.1:8765/dev/design/';
             await page.goto(base + 'departures-next/', {
                 waitUntil: 'networkidle',
             });
+            // Travel opens on Nearby; the trip is under Plan a trip.
+            await page.getByRole('button', { name: 'Plan a trip' }).first().click();
             assert.match(
                 await page.locator('.next-trip-name').innerText(),
                 /Neumarkt → Wiener Platz/,

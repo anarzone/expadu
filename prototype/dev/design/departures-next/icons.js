@@ -23,6 +23,8 @@ const shapes = {
     play: '<path d="m8 5 11 7-11 7Z"/>',
     edit: '<path d="m3 16 12-12 5 5L8 21H3v-5Zm9-9 5 5"/>',
     map: '<path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16"/>',
+    list: '<path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+    star: '<path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6.1L12 16.6 6.6 19.6l1.2-6.1-4.5-4.2 6.1-.7L12 3Z"/>',
     locate: '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>',
     plus: '<path d="M5 12h14M12 5v14"/>',
     minus: '<path d="M5 12h14"/>',

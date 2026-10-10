@@ -346,5 +346,6 @@
             },
         };
     }
-    root.StationMap = { mount, groupPoints, matches };
+    // `load` lets Nearby share the same vendored MapLibre.
+    root.StationMap = { mount, groupPoints, matches, load: library };
 })(globalThis);

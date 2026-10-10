@@ -5,31 +5,13 @@ const D = DeparturesModel,
     U = DeparturesUI,
     T = TimetableModel;
 const state = {
-    view: 'journey',
-    stop:
-        window.StationCapture?.stop.id ||
-        (window.StationBoard ? 'all' : J.day?.boardingStop.id || 'mitte'),
-    stationView: 'list',
-    stationMapLine: null,
-    stationPointId: null,
-    stationMapExpanded: false,
-    stationScroll: { list: 0, map: 0 },
-    boardSelected: null,
+    // Travel opens on Nearby, the closest station (owner, 9 Oct 2026).
+    view: 'stop',
     servicePreference: null,
     composerRoute: null,
     composerHelpDismissed: false,
-    boardType: 'all',
-    boardStatus: 'all',
-    boardFiltersOpen: false,
-    boardMode: 'now',
-    boardDate: D.snapshot.dateISO,
-    boardTime: D.snapshot.time,
-    boardLimit: 10,
+    // A journey's boarding stop opened in Nearby, with a way back.
     boardRoute: null,
-    boardReturnOrigin: null,
-    boardLine: 'all',
-    boardDirection: 'all',
-    boardExpanded: null,
     boardingStop: null,
     boardingRoute: null,
     routeMode: 'transit',
@@ -133,7 +115,6 @@ let toastTimer,
     previousRequest,
     boardingReturn;
 let closingSheet = false;
-let stopDiscoveryController;
 const modes = [
     ['transit', 'Transit', 'train'],
     ['bike', 'Cycle', 'bike'],
@@ -241,8 +222,7 @@ function positionPopover() {
     const bottom =
         (viewport?.offsetTop || 0) + (viewport?.height || innerHeight) - edge;
     const rect = popoverAnchor.getBoundingClientRect();
-    const filterMenu = popover.dataset.kind?.startsWith('board-filter-');
-    popover.style.maxHeight = `${filterMenu ? Math.min(420, bottom - top) : bottom - top}px`;
+    popover.style.maxHeight = `${bottom - top}px`;
     const height = popover.offsetHeight;
     const preferred = rect.bottom + 8;
     popover.style.left = `${Math.max(edge, Math.min(rect.left, innerWidth - popover.offsetWidth - edge))}px`;
@@ -268,8 +248,6 @@ function openPopover(title, body, anchor, kind) {
 }
 function closePopover(restoreFocus = false) {
     if (popover.hidden) return;
-    stopDiscoveryController?.destroy();
-    stopDiscoveryController = null;
     ExpaduTime?.close();
     popover.hidden = true;
     popoverAnchor?.setAttribute('aria-expanded', 'false');
@@ -891,7 +869,7 @@ function savedBody() {
         .map((id) => {
             const route = findRoute(id),
                 trip = tripOf(route);
-            return `<div class="saved-row"><button data-saved="${id}"><span class="saved-mode">${icon(routeIcon(route))}${route.line || ''}</span><span><strong>${safe(trip.place)}</strong><small>From ${safe(placeName(trip.from))} · ${route.duration} min</small><small>${trip.id === 'day' ? `Sample day · ${boardDateLabel(trip.date)}` : '7 Sep 2026'} · ${route.depart}–${route.arrive}${route.arrive < trip.time ? ' (+1 day)' : ''}</small></span>${icon('chevron')}</button><button class="icon-button is-saved" data-save="${id}" aria-label="Unsave ${routeName(route)} journey">${icon('bookmark')}</button>${window.StationBoard ? `<button type="button" class="saved-repeat text-action" data-repeat-route="${id}">Plan this trip again</button>` : ''}</div>`;
+            return `<div class="saved-row"><button data-saved="${id}"><span class="saved-mode">${icon(routeIcon(route))}${route.line || ''}</span><span><strong>${safe(trip.place)}</strong><small>From ${safe(placeName(trip.from))} · ${route.duration} min</small><small>${trip.id === 'day' ? `Sample day · ${boardDateLabel(trip.date)}` : '7 Sep 2026'} · ${route.depart}–${route.arrive}${route.arrive < trip.time ? ' (+1 day)' : ''}</small></span>${icon('chevron')}</button><button class="icon-button is-saved" data-save="${id}" aria-label="Unsave ${routeName(route)} journey">${icon('bookmark')}</button><button type="button" class="saved-repeat text-action" data-repeat-route="${id}">Plan this trip again</button></div>`;
         })
         .join('')}</div>`;
 }
@@ -949,549 +927,26 @@ const boardDateLabel = (date, long = false) =>
         month: long ? 'long' : 'short',
         ...(long ? { year: 'numeric' } : {}),
     }).format(new Date(date + 'T12:00:00'));
-function timetableStop() {
-    const selected = T.stops.find((item) => item.id === state.stop);
-    if (selected) return selected;
-    const eligible = T.stops.filter(
-        (stop) => state.boardType === 'all' || stop.mode === state.boardType,
-    );
-    const first =
-        [...eligible].sort((a, b) =>
-            `${a.capture.date}T${a.capture.time}`.localeCompare(
-                `${b.capture.date}T${b.capture.time}`,
-            ),
-        )[0] || T.stops[0];
-    return {
-        id: 'all',
-        name: 'All sample stops',
-        mode: state.boardType,
-        capture: first.capture,
-    };
-}
-function scopeEntries() {
-    return T.entries.filter(
-        (entry) =>
-            (state.stop === 'all' || entry.stopId === state.stop) &&
-            (state.boardType === 'all' ||
-                (entry.type ||
-                    T.stops.find((stop) => stop.id === entry.stopId)?.mode) ===
-                    state.boardType),
-    );
-}
-function departureTypes() {
-    const choices = [
-        ['all', 'All', null],
-        ['tram', 'Tram', 'train'],
-        ['bus', 'Bus', 'bus'],
-        ['rail', 'Train', 'train'],
-    ];
-    $('#board-types').innerHTML = choices
-        .filter(
-            ([id]) =>
-                id === 'all' ||
-                T.entries.some(
-                    (entry) =>
-                        (state.stop === 'all' ||
-                            !window.StationBoard ||
-                            entry.stopId === state.stop) &&
-                        (entry.type ||
-                            T.stops.find((stop) => stop.id === entry.stopId)
-                                ?.mode) === id,
-                ),
-        )
-        .map(
-            ([id, name, shape]) =>
-                `<button type="button" data-board-type="${id}" aria-pressed="${state.boardType === id}">${shape ? icon(shape) : ''}${name}</button>`,
-        )
-        .join('');
-}
-// A stop on the sample day opens at its clock; other stops at their capture.
-const stopNow = (stop) => stop.sampleDay || stop.capture;
-function timetableClock() {
-    const stop = timetableStop();
-    return state.boardMode === 'now'
-        ? stopNow(stop)
-        : { date: state.boardDate, time: state.boardTime };
-}
-function timetableNow() {
-    const stop = timetableStop();
-    Object.assign(state, {
-        boardMode: 'now',
-        boardDate: stopNow(stop).date,
-        boardTime: stopNow(stop).time,
-        boardLimit: 10,
-    });
-}
-// The sample day only holds the appointment trip's departures; say so.
-function sampleDayScope(stop, clock) {
-    if (!stop.sampleDay || clock.date !== stop.sampleDay.date) return '';
-    const lines = [
-        ...new Set(
-            T.entries
-                .filter((entry) => entry.stopId === stop.id && entry.sampleDay)
-                .map((entry) => entry.line),
-        ),
-    ];
-    if (!lines.length) return '';
-    return `<div class="timetable-scope">${icon('info')}<p>Only line ${lines.join(', ')}, for your appointment trip, is in the sample day. Other services at ${safe(stop.name)} weren’t captured for ${boardDateLabel(clock.date)}.</p><button type="button" class="quiet-button" data-action="timetable-capture">See the ${boardDateLabel(stop.capture.date)} capture</button></div>`;
-}
-// Lines and directions to filter by: those running in the shown window, so
-// the sample day doesn't offer lines that only the 4 Oct capture has.
-function windowEntries() {
-    const clock = timetableClock();
-    const shown = new Set(
-        T.departures(
-            timetableStop().id,
-            clock.date,
-            clock.time,
-            T.entries.length,
-        ).rows.map((row) => row.id),
-    );
-    return scopeEntries().filter((entry) => shown.has(entry.id));
-}
-function boardFilters() {
-    const entries = windowEntries();
-    const lines = [...new Set(entries.map((entry) => entry.line))];
-    if (!lines.includes(state.boardLine)) state.boardLine = 'all';
-    const services = [
-        ...new Map(
-            entries
-                .filter(
-                    (entry) =>
-                        state.boardLine === 'all' ||
-                        entry.line === state.boardLine,
-                )
-                .map((entry) => [entry.serviceId, entry]),
-        ).values(),
-    ];
-    if (!services.some((entry) => entry.serviceId === state.boardDirection))
-        state.boardDirection = 'all';
-    $('#board-line-filter').hidden = lines.length < 2;
-    $('#board-direction-filter').hidden = services.length < 2;
-    $('#board-filters').hidden = !state.boardFiltersOpen;
-    const count = [
-        state.boardLine,
-        state.boardDirection,
-        state.boardStatus,
-    ].filter((value) => value !== 'all').length;
-    const toggle = $('[data-action="board-filters"]');
-    toggle.setAttribute('aria-expanded', String(state.boardFiltersOpen));
-    toggle.innerHTML = `${icon('sliders')}Filters${count ? `<span class="board-filter-count">${count}</span>` : ''}`;
-    $('[data-action="clear-board-filters"]').hidden = !count;
-    for (const key of ['line', 'direction', 'status']) {
-        const filter = boardFilterChoices(key);
-        const selected = filter.options.find(
-            (option) => option.value === filter.value,
-        );
-        const trigger = $(`#board-${key}`);
-        trigger.innerHTML = `<span class="board-filter-label">${safe(selected.label)}</span>${icon('down')}`;
-        trigger.setAttribute(
-            'aria-label',
-            `${filter.title}: ${selected.label}`,
-        );
-        trigger.dataset.active = String(filter.value !== 'all');
-    }
-    renderActiveStationFilters();
-    if (window.StationBoard) {
-        const choices = StationBoard.directionChoices(
-            services,
-            state.boardDirection,
-        );
-        $('#station-directions').innerHTML = choices;
-        $('#station-directions').hidden = !choices;
-        if (choices) $('#board-direction-filter').hidden = true;
-        if ($('#station-lines'))
-            $('#station-lines').innerHTML = StationBoard.lineChoices(
-                entries,
-                state.boardLine,
-            );
-    }
-}
-function boardFilterChoices(key) {
-    if (key === 'status')
-        return {
-            title: 'Service notices',
-            value: state.boardStatus,
-            options: [
-                { value: 'all', label: 'All services' },
-                { value: 'delayed', label: 'Delay notices' },
-            ],
-        };
-    const entries = windowEntries();
-    const lines = [...new Set(entries.map((entry) => entry.line))];
-    if (key === 'line')
-        return {
-            title: 'Line',
-            value: state.boardLine,
-            options: [
-                { value: 'all', label: 'All lines' },
-                ...lines.map((line) => ({
-                    value: line,
-                    label: `Line ${line}`,
-                })),
-            ],
-        };
-    if (key !== 'direction') return null;
-    const services = [
-        ...new Map(
-            entries
-                .filter(
-                    (entry) =>
-                        state.boardLine === 'all' ||
-                        entry.line === state.boardLine,
-                )
-                .map((entry) => [entry.serviceId, entry]),
-        ).values(),
-    ];
-    return {
-        title: 'Direction',
-        value: state.boardDirection,
-        options: [
-            { value: 'all', label: 'All directions' },
-            ...services.map((entry) => ({
-                value: entry.serviceId,
-                label: `${entry.destination}${state.boardLine === 'all' && lines.length > 1 ? ` · Line ${entry.line}` : ''}`,
-            })),
-        ],
-    };
-}
-function showBoardFilter(key, anchor) {
-    const filter = boardFilterChoices(key);
-    if (!filter) return;
-    openPopover(
-        filter.title,
-        `<div class="board-filter-options">${filter.options
-            .map(
-                (option) =>
-                    `<button type="button" class="board-filter-option" data-board-filter-choice="${key}" data-value="${safe(option.value)}" aria-pressed="${option.value === filter.value}"><span>${safe(option.label)}</span>${icon('check')}</button>`,
-            )
-            .join('')}</div>`,
-        anchor,
-        `board-filter-${key}`,
-    );
-    if (!popover.hidden)
-        popover
-            .querySelector('[data-board-filter-choice][aria-pressed="true"]')
-            ?.focus();
-}
-function selectBoardFilter(key, value) {
-    const filter = boardFilterChoices(key);
-    if (!filter?.options.some((option) => option.value === value)) return;
-    if (key === 'line') {
-        state.boardLine = value;
-        state.boardDirection = 'all';
-    } else if (key === 'status') state.boardStatus = value;
-    else state.boardDirection = value;
-    state.boardExpanded = null;
-    state.boardLimit = 10;
-    closePopover();
-    renderDepartures();
-    $(`#board-${key}`).focus({ preventScroll: true });
-    animate($('#departure-cards'));
-}
-function renderActiveStationFilters() {
-    if (!window.StationBoard || !$('#station-active-filters')) return;
-    const direction = T.entries.find(
-        (entry) => entry.serviceId === state.boardDirection,
-    );
-    const filters = [];
-    if (direction)
-        filters.push(['direction', `Towards ${direction.destination}`]);
-    if (state.boardStatus !== 'all') filters.push(['status', 'Delay notices']);
-    const panel = $('#station-active-filters');
-    panel.hidden = !filters.length;
-    panel.innerHTML = filters
-        .map(
-            ([key, label]) =>
-                `<button type="button" data-clear-station-filter="${key}" aria-label="Clear ${safe(label)}">${safe(label)}${icon('close')}</button>`,
-        )
-        .join('');
-}
-function clearStationFilter(key) {
-    if (key === 'direction') state.boardDirection = 'all';
-    if (key === 'status') state.boardStatus = 'all';
-    state.boardLimit = 10;
-    state.boardExpanded = null;
-    renderDepartures();
-    $('[data-action="board-filters"]')?.focus({ preventScroll: true });
-}
-function departureContent(entry, inline = false) {
-    const stop = T.stops.find((item) => item.id === entry.stopId);
-    const later = T.serviceEntries(entry.serviceId).filter(
-        (row) => `${row.date}T${row.time}` > `${entry.date}T${entry.time}`,
-    );
-    return `<div class="${inline ? 'departure-inline-content' : 'departure-detail'}">${inline ? '' : `<div class="detail-topline"><span>${icon((entry.type || stop.mode) === 'bus' ? 'bus' : 'train')}Line ${entry.line}</span><span class="sample-tag">Sample departure</span></div><div class="detail-destination"><small>Towards</small><h2>${safe(entry.destination)}</h2></div><div class="departure-stop-route"><span class="origin-dot"></span><div><small>Board at</small><strong>${safe(stop.name)}</strong></div><time>${entry.time}</time></div>`}<div class="departure-facts"><span>${boardDateLabel(entry.date, true)}</span><span>${safe(stop.operator || 'KVB')}</span></div>${entry.delayed ? '<p class="departure-warning">Delay flagged in this capture. Current status is unknown.</p>' : ''}${later.length ? `<div class="departure-later"><h3>Later in this direction</h3><div class="scheduled-list" role="group" aria-label="Later departures">${later.map((row) => `<button data-select-departure="${row.id}" aria-label="${row.time}, ${boardDateLabel(row.date)}"><strong>${row.time}</strong><span>${row.date !== entry.date ? boardDateLabel(row.date) : 'Same day'}</span></button>`).join('')}</div></div>` : ''}<p class="route-note">${entry.timeBasis ? 'Estimate from a saved capture. ' : ''}Platform and live delays unavailable.</p><div class="departure-inline-actions">${window.StationCapture && entry.stopId === StationCapture.stop.id ? `<button class="quiet-button" data-show-station-line="${safe(entry.line)}">${icon('pin')}Stops for line ${safe(entry.line)}</button>` : ''}<button class="${inline ? 'quiet-button departure-inline-action' : 'primary'}" data-origin="${stop.id}" data-origin-departure="${entry.id}">${entry.timeBasis ? 'Plan from this stop' : 'Plan from this departure'}</button></div></div>`;
-}
-let stationMapController;
-function chooseStationLine(line, focus = true) {
-    Object.assign(state, {
-        boardLine: line,
-        boardDirection: 'all',
-        boardExpanded: null,
-        boardLimit: 10,
-        stationMapLine: null,
-    });
-    renderDepartures();
-    if (focus)
-        $(`[data-station-line="${line}"]`)?.focus({ preventScroll: true });
-    animate($('#departure-cards'));
-}
-function renderStationMap() {
-    const panel = $('#station-map-panel');
-    if (!panel) return;
-    const supported =
-        window.StationCapture && state.stop === StationCapture.stop.id;
-    $('.station-views').hidden = !supported;
-    const shown = supported && state.stationView === 'map';
-    panel.hidden = !shown;
-    panel.classList.toggle('is-expanded', state.stationMapExpanded);
-    $('#station-workspace').classList.toggle('has-map', shown);
-    document
-        .querySelectorAll('[data-station-view]')
-        .forEach((button) =>
-            button.setAttribute(
-                'aria-pressed',
-                String(button.dataset.stationView === state.stationView),
-            ),
-        );
-    if (!shown) {
-        stationMapController?.destroy();
-        stationMapController = null;
-        return;
-    }
-    const selection = {
-        line:
-            state.boardLine !== 'all'
-                ? state.boardLine
-                : state.boardDirection !== 'all'
-                  ? T.entries.find(
-                        (row) => row.serviceId === state.boardDirection,
-                    )?.line
-                  : state.stationMapLine,
-        type: state.boardType,
-        selectedPointId: state.stationPointId,
-    };
-    if (stationMapController) stationMapController.update(selection);
-    else if (window.StationMap)
-        stationMapController = StationMap.mount(
-            $('#station-map-content') || panel,
-            {
-                points: StationCapture.boardingPoints,
-                ...selection,
-                onPointSelect: (id) => {
-                    state.stationPointId = id;
-                },
-                onLineSelect: (line) => {
-                    chooseStationLine(line, false);
-                    panel
-                        .querySelector(`[data-station-map-line="${line}"]`)
-                        ?.focus({ preventScroll: true });
-                },
-            },
-        );
-}
-function renderStationServiceSummary(rows) {
-    const panel = $('#station-service-summary');
-    if (!window.StationBoard || !panel) return;
-    if (!rows.some((entry) => entry.id === state.boardSelected))
-        state.boardSelected = null;
-    const entry =
-        rows.find((entry) => entry.id === state.boardSelected) || rows[0];
-    panel.hidden = !entry;
-    if (!entry) {
-        panel.innerHTML = '';
-        return;
-    }
-    panel.innerHTML = `<button type="button" data-departure="${safe(entry.id)}" aria-label="${state.boardSelected ? 'Selected departure' : 'First matching departure'}: Line ${safe(entry.line)} to ${safe(entry.destination)}, ${entry.time}"><span class="station-service">${icon(entry.type === 'bus' ? 'bus' : 'train')}<strong>${safe(entry.line)}</strong></span><span><small>${state.boardSelected ? 'Selected service' : 'First in this capture'}</small><strong>${safe(entry.destination)}</strong></span><time>${entry.time}</time></button><p>Saved estimate · boarding point unconfirmed</p>`;
-}
-function switchStationView(view) {
-    state.stationScroll[state.stationView] = window.scrollY || 0;
-    state.stationView = view;
-    renderDepartures();
-    requestAnimationFrame(() => {
-        window.scrollTo({
-            top: state.stationScroll[view],
-            behavior: 'instant',
-        });
-        $(`[data-station-view="${view}"]`)?.focus({ preventScroll: true });
-    });
-}
+// Nearby: the closest station by area (nearby.js, nearby-ui.js).
+let nearbyView;
 function renderDepartures() {
-    const stop = timetableStop(),
-        clock = timetableClock();
-    $('#at-stop-title').textContent = stop.name;
-    const nearby = $('#stop-nearby');
-    if (nearby) {
-        const href = nearbyLink(stop.name, clock.date, clock.time);
-        nearby.hidden = !href;
-        if (href) nearby.setAttribute('href', href);
-    }
-    $('.stop-symbol').innerHTML = icon(
-        stop.mode === 'all' ? 'pin' : stop.mode === 'bus' ? 'bus' : 'train',
-    );
-    $('.board-plan').hidden = state.stop === 'all';
-    departureTypes();
     $('.board-return').hidden = !state.boardRoute;
-    $('#timetable-time-label').textContent =
-        `${boardDateLabel(clock.date)} · ${clock.time}`;
-    $('#board-meta').textContent =
-        stop.sampleDay && clock.date === stop.sampleDay.date
-            ? 'Sample day · not live'
-            : stop.capture.estimated
-              ? 'Saved estimates · not live'
-              : 'Sample timetable · not live';
-    boardFilters();
-    const filters = {
-        line: state.boardLine,
-        direction: state.boardDirection,
-        type: state.boardType,
-        status: state.boardStatus,
-        keepTies: !!window.StationBoard,
-    };
-    if (window.StationBoard) {
-        // Pagination is a presentation limit, not a reason to lose a service
-        // which still matches the traveller's station, clock and filters.
-        const matching = T.departures(
-            stop.id,
-            clock.date,
-            clock.time,
-            T.entries.length,
-            filters,
-        ).rows;
-        const previousSelection = state.boardSelected;
-        renderStationServiceSummary(matching);
-        if (previousSelection && !state.boardSelected)
-            state.stationMapLine = null;
-        const selectedIndex = matching.findIndex(
-            (entry) => entry.id === state.boardSelected,
-        );
-        if (selectedIndex >= state.boardLimit)
-            state.boardLimit = selectedIndex + 1;
-    }
-    const page = T.departures(
-        stop.id,
-        clock.date,
-        clock.time,
-        state.boardLimit,
-        filters,
-    );
-    renderStationMap();
-    $('#board-filter-summary').textContent =
-        `${page.total} ${stop.sampleDay && clock.date === stop.sampleDay.date ? 'sample' : 'captured'} ${page.total === 1 ? 'departure' : 'departures'}`;
-    if (window.StationBoard && page.rows.length) {
-        $('#departure-cards').innerHTML =
-            StationBoard.render({
-                page,
-                stop,
-                clock,
-                expanded: state.boardExpanded,
-                selected: state.boardSelected,
-                desktop: desktopPlanner.matches,
-                detail: departureContent,
-            }) + sampleDayScope(stop, clock);
-        return;
-    }
-    let lastDate = clock.date;
-    $('#departure-cards').innerHTML = page.rows.length
-        ? page.rows
-              .map((entry, index) => {
-                  const dateBreak =
-                      entry.date !== lastDate
-                          ? `<div class="timetable-day">${boardDateLabel(entry.date)}</div>`
-                          : '';
-                  lastDate = entry.date;
-                  const entryStop = T.stops.find(
-                      (item) => item.id === entry.stopId,
-                  );
-                  const expanded =
-                      desktopPlanner.matches &&
-                      state.boardExpanded === entry.id;
-                  const panelId = `departure-${entry.id.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-                  return `${dateBreak}<div class="timetable-entry ${index === 0 ? 'next-departure' : ''}"><button class="timetable-row" data-departure="${entry.id}" aria-label="Line ${entry.line} to ${safe(entry.destination)}, ${entry.time}, ${boardDateLabel(entry.date)}${entry.delayed ? ', delay in capture' : ''}" aria-expanded="${expanded}" ${desktopPlanner.matches ? `aria-controls="${panelId}"` : 'aria-haspopup="dialog"'}><span class="line-badge ${entryStop.mode}">${icon(entryStop.mode === 'bus' ? 'bus' : 'train')}<strong>${entry.line}</strong></span><span class="timetable-destination"><strong>${safe(entry.destination)}</strong>${state.stop === 'all' ? `<small>From ${safe(entryStop.name)}</small>` : ''}${entry.delayed ? '<small>Delay in capture</small>' : ''}</span><time datetime="${entry.date}T${entry.time}">${entry.time}</time>${icon('down')}</button><div class="departure-inline" id="${panelId}" ${expanded ? '' : 'hidden'}>${expanded ? departureContent(entry, true) : ''}</div></div>`;
-              })
-              .join('') +
-          (page.total > page.rows.length
-              ? `<button class="quiet-button timetable-more" data-action="more-departures">More departures${icon('down')}</button>`
-              : '') +
-          sampleDayScope(stop, clock)
-        : state.boardStatus !== 'all' ||
-            state.boardLine !== 'all' ||
-            state.boardDirection !== 'all'
-          ? `<div class="timetable-empty">${icon('sliders')}<h2>No matching captured departures</h2><p>Try clearing the filters. Missing delay information does not mean a service is on time.</p><button class="quiet-button" data-action="clear-board-filters">Clear filters</button></div>`
-          : `<div class="timetable-empty">${icon('calendar')}<h2>No captured times here</h2><p>There’s no timetable captured for this time. This doesn’t mean no services run.</p><button class="quiet-button" data-action="timetable-now">Show captured departures</button></div>`;
-}
-function showTimetableTime(anchor) {
-    const clock = timetableClock();
-    openPopover(
-        'Timetable time',
-        `<form id="timetable-time-form"><div class="segmented schedule-modes" role="group" aria-label="Timetable time"><button type="button" data-board-mode="now" aria-pressed="${state.boardMode === 'now'}">${timetableStop().sampleDay ? 'Sample day' : 'Captured time'}</button><button type="button" data-board-mode="date" aria-pressed="${state.boardMode !== 'now'}">Choose time</button></div><input type="hidden" id="board-mode" value="${state.boardMode}"><div id="board-time-fields" ${state.boardMode === 'now' ? 'hidden' : ''}><label for="board-date">Date</label><input type="date" id="board-date" value="${clock.date}"><label for="board-time">From</label><input type="text" id="board-time" name="start" data-time-input inputmode="numeric" value="${clock.time}" placeholder="HH:MM" maxlength="5" aria-label="Timetable starting time" autocomplete="off"></div><p id="board-error" class="form-error" role="alert" hidden></p><div class="popover-footer"><small>${timetableStop().sampleDay ? `Sample day: ${boardDateLabel(timetableStop().sampleDay.date, true)}` : `Captured on ${boardDateLabel(timetableStop().capture.date, true)}`}. Not live.</small><button class="text-action" type="submit">Show departures</button></div></form>`,
-        anchor,
-        'timetable-time',
-    );
-}
-function moveTimetable(minutes, anchor) {
-    const clock = timetableClock(),
-        next = T.shift(clock.date, clock.time, minutes);
-    Object.assign(state, {
-        boardMode: 'date',
-        boardDate: next.date,
-        boardTime: next.time,
-        boardLimit: 10,
-    });
-    renderDepartures();
-    animate($('#departure-cards'), Math.sign(minutes));
-    anchor.focus({ preventScroll: true });
-}
-function stopSearch(query = '') {
-    const stops = T.searchStops(query).filter(
-        (stop) =>
-            state.boardType === 'all' ||
-            stop.mode === 'mixed' ||
-            stop.mode === state.boardType,
-    );
-    $('#stop-results').innerHTML =
-        (!query.trim()
-            ? `<button data-stop="all" aria-pressed="${state.stop === 'all'}">${icon('pin')}<span><strong>All sample stops</strong><small>${state.boardType === 'all' ? 'All departure types' : state.boardType === 'bus' ? 'Bus stops' : 'Tram stops'}</small></span></button>`
-            : '') +
-        (stops.length
-            ? stops
-                  .map((stop) => {
-                      const lines = [
-                          ...new Set(
-                              T.entries
-                                  .filter((entry) => entry.stopId === stop.id)
-                                  .map((entry) => entry.line),
-                          ),
-                      ];
-                      return `<button data-stop="${stop.id}" aria-pressed="${state.stop === stop.id}">${icon(stop.mode === 'mixed' ? 'pin' : stop.mode === 'tram' ? 'train' : 'bus')}<span><strong>${safe(stop.name)}</strong><small>${stop.mode === 'mixed' ? 'Tram & bus' : stop.mode === 'tram' ? 'Tram' : 'Bus'} · ${lines.join(', ')}</small></span>${state.stop === stop.id ? icon('check') : ''}</button>`;
-                  })
-                  .join('')
-            : '<p class="popover-note">No matching sample stop.</p>');
-}
-function showStops(anchor) {
-    if (window.StopDiscovery) {
-        openPopover('Choose a stop', '', anchor, 'stops');
-        if (popover.hidden) return;
-        stopDiscoveryController = StopDiscovery.mount($('#popover-body'), {
-            stops: T.stops,
-            entries: T.entries,
-            selectedId: state.stop,
-            icon,
-            onResize: positionPopover,
+    if (!window.NearbyView || !$('#nearby')) return;
+    if (nearbyView) nearbyView.render();
+    else
+        nearbyView = NearbyView.mount($('#nearby'), {
+            model: NearbyModel.create({
+                capture: window.StationCapture,
+                departures: D,
+            }),
+            desktop: desktopPlanner,
         });
-        positionPopover();
-        stopDiscoveryController.focus();
-        return;
-    }
-    openPopover(
-        'Choose a stop',
-        `<label class="stop-search">${icon('search')}<input id="stop-search" type="search" placeholder="Search stops" aria-label="Search stops" autocomplete="off"></label><div id="stop-results" class="choice-list"></div><p class="popover-note">${T.stops.length} captured stops · live search not connected</p>`,
-        anchor,
-        'stops',
-    );
-    stopSearch();
-    positionPopover();
-    $('#stop-search').focus({ preventScroll: true });
+}
+// Open Nearby on a stop it knows; otherwise keep the current one.
+function showStop(id) {
+    setView('stop');
+    nearbyView?.setStop(id);
+    nearbyView?.focus();
 }
 function openBoardingStop(button, restorePreview = null) {
     const routeId = button.dataset.boardRoute;
@@ -1508,26 +963,8 @@ function openBoardingStop(button, restorePreview = null) {
     };
     closeSheet(() => {
         boardingReturn = returnContext;
-        state.stop = button.dataset.boardStop;
-        state.boardType = 'all';
-        state.boardStatus = 'all';
-        Object.assign(state, {
-            boardMode: 'date',
-            boardDate: T.dateAtClock(
-                tripOf(routeId).date,
-                tripOf(routeId).time,
-                button.dataset.boardTime,
-            ),
-            boardTime: button.dataset.boardTime,
-            boardLimit: 10,
-            boardRoute: routeId,
-            boardReturnOrigin: button.dataset.boardOrigin || null,
-            boardLine: 'all',
-            boardDirection: 'all',
-            boardExpanded: null,
-        });
-        setView('stop');
-        $('[data-action="stops"]').focus({ preventScroll: true });
+        state.boardRoute = routeId;
+        showStop(button.dataset.boardStop);
     });
 }
 function returnFromTimetable() {
@@ -1546,74 +983,12 @@ function returnFromTimetable() {
         context.trigger.focus({ preventScroll: true });
     else $('#results-title')?.focus();
 }
-function departureDetails(id, replacing = false) {
-    const entry = T.entries.find((item) => item.id === id);
-    if (!entry) return;
-    state.stationMapLine = entry.line;
-    state.boardSelected = entry.id;
-    renderStationMap();
-    const clockForSelection = timetableClock();
-    renderStationServiceSummary(
-        T.departures(
-            timetableStop().id,
-            clockForSelection.date,
-            clockForSelection.time,
-            T.entries.length,
-            {
-                line: state.boardLine,
-                direction: state.boardDirection,
-                type: state.boardType,
-                status: state.boardStatus,
-            },
-        ).rows,
-    );
-    if (desktopPlanner.matches) {
-        const clock = timetableClock();
-        const scoped = T.departures(
-            timetableStop().id,
-            clock.date,
-            clock.time,
-            T.entries.length,
-            {
-                line: state.boardLine,
-                direction: state.boardDirection,
-                type: state.boardType,
-                status: state.boardStatus,
-            },
-        );
-        const index = scoped.rows.findIndex((row) => row.id === id);
-        if (index < 0) {
-            openSheet(
-                'Departure details',
-                departureContent(entry),
-                'departure',
-                document.activeElement,
-            );
-            return;
-        }
-        state.boardLimit = Math.max(state.boardLimit, index + 1);
-        state.boardExpanded =
-            state.boardExpanded === id && !replacing ? null : id;
-        renderDepartures();
-        const row = $(`[data-departure="${id}"]`);
-        row?.focus({ preventScroll: !replacing });
-        if (state.boardExpanded && row) animate(row.nextElementSibling);
-    } else {
-        renderDepartures();
-        openSheet(
-            'Departure details',
-            departureContent(entry),
-            'departure',
-            `[data-departure="${id}"]`,
-        );
-    }
-}
 function useStop(id, departureId) {
     closeSheet(() => {
         boardingReturn = null;
         const stop = T.stops.find((item) => item.id === id);
         const entry = T.entries.find((item) => item.id === departureId);
-        const clock = entry || timetableClock();
+        const clock = entry || stop.sampleDay || stop.capture;
         Object.assign(state, {
             boardRoute: null,
             schedule: 'depart',
@@ -1729,7 +1104,6 @@ function action(name, button) {
     } else if (name === 'schedule') showSchedule(button);
     else if (name === 'preferences') showPreferences(button);
     else if (name === 'sort') showSort(button);
-    else if (name === 'stops') showStops(button);
     else if (name === 'clear-service-preference') {
         state.servicePreference = null;
         $('#service-context-status').hidden = false;
@@ -1737,71 +1111,9 @@ function action(name, button) {
             'Service choice removed. Your trip details are kept.';
         syncServicePreference();
         from.focus({ preventScroll: true });
-    } else if (name === 'expand-station-map') {
-        state.stationMapExpanded = !state.stationMapExpanded;
-        $('#station-map-panel').classList.toggle(
-            'is-expanded',
-            state.stationMapExpanded,
-        );
-        button.setAttribute('aria-expanded', String(state.stationMapExpanded));
-        button.textContent = state.stationMapExpanded
-            ? 'Collapse map'
-            : 'Expand map';
-        stationMapController?.resize();
-    } else if (name === 'stop-origin' && state.stop !== 'all')
-        useStop(state.stop);
-    else if (name === 'board-filters') {
-        state.boardFiltersOpen = !state.boardFiltersOpen;
-        boardFilters();
-        if (state.boardFiltersOpen) animate($('#board-filters'));
-    } else if (name === 'clear-board-filters') {
-        state.boardStatus = 'all';
-        state.stationMapLine = null;
-        state.boardLine = 'all';
-        state.boardDirection = 'all';
-        state.boardExpanded = null;
-        state.boardLimit = 10;
-        renderDepartures();
-        $('[data-action="board-filters"]').focus({ preventScroll: true });
     } else if (name === 'next-trip') openNextTrip();
-    else if (name === 'from-departures') {
-        state.stop = button.dataset.stopId;
-        Object.assign(state, {
-            boardType: 'all',
-            boardLine: 'all',
-            boardDirection: 'all',
-            boardExpanded: null,
-        });
-        timetableNow();
-        setView('stop');
-        $('[data-action="stops"]')?.focus({ preventScroll: true });
-    } else if (name === 'timetable-capture') {
-        const stop = timetableStop();
-        Object.assign(state, {
-            boardMode: 'date',
-            boardDate: stop.capture.date,
-            boardTime: stop.capture.time,
-            boardLimit: 10,
-        });
-        renderDepartures();
-        animate($('#departure-cards'));
-        $('[data-action="timetable-time"]').focus({ preventScroll: true });
-    } else if (name === 'timetable-time') showTimetableTime(button);
-    else if (name === 'earlier-departures') moveTimetable(-60, button);
-    else if (name === 'later-departures') moveTimetable(60, button);
-    else if (name === 'timetable-now') {
-        timetableNow();
-        renderDepartures();
-        $('[data-action="timetable-time"]').focus({ preventScroll: true });
-    } else if (name === 'more-departures') {
-        state.boardLimit += 10;
-        const firstNew =
-            $('#departure-cards').querySelectorAll('[data-departure]').length;
-        renderDepartures();
-        $('#departure-cards')
-            .querySelectorAll('[data-departure]')
-            [firstNew]?.focus({ preventScroll: true });
-    } else if (name === 'return-journey') {
+    else if (name === 'from-departures') showStop(button.dataset.stopId);
+    else if (name === 'return-journey') {
         returnFromTimetable();
     } else if (name === 'edit-journey') {
         state.editing = true;
@@ -1878,13 +1190,6 @@ document.addEventListener('click', (event) => {
         hideSuggestions();
     if (!button) return;
     if (button.dataset.action) action(button.dataset.action, button);
-    else if (button.dataset.boardFilter)
-        showBoardFilter(button.dataset.boardFilter, button);
-    else if (button.dataset.boardFilterChoice)
-        selectBoardFilter(
-            button.dataset.boardFilterChoice,
-            button.dataset.value,
-        );
     else if (button.dataset.view) setView(button.dataset.view);
     else if (button.dataset.place) {
         if (
@@ -1966,80 +1271,7 @@ document.addEventListener('click', (event) => {
     else if (button.dataset.replace) {
         state.active = null;
         simulate(button.dataset.replace);
-    } else if (button.dataset.stop) {
-        state.stop = button.dataset.stop;
-        window.StopDiscovery?.recordSelection(state.stop, T.stops);
-        state.stationPointId = null;
-        state.boardSelected = null;
-        if (window.StationBoard) state.boardType = 'all';
-        state.stationMapLine = null;
-        state.boardLine = 'all';
-        state.boardDirection = 'all';
-        state.boardExpanded = null;
-        state.boardLimit = 10;
-        if (state.boardMode === 'now') timetableNow();
-        closePopover(true);
-        renderDepartures();
     } else if (button.dataset.boardStop) openBoardingStop(button);
-    else if (button.dataset.boardMode) {
-        $('#board-mode').value = button.dataset.boardMode;
-        $('#board-time-fields').hidden = button.dataset.boardMode === 'now';
-        popover
-            .querySelectorAll('[data-board-mode]')
-            .forEach((item) =>
-                item.setAttribute('aria-pressed', String(item === button)),
-            );
-        positionPopover();
-    } else if (button.dataset.boardType) {
-        Object.assign(state, {
-            boardType: button.dataset.boardType,
-            stop: window.StationBoard ? state.stop : 'all',
-            stationMapLine: null,
-            boardLine: 'all',
-            boardDirection: 'all',
-            boardExpanded: null,
-            boardLimit: 10,
-        });
-        if (state.boardMode === 'now') timetableNow();
-        renderDepartures();
-        $(`[data-board-type="${state.boardType}"]`)?.focus({
-            preventScroll: true,
-        });
-        animate($('#departure-cards'));
-    } else if (button.dataset.stationLine) {
-        chooseStationLine(button.dataset.stationLine);
-    } else if (button.dataset.stationView) {
-        switchStationView(button.dataset.stationView);
-    } else if (button.dataset.clearStationFilter) {
-        clearStationFilter(button.dataset.clearStationFilter);
-    } else if (button.dataset.showStationLine) {
-        state.stationView = 'map';
-        state.stationMapLine = button.dataset.showStationLine;
-        closeSheet(() => {
-            renderStationMap();
-            $('#station-map-panel')?.scrollIntoView({
-                block: 'nearest',
-                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
-                    ? 'instant'
-                    : 'smooth',
-            });
-            $('[data-station-view="map"]')?.focus({ preventScroll: true });
-        });
-    } else if (button.dataset.boardDirection) {
-        state.boardDirection = button.dataset.boardDirection;
-        state.boardExpanded = null;
-        state.boardLimit = 10;
-        renderDepartures();
-        $(`[data-board-direction="${state.boardDirection}"]`)?.focus({
-            preventScroll: true,
-        });
-        animate($('#departure-cards'));
-    } else if (button.dataset.selectDeparture) {
-        departureDetails(button.dataset.selectDeparture, true);
-    } else if (button.dataset.departure)
-        departureDetails(button.dataset.departure);
-    else if (button.dataset.origin)
-        useStop(button.dataset.origin, button.dataset.originDeparture);
 });
 document.addEventListener('submit', (event) => {
     if (
@@ -2048,35 +1280,13 @@ document.addEventListener('submit', (event) => {
             'schedule-form',
             'preferences-form',
             'compose-form',
-            'timetable-time-form',
         ].includes(event.target.id)
     )
         return;
     event.preventDefault();
     if (event.target.id === 'journey-form') searchJourney();
     else if (event.target.id === 'compose-form') compose();
-    else if (event.target.id === 'timetable-time-form') {
-        const mode = $('#board-mode').value,
-            date = $('#board-date').value,
-            time = ExpaduTime.normalizeTime($('#board-time').value);
-        if (mode !== 'now' && (!time || !U.validDate(date))) {
-            $('#board-error').hidden = false;
-            $('#board-error').textContent =
-                'Choose a date and a valid 24-hour time.';
-            return;
-        }
-        if (mode === 'now') timetableNow();
-        else
-            Object.assign(state, {
-                boardMode: 'date',
-                boardDate: date,
-                boardTime: time,
-                boardLimit: 10,
-            });
-        closePopover(true);
-        renderDepartures();
-        animate($('#departure-cards'));
-    } else if (event.target.id === 'schedule-form') {
+    else if (event.target.id === 'schedule-form') {
         const mode = $('#schedule-mode').value,
             time = ExpaduTime.normalizeTime($('#travel-time').value),
             date = $('#travel-date').value;
@@ -2130,8 +1340,7 @@ document.addEventListener('input', (event) => {
             $('#results').hidden = true;
             renderPlanner();
         }
-    } else if (event.target.id === 'stop-search' && !window.StopDiscovery)
-        stopSearch(event.target.value);
+    }
 });
 document.addEventListener('pointerdown', (event) => {
     if (
@@ -2157,43 +1366,6 @@ document.addEventListener('focusin', (event) => {
         hideSuggestions();
 });
 document.addEventListener('keydown', (event) => {
-    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
-        if (
-            !popover.hidden &&
-            popover.dataset.kind?.startsWith('board-filter-') &&
-            popover.contains(event.target)
-        ) {
-            const options = [
-                ...popover.querySelectorAll('[data-board-filter-choice]'),
-            ];
-            const current = options.indexOf(document.activeElement);
-            const next =
-                event.key === 'Home'
-                    ? 0
-                    : event.key === 'End'
-                      ? options.length - 1
-                      : current < 0
-                        ? event.key === 'ArrowDown'
-                            ? 0
-                            : options.length - 1
-                        : (current +
-                              (event.key === 'ArrowDown' ? 1 : -1) +
-                              options.length) %
-                          options.length;
-            if (options[next]) {
-                event.preventDefault();
-                options[next].focus();
-                return;
-            }
-        } else if (
-            event.target.dataset?.boardFilter &&
-            ['ArrowDown', 'ArrowUp'].includes(event.key)
-        ) {
-            event.preventDefault();
-            showBoardFilter(event.target.dataset.boardFilter, event.target);
-            return;
-        }
-    }
     if (event.key === 'Escape') {
         if (!popover.hidden) {
             closePopover(true);
@@ -2201,12 +1373,6 @@ document.addEventListener('keydown', (event) => {
         } else if (!$('#suggestions').hidden) {
             searchField?.focus();
             hideSuggestions();
-            event.preventDefault();
-        } else if (state.boardExpanded && state.view === 'stop') {
-            const previous = state.boardExpanded;
-            state.boardExpanded = null;
-            renderDepartures();
-            $(`[data-departure="${previous}"]`)?.focus({ preventScroll: true });
             event.preventDefault();
         }
     }
@@ -2265,13 +1431,15 @@ renderDepartures();
 savedCount();
 renderSampleRoutes();
 renderNextTrip();
-// A Today shortcut opens the existing board without manufacturing current times.
+// Travel opens on Nearby. A trip hand-off (Today, Composer, a saved route)
+// opens Plan a trip; Today's stop shortcut (?view=timetable&stop=) and
+// ?view=nearby open Nearby on that stop.
 const todayEntry = new URLSearchParams(location.search);
-if (todayEntry.get('view') === 'timetable') {
-    const stop = T.stops.find((item) => item.id === todayEntry.get('stop'));
-    if (stop) state.stop = stop.id;
-    timetableNow();
+if (['from', 'to', 'route', 'service'].some((key) => todayEntry.has(key)))
+    setView('journey');
+else {
     setView('stop');
+    if (todayEntry.has('stop')) nearbyView?.setStop(todayEntry.get('stop'));
 }
 if (window.ServiceContext && todayEntry.has('service')) {
     const entry = T.entries.find(
