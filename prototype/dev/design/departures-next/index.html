@@ -42,8 +42,8 @@
         <script defer src="./station-map.js?v=3f66e847bf23"></script>
         <script defer src="./service-context.js?v=bbb3393e63ce"></script>
         <script defer src="./nearby.js?v=011793fa8825"></script>
-        <script defer src="./nearby-ui.js?v=f21d416681d7"></script>
-        <script defer src="./app.js?v=18be4c63fd2d"></script>
+        <script defer src="./nearby-ui.js?v=252d79dc371e"></script>
+        <script defer src="./app.js?v=a30d2df4719d"></script>
         <script defer src="../connected/model.js?v=b727e359c259"></script>
         <script defer src="../connected/store.js?v=17618b25abbe"></script>
         <script defer src="../connected/bridge.js?v=e351cb308817"></script>
@@ -116,7 +116,7 @@
         <link rel="stylesheet" href="./soft-palette.css?v=80891a54ed58" />
         <link rel="stylesheet" href="./workspace.css?v=187f59ca126f" />
         <link rel="stylesheet" href="./station-context.css?v=1347d89c30fa" />
-        <link rel="stylesheet" href="./nearby.css?v=1887f0e9e32f" />
+        <link rel="stylesheet" href="./nearby.css?v=2401711017f3" />
         <link rel="stylesheet" href="./plan.css?v=24f58b2a3532" />
         <link rel="stylesheet" href="./day.css?v=31889c44c885" />
     </head>
@@ -717,6 +717,12 @@
                     aria-labelledby="next-trip-title"
                     hidden
                 ></section>
+                <section
+                    id="your-day"
+                    class="your-day"
+                    aria-labelledby="your-day-title"
+                    hidden
+                ></section>
                 <div id="nearby"></div>
             </section>
             <section id="day-view" class="day-view" hidden aria-label="My day"></section>
@@ -737,6 +743,9 @@
                         <span class="review-tools-label">Try a situation</span>
                         <button type="button" data-scenario="normal" aria-pressed="true">
                             A normal day
+                        </button>
+                        <button type="button" data-scenario="unplanned" aria-pressed="false">
+                            Nothing planned yet
                         </button>
                         <button type="button" data-scenario="cancelled" aria-pressed="false">
                             Your tram is cancelled

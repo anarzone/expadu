@@ -313,8 +313,24 @@
             const stop = v.stop;
             if (state.line && !stop.lines.some((l) => l.line === state.line))
                 state.line = '';
-            if (state.area && !stop.areas.some((a) => a.id === state.area))
+            if (
+                state.area &&
+                state.area !== 'none' &&
+                !stop.areas.some((a) => a.id === state.area)
+            )
                 state.area = '';
+            // An area is always picked beside the map, the first one unless
+            // you choose (owner-approved canvas: no empty map column).
+            const showsMap = desktop() || state.view === 'map';
+            const picked =
+                state.area === 'none'
+                    ? ''
+                    : state.area ||
+                      (stop.map && showsMap
+                          ? v.areas[0]?.id || stop.areas[0]?.id
+                          : '') ||
+                      '';
+            state.shownArea = picked;
             const wide = desktop();
             container.dataset.view = wide ? 'both' : state.view;
             const places = placesOf(stop);
@@ -349,7 +365,7 @@
                           (
                               area,
                           ) => `<section class="nearby-area" aria-label="Area for lines ${area.lines.join(', ')}">
-                    <div class="nearby-area-head"><span class="nearby-badges">${badgesOf(area.lines, stop)}</span><span class="nearby-area-meta">${stop.map ? `${area.places.length} boarding points${area.mode === 'bus' ? ' · buses' : ''}` : 'Boarding points not recorded'}</span>${area.blocked ? '<span class="nearby-tag is-conflict">Lift out of order</span>' : ''}${stop.map ? `<button type="button" class="nearby-area-map" data-n="area" data-v="${safe(area.id)}" data-key="area-${safe(area.id)}" aria-pressed="${state.area === area.id && !state.line}">${icon('pin')}<span>${state.area === area.id && !state.line ? 'On the map' : 'Show on the map'}</span></button>` : ''}</div>
+                    <div class="nearby-area-head"><span class="nearby-badges">${badgesOf(area.lines, stop)}</span><span class="nearby-area-meta">${stop.map ? `${area.places.length} boarding points${area.mode === 'bus' ? ' · buses' : ''}` : 'Boarding points not recorded'}</span>${area.blocked ? '<span class="nearby-tag is-conflict">Lift out of order</span>' : ''}${stop.map ? `<button type="button" class="nearby-area-map" data-n="area" data-v="${safe(area.id)}" data-key="area-${safe(area.id)}" aria-pressed="${picked === area.id && !state.line}">${icon('pin')}<span>${picked === area.id && !state.line ? 'On the map' : 'Show on the map'}</span></button>` : ''}</div>
                     ${area.blocked ? `<p class="nearby-area-warning">${area.hidden ? 'Hidden by Step-free: no step-free way to these platforms right now (sample).' : 'No step-free way to these platforms right now (sample).'}</p>` : ''}
                     <div class="nearby-cards">${area.cards.map((c) => card(stop, c)).join('')}</div>
                 </section>`,
@@ -366,7 +382,7 @@
             const selectedLine = stop.lines.find((l) => l.line === state.line);
             const area =
                 (selectedLine && areaOfLine(stop, selectedLine.line)) ||
-                stop.areas.find((a) => a.id === state.area);
+                stop.areas.find((a) => a.id === picked);
             let aside = '';
             if (wide && selectedLine) aside = detail(stop, selectedLine, false);
             else if (area && stop.map) aside = areaPanel(stop, v, area);
@@ -595,8 +611,8 @@
                 state.pinned = toggleIn(state.pinned, value);
                 writePins(state.pinned);
             } else if (name === 'area') {
-                const on = state.area === value && !state.line;
-                state.area = on ? '' : value;
+                const on = state.shownArea === value && !state.line;
+                state.area = on ? 'none' : value;
                 state.line = '';
                 if (!desktop() && !on) state.view = 'map';
             } else if (name === 'boards') {

@@ -601,8 +601,6 @@ function renderPlanner() {
         `Edit journey from ${from.value} to ${to.value}`,
     );
     $('#journey-start').hidden = state.results;
-    const nextTrip = $('#next-trip');
-    if (nextTrip) nextTrip.hidden = state.results || !J.day;
     syncPlanStage();
 }
 // The place picked from today, while To still says it.
@@ -811,7 +809,9 @@ function renderNextTrip() {
     const trip = J.day;
     if (!panel) return;
     const sc = state.scenario;
-    panel.hidden = !trip || ['longwait', 'lift', 'stale'].includes(sc);
+    panel.hidden =
+        !trip || ['unplanned', 'longwait', 'lift', 'stale'].includes(sc);
+    renderYourDay();
     if (panel.hidden) return;
     const choice = nextTripChoice(trip);
     const { planned, spare } = choice;
@@ -891,6 +891,25 @@ function renderNextTrip() {
             <div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div>
             ${later.length ? `<div class="next-trip-later"><h3>Later today</h3><ul>${later.map(({ event, weather: w }) => `<li><button type="button" data-action="plan-way" data-place="${safe(event.venue || event.title)}" aria-label="Plan the way to ${safe(event.title)}, ${event.start}"><time>${event.start}</time><span><strong>${safe(event.title)}</strong><small>${safe(event.venue || '')}${w?.wet ? ` · ${w.sky.toLowerCase()} likely (sample)` : ''}</small></span>${icon('arrow')}</button></li>`).join('')}</ul></div>` : ''}
         </div>`;
+}
+// Before anything is planned, desktops show the day with a way to plan each
+// place (owner-approved canvas, Nearby on desktop).
+function renderYourDay() {
+    const box = $('#your-day');
+    if (!box) return;
+    const places = dayPlaces();
+    box.hidden =
+        !desktopPlanner.matches ||
+        state.scenario !== 'unplanned' ||
+        !places.length;
+    box.innerHTML = box.hidden
+        ? ''
+        : `<div class="your-day-head"><h2 id="your-day-title">Your day</h2><span>Pick one to plan the way</span></div><ol>${places
+              .map(
+                  (place) =>
+                      `<li><time>${place.time}</time><strong>${safe(place.title)}</strong><small>${safe(place.detail || place.place)}</small><button type="button" class="text-action" data-action="plan-way" data-place="${safe(place.place)}" aria-label="Plan the way to ${safe(place.title)}, ${place.time}">Plan the way${icon('arrow')}</button></li>`,
+              )
+              .join('')}</ol>`;
 }
 // Opens the appointment trip as Today hands it over, without a page load.
 function openNextTrip() {
@@ -1477,6 +1496,7 @@ function renderDay() {
 // Each uses the sample day or a capture; none of them is live.
 const scenarios = {
     normal: { label: 'A normal day' },
+    unplanned: { label: 'Nothing planned yet' },
     cancelled: { label: 'Your tram is cancelled' },
     missed: { label: 'You didn’t set off in time' },
     longwait: { label: 'Late at night: a long wait', stop: 'mitte' },
@@ -1537,6 +1557,9 @@ function setScenario(id) {
     } catch {
         /* The situation still shows. */
     }
+    // The planner redraws for the situation, but the situation shows on
+    // Nearby.
+    if (state.results) renderResults();
     setView('stop');
     nearbyView?.applyScenario({
         stop: scenarios[id].stop,
@@ -1544,7 +1567,6 @@ function setScenario(id) {
     });
     renderNextTrip();
     renderDay();
-    if (state.results) renderResults();
     document
         .querySelectorAll('[data-scenario]')
         .forEach((button) =>
@@ -1756,10 +1778,22 @@ function action(name, button) {
         $('[data-action="trip-others"]')?.focus({ preventScroll: true });
     } else if (name === 'plan-way') {
         // A later plan: start a request to it from the sample day's stop.
-        if (from.value.trim() || to.value.trim())
+        if ((atYourLocation() ? '' : from.value.trim()) || to.value.trim())
             previousRequest = captureRequest();
-        from.value = J.day?.from || '';
+        // From your location, to be there by the place's start.
+        const place = dayPlaces().find(
+            (item) => item.place === button.dataset.place,
+        );
+        from.value = yourLocation;
         to.value = button.dataset.place;
+        state.planPlace = place || null;
+        if (place)
+            Object.assign(state, {
+                schedule: 'arrive',
+                date: home.date,
+                time: place.time,
+            });
+        syncControls();
         setView('journey');
         searchJourney();
     } else if (name === 'from-departures') showStop(button.dataset.stopId);
@@ -2161,6 +2195,7 @@ sheet.addEventListener('click', (event) => {
         closeSheet();
 });
 desktopPlanner.addEventListener?.('change', () => {
+    renderYourDay();
     if (state.view === 'stop') renderDepartures();
     if (state.results) renderPlanner();
 });
@@ -2172,6 +2207,9 @@ drawIcons();
 syncControls();
 renderDepartures();
 savedCount();
+if (J.day && $('.sample-label-text'))
+    $('.sample-label-text').textContent =
+        `Sample day · ${boardDateLabel(J.day.date)}, ${J.day.time}`;
 renderSampleRoutes();
 renderNextTrip();
 // Travel opens on Nearby. A trip hand-off (Today, Composer, a saved route)

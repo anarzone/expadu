@@ -25,6 +25,33 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             };
             const band = page.locator('#next-trip');
 
+            // Before anything is planned: no band; desktops show the day.
+            await choose('Nothing planned yet');
+            assert.equal(await band.isVisible(), false);
+            const day = page.locator('#your-day');
+            assert.equal(await day.isVisible(), width >= 1000);
+            if (width >= 1000) {
+                assert.match(
+                    await day.innerText(),
+                    /Your day[\s\S]*14:00[\s\S]*Blue Card appointment[\s\S]*18:30[\s\S]*20:00/,
+                );
+                await day
+                    .getByRole('button', { name: /Plan the way to Blue Card/ })
+                    .click();
+                assert.match(
+                    await page.locator('#results').innerText(),
+                    /Best for you[\s\S]*Tram 4, no change/,
+                );
+            }
+            // On phones and desktops alike, the map column isn't empty.
+            if (width >= 1000) {
+                await choose('A normal day');
+                assert.match(
+                    await page.locator('.nearby-area-panel').innerText(),
+                    /2 boarding points[\s\S]*Buchheim/,
+                );
+            }
+
             await choose('Your tram is cancelled');
             assert.match(
                 await band.innerText(),

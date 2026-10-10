@@ -124,6 +124,12 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             await again.click();
             await page.getByRole('button', { name: 'Done' }).click();
             assert.equal(await page.locator('#departures').isVisible(), true);
+            // Back on Nearby, the next trip still leads (it used to hide
+            // once a plan had been made).
+            assert.match(
+                await page.locator('#next-trip').innerText(),
+                /Leave now/,
+            );
             assert.equal(
                 await page.evaluate(
                     () => document.documentElement.scrollWidth <= innerWidth,
