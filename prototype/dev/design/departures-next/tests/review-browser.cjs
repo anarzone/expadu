@@ -33,7 +33,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             if (width >= 1000) {
                 assert.match(
                     await day.innerText(),
-                    /Your day[\s\S]*14:00[\s\S]*Blue Card appointment[\s\S]*18:30[\s\S]*20:00/,
+                    /My day[\s\S]*14:00[\s\S]*Blue Card appointment[\s\S]*18:30[\s\S]*20:00/,
                 );
                 await day
                     .getByRole('button', { name: /Plan the way to Blue Card/ })

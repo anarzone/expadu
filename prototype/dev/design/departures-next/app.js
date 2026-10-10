@@ -624,7 +624,7 @@ function syncPlanStage() {
     const find = $('.find-routes');
     find.setAttribute('aria-disabled', String(!hasDest));
     $('#plan-hint').textContent = !hasDest
-        ? 'Pick a place from your day, or type one.'
+        ? 'Pick a place from My day, or type one.'
         : state.results && desktopPlanner.matches
           ? 'Your options update as you change these.'
           : '';
@@ -766,7 +766,7 @@ function renderSampleRoutes() {
                       `<button type="button" data-day-place="${safe(place.place)}" aria-pressed="${to.value.trim() === place.place}"><time>${place.time}</time><span><strong>${safe(place.title)}</strong><small>${safe(place.detail || place.place)}</small></span><span class="day-place-pick">${to.value.trim() === place.place ? 'Picked' : 'Go here'}</span>${icon('chevron')}</button>`,
               )
               .join('')
-        : '<p class="route-note">Your day isn’t in this preview.</p>';
+        : '<p class="route-note">My day isn’t in this preview.</p>';
 }
 // The sample day's appointment trip leads Nearby: the tram to take now, with
 // Today's rule for tight official appointments (owner-approved design).
@@ -892,8 +892,9 @@ function renderNextTrip() {
             ${later.length ? `<div class="next-trip-later"><h3>Later today</h3><ul>${later.map(({ event, weather: w }) => `<li><button type="button" data-action="plan-way" data-place="${safe(event.venue || event.title)}" aria-label="Plan the way to ${safe(event.title)}, ${event.start}"><time>${event.start}</time><span><strong>${safe(event.title)}</strong><small>${safe(event.venue || '')}${w?.wet ? ` · ${w.sky.toLowerCase()} likely (sample)` : ''}</small></span>${icon('arrow')}</button></li>`).join('')}</ul></div>` : ''}
         </div>`;
 }
-// Before anything is planned, desktops show the day with a way to plan each
-// place (owner-approved canvas, Nearby on desktop).
+// Before anything is planned, desktops show My day with a way to plan each
+// place (owner-approved canvas, Nearby on desktop; renamed from "Your day",
+// owner, 10 Oct 2026, to match the phones' My day).
 function renderYourDay() {
     const box = $('#your-day');
     if (!box) return;
@@ -904,7 +905,7 @@ function renderYourDay() {
         !places.length;
     box.innerHTML = box.hidden
         ? ''
-        : `<div class="your-day-head"><h2 id="your-day-title">Your day</h2><span>Pick one to plan the way</span></div><ol>${places
+        : `<div class="your-day-head"><h2 id="your-day-title">My day</h2><span>Pick one to plan the way</span></div><ol>${places
               .map(
                   (place) =>
                       `<li><time>${place.time}</time><strong>${safe(place.title)}</strong><small>${safe(place.detail || place.place)}</small><button type="button" class="text-action" data-action="plan-way" data-place="${safe(place.place)}" aria-label="Plan the way to ${safe(place.title)}, ${place.time}">Plan the way${icon('arrow')}</button></li>`,
@@ -1026,8 +1027,8 @@ function checks(tripId, trip, route) {
             muted: !weather,
         },
         {
-            short: 'Your day',
-            title: 'Your day',
+            short: 'My day',
+            title: 'My day',
             text: day
                 ? between.length
                     ? `${between.map((place) => `${place.title} at ${place.time}`).join(', ')} before this`
@@ -1062,7 +1063,7 @@ function savedPlan(route) {
         : null;
     // Phones keep the day in My day; desktops show it as the next trip.
     const day = desktopPlanner.matches
-        ? `<button type="button" data-action="plan-done"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on your day</strong><small>Travel shows it as your next trip${trip.start ? `, between now and your ${trip.start}` : ''}</small></span>${icon('chevron')}</button>`
+        ? `<button type="button" data-action="plan-done"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on My day</strong><small>Travel shows it as your next trip${trip.start ? `, between now and your ${trip.start}` : ''}</small></span>${icon('chevron')}</button>`
         : `<button type="button" data-view="day"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on My day</strong><small>${trip.start ? `Between now and your ${trip.start}` : 'With the rest of today'}</small></span>${icon('chevron')}</button>`;
     return `<section class="plan-saved" aria-labelledby="plan-saved-title"><span class="plan-saved-mark"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${icon('check')}</span><h2 id="plan-saved-title" tabindex="-1">Plan saved</h2><p class="plan-saved-summary">${safe(optionTitle(route))} · leave ${route.depart} · there ${route.arrive}</p><ul class="plan-saved-list"><li>${day}</li><li><button type="button" role="switch" aria-checked="${state.remind}" data-action="remind"><span class="plan-saved-icon">${icon('bell')}</span><span><strong>Remind me when to leave</strong><small>${state.remind ? `At ${remindAt}, five minutes before you need to go. Not sent in this preview.` : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button></li><li class="is-note"><span class="plan-saved-icon is-watch">${icon('eye')}</span><span><strong>We keep watching it</strong><small>Live delays, KVB notices and the weather. If something changes, you get a “Change of plan” with a new way. This preview doesn’t watch.</small></span></li></ul><div class="plan-saved-actions"><button type="button" class="quiet-button" data-action="change-plan">Change the plan</button><button type="button" class="primary is-ink" data-action="plan-done">Done</button></div></section>`;
 }
@@ -1427,7 +1428,7 @@ function renderDay() {
     const trip = J.day;
     if (!trip) {
         panel.innerHTML =
-            '<p class="route-note">Your day isn’t in this preview.</p>';
+            '<p class="route-note">My day isn’t in this preview.</p>';
         return;
     }
     const appointment = window.ExpaduSampleDay?.appointment;

@@ -239,6 +239,8 @@
         const finish = () => {
             map?.destroy();
             map = null;
+            walkMap?.remove();
+            walkMap = null;
             panelObserver?.disconnect();
             dialog.close();
             document.body.classList?.remove('trip-open');
@@ -303,6 +305,60 @@
         const line = stop?.lines.find((item) => item.line === route.line);
         return stop?.areas.find((area) => area.id === line?.area) || null;
     }
+    // This line's recorded boarding points at its stop, when Nearby knows
+    // the stop (KVB point records from the station capture).
+    function linePoints() {
+        const board = N.steps(route).find((step) => step.mode === 'transit');
+        if (!route.line || !boardingArea(board)) return [];
+        return (root.StationCapture?.boardingPoints || []).filter(
+            (point) =>
+                Number.isFinite(point.lat) &&
+                (point.lines || []).map(String).includes(String(route.line)),
+        );
+    }
+    let walkMap = null;
+    function mountWalkMap() {
+        walkMap?.remove();
+        walkMap = null;
+        const box = dialog.querySelector('.moment-map-canvas');
+        const load = root.StationMap?.load;
+        const points = box ? linePoints() : [];
+        if (!box || !points.length) return;
+        const fail = () =>
+            box.closest('.moment-map')?.toggleAttribute('hidden', true);
+        if (!load) return fail();
+        load()
+            .then(() => {
+                if (!box.isConnected) return;
+                const lng = points.map((point) => point.lng),
+                    lat = points.map((point) => point.lat);
+                const map = new maplibregl.Map({
+                    container: box,
+                    style: 'https://tiles.openfreemap.org/styles/positron',
+                    bounds: [
+                        [Math.min(...lng), Math.min(...lat)],
+                        [Math.max(...lng), Math.max(...lat)],
+                    ],
+                    fitBoundsOptions: { padding: 60, maxZoom: 17.5 },
+                    interactive: false,
+                    attributionControl: false,
+                });
+                walkMap = map;
+                const look = root.NearbyModel?.look(String(route.line), 'tram');
+                points.forEach((point) => {
+                    const dot = document.createElement('span');
+                    dot.className = 'nearby-dot is-on';
+                    if (look) dot.style.setProperty('--line', look.colour);
+                    new maplibregl.Marker({ element: dot })
+                        .setLngLat([point.lng, point.lat])
+                        .addTo(map);
+                });
+                map.on('error', () => {
+                    if (!map.loaded()) fail();
+                });
+            })
+            .catch(fail);
+    }
     function lineStyle() {
         const look = root.NearbyModel?.look(
             route.line,
@@ -349,7 +405,19 @@
         const step = p.step;
         if (step.mode === 'walk' && p.index === 0) {
             const area = boardingArea(board);
-            return `<h2>Walk to ${safe(stopName(board?.title ? step.title.replace(/^Walk to /, '') : step.title))}</h2><p class="moment-sub">${safe(step.detail.replace(' on foot', ''))} · ${kind.toLowerCase()} ${safe(route.line || '')} leaves at ${board?.time || route.depart}</p>${area ? `<div class="moment-card"><strong>Board in the area for ${area.lines.join(' · ')}</strong><small>KVB lists ${area.places.length} boarding points there. Which one your ${kind === 'Bus' ? 'bus' : 'tram'} uses isn’t confirmed.</small></div>` : ''}${board ? front : ''}`;
+            const points = linePoints();
+            const stopLabel = stopName(
+                board?.title ? step.title.replace(/^Walk to /, '') : step.title,
+            );
+            const vehicleWord = kind === 'Bus' ? 'bus' : 'tram';
+            // The canvas: a small map of the stop with this line's recorded
+            // boarding points (KVB records; which one is used isn't known).
+            const where = points.length
+                ? `<div class="moment-map" role="img" aria-label="Map of ${safe(stopLabel)} with the ${points.length} recorded boarding point${points.length === 1 ? '' : 's'} for ${vehicleWord} ${safe(route.line || '')}"><div class="moment-map-canvas"></div><span class="moment-map-label">${points.length === 1 ? 'Board at this point' : `Board at one of these ${points.length === 2 ? 'two' : points.length} points`}</span><small class="moment-map-credit">© OpenStreetMap · OpenFreeMap</small></div><p class="moment-note">KVB lists ${points.length === 1 ? 'this point' : points.length === 2 ? 'both points' : `all ${points.length} points`} for this line. Which one your ${vehicleWord} uses isn’t confirmed.</p>`
+                : area
+                  ? `<div class="moment-card"><strong>Board in the area for ${area.lines.join(' · ')}</strong><small>KVB lists ${area.places.length} boarding points there. Which one your ${vehicleWord} uses isn’t confirmed.</small></div>`
+                  : '';
+            return `<h2>Walk to ${safe(stopLabel)}</h2><p class="moment-sub">${safe(step.detail.replace(' on foot', ''))} · ${kind.toLowerCase()} ${safe(route.line || '')} leaves at ${board?.time || route.depart}</p>${where}${board ? front : ''}`;
         }
         if (step.mode === 'transit')
             return `<div class="moment-ring" aria-hidden="true"><span>Leaves</span><strong>${step.time}</strong></div><h2>${kind} ${safe(route.line || '')} to ${safe(stopName(towards))}</h2><p class="moment-sub">That’s your ${kind === 'Bus' ? 'bus' : 'tram'}. Other lines stop here too.</p>${front}`;
@@ -451,6 +519,7 @@
         }
         if (typeof savedCount === 'function') savedCount();
         if (expanded) dialog.classList.add('is-expanded');
+        mountWalkMap();
         measure();
     }
     function measure() {
