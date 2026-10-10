@@ -142,7 +142,11 @@ function navigationView(data = new Map()) {
         },
         CustomEvent: class {},
         dispatchEvent() {},
-        matchMedia: () => ({ matches: true, addEventListener() {} }),
+        // A phone: everything up to 700px wide, nothing from 1000px.
+        matchMedia: (query) => ({
+            matches: !query.includes('min-width'),
+            addEventListener() {},
+        }),
         ResizeObserver: class {
             observe() {}
             disconnect() {}
@@ -201,14 +205,21 @@ function navigationView(data = new Map()) {
     };
 }
 
-test('switching between Map and Steps preserves manual progress and keyboard focus', () => {
+test('the trip opens on its steps; Map and Steps keep manual progress and focus', () => {
     const ui = navigationView();
     ui.context.JourneyNavigation.start('r18');
+    assert.equal(
+        ui.element('[data-nav-view="steps"]').attributes['aria-pressed'],
+        'true',
+    );
+    assert.equal(ui.element('.nav-map-area').hidden, true);
+    ui.click('next');
+    ui.view('map');
     assert.equal(
         ui.element('[data-nav-view="map"]').attributes['aria-pressed'],
         'true',
     );
-    ui.click('next');
+    assert.equal(ui.element('.nav-map-area').hidden, false);
     ui.view('steps');
     assert.equal(
         ui.element('[data-nav-view="steps"]').attributes['aria-pressed'],
@@ -219,7 +230,8 @@ test('switching between Map and Steps preserves manual progress and keyboard foc
         ui.element('[data-nav-view="steps"]'),
     );
     assert.equal(ui.element('.nav-map-area').hidden, true);
-    assert.doesNotMatch(ui.content(), /class="nav-expanded" inert/);
+    // On a phone the whole journey waits behind "Itinerary".
+    assert.match(ui.content(), /class="nav-expanded" inert/);
     // The step says what to do now: the tram and where it's going.
     assert.match(
         ui.content(),
@@ -269,5 +281,5 @@ test('minimizing and reloading resume Steps at the same captured boarding-stop s
         /<h2>Stay on to Dom\/Hbf<\/h2>[\s\S]*Next: Appellhofplatz at 23:49/,
     );
     assert.doesNotMatch(resumed.content(), /Walk to Köln Neumarkt/);
-    assert.doesNotMatch(resumed.content(), /class="nav-expanded" inert/);
+    assert.match(resumed.content(), /class="nav-expanded" inert/);
 });

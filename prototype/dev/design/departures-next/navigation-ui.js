@@ -8,10 +8,12 @@
     dialog.setAttribute('aria-labelledby', 'nav-title');
     document.body.append(dialog);
     const viewPreferenceKey = 'expadu.journey-preview-view.v1';
-    let journeyView = 'map';
+    // The trip opens on its steps, one moment at a time; the map is a tap
+    // away (owner-approved Moments, Steps | Map).
+    let journeyView = 'steps';
     try {
-        if (localStorage.getItem(viewPreferenceKey) === 'steps')
-            journeyView = 'steps';
+        if (localStorage.getItem(viewPreferenceKey) === 'map')
+            journeyView = 'map';
     } catch {
         /* Keep the view usable when local preferences cannot be read. */
     }
@@ -31,6 +33,12 @@
         drag,
         suppressClick = false;
     const mobile = () => matchMedia('(max-width: 700px)').matches;
+    // Desktops keep the trip in Travel's column, beside its map; smaller
+    // screens give it the whole screen (owner-approved workspace layout).
+    const wide = () => matchMedia('(min-width: 1000px)').matches;
+    const showMap = () => journeyView === 'map' || wide();
+    // A trip started from Nearby's band has had its "Get ready" moment.
+    const ready = () => (trip().id === 'day' ? 1 : 0);
     const reduced = () =>
         matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isActive = () =>
@@ -118,7 +126,7 @@
         confirmation = '';
         dialog.classList.remove('is-expanded', 'is-closing');
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${iconButton('back', 'Back to journeys', 'close')}<div><small>Journey preview · ${localDate()}</small><h1 id="nav-title">${safe(trip().place)}</h1></div><div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="map" aria-pressed="false">${icon('map')}Map</button><button data-nav-view="steps" aria-pressed="false">${icon('route')}Steps</button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div>${route.line ? `<span class="nav-line" style="${lineStyle()}">${safe(route.line)}</span>` : ''}<div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
             <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
                 <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
                 <p class="nav-map-caption">Illustrative connections · not street directions</p>
@@ -128,9 +136,19 @@
             <p class="nav-session-note" role="status" hidden>Progress is kept for this page only.</p>
             <p class="sr-only nav-announcement" aria-live="polite"></p>
         </div>`;
+        if (!dialog.open) {
+            if (wide()) {
+                document.querySelector('.page-navigation')?.after?.(dialog);
+                dialog.show();
+                document.body.classList?.add('trip-open');
+                window.scrollTo({ top: 0, behavior: 'instant' });
+            } else {
+                document.body.append?.(dialog);
+                dialog.showModal();
+            }
+        }
         syncView();
         setExpanded(expanded);
-        if (!dialog.open) dialog.showModal();
         measure();
         panelObserver = new ResizeObserver(() => {
             dialog.style.setProperty(
@@ -139,7 +157,7 @@
             );
         });
         panelObserver.observe(dialog.querySelector('.nav-panel'));
-        document.body.style.overflow = 'hidden';
+        if (!wide()) document.body.style.overflow = 'hidden';
         closing = false;
         if (!reduced())
             dialog.animate(
@@ -166,7 +184,7 @@
         if (autoStart && !isActive()) startCurrent();
     }
     function mountMap() {
-        if (journeyView !== 'map' || map) return;
+        if (!showMap() || map) return;
         map = root.JourneyRouteMap.mount(
             dialog.querySelector('.nav-map-canvas'),
             route,
@@ -185,8 +203,8 @@
         );
     }
     function syncView() {
-        dialog.classList.toggle('is-steps-view', journeyView === 'steps');
-        dialog.querySelector('.nav-map-area').hidden = journeyView === 'steps';
+        dialog.classList.toggle('is-steps-view', !showMap());
+        dialog.querySelector('.nav-map-area').hidden = !showMap();
         dialog.querySelectorAll('[data-nav-view]').forEach((button) => {
             button.setAttribute(
                 'aria-pressed',
@@ -204,7 +222,7 @@
         }
         syncView();
         render();
-        if (journeyView === 'map') {
+        if (showMap()) {
             mountMap();
             map?.resize();
             updateMap(false);
@@ -223,6 +241,7 @@
             map = null;
             panelObserver?.disconnect();
             dialog.close();
+            document.body.classList?.remove('trip-open');
             document.body.style.overflow = previousOverflow || '';
             closing = false;
             returnFocus?.isConnected &&
@@ -305,6 +324,20 @@
             arrive: 'End trip',
         }[p.step.mode];
     }
+    // The moment's name, as the canvas labels it.
+    function momentLabel(p) {
+        const mode = p.step.mode;
+        if (mode === 'walk')
+            return p.index === 0 ? 'Walk to the stop' : 'Get off';
+        return (
+            {
+                transit: 'At the stop',
+                ride: 'On board',
+                alight: 'On board',
+                arrive: 'Arrived',
+            }[mode] || ''
+        );
+    }
     function moment(p) {
         const list = N.steps(route);
         const board = list.find((step) => step.mode === 'transit');
@@ -316,20 +349,20 @@
         const step = p.step;
         if (step.mode === 'walk' && p.index === 0) {
             const area = boardingArea(board);
-            return `<p class="moment-eyebrow">Walk to the stop</p><h2>Walk to ${safe(stopName(board?.title ? step.title.replace(/^Walk to /, '') : step.title))}</h2><p class="moment-sub">${safe(step.detail.replace(' on foot', ''))} · ${kind.toLowerCase()} ${safe(route.line || '')} leaves at ${board?.time || route.depart}</p>${area ? `<div class="moment-card"><strong>Board in the area for ${area.lines.join(' · ')}</strong><small>KVB lists ${area.places.length} boarding points there. Which one your ${kind === 'Bus' ? 'bus' : 'tram'} uses isn’t confirmed.</small></div>` : ''}${board ? front : ''}`;
+            return `<h2>Walk to ${safe(stopName(board?.title ? step.title.replace(/^Walk to /, '') : step.title))}</h2><p class="moment-sub">${safe(step.detail.replace(' on foot', ''))} · ${kind.toLowerCase()} ${safe(route.line || '')} leaves at ${board?.time || route.depart}</p>${area ? `<div class="moment-card"><strong>Board in the area for ${area.lines.join(' · ')}</strong><small>KVB lists ${area.places.length} boarding points there. Which one your ${kind === 'Bus' ? 'bus' : 'tram'} uses isn’t confirmed.</small></div>` : ''}${board ? front : ''}`;
         }
         if (step.mode === 'transit')
-            return `<p class="moment-eyebrow">At the stop</p><div class="moment-ring" aria-hidden="true"><span>Leaves</span><strong>${step.time}</strong></div><h2>${kind} ${safe(route.line || '')} to ${safe(stopName(towards))}</h2><p class="moment-sub">That’s your ${kind === 'Bus' ? 'bus' : 'tram'}. Other lines stop here too.</p>${front}`;
+            return `<div class="moment-ring" aria-hidden="true"><span>Leaves</span><strong>${step.time}</strong></div><h2>${kind} ${safe(route.line || '')} to ${safe(stopName(towards))}</h2><p class="moment-sub">That’s your ${kind === 'Bus' ? 'bus' : 'tram'}. Other lines stop here too.</p>${front}`;
         if (step.mode === 'ride')
-            return `<p class="moment-eyebrow">On board</p><h2>Stay on to ${safe(offAt)}</h2><p class="moment-sub">Next: ${safe(stopName(step.title))} at ${step.time}</p>`;
+            return `<h2>Stay on to ${safe(offAt)}</h2><p class="moment-sub">Next: ${safe(stopName(step.title))} at ${step.time}</p>`;
         if (step.mode === 'alight')
-            return `<p class="moment-eyebrow">On board · ${kind.toLowerCase()} ${safe(route.line || '')} towards ${safe(stopName(towards))}</p><h2>Get off at ${safe(offAt)}</h2><p class="moment-sub">At ${step.time} · ${minutesBetween(board.time, step.time)} min ride${board.intermediate?.length ? '' : '. The stops on the way aren’t in the sample.'}</p><div class="moment-card is-tint"><small>You’ll hear</small><strong lang="de">„Nächster Halt: ${safe(offAt)}“</strong><span>Next stop: ${safe(offAt)}</span></div><button type="button" class="moment-switch" role="switch" aria-checked="${buzz}" data-nav="buzz"><span><strong>Buzz me before ${safe(offAt)}</strong><small>${buzz ? 'Not sent in this preview' : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button>`;
+            return `<p class="moment-eyebrow">On ${kind.toLowerCase()} ${safe(route.line || '')} towards ${safe(stopName(towards))}</p><h2>Get off at ${safe(offAt)}</h2><p class="moment-sub">At ${step.time} · ${minutesBetween(board.time, step.time)} min ride</p><div class="moment-card moment-ride"><span class="moment-ride-ends"><strong>${safe(stopName(list.find((item) => item.mode === 'walk')?.title.replace(/^Walk to /, '') || trip().from))} ${board.time}</strong><strong>${safe(offAt)} ${step.time}</strong></span><span class="moment-ride-track" aria-hidden="true"><i></i><i></i></span><small>${board.intermediate?.length ? `${board.intermediate.length} stops on the way.` : 'The stops on the way aren’t in the sample.'} No live position in this preview.</small></div><div class="moment-card is-tint"><small>You’ll hear</small><strong lang="de">„Nächster Halt: ${safe(offAt)}“</strong><span>Next stop: ${safe(offAt)}</span></div><button type="button" class="moment-switch" role="switch" aria-checked="${buzz}" data-nav="buzz"><span><strong>Buzz me before ${safe(offAt)}</strong><small>${buzz ? 'Not sent in this preview' : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button>`;
         if (step.mode === 'walk')
-            return `<p class="moment-eyebrow">Get off</p><h2>Walk ${safe(step.detail.replace(' on foot', ''))} to ${safe(trip().place)}</h2><p class="moment-sub">From ${safe(offAt)} at ${step.time}. Street directions weren’t captured.</p><div class="moment-card is-tint"><small>You’ll see</small><strong lang="de">Ausgang</strong><span>Exit</span></div>`;
+            return `<h2>Walk ${safe(step.detail.replace(' on foot', ''))} to ${safe(trip().place)}</h2><p class="moment-sub">From ${safe(offAt)} at ${step.time}. Street directions weren’t captured.</p><div class="moment-card is-tint"><small>You’ll see</small><strong lang="de">Ausgang</strong><span>Exit</span></div>`;
         const early = trip().start
             ? minutesBetween(route.arrive, trip().start)
             : null;
-        return `<p class="moment-eyebrow">Arrived</p><span class="moment-done">${icon('check')}</span><h2>${early != null ? `You’re ${early} min early` : `You’ve arrived`}</h2><p class="moment-sub">${safe(trip().place)}${trip().start ? ` · ${trip().start}` : ''}</p>${trip().kind === 'official' ? '<a class="moment-paper" href="../bureaucracy-next/">' + icon('document') + '<span><strong>What to bring</strong><small>Your Blue Card checklist in Paperwork</small></span>' + icon('chevron') + '</a>' : ''}`;
+        return `<span class="moment-done">${icon('check')}</span><h2>${early != null ? `You’re ${early} min early` : `You’ve arrived`}</h2><p class="moment-sub">${safe(trip().place)}${trip().start ? ` · ${trip().start}` : ''}</p>${trip().kind === 'official' ? '<a class="moment-paper" href="../bureaucracy-next/">' + icon('document') + '<span><strong>What to bring</strong><small>Your Blue Card checklist in Paperwork</small></span>' + icon('chevron') + '</a>' : ''}`;
     }
     function timeline() {
         return `<ol class="nav-timeline">${N.steps(route)
@@ -365,18 +398,21 @@
                 : walking
                   ? `${icon('walk')}<strong>${walking}</strong> min walk`
                   : '';
+        // "Get ready" (Nearby's band) counts as the first moment.
+        const done = ready();
         const segments = running
-            ? `<div class="nav-segments" role="progressbar" aria-label="Trip steps done" aria-valuemin="0" aria-valuemax="${p.total - 1}" aria-valuenow="${p.index}">${N.steps(
-                  route,
-              )
+            ? `<div class="nav-segments" style="${lineStyle()}" role="progressbar" aria-label="Trip steps done" aria-valuemin="0" aria-valuemax="${p.total + done - 1}" aria-valuenow="${p.index + done}">${[
+                  ...Array(done).fill(-1),
+                  ...N.steps(route).map((_, index) => index),
+              ]
                   .map(
-                      (_, index) =>
+                      (index) =>
                           `<span class="${index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></span>`,
                   )
                   .join('')}</div>`
             : '';
         content.innerHTML = `${conditionMarkup()}<div class="nav-summary${running ? ' is-moment' : ''}">
-            ${segments}<div class="nav-eyebrow"><span>${icon(running ? modeIcon(p.step.mode) : route.mode === 'transit' ? 'train' : route.mode)}${running ? `${p.index + 1} of ${p.total} · ${trip().id === 'day' ? 'sample day' : 'captured times'}` : route.line ? `Line ${route.line} · Direct` : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span><button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
+            ${segments}<div class="nav-eyebrow">${running ? `<strong class="nav-stage">${momentLabel(p)}</strong><span class="nav-count">${p.index + done + 1} of ${p.total + done} · ${trip().id === 'day' ? 'sample day' : 'captured times'}</span>` : `<span>${icon(route.mode === 'transit' ? 'train' : route.mode)}${route.line ? `Line ${route.line} · Direct` : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span>`}<button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
             ${
                 running
                     ? `<div class="nav-moment" style="${lineStyle()}">${moment(p)}</div>`
@@ -384,7 +420,7 @@
             <div class="nav-facts"><span>${icon('clock')}<strong>${route.duration}</strong> min</span>${movement ? `<span>${movement}</span>` : ''}<span>Arrive <strong>${route.arrive}</strong>${nextDay}</span></div>`
             }
             <p class="nav-guidance-note">Sample steps · advance them yourself</p>
-        </div><div id="nav-expanded" class="nav-expanded" ${mobile() && !expanded && journeyView === 'map' ? 'inert' : ''}><div class="nav-detail-scroll"><div class="nav-itinerary-label"><strong>Whole journey</strong><small>${localDate()} · Sample</small></div>${timeline()}${route.delayed ? `<p class="nav-preview-note">${icon('info')}Delay flagged in this capture. Current status is unknown.</p>` : ''}<p class="nav-preview-note">${icon('info')}${trip().id === 'day' ? 'Scheduled sample times; no stops between were recorded.' : 'Times and steps are from a saved capture.'} Advance the preview yourself; live guidance is not connected.</p>
+        </div><div id="nav-expanded" class="nav-expanded" ${!wide() && !expanded ? 'inert' : ''}><div class="nav-detail-scroll"><div class="nav-itinerary-label"><strong>Whole journey</strong><small>${localDate()} · Sample</small></div>${timeline()}${route.delayed ? `<p class="nav-preview-note">${icon('info')}Delay flagged in this capture. Current status is unknown.</p>` : ''}<p class="nav-preview-note">${icon('info')}${trip().id === 'day' ? 'Scheduled sample times; no stops between were recorded.' : 'Times and steps are from a saved capture.'} Advance the preview yourself; live guidance is not connected.</p>
         </div></div>
         <footer class="nav-footer">${
             confirmation
@@ -406,8 +442,11 @@
             const spare = trip().start
                 ? ` · ${minutesBetween(route.arrive, trip().start)} min spare`
                 : '';
+            dialog.querySelector('#nav-title').textContent = running
+                ? `To ${trip().place}`
+                : trip().place;
             top.textContent = running
-                ? `To ${trip().place} · there ${route.arrive}${spare}`
+                ? `There ${route.arrive}${spare}`
                 : `Journey preview · ${localDate()}`;
         }
         if (typeof savedCount === 'function') savedCount();
@@ -428,7 +467,7 @@
         dialog.style.setProperty('--nav-collapsed-height', `${height}px`);
     }
     function updateMap(animate = true) {
-        if (!map || journeyView !== 'map') return;
+        if (!map || !showMap()) return;
         map.position(
             isActive() ? active.step : 0,
             isActive() && active.condition !== 'location',
@@ -480,7 +519,7 @@
         mapView = 'step';
         if (reveal) setExpanded(true);
         else render();
-        if (journeyView === 'map') map?.focus(index);
+        if (showMap()) map?.focus(index);
         dialog
             .querySelector(`[data-nav-step="${index}"]`)
             ?.focus({ preventScroll: true });
@@ -682,6 +721,12 @@
     }
     dialog.addEventListener('pointerup', endDrag);
     dialog.addEventListener('pointercancel', endDrag);
+    // Crossing the desktop width moves the trip between page and screen.
+    matchMedia('(min-width: 1000px)').addEventListener('change', () => {
+        if (!dialog.open) return;
+        const current = route;
+        close(() => open(current));
+    });
     matchMedia('(max-width: 700px)').addEventListener('change', () => {
         if (dialog.open) {
             render();

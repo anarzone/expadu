@@ -196,3 +196,230 @@
         transition: none;
     }
 }
+
+/* ---------- The canvas trip (owner check, 10 Oct 2026) ----------
+   One header: close, where to and the spare time, the line. Progress in the
+   line's colour, counting "Get ready" from Nearby. Phones get the whole
+   screen with the steps first; desktops keep the trip in Travel's column
+   with its map beside it, no window over the page. */
+.nav-segments .is-done,
+.nav-segments .is-now {
+    background: var(--line, var(--color-text));
+}
+.nav-segments .is-now {
+    opacity: 0.55;
+}
+.nav-eyebrow .nav-stage {
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+}
+.nav-eyebrow .nav-count {
+    margin-left: auto;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.nav-topbar h1 {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.nav-topbar .nav-line {
+    flex: none;
+    display: grid;
+    place-items: center;
+    min-width: 32px;
+    height: 28px;
+    padding: 0 7px;
+    border-radius: 8px;
+    background: var(--line, var(--color-text));
+    color: var(--ink, var(--color-text-on-action));
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+}
+.moment-ride {
+    gap: var(--space-8);
+}
+.moment-ride-ends {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-8);
+    font-size: var(--text-small);
+    font-variant-numeric: tabular-nums;
+}
+.moment-ride-ends strong {
+    color: var(--color-text);
+}
+.moment-ride-track {
+    position: relative;
+    display: block;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--line, var(--color-text));
+}
+.moment-ride-track i {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border: 3px solid var(--line, var(--color-text));
+    border-radius: var(--radius-round);
+    background: var(--color-bg-surface);
+    transform: translateY(-50%);
+}
+.moment-ride-track i:first-child {
+    left: -2px;
+}
+.moment-ride-track i:last-child {
+    right: -2px;
+}
+
+@media (max-width: 999px) {
+    #journey-navigation .nav-topbar {
+        display: flex;
+        align-items: center;
+        gap: var(--space-8);
+    }
+    #journey-navigation.is-steps-view .nav-topbar {
+        padding: max(env(safe-area-inset-top), 8px) 12px 8px;
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg-canvas);
+    }
+    #journey-navigation .nav-topbar > .nav-view-switch {
+        grid-area: auto;
+    }
+    #journey-navigation .nav-view-switch button {
+        padding: 0 10px;
+    }
+    #journey-navigation .nav-view-switch span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    #journey-navigation.is-steps-view,
+    #journey-navigation.is-steps-view :is(.nav-panel, .nav-footer) {
+        background: var(--color-bg-canvas);
+    }
+    #journey-navigation.is-steps-view .nav-footer::before {
+        background: linear-gradient(transparent, var(--color-bg-canvas));
+    }
+    /* The whole journey waits behind "Itinerary" on phones. */
+    #journey-navigation.is-steps-view .nav-eyebrow > button {
+        display: flex;
+    }
+    #journey-navigation.is-steps-view:not(.is-expanded) .nav-expanded {
+        display: none;
+    }
+    #journey-navigation.is-steps-view .nav-summary {
+        border-bottom: 0;
+    }
+}
+@media (min-width: 1000px) {
+    body.trip-open :is(#departures, #journey-view, #day-view) {
+        display: none !important;
+    }
+    #journey-navigation:not(:modal)[open] {
+        position: static;
+        display: block;
+        width: 100%;
+        height: auto;
+        margin: 0 0 var(--space-24);
+        border-radius: 0;
+        overflow: visible;
+        background: transparent;
+        box-shadow: none;
+        color: var(--color-text);
+    }
+    #journey-navigation:not(:modal) .nav-workspace {
+        height: auto;
+        grid-template: auto auto / minmax(0, 1fr) minmax(0, 1fr);
+    }
+    #journey-navigation:not(:modal) .nav-topbar {
+        margin-bottom: var(--space-20);
+        padding: 0 0 var(--space-14);
+        border-bottom: 1px solid var(--color-border);
+        background: transparent;
+    }
+    #journey-navigation:not(:modal) .nav-topbar .nav-icon-button {
+        background: var(--color-bg-quiet);
+    }
+    #journey-navigation:not(:modal) .nav-view-switch {
+        display: none;
+    }
+    #journey-navigation:not(:modal) .nav-panel {
+        grid-area: 2 / 1;
+        padding-right: 32px;
+        border-right: 1px solid var(--color-border);
+        background: transparent;
+    }
+    #journey-navigation:not(:modal) .nav-panel-content {
+        overflow: visible;
+    }
+    #journey-navigation:not(:modal) .nav-summary {
+        padding: 0;
+    }
+    #journey-navigation:not(:modal) .nav-footer {
+        order: 1;
+        padding: var(--space-16) 0 var(--space-20);
+        background: transparent;
+    }
+    #journey-navigation:not(:modal) .nav-footer::before {
+        display: none;
+    }
+    #journey-navigation:not(:modal) .nav-expanded {
+        order: 2;
+        border-top: 1px solid var(--color-border);
+    }
+    #journey-navigation:not(:modal) .nav-detail-scroll {
+        overflow: visible;
+        padding: var(--space-14) 0 0;
+    }
+    #journey-navigation:not(:modal) .nav-map-area {
+        grid-area: 2 / 2;
+        position: sticky;
+        top: var(--space-16);
+        align-self: start;
+        height: min(560px, calc(100dvh - 140px));
+        margin-left: 32px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+    }
+    #journey-navigation:not(:modal) .nav-options {
+        top: 56px;
+        right: 0;
+    }
+}
+@media (max-width: 999px) {
+    /* One toggle: the view you're not on. */
+    #journey-navigation .nav-topbar > .nav-view-switch {
+        padding: 0;
+        background: transparent;
+    }
+    #journey-navigation .nav-view-switch button[aria-pressed='true'] {
+        display: none;
+    }
+    #journey-navigation .nav-view-switch button {
+        background: var(--color-bg-quiet);
+        color: var(--color-text);
+    }
+    /* The step's action follows it, as on the canvas. */
+    #journey-navigation.is-steps-view .nav-footer {
+        margin-top: 0;
+    }
+}
+@media (min-width: 701px) and (max-width: 999px) {
+    #journey-navigation.is-steps-view {
+        width: 100%;
+        height: 100dvh;
+        max-height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+    }
+    #journey-navigation.is-steps-view .nav-workspace {
+        grid-template: auto minmax(0, 1fr) / minmax(0, 720px);
+        justify-content: center;
+    }
+}

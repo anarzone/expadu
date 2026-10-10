@@ -74,7 +74,16 @@ const status = (page) =>
             await page.getByRole('button', { name: 'I’m on my way' }).click();
             const trip = page.locator('#journey-navigation');
             await trip.waitFor();
-            await trip.locator('[data-nav-view="steps"]').click();
+            // It opens on its steps, "Get ready" already done; desktops keep
+            // it in the page beside the map, phones give it the screen.
+            assert.match(
+                await trip.locator('.nav-eyebrow').innerText(),
+                /Walk to the stop[\s\S]*2 of 6 · sample day/,
+            );
+            assert.equal(
+                await trip.evaluate((d) => d.matches(':modal')),
+                width < 1000,
+            );
             // One moment at a time, each with its own next action.
             const moments = [
                 [
