@@ -101,6 +101,13 @@ const status = (page) =>
                 ],
                 [/You’re 12 min early[\s\S]*What to bring/, 'End trip'],
             ];
+            // The small choices say what they do.
+            assert.equal(
+                await trip
+                    .getByRole('button', { name: 'Stop the trip' })
+                    .isVisible(),
+                true,
+            );
             for (const [text, next] of moments) {
                 assert.match(
                     await trip.locator('.nav-moment').innerText(),

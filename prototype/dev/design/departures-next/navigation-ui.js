@@ -496,8 +496,8 @@
             confirmation
                 ? `<div class="nav-confirm" role="group" aria-label="${confirmation === 'end' ? 'End journey preview?' : 'Replace current journey preview?'}"><span>${confirmation === 'end' ? 'End this preview?' : 'Replace current preview?'}</span><button data-nav="cancel-confirm">Keep</button><button class="nav-primary" data-nav="confirm">${confirmation === 'end' ? 'End' : 'Replace'}</button></div>`
                 : running
-                  ? `${iconButton('back', 'Previous step', 'previous', p.index === 0 ? 'disabled' : '')}${iconButton('stop', 'Stop this trip', 'end')}<button class="nav-primary" data-nav="${p.complete ? 'finish' : 'next'}">${safe(momentAction(p))}${icon(p.complete ? 'check' : 'arrow')}</button>`
-                  : `<button class="nav-icon-button" data-save="${route.id}" aria-label="Save journey">${icon('bookmark')}</button><button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button>`
+                  ? `<button class="nav-primary" data-nav="${p.complete ? 'finish' : 'next'}">${safe(momentAction(p))}${icon(p.complete ? 'check' : 'arrow')}</button><div class="nav-footer-more">${p.index === 0 ? '<span></span>' : `<button class="nav-text-button" data-nav="previous">${icon('back')}Back a step</button>`}${p.complete ? '' : `<button class="nav-text-button" data-nav="end">${icon('stop')}Stop the trip</button>`}</div>`
+                  : `<button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button><div class="nav-footer-more"><span></span><button class="nav-text-button" data-save="${route.id}">${icon('bookmark')}Save to Saved journeys</button></div>`
         }</footer>`;
         content.querySelector('.nav-detail-scroll').scrollTop = scrollTop;
         if (focus)

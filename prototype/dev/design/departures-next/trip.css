@@ -483,3 +483,46 @@
         line-height: 1.2;
     }
 }
+
+/* The step's action, then two worded choices: back a step, stop the trip
+   (owner asked what the bare square meant, 10 Oct 2026). */
+#journey-navigation .nav-footer {
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-8);
+}
+#journey-navigation .nav-footer > .nav-primary {
+    flex: 1 1 100%;
+    min-height: 52px;
+}
+.nav-footer-more {
+    display: flex;
+    flex: 1 1 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+}
+#journey-navigation .nav-text-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text-soft);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+#journey-navigation .nav-text-button svg {
+    width: 16px;
+    height: 16px;
+}
+#journey-navigation .nav-text-button[data-nav='end'] {
+    color: var(--color-conflict-text, var(--color-text));
+}
+#journey-navigation .nav-text-button:active {
+    background: var(--color-bg-quiet);
+}
