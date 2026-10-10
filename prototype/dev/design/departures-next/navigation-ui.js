@@ -33,6 +33,8 @@
         drag,
         suppressClick = false;
     const mobile = () => matchMedia('(max-width: 700px)').matches;
+    // The approved label set (labels.js), when the page has it.
+    const L = root.TravelLabels;
     // Desktops keep the trip in Travel's column, beside its map; smaller
     // screens give it the whole screen (owner-approved workspace layout).
     const wide = () => matchMedia('(min-width: 1000px)').matches;
@@ -128,7 +130,7 @@
         confirmation = '';
         dialog.classList.remove('is-expanded', 'is-closing');
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div>${route.line ? `<span class="nav-line" style="${lineStyle()}">${safe(route.line)}</span>` : ''}<div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div>${route.line ? (L ? L.line(route.line, root.NearbyModel?.look(String(route.line), vehicle() === 'Bus' ? 'bus' : 'tram'), { kind: vehicle() === 'Bus' ? 'bus' : 'tram', size: 'big' }) : `<span class="nav-line" style="${lineStyle()}">${safe(route.line)}</span>`) : ''}<div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
             <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
                 <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
                 <p class="nav-map-caption">Illustrative connections · not street directions</p>
@@ -415,14 +417,14 @@
             // The canvas: a small map of the stop with this line's recorded
             // boarding points (KVB records; which one is used isn't known).
             const where = points.length
-                ? `<div class="moment-map" role="img" aria-label="Map of ${safe(stopLabel)} with the ${points.length} recorded boarding point${points.length === 1 ? '' : 's'} for ${vehicleWord} ${safe(route.line || '')}"><div class="moment-map-canvas"></div><span class="moment-map-label">${points.length === 1 ? 'Board at this point' : `Board at one of these ${points.length === 2 ? 'two' : points.length} points`}</span><small class="moment-map-credit">© OpenStreetMap · OpenFreeMap</small></div><p class="moment-note">KVB lists ${points.length === 1 ? 'this point' : points.length === 2 ? 'both points' : `all ${points.length} points`} for this line. Which one your ${vehicleWord} uses isn’t confirmed.</p>`
+                ? `<div class="moment-map" role="img" aria-label="Map of ${safe(stopLabel)} with the ${points.length} recorded boarding point${points.length === 1 ? '' : 's'} for ${vehicleWord} ${safe(route.line || '')}"><div class="moment-map-canvas"></div><span class="moment-map-label">${points.length === 1 ? 'Board at this point' : `Board at one of these ${points.length === 2 ? 'two' : points.length} points`}</span><small class="moment-map-credit">© OpenStreetMap · OpenFreeMap</small></div>${L ? `<span class="tl-chips">${L.chip('unsure', 'pin', points.length === 1 ? 'Boarding point not confirmed' : `Either of ${points.length} boarding points · not confirmed`)}</span>` : ''}<p class="moment-note"${L ? ' hidden' : ''}>KVB lists ${points.length === 1 ? 'this point' : points.length === 2 ? 'both points' : `all ${points.length} points`} for this line. Which one your ${vehicleWord} uses isn’t confirmed.</p>`
                 : area
                   ? `<div class="moment-card"><strong>Board in the area for ${area.lines.join(' · ')}</strong><small>KVB lists ${area.places.length} boarding points there. Which one your ${vehicleWord} uses isn’t confirmed.</small></div>`
                   : '';
             return `<h2>Walk to ${safe(stopLabel)}</h2><p class="moment-sub">${safe(step.detail.replace(' on foot', ''))} · ${kind.toLowerCase()} ${safe(route.line || '')} leaves at ${board?.time || route.depart}</p>${where}${board ? front : ''}`;
         }
         if (step.mode === 'transit')
-            return `<div class="moment-ring" aria-hidden="true"><span>Leaves</span><strong>${step.time}</strong></div><h2>${kind} ${safe(route.line || '')} to ${safe(stopName(towards))}</h2><p class="moment-sub">That’s your ${kind === 'Bus' ? 'bus' : 'tram'}. Other lines stop here too.</p>${front}`;
+            return `<div class="moment-ring" aria-hidden="true"><span>Leaves</span><strong>${step.time}</strong></div><h2>${kind} ${safe(route.line || '')} to ${safe(stopName(towards))}</h2>${L ? `<span class="tl-chips">${L.chip('unsure', 'offline', trip().id === 'day' ? 'Scheduled time · not live' : 'Captured time · not live')}</span>` : ''}<p class="moment-sub">That’s your ${kind === 'Bus' ? 'bus' : 'tram'}. Other lines stop here too.</p>${front}`;
         if (step.mode === 'ride')
             return `<h2>Stay on to ${safe(offAt)}</h2><p class="moment-sub">Next: ${safe(stopName(step.title))} at ${step.time}</p>`;
         if (step.mode === 'alight')
@@ -482,7 +484,7 @@
                   .join('')}</div>`
             : '';
         content.innerHTML = `${conditionMarkup()}<div class="nav-summary${running ? ' is-moment' : ''}">
-            ${segments}<div class="nav-eyebrow">${running ? `<strong class="nav-stage">${momentLabel(p)}</strong><span class="nav-count">${p.index + done + 1} of ${p.total + done} · ${trip().id === 'day' ? 'sample day' : 'captured times'}</span>` : `<span>${icon(route.mode === 'transit' ? 'train' : route.mode)}${route.line ? `Line ${route.line} · Direct` : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span>`}<button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
+            ${segments}<div class="nav-eyebrow">${running ? `${L ? `<span class="nav-stage tl-chip is-select">${icon(modeIcon(p.step.mode))}<span>${momentLabel(p)}</span></span>` : `<strong class="nav-stage">${momentLabel(p)}</strong>`}<span class="nav-count">${p.index + done + 1} of ${p.total + done} · ${trip().id === 'day' ? 'sample day' : 'captured times'}</span>` : `<span>${icon(route.mode === 'transit' ? 'train' : route.mode)}${route.line ? `Line ${route.line} · Direct` : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span>`}<button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
             ${
                 running
                     ? `<div class="nav-moment" style="${lineStyle()}">${moment(p)}</div>`

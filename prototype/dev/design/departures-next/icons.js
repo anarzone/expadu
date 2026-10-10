@@ -32,6 +32,13 @@ const shapes = {
     minus: '<path d="M5 12h14"/>',
     more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
     stop: '<rect x="6" y="6" width="12" height="12" rx="3"/>',
+    // Travel labels (owner-approved 10 Oct 2026)
+    cancel: '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/>',
+    alert: '<path d="M12 3.5 2.5 20h19L12 3.5Z"/><path d="M12 10v4.5m0 3v.1"/>',
+    lift: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="m9.5 8.5 2.5-2.5 2.5 2.5m-5 7 2.5 2.5 2.5-2.5M3 3l18 18"/>',
+    liftok: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="m9.5 8.5 2.5-2.5 2.5 2.5m-5 7 2.5 2.5 2.5-2.5"/>',
+    timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9.5 2.5h5"/>',
+    moon: '<path d="M19.5 14.5A7.5 7.5 0 1 1 9.5 4.5a6 6 0 0 0 10 10Z"/>',
     offline:
         '<path d="m3 3 18 18M2 8a16 16 0 0 1 3-2m4-2a16 16 0 0 1 13 4M5 12a11 11 0 0 1 4-2m5 0a11 11 0 0 1 5 2m-11 4a6 6 0 0 1 8 0"/><circle cx="12" cy="20" r=".8"/>',
 };

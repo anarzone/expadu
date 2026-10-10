@@ -100,6 +100,7 @@ function workspace(
         'timetable.js',
         'journey-ui.js',
         'icons.js',
+        'labels.js',
         ...(station ? ['nearby.js', 'nearby-ui.js', 'service-context.js'] : []),
         'app.js',
     ]) {
@@ -627,13 +628,15 @@ test('on the sample day Nearby leads with the appointment trip and Today’s tim
     w.run('renderNextTrip();');
     const card = w.element('#next-trip');
     assert.equal(card.hidden, false);
-    assert.match(
-        card.innerHTML,
-        /Next · Blue Card appointment · 14:00 · Mülheim/,
-    );
+    // Labels: the line with its vehicle, the spare time, the sample.
+    const text = card.innerHTML.replace(/<[^>]+>/g, '');
+    assert.match(text, /Next · Blue Card appointment · 14:00 · Mülheim/);
     assert.match(card.innerHTML, /<h2 id="next-trip-title">Leave now<\/h2>/);
-    assert.match(card.innerHTML, /13:14 from Neumarkt/);
-    assert.match(card.innerHTML, /There 13:48 · 12 min spare/);
+    assert.match(card.innerHTML, /class="tl-line"[\s\S]*?Tram <\/span>4/);
+    assert.match(text, /13:14 from Neumarkt/);
+    assert.match(text, /There 13:48/);
+    assert.match(card.innerHTML, /tl-chip is-calm[\s\S]*?12 min spare/);
+    assert.match(card.innerHTML, /tl-chip is-unsure is-sm[\s\S]*?Sample/);
     assert.match(
         card.innerHTML,
         /data-action="trip-start" data-trip-route="day-1314"/,
@@ -641,7 +644,7 @@ test('on the sample day Nearby leads with the appointment trip and Today’s tim
     // The planned 13:24 is an other way, too tight for an official appointment.
     assert.match(
         card.innerHTML,
-        /The 13:24 tram 4<\/strong><small>In your plan · there 13:58[\s\S]*Only 2 min spare/,
+        /The 13:24 tram 4<\/strong><small>In your plan · there 13:58<\/small><\/span><span class="tl-chip is-attention">[\s\S]*?Only 2 min spare/,
     );
     assert.match(
         card.innerHTML,
@@ -684,17 +687,21 @@ test('opening the next trip compares both trams against the 14:00 start', () => 
     assert.match(results, /Best for you[\s\S]*13:10/);
     // One choice of options, each with its minutes to spare and reasons.
     assert.match(results, /role="radiogroup" aria-label="Your options"/);
-    assert.match(results, /<span class="plan-spare">12 min spare/);
-    assert.match(results, /<span class="plan-spare is-tight">2 min spare/);
+    assert.match(results, /tl-chip is-best[\s\S]*?Best for you/);
+    assert.match(results, /tl-chip is-calm">[\s\S]*?<span>12 min spare/);
     assert.match(
         results,
-        /In your plan<\/span><span class="is-warn">Only 2 min to spare/,
+        /tl-chip is-attention">[\s\S]*?<span>Only 2 min spare/,
+    );
+    assert.match(
+        results,
+        /In your plan<\/span><span class="is-warn">[\s\S]*?Only 2 min before your 14:00/,
     );
     assert.match(
         results,
         /class="primary plan-go" data-route="day-1314">[\s\S]*Show the way<\/button><button type="button" class="quiet-button plan-save" data-action="save-plan" data-route-id="day-1314">Save this plan/,
     );
-    assert.match(results, /Bike or walk: times aren’t in the sample/);
+    assert.match(results, /Not in the sample[\s\S]*Bike or walk times/);
     assert.match(results, /Sample day · scheduled times/);
     assert.doesNotMatch(results, /7 Sep 2026|aria-label="next day"/);
     w.run('state.routeMode = "bike"; renderResults();');
@@ -775,7 +782,9 @@ test('Review situations: a cancelled 13:14 offers the 13:24 and the planner drop
     const w = workspace('?scenario=cancelled', false, false, false, true);
     w.run('renderNextTrip();');
     let band = w.element('#next-trip').innerHTML;
-    assert.match(band, /Change of plan · sample cancellation/);
+    // It won't work: a filled Cancelled label leads.
+    assert.match(band, /tl-chip is-conflict[\s\S]*?Cancelled/);
+    assert.match(band, /Change of plan · sample · for your 14:00/);
     assert.match(band, /Your 13:14 is cancelled/);
     assert.match(band, /„Fällt aus“<\/span>, which means cancelled/);
     assert.match(band, /at 13:24, gets you there at 13:58: only 2 min early/);
@@ -788,7 +797,7 @@ test('Review situations: a cancelled 13:14 offers the 13:24 and the planner drop
         /Switched to the 13:24 tram 4, because the 13:14 is cancelled \(sample\)/,
     );
     assert.match(band, /<h2 id="next-trip-title">Leave at 13:20<\/h2>/);
-    assert.match(band, /<b>2 min spare<\/b>/);
+    assert.match(band, /tl-chip is-attention">[\s\S]*?Only 2 min spare/);
     w.run('closeSheet = done => done?.(); openNextTrip();');
     const results = w.element('#results').innerHTML;
     assert.match(results, /Tram 4 at 13:14 is cancelled \(sample\)/);

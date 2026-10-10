@@ -768,6 +768,12 @@ function renderSampleRoutes() {
               .join('')
         : '<p class="route-note">My day isn’t in this preview.</p>';
 }
+// The approved label set (labels.js): icon + word, by strength.
+const L = window.TravelLabels;
+const spareLabel = (minutes, margin) =>
+    minutes < margin
+        ? L.chip('attention', 'timer', `Only ${minutes} min spare`)
+        : L.chip('calm', 'check', `${minutes} min spare`);
 // The sample day's appointment trip leads Nearby: the tram to take now, with
 // Today's rule for tight official appointments (owner-approved design).
 const skies = {
@@ -801,8 +807,8 @@ function changeOfPlan(trip, planned, spare) {
     const missed = state.scenario === 'missed';
     const ways = `<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li><li><span><strong>Taxi</strong><small>Time and price aren’t in the sample</small></span></li>`;
     if (missed)
-        return `<div class="next-trip-main"><p class="next-trip-eyebrow is-conflict">${icon('clock')}You didn’t set off in time · sample · for your ${trip.start}</p><div class="next-trip-lead"><h2 id="next-trip-title">Tram ${safe(planned.line)} left at 13:14</h2></div><p class="next-trip-sub is-shown">That’s fine. Here’s what still gets you there by ${trip.start}:</p><ul class="next-trip-ways"><li class="is-first"><span class="next-trip-badge">${safe(planned.line)}</span><span><strong>Next tram ${safe(planned.line)} at ${tram.time}</strong><small>Leave ${planned.depart} · there ${planned.arrive} · <b>${spare(planned)} min spare</b></small></span><button type="button" class="primary" data-action="trip-recover">Take it</button></li>${ways}</ul><p class="next-trip-note">We noticed because your location didn’t change after ${trip.time} (sample). Indoors this can be wrong.</p></div>`;
-    return `<div class="next-trip-main"><p class="next-trip-eyebrow is-change">${icon('info')}Change of plan · sample cancellation · for your ${trip.start}</p><div class="next-trip-lead"><h2 id="next-trip-title">Your 13:14 is cancelled</h2></div><ul class="next-trip-reasons"><li class="is-cause"><span aria-hidden="true">${icon('close')}</span><span><strong>Tram ${safe(planned.line)} at 13:14 is cancelled.</strong> The stop display says <span lang="de">„Fällt aus“</span>, which means cancelled.</span></li><li><span aria-hidden="true">${icon('arrow')}</span><span>The next tram ${safe(planned.line)}, at ${tram.time}, gets you there at ${planned.arrive}: only ${spare(planned)} min early.</span></li><li><span aria-hidden="true">${icon('info')}</span><span>Other lines from ${safe(placeName(trip.from))} to ${safe(trip.to)} aren’t in the sample. Composer can help you compare.</span></li></ul></div><div class="next-trip-side"><button type="button" class="primary next-trip-go" data-action="trip-recover">Take the ${tram.time} · leave ${planned.depart}</button><button type="button" class="text-action next-trip-toggle" data-action="trip-others" aria-expanded="${state.tripOthers}" aria-controls="next-trip-others">Every other way${icon('down')}</button><div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${ways}</ul><button type="button" class="text-action" data-action="ask-composer">Ask Composer${icon('arrow')}</button></div></div>`;
+        return `<div class="next-trip-main"><p class="next-trip-eyebrow is-conflict">${L.chip('attention', 'clock', 'Missed')}You didn’t set off in time · sample · for your ${trip.start}</p><div class="next-trip-lead"><h2 id="next-trip-title">Tram ${safe(planned.line)} left at 13:14</h2></div><p class="next-trip-sub is-shown">That’s fine. Here’s what still gets you there by ${trip.start}:</p><ul class="next-trip-ways"><li class="is-first"><span class="next-trip-badge">${safe(planned.line)}</span><span><strong>Next tram ${safe(planned.line)} at ${tram.time}</strong><small>Leave ${planned.depart} · there ${planned.arrive}</small>${spareLabel(spare(planned), trip.kind === 'official' ? 10 : 5)}</span><button type="button" class="primary" data-action="trip-recover">Take it</button></li>${ways}</ul><p class="next-trip-note">We noticed because your location didn’t change after ${trip.time} (sample). Indoors this can be wrong.</p></div>`;
+    return `<div class="next-trip-main"><p class="next-trip-eyebrow is-change">${L.chip('conflict', 'cancel', 'Cancelled')}Change of plan · sample · for your ${trip.start}</p><div class="next-trip-lead"><h2 id="next-trip-title">Your 13:14 is cancelled</h2></div><ul class="next-trip-reasons"><li class="is-cause"><span aria-hidden="true">${icon('cancel')}</span><span><strong>Tram ${safe(planned.line)} at 13:14 is cancelled.</strong> The stop display says <span lang="de">„Fällt aus“</span>, which means cancelled.</span></li><li><span aria-hidden="true">${icon('arrow')}</span><span>The next tram ${safe(planned.line)}, at ${tram.time}, gets you there at ${planned.arrive}: only ${spare(planned)} min early.</span></li><li><span aria-hidden="true">${icon('info')}</span><span>Other lines from ${safe(placeName(trip.from))} to ${safe(trip.to)} aren’t in the sample. Composer can help you compare.</span></li></ul></div><div class="next-trip-side"><button type="button" class="primary next-trip-go" data-action="trip-recover">Take the ${tram.time} · leave ${planned.depart}</button><button type="button" class="text-action next-trip-toggle" data-action="trip-others" aria-expanded="${state.tripOthers}" aria-controls="next-trip-others">Every other way${icon('down')}</button><div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${ways}</ul><button type="button" class="text-action" data-action="ask-composer">Ask Composer${icon('arrow')}</button></div></div>`;
 }
 function renderNextTrip() {
     const panel = $('#next-trip');
@@ -860,7 +866,7 @@ function renderNextTrip() {
         }));
     const others = [
         planned !== best && !broken
-            ? `<li><span><strong>The ${tram(planned).time} tram ${safe(planned.line)}</strong><small>In your plan · there ${planned.arrive}</small></span><span class="nearby-tag is-late">Only ${spare(planned)} min spare</span></li>`
+            ? `<li><span><strong>The ${tram(planned).time} tram ${safe(planned.line)}</strong><small>In your plan · there ${planned.arrive}</small></span>${spareLabel(spare(planned), trip.kind === 'official' ? 10 : 5)}</li>`
             : '',
         '<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li>',
     ].join('');
@@ -868,20 +874,19 @@ function renderNextTrip() {
         'style',
         `--line:${look.colour};--tint:${look.tint};--ink:${look.ink}`,
     );
-    const tight = spare(best) < (trip.kind === 'official' ? 10 : 5);
     panel.innerHTML = `<div class="next-trip-main">
             ${switchNote ? `<p class="next-trip-switched">${icon('check')}${safe(switchNote)}</p>` : ''}
-            <p class="next-trip-eyebrow">Next · ${safe(trip.place)} · ${trip.start} · ${safe(trip.to)}</p>
-            <div class="next-trip-lead"><h2 id="next-trip-title">${leaveIn <= 0 ? 'Leave now' : `Leave at ${best.depart}`}</h2><span class="next-trip-badge">${safe(best.line)}</span><span class="next-trip-from">${ride.time} from ${safe(placeName(trip.from))}</span></div>
+            <p class="next-trip-eyebrow"><span>Next · ${safe(trip.place)} · ${trip.start}<span class="next-trip-to"> · ${safe(trip.to)}</span></span>${L.chip('unsure', 'info', 'Sample', { size: 'sm' })}</p>
+            <div class="next-trip-lead"><h2 id="next-trip-title">${leaveIn <= 0 ? 'Leave now' : `Leave at ${best.depart}`}</h2>${L.line(best.line, look)}</div>
+            <p class="next-trip-from">${ride.time} from ${safe(placeName(trip.from))} · there ${best.arrive}</p>
             <p class="next-trip-sub">Tram ${safe(best.line)} leaves ${safe(placeName(trip.from))} at ${ride.time}.${walkIn ? ` It’s a ${walkIn} min walk.` : ''}</p>
-            <p class="next-trip-there">There ${best.arrive} · ${tight ? '<b>' : ''}${spare(best)} min spare${tight ? '</b>' : ''}</p>
             <div class="next-trip-line" aria-hidden="true" style="--walk-in:${walkIn};--ride:${ride.duration};--walk-out:${walkOut}">
                 <span class="next-trip-stop" style="left:${((walkIn / total) * 100).toFixed(1)}%">${safe(placeName(trip.from))} ${ride.time}</span>
                 <span class="next-trip-stop is-end" style="right:${((walkOut / total) * 100).toFixed(1)}%">${safe(ride.stop)} ${ride.alight}</span>
                 <span class="next-trip-track"><i class="is-you"></i><b class="is-walk"></b><i class="is-board"></i><b class="is-ride"><span>${safe(best.line)}</span></b><i class="is-board"></i><b class="is-walk is-out"></b><i class="is-there"></i></span>
                 <span class="next-trip-end">You · ${best.depart}</span><span class="next-trip-end is-there">There ${best.arrive}</span>
             </div>
-            <p class="next-trip-chips"><span${tight ? ' class="is-tight"' : ''}>${spare(best)} min spare</span>${weather ? `<span>${icon('sun')}${weather.sky}, ${weather.degrees}° · sample weather</span>` : ''}</p>
+            <p class="next-trip-labels tl-chips">${spareLabel(spare(best), trip.kind === 'official' ? 10 : 5)}${walkIn ? L.chip('calm', 'walk', `${walkIn} min`, { hidden: 'walk' }) : ''}${weather ? L.chip('calm', weather.wet ? 'cloud' : 'sun', `${weather.degrees}° · sample`, { hidden: weather.sky }) : ''}</p>
         </div>
         <div class="next-trip-side">
             <button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${best.id}">${icon('play')}I’m on my way</button>
@@ -889,7 +894,7 @@ function renderNextTrip() {
             <small class="next-trip-hint">Your phone takes the trip from here, one step at a time.</small>
             <button type="button" class="text-action next-trip-toggle" data-action="trip-others" aria-expanded="${state.tripOthers}" aria-controls="next-trip-others">Other ways${icon('down')}</button>
             <div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div>
-            ${later.length ? `<div class="next-trip-later"><h3>Later today</h3><ul>${later.map(({ event, weather: w }) => `<li><button type="button" data-action="plan-way" data-place="${safe(event.venue || event.title)}" aria-label="Plan the way to ${safe(event.title)}, ${event.start}"><time>${event.start}</time><span><strong>${safe(event.title)}</strong><small>${safe(event.venue || '')}${w?.wet ? ` · ${w.sky.toLowerCase()} likely (sample)` : ''}</small></span>${icon('arrow')}</button></li>`).join('')}</ul></div>` : ''}
+            ${later.length ? `<div class="next-trip-later"><h3>Later today</h3><ul>${later.map(({ event, weather: w }) => `<li><button type="button" data-action="plan-way" data-place="${safe(event.venue || event.title)}" aria-label="Plan the way to ${safe(event.title)}, ${event.start}"><time>${event.start}</time><span><strong>${safe(event.title)}</strong><small>${safe(event.venue || '')}</small>${w?.wet ? L.chip('attention', 'cloud', `${w.sky} likely · sample`, { size: 'sm' }) : ''}</span>${icon('arrow')}</button></li>`).join('')}</ul></div>` : ''}
         </div>`;
 }
 // Before anything is planned, desktops show My day with a way to plan each
@@ -1001,6 +1006,8 @@ function checks(tripId, trip, route) {
     return [
         {
             short: 'Departures',
+            icon: day ? 'check' : 'offline',
+            tone: day ? 'calm' : 'unsure',
             title: day ? 'Departures' : 'Departures, as captured',
             text: day
                 ? `Scheduled sample times for ${boardDateLabel(trip.date)}`
@@ -1008,7 +1015,18 @@ function checks(tripId, trip, route) {
         },
         {
             short:
-                state.scenario === 'cancelled' && day ? '1 notice' : 'Notices',
+                state.scenario === 'cancelled' && day
+                    ? '1 notice'
+                    : day
+                      ? 'No notices'
+                      : 'Notices',
+            icon: state.scenario === 'cancelled' && day ? 'alert' : 'check',
+            tone:
+                state.scenario === 'cancelled' && day
+                    ? 'conflict'
+                    : day
+                      ? 'calm'
+                      : 'unsure',
             title: 'KVB notices',
             text:
                 state.scenario === 'cancelled' && day
@@ -1020,6 +1038,7 @@ function checks(tripId, trip, route) {
         },
         {
             short: 'Weather',
+            icon: weather?.wet ? 'cloud' : 'sun',
             title: 'Weather',
             text: weather
                 ? `${weather.sky}, ${weather.degrees}° when you leave · sample weather`
@@ -1037,7 +1056,17 @@ function checks(tripId, trip, route) {
             muted: !day,
         },
         {
-            short: 'Lifts',
+            short:
+                state.scenario === 'lift'
+                    ? 'Lift out of order'
+                    : 'Lifts unknown',
+            icon: state.scenario === 'lift' ? 'lift' : 'liftok',
+            tone:
+                state.scenario === 'lift'
+                    ? 'conflict'
+                    : state.stepfree
+                      ? 'attention'
+                      : 'unsure',
             title: 'Lifts on the way',
             text:
                 state.scenario === 'lift'
@@ -1051,7 +1080,7 @@ function checks(tripId, trip, route) {
     ];
 }
 function checksMarkup(list) {
-    return `<section class="plan-checks" aria-label="What we checked"><button type="button" class="plan-checks-toggle" data-action="checks" aria-expanded="${state.checksOpen}" aria-controls="plan-checks-detail"><strong>We checked today’s conditions</strong><span class="plan-check-chips">${list.map((item) => `<span class="${item.flag ? 'is-flag' : item.muted ? 'is-muted' : ''}">${safe(item.short)}</span>`).join('')}</span><span class="plan-checks-more">${state.checksOpen ? 'Hide' : 'Details'}${icon('down')}</span></button><div id="plan-checks-detail" class="plan-checks-detail" ${state.checksOpen ? '' : 'hidden'}>${list.map((item) => `<p><strong>${safe(item.title)}</strong><span>${safe(item.text)}</span></p>`).join('')}</div></section>`;
+    return `<section class="plan-checks" aria-label="What we checked"><button type="button" class="plan-checks-toggle" data-action="checks" aria-expanded="${state.checksOpen}" aria-controls="plan-checks-detail"><strong>We checked today’s conditions</strong><span class="plan-check-chips tl-chips">${list.map((item) => L.chip(item.tone || (item.flag ? 'attention' : item.muted ? 'unsure' : 'calm'), item.icon || 'check', item.short)).join('')}</span><span class="plan-checks-more">${state.checksOpen ? 'Hide' : 'Details'}${icon('down')}</span></button><div id="plan-checks-detail" class="plan-checks-detail" ${state.checksOpen ? '' : 'hidden'}>${list.map((item) => `<p><strong>${safe(item.title)}</strong><span>${safe(item.text)}</span></p>`).join('')}</div></section>`;
 }
 const clockOf = (minutes) =>
     `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
@@ -1111,27 +1140,43 @@ function optionTitle(route) {
 }
 // Why an option is good or not, in the sample's own facts.
 function optionReasons(route, trip) {
+    // [words, ok or warn, icon]: each reason is a label of its own.
     const reasons = [];
     if (route.mode === 'transit')
-        reasons.push([
+        reasons.push(
             route.changes
-                ? `${route.changes} change${route.changes > 1 ? 's' : ''}`
-                : 'No change',
-            'ok',
-        ]);
+                ? [
+                      `${route.changes} change${route.changes > 1 ? 's' : ''}`,
+                      'ok',
+                      'route',
+                  ]
+                : ['No change', 'ok', 'check'],
+        );
     const weather =
         trip.id === 'day' ? sampleWeather(trip.date, route.depart) : null;
     if (route.walking || route.mode !== 'transit')
         reasons.push([
-            `${route.mode === 'transit' ? route.walking : route.duration} min ${route.mode === 'bike' ? 'cycling' : 'walking'}${weather ? (weather.wet ? `, ${weather.sky.toLowerCase()} likely (sample)` : ', dry (sample)') : ''}`,
-            weather?.wet ? 'warn' : 'ok',
+            `${route.mode === 'transit' ? route.walking : route.duration} min ${route.mode === 'bike' ? 'cycling' : 'walking'}`,
+            'ok',
+            route.mode === 'bike' ? 'bike' : 'walk',
         ]);
-    if (route.inPlan) reasons.push(['In your plan', 'ok']);
-    if (route.delayed) reasons.push(['Delay flagged in the capture', 'warn']);
+    if (weather)
+        reasons.push(
+            weather.wet
+                ? [`${weather.sky} likely on the way (sample)`, 'warn', 'cloud']
+                : ['Dry on the way (sample)', 'ok', 'sun'],
+        );
+    if (route.inPlan) reasons.push(['In your plan', 'ok', 'calendar']);
+    if (route.delayed)
+        reasons.push(['Delay flagged in the capture', 'warn', 'clock']);
     if (trip.start) {
         const spare = minutesOf(trip.start) - minutesOf(route.arrive);
         if (spare < (trip.kind === 'official' ? 10 : 5))
-            reasons.push([`Only ${spare} min to spare`, 'warn']);
+            reasons.push([
+                `Only ${spare} min before your ${trip.start}`,
+                'warn',
+                'timer',
+            ]);
     }
     return reasons;
 }
@@ -1141,26 +1186,40 @@ function planOption(route, list, trip, best) {
     const spare = trip.start
         ? minutesOf(trip.start) - minutesOf(route.arrive)
         : null;
-    const tight = spare !== null && spare < (trip.kind === 'official' ? 10 : 5);
+    // The line badge (with its vehicle) is the option's name; how it goes
+    // is in the reasons below.
+    const transit = route.legs.filter((leg) => leg.mode === 'transit');
     const badges =
         route.mode === 'transit'
-            ? route.legs
-                  .filter((leg) => leg.mode === 'transit')
-                  .map((leg) => lineBadge(leg.line || route.line))
-                  .join('')
-            : `<span class="plan-line is-mode">${icon(route.mode)}</span>`;
-    const title = `<span class="plan-option-title">${badges}<strong>${safe(optionTitle(route))}</strong></span>`;
-    const spareTag = `<span class="plan-spare${tight ? ' is-tight' : ''}">${spare !== null ? `${spare} min spare` : `${route.duration} min`}</span>`;
+            ? transit
+                  .map((leg, index) => {
+                      const id = String(leg.line || route.line);
+                      const look = window.NearbyModel?.look(
+                          id,
+                          vehicleOf(id) === 'Bus' ? 'bus' : 'tram',
+                      );
+                      return L.line(id, look, {
+                          word: index === 0,
+                          kind: vehicleOf(id) === 'Bus' ? 'bus' : 'tram',
+                      });
+                  })
+                  .join(`<span class="plan-then">${icon('arrow')}</span>`)
+            : `<span class="tl-line is-mode">${icon(route.mode)}<span>${route.mode === 'bike' ? 'By bike' : 'On foot'}</span></span>`;
+    const title = `<span class="plan-option-title">${badges}</span>`;
+    const spareTag =
+        spare !== null
+            ? spareLabel(spare, trip.kind === 'official' ? 10 : 5)
+            : L.chip('calm', 'clock', `${route.duration} min`);
     return `<article class="plan-option${on ? ' is-on' : ''}" aria-label="${safe(optionTitle(route))}, leave ${route.depart}, there ${route.arrive}${overnight(route.arrive, trip) ? ' next day' : ''}">
         <button type="button" class="plan-option-pick" role="radio" aria-checked="${on}" tabindex="${on ? 0 : -1}" data-pick-route="${route.id}">
             <span class="plan-radio" aria-hidden="true"></span>
-            <span class="plan-option-body"><span class="plan-option-head">${best ? '<span class="best-tag">Best for you</span>' : title}${spareTag}</span>${best ? title : ''}<span class="plan-option-times">Leave <strong>${route.depart}</strong> → there <strong>${route.arrive}</strong>${overnight(route.arrive, trip)}</span><span class="plan-option-reasons">${optionReasons(
+            <span class="plan-option-body"><span class="plan-option-head">${best ? L.chip('best', 'star', 'Best for you') : title}${spareTag}</span>${best ? title : ''}<span class="plan-option-times">Leave <strong>${route.depart}</strong> → there <strong>${route.arrive}</strong>${overnight(route.arrive, trip)}</span><span class="plan-option-reasons">${optionReasons(
                 route,
                 trip,
             )
                 .map(
-                    ([text, kind]) =>
-                        `<span class="is-${kind}">${safe(text)}</span>`,
+                    ([text, kind, name]) =>
+                        `<span class="is-${kind}"><span class="plan-reason-icon">${icon(name)}</span>${safe(text)}</span>`,
                 )
                 .join('')}</span></span>
         </button>
@@ -1277,7 +1336,7 @@ function renderResults() {
         ? gone +
           (otherWays.length
               ? ''
-              : '<p class="route-note other-ways-note">Bike or walk: times aren’t in the sample.</p>')
+              : `<p class="route-note other-ways-note">${L.chip('unsure', 'info', 'Not in the sample')}<span>Bike or walk times</span></p>`)
         : '';
     const contents = list.length
         ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="plan-options" role="radiogroup" aria-label="Your options">${shown.map((route, index) => planOption(route, list, trip, index === 0 && shown.length > 1)).join('')}</div>${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}${others}${chosen ? `<div class="plan-actions"><button type="button" class="primary plan-go" data-route="${chosen.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-save" data-action="save-plan" data-route-id="${chosen.id}">${saved.includes(chosen.id) ? 'Saved · see the plan' : 'Save this plan'}</button></div>` : ''}</div>`
@@ -1443,7 +1502,6 @@ function renderDay() {
     const walkOut =
         route.legs.at(-1).mode === 'walk' ? route.legs.at(-1).duration : 0;
     const look = window.NearbyModel?.look(route.line, 'tram') || {};
-    const tight = spare(route) < (trip.kind === 'official' ? 10 : 5);
     const hour = (h) =>
         sampleWeather(trip.date, `${String(h).padStart(2, '0')}:00`);
     const now = sampleWeather(trip.date, trip.time);
@@ -1456,7 +1514,7 @@ function renderDay() {
     const ev = (event, key) => {
         const w = sampleWeather(trip.date, event.start);
         const skipped = state.dayPick && state.dayPick !== key;
-        return `<section class="day-event${skipped ? ' is-skipped' : ''}" aria-label="${safe(event.title)}"><strong>${safe(event.title)}</strong><span>${safe(event.venue)} · until ${event.end}</span>${w?.wet ? `<span class="day-weather">${icon('cloud')}${w.sky} likely · sample forecast</span>` : ''}${skipped ? '<small>Skipping this one</small>' : ''}</section>`;
+        return `<section class="day-event${skipped ? ' is-skipped' : ''}" aria-label="${safe(event.title)}"><strong>${safe(event.title)}</strong><span>${safe(event.venue)} · until ${event.end}</span>${w?.wet ? L.chip('attention', 'cloud', `${w.sky} likely · sample forecast`, { size: 'sm' }) : ''}${skipped ? '<small>Skipping this one</small>' : ''}</section>`;
     };
     const end = state.dayPick === 'culture' ? first : second || first;
     const steps = J.tripSteps(route)
@@ -1466,8 +1524,8 @@ function renderDay() {
         )
         .join('');
     const tripBlock = broken
-        ? `<section class="day-broken" aria-labelledby="day-broken-title"><p class="day-broken-cause">${icon('close')}${sc === 'cancelled' ? 'Tram 4 at 13:14 is cancelled (sample)' : 'Tram 4 left at 13:14 (sample)'}</p><strong id="day-broken-title">Your 13:14 way ${sc === 'cancelled' ? 'is cancelled' : 'has gone'}</strong><div class="day-switch"><span class="day-badge" style="--line:${look.colour};--ink:${look.ink}">${safe(planned.line)}</span><span><strong>Leave ${planned.depart} · there ${planned.arrive}</strong><small>The next tram ${safe(planned.line)} · only ${spare(planned)} min spare</small></span><button type="button" class="primary" data-action="trip-recover">Switch</button></div><p class="day-note">Other ways’ times aren’t in the sample.</p></section>`
-        : `<section class="day-trip" aria-label="Journey to the appointment" style="--line:${look.colour};--ink:${look.ink};--tint:${look.tint}">${state.recovered ? `<p class="day-switched">Switched to the 13:24, because the 13:14 ${sc === 'cancelled' ? 'is cancelled' : 'left without you'} (sample).</p>` : ''}<button type="button" class="day-trip-head" data-action="day-trip" aria-expanded="${state.dayTripOpen}"><span class="day-trip-times"><strong>Leave ${route.depart} → there ${route.arrive}</strong>${icon('down')}</span><span class="day-ribbon"><span>${icon('walk')}${walkIn}</span><i></i><b>${safe(route.line)} · ${ride.duration} min</b><i></i><span>${icon('walk')}${walkOut}</span></span><span class="day-chips"><span${tight ? ' class="is-tight"' : ''}>${spare(route)} min spare</span><span>Sample day</span></span></button>${state.dayTripOpen ? `<div class="day-trip-detail"><ol class="day-steps">${steps}</ol><button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}Start this trip</button></div>` : ''}</section>`;
+        ? `<section class="day-broken" aria-labelledby="day-broken-title"><p class="day-broken-cause">${sc === 'cancelled' ? L.chip('conflict', 'cancel', 'Cancelled') : L.chip('attention', 'clock', 'Missed')}${sc === 'cancelled' ? 'Tram 4 at 13:14 (sample)' : 'Tram 4 left at 13:14 (sample)'}</p><strong id="day-broken-title">Your 13:14 way ${sc === 'cancelled' ? 'is cancelled' : 'has gone'}</strong><div class="day-switch">${L.line(planned.line, look)}<span><strong>Leave ${planned.depart} · there ${planned.arrive}</strong><small>The next tram ${safe(planned.line)}</small>${spareLabel(spare(planned), trip.kind === 'official' ? 10 : 5)}</span><button type="button" class="primary" data-action="trip-recover">Switch</button></div><p class="day-note">Other ways’ times aren’t in the sample.</p></section>`
+        : `<section class="day-trip" aria-label="Journey to the appointment" style="--line:${look.colour};--ink:${look.ink};--tint:${look.tint}">${state.recovered ? `<p class="day-switched">Switched to the 13:24, because the 13:14 ${sc === 'cancelled' ? 'is cancelled' : 'left without you'} (sample).</p>` : ''}<button type="button" class="day-trip-head" data-action="day-trip" aria-expanded="${state.dayTripOpen}"><span class="day-trip-times"><strong>Leave ${route.depart} → there ${route.arrive}</strong>${icon('down')}</span><span class="day-ribbon"><span>${icon('walk')}${walkIn}</span><i></i><b>${safe(route.line)} · ${ride.duration} min</b><i></i><span>${icon('walk')}${walkOut}</span></span><span class="day-chips tl-chips">${spareLabel(spare(route), trip.kind === 'official' ? 10 : 5)}${L.chip('unsure', 'info', 'Sample day')}</span></button>${state.dayTripOpen ? `<div class="day-trip-detail"><ol class="day-steps">${steps}</ol><button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}Start this trip</button></div>` : ''}</section>`;
     panel.innerHTML = `<div class="day-head"><span><strong>Today</strong><small>${boardDateLabel(trip.date)} · sample day</small></span>${now ? `<span class="day-now-weather">${icon('sun')}${now.degrees}° · ${now.sky.toLowerCase()} until about 15:00 <small>sample weather</small></span>` : ''}</div>
         <ol class="day-river">
             <li class="is-now"><time>${trip.time}</time><span class="day-rail"><i class="day-dot is-now"></i></span><div><strong>Now, near ${safe(placeName(trip.from))}</strong><small>Your location is a sample</small></div></li>
@@ -1489,7 +1547,7 @@ function renderDay() {
             }
             ${first ? `<li class="is-later"><time>later</time><span class="day-rail is-dashed"></span><div><section class="day-open"><strong>Getting to ${safe(first.venue)}</strong><small>Route times aren’t in the sample yet.</small><button type="button" class="quiet-button" data-action="plan-way" data-place="${safe(first.venue)}">Plan the way</button></section></div></li>` : ''}
             ${first ? `<li><time>${first.start}</time><span class="day-rail is-event"><i class="day-dot is-event"></i></span><div>${ev(first, 'culture')}</div></li>` : ''}
-            ${overlap ? `<li class="is-choice"><time></time><span class="day-rail is-event"></span><div><div class="day-overlap"><strong>These overlap from ${overlap.from} to ${overlap.to}. Which one?</strong><div role="group" aria-label="Choose an evening plan"><button type="button" data-action="day-pick" data-pick="culture" aria-pressed="${state.dayPick === 'culture'}">Street culture</button><button type="button" data-action="day-pick" data-pick="cinema" aria-pressed="${state.dayPick === 'cinema'}">Cinema</button></div></div></div></li>` : ''}
+            ${overlap ? `<li class="is-choice"><time></time><span class="day-rail is-event"></span><div><div class="day-overlap"><strong>${L.chip('attention', 'alert', 'Overlap')} These overlap from ${overlap.from} to ${overlap.to}. Which one?</strong><div role="group" aria-label="Choose an evening plan"><button type="button" data-action="day-pick" data-pick="culture" aria-pressed="${state.dayPick === 'culture'}">Street culture</button><button type="button" data-action="day-pick" data-pick="cinema" aria-pressed="${state.dayPick === 'cinema'}">Cinema</button></div></div></div></li>` : ''}
             ${second ? `<li><time>${second.start}</time><span class="day-rail is-event"><i class="day-dot is-event"></i></span><div>${ev(second, 'cinema')}</div></li>` : ''}
             ${end ? `<li class="is-home"><time>${end.end}</time><span class="day-rail"><i class="day-dot is-home"></i></span><div><section class="day-open"><strong>Getting home</strong><small>Add your home and Expadu plans the way back from ${safe(end.venue)}.</small><button type="button" class="quiet-button" data-action="saved-place">${icon('home')}Add home</button></section></div></li>` : ''}
         </ol>`;
@@ -1513,6 +1571,7 @@ function nearbyScenario() {
             liftOut: ['neumarkt-3-4-16-18'],
             banner: {
                 tone: 'conflict',
+                icon: 'lift',
                 title: 'A lift at Neumarkt is out of order · sample',
                 text: 'Step-free is on: the platforms for 3, 4, 16 and 18 are hidden. In the app this comes from KVB’s lift status.',
             },
@@ -1521,6 +1580,8 @@ function nearbyScenario() {
         return {
             stale: true,
             banner: {
+                tone: 'unsure',
+                icon: 'offline',
                 title: 'Live times paused · sample',
                 text: 'No update for 6 minutes, so these are the last times we had, from 22:19.',
             },
@@ -1533,6 +1594,8 @@ function nearbyScenario() {
         return {
             laterTags: true,
             banner: {
+                tone: 'attention',
+                icon: 'moon',
                 title: 'Last trams for a while',
                 text:
                     dirs

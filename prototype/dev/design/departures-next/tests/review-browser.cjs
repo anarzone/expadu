@@ -40,7 +40,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                     .click();
                 assert.match(
                     await page.locator('#results').innerText(),
-                    /Best for you[\s\S]*Tram 4, no change/,
+                    /Best for you[\s\S]*Tram 4[\s\S]*No change/,
                 );
             }
             // On phones and desktops alike, the map column isn't empty.
@@ -87,7 +87,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             );
             assert.match(
                 await page.locator('.nearby-card').first().innerText(),
-                /then 23:53/,
+                /Then 23:53/,
             );
 
             await choose('A lift is out of order');
@@ -109,9 +109,14 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                 await page.locator('.nearby-banner').innerText(),
                 /Live times paused · sample/,
             );
+            // Paused times show their clock; the station says not live.
             assert.match(
                 await page.locator('.nearby-card').first().innerText(),
-                /22:19[\s\S]*not live/,
+                /22:19/,
+            );
+            assert.match(
+                await page.locator('.nearby-stop').innerText(),
+                /Not live · last times 22:19/,
             );
 
             await choose('A normal day');

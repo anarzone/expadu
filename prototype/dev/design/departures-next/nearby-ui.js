@@ -43,6 +43,8 @@
             ...(options.scenario?.() || {}),
         });
         const N = root.NearbyModel;
+        // The approved label set (labels.js); plain words if it's missing.
+        const L = root.TravelLabels;
         const state = {
             stop: model.stops[0].id,
             view: 'list',
@@ -98,20 +100,43 @@
         // wait shows the next one after; otherwise a recorded delay.
         const when = (dir) =>
             scene().stale ? { big: dir.clock, unit: '' } : N.when(dir);
-        const tagOf = (dir) => {
+        // Labels by strength: not live is unsure, a delay is attention.
+        // Cards say "+2 min"; the line panel and rows say "+2 min late".
+        const tagOf = (dir, long = false) => {
             const now = scene();
+            // Paused times: the banner and the station's label say it once.
             if (now.stale)
-                return '<span class="nearby-tag is-quiet">not live</span>';
-            if (now.laterTags && dir.later.length)
-                return `<span class="nearby-tag is-late">then ${dir.later[0]}</span>`;
-            return dir.delay
-                ? `<span class="nearby-tag is-late">+${dir.delay} min late</span>`
-                : '';
+                return L
+                    ? ''
+                    : '<span class="nearby-tag is-quiet">not live</span>';
+            if (now.laterTags && dir.later.length && long)
+                return L
+                    ? L.chip('attention', 'moon', `Then ${dir.later[0]}`, {
+                          size: 'sm',
+                      })
+                    : `<span class="nearby-tag is-late">then ${dir.later[0]}</span>`;
+            if (now.laterTags) return '';
+            if (!dir.delay) return '';
+            if (!L)
+                return `<span class="nearby-tag is-late">+${dir.delay} min late</span>`;
+            return long
+                ? L.chip('attention', 'clock', `+${dir.delay} min late`, {
+                      size: 'sm',
+                  })
+                : L.chip('attention', 'clock', `+${dir.delay} min`, {
+                      size: 'sm',
+                      hidden: 'late',
+                  });
         };
-        const time = (dir) => {
+        const time = (dir, look) => {
             const t = when(dir);
+            if (L && look && t.big === 'now' && !scene().stale)
+                return `<span class="nearby-time is-now">${L.now(look)}</span>`;
             return `<span class="nearby-time${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>`;
         };
+        // A destination reads as a direction.
+        const toward = (dest) =>
+            `<span class="nearby-dest">${L ? icon('arrow') : ''}<span>${safe(dest)}</span></span>`;
         const placesOf = (stop) =>
             stop.areas.reduce((n, a) => n + a.places.length, 0);
         const areaOfLine = (stop, line) =>
@@ -132,7 +157,7 @@
                 .slice(0, 2)
                 .map(
                     (d) =>
-                        `<span class="nearby-dir">${time(d)}<span class="nearby-dest">${safe(d.dest)}</span>${tagOf(d)}</span>`,
+                        `<span class="nearby-dir">${time(d, l.look)}${toward(d.dest)}${tagOf(d)}</span>`,
                 );
             if (cols.length === 1)
                 cols.push(
@@ -145,10 +170,18 @@
                 })
                 .join(', ')}`;
             if (open && !desktop()) return detail(stop, l, true);
+            // A long wait is about the whole card: a strip along its foot.
+            const later = scene().laterTags
+                ? l.shown.map((d) => d.later[0]).filter(Boolean)
+                : [];
+            const strip =
+                L && later.length
+                    ? L.strip('attention', 'moon', `Then ${later.join(' · ')}`)
+                    : '';
             return `<button type="button" class="nearby-card${open ? ' is-selected' : ''}" data-n="line" data-v="${safe(l.line)}" data-key="line-${safe(l.line)}" aria-pressed="${open}" aria-label="${safe(label)}" style="--line:${l.look.colour};--tint:${l.look.tint}">
                 <span class="nearby-watermark" aria-hidden="true">${safe(l.line)}</span>
-                <span class="nearby-card-head">${badge(l.line, l.look, 'card')}<span>${modeName(l)}</span>${l.pinned ? `<span class="nearby-pinned" aria-label="Pinned">${icon('star')}</span>` : ''}</span>
-                <span class="nearby-dirs">${cols.join('')}</span>
+                <span class="nearby-card-head">${L ? L.line(l.line, l.look, { kind: l.mode }) : `${badge(l.line, l.look, 'card')}<span>${modeName(l)}</span>`}${l.pinned ? `<span class="nearby-pinned" aria-label="Pinned">${icon('star')}</span>` : ''}</span>
+                <span class="nearby-dirs">${cols.join('')}</span>${strip}
             </button>`;
         }
 
@@ -157,12 +190,12 @@
             const dirs = l.dirs
                 .map((d, i) => {
                     const t = when(d);
-                    return `<div class="nearby-detail-dir"><span><strong>→ ${safe(d.dest)}</strong>${d.via.length ? `<small>via ${safe(d.via.join(', '))}</small>` : ''}<small>${d.later.length ? `Then ${d.later.join(' · ')}` : 'Later ones aren’t in the recording'}</small></span><span class="nearby-detail-time"><span class="nearby-time is-large${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>${tagOf(d)}</span></div>`;
+                    return `<div class="nearby-detail-dir"><span><strong>→ ${safe(d.dest)}</strong>${d.via.length ? `<small>via ${safe(d.via.join(', '))}</small>` : ''}<small>${d.later.length ? `Then ${d.later.join(' · ')}` : 'Later ones aren’t in the recording'}</small></span><span class="nearby-detail-time"><span class="nearby-time is-large${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>${tagOf(d, true)}</span></div>`;
                 })
                 .join('');
             const first = l.dirs[0].dest;
             return `<section class="nearby-line${inline ? ' is-inline' : ''}" aria-label="${modeName(l)} ${safe(l.line)}" style="--line:${l.look.colour};--ink:${l.look.ink};--tint:${l.look.tint}">
-                <div class="nearby-line-head"><span class="nearby-line-number">${safe(l.line)}</span><span><strong>${modeName(l)} ${safe(l.line)}</strong><small>${safe(others(stop, l.line))}</small></span><button type="button" class="nearby-line-close" data-n="close-line" data-key="close-line" aria-label="Close line ${safe(l.line)}">${icon('close')}</button></div>
+                <div class="nearby-line-head">${L ? L.line(l.line, { colour: '#fff', ink: l.look.colour }, { kind: l.mode, size: 'big' }) : `<span class="nearby-line-number">${safe(l.line)}</span>`}<span><strong>${modeName(l)} ${safe(l.line)}</strong><small>${safe(others(stop, l.line))}</small></span><button type="button" class="nearby-line-close" data-n="close-line" data-key="close-line" aria-label="Close line ${safe(l.line)}">${icon('close')}</button></div>
                 ${dirs}
                 <p class="nearby-front"><small>${l.mode === 'bus' ? 'On the front of the bus' : 'On the front of the tram'}</small><strong>${safe(l.line)} ${safe(first)}</strong> · <span lang="de">Richtung</span> ${safe(first)} means “towards ${safe(first)}”.</p>
                 <div class="nearby-line-actions"><button type="button" class="nearby-pin" data-n="pin" data-v="${safe(l.line)}" data-key="pin-${safe(l.line)}" aria-pressed="${pinned}">${icon('star')}${pinned ? 'Pinned' : `Pin line ${safe(l.line)}`}</button>${inline && stop.map ? `<button type="button" class="quiet-button" data-n="boards" data-v="${safe(l.line)}" data-key="boards-${safe(l.line)}">${icon('pin')}Where it boards</button>` : ''}${inline ? '' : `<small>${stop.map ? 'Its area is marked on the map. Which point it uses isn’t confirmed.' : 'Boarding points weren’t recorded here.'}</small>`}</div>
@@ -176,7 +209,9 @@
                 .sort((a, b) => a.d.mins - b.d.mins)
                 .slice(0, 8);
             const status = shown?.blocked
-                ? '<span class="nearby-tag is-conflict">Lift out of order</span>'
+                ? L
+                    ? L.chip('conflict', 'lift', 'Lift out of order')
+                    : '<span class="nearby-tag is-conflict">Lift out of order</span>'
                 : '';
             const note = shown?.hidden
                 ? 'Hidden by Step-free: no step-free way to these platforms right now (sample).'
@@ -188,7 +223,7 @@
                 ${rows
                     .map(
                         ({ c, d }) =>
-                            `<button type="button" class="nearby-area-row" data-n="row-line" data-v="${safe(c.line)}" data-key="row-${safe(d.id)}">${badge(c.line, c.look)}<span class="nearby-dest">${safe(d.dest)}</span>${tagOf(d)}<strong>${when(d).big}${when(d).unit ? ` ${when(d).unit}` : ''}</strong></button>`,
+                            `<button type="button" class="nearby-area-row" data-n="row-line" data-v="${safe(c.line)}" data-key="row-${safe(d.id)}">${L ? L.line(c.line, c.look, { kind: c.mode }) : badge(c.line, c.look)}<span class="nearby-dest">${safe(d.dest)}</span>${tagOf(d, true)}<strong>${when(d).big}${when(d).unit ? ` ${when(d).unit}` : ''}</strong></button>`,
                     )
                     .join('')}
                 ${rows.length ? '' : '<p class="nearby-area-empty">Nothing from here matches the filters.</p>'}
@@ -306,9 +341,16 @@
             });
             const banner = part('banner');
             banner.hidden = !now.banner;
-            banner.className = `nearby-banner${now.banner ? ` is-${now.banner.tone || 'attention'}` : ''}`;
+            banner.className = `nearby-banner${now.banner ? ` is-${now.banner.tone || 'attention'}` : ''}${L ? ' is-labelled' : ''}`;
             banner.innerHTML = now.banner
-                ? `${icon('info')}<p><strong>${safe(now.banner.title)}</strong><span>${safe(now.banner.text)}</span></p>`
+                ? L
+                    ? L.banner(
+                          now.banner.tone || 'attention',
+                          now.banner.icon || 'info',
+                          now.banner.title,
+                          now.banner.text,
+                      )
+                    : `${icon('info')}<p><strong>${safe(now.banner.title)}</strong><span>${safe(now.banner.text)}</span></p>`
                 : '';
             const stop = v.stop;
             if (state.line && !stop.lines.some((l) => l.line === state.line))
@@ -337,8 +379,14 @@
             const meta = stop.map
                 ? `Closest station · ${stop.areas.length} areas · ${places} boarding points · ${stop.note.replace('Recorded', 'recorded')}`
                 : `${stop.kind} · boarding points weren’t recorded`;
+            // The station's facts as labels: what it is, and that its times
+            // aren't live (recorded, or the last ones we had).
+            const clock = (stop.note.match(/\d{1,2}:\d{2}/) || [''])[0];
+            const metaLabels = L
+                ? `<span class="tl-chips">${L.chip('calm', 'pin', stop.map ? `Closest · ${stop.areas.length} areas` : stop.kind.split(' · ')[0])}${L.chip('unsure', 'offline', now.stale ? `Not live · last times ${clock}` : `Not live · ${clock}`)}</span>`
+                : `<small>${safe(meta)}</small>`;
             part('bar').innerHTML =
-                `<button type="button" class="nearby-stop" data-n="stops" data-key="stops" aria-expanded="${state.stopsOpen}" aria-label="Change stop, now ${safe(stop.name)}"><span class="nearby-stop-name">${safe(stop.name)}${icon('down')}</span><small>${safe(meta)}</small></button>${stop.map ? `<div class="nearby-views" role="group" aria-label="Show as"><button type="button" data-n="view" data-v="list" data-key="view-list" aria-pressed="${state.view === 'list'}" aria-label="List">${icon('list')}</button><button type="button" data-n="view" data-v="map" data-key="view-map" aria-pressed="${state.view === 'map'}" aria-label="Map">${icon('map')}</button></div>` : ''}`;
+                `<button type="button" class="nearby-stop" data-n="stops" data-key="stops" aria-expanded="${state.stopsOpen}" aria-label="Change stop, now ${safe(stop.name)}"><span class="nearby-stop-name">${safe(stop.name)}${icon('down')}</span>${metaLabels}</button>${stop.map ? `<div class="nearby-views" role="group" aria-label="Show as"><button type="button" data-n="view" data-v="list" data-key="view-list" aria-pressed="${state.view === 'list'}" aria-label="List">${icon('list')}</button><button type="button" data-n="view" data-v="map" data-key="view-map" aria-pressed="${state.view === 'map'}" aria-label="Map">${icon('map')}</button></div>` : ''}`;
             const stops = part('stops');
             stops.hidden = !state.stopsOpen;
             stops.innerHTML = state.stopsOpen
@@ -365,7 +413,7 @@
                           (
                               area,
                           ) => `<section class="nearby-area" aria-label="Area for lines ${area.lines.join(', ')}">
-                    <div class="nearby-area-head"><span class="nearby-badges">${badgesOf(area.lines, stop)}</span><span class="nearby-area-meta">${stop.map ? `${area.places.length} boarding points${area.mode === 'bus' ? ' · buses' : ''}` : 'Boarding points not recorded'}</span>${area.blocked ? '<span class="nearby-tag is-conflict">Lift out of order</span>' : ''}${stop.map ? `<button type="button" class="nearby-area-map" data-n="area" data-v="${safe(area.id)}" data-key="area-${safe(area.id)}" aria-pressed="${picked === area.id && !state.line}">${icon('pin')}<span>${picked === area.id && !state.line ? 'On the map' : 'Show on the map'}</span></button>` : ''}</div>
+                    <div class="nearby-area-head"><span class="nearby-badges">${badgesOf(area.lines, stop)}</span>${L ? L.chip(stop.map ? 'calm' : 'unsure', 'pin', stop.map ? `${area.places.length} boarding points${area.mode === 'bus' ? ' · buses' : ''}` : 'Boarding points not recorded') : `<span class="nearby-area-meta">${stop.map ? `${area.places.length} boarding points${area.mode === 'bus' ? ' · buses' : ''}` : 'Boarding points not recorded'}</span>`}${area.blocked ? (L ? L.chip('conflict', 'lift', 'Lift out of order') : '<span class="nearby-tag is-conflict">Lift out of order</span>') : ''}${stop.map ? `<button type="button" class="nearby-area-map" data-n="area" data-v="${safe(area.id)}" data-key="area-${safe(area.id)}" aria-pressed="${picked === area.id && !state.line}">${icon(L ? 'map' : 'pin')}<span>${picked === area.id && !state.line ? 'On the map' : 'Show on the map'}</span></button>` : ''}</div>
                     ${area.blocked ? `<p class="nearby-area-warning">${area.hidden ? 'Hidden by Step-free: no step-free way to these platforms right now (sample).' : 'No step-free way to these platforms right now (sample).'}</p>` : ''}
                     <div class="nearby-cards">${area.cards.map((c) => card(stop, c)).join('')}</div>
                 </section>`,

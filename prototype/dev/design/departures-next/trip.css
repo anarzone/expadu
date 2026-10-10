@@ -526,3 +526,19 @@
 #journey-navigation .nav-text-button:active {
     background: var(--color-bg-quiet);
 }
+
+/* Labels in the trip (owner-approved 10 Oct 2026). */
+.nav-eyebrow .nav-stage.tl-chip {
+    min-height: 30px;
+    font-size: var(--text-small);
+}
+.nav-eyebrow .nav-stage svg {
+    width: 16px;
+    height: 16px;
+}
+.nav-topbar .tl-line {
+    flex: none;
+}
+.nav-moment .tl-chips {
+    margin-top: -2px;
+}

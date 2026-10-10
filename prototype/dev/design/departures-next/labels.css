@@ -1,0 +1,244 @@
+/* Travel labels (owner-approved 10 Oct 2026, canvas row 10). Colours keep
+   their roles from connected/design-decisions.md: line colours say which
+   line, coral says it won't work, amber says watch out, a dashed outline
+   says we aren't sure. Tokens only. */
+.tl-line {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 8px 0 6px;
+    border-radius: 7px;
+    background: var(--line);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+}
+.tl-line svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.tl-line.is-big {
+    height: 32px;
+    padding: 0 10px 0 8px;
+    border-radius: 9px;
+    font-size: var(--text-control);
+}
+.tl-line.is-big svg {
+    width: 19px;
+    height: 19px;
+}
+.tl-line.is-mode {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.tl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 24px;
+    padding: 2px 9px 2px 7px;
+    border-radius: var(--radius-pill);
+    font-size: 12.5px;
+    font-weight: var(--weight-bold);
+    line-height: 1.15;
+    white-space: nowrap;
+}
+.tl-chip svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.tl-chip.is-lg {
+    min-height: 30px;
+    padding: 3px 12px 3px 9px;
+    font-size: var(--text-small);
+}
+.tl-chip.is-lg svg {
+    width: 16px;
+    height: 16px;
+}
+.tl-chip.is-sm {
+    min-height: 22px;
+    padding: 2px 7px 2px 5px;
+    gap: 4px;
+    font-size: 11.5px;
+}
+.tl-chip.is-sm svg {
+    width: 12px;
+    height: 12px;
+}
+.tl-chip.is-conflict,
+.tl-strip.is-conflict {
+    background: var(--color-conflict-text);
+    color: var(--color-text-on-action);
+}
+.tl-chip.is-attention,
+.tl-strip.is-attention {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.tl-chip.is-unsure {
+    padding-block: 1px;
+    border: 1.5px dashed var(--color-border-strong);
+    background: transparent;
+    color: var(--color-text-soft);
+    font-weight: var(--weight-semibold);
+}
+.tl-chip.is-calm {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.tl-chip.is-select {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.tl-chip.is-best {
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
+.tl-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.tl-now {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 12px 0 10px;
+    border-radius: var(--radius-pill);
+    background: var(--line);
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.2px;
+    line-height: 1;
+}
+.tl-now i {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+    animation: tl-blink 1.6s ease-in-out infinite;
+}
+@keyframes tl-blink {
+    50% {
+        opacity: 0.35;
+    }
+}
+.tl-strip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-8);
+    padding: 6px 9px;
+    border-radius: 11px;
+    font-size: 12.5px;
+    font-weight: var(--weight-bold);
+    line-height: 1.25;
+    text-align: left;
+}
+.tl-strip svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.tl-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-lg);
+    line-height: 1.3;
+}
+.tl-banner > p {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+.tl-banner strong {
+    display: block;
+    font-size: var(--text-control);
+}
+.tl-banner p > span {
+    display: block;
+    margin-top: 1px;
+    font-size: var(--text-small);
+}
+.tl-tile {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+}
+.tl-tile svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.tl-banner.is-conflict {
+    background: var(--color-conflict-bg);
+    box-shadow: inset 4px 0 0 var(--color-conflict-text);
+}
+.tl-banner.is-conflict .tl-tile {
+    background: var(--color-conflict-text);
+    color: var(--color-text-on-action);
+}
+.tl-banner.is-conflict p > span {
+    color: var(--color-conflict-text);
+}
+.tl-banner.is-attention {
+    background: var(--color-attention-bg);
+    box-shadow: inset 4px 0 0 var(--color-attention-border);
+}
+.tl-banner.is-attention .tl-tile {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.tl-banner.is-attention p > span {
+    color: var(--color-attention-text);
+}
+.tl-banner.is-unsure {
+    border: 1.5px dashed var(--color-border-strong);
+    background: var(--color-bg-surface);
+}
+.tl-banner.is-unsure .tl-tile {
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+.tl-banner.is-unsure p > span {
+    color: var(--color-text-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+    .tl-now i {
+        animation: none;
+    }
+}
+/* Long labels wrap rather than push the page sideways. */
+.nearby-stop .tl-chip,
+.day-switch .tl-chip,
+.next-trip-ways .tl-chip {
+    max-width: 100%;
+    white-space: normal;
+}

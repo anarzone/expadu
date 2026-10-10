@@ -48,7 +48,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                 await page.locator('#next-trip').innerText(),
                 width >= 1000
                     ? /Neumarkt 13:14[\s\S]*Wiener Platz 13:42/
-                    : /13:14 from Neumarkt[\s\S]*There 13:48 · 12 min spare/,
+                    : /13:14 from Neumarkt · there 13:48[\s\S]*12 min spare/,
             );
             // Phones open Plan a trip from “Where to?”; desktops from its tab.
             await (

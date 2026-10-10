@@ -87,7 +87,7 @@ const status = (page) =>
             // One moment at a time, each with its own next action.
             const moments = [
                 [
-                    /Walk to Neumarkt[\s\S]*Board at one of these two points[\s\S]*KVB lists both points for this line/,
+                    /Walk to Neumarkt[\s\S]*Board at one of these two points[\s\S]*Either of 2 boarding points · not confirmed/,
                     'I’m at the stop',
                 ],
                 [/Leaves\s*13:14[\s\S]*Tram 4 to Schlebusch/, 'I’m on board'],

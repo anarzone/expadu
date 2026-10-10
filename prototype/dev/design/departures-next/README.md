@@ -11,6 +11,25 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Labels — 10 October 2026 (owner-approved, canvas row 10)
+
+What people mustn't miss is a label: an icon and a word, never colour alone,
+with strength by how much it changes the trip (`labels.js`, `labels.css`).
+
+- Which line: the line badge carries its vehicle (tram or bus symbol); the
+  trip and Plan's options say the word too ("Tram 4").
+- When: "Now" is a filled pill in the line's colour with a slow blink (still
+  with reduced motion); destinations read as directions ("→ Buchheim").
+- It won't work: filled coral (Cancelled, Lift out of order, 1 notice).
+- Watch out: amber with an icon ("+2 min" on cards, "+2 min late" elsewhere,
+  Only 2 min spare, showers likely, a long wait as a strip along the card).
+- Not sure: a dashed outline (Not live · 22:19, Lifts unknown, Either of 2
+  boarding points · not confirmed, Scheduled time · not live, Sample).
+- Good to go: quiet (Best for you, 12 min spare, No change).
+
+One strong label per card; a label sits next to what it changes. Paused
+times say "not live" once, on the banner and the station, not on every card.
+
 ## Nearby replaces Timetable — 10 October 2026 (owner-approved design)
 
 The owner approved the combined Travel design on the "Travel directions"

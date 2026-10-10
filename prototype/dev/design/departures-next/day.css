@@ -288,14 +288,14 @@
     gap: var(--space-6);
     margin-top: var(--space-8);
 }
-.day-chips span {
+.day-chips:not(.tl-chips) span {
     padding: 2px var(--space-8);
     border-radius: var(--radius-pill);
     background: var(--color-bg-surface);
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
-.day-chips span:first-child {
+.day-chips:not(.tl-chips) span:first-child {
     color: var(--color-text);
     font-weight: var(--weight-semibold);
 }
@@ -525,4 +525,17 @@
     .day-event {
         transition: none;
     }
+}
+
+/* Labels in My day (owner-approved 10 Oct 2026). */
+.day-event .tl-chip {
+    align-self: flex-start;
+    margin-top: 4px;
+}
+.day-switch > span:nth-child(2) .tl-chip {
+    margin-top: 3px;
+}
+.day-overlap strong .tl-chip {
+    margin-right: 4px;
+    vertical-align: 1px;
 }

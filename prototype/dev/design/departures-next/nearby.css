@@ -1587,3 +1587,128 @@
 .nearby-panel[hidden] {
     display: none;
 }
+
+/* ---------- Labels in Nearby (owner-approved 10 Oct 2026) ---------- */
+.nearby-banner.is-labelled {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+}
+.nearby-banner.is-labelled .tl-banner {
+    margin: 0;
+}
+.nearby-banner.is-labelled span {
+    font-size: inherit;
+}
+.nearby-banner.is-labelled p > span {
+    font-size: var(--text-small);
+}
+.nearby-stop .tl-chips {
+    margin-top: 5px;
+}
+.nearby-card-head .tl-line {
+    height: 28px;
+    font-size: 15px;
+}
+.nearby-time.is-now {
+    align-items: center;
+    height: 32px;
+}
+.nearby-time.is-now .tl-now {
+    height: 28px;
+    padding: 0 10px 0 8px;
+    font-size: 17px;
+}
+.nearby-dest {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: var(--weight-medium);
+}
+.nearby-dest > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.nearby-dest > svg {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: var(--color-text-soft);
+    stroke-width: 2.2;
+}
+.nearby-dir .tl-chip {
+    align-self: flex-start;
+    margin-top: 3px;
+}
+.nearby-card .tl-strip {
+    position: relative;
+    margin-top: 0;
+}
+.nearby-area-head .tl-chip.is-calm {
+    font-weight: var(--weight-semibold);
+}
+.nearby-area-row .tl-line {
+    height: 24px;
+    min-width: 50px;
+    justify-content: center;
+}
+.nearby-area-row .tl-chip {
+    margin-left: auto;
+}
+.nearby-area-row .tl-chip + strong {
+    margin-left: 0;
+}
+.nearby-line-head .tl-line {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 25%, transparent);
+}
+
+/* The next trip's labels (owner-approved 10 Oct 2026). */
+.next-trip-eyebrow:not(.is-change):not(.is-conflict) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-8);
+}
+.next-trip-eyebrow .tl-chip {
+    flex: none;
+}
+.next-trip-labels {
+    margin-top: var(--space-8) !important;
+}
+.next-trip-later small + .tl-chip {
+    align-self: flex-start;
+    margin-top: 3px;
+}
+.next-trip-ways .tl-chip {
+    align-self: flex-start;
+    margin-top: 4px;
+}
+@media (min-width: 1000px) {
+    .next-trip-lead .tl-line {
+        display: none;
+    }
+    .next-trip-labels {
+        margin-top: var(--space-12) !important;
+    }
+}
+@media (max-width: 999px) {
+    .next-trip-to {
+        display: none;
+    }
+}
+.next-trip p.next-trip-from {
+    margin-top: 2px;
+}
+@media (max-width: 380px) {
+    .next-trip .next-trip-labels.tl-chips {
+        gap: 4px;
+    }
+    .next-trip .next-trip-labels .tl-chip {
+        gap: 4px;
+        padding-inline: 5px 6px;
+        font-size: 11.5px;
+    }
+}

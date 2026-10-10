@@ -119,6 +119,7 @@ function navigation(data = new Map(), mobile = false) {
             element('.nav-detail-scroll').scrollTop = 0;
         },
     });
+    load('labels.js');
     load('navigation-ui.js');
     return {
         context,

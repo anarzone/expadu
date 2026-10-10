@@ -283,7 +283,7 @@ body.travel-palette .plan-when button[aria-pressed='true'] {
     flex-wrap: wrap;
     gap: 5px;
 }
-.plan-check-chips span {
+.plan-check-chips:not(.tl-chips) span {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -294,7 +294,7 @@ body.travel-palette .plan-when button[aria-pressed='true'] {
     font-size: var(--text-caption);
     font-weight: var(--weight-semibold);
 }
-.plan-check-chips span::before {
+.plan-check-chips:not(.tl-chips) span::before {
     content: '';
     width: 7px;
     height: 7px;
@@ -694,12 +694,12 @@ body.travel-palette .find-routes[aria-disabled='true'] {
     margin-top: 2px;
     font-size: var(--text-small);
 }
-.plan-option-reasons span {
+.plan-option-reasons > span {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 7px;
 }
-.plan-option-reasons span::before {
+.plan-option-reasons > span:not(:has(.plan-reason-icon))::before {
     content: '';
     flex: none;
     width: 5px;
@@ -1027,4 +1027,57 @@ body.travel-palette .plan-option-side button.plan-keep {
     .plan-option-side .plan-keep {
         display: none;
     }
+}
+
+/* Labels in Plan a trip (owner-approved 10 Oct 2026). */
+.plan-option-reasons {
+    gap: 4px;
+    margin-top: var(--space-6);
+}
+.plan-option-reasons .is-warn {
+    font-weight: var(--weight-semibold);
+}
+.plan-reason-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.is-warn > .plan-reason-icon {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.plan-reason-icon svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+}
+.plan-option-title {
+    gap: 4px;
+}
+.plan-option-head + .plan-option-title {
+    margin-top: 4px;
+}
+.plan-then svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: var(--color-text-soft);
+    stroke-width: 2.2;
+}
+.plan-option-times {
+    margin-top: 4px;
+}
+.other-ways-note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
 }

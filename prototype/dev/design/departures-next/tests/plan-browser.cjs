@@ -81,7 +81,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             assert.equal(await options.count(), 2);
             assert.match(
                 await options.first().innerText(),
-                /Best for you[\s\S]*12 min spare[\s\S]*Tram 4, no change[\s\S]*Leave 13:10 → there 13:48/,
+                /Best for you[\s\S]*12 min spare[\s\S]*Tram 4[\s\S]*Leave 13:10 → there 13:48[\s\S]*No change/,
             );
             assert.equal(
                 await options.first().getAttribute('aria-checked'),
