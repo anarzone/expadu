@@ -176,7 +176,7 @@ test('opening the ordinary route does not reinterpret an active at-stop step', (
     view.click('next');
     view.context.JourneyNavigation.open(route);
     assert.match(view.content(), /<h2>23:44 – 23:59<\/h2>/);
-    assert.match(view.content(), /Start preview/);
+    assert.match(view.content(), /I’m on my way/);
     view.click('start');
     assert.match(view.content(), /Replace current preview/);
     assert.equal(
@@ -193,7 +193,11 @@ test('an unstarted preview returns from its timetable with its inspected step an
         'neumarkt',
     );
     view.context.JourneyNavigation.open(route);
-    view.click('expand');
+    // A way you're only looking at opens with all its stops.
+    assert.equal(
+        view.element('dialog').classList.contains('is-expanded'),
+        true,
+    );
     view.click({ navStep: '2' });
     view.element('.nav-detail-scroll').scrollTop = 147;
     view.click({
@@ -210,7 +214,7 @@ test('an unstarted preview returns from its timetable with its inspected step an
         view.context.JourneyNavigation.currentRoute('r18').depart,
         '23:47',
     );
-    assert.match(view.content(), /Start preview/);
+    assert.match(view.content(), /I’m on my way/);
     assert.match(view.content(), /is-inspected[^>]*data-nav-step="2"/);
     assert.equal(
         view.element('dialog').classList.contains('is-expanded'),

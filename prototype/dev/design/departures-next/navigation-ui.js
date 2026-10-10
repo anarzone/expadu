@@ -121,7 +121,9 @@
         route = found;
         inspected = restoration?.inspected ?? (isActive() ? active.step : 0);
         mapView = restoration?.mapView ?? (isActive() ? 'step' : 'overview');
-        expanded = restoration?.expanded ?? false;
+        // A way you're only looking at shows all its stops; a trip under
+        // way shows the moment.
+        expanded = restoration?.expanded ?? !isActive();
         settings = false;
         confirmation = '';
         dialog.classList.remove('is-expanded', 'is-closing');
@@ -495,7 +497,7 @@
                 ? `<div class="nav-confirm" role="group" aria-label="${confirmation === 'end' ? 'End journey preview?' : 'Replace current journey preview?'}"><span>${confirmation === 'end' ? 'End this preview?' : 'Replace current preview?'}</span><button data-nav="cancel-confirm">Keep</button><button class="nav-primary" data-nav="confirm">${confirmation === 'end' ? 'End' : 'Replace'}</button></div>`
                 : running
                   ? `${iconButton('back', 'Previous step', 'previous', p.index === 0 ? 'disabled' : '')}${iconButton('stop', 'Stop this trip', 'end')}<button class="nav-primary" data-nav="${p.complete ? 'finish' : 'next'}">${safe(momentAction(p))}${icon(p.complete ? 'check' : 'arrow')}</button>`
-                  : `<button class="nav-icon-button" data-save="${route.id}" aria-label="Save journey">${icon('bookmark')}</button><button class="nav-primary" data-nav="start">${icon('play')}Start preview</button>`
+                  : `<button class="nav-icon-button" data-save="${route.id}" aria-label="Save journey">${icon('bookmark')}</button><button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button>`
         }</footer>`;
         content.querySelector('.nav-detail-scroll').scrollTop = scrollTop;
         if (focus)
@@ -510,12 +512,11 @@
             const spare = trip().start
                 ? ` · ${minutesBetween(route.arrive, trip().start)} min spare`
                 : '';
-            dialog.querySelector('#nav-title').textContent = running
-                ? `To ${trip().place}`
-                : trip().place;
+            dialog.querySelector('#nav-title').textContent =
+                `To ${trip().place}`;
             top.textContent = running
                 ? `There ${route.arrive}${spare}`
-                : `Journey preview · ${localDate()}`;
+                : `Leave ${route.depart} · there ${route.arrive}${spare}`;
         }
         if (typeof savedCount === 'function') savedCount();
         if (expanded) dialog.classList.add('is-expanded');
@@ -560,8 +561,8 @@
         mapView = 'step';
         confirmation = '';
         persist();
-        render();
-        updateMap();
+        // Under way, the moment leads; the stops wait behind Itinerary.
+        setExpanded(false);
         announce('Journey preview started. Advance steps manually.');
     }
     function announce(text) {

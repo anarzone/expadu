@@ -96,6 +96,26 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                 'true',
             );
             await results.getByRole('radio').first().click();
+            // The way comes first: its stops and stations, ready to go.
+            await page
+                .getByRole('button', { name: 'Show the way' })
+                .first()
+                .click();
+            const way = page.locator('#journey-navigation');
+            await way.waitFor();
+            assert.match(
+                await way.innerText(),
+                /To Blue Card appointment[\s\S]*Leave 13:10 · there 13:48[\s\S]*Walk to Köln Neumarkt[\s\S]*Board line 4[\s\S]*Get off at Wiener Platz/,
+            );
+            assert.equal(
+                await way
+                    .getByRole('button', { name: 'I’m on my way' })
+                    .isVisible(),
+                true,
+            );
+            await way.getByRole('button', { name: 'Close the trip' }).click();
+            await way.waitFor({ state: 'hidden' });
+            // Saving it is the second choice.
             await page
                 .getByRole('button', { name: 'Save this plan' })
                 .first()

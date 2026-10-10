@@ -973,3 +973,58 @@ body.travel-palette .plan-option > .details-toggle {
     width: 14px;
     height: 14px;
 }
+
+/* The way first, saving it second (owner, 10 Oct 2026). */
+.plan-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    margin-top: var(--space-14);
+}
+.plan-actions .plan-save {
+    margin-top: 0;
+}
+body.travel-palette .plan-actions button.plan-save,
+body.travel-palette .plan-option-side button.plan-keep {
+    min-height: 48px;
+    border: 1.5px solid var(--color-text);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.plan-go {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+    width: 100%;
+    min-height: 52px;
+    border-radius: var(--radius-lg);
+    font-size: var(--text-section);
+}
+.plan-go svg {
+    width: 18px;
+    height: 18px;
+}
+@media (min-width: 1000px) {
+    .plan-actions {
+        display: none;
+    }
+    .plan-option-side .plan-go {
+        min-height: 46px;
+        border-radius: var(--radius-md);
+        font-size: var(--text-control);
+    }
+    body.travel-palette .plan-option-side .plan-keep {
+        min-height: 44px;
+        border-radius: var(--radius-md);
+    }
+}
+@media (max-width: 999px) {
+    .plan-option-side .plan-go,
+    .plan-option-side .plan-keep {
+        display: none;
+    }
+}

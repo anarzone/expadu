@@ -692,7 +692,7 @@ test('opening the next trip compares both trams against the 14:00 start', () => 
     );
     assert.match(
         results,
-        /class="primary plan-save" data-action="save-plan" data-route-id="day-1314">Save this plan/,
+        /class="primary plan-go" data-route="day-1314">[\s\S]*Show the way<\/button><button type="button" class="quiet-button plan-save" data-action="save-plan" data-route-id="day-1314">Save this plan/,
     );
     assert.match(results, /Bike or walk: times aren’t in the sample/);
     assert.match(results, /Sample day · scheduled times/);
