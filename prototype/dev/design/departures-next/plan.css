@@ -517,3 +517,459 @@ body.travel-palette .primary.is-ink {
         transition: none;
     }
 }
+
+/* ---------- The canvas layout (owner check, 10 Oct 2026) ----------
+   Phones: where first; when and what matters once there's a place. The
+   options are one choice with a single Save; desktops open the chosen one
+   with its steps and map. */
+body.travel-palette .journey-fields > .swap {
+    display: none;
+}
+body.travel-palette .journey-fields {
+    padding-right: 0;
+}
+.from-note {
+    color: var(--color-text-soft);
+    font-weight: var(--weight-regular);
+}
+.to-field.is-picked input {
+    display: none;
+}
+.to-picked {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+}
+.to-picked[hidden] {
+    display: none;
+}
+.to-picked > span {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: var(--leading-snug);
+}
+.to-picked strong {
+    font-size: var(--text-section);
+}
+.to-picked small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.to-picked .icon-button {
+    flex: none;
+    margin: -8px -6px -8px 0;
+}
+.plan-when-note {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-hint {
+    margin: var(--space-8) 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-hint:empty {
+    display: none;
+}
+body.travel-palette .find-routes[aria-disabled='true'] {
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+    box-shadow: none;
+}
+.day-places button > svg {
+    display: none;
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-soft);
+}
+
+/* The options */
+.plan-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+}
+.plan-option {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--color-bg-surface) 60%, transparent);
+    transition:
+        border-color var(--duration-fast) var(--ease-standard),
+        background-color var(--duration-fast) var(--ease-standard);
+}
+.plan-option.is-on {
+    border-color: var(--color-text);
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 0.5px var(--color-text);
+}
+.plan-option-pick {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-12);
+    width: 100%;
+    padding: var(--space-14) var(--space-14) var(--space-4);
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    line-height: var(--leading-snug);
+    cursor: pointer;
+}
+.plan-option-pick:focus-visible {
+    outline: 2px solid var(--color-focus, var(--color-text));
+    outline-offset: 2px;
+}
+.plan-radio {
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+    border: 2px solid var(--color-border-strong);
+    border-radius: var(--radius-round);
+    background: var(--color-bg-surface);
+    transition: border-width var(--duration-fast) var(--ease-standard);
+}
+.is-on .plan-radio {
+    border: 6px solid var(--color-text);
+}
+.plan-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.plan-option-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-8);
+    margin-bottom: 2px;
+}
+.plan-option-head .best-tag {
+    margin: 2px 0 0;
+}
+.plan-option-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
+}
+.plan-option-title strong {
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+}
+.plan-line {
+    display: inline-grid;
+    place-items: center;
+    min-width: 26px;
+    height: 22px;
+    padding: 0 5px;
+    border-radius: 6px;
+    background: var(--line, var(--color-text));
+    color: var(--ink, var(--color-text-on-action));
+    font-size: var(--text-caption);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+}
+.plan-line.is-mode {
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.plan-line svg {
+    width: 15px;
+    height: 15px;
+}
+.plan-option-times {
+    font-size: var(--text-body);
+    font-variant-numeric: tabular-nums;
+}
+.plan-option-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 2px;
+    font-size: var(--text-small);
+}
+.plan-option-reasons span {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+}
+.plan-option-reasons span::before {
+    content: '';
+    flex: none;
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+    transform: translateY(-2px);
+}
+.plan-option-reasons .is-warn {
+    color: var(--color-attention-text);
+}
+.plan-spare {
+    padding: 2px var(--space-8);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+.plan-spare.is-tight {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+body.travel-palette .plan-option > .details-toggle {
+    margin-left: 48px;
+    padding-block: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--text-small);
+    cursor: pointer;
+}
+.plan-option .route-disclosure-inner {
+    padding: 0 var(--space-14);
+}
+.plan-option-way {
+    display: grid;
+    gap: var(--space-12);
+    padding: var(--space-4) 0 var(--space-14);
+    border-top: 1px solid var(--color-border);
+}
+.plan-option-way .route-steps {
+    margin: var(--space-10) 0 0;
+}
+.plan-option-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+.plan-option-side .route-note {
+    margin: 0;
+}
+.plan-option-map {
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+}
+.plan-save {
+    width: 100%;
+    min-height: 52px;
+    margin-top: var(--space-14);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-section);
+}
+.other-ways-note {
+    margin: var(--space-10) 0 0;
+}
+
+/* The saved plan: the line's colour, the two actions side by side */
+.plan-saved-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--line, var(--color-text));
+    color: var(--ink, var(--color-text-on-action));
+}
+.plan-saved-actions button {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+@media (max-width: 999px) {
+    /* A focused screen: the bar names the step, the shell steps aside. */
+    body.travel-palette[data-view='journey'] .plan-back-row {
+        position: sticky;
+        top: 0;
+        z-index: 6;
+        margin: 0 calc(var(--space-16) * -1) var(--space-12);
+        padding: var(--space-6) var(--space-16) var(--space-6) var(--space-8);
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg-canvas);
+    }
+    .plan-bar-title {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        line-height: var(--leading-snug);
+    }
+    .plan-bar-title strong {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .plan-bar-title small {
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+    }
+    .plan-bar-title small[hidden] {
+        display: none;
+    }
+    body.travel-palette .planner-heading,
+    body.travel-palette .plan-explainer,
+    body.travel-palette:not(.plan-has-dest) #plan-hint,
+    body.travel-palette #journey-summary,
+    body.travel-palette:not(.plan-has-dest)
+        :is(.plan-controls, .find-routes, #form-error) {
+        display: none;
+    }
+    body.travel-palette.plan-has-dest #journey-start {
+        display: none;
+    }
+    body.travel-palette .journey-intro-grid {
+        gap: var(--space-16);
+    }
+    body.travel-palette .journey-results {
+        padding-top: 0;
+        border-top: 0;
+    }
+    /* Today and saved places: labelled lists under where */
+    body.travel-palette .journey-start .section-heading h2,
+    body.travel-palette .journey-start .plan-subhead {
+        margin: 0;
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+        font-weight: var(--weight-semibold);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    body.travel-palette .journey-start .plan-subhead {
+        margin: var(--space-16) 0 var(--space-8);
+    }
+    body.travel-palette .journey-start .section-heading {
+        margin-bottom: var(--space-8);
+    }
+    .day-places {
+        margin-top: 0;
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        background: var(--color-bg-surface);
+    }
+    .day-places button {
+        grid-template-columns: 48px minmax(0, 1fr) auto;
+        min-height: 60px;
+        padding-inline: var(--space-14);
+    }
+    .day-places button:last-child {
+        border-bottom: 0;
+    }
+    .day-places button > svg {
+        display: block;
+    }
+    .day-place-pick {
+        display: none;
+    }
+    .saved-places button {
+        flex: 1 1 0;
+        min-width: 0;
+        border: 1px solid var(--color-border);
+        background: var(--color-bg-surface);
+    }
+    /* The results: the bar has the title; the options, then one Save */
+    body.travel-palette #results .results-top {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    .plan-check-chips {
+        order: 2;
+        flex-basis: 100%;
+    }
+    .plan-checks {
+        margin-bottom: var(--space-12);
+        padding: 0 var(--space-14);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        background: var(--color-bg-surface);
+    }
+    .plan-option-map,
+    .plan-option-side > .primary {
+        display: none;
+    }
+}
+@media (max-width: 700px) {
+    body.travel-palette[data-view='journey'] #shell {
+        display: none;
+    }
+}
+@media (min-width: 1000px) {
+    .plan-save {
+        display: none;
+    }
+    .plan-option-way {
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
+        align-items: start;
+    }
+    .plan-option-side {
+        padding-top: var(--space-10);
+    }
+    .plan-option-side > .primary {
+        min-height: 46px;
+        border-radius: var(--radius-md);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .plan-option,
+    .plan-radio {
+        transition: none;
+    }
+}
+/* MapLibre sets its container to position: relative; keep it filling. */
+.plan-option-map .plan-map-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+.plan-option-way .route-step {
+    min-height: 0;
+    padding: 6px 0 10px;
+}
+.plan-option-map .nav-map-fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.plan-option-map .nav-map-fallback[hidden] {
+    display: none;
+}
+.plan-option-map .maplibregl-ctrl-bottom-right {
+    display: none;
+}
+.plan-map-credit {
+    position: absolute;
+    left: 6px;
+    bottom: 4px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--color-bg-surface) 85%, transparent);
+    color: var(--color-text-soft);
+    font-size: 10px;
+}
+.plan-option-way .step-nearby {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-target);
+}
+.plan-option-way .step-nearby svg {
+    display: inline;
+    width: 14px;
+    height: 14px;
+}

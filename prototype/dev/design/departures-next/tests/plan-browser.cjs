@@ -24,8 +24,26 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                     : page.getByRole('button', { name: 'Plan a trip' }).first()
             ).click();
 
+            // Phones start with where: your location, then today's places;
+            // when and what matters wait for a destination.
+            assert.equal(
+                await page.locator('#from').inputValue(),
+                'Your location',
+            );
+            assert.equal(
+                await page.locator('.plan-controls').isVisible(),
+                width >= 1000,
+            );
             // Today's places start the trip: arrive by the appointment.
             await page.locator('[data-day-place="Mülheim"]').click();
+            assert.match(
+                await page.locator('#to-picked').innerText(),
+                /Blue Card appointment[\s\S]*Mülheim/,
+            );
+            assert.equal(
+                await page.locator('.plan-controls').isVisible(),
+                true,
+            );
             assert.equal(await page.locator('#to').inputValue(), 'Mülheim');
             assert.equal(
                 await page
@@ -58,14 +76,26 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                 await page.locator('#plan-checks-detail').innerText(),
                 /None in the sample day/,
             );
+            // The options are one choice, the best first, with one Save.
+            const options = results.getByRole('radio');
+            assert.equal(await options.count(), 2);
             assert.match(
-                await results.locator('.route-option').first().innerText(),
-                /Best for you[\s\S]*13:10[\s\S]*13:48[\s\S]*12 min to spare/,
+                await options.first().innerText(),
+                /Best for you[\s\S]*12 min spare[\s\S]*Tram 4, no change[\s\S]*Leave 13:10 → there 13:48/,
             );
-            await results
-                .getByRole('button', { name: 'Journey details' })
-                .first()
-                .click();
+            assert.equal(
+                await options.first().getAttribute('aria-checked'),
+                'true',
+            );
+            await options.nth(1).click();
+            assert.equal(
+                await results
+                    .getByRole('radio')
+                    .nth(1)
+                    .getAttribute('aria-checked'),
+                'true',
+            );
+            await results.getByRole('radio').first().click();
             await page
                 .getByRole('button', { name: 'Save this plan' })
                 .first()
@@ -74,7 +104,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             // Saved, with a reminder that says it isn't sent in the preview.
             assert.match(
                 await page.locator('.plan-saved').innerText(),
-                /Plan saved[\s\S]*Line 4 · leave 13:10 · there 13:48/,
+                /Plan saved[\s\S]*Tram 4, no change · leave 13:10 · there 13:48[\s\S]*It’s on (My|your) day/,
             );
             await page
                 .getByRole('switch', { name: /Remind me when to leave/ })
@@ -85,10 +115,11 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             );
             await page.getByRole('button', { name: 'Change the plan' }).click();
             assert.equal(await page.locator('.plan-saved').count(), 0);
-            // The option it came from is open again and knows it's saved.
-            const again = page.locator(
-                '[data-action="save-plan"][data-route-id="day-1314"]',
-            );
+            // The option it came from is chosen again and knows it's saved.
+            const again = page
+                .getByRole('button', { name: 'Saved · see the plan' })
+                .first();
+            assert.equal(await again.getAttribute('data-route-id'), 'day-1314');
             assert.equal(await again.innerText(), 'Saved · see the plan');
             await again.click();
             await page.getByRole('button', { name: 'Done' }).click();

@@ -85,11 +85,17 @@ function nearbyLink(name, date, time) {
     const sampleDay = window.ExpaduSampleDay?.date === date;
     return `../around-here/?near=${anchor}${sampleDay ? `&time=${time}` : ''}`;
 }
+// Plan a trip starts from "Your location": the sample day's stop.
+const yourLocation = 'Your location';
+const atYourLocation = () => from.value.trim() === yourLocation;
+const fromPlace = () => (atYourLocation() ? J.day?.from || '' : from.value);
+const fromLabel = () =>
+    atYourLocation() ? 'your location' : placeName(from.value.trim());
 // Which sample the typed request matches, if any.
 const requestTrip = () =>
     J.tripFor
-        ? J.tripFor(from.value, to.value)
-        : J.matches(from.value, to.value)
+        ? J.tripFor(fromPlace(), to.value)
+        : J.matches(fromPlace(), to.value)
           ? 'capture'
           : null;
 function routeList(tripId = requestTrip(), mode = state.routeMode) {
@@ -333,6 +339,13 @@ function syncControls() {
     $('#schedule-label').textContent = timed
         ? `${state.date === home.date ? '' : `${boardDateLabel(state.date)} · `}${state.time}`
         : '';
+    const picked = pickedPlace();
+    $('#plan-when-note').textContent =
+        state.schedule === 'arrive' && picked && state.time === picked.time
+            ? picked.time === J.day?.start
+                ? 'your appointment’s start'
+                : 'when it starts'
+            : '';
     document
         .querySelectorAll('[data-pref]')
         .forEach((button) =>
@@ -544,7 +557,7 @@ function resetFilters() {
 function example(routeId = null) {
     if (
         state.schedule !== 'now' ||
-        ((from.value.trim() || to.value.trim()) &&
+        (((atYourLocation() ? '' : from.value.trim()) || to.value.trim()) &&
             !J.matches(from.value, to.value))
     )
         previousRequest = captureRequest();
@@ -590,6 +603,63 @@ function renderPlanner() {
     $('#journey-start').hidden = state.results;
     const nextTrip = $('#next-trip');
     if (nextTrip) nextTrip.hidden = state.results || !J.day;
+    syncPlanStage();
+}
+// The place picked from today, while To still says it.
+function pickedPlace() {
+    const place = state.planPlace;
+    return place && to.value.trim() === place.place ? place : null;
+}
+// Phones show where first, then when and what matters once there's a
+// destination (owner-approved Plan a trip). The bar names the step.
+function syncPlanStage() {
+    const hasDest = !!to.value.trim();
+    const picked = pickedPlace();
+    document.body.classList.toggle('plan-has-dest', hasDest);
+    $('#from-note').hidden = !atYourLocation();
+    const field = $('.to-field');
+    field.classList.toggle('is-picked', !!picked);
+    $('#to-picked').hidden = !picked;
+    $('#to-picked').innerHTML = picked
+        ? `<span><strong>${safe(picked.title)}</strong><small>${safe(picked.place)}</small></span><button type="button" class="icon-button" data-action="clear-to" aria-label="Change destination">${icon('close')}</button>`
+        : '';
+    const find = $('.find-routes');
+    find.setAttribute('aria-disabled', String(!hasDest));
+    $('#plan-hint').textContent = !hasDest
+        ? 'Pick a place from your day, or type one.'
+        : state.results && desktopPlanner.matches
+          ? 'Your options update as you change these.'
+          : '';
+    const saved = state.results && state.planSaved;
+    const results = state.results && !desktopPlanner.matches;
+    const title =
+        J.day && requestTrip() === 'day' ? J.day.place : placeName(to.value);
+    $('#plan-bar-title').textContent = saved
+        ? 'Saved'
+        : results
+          ? `To ${title}`
+          : 'Plan a trip';
+    $('#plan-bar-sub').hidden = !results || !!saved;
+    $('#plan-bar-sub').textContent = `${planSummary()} · from ${fromLabel()}`;
+    $('[data-action="plan-back"]').setAttribute(
+        'aria-label',
+        saved
+            ? 'Back to your options'
+            : results
+              ? 'Back to where and when'
+              : 'Back to Nearby',
+    );
+    placeComposerHelper();
+}
+// Composer's trip help sits under the options on phones.
+function placeComposerHelper() {
+    const helper = $('#travel-composer-helper');
+    if (!helper) return;
+    if (state.results && !desktopPlanner.matches) {
+        if (helper.previousElementSibling !== $('#results'))
+            $('#results').after(helper);
+    } else if (helper.parentElement !== $('.journey-desk'))
+        $('.journey-desk').append(helper);
 }
 function plannerControl(selector) {
     return $(
@@ -670,7 +740,12 @@ function option(route, list, preview = false, best = false) {
 function dayPlaces() {
     if (!J.day) return [];
     return [
-        { time: J.day.start, title: J.day.place, place: J.day.to },
+        {
+            time: J.day.start,
+            title: J.day.place,
+            place: J.day.to,
+            detail: `${J.day.to} · ${J.day.alightStop}`,
+        },
         ...(window.ExpaduSampleDay?.events || []).map((event) => ({
             time: event.start,
             title: event.title,
@@ -690,7 +765,7 @@ function renderSampleRoutes() {
         ? places
               .map(
                   (place) =>
-                      `<button type="button" data-day-place="${safe(place.place)}" aria-pressed="${to.value.trim() === place.place}"><time>${place.time}</time><span><strong>${safe(place.title)}</strong><small>${safe(place.place)}</small></span><span class="day-place-pick">${to.value.trim() === place.place ? 'Picked' : 'Go here'}</span></button>`,
+                      `<button type="button" data-day-place="${safe(place.place)}" aria-pressed="${to.value.trim() === place.place}"><time>${place.time}</time><span><strong>${safe(place.title)}</strong><small>${safe(place.detail || place.place)}</small></span><span class="day-place-pick">${to.value.trim() === place.place ? 'Picked' : 'Go here'}</span>${icon('chevron')}</button>`,
               )
               .join('')
         : '<p class="route-note">Your day isn’t in this preview.</p>';
@@ -850,9 +925,16 @@ function openNextTrip() {
 }
 function toggleRouteDetails(id) {
     if (!findRoute(id)) return;
+    state.detailsTouched = true;
     state.expanded = state.expanded === id ? null : id;
     if (state.expanded) state.selected = id;
     if (state.expanded) rememberComposerRoute(id);
+    // The option cards show which one is chosen, so draw them again.
+    if (state.results && $('#results [data-pick-route]')) {
+        renderResults();
+        $(`[data-route-details="${id}"]`)?.focus({ preventScroll: true });
+        return;
+    }
     document.querySelectorAll('[data-route-details]').forEach((button) => {
         const open = button.dataset.routeDetails === state.expanded;
         button.setAttribute('aria-expanded', String(open));
@@ -860,6 +942,18 @@ function toggleRouteDetails(id) {
         panel.setAttribute('aria-hidden', String(!open));
         panel.inert = !open;
     });
+}
+// Choosing an option; desktops open its way beside it.
+function pickRoute(id) {
+    state.selected = id;
+    state.expanded = desktopPlanner.matches
+        ? id
+        : state.expanded === id
+          ? id
+          : null;
+    rememberComposerRoute(id);
+    renderResults();
+    $(`[data-pick-route="${id}"]`)?.focus({ preventScroll: true });
 }
 function stepsMarkup(route) {
     const trip = tripOf(route);
@@ -943,7 +1037,15 @@ const clockOf = (minutes) =>
     `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 function savedPlan(route) {
     const remindAt = clockOf(minutesOf(route.depart) - 5);
-    return `<section class="plan-saved" aria-labelledby="plan-saved-title"><span class="plan-saved-mark">${icon('check')}</span><h2 id="plan-saved-title" tabindex="-1">Plan saved</h2><p class="plan-saved-summary">${routeName(route)} · leave ${route.depart} · there ${route.arrive}</p><ul class="plan-saved-list"><li><button type="button" data-action="saved"><span class="plan-saved-icon">${icon('bookmark')}</span><span><strong>It’s in Saved journeys</strong><small>On this device · open it any time from Saved</small></span>${icon('chevron')}</button></li><li><button type="button" role="switch" aria-checked="${state.remind}" data-action="remind"><span class="plan-saved-icon">${icon('clock')}</span><span><strong>Remind me when to leave</strong><small>${state.remind ? `At ${remindAt}, five minutes before you need to go. Reminders aren’t sent in this preview.` : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button></li><li class="is-note"><span class="plan-saved-icon is-watch">${icon('eye')}</span><span><strong>We keep watching it</strong><small>In the app, live delays and KVB notices update it, and a “Change of plan” offers a new way. This preview doesn’t watch.</small></span></li></ul><div class="plan-saved-actions"><button type="button" class="quiet-button" data-action="change-plan">Change the plan</button><button type="button" class="primary is-ink" data-action="plan-done">Done</button></div></section>`;
+    const trip = tripOf(route);
+    const look = route.line
+        ? window.NearbyModel?.look(String(route.line), 'tram')
+        : null;
+    // Phones keep the day in My day; desktops show it as the next trip.
+    const day = desktopPlanner.matches
+        ? `<button type="button" data-action="plan-done"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on your day</strong><small>Travel shows it as your next trip${trip.start ? `, between now and your ${trip.start}` : ''}</small></span>${icon('chevron')}</button>`
+        : `<button type="button" data-view="day"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on My day</strong><small>${trip.start ? `Between now and your ${trip.start}` : 'With the rest of today'}</small></span>${icon('chevron')}</button>`;
+    return `<section class="plan-saved" aria-labelledby="plan-saved-title"><span class="plan-saved-mark"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${icon('check')}</span><h2 id="plan-saved-title" tabindex="-1">Plan saved</h2><p class="plan-saved-summary">${safe(optionTitle(route))} · leave ${route.depart} · there ${route.arrive}</p><ul class="plan-saved-list"><li>${day}</li><li><button type="button" role="switch" aria-checked="${state.remind}" data-action="remind"><span class="plan-saved-icon">${icon('bell')}</span><span><strong>Remind me when to leave</strong><small>${state.remind ? `At ${remindAt}, five minutes before you need to go. Not sent in this preview.` : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button></li><li class="is-note"><span class="plan-saved-icon is-watch">${icon('eye')}</span><span><strong>We keep watching it</strong><small>Live delays, KVB notices and the weather. If something changes, you get a “Change of plan” with a new way. This preview doesn’t watch.</small></span></li></ul><div class="plan-saved-actions"><button type="button" class="quiet-button" data-action="change-plan">Change the plan</button><button type="button" class="primary is-ink" data-action="plan-done">Done</button></div></section>`;
 }
 // "Arrive by 14:00", with the date only when it isn't the planner's day.
 function planSummary() {
@@ -951,6 +1053,115 @@ function planSummary() {
     const day =
         state.date === home.date ? '' : `${boardDateLabel(state.date)}, `;
     return `${state.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${day}${state.time}`;
+}
+// A line badge in the line's own colour, from Nearby's line looks.
+function lineBadge(line) {
+    const service = window.StationCapture?.services.find(
+        (item) => item.line === String(line),
+    );
+    const look = window.NearbyModel?.look(
+        String(line),
+        service?.type === 'bus' ? 'bus' : 'tram',
+    );
+    return `<span class="plan-line"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${safe(line)}</span>`;
+}
+function vehicleOf(line) {
+    const service = window.StationCapture?.services.find(
+        (item) => item.line === String(line),
+    );
+    return service ? (service.type === 'bus' ? 'Bus' : 'Tram') : 'Line';
+}
+function optionTitle(route) {
+    if (route.mode === 'bike') return 'By bike';
+    if (route.mode === 'walk') return 'On foot';
+    const lines = route.legs.filter((leg) => leg.mode === 'transit');
+    const first = lines[0]?.line || route.line;
+    return `${vehicleOf(first)} ${first}${
+        route.changes
+            ? `, then ${
+                  lines
+                      .slice(1)
+                      .map((leg) => leg.line || '')
+                      .filter(Boolean)
+                      .join(', ') ||
+                  `${route.changes} change${route.changes > 1 ? 's' : ''}`
+              }`
+            : ', no change'
+    }`;
+}
+// Why an option is good or not, in the sample's own facts.
+function optionReasons(route, trip) {
+    const reasons = [];
+    if (route.mode === 'transit')
+        reasons.push([
+            route.changes
+                ? `${route.changes} change${route.changes > 1 ? 's' : ''}`
+                : 'No change',
+            'ok',
+        ]);
+    const weather =
+        trip.id === 'day' ? sampleWeather(trip.date, route.depart) : null;
+    if (route.walking || route.mode !== 'transit')
+        reasons.push([
+            `${route.mode === 'transit' ? route.walking : route.duration} min ${route.mode === 'bike' ? 'cycling' : 'walking'}${weather ? (weather.wet ? `, ${weather.sky.toLowerCase()} likely (sample)` : ', dry (sample)') : ''}`,
+            weather?.wet ? 'warn' : 'ok',
+        ]);
+    if (route.inPlan) reasons.push(['In your plan', 'ok']);
+    if (route.delayed) reasons.push(['Delay flagged in the capture', 'warn']);
+    if (trip.start) {
+        const spare = minutesOf(trip.start) - minutesOf(route.arrive);
+        if (spare < (trip.kind === 'official' ? 10 : 5))
+            reasons.push([`Only ${spare} min to spare`, 'warn']);
+    }
+    return reasons;
+}
+function planOption(route, list, trip, best) {
+    const on = route.id === state.selected;
+    const expanded = state.expanded === route.id;
+    const spare = trip.start
+        ? minutesOf(trip.start) - minutesOf(route.arrive)
+        : null;
+    const tight = spare !== null && spare < (trip.kind === 'official' ? 10 : 5);
+    const badges =
+        route.mode === 'transit'
+            ? route.legs
+                  .filter((leg) => leg.mode === 'transit')
+                  .map((leg) => lineBadge(leg.line || route.line))
+                  .join('')
+            : `<span class="plan-line is-mode">${icon(route.mode)}</span>`;
+    const title = `<span class="plan-option-title">${badges}<strong>${safe(optionTitle(route))}</strong></span>`;
+    const spareTag = `<span class="plan-spare${tight ? ' is-tight' : ''}">${spare !== null ? `${spare} min spare` : `${route.duration} min`}</span>`;
+    return `<article class="plan-option${on ? ' is-on' : ''}" aria-label="${safe(optionTitle(route))}, leave ${route.depart}, there ${route.arrive}${overnight(route.arrive, trip) ? ' next day' : ''}">
+        <button type="button" class="plan-option-pick" role="radio" aria-checked="${on}" tabindex="${on ? 0 : -1}" data-pick-route="${route.id}">
+            <span class="plan-radio" aria-hidden="true"></span>
+            <span class="plan-option-body"><span class="plan-option-head">${best ? '<span class="best-tag">Best for you</span>' : title}${spareTag}</span>${best ? title : ''}<span class="plan-option-times">Leave <strong>${route.depart}</strong> → there <strong>${route.arrive}</strong>${overnight(route.arrive, trip)}</span><span class="plan-option-reasons">${optionReasons(
+                route,
+                trip,
+            )
+                .map(
+                    ([text, kind]) =>
+                        `<span class="is-${kind}">${safe(text)}</span>`,
+                )
+                .join('')}</span></span>
+        </button>
+        <button class="details-toggle" data-route-details="${route.id}" aria-expanded="${expanded}" aria-controls="route-disclosure-${route.id}">Journey details ${icon('down')}</button>
+        <div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="plan-option-way">${stepsMarkup(route)}<div class="plan-option-side"><div class="plan-option-map" role="img" aria-label="Map of this way"><div class="plan-map-canvas" data-route-map="${route.id}"></div><div class="nav-map-fallback"><strong>Loading the map</strong></div><small class="plan-map-credit">OpenFreeMap © OpenMapTiles © OpenStreetMap</small></div><button class="primary" data-action="save-plan" data-route-id="${route.id}">${saved.includes(route.id) ? 'Saved · see the plan' : 'Save this plan'}</button><p class="route-note">${sourceNote(route)}${route.mode === 'transit' ? '' : ' · Street directions weren’t captured.'}</p></div></div>${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}</div></div>
+    </article>`;
+}
+let planMap = null;
+// The open option's map on desktop, beside its steps.
+function mountPlanMap() {
+    planMap?.destroy?.();
+    planMap = null;
+    if (!desktopPlanner.matches || !window.JourneyRouteMap) return;
+    const box = document.querySelector(
+        `#results .route-disclosure[aria-hidden="false"] [data-route-map]`,
+    );
+    const route = box && currentRoute(box.dataset.routeMap);
+    if (!route) return;
+    planMap = JourneyRouteMap.mount(box, route, {
+        padding: () => ({ top: 28, right: 28, bottom: 28, left: 28 }),
+    });
 }
 function renderResults() {
     state.results = true;
@@ -962,9 +1173,18 @@ function renderResults() {
         matched = !!tripId,
         trip = J.trips?.[tripId] || J.capture,
         list = routeList(tripId);
-    if (!list.some((route) => route.id === state.selected))
+    // Bike and walk options can be chosen too.
+    const pool = [
+        ...list,
+        ...(tripId
+            ? ['bike', 'walk']
+                  .filter((mode) => mode !== state.routeMode)
+                  .flatMap((mode) => routeList(tripId, mode))
+            : []),
+    ];
+    if (!pool.some((route) => route.id === state.selected))
         state.selected = list[0]?.id || null;
-    if (!list.some((route) => route.id === state.expanded))
+    if (!pool.some((route) => route.id === state.expanded))
         state.expanded = null;
     const selected = list.find((route) => route.id === state.selected);
     if (selected && !list.slice(0, 3).includes(selected)) state.more = true;
@@ -981,6 +1201,7 @@ function renderResults() {
     ) {
         $('#results').innerHTML = restore + savedPlan(plan);
         syncComposerHelper();
+        syncPlanStage();
         return;
     }
     state.planSaved = null;
@@ -988,7 +1209,7 @@ function renderResults() {
         tripId === 'day' && trip.place
             ? trip.place
             : placeName(to.value.trim());
-    const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? `To ${safe(title)}` : 'Your journey'}</h2><div class="results-heading"><span>${safe(planSummary())} · from ${safe(placeName(from.value.trim()))}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
+    const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? `To ${safe(title)}` : 'Your journey'}</h2><div class="results-heading"><span>${safe(planSummary())} · from ${safe(fromLabel())}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
     const empty = matched
         ? U.emptyReason(state, trip, [
               ...new Set(
@@ -1019,20 +1240,34 @@ function renderResults() {
         tripId === 'day' && ['cancelled', 'missed'].includes(state.scenario)
             ? `<p class="route-note">The 13:14 isn’t offered: ${state.scenario === 'cancelled' ? 'it’s cancelled' : 'it has left'} (sample).</p>`
             : '';
+    // The options as one choice, the best first; bike and walk after the
+    // trams when the sample has them (owner-approved Plan a trip).
+    const shown = [...(state.more ? list : list.slice(0, 3)), ...otherWays];
+    if (!shown.some((route) => route.id === state.selected))
+        state.selected = shown[0]?.id || null;
+    if (
+        desktopPlanner.matches &&
+        !state.detailsTouched &&
+        state.expanded === null
+    )
+        state.expanded = state.selected;
+    const chosen = shown.find((route) => route.id === state.selected);
     const others = list.length
         ? gone +
           (otherWays.length
-              ? `<h3 class="plan-subhead">Other ways</h3><div class="route-options">${otherWays.map((route) => option(route, otherWays)).join('')}</div>`
+              ? ''
               : '<p class="route-note other-ways-note">Bike or walk: times aren’t in the sample.</p>')
         : '';
     const contents = list.length
-        ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="route-options">${(state.more ? list : list.slice(0, 3)).map((route, index) => option(route, list, false, index === 0 && list.length > 1)).join('')}${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}</div>${others}</div>`
+        ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="plan-options" role="radiogroup" aria-label="Your options">${shown.map((route, index) => planOption(route, list, trip, index === 0 && shown.length > 1)).join('')}</div>${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}${others}${chosen ? `<button type="button" class="primary plan-save" data-action="save-plan" data-route-id="${chosen.id}">${saved.includes(chosen.id) ? 'Saved · see the plan' : 'Save this plan'}</button>` : ''}</div>`
         : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : `${empty.composer ? `<button class="quiet-button" data-action="composer-help">${icon('spark')}Ask Composer</button>` : ''}${empty.composer && fromStop ? `<button class="quiet-button" data-action="from-departures" data-stop-id="${safe(fromStop.id)}">${icon('train')}Departures from ${safe(placeName(fromStop.name))}</button>` : ''}<button class="quiet-button" data-action="example">Explore sample routes</button>`}</div></div>`;
     const captureNote = list.length
         ? `<p class="sample-footnote">${icon('info')}<span>${sourceNote(list[0])} · No live travel status.</span></p>`
         : '';
     $('#results').innerHTML = restore + header + contents + captureNote;
     syncComposerHelper();
+    syncPlanStage();
+    mountPlanMap();
 }
 function selectedRoute(id, boardingOrigin = undefined) {
     const route =
@@ -1582,6 +1817,29 @@ function action(name, button) {
         $(`[data-pick="${button.dataset.pick}"]`)?.focus({
             preventScroll: true,
         });
+    } else if (name === 'clear-to') {
+        to.value = '';
+        state.planPlace = null;
+        if (state.results) {
+            state.results = false;
+            $('#results').hidden = true;
+        }
+        renderPlanner();
+        renderSampleRoutes();
+        to.focus();
+    } else if (name === 'plan-back') {
+        // Saved → the options → where and when → Nearby.
+        if (state.results && state.planSaved) action('change-plan', button);
+        else if (state.results && !desktopPlanner.matches) {
+            state.results = false;
+            $('#results').hidden = true;
+            renderPlanner();
+            animate($('#journey-view'), -1);
+            $('.find-routes')?.focus({ preventScroll: true });
+        } else {
+            setView('stop');
+            $('.where-to')?.focus({ preventScroll: true });
+        }
     } else if (name === 'saved-place')
         toast('Saved places aren’t in this preview.');
     else if (name === 'ask-composer') {
@@ -1613,7 +1871,7 @@ function action(name, button) {
     else if (name === 'about')
         openSheet(
             'About these samples',
-            `<div class="about-samples"><p>Explore the journey flow with captured Cologne transport information.</p>${J.day ? `<div class="network-notice">${icon('calendar')}<div><strong>Sample day</strong><p>${boardDateLabel(J.day.date, true)}, ${J.day.time}</p><small>${safe(placeName(J.day.from))} to ${safe(J.day.to)} for the ${safe(J.day.place)}: line ${safe(J.dayRoutes[0].line)} at ${J.dayRoutes.map((route) => route.legs.find((leg) => leg.mode === 'transit').time).join(' or ')}. Scheduled sample times, shared with Today.</small></div></div>` : ''}${window.StationCapture ? `<div class="network-notice">${icon('train')}<div><strong>Neumarkt station board</strong><p>${boardDateLabel(StationCapture.stop.capture.date, true)}, ${StationCapture.stop.capture.time}</p><small>Saved staging estimates and KVB stop locations. Individual platforms weren’t provided.</small></div></div>` : ''}<div class="network-notice">${icon('train')}<div><strong>Stop departures</strong><p>7 September 2026, 23:15</p><small>Merkenich Mitte and Merkenich.</small></div></div><div class="network-notice">${icon('route')}<div><strong>Journey options</strong><p>7 September 2026, 23:37</p><small>Neumarkt to Museum Ludwig.</small></div></div><button class="quiet-button" data-action="notices">Historical network examples</button><p class="route-note">${icon('info')}<span>Times don’t refresh. Live search, GPS, fares and tickets aren’t connected. Saving keeps a sample on this device.</span></p></div>`,
+            `<div class="about-samples"><p>Explore the journey flow with captured Cologne transport information.</p>${J.day ? `<div class="network-notice">${icon('calendar')}<div><strong>Sample day</strong><p>${boardDateLabel(J.day.date, true)}, ${J.day.time}</p><small>${safe(placeName(J.day.from))} to ${safe(J.day.to)} for the ${safe(J.day.place)}: line ${safe(J.dayRoutes[0].line)} at ${J.dayRoutes.map((route) => route.legs.find((leg) => leg.mode === 'transit').time).join(' or ')}. Scheduled sample times, shared with Today.</small></div></div>` : ''}${window.StationCapture ? `<div class="network-notice">${icon('train')}<div><strong>Neumarkt station board</strong><p>${boardDateLabel(StationCapture.stop.capture.date, true)}, ${StationCapture.stop.capture.time}</p><small>Saved staging estimates and KVB stop locations. Individual platforms weren’t provided.</small></div></div>` : ''}<div class="network-notice">${icon('train')}<div><strong>Stop departures</strong><p>7 September 2026, 23:15</p><small>Merkenich Mitte and Merkenich.</small></div></div><div class="network-notice">${icon('route')}<div><strong>Journey options</strong><p>7 September 2026, 23:37</p><small>Neumarkt to Museum Ludwig: that night’s times, not today’s.</small><button type="button" class="text-action" data-action="example">Explore this captured example${icon('arrow')}</button></div></div><button class="quiet-button" data-action="notices">Historical network examples</button><p class="route-note">${icon('info')}<span>Times don’t refresh. Live search, GPS, fares and tickets aren’t connected. Saving keeps a sample on this device.</span></p></div>`,
             'about',
         );
     else if (name === 'account')
@@ -1632,8 +1890,14 @@ document.addEventListener('click', (event) => {
         hideSuggestions();
     if (!button) return;
     if (button.dataset.action) action(button.dataset.action, button);
-    else if (button.dataset.view) setView(button.dataset.view);
-    else if (button.dataset.place) {
+    else if (button.dataset.view) {
+        // Plan a trip starts from your location (the sample's stop).
+        if (button.dataset.view === 'journey' && !from.value.trim()) {
+            from.value = yourLocation;
+            syncPlanStage();
+        }
+        setView(button.dataset.view);
+    } else if (button.dataset.place) {
         if (
             searchField === from &&
             searchField.value !== button.dataset.place
@@ -1685,8 +1949,9 @@ document.addEventListener('click', (event) => {
         const place = dayPlaces().find(
             (item) => item.place === button.dataset.dayPlace,
         );
-        if (!from.value.trim()) from.value = J.day?.from || '';
+        if (!from.value.trim()) from.value = yourLocation;
         to.value = button.dataset.dayPlace;
+        state.planPlace = place || null;
         Object.assign(state, {
             schedule: 'arrive',
             date: home.date,
@@ -1694,6 +1959,7 @@ document.addEventListener('click', (event) => {
         });
         syncControls();
         renderSampleRoutes();
+        syncPlanStage();
         $('.find-routes')?.focus({ preventScroll: true });
     } else if (button.dataset.schedule) {
         $('#schedule-mode').value = button.dataset.schedule;
@@ -1721,6 +1987,7 @@ document.addEventListener('click', (event) => {
         });
     } else if (button.dataset.scenario) setScenario(button.dataset.scenario);
     else if (button.dataset.exampleRoute) example(button.dataset.exampleRoute);
+    else if (button.dataset.pickRoute) pickRoute(button.dataset.pickRoute);
     else if (button.dataset.routeDetails)
         toggleRouteDetails(button.dataset.routeDetails);
     else if (button.dataset.route) selectedRoute(button.dataset.route);
@@ -1792,7 +2059,8 @@ document.addEventListener('input', (event) => {
         if (event.target === from) {
             state.boardingStop = null;
             state.boardingRoute = null;
-        }
+        } else state.planPlace = null;
+        syncPlanStage();
         syncServicePreference();
         syncComposerHelper();
         suggestions(event.target);
@@ -1828,6 +2096,19 @@ document.addEventListener('focusin', (event) => {
         hideSuggestions();
 });
 document.addEventListener('keydown', (event) => {
+    // Arrow keys move the choice between Plan a trip's options.
+    const pick = event.target.closest?.('[data-pick-route]');
+    if (
+        pick &&
+        ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key)
+    ) {
+        const all = [...document.querySelectorAll('[data-pick-route]')];
+        const step = ['ArrowDown', 'ArrowRight'].includes(event.key) ? 1 : -1;
+        const next = all[(all.indexOf(pick) + step + all.length) % all.length];
+        event.preventDefault();
+        if (next) pickRoute(next.dataset.pickRoute);
+        return;
+    }
     if (event.key === 'Escape') {
         if (!popover.hidden) {
             closePopover(true);

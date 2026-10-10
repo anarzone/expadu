@@ -52,6 +52,7 @@ function workspace(
                 },
                 closest: () => null,
                 append() {},
+                after() {},
             });
         return elements.get(selector);
     };
@@ -681,12 +682,18 @@ test('opening the next trip compares both trams against the 14:00 start', () => 
     assert.match(results, /Clear, 21° when you leave · sample weather/);
     assert.match(results, /Nothing else before 14:00/);
     assert.match(results, /Best for you[\s\S]*13:10/);
-    assert.match(results, /<span class="status-tag">12 min to spare/);
+    // One choice of options, each with its minutes to spare and reasons.
+    assert.match(results, /role="radiogroup" aria-label="Your options"/);
+    assert.match(results, /<span class="plan-spare">12 min spare/);
+    assert.match(results, /<span class="plan-spare is-tight">2 min spare/);
     assert.match(
         results,
-        /<span class="status-tag warning">Only 2 min to spare/,
+        /In your plan<\/span><span class="is-warn">Only 2 min to spare/,
     );
-    assert.match(results, /In your plan · No changes/);
+    assert.match(
+        results,
+        /class="primary plan-save" data-action="save-plan" data-route-id="day-1314">Save this plan/,
+    );
     assert.match(results, /Bike or walk: times aren’t in the sample/);
     assert.match(results, /Sample day · scheduled times/);
     assert.doesNotMatch(results, /7 Sep 2026|aria-label="next day"/);
@@ -709,16 +716,15 @@ test('Plan a trip starts from today’s places; picking one arrives by its start
         places,
         /data-day-place="Rheinauhafen"[\s\S]*18:30[\s\S]*Street culture night/,
     );
-    assert.match(
-        w.element('.sample-endpoints').textContent,
-        /Museum Ludwig · captured Mon 7 Sept at 23:37/,
-    );
     const place = { dataset: { dayPlace: 'Rheinauhafen' } };
     w.emit('click', {
         target: { closest: (s) => (s === 'button' ? place : null) },
     });
-    assert.equal(w.element('#from').value, 'Neumarkt');
+    assert.equal(w.element('#from').value, 'Your location');
     assert.equal(w.element('#to').value, 'Rheinauhafen');
+    assert.equal(w.run('requestTrip()'), null);
+    w.element('#to').value = 'Mülheim';
+    assert.equal(w.run('requestTrip()'), 'day');
     assert.equal(w.run('state.schedule'), 'arrive');
     assert.equal(w.run('state.time'), '18:30');
 });
@@ -729,16 +735,13 @@ test('the captured example offers bike and walk as other ways, and saves a plan'
         'from.value = "Köln Neumarkt"; to.value = "Museum Ludwig"; searchJourney();',
     );
     const results = w.element('#results').innerHTML;
-    assert.match(
-        results,
-        /<h3 class="plan-subhead">Other ways<\/h3>[\s\S]*By bike[\s\S]*On foot/,
-    );
+    assert.match(results, /data-pick-route="r[\s\S]*By bike[\s\S]*On foot/);
     assert.match(results, /Captured Mon 7 Sept at 23:37: that night’s times/);
     w.run('action("save-plan", { dataset: { routeId: "r9" } });');
     const saved = w.element('#results').innerHTML;
     assert.match(saved, /Plan saved/);
-    assert.match(saved, /Line 9 · leave 23:37/);
-    assert.match(saved, /Reminders aren’t sent in this preview/);
+    assert.match(saved, /Line 9, no change · leave 23:37/);
+    assert.match(saved, /Not sent in this preview/);
     assert.match(saved, /This preview doesn’t watch/);
     assert.ok(w.run('saved.includes("r9")'));
     w.run('action("change-plan", {});');

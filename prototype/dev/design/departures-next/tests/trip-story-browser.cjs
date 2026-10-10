@@ -57,8 +57,12 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                     : page.getByRole('button', { name: 'Plan a trip' }).first()
             ).click();
             assert.equal(
-                await page.locator('.sample-endpoints').innerText(),
-                'Köln Neumarkt → Museum Ludwig · captured Mon 7 Sept at 23:37. These are that night’s times, not today’s.',
+                await page.locator('#from').inputValue(),
+                'Your location',
+            );
+            assert.match(
+                await page.locator('#from-note').innerText(),
+                /near Neumarkt \(sample\)/,
             );
             assert.deepEqual(errors, []);
             await page.close();

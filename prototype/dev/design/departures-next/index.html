@@ -43,7 +43,7 @@
         <script defer src="./service-context.js?v=bbb3393e63ce"></script>
         <script defer src="./nearby.js?v=011793fa8825"></script>
         <script defer src="./nearby-ui.js?v=f21d416681d7"></script>
-        <script defer src="./app.js?v=70e4a8256ee2"></script>
+        <script defer src="./app.js?v=18be4c63fd2d"></script>
         <script defer src="../connected/model.js?v=b727e359c259"></script>
         <script defer src="../connected/store.js?v=17618b25abbe"></script>
         <script defer src="../connected/bridge.js?v=e351cb308817"></script>
@@ -117,7 +117,7 @@
         <link rel="stylesheet" href="./workspace.css?v=187f59ca126f" />
         <link rel="stylesheet" href="./station-context.css?v=1347d89c30fa" />
         <link rel="stylesheet" href="./nearby.css?v=1887f0e9e32f" />
-        <link rel="stylesheet" href="./plan.css?v=9b8bd1d828c9" />
+        <link rel="stylesheet" href="./plan.css?v=24f58b2a3532" />
         <link rel="stylesheet" href="./day.css?v=31889c44c885" />
     </head>
     <body
@@ -378,12 +378,15 @@
                     <button
                         type="button"
                         class="icon-button"
-                        data-view="stop"
+                        data-action="plan-back"
                         aria-label="Back to Nearby"
                     >
                         <span data-icon="back"></span>
                     </button>
-                    <strong>Plan a trip</strong>
+                    <span class="plan-bar-title"
+                        ><strong id="plan-bar-title">Plan a trip</strong
+                        ><small id="plan-bar-sub" hidden></small
+                    ></span>
                     <button
                         type="button"
                         class="icon-button plan-saved-journeys"
@@ -424,7 +427,15 @@
                                         class="field-symbol origin-dot"
                                         aria-hidden="true"
                                     ></span>
-                                    <label for="from">From</label>
+                                    <label for="from"
+                                        >From<span
+                                            id="from-note"
+                                            class="from-note"
+                                            hidden
+                                        >
+                                            · near Neumarkt (sample)</span
+                                        ></label
+                                    >
                                     <input
                                         id="from"
                                         placeholder="Your starting point"
@@ -476,7 +487,7 @@
                                     <label for="to">To</label>
                                     <input
                                         id="to"
-                                        placeholder="Where to?"
+                                        placeholder="Address, place or stop"
                                         maxlength="120"
                                         autocomplete="off"
                                         spellcheck="false"
@@ -487,6 +498,11 @@
                                         aria-controls="suggestions"
                                         aria-expanded="false"
                                     />
+                                    <div
+                                        id="to-picked"
+                                        class="to-picked"
+                                        hidden
+                                    ></div>
                                 </div>
                                 <div
                                     id="suggestions"
@@ -539,6 +555,10 @@
                                         <span id="schedule-label">13:10</span
                                         ><span data-icon="down"></span>
                                     </button>
+                                    <span
+                                        id="plan-when-note"
+                                        class="plan-when-note"
+                                    ></span>
                                 </p>
                                 <span class="plan-label" id="prefs-label"
                                     >What matters to you</span
@@ -591,6 +611,7 @@
                             <button class="primary find-routes" type="submit">
                                 Plan it
                             </button>
+                            <p class="plan-hint" id="plan-hint"></p>
                         </form>
                         <aside
                             id="travel-composer-helper"
@@ -672,20 +693,6 @@
                                         has.</span
                                     >
                                 </p>
-                            </div>
-                            <div class="plan-example">
-                                <p class="sample-endpoints">
-                                    Köln Neumarkt → Museum Ludwig
-                                </p>
-                                <button
-                                    type="button"
-                                    class="text-action"
-                                    data-action="example"
-                                >
-                                    Explore this captured example<span
-                                        data-icon="arrow"
-                                    ></span>
-                                </button>
                             </div>
                         </section>
                         <section
