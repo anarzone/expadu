@@ -5,6 +5,27 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A rounded card on phones, and fixes on narrower desktops — 9 October 2026
+
+Owner request. The wall is a rounded card on every screen: on a phone 12px
+from the screen's edges (22px corners), on a tablet inside the page margin
+(28px). On a phone the lantern has a 14px strip of wall left of the column
+and the dome overhangs it by 12px, so the posters keep about 135px at
+390px; phone posters are 1.9 times as tall as wide.
+
+From the owner's screenshot of a narrower desktop (about 1350px):
+- the date's calendar opens from the chip's left, on screen (it was still
+  anchored to the right, from when the date sat at the row's end);
+- the date and search keep at least 440px, and between 1000 and 1399px the
+  categories drop their icons, so "Search events" has room;
+- the bench stands inside the wall (it was 16px outside);
+- a flag (On now, Rain likely) takes its own line under the category with
+  the poster's full width, and a poster's top row no longer shrinks, so a
+  flag never spills out of its pill or under the date tape.
+
+`tests/wall-browser.cjs` checks the card's edges and corners on a phone and,
+at 1347px, the calendar, the search's width, the bench and the flag.
+
 ## The whole wall on phones and tablets — 9 October 2026
 
 Owner follow-up: a phone shows the whole desktop street, not only the

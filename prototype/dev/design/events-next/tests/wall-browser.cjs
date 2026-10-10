@@ -464,7 +464,8 @@ const inside = (box, viewport) =>
             };
         });
         assert.ok(flagged.flag <= 0.5 && flagged.tape <= 4 && !flagged.clipped, `the column poster's flag is covered: ${JSON.stringify(flagged)}`);
-        // One wall runs to the screen's edges, as on a desktop: today's sky
+        // One wall, a rounded card 12px from the screen's edges as on a
+        // desktop (owner, 9 Oct 2026): today's sky
         // with the hour's weather along its top, the column and the day's
         // posters on its plaster. The plaster darkens at dusk.
         const plaster = async () =>
@@ -477,14 +478,14 @@ const inside = (box, viewport) =>
                 const srgb = colour.match(/color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/);
                 const rgb = colour.match(/rgba?\((\d+), (\d+), (\d+)/);
                 return {
-                    edges: [at(board).left, at(board).right],
+                    edges: [at(board).left, at(board).right, parseFloat(getComputedStyle(board).borderTopLeftRadius)],
                     sky: sky.offsetParent ? Math.abs(at(sky).top - at(board).top) : null,
                     chip: sky.querySelector('.sky-weather').innerText.replace(/\s+/g, ' '),
                     shade: srgb ? +srgb[1] + +srgb[2] + +srgb[3] : (+rgb[1] + +rgb[2] + +rgb[3]) / 255,
                 };
             });
         const dusk = await plaster();
-        assert.deepEqual(dusk.edges, [0, 390], 'the wall should reach the screen edges');
+        assert.deepEqual(dusk.edges, [12, 378, 22], 'the wall should be a rounded card 12px from the edges');
         assert.ok(dusk.sky !== null && dusk.sky <= 1, 'today’s sky should run along the wall’s top');
         assert.match(dusk.chip, /16° Showers 19:30 · Sample weather/);
         await touch.goto(`${base}?date=2026-09-30&at=13:10`, { waitUntil: 'networkidle' });
@@ -493,7 +494,7 @@ const inside = (box, viewport) =>
         await touch.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });
         const pastDay = await plaster();
         assert.equal(pastDay.sky, null, 'today’s sky should not hang over another day');
-        assert.deepEqual(pastDay.edges, [0, 390]);
+        assert.deepEqual(pastDay.edges, [12, 378, 22]);
         await touch.goto(`${base}?date=2026-09-30&view=skyline&at=19:30`, { waitUntil: 'networkidle' });
         assert.equal(
             await touch.locator('.wall-board > .wall-sky').isVisible(),
@@ -595,6 +596,29 @@ const inside = (box, viewport) =>
         await sheets.waitForTimeout(400);
         assert.ok(await sheets.locator('#events-area').isHidden(), 'dragging the sheet down leaves it open');
         await sheets.close();
+        // A narrower desktop (owner's screenshot, 9 Oct 2026): the date's
+        // calendar opens on screen, the search keeps room to type, the bench
+        // stands inside the wall, and a poster's flag keeps to one line.
+        {
+            const mid = await browser.newPage({ viewport: { width: 1347, height: 1500 } });
+            await mid.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
+            await mid.click('#event-calendar-toggle');
+            await mid.waitForTimeout(300);
+            const fit = await mid.evaluate(() => {
+                const at = (s) => document.querySelector(s).getBoundingClientRect();
+                return {
+                    calendar: at('#event-calendar-panel').left,
+                    search: at('.event-search').width,
+                    bench: at('.wall-bench').left - at('.wall-board').left,
+                    flag: document.querySelector('.wall-day .pp-flag').offsetHeight,
+                };
+            });
+            assert.ok(fit.calendar >= 0, `the calendar opens off screen: ${fit.calendar}`);
+            assert.ok(fit.search >= 160, `the search is squeezed: ${fit.search}px`);
+            assert.ok(fit.bench >= 0, `the bench stands outside the wall: ${fit.bench}`);
+            assert.ok(fit.flag <= 27, `the poster's flag wraps: ${fit.flag}px`);
+            await mid.close();
+        }
         // A narrower desktop still fits two posters beside the corner.
         const narrow = await browser.newPage({ viewport: { width: 1280, height: 900 } });
         await narrow.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });

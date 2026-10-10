@@ -480,7 +480,11 @@ main[data-view='skyline'] .wall-board > .wall-sky {
 .pp-top:has(.pp-flags) {
     flex-wrap: wrap;
     gap: 6px;
-    padding-right: 46px;
+}
+/* A flag (On now, Rain likely) takes its own line under the category,
+   below the save button, so its words stay on one line. */
+.pp-top:has(.pp-flags) .pp-category {
+    margin-right: 100%;
 }
 .pp-flags {
     display: contents;
@@ -1012,7 +1016,7 @@ main[data-view='skyline'] .wall-board > .wall-sky {
         left: -26px;
     }
     .wall-bench {
-        left: -40px;
+        left: -18px;
     }
     .wall-day > .pp--size-wall {
         width: 272px;
@@ -1400,6 +1404,7 @@ main[data-view='skyline'] .wall-board > .wall-sky {
 }
 .pp-top {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     min-height: 44px;
 }
@@ -3090,11 +3095,11 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
         container-type: inline-size;
     }
     main[data-view='wall'] .wall-board > * {
-        --corner-w: clamp(124px, calc((100cqi - 60px) / 2), 190px);
+        --corner-w: clamp(124px, calc((100cqi - 62px) / 2), 190px);
     }
     main[data-view='wall'] .wall-view--wall .wall-day > .pp--size-wall {
         width: var(--corner-w);
-        height: calc(var(--corner-w) * 1.7);
+        height: calc(var(--corner-w) * 1.9);
     }
     main[data-view='wall'] .wall-column {
         --column-h: calc(var(--corner-w) * 1.95);
@@ -3117,14 +3122,8 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
     main[data-view='wall'] .wall-board .pp-top {
         min-height: 30px;
     }
-    /* A flag (On now, Rain likely) takes its own line under the
-       category, clear of the save button. */
     main[data-view='wall'] .wall-board .pp-top:has(.pp-flags) {
         gap: 4px;
-        padding-right: 0;
-    }
-    main[data-view='wall'] .wall-board .pp-top:has(.pp-flags) .pp-category {
-        margin-right: 100%;
     }
     main[data-view='wall'] .wall-board .pp-top + * {
         margin-top: 6px;
@@ -3142,9 +3141,9 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
     main[data-view='wall'] .wall-board .pp-flag {
         min-height: 20px;
         gap: 4px;
-        padding: 3px 7px;
+        padding: 2px 7px;
         font-size: var(--text-micro);
-        line-height: 1.15;
+        line-height: 1.1;
     }
     main[data-view='wall'] .wall-board .pp-tape {
         flex: none;
@@ -3157,7 +3156,7 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
         font-size: clamp(14px, 12cqi, 26px);
     }
     main[data-view='wall'] .wall-board .pp:has(.pp-flags) .pp-title {
-        font-size: clamp(14px, 10.5cqi, 24px);
+        font-size: clamp(13px, 10.5cqi, 24px);
     }
     /* A past poster can't be planned; its long title keeps the room. */
     main[data-view='wall'] .wall-board .pp.is-past .pp-translation {
@@ -3237,7 +3236,6 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
     }
     main[data-view='wall'] .wall-decor {
         display: block;
-        border-radius: 0;
     }
     main[data-view='wall'] .wall-decor > :not(.wall-cracks) {
         zoom: var(--decor-scale);
@@ -3258,14 +3256,14 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
         zoom: var(--lantern-scale);
     }
     main[data-view='wall'] .wall-scene .wall-lantern {
-        left: calc((var(--street-bleed) * -1 - 2px) / var(--lantern-scale));
+        left: calc((var(--street-bleed) * -1 + 2px) / var(--lantern-scale));
         bottom: calc(34px / var(--lantern-scale));
     }
     main[data-view='wall'] .wall-scene .wall-scene-glow {
         left: calc((var(--street-bleed) * -1 - 90px) / var(--lantern-scale));
     }
     main[data-view='wall'] .wall-scene .wall-bench {
-        left: calc((var(--street-bleed) * -1 - 4px) / var(--street-art-scale));
+        left: calc((var(--street-bleed) * -1 + 2px) / var(--street-art-scale));
         bottom: calc(30px / var(--street-art-scale));
     }
     main[data-view='wall'] .wall-scene .wall-bike {
@@ -3296,6 +3294,64 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
     main[data-view='wall'] .wall-board {
         --decor-scale: 0.5;
         --street-art-scale: 0.44;
-        --lantern-scale: 0.5;
+        --lantern-scale: 0.42;
     }
 }
+
+/* ---------- The wall is a rounded card on every screen ----------
+   Owner request, 9 October 2026: as on a desktop, the wall sits inside
+   the page's margins with rounded corners, the sky along its rounded top. */
+@media (max-width: 999px) {
+    main[data-view='wall'] .wall-board {
+        margin: 6px 0 0;
+        border-radius: 28px;
+    }
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        border-radius: 28px 28px 0 0;
+    }
+}
+@media (max-width: 700px) {
+    /* The card keeps 12px from the screen's edges, a little inside the
+       page's margin, so the posters keep their width. */
+    main[data-view='wall'] .wall-board {
+        --street-bleed: 10px;
+        --corner-gap: 10px;
+        margin-inline: -8px;
+        border-radius: 22px;
+    }
+    /* The lantern has a strip of wall at the left; the dome overhangs the
+       column a little less. */
+    main[data-view='wall'] .wall-scene {
+        padding-left: 14px;
+    }
+    main[data-view='wall'] .wall-column-cap {
+        width: calc(var(--column-w) + 24px);
+    }
+    main[data-view='wall'] .wall-column-base > span {
+        left: -6px;
+        right: -6px;
+    }
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        border-radius: 22px 22px 0 0;
+    }
+}
+
+/* The date leads the search row, so its calendar opens from its left. */
+@media (min-width: 1000px) {
+    .event-search-row #event-calendar-panel {
+        left: 0;
+        right: auto;
+    }
+    /* The search keeps room to type next to the date. */
+    main[data-view='wall'] .event-gallery-head {
+        min-width: 440px;
+    }
+}
+/* On narrower desktops the categories drop their icons, so the date,
+   search, categories and filters still share one row. */
+@media (min-width: 1000px) and (max-width: 1399px) {
+    main[data-view='wall'] .event-categories .event-control-icon {
+        display: none;
+    }
+}
+
