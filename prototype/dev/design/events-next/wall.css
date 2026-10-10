@@ -3218,3 +3218,84 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
         inset: -4px;
     }
 }
+
+/* ---------- The whole wall on phones and tablets ----------
+   Owner request, 9 October 2026: not only the column and posters but the
+   whole street from the desktop, adjusted to the screen: the wall's bricks,
+   torn older posters, stickers, cracks, drainpipe and house number, its
+   stone base and stencil, and the lantern, bench, bike and pigeons round
+   the column on a strip of cobbles. The decor keeps its places (they're
+   set in percentages) at a smaller size; the street furniture stands in
+   the wall's edge and at the column's foot, so the posters keep their
+   width. */
+@media (max-width: 999px) {
+    main[data-view='wall'] .wall-board {
+        --decor-scale: 0.7;
+        --street-art-scale: 0.62;
+        --lantern-scale: 0.66;
+        padding-bottom: calc(72px * var(--decor-scale));
+    }
+    main[data-view='wall'] .wall-decor {
+        display: block;
+        border-radius: 0;
+    }
+    main[data-view='wall'] .wall-decor > :not(.wall-cracks) {
+        zoom: var(--decor-scale);
+    }
+    main[data-view='wall'] .wall-board[data-today-posters] > .wall-sky {
+        height: 120px;
+    }
+    main[data-view='wall'] .wall-scene :is(.wall-lantern, .wall-bench, .wall-bike, .wall-pigeons, .wall-scene-glow) {
+        display: block;
+    }
+    /* The lantern stands at the wall's edge, as tall as the column and
+       behind its dome; the bench in front of it, the bike leaning on the
+       plinth, pigeons on the cobbles. */
+    main[data-view='wall'] .wall-scene :is(.wall-bench, .wall-bike, .wall-pigeons) {
+        zoom: var(--street-art-scale);
+    }
+    main[data-view='wall'] .wall-scene :is(.wall-lantern, .wall-scene-glow) {
+        zoom: var(--lantern-scale);
+    }
+    main[data-view='wall'] .wall-scene .wall-lantern {
+        left: calc((var(--street-bleed) * -1 - 2px) / var(--lantern-scale));
+        bottom: calc(34px / var(--lantern-scale));
+    }
+    main[data-view='wall'] .wall-scene .wall-scene-glow {
+        left: calc((var(--street-bleed) * -1 - 90px) / var(--lantern-scale));
+    }
+    main[data-view='wall'] .wall-scene .wall-bench {
+        left: calc((var(--street-bleed) * -1 - 4px) / var(--street-art-scale));
+        bottom: calc(30px / var(--street-art-scale));
+    }
+    main[data-view='wall'] .wall-scene .wall-bike {
+        right: calc(-34px / var(--street-art-scale));
+        bottom: calc(28px / var(--street-art-scale));
+    }
+    main[data-view='wall'] .wall-scene .wall-pigeons {
+        left: 40%;
+        bottom: calc(30px / var(--street-art-scale));
+    }
+    /* The house number hangs by the pipe, below the first posters. */
+    main[data-view='wall'] .wall-decor > .wall-number {
+        top: 52%;
+    }
+    /* The pavement runs from the wall's edge to past the bike. */
+    main[data-view='wall'] .wall-scene-ground {
+        left: calc(var(--street-bleed) * -1);
+        right: -34px;
+        height: 34px;
+    }
+    main[data-view='wall'] .wall-scene .wall-column-caption {
+        position: relative;
+        z-index: 4;
+        margin-top: 40px;
+    }
+}
+@media (max-width: 700px) {
+    main[data-view='wall'] .wall-board {
+        --decor-scale: 0.5;
+        --street-art-scale: 0.44;
+        --lantern-scale: 0.5;
+    }
+}

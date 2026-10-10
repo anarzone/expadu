@@ -98,6 +98,16 @@ const inside = (box, viewport) =>
                 assert.ok(corner.slim > 0.3 && corner.slim < 0.45, `the column should be slim on a phone: ${corner.slim}`);
                 assert.ok(corner.filtersFirst, 'the filters should lead the page, above the wall');
                 assert.ok(corner.beside, "the day's poster should hang beside the column");
+                // The whole street, as on a desktop: the wall's decor, its
+                // base and stencil, and the lantern, bench and bike.
+                const street = await page.evaluate(() =>
+                    ['.wall-decor', '.wall-sockel', '.wall-stencil', '.wall-pipe', '.wall-lantern', '.wall-bench', '.wall-bike']
+                        .filter((s) => {
+                            const r = document.querySelector(s)?.getBoundingClientRect();
+                            return !r || !r.width || !r.height;
+                        }),
+                );
+                assert.deepEqual(street, [], 'part of the street is missing on a phone');
                 assert.equal(await page.locator('.event-search-row > .wall-heading:first-child + .event-search').count(), 1);
                 assert.equal(await page.locator('.event-control-scroller > [data-event-picker="sort"]:first-child + [data-event-picker="travel"]').count(), 1);
                 const edges = await page.evaluate(() => {

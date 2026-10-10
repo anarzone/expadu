@@ -5,6 +5,19 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The whole wall on phones and tablets — 9 October 2026
+
+Owner follow-up: a phone shows the whole desktop street, not only the
+column and posters. The wall's decor (bricks, torn older posters with tape,
+stickers, cracks, paste marks, streaks, the drainpipe, house number 17, the
+stone base and "Plakatieren verboten") keeps its percentage places at half
+size (0.7 on a tablet); the house number hangs lower by the pipe. The
+lantern stands at the wall's edge as tall as the column (0.5), the bench in
+front of it and the bike leaning on the plinth (0.44), with pigeons, on a
+strip of cobbles from the wall's edge to past the bike. Today's sky is
+120px. The posters keep their width. `tests/wall-browser.cjs` checks the
+street's pieces are on a phone.
+
 ## Phones and tablets get the desktop's street corner — 9 October 2026
 
 Owner request: on a phone the Wall reads like a smaller desktop. The filters
