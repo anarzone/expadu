@@ -221,10 +221,16 @@ test('switching between Map and Steps preserves manual progress and keyboard foc
     assert.equal(ui.element('.nav-map-area').hidden, true);
     assert.doesNotMatch(ui.content(), /class="nav-expanded" inert/);
     // The step says what to do now: the tram and where it's going.
-    assert.match(ui.content(), /<h2>(Tram|Line) 18 to Buchheim Herler Str\.<\/h2>/);
+    assert.match(
+        ui.content(),
+        /<h2>(Tram|Line) 18 to Buchheim Herler Str\.<\/h2>/,
+    );
     assert.equal(ui.context.JourneySession.read().step, 1);
     ui.click('next');
-    assert.match(ui.content(), /<h2>Stay on to Dom\/Hbf<\/h2>[\s\S]*Next: Appellhofplatz at 23:49/);
+    assert.match(
+        ui.content(),
+        /<h2>Stay on to Dom\/Hbf<\/h2>[\s\S]*Next: Appellhofplatz at 23:49/,
+    );
     ui.click('previous');
     assert.equal(ui.context.JourneySession.read().step, 1);
     ui.view('map');
@@ -258,7 +264,10 @@ test('minimizing and reloading resume Steps at the same captured boarding-stop s
     );
     assert.equal(resumed.element('.nav-map-area').hidden, true);
     assert.equal(resumed.context.JourneySession.read().step, 1);
-    assert.match(resumed.content(), /<h2>Stay on to Dom\/Hbf<\/h2>[\s\S]*Next: Appellhofplatz at 23:49/);
+    assert.match(
+        resumed.content(),
+        /<h2>Stay on to Dom\/Hbf<\/h2>[\s\S]*Next: Appellhofplatz at 23:49/,
+    );
     assert.doesNotMatch(resumed.content(), /Walk to Köln Neumarkt/);
     assert.doesNotMatch(resumed.content(), /class="nav-expanded" inert/);
 });

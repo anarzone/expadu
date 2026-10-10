@@ -107,7 +107,9 @@ function routeList(tripId = requestTrip(), mode = state.routeMode) {
     const gone = (route) =>
         tripId === 'day' &&
         ['cancelled', 'missed'].includes(state.scenario) &&
-        route.legs.some((leg) => leg.mode === 'transit' && leg.time === '13:14');
+        route.legs.some(
+            (leg) => leg.mode === 'transit' && leg.time === '13:14',
+        );
     const usable = list.filter((route) => !gone(route));
     // What matters to you re-ranks the options; ties keep the chosen sort.
     if (!state.fewer && !state.lessWalk) return usable;
@@ -316,12 +318,14 @@ function scheduleLabel() {
 function syncControls() {
     syncServicePreference();
     syncComposerHelper();
-    document.querySelectorAll('[data-schedule-mode]').forEach((button) =>
-        button.setAttribute(
-            'aria-pressed',
-            String(button.dataset.scheduleMode === state.schedule),
-        ),
-    );
+    document
+        .querySelectorAll('[data-schedule-mode]')
+        .forEach((button) =>
+            button.setAttribute(
+                'aria-pressed',
+                String(button.dataset.scheduleMode === state.schedule),
+            ),
+        );
     const timed = state.schedule !== 'now';
     $('#plan-when-time').hidden = !timed;
     $('#plan-when-caption').textContent =
@@ -329,9 +333,14 @@ function syncControls() {
     $('#schedule-label').textContent = timed
         ? `${state.date === home.date ? '' : `${boardDateLabel(state.date)} · `}${state.time}`
         : '';
-    document.querySelectorAll('[data-pref]').forEach((button) =>
-        button.setAttribute('aria-pressed', String(!!state[button.dataset.pref])),
-    );
+    document
+        .querySelectorAll('[data-pref]')
+        .forEach((button) =>
+            button.setAttribute(
+                'aria-pressed',
+                String(!!state[button.dataset.pref]),
+            ),
+        );
     $('#stepfree-note').hidden = !state.stepfree;
 }
 function composerRequestKey() {
@@ -732,11 +741,20 @@ function renderNextTrip() {
     const choice = nextTripChoice(trip);
     const { planned, spare } = choice;
     const broken = ['cancelled', 'missed'].includes(sc);
-    panel.classList.toggle('is-change', broken && !state.recovered && sc === 'cancelled');
-    panel.classList.toggle('is-missed', broken && !state.recovered && sc === 'missed');
+    panel.classList.toggle(
+        'is-change',
+        broken && !state.recovered && sc === 'cancelled',
+    );
+    panel.classList.toggle(
+        'is-missed',
+        broken && !state.recovered && sc === 'missed',
+    );
     const lineLook = window.NearbyModel?.look(planned.line, 'tram');
     if (lineLook)
-        panel.setAttribute('style', `--line:${lineLook.colour};--tint:${lineLook.tint};--ink:${lineLook.ink}`);
+        panel.setAttribute(
+            'style',
+            `--line:${lineLook.colour};--tint:${lineLook.tint};--ink:${lineLook.ink}`,
+        );
     if (broken && !state.recovered) {
         panel.innerHTML = changeOfPlan(trip, planned, spare);
         return;
@@ -749,21 +767,32 @@ function renderNextTrip() {
     const tram = (route) => route.legs.find((leg) => leg.mode === 'transit');
     const ride = tram(best);
     const walkIn = best.legs[0].mode === 'walk' ? best.legs[0].duration : 0;
-    const walkOut = best.legs.at(-1).mode === 'walk' ? best.legs.at(-1).duration : 0;
+    const walkOut =
+        best.legs.at(-1).mode === 'walk' ? best.legs.at(-1).duration : 0;
     const leaveIn = minutesOf(best.depart) - minutesOf(trip.time);
-    const look = window.NearbyModel?.look(best.line, 'tram') || { colour: 'var(--color-select-text)', tint: 'var(--color-select-bg)', ink: '#fff' };
+    const look = window.NearbyModel?.look(best.line, 'tram') || {
+        colour: 'var(--color-select-text)',
+        tint: 'var(--color-select-bg)',
+        ink: '#fff',
+    };
     const total = walkIn + ride.duration + walkOut;
     const weather = sampleWeather(trip.date, best.depart);
     const later = (window.ExpaduSampleDay?.events || [])
         .filter((event) => event.start > trip.start)
-        .map((event) => ({ event, weather: sampleWeather(trip.date, event.start) }));
+        .map((event) => ({
+            event,
+            weather: sampleWeather(trip.date, event.start),
+        }));
     const others = [
         planned !== best && !broken
             ? `<li><span><strong>The ${tram(planned).time} tram ${safe(planned.line)}</strong><small>In your plan · there ${planned.arrive}</small></span><span class="nearby-tag is-late">Only ${spare(planned)} min spare</span></li>`
             : '',
         '<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li>',
     ].join('');
-    panel.setAttribute('style', `--line:${look.colour};--tint:${look.tint};--ink:${look.ink}`);
+    panel.setAttribute(
+        'style',
+        `--line:${look.colour};--tint:${look.tint};--ink:${look.ink}`,
+    );
     const tight = spare(best) < (trip.kind === 'official' ? 10 : 5);
     panel.innerHTML = `<div class="next-trip-main">
             ${switchNote ? `<p class="next-trip-switched">${icon('check')}${safe(switchNote)}</p>` : ''}
@@ -848,9 +877,12 @@ function details(route) {
 // What the planner looked at for this trip, and what the preview has of it.
 function checks(tripId, trip, route) {
     const day = tripId === 'day';
-    const weather = day && route ? sampleWeather(trip.date, route.depart) : null;
+    const weather =
+        day && route ? sampleWeather(trip.date, route.depart) : null;
     const between = day
-        ? dayPlaces().filter((place) => place.time > trip.time && place.time < trip.start)
+        ? dayPlaces().filter(
+              (place) => place.time > trip.time && place.time < trip.start,
+          )
         : [];
     return [
         {
@@ -861,7 +893,8 @@ function checks(tripId, trip, route) {
                 : `Captured ${boardDateLabel(trip.date)} at ${trip.time}: that night’s times`,
         },
         {
-            short: state.scenario === 'cancelled' && day ? '1 notice' : 'Notices',
+            short:
+                state.scenario === 'cancelled' && day ? '1 notice' : 'Notices',
             title: 'KVB notices',
             text:
                 state.scenario === 'cancelled' && day
@@ -915,7 +948,8 @@ function savedPlan(route) {
 // "Arrive by 14:00", with the date only when it isn't the planner's day.
 function planSummary() {
     if (state.schedule === 'now') return 'Leave now';
-    const day = state.date === home.date ? '' : `${boardDateLabel(state.date)}, `;
+    const day =
+        state.date === home.date ? '' : `${boardDateLabel(state.date)}, `;
     return `${state.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${day}${state.time}`;
 }
 function renderResults() {
@@ -940,14 +974,20 @@ function renderResults() {
           'Back to your request</button>'
         : '';
     const plan = state.planSaved && findRoute(state.planSaved);
-    if (plan && tripId && tripOf(plan).id === (J.trips?.[tripId] || J.capture).id) {
+    if (
+        plan &&
+        tripId &&
+        tripOf(plan).id === (J.trips?.[tripId] || J.capture).id
+    ) {
         $('#results').innerHTML = restore + savedPlan(plan);
         syncComposerHelper();
         return;
     }
     state.planSaved = null;
     const title =
-        tripId === 'day' && trip.place ? trip.place : placeName(to.value.trim());
+        tripId === 'day' && trip.place
+            ? trip.place
+            : placeName(to.value.trim());
     const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? `To ${safe(title)}` : 'Your journey'}</h2><div class="results-heading"><span>${safe(planSummary())} · from ${safe(placeName(from.value.trim()))}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
     const empty = matched
         ? U.emptyReason(state, trip, [
@@ -980,9 +1020,10 @@ function renderResults() {
             ? `<p class="route-note">The 13:14 isn’t offered: ${state.scenario === 'cancelled' ? 'it’s cancelled' : 'it has left'} (sample).</p>`
             : '';
     const others = list.length
-        ? gone + (otherWays.length
-            ? `<h3 class="plan-subhead">Other ways</h3><div class="route-options">${otherWays.map((route) => option(route, otherWays)).join('')}</div>`
-            : '<p class="route-note other-ways-note">Bike or walk: times aren’t in the sample.</p>')
+        ? gone +
+          (otherWays.length
+              ? `<h3 class="plan-subhead">Other ways</h3><div class="route-options">${otherWays.map((route) => option(route, otherWays)).join('')}</div>`
+              : '<p class="route-note other-ways-note">Bike or walk: times aren’t in the sample.</p>')
         : '';
     const contents = list.length
         ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="route-options">${(state.more ? list : list.slice(0, 3)).map((route, index) => option(route, list, false, index === 0 && list.length > 1)).join('')}${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}</div>${others}</div>`
@@ -1131,7 +1172,8 @@ function renderDay() {
     if (!panel) return;
     const trip = J.day;
     if (!trip) {
-        panel.innerHTML = '<p class="route-note">Your day isn’t in this preview.</p>';
+        panel.innerHTML =
+            '<p class="route-note">Your day isn’t in this preview.</p>';
         return;
     }
     const appointment = window.ExpaduSampleDay?.appointment;
@@ -1142,10 +1184,12 @@ function renderDay() {
     const route = ['cancelled', 'missed'].includes(sc) ? planned : usual;
     const ride = route.legs.find((leg) => leg.mode === 'transit');
     const walkIn = route.legs[0].mode === 'walk' ? route.legs[0].duration : 0;
-    const walkOut = route.legs.at(-1).mode === 'walk' ? route.legs.at(-1).duration : 0;
+    const walkOut =
+        route.legs.at(-1).mode === 'walk' ? route.legs.at(-1).duration : 0;
     const look = window.NearbyModel?.look(route.line, 'tram') || {};
     const tight = spare(route) < (trip.kind === 'official' ? 10 : 5);
-    const hour = (h) => sampleWeather(trip.date, `${String(h).padStart(2, '0')}:00`);
+    const hour = (h) =>
+        sampleWeather(trip.date, `${String(h).padStart(2, '0')}:00`);
     const now = sampleWeather(trip.date, trip.time);
     // Two plans that overlap ask which one; the other is then skipped.
     const [first, second] = events;
@@ -1173,12 +1217,20 @@ function renderDay() {
             <li class="is-now"><time>${trip.time}</time><span class="day-rail"><i class="day-dot is-now"></i></span><div><strong>Now, near ${safe(placeName(trip.from))}</strong><small>Your location is a sample</small></div></li>
             <li class="is-trip" style="--trip-line:${look.colour}"><time>${route.depart}</time><span class="day-rail is-ride"></span><div>${tripBlock}</div></li>
             <li><time>${trip.start}</time><span class="day-rail"><i class="day-dot is-plan"></i></span><div><section class="day-plan"><strong>${safe(trip.place)}</strong><span>${safe(trip.to)} · ${safe(trip.alightStop || '')}${appointment?.end ? ` · until ${appointment.end}` : ''}</span><a class="day-paper" href="../bureaucracy-next/">${icon('document')}What to bring</a></section></div></li>
-            ${appointment?.end && first ? `<li class="is-free"><time>${appointment.end}</time><span class="day-rail is-free"></span><div><strong class="day-free">${(Number(first.start.slice(0, 2)) - Number(appointment.end.slice(0, 2)))} hours free</strong><small>Weather along the way · sample</small><ul class="day-hours">${[15, 16, 17, 18]
-                .map((h) => {
-                    const w = hour(h);
-                    return w ? `<li><time>${h}:00</time>${icon(w.wet ? 'cloud' : 'sun')}<span>${w.sky}, ${w.degrees}°${w.rain ? ` · ${w.rain}% rain` : ''}</span></li>` : '';
-                })
-                .join('')}</ul></div></li>` : ''}
+            ${
+                appointment?.end && first
+                    ? `<li class="is-free"><time>${appointment.end}</time><span class="day-rail is-free"></span><div><strong class="day-free">${Number(first.start.slice(0, 2)) - Number(appointment.end.slice(0, 2))} hours free</strong><small>Weather along the way · sample</small><ul class="day-hours">${[
+                          15, 16, 17, 18,
+                      ]
+                          .map((h) => {
+                              const w = hour(h);
+                              return w
+                                  ? `<li><time>${h}:00</time>${icon(w.wet ? 'cloud' : 'sun')}<span>${w.sky}, ${w.degrees}°${w.rain ? ` · ${w.rain}% rain` : ''}</span></li>`
+                                  : '';
+                          })
+                          .join('')}</ul></div></li>`
+                    : ''
+            }
             ${first ? `<li class="is-later"><time>later</time><span class="day-rail is-dashed"></span><div><section class="day-open"><strong>Getting to ${safe(first.venue)}</strong><small>Route times aren’t in the sample yet.</small><button type="button" class="quiet-button" data-action="plan-way" data-place="${safe(first.venue)}">Plan the way</button></section></div></li>` : ''}
             ${first ? `<li><time>${first.start}</time><span class="day-rail is-event"><i class="day-dot is-event"></i></span><div>${ev(first, 'culture')}</div></li>` : ''}
             ${overlap ? `<li class="is-choice"><time></time><span class="day-rail is-event"></span><div><div class="day-overlap"><strong>These overlap from ${overlap.from} to ${overlap.to}. Which one?</strong><div role="group" aria-label="Choose an evening plan"><button type="button" data-action="day-pick" data-pick="culture" aria-pressed="${state.dayPick === 'culture'}">Street culture</button><button type="button" data-action="day-pick" data-pick="cinema" aria-pressed="${state.dayPick === 'cinema'}">Cinema</button></div></div></div></li>` : ''}
@@ -1217,15 +1269,21 @@ function nearbyScenario() {
             },
         };
     if (sc === 'longwait') {
-        const mitte = window.NearbyModel?.create({ departures: D }).stopOf('mitte');
+        const mitte = window.NearbyModel?.create({ departures: D }).stopOf(
+            'mitte',
+        );
         const dirs = mitte ? mitte.lines.flatMap((line) => line.dirs) : [];
         return {
             laterTags: true,
             banner: {
                 title: 'Last trams for a while',
-                text: dirs
-                    .map((dir) => `To ${dir.dest}: ${dir.clock}, then ${dir.later[0]}`)
-                    .join('. ') + '. Recorded Mon 7 Sept, 23:15.',
+                text:
+                    dirs
+                        .map(
+                            (dir) =>
+                                `To ${dir.dest}: ${dir.clock}, then ${dir.later[0]}`,
+                        )
+                        .join('. ') + '. Recorded Mon 7 Sept, 23:15.',
             },
         };
     }
@@ -1252,9 +1310,14 @@ function setScenario(id) {
     renderNextTrip();
     renderDay();
     if (state.results) renderResults();
-    document.querySelectorAll('[data-scenario]').forEach((button) =>
-        button.setAttribute('aria-pressed', String(button.dataset.scenario === id)),
-    );
+    document
+        .querySelectorAll('[data-scenario]')
+        .forEach((button) =>
+            button.setAttribute(
+                'aria-pressed',
+                String(button.dataset.scenario === id),
+            ),
+        );
     const menu = $('.review-tools');
     if (menu) menu.open = false;
 }
@@ -1452,8 +1515,7 @@ function action(name, button) {
         renderNextTrip();
         if (state.view === 'day') renderDay();
         $('[data-action="trip-start"]')?.focus({ preventScroll: true });
-    }
-    else if (name === 'trip-others') {
+    } else if (name === 'trip-others') {
         state.tripOthers = !state.tripOthers;
         renderNextTrip();
         $('[data-action="trip-others"]')?.focus({ preventScroll: true });
@@ -1465,8 +1527,7 @@ function action(name, button) {
         to.value = button.dataset.place;
         setView('journey');
         searchJourney();
-    }
-    else if (name === 'from-departures') showStop(button.dataset.stopId);
+    } else if (name === 'from-departures') showStop(button.dataset.stopId);
     else if (name === 'return-journey') {
         returnFromTimetable();
     } else if (name === 'edit-journey') {
@@ -1515,9 +1576,12 @@ function action(name, button) {
         renderDay();
         $('[data-action="day-trip"]')?.focus({ preventScroll: true });
     } else if (name === 'day-pick') {
-        state.dayPick = state.dayPick === button.dataset.pick ? '' : button.dataset.pick;
+        state.dayPick =
+            state.dayPick === button.dataset.pick ? '' : button.dataset.pick;
         renderDay();
-        $(`[data-pick="${button.dataset.pick}"]`)?.focus({ preventScroll: true });
+        $(`[data-pick="${button.dataset.pick}"]`)?.focus({
+            preventScroll: true,
+        });
     } else if (name === 'saved-place')
         toast('Saved places aren’t in this preview.');
     else if (name === 'ask-composer') {
@@ -1589,10 +1653,15 @@ document.addEventListener('click', (event) => {
         ).focus();
     } else if (button.dataset.scheduleMode) {
         const mode = button.dataset.scheduleMode;
-        const place = dayPlaces().find((item) => item.place === to.value.trim());
+        const place = dayPlaces().find(
+            (item) => item.place === to.value.trim(),
+        );
         Object.assign(state, {
             schedule: mode,
-            date: mode === 'now' || state.schedule === 'now' ? home.date : state.date,
+            date:
+                mode === 'now' || state.schedule === 'now'
+                    ? home.date
+                    : state.date,
             time:
                 mode === 'arrive' && place
                     ? place.time
@@ -1602,7 +1671,9 @@ document.addEventListener('click', (event) => {
         });
         syncControls();
         if (state.results) renderResults();
-        plannerControl(`[data-schedule-mode="${mode}"]`)?.focus({ preventScroll: true });
+        plannerControl(`[data-schedule-mode="${mode}"]`)?.focus({
+            preventScroll: true,
+        });
     } else if (button.dataset.pref) {
         const key = button.dataset.pref;
         state[key] = !state[key];
@@ -1611,7 +1682,9 @@ document.addEventListener('click', (event) => {
         plannerControl(`[data-pref="${key}"]`)?.focus({ preventScroll: true });
     } else if (button.dataset.dayPlace) {
         // A place from today: arrive by its start, from the sample location.
-        const place = dayPlaces().find((item) => item.place === button.dataset.dayPlace);
+        const place = dayPlaces().find(
+            (item) => item.place === button.dataset.dayPlace,
+        );
         if (!from.value.trim()) from.value = J.day?.from || '';
         to.value = button.dataset.dayPlace;
         Object.assign(state, {
@@ -1647,8 +1720,7 @@ document.addEventListener('click', (event) => {
             preventScroll: true,
         });
     } else if (button.dataset.scenario) setScenario(button.dataset.scenario);
-    else if (button.dataset.exampleRoute)
-        example(button.dataset.exampleRoute);
+    else if (button.dataset.exampleRoute) example(button.dataset.exampleRoute);
     else if (button.dataset.routeDetails)
         toggleRouteDetails(button.dataset.routeDetails);
     else if (button.dataset.route) selectedRoute(button.dataset.route);
@@ -1682,11 +1754,9 @@ document.addEventListener('click', (event) => {
 });
 document.addEventListener('submit', (event) => {
     if (
-        ![
-            'journey-form',
-            'schedule-form',
-            'compose-form',
-        ].includes(event.target.id)
+        !['journey-form', 'schedule-form', 'compose-form'].includes(
+            event.target.id,
+        )
     )
         return;
     event.preventDefault();
@@ -1829,7 +1899,8 @@ renderNextTrip();
 const todayEntry = new URLSearchParams(location.search);
 if (['from', 'to', 'route', 'service'].some((key) => todayEntry.has(key)))
     setView('journey');
-else if (scenarios[todayEntry.get('scenario')]) setScenario(todayEntry.get('scenario'));
+else if (scenarios[todayEntry.get('scenario')])
+    setScenario(todayEntry.get('scenario'));
 else if (todayEntry.get('view') === 'day') setView('day');
 else {
     setView('stop');

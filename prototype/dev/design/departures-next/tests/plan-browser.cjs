@@ -14,49 +14,89 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             });
             const errors = [];
             page.on('pageerror', (e) => errors.push(e.message));
-            await page.goto(base + 'departures-next/', { waitUntil: 'networkidle' });
+            await page.goto(base + 'departures-next/', {
+                waitUntil: 'networkidle',
+            });
             // Phones open Plan a trip from “Where to?”; desktops from its tab.
-            await (width < 1000 ? page.locator('.where-to') : page.getByRole('button', { name: 'Plan a trip' }).first()).click();
+            await (
+                width < 1000
+                    ? page.locator('.where-to')
+                    : page.getByRole('button', { name: 'Plan a trip' }).first()
+            ).click();
 
             // Today's places start the trip: arrive by the appointment.
             await page.locator('[data-day-place="Mülheim"]').click();
             assert.equal(await page.locator('#to').inputValue(), 'Mülheim');
             assert.equal(
-                await page.locator('[data-schedule-mode="arrive"]').getAttribute('aria-pressed'),
+                await page
+                    .locator('[data-schedule-mode="arrive"]')
+                    .getAttribute('aria-pressed'),
                 'true',
             );
-            assert.equal(await page.locator('#schedule-label').innerText(), '14:00');
+            assert.equal(
+                await page.locator('#schedule-label').innerText(),
+                '14:00',
+            );
             await page.locator('[data-pref="stepfree"]').click();
-            assert.equal(await page.locator('#stepfree-note').isVisible(), true);
+            assert.equal(
+                await page.locator('#stepfree-note').isVisible(),
+                true,
+            );
             await page.locator('[data-pref="stepfree"]').click();
             await page.getByRole('button', { name: 'Plan it' }).click();
 
             // What we checked, then the best option first.
             const results = page.locator('#results');
-            assert.match(await results.locator('#results-title').innerText(), /To Blue Card appointment/);
-            await page.getByRole('button', { name: /We checked today’s conditions/ }).click();
-            assert.match(await page.locator('#plan-checks-detail').innerText(), /None in the sample day/);
+            assert.match(
+                await results.locator('#results-title').innerText(),
+                /To Blue Card appointment/,
+            );
+            await page
+                .getByRole('button', { name: /We checked today’s conditions/ })
+                .click();
+            assert.match(
+                await page.locator('#plan-checks-detail').innerText(),
+                /None in the sample day/,
+            );
             assert.match(
                 await results.locator('.route-option').first().innerText(),
                 /Best for you[\s\S]*13:10[\s\S]*13:48[\s\S]*12 min to spare/,
             );
-            await results.getByRole('button', { name: 'Journey details' }).first().click();
-            await page.getByRole('button', { name: 'Save this plan' }).first().click();
+            await results
+                .getByRole('button', { name: 'Journey details' })
+                .first()
+                .click();
+            await page
+                .getByRole('button', { name: 'Save this plan' })
+                .first()
+                .click();
 
             // Saved, with a reminder that says it isn't sent in the preview.
-            assert.match(await page.locator('.plan-saved').innerText(), /Plan saved[\s\S]*Line 4 · leave 13:10 · there 13:48/);
-            await page.getByRole('switch', { name: /Remind me when to leave/ }).click();
-            assert.match(await page.locator('.plan-saved').innerText(), /Remind me when to leave\s*Off/);
+            assert.match(
+                await page.locator('.plan-saved').innerText(),
+                /Plan saved[\s\S]*Line 4 · leave 13:10 · there 13:48/,
+            );
+            await page
+                .getByRole('switch', { name: /Remind me when to leave/ })
+                .click();
+            assert.match(
+                await page.locator('.plan-saved').innerText(),
+                /Remind me when to leave\s*Off/,
+            );
             await page.getByRole('button', { name: 'Change the plan' }).click();
             assert.equal(await page.locator('.plan-saved').count(), 0);
             // The option it came from is open again and knows it's saved.
-            const again = page.locator('[data-action="save-plan"][data-route-id="day-1314"]');
+            const again = page.locator(
+                '[data-action="save-plan"][data-route-id="day-1314"]',
+            );
             assert.equal(await again.innerText(), 'Saved · see the plan');
             await again.click();
             await page.getByRole('button', { name: 'Done' }).click();
             assert.equal(await page.locator('#departures').isVisible(), true);
             assert.equal(
-                await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+                await page.evaluate(
+                    () => document.documentElement.scrollWidth <= innerWidth,
+                ),
                 true,
             );
             assert.deepEqual(errors, []);

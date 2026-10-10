@@ -144,22 +144,6 @@ body.travel-palette .suggestions button:focus-visible {
     background-color: var(--blue);
     outline: none;
 }
-body.travel-palette .planner-controls {
-    margin-top: 14px;
-}
-body.travel-palette .route-modes {
-    min-width: 0;
-    padding: 0;
-    gap: 4px;
-}
-body.travel-palette .route-modes button {
-    min-height: 44px;
-    font-size: var(--text-small);
-    padding-inline: 10px;
-}
-body.travel-palette .journey-utilities {
-    margin-top: 12px;
-}
 body.travel-palette .find-routes {
     margin-top: 10px;
     min-height: 46px;
@@ -282,14 +266,6 @@ body.travel-palette .results-heading .icon-button {
 body.travel-palette .results-heading > span {
     color: var(--muted);
     font-size: var(--text-caption);
-}
-body.travel-palette .results-tools {
-    margin-bottom: 10px;
-}
-body.travel-palette
-    .journey-intro-grid:has(.journey-desk:not(.is-compact))
-    .results-tools {
-    display: none;
 }
 body.travel-palette .route-workspace {
     display: block;
@@ -514,230 +490,11 @@ body.travel-palette #departures {
 body.travel-palette #departures[hidden] {
     display: none;
 }
-body.travel-palette .timetable-context {
-    padding: 0;
-    border: 0;
-}
-body.travel-palette .stop-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 0 0 8px;
-}
-body.travel-palette .stop-selector {
-    flex: 1;
-    min-width: 0;
-    min-height: 48px;
-    gap: 10px;
-    padding: 0;
-}
-body.travel-palette .stop-selector > span:nth-child(2) {
-    min-width: 0;
-}
-body.travel-palette .stop-selector small {
-    margin-bottom: 2px;
-    font-size: var(--text-micro);
-}
-body.travel-palette .stop-selector strong {
-    display: block;
-    font-size: var(--text-title);
-    line-height: 1.25;
-    overflow-wrap: normal;
-}
-body.travel-palette .stop-selector > [data-icon] {
-    flex: none;
-}
-body.travel-palette .stop-symbol {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-md);
-}
 body.travel-palette .board-plan {
     flex: none;
     color: var(--action);
     padding-inline: 8px;
     font-size: var(--text-small);
-}
-body.travel-palette .timetable-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 12px;
-    margin: 0 0 8px;
-}
-body.travel-palette .timetable-toolbar > button {
-    min-height: 44px;
-    padding-inline: 0 8px;
-    gap: 7px;
-}
-body.travel-palette .timetable-toolbar > button > span:nth-child(2) {
-    font-size: var(--text-small);
-}
-body.travel-palette .timetable-paging {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    margin-left: auto;
-}
-body.travel-palette .timetable-paging button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: auto;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 8px;
-    gap: 5px;
-    font-size: var(--text-caption);
-    color: var(--muted);
-}
-body.travel-palette .timetable-paging svg {
-    width: 14px;
-    height: 14px;
-}
-body.travel-palette .board-meta {
-    display: block;
-    margin: 0;
-    font-size: var(--text-micro);
-    line-height: 1.4;
-    color: var(--muted);
-}
-body.travel-palette .timetable-context > .board-meta {
-    margin: -6px 0 10px;
-}
-body.travel-palette #board-filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 14px;
-    margin: 0 0 8px;
-}
-body.travel-palette .board-filterbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    flex-basis: 100%;
-    min-width: 0;
-    min-height: 44px;
-    margin-bottom: 6px;
-}
-body.travel-palette .board-types {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-width: 0;
-    overflow-x: auto;
-}
-body.travel-palette .board-filter-toggle,
-body.travel-palette .board-types button {
-    flex: none;
-}
-body.travel-palette :is(.board-types button, .board-filter-toggle) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 44px;
-    padding: 8px 12px;
-    border-radius: var(--radius-pill);
-    color: var(--ink-soft);
-    font-size: var(--text-small);
-    transition:
-        background-color 140ms ease,
-        color 140ms ease;
-}
-body.travel-palette :is(.board-types button, .board-filter-toggle) svg {
-    width: 18px;
-    height: 18px;
-}
-body.travel-palette .board-types [aria-pressed='true'],
-body.travel-palette .board-filter-toggle[aria-expanded='true'] {
-    color: var(--teal);
-    background: var(--blue);
-}
-body.travel-palette :is(.board-types button, .board-filter-toggle):active {
-    background: var(--blue);
-}
-body.travel-palette
-    :is(.board-types button, .board-filter-toggle):focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-}
-body.travel-palette .board-filter-count {
-    display: inline-grid;
-    place-items: center;
-    min-width: 18px;
-    height: 18px;
-    font-size: var(--text-micro);
-    border-radius: var(--radius-round);
-    color: var(--surface);
-    background: var(--teal);
-}
-body.travel-palette #board-filters .board-clear {
-    min-height: 44px;
-    font-size: var(--text-small);
-    padding: 8px;
-}
-body.travel-palette #board-filters:empty,
-body.travel-palette #board-filters[hidden],
-body.travel-palette #board-filters [hidden] {
-    display: none;
-}
-body.travel-palette #board-filters :is(.board-filter, .board-status-filter) {
-    min-width: 0;
-    max-width: 100%;
-}
-body.travel-palette .board-filter-trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-width: 0;
-    min-height: 44px;
-    max-width: 100%;
-    padding: 8px 10px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    background-color: var(--surface);
-    color: var(--ink);
-    font: inherit;
-    font-size: var(--text-small);
-    line-height: 1.4;
-    text-align: left;
-    cursor: pointer;
-    transition:
-        background-color 140ms ease,
-        border-color 140ms ease,
-        color 140ms ease;
-}
-body.travel-palette .board-filter-label {
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-body.travel-palette .board-filter-trigger [data-icon] {
-    display: inline-flex;
-    flex: none;
-}
-body.travel-palette .board-filter-trigger svg {
-    width: 16px;
-    height: 16px;
-    flex: none;
-    color: var(--muted);
-}
-body.travel-palette .board-filter-trigger[aria-expanded='true'] {
-    border-color: var(--teal);
-    color: var(--teal);
-}
-body.travel-palette .board-filter-trigger[aria-expanded='true'] svg {
-    color: currentColor;
-}
-body.travel-palette .board-filter-trigger:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
 }
 body.travel-palette #journey-popover[data-kind^='board-filter-'] {
     display: flex;
@@ -787,217 +544,6 @@ body.travel-palette #journey-popover[data-kind^='board-filter-'] #popover-body {
     display: grid;
     gap: 2px;
 }
-body.travel-palette
-    #journey-popover[data-kind^='board-filter-']
-    .board-filter-option {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 18px;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    min-height: 44px;
-    padding: 10px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--ink);
-    text-align: left;
-    font-size: var(--text-control);
-    font-weight: var(--weight-regular);
-    line-height: 1.4;
-    transition:
-        background-color 140ms ease,
-        color 140ms ease;
-}
-body.travel-palette
-    #journey-popover[data-kind^='board-filter-']
-    .board-filter-option
-    > span {
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-body.travel-palette
-    #journey-popover[data-kind^='board-filter-']
-    .board-filter-option
-    > svg {
-    grid-column: 2;
-    width: 18px;
-    height: 18px;
-    color: var(--teal);
-}
-body.travel-palette
-    #journey-popover[data-kind^='board-filter-']
-    .board-filter-option[aria-pressed='false']
-    > svg {
-    visibility: hidden;
-}
-body.travel-palette
-    #journey-popover[data-kind^='board-filter-']
-    .board-filter-option[aria-pressed='true'] {
-    background: var(--blue);
-    color: var(--teal);
-}
-body.travel-palette
-    #journey-popover[data-kind^='board-filter-']
-    .board-filter-option:focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: -2px;
-}
-body.travel-palette .board-filter-trigger:active,
-body.travel-palette
-    #journey-popover[data-kind^='board-filter-']
-    .board-filter-option:active {
-    background: var(--cyan-hover);
-    color: var(--teal);
-}
-body.travel-palette #board-filter-summary {
-    color: var(--muted);
-    font-size: var(--text-caption);
-    line-height: 1.5;
-    margin: 0 0 8px;
-}
-body.travel-palette .timetable-columns,
-body.travel-palette .timetable-row {
-    display: grid;
-    grid-template-columns: 46px minmax(0, 1fr) 64px 14px;
-    align-items: center;
-    gap: 12px;
-    padding-inline: 12px;
-}
-body.travel-palette .timetable-columns {
-    padding-block: 7px;
-    color: var(--muted);
-    font-size: var(--text-micro);
-    border-bottom: 1px solid var(--line);
-}
-body.travel-palette .timetable-columns > :nth-child(3) {
-    text-align: right;
-}
-body.travel-palette .timetable-list,
-body.travel-palette .timetable-day {
-    background: transparent;
-    border-radius: 0;
-}
-body.travel-palette .timetable-entry {
-    border-bottom: 1px solid var(--line);
-}
-body.travel-palette .timetable-row {
-    position: relative;
-    min-height: 62px;
-    padding-block: 12px;
-    border: 0;
-    transition: background-color 140ms ease;
-}
-body.travel-palette .timetable-row.next-departure::before,
-body.travel-palette .next-departure > .timetable-row::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 14px;
-    bottom: 14px;
-    width: 3px;
-    border-radius: var(--radius-sm);
-    background: var(--teal);
-}
-body.travel-palette .timetable-row[aria-expanded='true'],
-body.travel-palette .timetable-row:active {
-    background-color: var(--blue);
-}
-body.travel-palette .timetable-destination > strong {
-    font-size: var(--text-body);
-    line-height: 1.35;
-    overflow-wrap: normal;
-}
-body.travel-palette .timetable-destination > small {
-    font-size: var(--text-micro);
-    line-height: 1.4;
-}
-body.travel-palette .timetable-row > svg {
-    width: 14px;
-    height: 14px;
-    transition: transform 160ms ease;
-}
-body.travel-palette .timetable-row[aria-expanded='true'] > svg {
-    transform: rotate(180deg);
-}
-body.travel-palette .timetable-row time {
-    font-size: var(--text-section);
-}
-body.travel-palette .timetable-day {
-    padding: 13px 12px 8px;
-    font-size: var(--text-caption);
-    font-weight: var(--weight-medium);
-}
-body.travel-palette .departure-inline {
-    padding: 4px 38px 16px 70px;
-    background: var(--surface);
-    animation: departure-reveal 150ms ease-out;
-}
-body.travel-palette .departure-inline[hidden] {
-    display: none;
-}
-body.travel-palette .departure-inline .departure-facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 20px;
-    margin: 10px 0;
-    font-size: var(--text-caption);
-}
-body.travel-palette .departure-warning {
-    display: flex;
-    align-items: flex-start;
-    gap: 7px;
-    margin: 12px 0;
-    padding: 9px 11px;
-    border-radius: var(--radius-sm);
-    background: #fff3db;
-    color: #805717;
-    font-size: var(--text-caption);
-    line-height: 1.5;
-}
-body.travel-palette .departure-warning svg {
-    flex: none;
-    width: 16px;
-    height: 16px;
-    margin-top: 1px;
-}
-body.travel-palette .departure-inline .route-note {
-    margin: 10px 0;
-    font-size: var(--text-caption);
-}
-body.travel-palette .departure-inline-action {
-    margin-top: 4px;
-    min-height: 44px;
-    color: var(--action);
-}
-body.travel-palette .board-bottom {
-    margin: 12px 0 0;
-    gap: 4px 12px;
-}
-body.travel-palette .board-bottom > span {
-    font-size: var(--text-micro);
-    line-height: 1.5;
-}
-body.travel-palette .departure-detail .departure-stop-route {
-    margin-block: 12px;
-    padding: 12px;
-}
-body.travel-palette .departure-detail .departure-facts {
-    margin: 12px 0;
-    gap: 7px;
-}
-body.travel-palette .departure-detail h3 {
-    margin: 16px 0 8px;
-    font-size: var(--text-control);
-}
-body.travel-palette .departure-detail .scheduled-list {
-    gap: 4px;
-}
-body.travel-palette .departure-detail .scheduled-list > button {
-    min-height: 44px;
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-}
 @keyframes departure-reveal {
     from {
         opacity: 0;
@@ -1007,43 +553,6 @@ body.travel-palette .departure-detail .scheduled-list > button {
     }
 }
 @media (min-width: 1000px) {
-    body.travel-palette .timetable-context {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        gap: 4px 16px;
-        margin-bottom: 8px;
-    }
-    body.travel-palette .timetable-context .stop-heading {
-        grid-column: 1 / -1;
-        margin-bottom: 4px;
-    }
-    body.travel-palette .timetable-toolbar {
-        display: contents;
-    }
-    body.travel-palette .timetable-toolbar > button {
-        grid-row: 2;
-        grid-column: 1;
-    }
-    body.travel-palette .board-filterbar {
-        grid-row: 2;
-        grid-column: 2;
-        margin: 0;
-    }
-    body.travel-palette #board-filters {
-        grid-row: 3;
-        grid-column: 1 / -1;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin: 0;
-    }
-    body.travel-palette .timetable-paging {
-        grid-row: 2;
-        grid-column: 3;
-    }
-    body.travel-palette .timetable-toolbar .board-meta {
-        grid-column: 1 / -1;
-        font-size: var(--text-caption);
-    }
     body.travel-palette .journey-intro-grid {
         grid-template-columns: minmax(300px, 0.9fr) minmax(0, 1.5fr);
         gap: 36px;
@@ -1053,14 +562,8 @@ body.travel-palette .departure-detail .scheduled-list > button {
         border-left: 1px solid var(--line);
         padding: 0 0 0 36px;
     }
-    body.travel-palette .results-tools {
-        display: none;
-    }
 }
 @media (max-width: 999px) {
-    body.travel-palette[data-view='stop'] .page-heading {
-        margin-bottom: 0;
-    }
     body.travel-palette[data-view='stop'] .page-navigation {
         margin-bottom: 12px;
     }
@@ -1102,125 +605,21 @@ body.travel-palette .departure-detail .scheduled-list > button {
     body.travel-palette .journey-summary strong {
         margin-top: 3px;
     }
-    body.travel-palette #departures .stop-heading {
-        gap: 8px;
-        margin-bottom: 0;
-    }
-    body.travel-palette #departures .stop-selector {
-        gap: 8px;
-        min-height: 44px;
-    }
-    body.travel-palette #departures .stop-selector strong {
-        font-size: var(--text-title-sm);
-    }
-    body.travel-palette #departures .stop-symbol {
-        width: 36px;
-        height: 36px;
-        border-radius: var(--radius-md);
-    }
     body.travel-palette #departures .board-plan {
         padding-inline: 4px;
         font-size: var(--text-caption);
     }
-    body.travel-palette #departures .timetable-toolbar {
-        gap: 0 4px;
-        margin-bottom: 4px;
-    }
-    body.travel-palette #departures .board-meta {
-        font-size: var(--text-caption);
-    }
-    body.travel-palette #departures .timetable-context > .board-meta {
-        margin-top: -4px;
-        margin-bottom: 6px;
-    }
-    body.travel-palette #board-filters {
-        gap: 6px 10px;
-        margin-bottom: 4px;
-    }
-    body.travel-palette .timetable-columns,
-    body.travel-palette .timetable-row {
-        grid-template-columns: 42px minmax(0, 1fr) 52px 12px;
-        gap: 8px;
-        padding-inline: 6px;
-    }
-    body.travel-palette .timetable-columns {
-        display: none;
-    }
-    body.travel-palette .timetable-row {
-        min-height: 56px;
-        padding-block: 10px;
-    }
-    body.travel-palette .timetable-row .line-badge {
-        width: 42px;
-    }
-    body.travel-palette .timetable-destination > strong {
-        font-size: var(--text-control);
-    }
-    body.travel-palette .timetable-row time {
-        font-size: var(--text-section);
-    }
-    body.travel-palette .timetable-day {
-        padding-inline: 6px;
-    }
-    body.travel-palette .departure-inline {
-        padding: 4px 26px 12px 56px;
-    }
 }
 @media (max-width: 359px) {
-    body.travel-palette #departures .stop-selector strong {
-        font-size: var(--text-section);
-    }
     body.travel-palette #departures .board-plan {
         max-width: 78px;
         white-space: normal;
         line-height: 1.3;
     }
-    body.travel-palette #departures .timetable-toolbar > button {
-        gap: 5px;
-        padding-right: 0;
-    }
-    body.travel-palette
-        #departures
-        .timetable-toolbar
-        > button
-        > span:nth-child(2) {
-        font-size: var(--text-caption);
-    }
-    body.travel-palette #departures .timetable-paging button {
-        gap: 3px;
-        padding-inline: 5px;
-        font-size: var(--text-micro);
-    }
-    body.travel-palette .timetable-destination > strong {
-        font-size: var(--text-small);
-    }
-    body.travel-palette #board-filters {
-        gap: 4px 8px;
-    }
-    body.travel-palette .board-filter-trigger {
-        gap: 6px;
-        padding-inline: 8px;
-        font-size: var(--text-caption);
-    }
 }
 @media (hover: hover) {
-    body.travel-palette .board-filter-trigger:hover,
-    body.travel-palette
-        #journey-popover[data-kind^='board-filter-']
-        .board-filter-option:not([aria-pressed='true']):hover {
-        background-color: var(--surface-hover);
-    }
-    body.travel-palette .timetable-row:hover {
-        background-color: var(--surface);
-    }
-    body.travel-palette .timetable-row[aria-expanded='true']:hover {
-        background-color: var(--blue);
-    }
     body.travel-palette .details-toggle:hover {
         color: var(--ink);
-    }
-    body.travel-palette .planner-help button:hover {
-        text-decoration: underline;
     }
     body.travel-palette .view-switch button:hover {
         background: transparent;
@@ -1231,22 +630,6 @@ body.travel-palette .details-toggle:active {
     opacity: 0.65;
 }
 @media (prefers-reduced-motion: reduce) {
-    body.travel-palette .board-filter-trigger,
-    body.travel-palette
-        #journey-popover[data-kind^='board-filter-']
-        .board-filter-option {
-        transition: none;
-    }
-    body.travel-palette :is(.board-types button, .board-filter-toggle) {
-        transition: none;
-    }
-    body.travel-palette .departure-inline {
-        animation: none;
-    }
-    body.travel-palette .timetable-row,
-    body.travel-palette .timetable-row > svg {
-        transition: none;
-    }
     body.travel-palette .leg-connection {
         animation: none;
     }
@@ -1259,64 +642,11 @@ body.travel-palette .details-toggle:active {
         transition: none;
     }
 }
-@media (max-width: 700px) {
-    body.travel-palette :is(.board-types button, .board-filter-toggle) {
-        gap: 4px;
-        padding-inline: 8px;
-    }
-}
 /* Journey preferences: aligned walking choices and a light "off" switch
    (the shared palette greys it, which reads as "on"). */
-body.travel-palette .preference-label {
-    display: block;
-    margin: 14px 0 6px;
-    color: var(--color-text-soft);
-    font-size: var(--text-caption);
-}
-body.travel-palette .walk-choices {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-}
-body.travel-palette .walk-choices button {
-    min-height: 40px;
-    padding-inline: 4px;
-    font-size: var(--text-small);
-}
-body.travel-palette .journey-popover .toggle-row input {
-    background: var(--color-bg-hover);
-}
-body.travel-palette .journey-popover .toggle-row input:checked {
-    background: var(--color-select-text);
-}
 /* "Places nearby": the stop in the place layer's map view. */
-body.travel-palette :is(.stop-nearby, .step-nearby) {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    min-height: 44px;
-    color: var(--color-text);
-    font-size: var(--text-small);
-    font-weight: var(--weight-medium);
-    text-decoration: none;
-}
-body.travel-palette .stop-nearby {
-    flex: none;
-    margin-left: auto;
-}
 body.travel-palette .step-nearby {
     min-height: 36px;
 }
-body.travel-palette :is(.stop-nearby, .step-nearby) svg {
-    width: 15px;
-    height: 15px;
-}
-body.travel-palette .stop-nearby[hidden] {
-    display: none;
-}
 /* Phones: the floating Composer button sits at the bottom right, so the
    preferences button stays beside the time instead of at the right edge. */
-@media (max-width: 700px) {
-    body.travel-palette :is(.journey-utilities, .result-utilities) {
-        justify-content: flex-start;
-    }
-}

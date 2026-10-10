@@ -285,8 +285,13 @@
         return stop?.areas.find((area) => area.id === line?.area) || null;
     }
     function lineStyle() {
-        const look = root.NearbyModel?.look(route.line, vehicle() === 'Bus' ? 'bus' : 'tram');
-        return look ? `--line:${look.colour};--ink:${look.ink};--tint:${look.tint}` : '';
+        const look = root.NearbyModel?.look(
+            route.line,
+            vehicle() === 'Bus' ? 'bus' : 'tram',
+        );
+        return look
+            ? `--line:${look.colour};--ink:${look.ink};--tint:${look.tint}`
+            : '';
     }
     function momentAction(p) {
         const list = N.steps(route);
@@ -361,7 +366,9 @@
                   ? `${icon('walk')}<strong>${walking}</strong> min walk`
                   : '';
         const segments = running
-            ? `<div class="nav-segments" role="progressbar" aria-label="Trip steps done" aria-valuemin="0" aria-valuemax="${p.total - 1}" aria-valuenow="${p.index}">${N.steps(route)
+            ? `<div class="nav-segments" role="progressbar" aria-label="Trip steps done" aria-valuemin="0" aria-valuemax="${p.total - 1}" aria-valuenow="${p.index}">${N.steps(
+                  route,
+              )
                   .map(
                       (_, index) =>
                           `<span class="${index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></span>`,
@@ -370,8 +377,12 @@
             : '';
         content.innerHTML = `${conditionMarkup()}<div class="nav-summary${running ? ' is-moment' : ''}">
             ${segments}<div class="nav-eyebrow"><span>${icon(running ? modeIcon(p.step.mode) : route.mode === 'transit' ? 'train' : route.mode)}${running ? `${p.index + 1} of ${p.total} · ${trip().id === 'day' ? 'sample day' : 'captured times'}` : route.line ? `Line ${route.line} · Direct` : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span><button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
-            ${running ? `<div class="nav-moment" style="${lineStyle()}">${moment(p)}</div>` : `<h2>${safe(title)}</h2><p class="nav-step-description">${safe(secondary)}</p>
-            <div class="nav-facts"><span>${icon('clock')}<strong>${route.duration}</strong> min</span>${movement ? `<span>${movement}</span>` : ''}<span>Arrive <strong>${route.arrive}</strong>${nextDay}</span></div>`}
+            ${
+                running
+                    ? `<div class="nav-moment" style="${lineStyle()}">${moment(p)}</div>`
+                    : `<h2>${safe(title)}</h2><p class="nav-step-description">${safe(secondary)}</p>
+            <div class="nav-facts"><span>${icon('clock')}<strong>${route.duration}</strong> min</span>${movement ? `<span>${movement}</span>` : ''}<span>Arrive <strong>${route.arrive}</strong>${nextDay}</span></div>`
+            }
             <p class="nav-guidance-note">Sample steps · advance them yourself</p>
         </div><div id="nav-expanded" class="nav-expanded" ${mobile() && !expanded && journeyView === 'map' ? 'inert' : ''}><div class="nav-detail-scroll"><div class="nav-itinerary-label"><strong>Whole journey</strong><small>${localDate()} · Sample</small></div>${timeline()}${route.delayed ? `<p class="nav-preview-note">${icon('info')}Delay flagged in this capture. Current status is unknown.</p>` : ''}<p class="nav-preview-note">${icon('info')}${trip().id === 'day' ? 'Scheduled sample times; no stops between were recorded.' : 'Times and steps are from a saved capture.'} Advance the preview yourself; live guidance is not connected.</p>
         </div></div>

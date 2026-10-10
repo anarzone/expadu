@@ -259,7 +259,6 @@ main {
     max-width: 1240px;
     padding: 22px 32px 100px;
 }
-.page-heading,
 .page-navigation,
 .section-heading,
 .results-top {
@@ -267,14 +266,6 @@ main {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-}
-.page-heading {
-    margin-bottom: 16px;
-}
-.page-heading h1 {
-    font-size: var(--text-display-sm);
-    line-height: 1.15;
-    letter-spacing: -1.1px;
 }
 .page-navigation {
     margin-bottom: 24px;
@@ -305,9 +296,7 @@ main {
 .saved-trigger {
     background: #fff;
 }
-#saved-count,
-#preferences-count,
-.notice-count {
+#saved-count {
     position: absolute;
     top: 1px;
     right: 0;
@@ -516,35 +505,6 @@ main {
     top: calc(50% - 22px);
     background: var(--paper);
 }
-.planner-controls {
-    margin-top: 12px;
-}
-.route-modes button {
-    flex: 1;
-    padding-inline: 12px;
-}
-.journey-utilities {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    margin-top: 4px;
-}
-.journey-utilities > .quiet-button {
-    min-width: 0;
-    justify-content: start;
-    padding-inline: 4px;
-}
-.journey-utilities > .quiet-button > span:nth-child(2) {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 245px;
-}
-.journey-utilities [data-icon='down'] svg {
-    width: 12px;
-    height: 12px;
-}
 .find-routes {
     width: 100%;
     margin-top: 8px;
@@ -612,102 +572,6 @@ main {
     font-size: var(--text-section);
     letter-spacing: -0.4px;
     line-height: 1.3;
-}
-.sample-journey {
-    display: block;
-    width: 100%;
-    padding: 20px;
-    border-radius: var(--radius-xl);
-    background: var(--blue);
-    text-align: left;
-}
-.sample-route-names {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    line-height: 1.3;
-}
-.sample-route-names > span:first-child {
-    color: #466c77;
-    font-size: var(--text-small);
-}
-.sample-route-names svg {
-    width: 14px;
-    height: 14px;
-    color: #537982;
-}
-.sample-route-names strong {
-    font-size: var(--text-section);
-    letter-spacing: -0.5px;
-}
-.sample-route-line {
-    display: flex;
-    align-items: center;
-    margin: 26px 0;
-    padding: 0 14px;
-}
-.sample-node {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    flex: none;
-}
-.sample-node svg {
-    width: 22px;
-    height: 22px;
-    color: #426871;
-}
-.sample-node small {
-    font-size: var(--text-caption);
-    color: #426871;
-}
-.sample-node.transit {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: var(--radius-lg);
-    padding: 12px 16px;
-    background: #fff;
-}
-.sample-node.transit strong {
-    font-size: var(--text-title);
-    line-height: 1;
-}
-.sample-connection {
-    min-width: 12px;
-    flex: 1;
-    border-top: 2px dotted #8bbdcb;
-    margin: 0 10px;
-}
-.sample-route-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.sample-route-bottom strong {
-    display: block;
-    font-size: var(--text-title);
-    letter-spacing: -0.7px;
-    line-height: 1.2;
-}
-.sample-route-bottom small {
-    display: block;
-    font-size: var(--text-caption);
-    margin-top: 4px;
-    color: #486b75;
-}
-.round-arrow {
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius-round);
-    display: grid;
-    place-items: center;
-    background: white;
-    color: var(--action);
-}
-.round-arrow svg {
-    width: 20px;
 }
 .sample-footnote {
     display: flex;
@@ -792,43 +656,6 @@ main {
 }
 .results-top h2:focus {
     outline: none;
-}
-.results-tools {
-    margin-bottom: 16px;
-}
-.result-utilities {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 4px;
-}
-.result-utilities > .quiet-button {
-    min-width: 0;
-    justify-content: start;
-    padding-inline: 4px;
-}
-.result-utilities > .quiet-button > span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.result-utilities > .quiet-button > svg:last-child {
-    width: 12px;
-}
-.result-utilities > div {
-    display: flex;
-    flex: none;
-}
-.has-preferences::after {
-    content: '';
-    position: absolute;
-    right: 7px;
-    top: 7px;
-    background: var(--cyan);
-    width: 6px;
-    height: 6px;
-    border-radius: var(--radius-round);
 }
 .route-options {
     display: flex;
@@ -1231,195 +1058,7 @@ sup {
     flex-wrap: wrap;
 }
 /* A stop board prioritises direction and an actual scheduled time, never a fake countdown. */
-.stop-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 4px;
-}
-.stop-selector {
-    display: flex;
-    align-items: center;
-    text-align: left;
-    gap: 12px;
-    padding: 0;
-    min-height: 52px;
-    min-width: 0;
-}
-.stop-symbol {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: var(--radius-lg);
-    background: var(--blue);
-    flex: none;
-}
-.stop-selector small {
-    display: block;
-    font-size: var(--text-caption);
-    color: var(--muted);
-    margin-bottom: 3px;
-}
-.stop-selector strong {
-    font-size: var(--text-title-sm);
-    line-height: 1.2;
-    letter-spacing: -0.5px;
-}
-.stop-selector > [data-icon='down'] svg {
-    width: 14px;
-}
-.board-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    color: var(--muted);
-    font-size: var(--text-caption);
-    margin-bottom: 14px;
-}
 /* Timetables are a single scan-friendly board, not one large card per direction. */
-.timetable-toolbar,
-.timetable-paging {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.timetable-toolbar {
-    justify-content: space-between;
-    gap: 8px;
-    margin: 2px 0 8px;
-}
-.timetable-toolbar > button {
-    min-width: 0;
-    justify-content: flex-start;
-    padding-inline: 4px;
-}
-.timetable-toolbar > button > span:nth-child(2) {
-    white-space: nowrap;
-    font-size: var(--text-small);
-}
-.timetable-toolbar [data-icon='down'] svg {
-    width: 12px;
-}
-.timetable-paging {
-    flex: none;
-}
-.timetable-paging .icon-button {
-    width: 44px;
-}
-.timetable-list {
-    background: white;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-}
-.timetable-row {
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 52px 12px;
-    align-items: center;
-    gap: 9px;
-    width: 100%;
-    min-height: 56px;
-    padding: 9px 12px;
-    text-align: left;
-}
-.timetable-row + .timetable-row {
-    border-top: 1px solid #edf3f4;
-}
-.timetable-row:active {
-    background: var(--blue);
-}
-.timetable-row:focus-visible {
-    outline-offset: -3px;
-}
-.line-badge {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    min-height: 32px;
-    border-radius: var(--radius-sm);
-    background: var(--blue);
-}
-.line-badge.bus {
-    background: #e9edfb;
-}
-.line-badge svg {
-    width: 14px;
-    height: 14px;
-    color: #426c7c;
-    flex: none;
-}
-.line-badge strong {
-    font-size: var(--text-small);
-    font-weight: var(--weight-bold);
-    line-height: 1;
-}
-.timetable-destination {
-    min-width: 0;
-}
-.timetable-destination > strong {
-    display: block;
-    font-size: var(--text-control);
-    font-weight: var(--weight-semibold);
-    line-height: 1.35;
-    overflow-wrap: anywhere;
-}
-.timetable-destination > small {
-    display: block;
-    font-size: var(--text-micro);
-    color: #915019;
-    margin-top: 2px;
-}
-.timetable-row time {
-    font-size: var(--text-section);
-    font-weight: var(--weight-semibold);
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.4px;
-}
-.timetable-row > svg {
-    width: 12px;
-    height: 12px;
-    color: var(--muted);
-}
-.timetable-day {
-    background: var(--paper);
-    color: var(--muted);
-    font-size: var(--text-micro);
-    padding: 9px 12px 6px;
-}
-.timetable-more {
-    width: 100%;
-    color: var(--action);
-}
-.timetable-empty {
-    padding: 24px 18px;
-    text-align: center;
-}
-.timetable-empty > svg {
-    width: 24px;
-    height: 24px;
-    color: var(--teal);
-    margin: 0 auto 12px;
-}
-.timetable-empty h2 {
-    font-size: var(--text-section);
-    margin-bottom: 8px;
-}
-.timetable-empty p {
-    color: var(--muted);
-    font-size: var(--text-small);
-    line-height: 1.5;
-    max-width: 32ch;
-    margin: auto;
-}
-.timetable-empty .quiet-button {
-    margin-top: 12px;
-    color: var(--action);
-}
 .board-return {
     padding-inline: 0;
     margin-bottom: 6px;
@@ -1440,145 +1079,6 @@ sup {
     width: 13px;
     height: 13px;
     flex: none;
-}
-@media (hover: hover) {
-    .timetable-row:hover {
-        background: #f0f9fb;
-    }
-}
-@media (max-width: 359px) {
-    .timetable-row {
-        grid-template-columns: 40px minmax(0, 1fr) 48px 10px;
-        gap: 7px;
-        padding: 8px 10px;
-    }
-    .line-badge {
-        width: 40px;
-        gap: 3px;
-    }
-    .line-badge svg {
-        width: 12px;
-    }
-    .timetable-destination > strong {
-        font-size: var(--text-small);
-    }
-    .timetable-toolbar {
-        gap: 2px;
-    }
-    .timetable-toolbar > button {
-        gap: 5px;
-    }
-    .timetable-toolbar > button > span:nth-child(2) {
-        font-size: var(--text-caption);
-    }
-}
-.board-bottom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 16px;
-}
-.board-bottom > span {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    color: var(--muted);
-    font-size: var(--text-caption);
-}
-.board-bottom > span svg {
-    width: 15px;
-    height: 15px;
-}
-.board-bottom .quiet-button {
-    padding-inline: 0;
-    color: var(--action);
-}
-.departure-detail {
-    padding: 4px 24px 12px;
-}
-.departure-stop-route {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    padding: 16px;
-    background: var(--blue);
-    border-radius: var(--radius-lg);
-    margin: 16px 0;
-}
-.departure-stop-route > div {
-    flex: 1;
-    min-width: 0;
-}
-.departure-stop-route small,
-.departure-stop-route strong {
-    display: block;
-}
-.departure-stop-route small {
-    font-size: var(--text-caption);
-    color: #50727b;
-    margin-bottom: 4px;
-}
-.departure-stop-route strong {
-    font-size: var(--text-section);
-}
-.departure-stop-route time {
-    font-size: var(--text-title);
-    font-weight: var(--weight-semibold);
-    letter-spacing: -0.5px;
-}
-.departure-facts {
-    display: grid;
-    gap: 8px;
-    color: var(--muted);
-    font-size: var(--text-small);
-    margin: 20px 0;
-}
-.departure-facts > span {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.departure-facts svg {
-    width: 16px;
-    height: 16px;
-}
-.departure-detail h3 {
-    font-size: var(--text-section);
-    margin: 24px 0 10px;
-}
-.scheduled-list {
-    display: grid;
-    gap: 6px;
-}
-.scheduled-list > button {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    width: 100%;
-    text-align: left;
-    min-height: 48px;
-    padding: 10px 14px;
-    border-radius: var(--radius-md);
-    background: var(--paper);
-}
-.scheduled-list .selected {
-    background: var(--blue);
-}
-.scheduled-list strong {
-    font-size: var(--text-section);
-    font-weight: var(--weight-semibold);
-}
-.scheduled-list span {
-    font-size: var(--text-small);
-    color: var(--muted);
-    flex: 1;
-}
-.scheduled-list svg {
-    width: 17px;
-    height: 17px;
-    color: var(--teal);
 }
 /* Contextual choices float at the trigger. They do not block or blur the page. */
 .journey-popover {
@@ -1612,8 +1112,7 @@ sup {
     margin-bottom: -5px;
 }
 .journey-popover form > label,
-#scheduled-fields > label,
-#board-time-fields > label {
+#scheduled-fields > label {
     display: block;
     color: var(--muted);
     font-size: var(--text-caption);
@@ -1649,53 +1148,6 @@ sup {
 .popover-footer small {
     font-size: var(--text-micro);
     color: var(--muted);
-}
-.journey-popover .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 52px;
-    margin: 8px 0 0;
-    color: var(--ink);
-    font-size: var(--text-control);
-}
-.toggle-row > span {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.toggle-row svg {
-    width: 18px;
-    height: 18px;
-}
-.toggle-row input {
-    appearance: none;
-    flex: none;
-    width: 38px;
-    height: 23px;
-    border-radius: var(--radius-md);
-    background: #dce8eb;
-    padding: 3px;
-    cursor: pointer;
-    transition: background 200ms var(--ease);
-    margin: 0;
-}
-.toggle-row input::before {
-    content: '';
-    display: block;
-    width: 17px;
-    height: 17px;
-    border-radius: var(--radius-round);
-    background: white;
-    box-shadow: 0 1px 4px #14333c1a;
-    transition: translate 220ms var(--ease);
-}
-.toggle-row input:checked {
-    background: #1685a0;
-}
-.toggle-row input:checked::before {
-    translate: 15px 0;
 }
 .choice-list {
     display: grid;
@@ -1736,27 +1188,6 @@ sup {
     width: 16px;
     height: 16px;
     color: var(--teal);
-}
-.stop-search {
-    position: relative;
-    display: block;
-    margin: 0 0 10px;
-}
-.stop-search > svg {
-    position: absolute;
-    top: 13px;
-    left: 12px;
-    width: 18px;
-    height: 18px;
-    color: var(--muted);
-}
-.stop-search input[type='search'] {
-    padding-left: 38px;
-}
-.popover-note {
-    font-size: var(--text-caption);
-    color: var(--muted);
-    padding: 10px 4px 2px;
 }
 .journey-popover .shared-calendar {
     margin-bottom: 0;
@@ -2109,9 +1540,6 @@ dialog#sheet::backdrop {
     .route-option:hover {
         box-shadow: 0 5px 22px #20455012;
     }
-    .sample-journey:hover {
-        background: #d5eef5;
-    }
     .choice-list button:not([aria-pressed='true']):hover,
     .suggestions button:hover {
         background: var(--paper);
@@ -2128,31 +1556,10 @@ dialog#sheet::backdrop {
     .journey-start {
         padding: 4px 0;
     }
-    .sample-journey {
-        padding: 24px;
-    }
-    .sample-route-line {
-        margin: 38px 0;
-    }
-    .sample-route-names strong {
-        font-size: var(--text-title);
-    }
-    .sample-route-bottom strong {
-        font-size: var(--text-title-lg);
-    }
-    .sample-route-bottom small {
-        font-size: var(--text-small);
-    }
     .suggestions {
         top: 147px;
         left: 24px;
         right: 24px;
-    }
-    .stop-heading {
-        margin-bottom: 8px;
-    }
-    .stop-selector strong {
-        font-size: var(--text-title-lg);
     }
     .has-results .journey-intro-grid {
         margin-bottom: 24px;
@@ -2171,23 +1578,6 @@ dialog#sheet::backdrop {
     }
     .has-results .journey-fields {
         grid-row: 1 / 3;
-    }
-    .has-results .planner-controls {
-        margin: 0;
-    }
-    .has-results .results-tools {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-    }
-    .has-results .route-modes {
-        min-width: 320px;
-    }
-    .has-results .result-utilities {
-        flex: 1;
-        max-width: 410px;
-        margin: 0;
     }
     .journey-summary {
         min-height: 70px;
@@ -2219,18 +1609,6 @@ dialog#sheet::backdrop {
     }
     .journey-start {
         padding: 8px 0 0;
-    }
-    .sample-journey {
-        padding: 24px 30px;
-    }
-    .sample-route-line {
-        padding: 0 30px;
-    }
-    .sample-route-names {
-        gap: 12px;
-    }
-    .sample-route-names > span:first-child {
-        font-size: var(--text-body);
     }
     .route-workspace {
         display: grid;
@@ -2265,13 +1643,6 @@ dialog#sheet::backdrop {
     .departures-page main {
         padding: 18px 16px 90px;
     }
-    .page-heading {
-        margin-bottom: 12px;
-    }
-    .page-heading h1 {
-        font-size: var(--text-title-lg);
-        letter-spacing: -0.9px;
-    }
     .page-navigation {
         margin-bottom: 20px;
         gap: 8px;
@@ -2293,26 +1664,6 @@ dialog#sheet::backdrop {
     .journey-start .section-heading h2 {
         font-size: var(--text-section);
     }
-    .sample-journey {
-        padding: 16px 18px;
-    }
-    .sample-route-line {
-        margin: 20px 0;
-        padding: 0;
-    }
-    .sample-node.transit {
-        padding: 10px 14px;
-    }
-    .sample-node svg {
-        width: 20px;
-        height: 20px;
-    }
-    .sample-route-names strong {
-        font-size: var(--text-section);
-    }
-    .sample-route-names > span:first-child {
-        font-size: var(--text-caption);
-    }
     dialog#sheet {
         width: 100%;
         max-width: none;
@@ -2326,8 +1677,7 @@ dialog#sheet::backdrop {
     .sheet-top h2 {
         font-size: var(--text-title-sm);
     }
-    #sheet .route-detail-content,
-    .departure-detail {
+    #sheet .route-detail-content {
         padding: 6px 20px 8px;
     }
     .detail-footer {
@@ -2345,15 +1695,6 @@ dialog#sheet::backdrop {
     }
     .simulation > h2 {
         font-size: var(--text-title);
-    }
-    .departure-stop-route {
-        padding: 14px;
-    }
-    .departure-stop-route strong {
-        font-size: var(--text-control);
-    }
-    .departure-stop-route time {
-        font-size: var(--text-title-sm);
     }
 }
 @media (max-width: 359px) {
@@ -2374,26 +1715,6 @@ dialog#sheet::backdrop {
     .journey-desk {
         padding: 12px;
     }
-    .route-modes button {
-        padding-inline: 9px;
-        gap: 6px;
-        font-size: var(--text-small);
-    }
-    .sample-route-names {
-        column-gap: 6px;
-    }
-    .sample-route-names strong {
-        font-size: var(--text-section);
-    }
-    .sample-node {
-        gap: 5px;
-    }
-    .sample-connection {
-        margin-inline: 7px;
-    }
-    .sample-node small {
-        font-size: var(--text-micro);
-    }
     .route-option {
         padding: 14px;
     }
@@ -2408,12 +1729,6 @@ dialog#sheet::backdrop {
     .status-tag {
         font-size: var(--text-micro);
         padding-inline: 5px;
-    }
-    .stop-selector {
-        gap: 8px;
-    }
-    .stop-selector strong {
-        font-size: var(--text-title-sm);
     }
     .preview-footer .primary {
         padding-inline: 12px;

@@ -1,34 +1,7 @@
 @import url('../connected/tokens.css');
 /* The accepted Travel palette; context lives beside the action it explains. */
-.station-active-filters {
-    display: flex;
-    flex-basis: 100%;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 0;
-}
-.station-active-filters[hidden],
 .service-preference[hidden] {
     display: none;
-}
-.station-active-filters button {
-    display: inline-flex;
-    gap: 8px;
-    align-items: center;
-    min-height: 44px;
-    padding: 6px 10px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    background: var(--surface);
-    font-size: var(--text-caption);
-    color: var(--teal);
-}
-.station-active-filters svg {
-    width: 15px;
-    height: 15px;
-}
-.station-row.is-selected {
-    box-shadow: inset 3px 0 var(--teal);
 }
 .service-preference {
     display: flex;
@@ -75,48 +48,4 @@
     width: fit-content;
     min-height: 44px;
     margin-left: 56px;
-}
-.station-service-summary > button {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    min-height: 44px;
-    text-align: left;
-}
-.station-service-summary > button > span:nth-child(2) > strong {
-    display: block;
-}
-.station-service-summary time {
-    font-size: var(--text-title-sm);
-    font-weight: var(--weight-bold);
-    font-variant-numeric: tabular-nums;
-}
-.station-service-summary p {
-    margin: 5px 0 0;
-    color: var(--ink-soft);
-    font-size: var(--text-micro);
-}
-.station-service-summary > button:focus-visible {
-    outline: 2px solid var(--teal);
-    outline-offset: 3px;
-}
-.station-map-toolbar > span {
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-}
-.station-active-filters button:focus-visible {
-    outline: 2px solid var(--teal);
-    outline-offset: 2px;
-}
-@media (max-width: 999px) {
-    body.travel-palette[data-timetable-design='station'] .timetable-context {
-        gap: 6px;
-    }
-    body.travel-palette[data-timetable-design='station']
-        .timetable-toolbar
-        .board-meta {
-        flex-basis: auto;
-    }
 }

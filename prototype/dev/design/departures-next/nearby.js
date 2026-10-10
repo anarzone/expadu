@@ -59,7 +59,8 @@
     // Points that share a line form one area (union-find over the records).
     function areasOf(points, stopId) {
         const parent = points.map((_, i) => i);
-        const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+        const find = (i) =>
+            parent[i] === i ? i : (parent[i] = find(parent[i]));
         points.forEach((a, i) =>
             points.forEach((b, j) => {
                 if (j <= i) return;
@@ -107,7 +108,8 @@
             return {
                 line,
                 mode,
-                area: (areas.find((a) => a.lines.includes(line)) || {}).id || '',
+                area:
+                    (areas.find((a) => a.lines.includes(line)) || {}).id || '',
                 look: look(line, mode),
                 dirs: runs
                     .map((s) => ({
@@ -202,12 +204,17 @@
 
         // What the station shows under the person's filters. `liftOut` lists
         // areas with no step-free way in (a sample scenario); Step-free hides them.
-        function view(stopId, filters = {}, { pinned = [], liftOut = [] } = {}) {
+        function view(
+            stopId,
+            filters = {},
+            { pinned = [], liftOut = [] } = {},
+        ) {
             const f = { ...filterDefaults(), ...filters };
             const stop = stopOf(stopId);
             const firstVia = (d) => d.via[0] || '';
             const lineOk = (l) =>
-                (f.type === 'all' || (f.type === 'bus') === (l.mode === 'bus')) &&
+                (f.type === 'all' ||
+                    (f.type === 'bus') === (l.mode === 'bus')) &&
                 (!f.lines.length || f.lines.includes(l.line));
             const dirOk = (d) =>
                 d.mins <= f.win &&
@@ -241,8 +248,12 @@
                 .sort(
                     (a, b) =>
                         b.blocked - a.blocked ||
-                        (a.cards.length ? soonest(a.cards.flatMap((c) => c.shown)) : 999) -
-                            (b.cards.length ? soonest(b.cards.flatMap((c) => c.shown)) : 999) ||
+                        (a.cards.length
+                            ? soonest(a.cards.flatMap((c) => c.shown))
+                            : 999) -
+                            (b.cards.length
+                                ? soonest(b.cards.flatMap((c) => c.shown))
+                                : 999) ||
                         (a.mode === 'bus') - (b.mode === 'bus') ||
                         b.lines.length - a.lines.length,
                 );
@@ -257,7 +268,8 @@
                     if (!name) return;
                     let choice = via.find((v) => v.name === name);
                     if (!choice) via.push((choice = { name, lines: [] }));
-                    if (!choice.lines.includes(l.line)) choice.lines.push(l.line);
+                    if (!choice.lines.includes(l.line))
+                        choice.lines.push(l.line);
                 }),
             );
             return {
@@ -266,8 +278,16 @@
                 areas,
                 shown,
                 total,
-                modes: [...new Set(stop.lines.map((l) => (l.mode === 'bus' ? 'bus' : 'tram')))],
-                lineChoices: [...stop.lines].sort((a, b) => byLine(a.line, b.line)),
+                modes: [
+                    ...new Set(
+                        stop.lines.map((l) =>
+                            l.mode === 'bus' ? 'bus' : 'tram',
+                        ),
+                    ),
+                ],
+                lineChoices: [...stop.lines].sort((a, b) =>
+                    byLine(a.line, b.line),
+                ),
                 viaChoices: via,
                 active:
                     f.type !== 'all' ||

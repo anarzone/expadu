@@ -10,7 +10,8 @@ const model = N.create({
 });
 const count = (view) =>
     view.areas.reduce(
-        (n, area) => n + area.cards.reduce((m, card) => m + card.shown.length, 0),
+        (n, area) =>
+            n + area.cards.reduce((m, card) => m + card.shown.length, 0),
         0,
     );
 
@@ -81,7 +82,10 @@ test('filters combine: type, lines, leaving via, window and delays', () => {
 
 test('pinned lines lead their area; Step-free hides an area without a lift', () => {
     const pinned = model.view('neumarkt', {}, { pinned: ['16'] });
-    assert.equal(pinned.areas.find((a) => a.lines.includes('16')).cards[0].line, '16');
+    assert.equal(
+        pinned.areas.find((a) => a.lines.includes('16')).cards[0].line,
+        '16',
+    );
     const lift = { liftOut: ['neumarkt-3-4-16-18'] };
     const open = model.view('neumarkt', {}, lift);
     assert.equal(open.areas.find((a) => a.blocked).cards.length, 4);
@@ -108,10 +112,10 @@ test('the Merkenich captures keep their own clock and later times', () => {
     // 00:27 is 72 minutes after the 23:15 capture: outside the next 30.
     assert.equal(merkenich.shown, 2);
     assert.equal(model.view('merkenich', { win: 60 }).shown, 2);
-    assert.deepEqual(
-        N.when({ mins: 72, clock: '00:27' }),
-        { big: '00:27', unit: '' },
-    );
+    assert.deepEqual(N.when({ mins: 72, clock: '00:27' }), {
+        big: '00:27',
+        unit: '',
+    });
 });
 
 test('line colours come from the KVB table, with readable ink', () => {

@@ -168,13 +168,29 @@ test('When and What matters to you mark their choices without rebuilding the for
             this.attributes[name] = String(value);
         },
     });
-    const when = ['now', 'depart', 'arrive'].map((id) => button({ scheduleMode: id }));
-    const prefs = ['fewer', 'lessWalk', 'avoidDelays', 'stepfree'].map((id) => button({ pref: id }));
+    const when = ['now', 'depart', 'arrive'].map((id) =>
+        button({ scheduleMode: id }),
+    );
+    const prefs = ['fewer', 'lessWalk', 'avoidDelays', 'stepfree'].map((id) =>
+        button({ pref: id }),
+    );
     w.run('document').querySelectorAll = (selector) =>
-        selector === '[data-schedule-mode]' ? when : selector === '[data-pref]' ? prefs : [];
-    w.run('Object.assign(state, { schedule: "arrive", time: "14:00", lessWalk: true, stepfree: true }); syncControls();');
-    assert.deepEqual(when.map((b) => b.attributes['aria-pressed']), ['false', 'false', 'true']);
-    assert.deepEqual(prefs.map((b) => b.attributes['aria-pressed']), ['false', 'true', 'false', 'true']);
+        selector === '[data-schedule-mode]'
+            ? when
+            : selector === '[data-pref]'
+              ? prefs
+              : [];
+    w.run(
+        'Object.assign(state, { schedule: "arrive", time: "14:00", lessWalk: true, stepfree: true }); syncControls();',
+    );
+    assert.deepEqual(
+        when.map((b) => b.attributes['aria-pressed']),
+        ['false', 'false', 'true'],
+    );
+    assert.deepEqual(
+        prefs.map((b) => b.attributes['aria-pressed']),
+        ['false', 'true', 'false', 'true'],
+    );
     assert.equal(w.element('#plan-when-time').hidden, false);
     assert.equal(w.element('#plan-when-caption').textContent, 'Be there by');
     assert.equal(w.element('#schedule-label').textContent, '14:00');
@@ -505,7 +521,10 @@ test('route-specific controls lead without repeated Composer actions', () => {
         assert.match(markup, /data-map=/);
     }
     // An option saves as a plan from its details; the sheet keeps its bookmark.
-    assert.match(card, /class="primary" data-action="save-plan" data-route-id="r9">Save this plan/);
+    assert.match(
+        card,
+        /class="primary" data-action="save-plan" data-route-id="r9">Save this plan/,
+    );
     assert.match(detail, /class="primary" data-map=/);
     assert.match(detail, /data-save=/);
 });
@@ -607,21 +626,39 @@ test('on the sample day Nearby leads with the appointment trip and Today’s tim
     w.run('renderNextTrip();');
     const card = w.element('#next-trip');
     assert.equal(card.hidden, false);
-    assert.match(card.innerHTML, /Next · Blue Card appointment · 14:00 · Mülheim/);
+    assert.match(
+        card.innerHTML,
+        /Next · Blue Card appointment · 14:00 · Mülheim/,
+    );
     assert.match(card.innerHTML, /<h2 id="next-trip-title">Leave now<\/h2>/);
     assert.match(card.innerHTML, /13:14 from Neumarkt/);
     assert.match(card.innerHTML, /There 13:48 · 12 min spare/);
-    assert.match(card.innerHTML, /data-action="trip-start" data-trip-route="day-1314"/);
+    assert.match(
+        card.innerHTML,
+        /data-action="trip-start" data-trip-route="day-1314"/,
+    );
     // The planned 13:24 is an other way, too tight for an official appointment.
     assert.match(
         card.innerHTML,
         /The 13:24 tram 4<\/strong><small>In your plan · there 13:58[\s\S]*Only 2 min spare/,
     );
-    assert.match(card.innerHTML, /Bike or walk<\/strong><small>Times aren’t in the sample/);
+    assert.match(
+        card.innerHTML,
+        /Bike or walk<\/strong><small>Times aren’t in the sample/,
+    );
     // The evening's plans follow, each a way to plan the trip there.
-    assert.match(card.innerHTML, /18:30<\/time><span><strong>Street culture night/);
-    assert.match(card.innerHTML, /Plan the way to Cinema under the stars, 20:00/);
-    assert.match(card.innerHTML, /data-action="plan-way" data-place="Stadtgarten"/);
+    assert.match(
+        card.innerHTML,
+        /18:30<\/time><span><strong>Street culture night/,
+    );
+    assert.match(
+        card.innerHTML,
+        /Plan the way to Cinema under the stars, 20:00/,
+    );
+    assert.match(
+        card.innerHTML,
+        /data-action="plan-way" data-place="Stadtgarten"/,
+    );
     assert.equal(w.run('state.date'), '2026-09-30');
 });
 
@@ -633,7 +670,10 @@ test('opening the next trip compares both trams against the 14:00 start', () => 
     assert.equal(w.run('state.schedule'), 'arrive');
     assert.equal(w.run('state.time'), '14:00');
     const results = w.element('#results').innerHTML;
-    assert.match(results, /<h2 id="results-title" tabindex="-1">To Blue Card appointment/);
+    assert.match(
+        results,
+        /<h2 id="results-title" tabindex="-1">To Blue Card appointment/,
+    );
     assert.match(results, /Arrive by 14:00 · from Neumarkt/);
     // What was checked, and what the sample has of it.
     assert.match(results, /We checked today’s conditions/);
@@ -661,14 +701,22 @@ test('Plan a trip starts from today’s places; picking one arrives by its start
     const w = workspace('', false, false, false, true);
     w.run('renderSampleRoutes();');
     const places = w.element('#day-places').innerHTML;
-    assert.match(places, /data-day-place="Mülheim"[\s\S]*14:00[\s\S]*Blue Card appointment/);
-    assert.match(places, /data-day-place="Rheinauhafen"[\s\S]*18:30[\s\S]*Street culture night/);
+    assert.match(
+        places,
+        /data-day-place="Mülheim"[\s\S]*14:00[\s\S]*Blue Card appointment/,
+    );
+    assert.match(
+        places,
+        /data-day-place="Rheinauhafen"[\s\S]*18:30[\s\S]*Street culture night/,
+    );
     assert.match(
         w.element('.sample-endpoints').textContent,
         /Museum Ludwig · captured Mon 7 Sept at 23:37/,
     );
     const place = { dataset: { dayPlace: 'Rheinauhafen' } };
-    w.emit('click', { target: { closest: (s) => (s === 'button' ? place : null) } });
+    w.emit('click', {
+        target: { closest: (s) => (s === 'button' ? place : null) },
+    });
     assert.equal(w.element('#from').value, 'Neumarkt');
     assert.equal(w.element('#to').value, 'Rheinauhafen');
     assert.equal(w.run('state.schedule'), 'arrive');
@@ -677,9 +725,14 @@ test('Plan a trip starts from today’s places; picking one arrives by its start
 
 test('the captured example offers bike and walk as other ways, and saves a plan', () => {
     const w = workspace();
-    w.run('from.value = "Köln Neumarkt"; to.value = "Museum Ludwig"; searchJourney();');
+    w.run(
+        'from.value = "Köln Neumarkt"; to.value = "Museum Ludwig"; searchJourney();',
+    );
     const results = w.element('#results').innerHTML;
-    assert.match(results, /<h3 class="plan-subhead">Other ways<\/h3>[\s\S]*By bike[\s\S]*On foot/);
+    assert.match(
+        results,
+        /<h3 class="plan-subhead">Other ways<\/h3>[\s\S]*By bike[\s\S]*On foot/,
+    );
     assert.match(results, /Captured Mon 7 Sept at 23:37: that night’s times/);
     w.run('action("save-plan", { dataset: { routeId: "r9" } });');
     const saved = w.element('#results').innerHTML;
@@ -727,7 +780,10 @@ test('Review situations: a cancelled 13:14 offers the 13:24 and the planner drop
     assert.doesNotMatch(band, /13:16|tram 18/i);
     w.run('action("trip-recover", {});');
     band = w.element('#next-trip').innerHTML;
-    assert.match(band, /Switched to the 13:24 tram 4, because the 13:14 is cancelled \(sample\)/);
+    assert.match(
+        band,
+        /Switched to the 13:24 tram 4, because the 13:14 is cancelled \(sample\)/,
+    );
     assert.match(band, /<h2 id="next-trip-title">Leave at 13:20<\/h2>/);
     assert.match(band, /<b>2 min spare<\/b>/);
     w.run('closeSheet = done => done?.(); openNextTrip();');
@@ -743,7 +799,10 @@ test('Review situations: missing the 13:14 says how it was noticed', () => {
     const band = w.element('#next-trip').innerHTML;
     assert.match(band, /You didn’t set off in time · sample/);
     assert.match(band, /Tram 4 left at 13:14/);
-    assert.match(band, /Next tram 4 at 13:24<\/strong><small>Leave 13:20 · there 13:58/);
+    assert.match(
+        band,
+        /Next tram 4 at 13:24<\/strong><small>Leave 13:20 · there 13:58/,
+    );
     assert.match(band, /your location didn’t change after 13:10 \(sample\)/);
 });
 
@@ -759,9 +818,11 @@ test('Review situations move Nearby: a long wait at Merkenich Mitte, a lift out 
     w.run('setScenario("lift");');
     assert.equal(w.run('nearbyView.state.stop'), 'neumarkt');
     assert.equal(w.run('nearbyView.state.filters.stepfree'), true);
-    assert.equal(w.run('JSON.stringify(nearbyScenario().liftOut)'), '["neumarkt-3-4-16-18"]');
+    assert.equal(
+        w.run('JSON.stringify(nearbyScenario().liftOut)'),
+        '["neumarkt-3-4-16-18"]',
+    );
     w.run('setScenario("normal");');
     assert.equal(w.run('nearbyView.state.filters.stepfree'), false);
     assert.equal(w.element('#next-trip').hidden, false);
 });
-

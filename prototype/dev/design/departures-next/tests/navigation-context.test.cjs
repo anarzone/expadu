@@ -154,7 +154,10 @@ test('boarding-stop navigation resumes the same step after leaving the page', ()
     );
     const next = navigation(data);
     next.context.JourneyNavigation.resume();
-    assert.match(next.content(), /<h2>Stay on to Dom\/Hbf<\/h2>[\s\S]*Next: Appellhofplatz at 23:49/);
+    assert.match(
+        next.content(),
+        /<h2>Stay on to Dom\/Hbf<\/h2>[\s\S]*Next: Appellhofplatz at 23:49/,
+    );
     assert.doesNotMatch(next.content(), /Walk to Köln Neumarkt/);
     assert.equal(
         next.context.JourneyNavigation.currentRoute('r18').depart,

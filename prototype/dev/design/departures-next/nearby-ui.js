@@ -25,7 +25,9 @@
         safe: typeof safe === 'function' ? safe : String,
     });
     const toggleIn = (list, value) =>
-        list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+        list.includes(value)
+            ? list.filter((v) => v !== value)
+            : [...list, value];
 
     function mount(container, options) {
         const { model } = options;
@@ -98,7 +100,8 @@
             scene().stale ? { big: dir.clock, unit: '' } : N.when(dir);
         const tagOf = (dir) => {
             const now = scene();
-            if (now.stale) return '<span class="nearby-tag is-quiet">not live</span>';
+            if (now.stale)
+                return '<span class="nearby-tag is-quiet">not live</span>';
             if (now.laterTags && dir.later.length)
                 return `<span class="nearby-tag is-late">then ${dir.later[0]}</span>`;
             return dir.delay
@@ -125,10 +128,12 @@
 
         function card(stop, l) {
             const open = state.line === l.line;
-            const cols = l.shown.slice(0, 2).map(
-                (d) =>
-                    `<span class="nearby-dir">${time(d)}<span class="nearby-dest">${safe(d.dest)}</span>${tagOf(d)}</span>`,
-            );
+            const cols = l.shown
+                .slice(0, 2)
+                .map(
+                    (d) =>
+                        `<span class="nearby-dir">${time(d)}<span class="nearby-dest">${safe(d.dest)}</span>${tagOf(d)}</span>`,
+                );
             if (cols.length === 1)
                 cols.push(
                     `<span class="nearby-dir is-empty"><span class="nearby-time"><strong>–</strong></span><span class="nearby-dest">${l.dirs.length > 1 ? 'Filtered out' : 'Not recorded'}</span></span>`,
@@ -197,11 +202,36 @@
                 `<button type="button" class="nearby-chip" data-n="chip" data-v="${key}" data-key="chip-${key}" aria-pressed="${active}"${caret ? ` aria-expanded="${state.panel === key}"` : ''}><span>${label}${caret ? icon('down') : ''}</span></button>`;
             const list = [];
             if (v.modes.length > 1)
-                list.push(chip('type', f.type === 'all' ? 'All types' : f.type === 'bus' ? 'Buses' : 'Trams', f.type !== 'all', true));
+                list.push(
+                    chip(
+                        'type',
+                        f.type === 'all'
+                            ? 'All types'
+                            : f.type === 'bus'
+                              ? 'Buses'
+                              : 'Trams',
+                        f.type !== 'all',
+                        true,
+                    ),
+                );
             if (v.lineChoices.length > 1)
-                list.push(chip('lines', f.lines.length ? `Lines · ${f.lines.length}` : 'Lines', f.lines.length > 0, true));
+                list.push(
+                    chip(
+                        'lines',
+                        f.lines.length ? `Lines · ${f.lines.length}` : 'Lines',
+                        f.lines.length > 0,
+                        true,
+                    ),
+                );
             if (v.viaChoices.length > 1)
-                list.push(chip('via', f.via.length ? `Via · ${f.via.length}` : 'Leaving via', f.via.length > 0, true));
+                list.push(
+                    chip(
+                        'via',
+                        f.via.length ? `Via · ${f.via.length}` : 'Leaving via',
+                        f.via.length > 0,
+                        true,
+                    ),
+                );
             list.push(chip('when', `Next ${f.win} min`, f.win !== 30, true));
             list.push(chip('delayed', 'Delayed', f.delayed, false));
             const step = chip('stepfree', 'Step-free', f.stepfree, false);
@@ -222,20 +252,40 @@
             if (state.panel === 'type') {
                 title = 'Type';
                 hint = 'Trams and buses at this station';
-                body = [['all', 'All types'], ['tram', 'Trams'], ['bus', 'Buses']]
+                body = [
+                    ['all', 'All types'],
+                    ['tram', 'Trams'],
+                    ['bus', 'Buses'],
+                ]
                     .map(([id, label]) => opt('type', id, label, f.type === id))
                     .join('');
             } else if (state.panel === 'lines') {
                 title = 'Lines';
                 hint = 'Pick one or more';
                 body = v.lineChoices
-                    .map((l) => opt('lines', l.line, modeName(l), f.lines.includes(l.line), badge(l.line, l.look)))
+                    .map((l) =>
+                        opt(
+                            'lines',
+                            l.line,
+                            modeName(l),
+                            f.lines.includes(l.line),
+                            badge(l.line, l.look),
+                        ),
+                    )
                     .join('');
             } else if (state.panel === 'via') {
                 title = 'Leaving via';
                 hint = `The first stop after ${stop.name}, from the recording`;
                 body = v.viaChoices
-                    .map((c) => opt('via', c.name, c.name, f.via.includes(c.name), `<span class="nearby-badges">${badgesOf(c.lines, stop)}</span>`))
+                    .map((c) =>
+                        opt(
+                            'via',
+                            c.name,
+                            c.name,
+                            f.via.includes(c.name),
+                            `<span class="nearby-badges">${badgesOf(c.lines, stop)}</span>`,
+                        ),
+                    )
                     .join('');
             } else if (state.panel === 'when') {
                 title = 'Leaving in';
@@ -271,7 +321,8 @@
             const meta = stop.map
                 ? `Closest station · ${stop.areas.length} areas · ${places} boarding points · ${stop.note.replace('Recorded', 'recorded')}`
                 : `${stop.kind} · boarding points weren’t recorded`;
-            part('bar').innerHTML = `<button type="button" class="nearby-stop" data-n="stops" data-key="stops" aria-expanded="${state.stopsOpen}" aria-label="Change stop, now ${safe(stop.name)}"><span class="nearby-stop-name">${safe(stop.name)}${icon('down')}</span><small>${safe(meta)}</small></button>${stop.map ? `<div class="nearby-views" role="group" aria-label="Show as"><button type="button" data-n="view" data-v="list" data-key="view-list" aria-pressed="${state.view === 'list'}" aria-label="List">${icon('list')}</button><button type="button" data-n="view" data-v="map" data-key="view-map" aria-pressed="${state.view === 'map'}" aria-label="Map">${icon('map')}</button></div>` : ''}`;
+            part('bar').innerHTML =
+                `<button type="button" class="nearby-stop" data-n="stops" data-key="stops" aria-expanded="${state.stopsOpen}" aria-label="Change stop, now ${safe(stop.name)}"><span class="nearby-stop-name">${safe(stop.name)}${icon('down')}</span><small>${safe(meta)}</small></button>${stop.map ? `<div class="nearby-views" role="group" aria-label="Show as"><button type="button" data-n="view" data-v="list" data-key="view-list" aria-pressed="${state.view === 'list'}" aria-label="List">${icon('list')}</button><button type="button" data-n="view" data-v="map" data-key="view-map" aria-pressed="${state.view === 'map'}" aria-label="Map">${icon('map')}</button></div>` : ''}`;
             const stops = part('stops');
             stops.hidden = !state.stopsOpen;
             stops.innerHTML = state.stopsOpen
@@ -286,13 +337,18 @@
             const panelBox = part('panel');
             panelBox.hidden = !state.panel;
             panelBox.innerHTML = state.panel ? panel(v) : '';
-            part('stepnote').hidden = !(state.filters.stepfree && !now.liftOut.length);
-            part('count').innerHTML = `<span role="status">${v.shown === v.total ? `All ${v.total} departures · soonest first` : `Showing ${v.shown} of ${v.total} departures`}</span>${v.active ? '<button type="button" class="text-action" data-n="clear" data-key="clear">Clear filters</button>' : ''}`;
+            part('stepnote').hidden = !(
+                state.filters.stepfree && !now.liftOut.length
+            );
+            part('count').innerHTML =
+                `<span role="status">${v.shown === v.total ? `All ${v.total} departures · soonest first` : `Showing ${v.shown} of ${v.total} departures`}</span>${v.active ? '<button type="button" class="text-action" data-n="clear" data-key="clear">Clear filters</button>' : ''}`;
 
             part('list').innerHTML = v.areas.length
                 ? v.areas
                       .map(
-                          (area) => `<section class="nearby-area" aria-label="Area for lines ${area.lines.join(', ')}">
+                          (
+                              area,
+                          ) => `<section class="nearby-area" aria-label="Area for lines ${area.lines.join(', ')}">
                     <div class="nearby-area-head"><span class="nearby-badges">${badgesOf(area.lines, stop)}</span><span class="nearby-area-meta">${stop.map ? `${area.places.length} boarding points${area.mode === 'bus' ? ' · buses' : ''}` : 'Boarding points not recorded'}</span>${area.blocked ? '<span class="nearby-tag is-conflict">Lift out of order</span>' : ''}${stop.map ? `<button type="button" class="nearby-area-map" data-n="area" data-v="${safe(area.id)}" data-key="area-${safe(area.id)}" aria-pressed="${state.area === area.id && !state.line}">${icon('pin')}<span>${state.area === area.id && !state.line ? 'On the map' : 'Show on the map'}</span></button>` : ''}</div>
                     ${area.blocked ? `<p class="nearby-area-warning">${area.hidden ? 'Hidden by Step-free: no step-free way to these platforms right now (sample).' : 'No step-free way to these platforms right now (sample).'}</p>` : ''}
                     <div class="nearby-cards">${area.cards.map((c) => card(stop, c)).join('')}</div>
@@ -317,7 +373,8 @@
             else if (stop.map)
                 aside = `<p class="nearby-hint">${wide ? 'Pick a line to see both directions and where it boards, or an area on the map to see everything leaving from it.' : 'Tap an area on the map to see what leaves from it.'}</p>`;
             part('detail').innerHTML = aside;
-            part('footnote').textContent = `${stop.note} · ${now.stale ? 'last times received' : 'rounded minutes'}, not live.`;
+            part('footnote').textContent =
+                `${stop.note} · ${now.stale ? 'last times received' : 'rounded minutes'}, not live.`;
             map.sync(stop, area);
             if (focusKey) {
                 container
@@ -354,8 +411,15 @@
                     a.places.forEach((p) => {
                         const dot = document.createElement('span');
                         dot.className = `nearby-dot${on ? ' is-on' : ''}${muted ? ' is-muted' : ''}`;
-                        dot.style.setProperty('--line', N.look(a.lines[0], a.mode).colour);
-                        markers.push(new maplibregl.Marker({ element: dot }).setLngLat([p.lng, p.lat]).addTo(instance));
+                        dot.style.setProperty(
+                            '--line',
+                            N.look(a.lines[0], a.mode).colour,
+                        );
+                        markers.push(
+                            new maplibregl.Marker({ element: dot })
+                                .setLngLat([p.lng, p.lat])
+                                .addTo(instance),
+                        );
                     });
                     const pill = document.createElement('button');
                     pill.type = 'button';
@@ -364,7 +428,10 @@
                     pill.dataset.v = a.id;
                     pill.dataset.key = `pill-${a.id}`;
                     pill.setAttribute('aria-pressed', String(on));
-                    pill.setAttribute('aria-label', `Area for lines ${a.lines.join(', ')}`);
+                    pill.setAttribute(
+                        'aria-label',
+                        `Area for lines ${a.lines.join(', ')}`,
+                    );
                     pill.innerHTML = `<span>${badgesOf(a.lines, stop)}</span>`;
                     const marker = new maplibregl.Marker({ element: pill })
                         .setLngLat([a.lng, a.lat])
@@ -396,7 +463,11 @@
                     });
                     const clear = (b) =>
                         taken.every(
-                            (t) => b.right <= t.left || b.left >= t.right || b.bottom <= t.top || b.top >= t.bottom,
+                            (t) =>
+                                b.right <= t.left ||
+                                b.left >= t.right ||
+                                b.bottom <= t.top ||
+                                b.top >= t.bottom,
                         );
                     const pick = tries.find((t) => clear(box(t))) || tries[0];
                     marker.setOffset(pick);
@@ -412,7 +483,11 @@
                         [Math.min(...lng), Math.min(...lat)],
                         [Math.max(...lng), Math.max(...lat)],
                     ],
-                    { padding: { top: 64, bottom: 28, left: 44, right: 44 }, animate: false, maxZoom: 17.5 },
+                    {
+                        padding: { top: 64, bottom: 28, left: 44, right: 44 },
+                        animate: false,
+                        maxZoom: 17.5,
+                    },
                 );
             }
             function sync(stop, picked) {
@@ -428,10 +503,17 @@
                 }
                 if (status === 'loading') return;
                 const load = root.StationMap?.load;
-                if (!load || typeof document === 'undefined') return showFallback(stop);
+                if (!load || typeof document === 'undefined')
+                    return showFallback(stop);
                 status = 'loading';
-                canvas.setAttribute('aria-label', `Map of ${stop.name}’s boarding areas`);
-                const timer = setTimeout(() => status === 'loading' && showFallback(stop), 10000);
+                canvas.setAttribute(
+                    'aria-label',
+                    `Map of ${stop.name}’s boarding areas`,
+                );
+                const timer = setTimeout(
+                    () => status === 'loading' && showFallback(stop),
+                    10000,
+                );
                 load()
                     .then(() => {
                         instance = new maplibregl.Map({
@@ -504,7 +586,8 @@
             } else if (name === 'line') {
                 state.line = state.line === value ? '' : value;
                 if (state.line) state.area = '';
-                focusKey = state.line && !desktop() ? 'close-line' : `line-${value}`;
+                focusKey =
+                    state.line && !desktop() ? 'close-line' : `line-${value}`;
             } else if (name === 'close-line') {
                 focusKey = `line-${state.line}`;
                 state.line = '';
@@ -563,14 +646,23 @@
             state,
             setStop(id) {
                 if (!model.stops.some((s) => s.id === id)) return false;
-                Object.assign(state, { stop: id, line: '', area: '', panel: '', stopsOpen: false });
+                Object.assign(state, {
+                    stop: id,
+                    line: '',
+                    area: '',
+                    panel: '',
+                    stopsOpen: false,
+                });
                 render();
                 return true;
             },
             // A sample situation: its stop, Step-free when a lift is out.
             applyScenario({ stop, stepfree = false } = {}) {
                 Object.assign(state, {
-                    stop: stop && model.stops.some((s) => s.id === stop) ? stop : model.stops[0].id,
+                    stop:
+                        stop && model.stops.some((s) => s.id === stop)
+                            ? stop
+                            : model.stops[0].id,
                     line: '',
                     area: '',
                     panel: '',
@@ -579,7 +671,10 @@
                 });
                 render();
             },
-            focus: () => part('bar').querySelector('.nearby-stop')?.focus({ preventScroll: true }),
+            focus: () =>
+                part('bar')
+                    .querySelector('.nearby-stop')
+                    ?.focus({ preventScroll: true }),
             destroy() {
                 container.removeEventListener('click', onClick);
                 container.removeEventListener('keydown', onKey);

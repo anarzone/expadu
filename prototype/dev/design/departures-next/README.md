@@ -41,9 +41,13 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
   on the canvas); unlisted lines use the travel colour, buses grey. The colour
   roles in `design-decisions.md` still describe cyan line badges; that entry
   waits for the owner.
-- **Removed:** the station board, its time paging and filter menus
-  (`station-board.js`, `stop-discovery.js` and their styles are no longer
-  loaded). `timetable.js` stays for the service hand-off and Today's brief.
+- **Removed:** the station board, its time paging and filter menus, stop
+  discovery, the mode tabs and the preferences menu, with their files
+  (`station-board.js`, `stop-discovery.js`, `station-board.css`,
+  `station-refinement.css`, `stop-discovery.css`) and the ~280 rules in
+  `style.css`, `workspace.css`, `soft-palette.css` and `station-context.css`
+  that only styled them. `timetable.js` stays for the service hand-off and
+  Today's brief; `station-map.js` stays for its MapLibre loader.
 
 - **Your next trip leads Nearby** (moved from Plan a trip). Today's rule
   still picks the 13:14 (12 min spare) over the planned 13:24 (2 min). Phones
