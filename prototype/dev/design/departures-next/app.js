@@ -14,6 +14,15 @@ const state = {
     boardRoute: null,
     boardingStop: null,
     tripOthers: false,
+    // What matters to you: these re-rank the options; step-free has no
+    // lift data in the preview, so it only says so.
+    fewer: false,
+    lessWalk: false,
+    stepfree: false,
+    // A plan saved from Plan a trip, and its (preview-only) reminder.
+    planSaved: null,
+    remind: true,
+    checksOpen: false,
     boardingRoute: null,
     routeMode: 'transit',
     sort: 'arrival',
@@ -75,17 +84,28 @@ const requestTrip = () =>
         : J.matches(from.value, to.value)
           ? 'capture'
           : null;
-function routeList(tripId = requestTrip()) {
+function routeList(tripId = requestTrip(), mode = state.routeMode) {
     if (!tripId) return [];
     const trip = J.trips?.[tripId] || J.capture;
-    return J.filtered({
+    const list = J.filtered({
         ...state,
         ...(state.schedule === 'now'
             ? { date: trip.date, time: trip.time }
             : {}),
-        mode: state.routeMode,
+        mode,
         trip: tripId,
     });
+    // What matters to you re-ranks the options; ties keep the chosen sort.
+    if (!state.fewer && !state.lessWalk) return list;
+    return list
+        .map((route, index) => ({ route, index }))
+        .sort(
+            (a, b) =>
+                (state.fewer ? a.route.changes - b.route.changes : 0) ||
+                (state.lessWalk ? a.route.walking - b.route.walking : 0) ||
+                a.index - b.index,
+        )
+        .map(({ route }) => route);
 }
 try {
     state.composerHelpDismissed =
@@ -116,11 +136,6 @@ let toastTimer,
     previousRequest,
     boardingReturn;
 let closingSheet = false;
-const modes = [
-    ['transit', 'Transit', 'train'],
-    ['bike', 'Cycle', 'bike'],
-    ['walk', 'Walk', 'walk'],
-];
 const routeIcon = (route) => (route.mode === 'transit' ? 'train' : route.mode);
 const routeName = (route) =>
     route.line
@@ -273,45 +288,29 @@ function setView(view) {
     if (changed)
         animate(view === 'stop' ? $('#departures') : $('#journey-view'));
 }
-function modeButtons() {
-    return modes
-        .map(
-            ([id, label, shape]) =>
-                `<button type="button" data-route-mode="${id}" aria-pressed="${state.routeMode === id}">${icon(shape)}${label}</button>`,
-        )
-        .join('');
-}
 function scheduleLabel() {
     return U.scheduleLabel(state);
-}
-function preferenceCount() {
-    return (
-        Number(state.maxWalk < 60) +
-        Number(state.avoidDelays) +
-        Number(state.direct)
-    );
 }
 function syncControls() {
     syncServicePreference();
     syncComposerHelper();
-    $('#schedule-label').textContent = scheduleLabel();
-    const modeRow = $('#planner-modes');
-    // The active page ships these controls in HTML; older fixtures still build them.
-    if (!modeRow.querySelectorAll('[data-route-mode]').length)
-        modeRow.innerHTML = modeButtons();
-    modeRow.querySelectorAll('[data-route-mode]').forEach((button) => {
+    document.querySelectorAll('[data-schedule-mode]').forEach((button) =>
         button.setAttribute(
             'aria-pressed',
-            String(button.dataset.routeMode === state.routeMode),
-        );
-    });
-    const count = preferenceCount();
-    $('#preferences-count').textContent = count;
-    $('#preferences-count').hidden = !count;
-    $('[data-action="preferences"]').setAttribute(
-        'aria-label',
-        `Journey preferences${count ? `, ${count} active` : ''}`,
+            String(button.dataset.scheduleMode === state.schedule),
+        ),
     );
+    const timed = state.schedule !== 'now';
+    $('#plan-when-time').hidden = !timed;
+    $('#plan-when-caption').textContent =
+        state.schedule === 'arrive' ? 'Be there by' : 'Leave at';
+    $('#schedule-label').textContent = timed
+        ? `${state.date === home.date ? '' : `${boardDateLabel(state.date)} · `}${state.time}`
+        : '';
+    document.querySelectorAll('[data-pref]').forEach((button) =>
+        button.setAttribute('aria-pressed', String(!!state[button.dataset.pref])),
+    );
+    $('#stepfree-note').hidden = !state.stepfree;
 }
 function composerRequestKey() {
     const { sort, ...request } = captureRequest();
@@ -395,26 +394,6 @@ function showSchedule(anchor) {
         'schedule',
     );
 }
-function showPreferences(anchor) {
-    openPopover(
-        'Journey preferences',
-        `<form id="preferences-form"><span class="preference-label" id="max-walk-label">Total walking</span><input type="hidden" id="max-walk" value="${state.maxWalk}"><div class="segmented walk-choices" role="group" aria-labelledby="max-walk-label">${[
-            [60, 'Any'],
-            [15, '15 min'],
-            [10, '10 min'],
-            [5, '5 min'],
-        ]
-            .map(
-                ([value, label]) =>
-                    `<button type="button" data-max-walk="${value}" aria-pressed="${state.maxWalk === value}" aria-label="${value === 60 ? 'Any walking time' : `Up to ${value} minutes`}">${label}</button>`,
-            )
-            .join(
-                '',
-            )}</div><label class="toggle-row"><span>${icon('route')}No changes</span><input id="direct" type="checkbox" role="switch" ${state.direct ? 'checked' : ''}></label><label class="toggle-row"><span>${icon('clock')}Hide delay notices</span><input id="avoid-delays" type="checkbox" role="switch" ${state.avoidDelays ? 'checked' : ''}></label><div class="popover-footer"><button type="button" class="quiet-button" data-action="reset-preferences">Reset</button><button class="text-action" type="submit">Done</button></div></form>`,
-        anchor,
-        'preferences',
-    );
-}
 function showSort(anchor) {
     openPopover(
         'Sort routes',
@@ -496,6 +475,9 @@ function captureRequest() {
         maxWalk: state.maxWalk,
         avoidDelays: state.avoidDelays,
         direct: state.direct,
+        fewer: state.fewer,
+        lessWalk: state.lessWalk,
+        stepfree: state.stepfree,
         sort: state.sort,
         boardingStop: state.boardingStop,
         boardingRoute: state.boardingRoute,
@@ -512,6 +494,10 @@ function resetFilters() {
         maxWalk: 60,
         avoidDelays: false,
         direct: false,
+        fewer: false,
+        lessWalk: false,
+        stepfree: false,
+        planSaved: null,
         more: false,
         boardingStop: null,
         boardingRoute: null,
@@ -631,7 +617,7 @@ function routeTag(route, list) {
         return '<span class="status-tag">Less walking</span>';
     return '';
 }
-function option(route, list, preview = false) {
+function option(route, list, preview = false, best = false) {
     const expanded = !preview && state.expanded === route.id;
     const trip = tripOf(route);
     const caption = `${route.inPlan ? 'In your plan · ' : ''}${
@@ -642,26 +628,41 @@ function option(route, list, preview = false) {
               : 'On foot'
     }`;
     return `<article class="route-option" aria-label="${routeName(route)}, ${route.duration} minutes, arriving ${route.arrive}${route.arrive < trip.time ? ' next day' : ''}">
-        <div class="option-top"><div class="option-summary"><div class="route-clock">${route.depart}<span class="time-connector" aria-label="to"></span>${route.arrive}${overnight(route.arrive, trip)}<span class="route-duration">${route.duration} min</span></div><p class="option-caption">${caption}</p></div><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}">${icon('bookmark')}</button></div>
+        <div class="option-top"><div class="option-summary">${best ? '<span class="best-tag">Best for you</span>' : ''}<div class="route-clock">${route.depart}<span class="time-connector" aria-label="to"></span>${route.arrive}${overnight(route.arrive, trip)}<span class="route-duration">${route.duration} min</span></div><p class="option-caption">${caption}</p></div></div>
         ${ribbon(route)}
         <div class="option-foot"><button class="details-toggle" ${preview ? `data-example-route="${route.id}" aria-label="Explore sample ${routeName(route)} journey details"` : `data-route-details="${route.id}" aria-expanded="${expanded}" aria-controls="route-disclosure-${route.id}"`}>Journey details ${icon('down')}</button>${routeTag(route, list)}</div>
-        ${preview ? '' : `<div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="inline-itinerary">${stepsMarkup(route)}${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}<p class="route-note">${sourceNote(route)} · ${route.mode === 'transit' ? 'Check current departures before travelling.' : 'Street directions weren’t captured.'}</p><div class="inline-route-actions"><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div></div></div></div>`}
+        ${preview ? '' : `<div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="inline-itinerary">${stepsMarkup(route)}${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}<p class="route-note">${sourceNote(route)} · ${route.mode === 'transit' ? 'Check current departures before travelling.' : 'Street directions weren’t captured.'}</p><div class="inline-route-actions"><button class="primary" data-action="save-plan" data-route-id="${route.id}">${saved.includes(route.id) ? 'Saved · see the plan' : 'Save this plan'}</button><button class="quiet-button" data-map="${route.id}">${icon('route')}Journey preview</button></div></div></div></div>`}
     </article>`;
 }
-// The captured example follows the chosen mode: it has one cycling and one
-// walking option besides the trams.
+// Plan a trip starts from today's places: the appointment and the evening's
+// events (sample day). The captured example stays one tap away.
+function dayPlaces() {
+    if (!J.day) return [];
+    return [
+        { time: J.day.start, title: J.day.place, place: J.day.to },
+        ...(window.ExpaduSampleDay?.events || []).map((event) => ({
+            time: event.start,
+            title: event.title,
+            place: event.venue,
+        })),
+    ];
+}
 function renderSampleRoutes() {
-    const routes = J.routes
-        .filter((route) => route.mode === state.routeMode)
-        .slice(0, 3);
-    // The capture is from late at night; say so up front, beside the times,
-    // rather than only in the footnote below them.
     const endpoints = $('.sample-endpoints');
+    // The capture is from late at night; say so beside its link.
     if (endpoints && J.capture)
         endpoints.textContent = `${J.capture.from} → ${J.capture.to} · captured ${boardDateLabel(J.capture.date)} at ${J.capture.time}. These are that night’s times, not today’s.`;
-    $('#sample-routes').innerHTML = routes
-        .map((route) => option(route, routes, true))
-        .join('');
+    const list = $('#day-places');
+    if (!list) return;
+    const places = dayPlaces();
+    list.innerHTML = places.length
+        ? places
+              .map(
+                  (place) =>
+                      `<button type="button" data-day-place="${safe(place.place)}" aria-pressed="${to.value.trim() === place.place}"><time>${place.time}</time><span><strong>${safe(place.title)}</strong><small>${safe(place.place)}</small></span><span class="day-place-pick">${to.value.trim() === place.place ? 'Picked' : 'Go here'}</span></button>`,
+              )
+              .join('')
+        : '<p class="route-note">Your day isn’t in this preview.</p>';
 }
 // The sample day's appointment trip leads Nearby: the tram to take now, with
 // Today's rule for tight official appointments (owner-approved design).
@@ -792,6 +793,72 @@ function details(route) {
     const trip = tripOf(route);
     return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>${safe(trip.place)}</h2></div><div class="journey-timeband"><span><small>Leave ${safe(placeName(trip.from))}</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < trip.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>${trip.id === 'day' ? 'Sample day, scheduled times.' : '7 Sep 2026 · 23:37 capture.'} ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'Saved journey' : 'Save journey'}">${icon('bookmark')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
 }
+// What the planner looked at for this trip, and what the preview has of it.
+function checks(tripId, trip, route) {
+    const day = tripId === 'day';
+    const weather = day && route ? sampleWeather(trip.date, route.depart) : null;
+    const between = day
+        ? dayPlaces().filter((place) => place.time > trip.time && place.time < trip.start)
+        : [];
+    return [
+        {
+            short: 'Departures',
+            title: day ? 'Departures' : 'Departures, as captured',
+            text: day
+                ? `Scheduled sample times for ${boardDateLabel(trip.date)}`
+                : `Captured ${boardDateLabel(trip.date)} at ${trip.time}: that night’s times`,
+        },
+        {
+            short: 'Notices',
+            title: 'KVB notices',
+            text: day
+                ? 'None in the sample day'
+                : 'Only historical examples were captured; current notices aren’t known',
+        },
+        {
+            short: 'Weather',
+            title: 'Weather',
+            text: weather
+                ? `${weather.sky}, ${weather.degrees}° when you leave · sample weather`
+                : 'Not recorded for this trip',
+            muted: !weather,
+        },
+        {
+            short: 'Your day',
+            title: 'Your day',
+            text: day
+                ? between.length
+                    ? `${between.map((place) => `${place.title} at ${place.time}`).join(', ')} before this`
+                    : `Nothing else before ${trip.start}`
+                : 'Not part of your sample day',
+            muted: !day,
+        },
+        {
+            short: 'Lifts',
+            title: 'Lifts on the way',
+            text: state.stepfree
+                ? 'Lift status isn’t in this preview, so we can’t promise step-free'
+                : 'Not in this preview',
+            muted: true,
+            flag: state.stepfree,
+        },
+    ];
+}
+function checksMarkup(list) {
+    return `<section class="plan-checks" aria-label="What we checked"><button type="button" class="plan-checks-toggle" data-action="checks" aria-expanded="${state.checksOpen}" aria-controls="plan-checks-detail"><strong>We checked today’s conditions</strong><span class="plan-check-chips">${list.map((item) => `<span class="${item.flag ? 'is-flag' : item.muted ? 'is-muted' : ''}">${safe(item.short)}</span>`).join('')}</span><span class="plan-checks-more">${state.checksOpen ? 'Hide' : 'Details'}${icon('down')}</span></button><div id="plan-checks-detail" class="plan-checks-detail" ${state.checksOpen ? '' : 'hidden'}>${list.map((item) => `<p><strong>${safe(item.title)}</strong><span>${safe(item.text)}</span></p>`).join('')}</div></section>`;
+}
+const clockOf = (minutes) =>
+    `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+function savedPlan(route) {
+    const remindAt = clockOf(minutesOf(route.depart) - 5);
+    return `<section class="plan-saved" aria-labelledby="plan-saved-title"><span class="plan-saved-mark">${icon('check')}</span><h2 id="plan-saved-title" tabindex="-1">Plan saved</h2><p class="plan-saved-summary">${routeName(route)} · leave ${route.depart} · there ${route.arrive}</p><ul class="plan-saved-list"><li><button type="button" data-action="saved"><span class="plan-saved-icon">${icon('bookmark')}</span><span><strong>It’s in Saved journeys</strong><small>On this device · open it any time from Saved</small></span>${icon('chevron')}</button></li><li><button type="button" role="switch" aria-checked="${state.remind}" data-action="remind"><span class="plan-saved-icon">${icon('clock')}</span><span><strong>Remind me when to leave</strong><small>${state.remind ? `At ${remindAt}, five minutes before you need to go. Reminders aren’t sent in this preview.` : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button></li><li class="is-note"><span class="plan-saved-icon is-watch">${icon('eye')}</span><span><strong>We keep watching it</strong><small>In the app, live delays and KVB notices update it, and a “Change of plan” offers a new way. This preview doesn’t watch.</small></span></li></ul><div class="plan-saved-actions"><button type="button" class="quiet-button" data-action="change-plan">Change the plan</button><button type="button" class="primary is-ink" data-action="plan-done">Done</button></div></section>`;
+}
+// "Arrive by 14:00", with the date only when it isn't the planner's day.
+function planSummary() {
+    if (state.schedule === 'now') return 'Leave now';
+    const day = state.date === home.date ? '' : `${boardDateLabel(state.date)}, `;
+    return `${state.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${day}${state.time}`;
+}
 function renderResults() {
     state.results = true;
     state.view = 'journey';
@@ -813,8 +880,16 @@ function renderResults() {
           icon('back') +
           'Back to your request</button>'
         : '';
-    const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? 'Your options' : 'Your journey'}</h2><div class="results-heading"><span>${list.length ? `${list.length} sample ${list.length === 1 ? 'route' : 'routes'}` : 'Route request'}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
-    const toolbar = `<div class="results-tools"><div class="segmented route-modes" role="group" aria-label="Travel mode">${modeButtons()}</div><div class="result-utilities"><button class="quiet-button" data-action="schedule" aria-expanded="false" aria-haspopup="dialog">${icon('clock')}<span>${safe(scheduleLabel())}</span>${icon('down')}</button><div><button class="icon-button ${preferenceCount() ? 'has-preferences' : ''}" data-action="preferences" aria-label="Journey preferences${preferenceCount() ? ', ' + preferenceCount() + ' active' : ''}" title="Journey preferences" aria-expanded="false" aria-haspopup="dialog">${icon('sliders')}</button></div></div></div>`;
+    const plan = state.planSaved && findRoute(state.planSaved);
+    if (plan && tripId && tripOf(plan).id === (J.trips?.[tripId] || J.capture).id) {
+        $('#results').innerHTML = restore + savedPlan(plan);
+        syncComposerHelper();
+        return;
+    }
+    state.planSaved = null;
+    const title =
+        tripId === 'day' && trip.place ? trip.place : placeName(to.value.trim());
+    const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? `To ${safe(title)}` : 'Your journey'}</h2><div class="results-heading"><span>${safe(planSummary())} · from ${safe(placeName(from.value.trim()))}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
     const empty = matched
         ? U.emptyReason(state, trip, [
               ...new Set(
@@ -835,14 +910,24 @@ function renderResults() {
             placeName(stop.name).toLocaleLowerCase() ===
             placeName(from.value.trim()).toLocaleLowerCase(),
     );
+    // Bike and walk are other ways, after the trams, when the sample has them.
+    const otherWays = tripId
+        ? ['transit', 'bike', 'walk']
+              .filter((mode) => mode !== state.routeMode && mode !== 'transit')
+              .flatMap((mode) => routeList(tripId, mode).slice(0, 1))
+        : [];
+    const others = list.length
+        ? otherWays.length
+            ? `<h3 class="plan-subhead">Other ways</h3><div class="route-options">${otherWays.map((route) => option(route, otherWays)).join('')}</div>`
+            : '<p class="route-note other-ways-note">Bike or walk: times aren’t in the sample.</p>'
+        : '';
     const contents = list.length
-        ? `<div class="route-workspace"><div class="route-options">${(state.more ? list : list.slice(0, 3)).map((route) => option(route, list)).join('')}${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}</div></div>`
+        ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="route-options">${(state.more ? list : list.slice(0, 3)).map((route, index) => option(route, list, false, index === 0 && list.length > 1)).join('')}${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}</div>${others}</div>`
         : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : `${empty.composer ? `<button class="quiet-button" data-action="composer-help">${icon('spark')}Ask Composer</button>` : ''}${empty.composer && fromStop ? `<button class="quiet-button" data-action="from-departures" data-stop-id="${safe(fromStop.id)}">${icon('train')}Departures from ${safe(placeName(fromStop.name))}</button>` : ''}<button class="quiet-button" data-action="example">Explore sample routes</button>`}</div></div>`;
     const captureNote = list.length
         ? `<p class="sample-footnote">${icon('info')}<span>${sourceNote(list[0])} · No live travel status.</span></p>`
         : '';
-    $('#results').innerHTML =
-        restore + header + toolbar + contents + captureNote;
+    $('#results').innerHTML = restore + header + contents + captureNote;
     syncComposerHelper();
 }
 function selectedRoute(id, boardingOrigin = undefined) {
@@ -1150,7 +1235,6 @@ function action(name, button) {
         renderPlanner();
         ExpaduMotion?.feedback(button);
     } else if (name === 'schedule') showSchedule(button);
-    else if (name === 'preferences') showPreferences(button);
     else if (name === 'sort') showSort(button);
     else if (name === 'clear-service-preference') {
         state.servicePreference = null;
@@ -1194,19 +1278,35 @@ function action(name, button) {
     } else if (name === 'reset-filters') {
         resetFilters();
         renderResults();
-    } else if (name === 'reset-preferences') {
-        $('#max-walk').value = '60';
-        popover
-            .querySelectorAll('[data-max-walk]')
-            .forEach((item) =>
-                item.setAttribute(
-                    'aria-pressed',
-                    String(item.dataset.maxWalk === '60'),
-                ),
-            );
-        $('#direct').checked = false;
-        $('#avoid-delays').checked = false;
-    } else if (name === 'ask-composer') {
+    } else if (name === 'checks') {
+        state.checksOpen = !state.checksOpen;
+        renderResults();
+        $('[data-action="checks"]')?.focus({ preventScroll: true });
+    } else if (name === 'save-plan') {
+        const id = button.dataset.routeId;
+        if (!saved.includes(id)) saveRoute(id);
+        state.planSaved = id;
+        rememberComposerRoute(id);
+        renderResults();
+        animate($('.plan-saved'));
+        $('#plan-saved-title')?.focus({ preventScroll: true });
+    } else if (name === 'remind') {
+        state.remind = !state.remind;
+        renderResults();
+        $('[data-action="remind"]')?.focus({ preventScroll: true });
+    } else if (name === 'change-plan') {
+        const id = state.planSaved;
+        state.planSaved = null;
+        state.expanded = id;
+        renderResults();
+        $(`[data-route-details="${id}"]`)?.focus({ preventScroll: true });
+    } else if (name === 'plan-done') {
+        state.planSaved = null;
+        setView('stop');
+        $('[data-view="stop"]')?.focus({ preventScroll: true });
+    } else if (name === 'saved-place')
+        toast('Saved places aren’t in this preview.');
+    else if (name === 'ask-composer') {
         if (to.value.trim()) handoff();
         else $('.composer-launcher')?.click();
     } else if (name === 'to-composer') handoff();
@@ -1273,13 +1373,41 @@ document.addEventListener('click', (event) => {
               ? $('.find-routes')
               : from
         ).focus();
-    } else if (button.dataset.maxWalk) {
-        $('#max-walk').value = button.dataset.maxWalk;
-        popover
-            .querySelectorAll('[data-max-walk]')
-            .forEach((item) =>
-                item.setAttribute('aria-pressed', String(item === button)),
-            );
+    } else if (button.dataset.scheduleMode) {
+        const mode = button.dataset.scheduleMode;
+        const place = dayPlaces().find((item) => item.place === to.value.trim());
+        Object.assign(state, {
+            schedule: mode,
+            date: mode === 'now' || state.schedule === 'now' ? home.date : state.date,
+            time:
+                mode === 'arrive' && place
+                    ? place.time
+                    : mode === 'now' || state.schedule === 'now'
+                      ? home.time
+                      : state.time,
+        });
+        syncControls();
+        if (state.results) renderResults();
+        plannerControl(`[data-schedule-mode="${mode}"]`)?.focus({ preventScroll: true });
+    } else if (button.dataset.pref) {
+        const key = button.dataset.pref;
+        state[key] = !state[key];
+        syncControls();
+        if (state.results) renderResults();
+        plannerControl(`[data-pref="${key}"]`)?.focus({ preventScroll: true });
+    } else if (button.dataset.dayPlace) {
+        // A place from today: arrive by its start, from the sample location.
+        const place = dayPlaces().find((item) => item.place === button.dataset.dayPlace);
+        if (!from.value.trim()) from.value = J.day?.from || '';
+        to.value = button.dataset.dayPlace;
+        Object.assign(state, {
+            schedule: 'arrive',
+            date: home.date,
+            time: place?.time || home.time,
+        });
+        syncControls();
+        renderSampleRoutes();
+        $('.find-routes')?.focus({ preventScroll: true });
     } else if (button.dataset.schedule) {
         $('#schedule-mode').value = button.dataset.schedule;
         $('#scheduled-fields').hidden = button.dataset.schedule === 'now';
@@ -1342,7 +1470,6 @@ document.addEventListener('submit', (event) => {
         ![
             'journey-form',
             'schedule-form',
-            'preferences-form',
             'compose-form',
         ].includes(event.target.id)
     )
@@ -1370,20 +1497,6 @@ document.addEventListener('submit', (event) => {
         if (state.results) {
             renderResults();
             plannerControl('[data-action="schedule"]')?.focus({
-                preventScroll: true,
-            });
-        }
-    } else {
-        Object.assign(state, {
-            maxWalk: Number($('#max-walk').value),
-            direct: $('#direct').checked,
-            avoidDelays: $('#avoid-delays').checked,
-        });
-        closePopover(true);
-        syncControls();
-        if (state.results) {
-            renderResults();
-            plannerControl('[data-action="preferences"]')?.focus({
                 preventScroll: true,
             });
         }

@@ -53,9 +53,27 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
   step-by-step preview; **Other ways** lists the 13:24 and says bike or walk
   times aren't in the sample, with "Compare them in Plan a trip".
 
+- **Plan a trip** follows the approved flow: "Where are you heading?" with
+  From/To (suggestions and swap kept), **When** (Leave now · Leave at ·
+  Arrive by, with the existing date and time picker) and **What matters to
+  you** (Fewer changes and Less walking re-rank; Avoid delays hides captured
+  delays; Step-free says lift status isn't in the preview). The other column
+  starts with **Today's places**: picking one arrives by its start. Saved
+  places say they aren't in the preview; the captured example is a link.
+  Results say **what we checked** (departures, notices, weather, your day,
+  lifts: each with what the sample has), put **Best for you** first, and open
+  an option in place with **Save this plan** and Journey preview. Bike and
+  walk are **Other ways** (the captured example has them; the sample day says
+  their times aren't in it). Saving shows **Plan saved** with a reminder
+  switch and "We keep watching it", both saying the preview doesn't send or
+  watch. Mode tabs and the preferences menu are gone; `?mode=` still works.
+  Avoid broken lines from the canvas became Avoid delays: the preview has
+  delay flags, not line outages.
+
 Data: `nearby.js` (model, `tests/nearby.test.cjs`), `nearby-ui.js` (view),
-`nearby.css`. No times, platforms or lift states are invented. Browser check:
-`tests/nearby-browser.cjs` at 390 and 1440px (360 and 800px checked by hand).
+`nearby.css`, `plan.css`. No times, platforms or lift states are invented.
+Browser checks: `tests/nearby-browser.cjs` and `tests/plan-browser.cjs` at 390
+and 1440px (360 and 800px checked by hand).
 
 ## The captured example says it's from late at night — 7 October 2026
 

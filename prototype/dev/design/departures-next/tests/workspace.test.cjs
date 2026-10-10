@@ -90,7 +90,9 @@ function workspace(
     });
     context.window = context;
     for (const file of [
-        ...(sampleDay ? ['../connected/sample-day.js'] : []),
+        ...(sampleDay
+            ? ['../connected/sample-day.js', '../events-next/sample-weather.js']
+            : []),
         'departure-data.js',
         'journeys.js',
         ...(capture ? ['station-data.js'] : []),
@@ -157,34 +159,30 @@ test('clicking a focused location field reopens its dismissed suggestions', () =
     assert.equal(w.element('#suggestions').hidden, false);
     assert.match(w.element('#suggestions').innerHTML, /Museum Ludwig/);
 });
-test('changing travel mode preserves the existing controls and keyboard focus', () => {
-    const w = workspace();
-    const buttons = ['transit', 'bike', 'walk'].map((id) => ({
-        dataset: { routeMode: id },
+test('When and What matters to you mark their choices without rebuilding the form', () => {
+    const w = workspace('', false, false, false, true);
+    const button = (dataset) => ({
+        dataset,
         attributes: {},
         setAttribute(name, value) {
             this.attributes[name] = String(value);
         },
-    }));
-    const row = w.element('#planner-modes');
-    row.querySelectorAll = () => buttons;
-    Object.defineProperty(row, 'innerHTML', {
-        set() {
-            assert.fail(
-                'Replacing controls discards focus and rebuilds the visible form',
-            );
-        },
     });
-    w.run('state.routeMode = "bike"; syncControls();');
-    assert.deepEqual(
-        buttons.map((button) => button.attributes['aria-pressed']),
-        ['false', 'true', 'false'],
-    );
-    w.run('state.routeMode = "walk"; syncControls();');
-    assert.deepEqual(
-        buttons.map((button) => button.attributes['aria-pressed']),
-        ['false', 'false', 'true'],
-    );
+    const when = ['now', 'depart', 'arrive'].map((id) => button({ scheduleMode: id }));
+    const prefs = ['fewer', 'lessWalk', 'avoidDelays', 'stepfree'].map((id) => button({ pref: id }));
+    w.run('document').querySelectorAll = (selector) =>
+        selector === '[data-schedule-mode]' ? when : selector === '[data-pref]' ? prefs : [];
+    w.run('Object.assign(state, { schedule: "arrive", time: "14:00", lessWalk: true, stepfree: true }); syncControls();');
+    assert.deepEqual(when.map((b) => b.attributes['aria-pressed']), ['false', 'false', 'true']);
+    assert.deepEqual(prefs.map((b) => b.attributes['aria-pressed']), ['false', 'true', 'false', 'true']);
+    assert.equal(w.element('#plan-when-time').hidden, false);
+    assert.equal(w.element('#plan-when-caption').textContent, 'Be there by');
+    assert.equal(w.element('#schedule-label').textContent, '14:00');
+    // Step-free can't be promised without lift data, and says so.
+    assert.equal(w.element('#stepfree-note').hidden, false);
+    w.run('state.schedule = "now"; state.stepfree = false; syncControls();');
+    assert.equal(w.element('#plan-when-time').hidden, true);
+    assert.equal(w.element('#stepfree-note').hidden, true);
 });
 test('Today’s stop shortcut opens Nearby on that stop', () => {
     const w = workspace('?view=timetable&stop=mitte', false, true, true);
@@ -504,9 +502,12 @@ test('route-specific controls lead without repeated Composer actions', () => {
     const detail = w.run('details(J.routes[0])');
     for (const markup of [card, detail]) {
         assert.doesNotMatch(markup, /Review in Composer|data-shared-route/);
-        assert.match(markup, /class="primary" data-map=/);
-        assert.match(markup, /data-save=/);
+        assert.match(markup, /data-map=/);
     }
+    // An option saves as a plan from its details; the sheet keeps its bookmark.
+    assert.match(card, /class="primary" data-action="save-plan" data-route-id="r9">Save this plan/);
+    assert.match(detail, /class="primary" data-map=/);
+    assert.match(detail, /data-save=/);
 });
 
 test('Composer helper does not infer route choice from the first search result', () => {
@@ -632,13 +633,21 @@ test('opening the next trip compares both trams against the 14:00 start', () => 
     assert.equal(w.run('state.schedule'), 'arrive');
     assert.equal(w.run('state.time'), '14:00');
     const results = w.element('#results').innerHTML;
-    assert.match(results, /2 sample routes/);
+    assert.match(results, /<h2 id="results-title" tabindex="-1">To Blue Card appointment/);
+    assert.match(results, /Arrive by 14:00 · from Neumarkt/);
+    // What was checked, and what the sample has of it.
+    assert.match(results, /We checked today’s conditions/);
+    assert.match(results, /None in the sample day/);
+    assert.match(results, /Clear, 21° when you leave · sample weather/);
+    assert.match(results, /Nothing else before 14:00/);
+    assert.match(results, /Best for you[\s\S]*13:10/);
     assert.match(results, /<span class="status-tag">12 min to spare/);
     assert.match(
         results,
         /<span class="status-tag warning">Only 2 min to spare/,
     );
     assert.match(results, /In your plan · No changes/);
+    assert.match(results, /Bike or walk: times aren’t in the sample/);
     assert.match(results, /Sample day · scheduled times/);
     assert.doesNotMatch(results, /7 Sep 2026|aria-label="next day"/);
     w.run('state.routeMode = "bike"; renderResults();');
@@ -648,14 +657,40 @@ test('opening the next trip compares both trams against the 14:00 start', () => 
     );
 });
 
-test('the captured example follows the travel mode', () => {
-    const w = workspace();
-    w.run('state.routeMode = "bike"; renderSampleRoutes();');
-    assert.match(w.element('#sample-routes').innerHTML, /By bike/);
-    assert.doesNotMatch(
-        w.element('#sample-routes').innerHTML,
-        /data-example-route="r9"/,
+test('Plan a trip starts from today’s places; picking one arrives by its start', () => {
+    const w = workspace('', false, false, false, true);
+    w.run('renderSampleRoutes();');
+    const places = w.element('#day-places').innerHTML;
+    assert.match(places, /data-day-place="Mülheim"[\s\S]*14:00[\s\S]*Blue Card appointment/);
+    assert.match(places, /data-day-place="Rheinauhafen"[\s\S]*18:30[\s\S]*Street culture night/);
+    assert.match(
+        w.element('.sample-endpoints').textContent,
+        /Museum Ludwig · captured Mon 7 Sept at 23:37/,
     );
+    const place = { dataset: { dayPlace: 'Rheinauhafen' } };
+    w.emit('click', { target: { closest: (s) => (s === 'button' ? place : null) } });
+    assert.equal(w.element('#from').value, 'Neumarkt');
+    assert.equal(w.element('#to').value, 'Rheinauhafen');
+    assert.equal(w.run('state.schedule'), 'arrive');
+    assert.equal(w.run('state.time'), '18:30');
+});
+
+test('the captured example offers bike and walk as other ways, and saves a plan', () => {
+    const w = workspace();
+    w.run('from.value = "Köln Neumarkt"; to.value = "Museum Ludwig"; searchJourney();');
+    const results = w.element('#results').innerHTML;
+    assert.match(results, /<h3 class="plan-subhead">Other ways<\/h3>[\s\S]*By bike[\s\S]*On foot/);
+    assert.match(results, /Captured Mon 7 Sept at 23:37: that night’s times/);
+    w.run('action("save-plan", { dataset: { routeId: "r9" } });');
+    const saved = w.element('#results').innerHTML;
+    assert.match(saved, /Plan saved/);
+    assert.match(saved, /Line 9 · leave 23:37/);
+    assert.match(saved, /Reminders aren’t sent in this preview/);
+    assert.match(saved, /This preview doesn’t watch/);
+    assert.ok(w.run('saved.includes("r9")'));
+    w.run('action("change-plan", {});');
+    assert.doesNotMatch(w.element('#results').innerHTML, /Plan saved/);
+    assert.equal(w.run('state.expanded'), 'r9');
 });
 
 test('Composer help waits for a trip; no route offers Composer and the start’s departures', () => {
