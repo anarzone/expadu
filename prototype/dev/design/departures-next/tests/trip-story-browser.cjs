@@ -50,7 +50,8 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                     ? /Neumarkt 13:14[\s\S]*Wiener Platz 13:42/
                     : /13:14 from Neumarkt[\s\S]*There 13:48 · 12 min spare/,
             );
-            await page.getByRole('button', { name: 'Plan a trip' }).first().click();
+            // Phones open Plan a trip from “Where to?”; desktops from its tab.
+            await (width < 1000 ? page.locator('.where-to') : page.getByRole('button', { name: 'Plan a trip' }).first()).click();
             assert.equal(
                 await page.locator('.sample-endpoints').innerText(),
                 'Köln Neumarkt → Museum Ludwig · captured Mon 7 Sept at 23:37. These are that night’s times, not today’s.',

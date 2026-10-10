@@ -27,6 +27,10 @@ const state = {
     // was taken.
     scenario: 'normal',
     recovered: false,
+    // My day: the evening's choice where two plans overlap, and whether the
+    // trip's steps are open.
+    dayPick: '',
+    dayTripOpen: false,
     boardingRoute: null,
     routeMode: 'transit',
     sort: 'arrival',
@@ -289,14 +293,22 @@ function setView(view) {
     document.body.dataset.view = view;
     $('#journey-view').hidden = view !== 'journey';
     $('#departures').hidden = view !== 'stop';
+    $('#day-view').hidden = view !== 'day';
     document
         .querySelectorAll('[data-view][aria-pressed]')
         .forEach((button) =>
             button.setAttribute('aria-pressed', button.dataset.view === view),
         );
     if (view === 'stop') renderDepartures();
+    if (view === 'day') renderDay();
     if (changed)
-        animate(view === 'stop' ? $('#departures') : $('#journey-view'));
+        animate(
+            view === 'stop'
+                ? $('#departures')
+                : view === 'day'
+                  ? $('#day-view')
+                  : $('#journey-view'),
+        );
 }
 function scheduleLabel() {
     return U.scheduleLabel(state);
@@ -769,6 +781,7 @@ function renderNextTrip() {
         </div>
         <div class="next-trip-side">
             <button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${best.id}">${icon('play')}I’m on my way</button>
+            <button type="button" class="quiet-button next-trip-day" data-view="day">My day</button>
             <small class="next-trip-hint">Your phone takes the trip from here, one step at a time.</small>
             <button type="button" class="text-action next-trip-toggle" data-action="trip-others" aria-expanded="${state.tripOthers}" aria-controls="next-trip-others">Other ways${icon('down')}</button>
             <div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div>
@@ -1110,6 +1123,69 @@ const boardDateLabel = (date, long = false) =>
         month: long ? 'long' : 'short',
         ...(long ? { year: 'numeric' } : {}),
     }).format(new Date(date + 'T12:00:00'));
+// My day (phones): today's moves on one line, the river. Sample day only:
+// the trip, the appointment, the free hours with sample weather, the
+// evening's plans and the way home.
+function renderDay() {
+    const panel = $('#day-view');
+    if (!panel) return;
+    const trip = J.day;
+    if (!trip) {
+        panel.innerHTML = '<p class="route-note">Your day isn’t in this preview.</p>';
+        return;
+    }
+    const appointment = window.ExpaduSampleDay?.appointment;
+    const events = window.ExpaduSampleDay?.events || [];
+    const { best: usual, planned, spare } = nextTripChoice(trip);
+    const sc = state.scenario;
+    const broken = ['cancelled', 'missed'].includes(sc) && !state.recovered;
+    const route = ['cancelled', 'missed'].includes(sc) ? planned : usual;
+    const ride = route.legs.find((leg) => leg.mode === 'transit');
+    const walkIn = route.legs[0].mode === 'walk' ? route.legs[0].duration : 0;
+    const walkOut = route.legs.at(-1).mode === 'walk' ? route.legs.at(-1).duration : 0;
+    const look = window.NearbyModel?.look(route.line, 'tram') || {};
+    const tight = spare(route) < (trip.kind === 'official' ? 10 : 5);
+    const hour = (h) => sampleWeather(trip.date, `${String(h).padStart(2, '0')}:00`);
+    const now = sampleWeather(trip.date, trip.time);
+    // Two plans that overlap ask which one; the other is then skipped.
+    const [first, second] = events;
+    const overlap =
+        first && second && second.start < first.end
+            ? { from: second.start, to: first.end }
+            : null;
+    const ev = (event, key) => {
+        const w = sampleWeather(trip.date, event.start);
+        const skipped = state.dayPick && state.dayPick !== key;
+        return `<section class="day-event${skipped ? ' is-skipped' : ''}" aria-label="${safe(event.title)}"><strong>${safe(event.title)}</strong><span>${safe(event.venue)} · until ${event.end}</span>${w?.wet ? `<span class="day-weather">${icon('cloud')}${w.sky} likely · sample forecast</span>` : ''}${skipped ? '<small>Skipping this one</small>' : ''}</section>`;
+    };
+    const end = state.dayPick === 'culture' ? first : second || first;
+    const steps = J.tripSteps(route)
+        .map(
+            (step) =>
+                `<li><time>${step.time}</time><span class="day-step-dot is-${step.mode}"></span><span><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small></span></li>`,
+        )
+        .join('');
+    const tripBlock = broken
+        ? `<section class="day-broken" aria-labelledby="day-broken-title"><p class="day-broken-cause">${icon('close')}${sc === 'cancelled' ? 'Tram 4 at 13:14 is cancelled (sample)' : 'Tram 4 left at 13:14 (sample)'}</p><strong id="day-broken-title">Your 13:14 way ${sc === 'cancelled' ? 'is cancelled' : 'has gone'}</strong><div class="day-switch"><span class="day-badge" style="--line:${look.colour};--ink:${look.ink}">${safe(planned.line)}</span><span><strong>Leave ${planned.depart} · there ${planned.arrive}</strong><small>The next tram ${safe(planned.line)} · only ${spare(planned)} min spare</small></span><button type="button" class="primary" data-action="trip-recover">Switch</button></div><p class="day-note">Other ways’ times aren’t in the sample.</p></section>`
+        : `<section class="day-trip" aria-label="Journey to the appointment" style="--line:${look.colour};--ink:${look.ink};--tint:${look.tint}">${state.recovered ? `<p class="day-switched">Switched to the 13:24, because the 13:14 ${sc === 'cancelled' ? 'is cancelled' : 'left without you'} (sample).</p>` : ''}<button type="button" class="day-trip-head" data-action="day-trip" aria-expanded="${state.dayTripOpen}"><span class="day-trip-times"><strong>Leave ${route.depart} → there ${route.arrive}</strong>${icon('down')}</span><span class="day-ribbon"><span>${icon('walk')}${walkIn}</span><i></i><b>${safe(route.line)} · ${ride.duration} min</b><i></i><span>${icon('walk')}${walkOut}</span></span><span class="day-chips"><span${tight ? ' class="is-tight"' : ''}>${spare(route)} min spare</span><span>Sample day</span></span></button>${state.dayTripOpen ? `<div class="day-trip-detail"><ol class="day-steps">${steps}</ol><button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}Start this trip</button></div>` : ''}</section>`;
+    panel.innerHTML = `<div class="day-head"><span><strong>Today</strong><small>${boardDateLabel(trip.date)} · sample day</small></span>${now ? `<span class="day-now-weather">${icon('sun')}${now.degrees}° · ${now.sky.toLowerCase()} until about 15:00 <small>sample weather</small></span>` : ''}</div>
+        <ol class="day-river">
+            <li class="is-now"><time>${trip.time}</time><span class="day-rail"><i class="day-dot is-now"></i></span><div><strong>Now, near ${safe(placeName(trip.from))}</strong><small>Your location is a sample</small></div></li>
+            <li class="is-trip" style="--trip-line:${look.colour}"><time>${route.depart}</time><span class="day-rail is-ride"></span><div>${tripBlock}</div></li>
+            <li><time>${trip.start}</time><span class="day-rail"><i class="day-dot is-plan"></i></span><div><section class="day-plan"><strong>${safe(trip.place)}</strong><span>${safe(trip.to)} · ${safe(trip.alightStop || '')}${appointment?.end ? ` · until ${appointment.end}` : ''}</span><a class="day-paper" href="../bureaucracy-next/">${icon('document')}What to bring</a></section></div></li>
+            ${appointment?.end && first ? `<li class="is-free"><time>${appointment.end}</time><span class="day-rail is-free"></span><div><strong class="day-free">${(Number(first.start.slice(0, 2)) - Number(appointment.end.slice(0, 2)))} hours free</strong><small>Weather along the way · sample</small><ul class="day-hours">${[15, 16, 17, 18]
+                .map((h) => {
+                    const w = hour(h);
+                    return w ? `<li><time>${h}:00</time>${icon(w.wet ? 'cloud' : 'sun')}<span>${w.sky}, ${w.degrees}°${w.rain ? ` · ${w.rain}% rain` : ''}</span></li>` : '';
+                })
+                .join('')}</ul></div></li>` : ''}
+            ${first ? `<li class="is-later"><time>later</time><span class="day-rail is-dashed"></span><div><section class="day-open"><strong>Getting to ${safe(first.venue)}</strong><small>Route times aren’t in the sample yet.</small><button type="button" class="quiet-button" data-action="plan-way" data-place="${safe(first.venue)}">Plan the way</button></section></div></li>` : ''}
+            ${first ? `<li><time>${first.start}</time><span class="day-rail is-event"><i class="day-dot is-event"></i></span><div>${ev(first, 'culture')}</div></li>` : ''}
+            ${overlap ? `<li class="is-choice"><time></time><span class="day-rail is-event"></span><div><div class="day-overlap"><strong>These overlap from ${overlap.from} to ${overlap.to}. Which one?</strong><div role="group" aria-label="Choose an evening plan"><button type="button" data-action="day-pick" data-pick="culture" aria-pressed="${state.dayPick === 'culture'}">Street culture</button><button type="button" data-action="day-pick" data-pick="cinema" aria-pressed="${state.dayPick === 'cinema'}">Cinema</button></div></div></div></li>` : ''}
+            ${second ? `<li><time>${second.start}</time><span class="day-rail is-event"><i class="day-dot is-event"></i></span><div>${ev(second, 'cinema')}</div></li>` : ''}
+            ${end ? `<li class="is-home"><time>${end.end}</time><span class="day-rail"><i class="day-dot is-home"></i></span><div><section class="day-open"><strong>Getting home</strong><small>Add your home and Expadu plans the way back from ${safe(end.venue)}.</small><button type="button" class="quiet-button" data-action="saved-place">${icon('home')}Add home</button></section></div></li>` : ''}
+        </ol>`;
+}
 // Sample situations to review (the footer's Review menu, ?scenario=).
 // Each uses the sample day or a capture; none of them is live.
 const scenarios = {
@@ -1174,6 +1250,7 @@ function setScenario(id) {
         stepfree: id === 'lift',
     });
     renderNextTrip();
+    renderDay();
     if (state.results) renderResults();
     document.querySelectorAll('[data-scenario]').forEach((button) =>
         button.setAttribute('aria-pressed', String(button.dataset.scenario === id)),
@@ -1373,6 +1450,7 @@ function action(name, button) {
         state.recovered = true;
         state.tripOthers = false;
         renderNextTrip();
+        if (state.view === 'day') renderDay();
         $('[data-action="trip-start"]')?.focus({ preventScroll: true });
     }
     else if (name === 'trip-others') {
@@ -1432,6 +1510,14 @@ function action(name, button) {
         state.planSaved = null;
         setView('stop');
         $('[data-view="stop"]')?.focus({ preventScroll: true });
+    } else if (name === 'day-trip') {
+        state.dayTripOpen = !state.dayTripOpen;
+        renderDay();
+        $('[data-action="day-trip"]')?.focus({ preventScroll: true });
+    } else if (name === 'day-pick') {
+        state.dayPick = state.dayPick === button.dataset.pick ? '' : button.dataset.pick;
+        renderDay();
+        $(`[data-pick="${button.dataset.pick}"]`)?.focus({ preventScroll: true });
     } else if (name === 'saved-place')
         toast('Saved places aren’t in this preview.');
     else if (name === 'ask-composer') {
@@ -1744,6 +1830,7 @@ const todayEntry = new URLSearchParams(location.search);
 if (['from', 'to', 'route', 'service'].some((key) => todayEntry.has(key)))
     setView('journey');
 else if (scenarios[todayEntry.get('scenario')]) setScenario(todayEntry.get('scenario'));
+else if (todayEntry.get('view') === 'day') setView('day');
 else {
     setView('stop');
     if (todayEntry.has('stop')) nearbyView?.setStop(todayEntry.get('stop'));

@@ -15,7 +15,8 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             const errors = [];
             page.on('pageerror', (e) => errors.push(e.message));
             await page.goto(base + 'departures-next/', { waitUntil: 'networkidle' });
-            await page.getByRole('button', { name: 'Plan a trip' }).first().click();
+            // Phones open Plan a trip from “Where to?”; desktops from its tab.
+            await (width < 1000 ? page.locator('.where-to') : page.getByRole('button', { name: 'Plan a trip' }).first()).click();
 
             // Today's places start the trip: arrive by the appointment.
             await page.locator('[data-day-place="Mülheim"]').click();

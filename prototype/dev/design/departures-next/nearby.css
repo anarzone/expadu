@@ -1429,3 +1429,31 @@
     color: var(--color-select-text);
     font-weight: var(--weight-semibold);
 }
+
+/* Phones: My day sits beside "I'm on my way". */
+.next-trip-side {
+    position: relative;
+}
+@media (max-width: 999px) {
+    .next-trip-side {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: var(--space-8);
+    }
+    .next-trip-side > :not(.next-trip-go, .next-trip-day) {
+        grid-column: 1 / -1;
+    }
+    body.travel-palette .next-trip-day {
+        min-height: 48px;
+        padding: 0 var(--space-14);
+        border: 1.5px solid var(--color-text);
+        border-radius: var(--radius-lg);
+        background: var(--color-bg-surface);
+        font-weight: var(--weight-semibold);
+    }
+}
+@media (min-width: 1000px) {
+    .next-trip-day {
+        display: none;
+    }
+}

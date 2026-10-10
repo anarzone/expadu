@@ -103,6 +103,16 @@ const status = (page) => page.locator('.nearby-count [role="status"]').innerText
             assert.equal(await status(page), 'All 2 departures · soonest first');
             assert.match(await page.locator('.nearby-footnote').innerText(), /Recorded Mon 7 Sept, 23:15/);
 
+            // Phones: My day is the day as a river, beside Nearby.
+            if (!wide) {
+                await page.locator('.travel-switch').getByRole('button', { name: 'My day' }).click();
+                const day = page.locator('#day-view');
+                assert.match(await day.innerText(), /Now, near Neumarkt[\s\S]*Leave 13:10 → there 13:48[\s\S]*Blue Card appointment[\s\S]*4 hours free[\s\S]*Street culture night/);
+                await day.getByRole('button', { name: 'Cinema' }).click();
+                assert.match(await day.locator('.day-event.is-skipped').innerText(), /Street culture night[\s\S]*Skipping this one/);
+                assert.match(await day.innerText(), /plans the way back from Stadtgarten/);
+                await page.locator('.travel-switch').getByRole('button', { name: 'Nearby' }).click();
+            }
             // No sideways scroll on the page.
             assert.equal(
                 await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -118,7 +128,8 @@ const status = (page) => page.locator('.nearby-count [role="status"]').innerText
                 await page.getByRole('button', { name: 'Nearby' }).first().click();
             }
             // Plan a trip is one tab away; a trip hand-off opens it directly.
-            await page.getByRole('button', { name: 'Plan a trip' }).first().click();
+            // Phones open Plan a trip from “Where to?”; desktops from its tab.
+            await (width < 1000 ? page.locator('.where-to') : page.getByRole('button', { name: 'Plan a trip' }).first()).click();
             assert.equal(await page.locator('#journey-view').isVisible(), true);
             await page.goto(base + 'departures-next/?from=Neumarkt&to=M%C3%BClheim&date=2026-09-30&arrive=14:00', { waitUntil: 'networkidle' });
             assert.equal(await page.locator('#journey-view').isVisible(), true);

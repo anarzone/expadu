@@ -95,8 +95,20 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
     area without a step-free way in comes first, hidden with its warning.
   - *Live times paused:* clock times marked not live, from 22:19.
 
+- **Phones** get the approved bar: **Where to?** (opens Plan a trip, which
+  has its own back row with Saved journeys) and **Nearby | My day**. Desktops
+  keep the tabs; the sample note is in the footer on both.
+- **My day** (phones; `?view=day`) is the day as a river: now near Neumarkt,
+  the trip (its steps and Start this trip), the 14:00 appointment with What
+  to bring, the free afternoon with the shared sample weather by the hour,
+  the way to the evening's first plan, the two evening plans with their
+  overlap choice (the other is dimmed, "Skipping this one"), and Getting
+  home. Under a cancelled or missed 13:14 it offers the switch to the 13:24.
+  The band's **My day** button opens it too.
+
 Data: `nearby.js` (model, `tests/nearby.test.cjs`), `nearby-ui.js` (view),
-`nearby.css`, `plan.css`. No times, platforms or lift states are invented.
+`nearby.css`, `plan.css`, `trip.css`, `day.css`. No times, platforms or lift
+states are invented.
 Browser checks: `tests/nearby-browser.cjs`, `tests/plan-browser.cjs` and
 `tests/review-browser.cjs` at 390 and 1440px (360 and 800px checked by hand).
 
