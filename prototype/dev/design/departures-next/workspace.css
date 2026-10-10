@@ -41,6 +41,25 @@ body.travel-palette .view-switch button[aria-pressed='true'] {
 body.travel-palette .view-switch button[aria-pressed='true']::after {
     transform: scaleX(1);
 }
+/* Tabs answer a hover or press with their underline, never a filled block
+   (the shared segmented hover painted one; owner, 10 Oct 2026). */
+body.travel-palette
+    .view-switch
+    button:not([aria-pressed='true']):is(:hover, :active) {
+    background-color: transparent;
+    color: var(--color-text);
+}
+body.travel-palette
+    .view-switch
+    button:not([aria-pressed='true']):hover::after {
+    background: var(--color-border-strong);
+    transform: scaleX(1);
+}
+body.travel-palette .view-switch button:focus-visible {
+    outline: 2px solid var(--color-select-text);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
 body.travel-palette :is(#journey-view, #departures) {
     padding: 0;
     border-radius: 0;

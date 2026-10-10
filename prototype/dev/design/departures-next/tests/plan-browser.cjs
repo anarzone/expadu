@@ -113,8 +113,14 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                     .isVisible(),
                 true,
             );
-            await way.getByRole('button', { name: 'Close the trip' }).click();
+            // Phones close it; on desktops a Travel tab also leaves it.
+            await (
+                width >= 1000
+                    ? page.locator('.page-navigation [data-view="journey"]')
+                    : way.getByRole('button', { name: 'Close the trip' })
+            ).click();
             await way.waitFor({ state: 'hidden' });
+            assert.equal(await page.locator('#results').isVisible(), true);
             // Saving it is the second choice.
             await page
                 .getByRole('button', { name: 'Save this plan' })

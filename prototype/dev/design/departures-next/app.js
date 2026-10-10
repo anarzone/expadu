@@ -1932,7 +1932,11 @@ document.addEventListener('click', (event) => {
             from.value = yourLocation;
             syncPlanStage();
         }
-        setView(button.dataset.view);
+        // A tab leaves the trip view (its progress is kept) for that tab.
+        const view = button.dataset.view;
+        if (document.body.classList.contains('trip-open'))
+            window.JourneyNavigation?.close(() => setView(view));
+        else setView(view);
     } else if (button.dataset.place) {
         if (
             searchField === from &&
