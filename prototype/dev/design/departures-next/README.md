@@ -79,10 +79,26 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
   on board", …). The preview's session, Map/Steps, conditions, resume bar and
   stop timetable link are unchanged (`trip.css`, `navigation-ui.js`).
 
+- **When things go wrong** sits in the footer's **Review** menu (as on
+  Paperwork), and `?scenario=` opens one directly. Every situation is labelled
+  a sample and uses only sample or captured times:
+  - *Your tram is cancelled:* a Change of plan (cause, consequence, „Fällt
+    aus“) whose way out is the real 13:24; other lines' times aren't in the
+    sample, so it says so instead of showing the canvas's illustrative tram
+    18. Taking it switches the trip and says why. Plan a trip shows the
+    notice and drops the 13:14.
+  - *You didn't set off in time:* the 13:24 to take, bike/walk and taxi
+    without times, and how it was noticed.
+  - *Late at night:* Merkenich Mitte's 7 Sept capture with each direction's
+    next tram after ("then 23:53").
+  - *A lift is out of order:* Step-free leads the filters and is on; the
+    area without a step-free way in comes first, hidden with its warning.
+  - *Live times paused:* clock times marked not live, from 22:19.
+
 Data: `nearby.js` (model, `tests/nearby.test.cjs`), `nearby-ui.js` (view),
 `nearby.css`, `plan.css`. No times, platforms or lift states are invented.
-Browser checks: `tests/nearby-browser.cjs` and `tests/plan-browser.cjs` at 390
-and 1440px (360 and 800px checked by hand).
+Browser checks: `tests/nearby-browser.cjs`, `tests/plan-browser.cjs` and
+`tests/review-browser.cjs` at 390 and 1440px (360 and 800px checked by hand).
 
 ## The captured example says it's from late at night — 7 October 2026
 

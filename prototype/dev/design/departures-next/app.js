@@ -23,6 +23,10 @@ const state = {
     planSaved: null,
     remind: true,
     checksOpen: false,
+    // A sample situation from the Review menu, and whether its change of plan
+    // was taken.
+    scenario: 'normal',
+    recovered: false,
     boardingRoute: null,
     routeMode: 'transit',
     sort: 'arrival',
@@ -95,9 +99,15 @@ function routeList(tripId = requestTrip(), mode = state.routeMode) {
         mode,
         trip: tripId,
     });
+    // A cancelled or missed 13:14 (sample situations) can't be planned.
+    const gone = (route) =>
+        tripId === 'day' &&
+        ['cancelled', 'missed'].includes(state.scenario) &&
+        route.legs.some((leg) => leg.mode === 'transit' && leg.time === '13:14');
+    const usable = list.filter((route) => !gone(route));
     // What matters to you re-ranks the options; ties keep the chosen sort.
-    if (!state.fewer && !state.lessWalk) return list;
-    return list
+    if (!state.fewer && !state.lessWalk) return usable;
+    return usable
         .map((route, index) => ({ route, index }))
         .sort(
             (a, b) =>
@@ -690,13 +700,40 @@ function nextTripChoice(trip = J.day) {
     const best = spare(planned) < margin && earlier ? earlier : planned;
     return { best, planned, spare };
 }
+// The 13:14 is cancelled, or it left before you did (sample situations):
+// the next tram 4 is the only timed way the sample has.
+function changeOfPlan(trip, planned, spare) {
+    const tram = planned.legs.find((leg) => leg.mode === 'transit');
+    const missed = state.scenario === 'missed';
+    const ways = `<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li><li><span><strong>Taxi</strong><small>Time and price aren’t in the sample</small></span></li>`;
+    if (missed)
+        return `<div class="next-trip-main"><p class="next-trip-eyebrow is-conflict">${icon('clock')}You didn’t set off in time · sample · for your ${trip.start}</p><div class="next-trip-lead"><h2 id="next-trip-title">Tram ${safe(planned.line)} left at 13:14</h2></div><p class="next-trip-sub is-shown">That’s fine. Here’s what still gets you there by ${trip.start}:</p><ul class="next-trip-ways"><li class="is-first"><span class="next-trip-badge">${safe(planned.line)}</span><span><strong>Next tram ${safe(planned.line)} at ${tram.time}</strong><small>Leave ${planned.depart} · there ${planned.arrive} · <b>${spare(planned)} min spare</b></small></span><button type="button" class="primary" data-action="trip-recover">Take it</button></li>${ways}</ul><p class="next-trip-note">We noticed because your location didn’t change after ${trip.time} (sample). Indoors this can be wrong.</p></div>`;
+    return `<div class="next-trip-main"><p class="next-trip-eyebrow is-change">${icon('info')}Change of plan · sample cancellation · for your ${trip.start}</p><div class="next-trip-lead"><h2 id="next-trip-title">Your 13:14 is cancelled</h2></div><ul class="next-trip-reasons"><li class="is-cause"><span aria-hidden="true">${icon('close')}</span><span><strong>Tram ${safe(planned.line)} at 13:14 is cancelled.</strong> The stop display says <span lang="de">„Fällt aus“</span>, which means cancelled.</span></li><li><span aria-hidden="true">${icon('arrow')}</span><span>The next tram ${safe(planned.line)}, at ${tram.time}, gets you there at ${planned.arrive}: only ${spare(planned)} min early.</span></li><li><span aria-hidden="true">${icon('info')}</span><span>Other lines from ${safe(placeName(trip.from))} to ${safe(trip.to)} aren’t in the sample. Composer can help you compare.</span></li></ul></div><div class="next-trip-side"><button type="button" class="primary next-trip-go" data-action="trip-recover">Take the ${tram.time} · leave ${planned.depart}</button><button type="button" class="text-action next-trip-toggle" data-action="trip-others" aria-expanded="${state.tripOthers}" aria-controls="next-trip-others">Every other way${icon('down')}</button><div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${ways}</ul><button type="button" class="text-action" data-action="ask-composer">Ask Composer${icon('arrow')}</button></div></div>`;
+}
 function renderNextTrip() {
     const panel = $('#next-trip');
     const trip = J.day;
     if (!panel) return;
-    panel.hidden = !trip;
-    if (!trip) return;
-    const { best, planned, spare } = nextTripChoice(trip);
+    const sc = state.scenario;
+    panel.hidden = !trip || ['longwait', 'lift', 'stale'].includes(sc);
+    if (panel.hidden) return;
+    const choice = nextTripChoice(trip);
+    const { planned, spare } = choice;
+    const broken = ['cancelled', 'missed'].includes(sc);
+    panel.classList.toggle('is-change', broken && !state.recovered && sc === 'cancelled');
+    panel.classList.toggle('is-missed', broken && !state.recovered && sc === 'missed');
+    const lineLook = window.NearbyModel?.look(planned.line, 'tram');
+    if (lineLook)
+        panel.setAttribute('style', `--line:${lineLook.colour};--tint:${lineLook.tint};--ink:${lineLook.ink}`);
+    if (broken && !state.recovered) {
+        panel.innerHTML = changeOfPlan(trip, planned, spare);
+        return;
+    }
+    // After a change of plan, the 13:24 is the trip.
+    const best = broken ? planned : choice.best;
+    const switchNote = broken
+        ? `Switched to the ${planned.legs.find((leg) => leg.mode === 'transit').time} tram ${planned.line}, because the 13:14 ${sc === 'cancelled' ? 'is cancelled' : 'left without you'} (sample).`
+        : '';
     const tram = (route) => route.legs.find((leg) => leg.mode === 'transit');
     const ride = tram(best);
     const walkIn = best.legs[0].mode === 'walk' ? best.legs[0].duration : 0;
@@ -709,24 +746,26 @@ function renderNextTrip() {
         .filter((event) => event.start > trip.start)
         .map((event) => ({ event, weather: sampleWeather(trip.date, event.start) }));
     const others = [
-        planned !== best
+        planned !== best && !broken
             ? `<li><span><strong>The ${tram(planned).time} tram ${safe(planned.line)}</strong><small>In your plan · there ${planned.arrive}</small></span><span class="nearby-tag is-late">Only ${spare(planned)} min spare</span></li>`
             : '',
         '<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li>',
     ].join('');
     panel.setAttribute('style', `--line:${look.colour};--tint:${look.tint};--ink:${look.ink}`);
+    const tight = spare(best) < (trip.kind === 'official' ? 10 : 5);
     panel.innerHTML = `<div class="next-trip-main">
+            ${switchNote ? `<p class="next-trip-switched">${icon('check')}${safe(switchNote)}</p>` : ''}
             <p class="next-trip-eyebrow">Next · ${safe(trip.place)} · ${trip.start} · ${safe(trip.to)}</p>
             <div class="next-trip-lead"><h2 id="next-trip-title">${leaveIn <= 0 ? 'Leave now' : `Leave at ${best.depart}`}</h2><span class="next-trip-badge">${safe(best.line)}</span><span class="next-trip-from">${ride.time} from ${safe(placeName(trip.from))}</span></div>
             <p class="next-trip-sub">Tram ${safe(best.line)} leaves ${safe(placeName(trip.from))} at ${ride.time}.${walkIn ? ` It’s a ${walkIn} min walk.` : ''}</p>
-            <p class="next-trip-there">There ${best.arrive} · ${spare(best)} min spare</p>
+            <p class="next-trip-there">There ${best.arrive} · ${tight ? '<b>' : ''}${spare(best)} min spare${tight ? '</b>' : ''}</p>
             <div class="next-trip-line" aria-hidden="true" style="--walk-in:${walkIn};--ride:${ride.duration};--walk-out:${walkOut}">
                 <span class="next-trip-stop" style="left:${((walkIn / total) * 100).toFixed(1)}%">${safe(placeName(trip.from))} ${ride.time}</span>
                 <span class="next-trip-stop is-end" style="right:${((walkOut / total) * 100).toFixed(1)}%">${safe(ride.stop)} ${ride.alight}</span>
                 <span class="next-trip-track"><i class="is-you"></i><b class="is-walk"></b><i class="is-board"></i><b class="is-ride"><span>${safe(best.line)}</span></b><i class="is-board"></i><b class="is-walk is-out"></b><i class="is-there"></i></span>
                 <span class="next-trip-end">You · ${best.depart}</span><span class="next-trip-end is-there">There ${best.arrive}</span>
             </div>
-            <p class="next-trip-chips"><span>${spare(best)} min spare</span>${weather ? `<span>${icon('sun')}${weather.sky}, ${weather.degrees}° · sample weather</span>` : ''}</p>
+            <p class="next-trip-chips"><span${tight ? ' class="is-tight"' : ''}>${spare(best)} min spare</span>${weather ? `<span>${icon('sun')}${weather.sky}, ${weather.degrees}° · sample weather</span>` : ''}</p>
         </div>
         <div class="next-trip-side">
             <button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${best.id}">${icon('play')}I’m on my way</button>
@@ -809,11 +848,15 @@ function checks(tripId, trip, route) {
                 : `Captured ${boardDateLabel(trip.date)} at ${trip.time}: that night’s times`,
         },
         {
-            short: 'Notices',
+            short: state.scenario === 'cancelled' && day ? '1 notice' : 'Notices',
             title: 'KVB notices',
-            text: day
-                ? 'None in the sample day'
-                : 'Only historical examples were captured; current notices aren’t known',
+            text:
+                state.scenario === 'cancelled' && day
+                    ? 'Tram 4 at 13:14 is cancelled (sample)'
+                    : day
+                      ? 'None in the sample day'
+                      : 'Only historical examples were captured; current notices aren’t known',
+            flag: state.scenario === 'cancelled' && day,
         },
         {
             short: 'Weather',
@@ -836,11 +879,14 @@ function checks(tripId, trip, route) {
         {
             short: 'Lifts',
             title: 'Lifts on the way',
-            text: state.stepfree
-                ? 'Lift status isn’t in this preview, so we can’t promise step-free'
-                : 'Not in this preview',
-            muted: true,
-            flag: state.stepfree,
+            text:
+                state.scenario === 'lift'
+                    ? 'A lift at Neumarkt is out of order (sample)'
+                    : state.stepfree
+                      ? 'Lift status isn’t in this preview, so we can’t promise step-free'
+                      : 'Not in this preview',
+            muted: state.scenario !== 'lift',
+            flag: state.stepfree || state.scenario === 'lift',
         },
     ];
 }
@@ -916,10 +962,14 @@ function renderResults() {
               .filter((mode) => mode !== state.routeMode && mode !== 'transit')
               .flatMap((mode) => routeList(tripId, mode).slice(0, 1))
         : [];
+    const gone =
+        tripId === 'day' && ['cancelled', 'missed'].includes(state.scenario)
+            ? `<p class="route-note">The 13:14 isn’t offered: ${state.scenario === 'cancelled' ? 'it’s cancelled' : 'it has left'} (sample).</p>`
+            : '';
     const others = list.length
-        ? otherWays.length
+        ? gone + (otherWays.length
             ? `<h3 class="plan-subhead">Other ways</h3><div class="route-options">${otherWays.map((route) => option(route, otherWays)).join('')}</div>`
-            : '<p class="route-note other-ways-note">Bike or walk: times aren’t in the sample.</p>'
+            : '<p class="route-note other-ways-note">Bike or walk: times aren’t in the sample.</p>')
         : '';
     const contents = list.length
         ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="route-options">${(state.more ? list : list.slice(0, 3)).map((route, index) => option(route, list, false, index === 0 && list.length > 1)).join('')}${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}</div>${others}</div>`
@@ -1060,6 +1110,77 @@ const boardDateLabel = (date, long = false) =>
         month: long ? 'long' : 'short',
         ...(long ? { year: 'numeric' } : {}),
     }).format(new Date(date + 'T12:00:00'));
+// Sample situations to review (the footer's Review menu, ?scenario=).
+// Each uses the sample day or a capture; none of them is live.
+const scenarios = {
+    normal: { label: 'A normal day' },
+    cancelled: { label: 'Your tram is cancelled' },
+    missed: { label: 'You didn’t set off in time' },
+    longwait: { label: 'Late at night: a long wait', stop: 'mitte' },
+    lift: { label: 'A lift is out of order', stop: 'neumarkt' },
+    stale: { label: 'Live times paused', stop: 'neumarkt' },
+};
+// What Nearby shows for the current situation.
+function nearbyScenario() {
+    const sc = state.scenario;
+    if (sc === 'lift')
+        return {
+            liftOut: ['neumarkt-3-4-16-18'],
+            banner: {
+                tone: 'conflict',
+                title: 'A lift at Neumarkt is out of order · sample',
+                text: 'Step-free is on: the platforms for 3, 4, 16 and 18 are hidden. In the app this comes from KVB’s lift status.',
+            },
+        };
+    if (sc === 'stale')
+        return {
+            stale: true,
+            banner: {
+                title: 'Live times paused · sample',
+                text: 'No update for 6 minutes, so these are the last times we had, from 22:19.',
+            },
+        };
+    if (sc === 'longwait') {
+        const mitte = window.NearbyModel?.create({ departures: D }).stopOf('mitte');
+        const dirs = mitte ? mitte.lines.flatMap((line) => line.dirs) : [];
+        return {
+            laterTags: true,
+            banner: {
+                title: 'Last trams for a while',
+                text: dirs
+                    .map((dir) => `To ${dir.dest}: ${dir.clock}, then ${dir.later[0]}`)
+                    .join('. ') + '. Recorded Mon 7 Sept, 23:15.',
+            },
+        };
+    }
+    return null;
+}
+function setScenario(id) {
+    if (!scenarios[id]) return;
+    state.scenario = id;
+    state.recovered = false;
+    state.tripOthers = false;
+    try {
+        const url = new URL(location.href);
+        if (id === 'normal') url.searchParams.delete('scenario');
+        else url.searchParams.set('scenario', id);
+        history.replaceState(history.state, '', url);
+    } catch {
+        /* The situation still shows. */
+    }
+    setView('stop');
+    nearbyView?.applyScenario({
+        stop: scenarios[id].stop,
+        stepfree: id === 'lift',
+    });
+    renderNextTrip();
+    if (state.results) renderResults();
+    document.querySelectorAll('[data-scenario]').forEach((button) =>
+        button.setAttribute('aria-pressed', String(button.dataset.scenario === id)),
+    );
+    const menu = $('.review-tools');
+    if (menu) menu.open = false;
+}
 // Nearby: the closest station by area (nearby.js, nearby-ui.js).
 let nearbyView;
 function renderDepartures() {
@@ -1073,6 +1194,7 @@ function renderDepartures() {
                 departures: D,
             }),
             desktop: desktopPlanner,
+            scenario: nearbyScenario,
         });
 }
 // Open Nearby on a stop it knows; otherwise keep the current one.
@@ -1247,6 +1369,12 @@ function action(name, button) {
         setView('journey');
         openNextTrip();
     } else if (name === 'trip-start') simulate(button.dataset.tripRoute);
+    else if (name === 'trip-recover') {
+        state.recovered = true;
+        state.tripOthers = false;
+        renderNextTrip();
+        $('[data-action="trip-start"]')?.focus({ preventScroll: true });
+    }
     else if (name === 'trip-others') {
         state.tripOthers = !state.tripOthers;
         renderNextTrip();
@@ -1432,7 +1560,8 @@ document.addEventListener('click', (event) => {
         plannerControl(`[data-route-mode="${state.routeMode}"]`)?.focus({
             preventScroll: true,
         });
-    } else if (button.dataset.exampleRoute)
+    } else if (button.dataset.scenario) setScenario(button.dataset.scenario);
+    else if (button.dataset.exampleRoute)
         example(button.dataset.exampleRoute);
     else if (button.dataset.routeDetails)
         toggleRouteDetails(button.dataset.routeDetails);
@@ -1614,6 +1743,7 @@ renderNextTrip();
 const todayEntry = new URLSearchParams(location.search);
 if (['from', 'to', 'route', 'service'].some((key) => todayEntry.has(key)))
     setView('journey');
+else if (scenarios[todayEntry.get('scenario')]) setScenario(todayEntry.get('scenario'));
 else {
     setView('stop');
     if (todayEntry.has('stop')) nearbyView?.setStop(todayEntry.get('stop'));

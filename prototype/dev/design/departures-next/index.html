@@ -41,9 +41,9 @@
         ></script>
         <script defer src="./station-map.js?v=3f66e847bf23"></script>
         <script defer src="./service-context.js?v=bbb3393e63ce"></script>
-        <script defer src="./nearby.js?v=4f89a335fb77"></script>
-        <script defer src="./nearby-ui.js?v=e3e9b240aa4e"></script>
-        <script defer src="./app.js?v=d7dabdbc7e89"></script>
+        <script defer src="./nearby.js?v=81e11fef8b84"></script>
+        <script defer src="./nearby-ui.js?v=ac62ca19271d"></script>
+        <script defer src="./app.js?v=1c80f5a23c65"></script>
         <script defer src="../connected/model.js?v=b727e359c259"></script>
         <script defer src="../connected/store.js?v=17618b25abbe"></script>
         <script defer src="../connected/bridge.js?v=e351cb308817"></script>
@@ -116,7 +116,7 @@
         <link rel="stylesheet" href="./soft-palette.css?v=b5854d636286" />
         <link rel="stylesheet" href="./workspace.css?v=89f8879eb9d7" />
         <link rel="stylesheet" href="./station-context.css?v=b8fca340757d" />
-        <link rel="stylesheet" href="./nearby.css?v=c7879f4fd9d0" />
+        <link rel="stylesheet" href="./nearby.css?v=3249dcdbad2b" />
         <link rel="stylesheet" href="./plan.css?v=9b8bd1d828c9" />
     </head>
     <body
@@ -678,6 +678,42 @@
                 <div id="nearby"></div>
             </section>
             <div id="active-trip" hidden></div>
+            <footer class="travel-footnote">
+                <span data-icon="info"></span
+                ><span>Sample day and saved captures · not live</span>
+                <button type="button" class="text-action" data-action="about">
+                    About these samples
+                </button>
+                <details class="review-tools">
+                    <summary>Review<span data-icon="down"></span></summary>
+                    <div
+                        class="review-tools-panel"
+                        role="group"
+                        aria-label="Try a situation"
+                    >
+                        <span class="review-tools-label">Try a situation</span>
+                        <button type="button" data-scenario="normal" aria-pressed="true">
+                            A normal day
+                        </button>
+                        <button type="button" data-scenario="cancelled" aria-pressed="false">
+                            Your tram is cancelled
+                        </button>
+                        <button type="button" data-scenario="missed" aria-pressed="false">
+                            You didn’t set off in time
+                        </button>
+                        <button type="button" data-scenario="longwait" aria-pressed="false">
+                            Late at night: a long wait
+                        </button>
+                        <button type="button" data-scenario="lift" aria-pressed="false">
+                            A lift is out of order
+                        </button>
+                        <button type="button" data-scenario="stale" aria-pressed="false">
+                            Live times paused
+                        </button>
+                        <small>Samples to review. Nothing here is live.</small>
+                    </div>
+                </details>
+            </footer>
         </main>
         <div
             id="journey-popover"

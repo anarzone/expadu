@@ -237,8 +237,10 @@
                     return { ...area, blocked, hidden, cards };
                 })
                 .filter((area) => area.cards.length || area.blocked)
+                // An area with no step-free way in leads: that's the news.
                 .sort(
                     (a, b) =>
+                        b.blocked - a.blocked ||
                         (a.cards.length ? soonest(a.cards.flatMap((c) => c.shown)) : 999) -
                             (b.cards.length ? soonest(b.cards.flatMap((c) => c.shown)) : 999) ||
                         (a.mode === 'bus') - (b.mode === 'bus') ||

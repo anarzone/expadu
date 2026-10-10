@@ -32,6 +32,14 @@
         const icon = options.icon || helpers().icon;
         const safe = options.safe || helpers().safe;
         const desktop = () => options.desktop?.matches ?? false;
+        // A sample situation from the page's Review menu, or the normal day.
+        const scene = () => ({
+            banner: null,
+            liftOut: [],
+            stale: false,
+            laterTags: false,
+            ...(options.scenario?.() || {}),
+        });
         const N = root.NearbyModel;
         const state = {
             stop: model.stops[0].id,
@@ -47,6 +55,7 @@
 
         container.classList.add('nearby');
         container.innerHTML = `
+            <div class="nearby-banner" hidden></div>
             <div class="nearby-bar"></div>
             <div class="nearby-stops" hidden></div>
             <div class="nearby-chips" role="group" aria-label="Filters"></div>
@@ -83,13 +92,22 @@
                 })
                 .join('');
         const modeName = (l) => (l.mode === 'bus' ? 'Bus' : 'Tram');
-        const tagOf = (dir) =>
-            dir.delay
+        // Paused times show their clock and say they're not live; a long
+        // wait shows the next one after; otherwise a recorded delay.
+        const when = (dir) =>
+            scene().stale ? { big: dir.clock, unit: '' } : N.when(dir);
+        const tagOf = (dir) => {
+            const now = scene();
+            if (now.stale) return '<span class="nearby-tag is-quiet">not live</span>';
+            if (now.laterTags && dir.later.length)
+                return `<span class="nearby-tag is-late">then ${dir.later[0]}</span>`;
+            return dir.delay
                 ? `<span class="nearby-tag is-late">+${dir.delay} min late</span>`
                 : '';
+        };
         const time = (dir) => {
-            const t = N.when(dir);
-            return `<span class="nearby-time"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>`;
+            const t = when(dir);
+            return `<span class="nearby-time${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>`;
         };
         const placesOf = (stop) =>
             stop.areas.reduce((n, a) => n + a.places.length, 0);
@@ -117,7 +135,7 @@
                 );
             const label = `${modeName(l)} ${l.line}: ${l.shown
                 .map((d) => {
-                    const t = N.when(d);
+                    const t = when(d);
                     return `${d.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}`;
                 })
                 .join(', ')}`;
@@ -133,8 +151,8 @@
             const pinned = state.pinned.includes(l.line);
             const dirs = l.dirs
                 .map((d, i) => {
-                    const t = N.when(d);
-                    return `<div class="nearby-detail-dir"><span><strong>→ ${safe(d.dest)}</strong>${d.via.length ? `<small>via ${safe(d.via.join(', '))}</small>` : ''}<small>${d.later.length ? `Then ${d.later.join(' · ')}` : 'Later ones aren’t in the recording'}</small></span><span class="nearby-detail-time"><span class="nearby-time is-large"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>${tagOf(d)}</span></div>`;
+                    const t = when(d);
+                    return `<div class="nearby-detail-dir"><span><strong>→ ${safe(d.dest)}</strong>${d.via.length ? `<small>via ${safe(d.via.join(', '))}</small>` : ''}<small>${d.later.length ? `Then ${d.later.join(' · ')}` : 'Later ones aren’t in the recording'}</small></span><span class="nearby-detail-time"><span class="nearby-time is-large${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>${tagOf(d)}</span></div>`;
                 })
                 .join('');
             const first = l.dirs[0].dest;
@@ -165,7 +183,7 @@
                 ${rows
                     .map(
                         ({ c, d }) =>
-                            `<button type="button" class="nearby-area-row" data-n="row-line" data-v="${safe(c.line)}" data-key="row-${safe(d.id)}">${badge(c.line, c.look)}<span class="nearby-dest">${safe(d.dest)}</span>${tagOf(d)}<strong>${N.when(d).big}${N.when(d).unit ? ` ${N.when(d).unit}` : ''}</strong></button>`,
+                            `<button type="button" class="nearby-area-row" data-n="row-line" data-v="${safe(c.line)}" data-key="row-${safe(d.id)}">${badge(c.line, c.look)}<span class="nearby-dest">${safe(d.dest)}</span>${tagOf(d)}<strong>${when(d).big}${when(d).unit ? ` ${when(d).unit}` : ''}</strong></button>`,
                     )
                     .join('')}
                 ${rows.length ? '' : '<p class="nearby-area-empty">Nothing from here matches the filters.</p>'}
@@ -188,7 +206,7 @@
             list.push(chip('delayed', 'Delayed', f.delayed, false));
             const step = chip('stepfree', 'Step-free', f.stepfree, false);
             // When a lift is out, Step-free leads the row so it's seen switched on.
-            if (options.liftOut?.().length) list.unshift(step);
+            if (scene().liftOut.length) list.unshift(step);
             else list.push(step);
             return list.join('');
         }
@@ -231,10 +249,17 @@
 
         /* ---------- Render ---------- */
         function render() {
+            const now = scene();
             const v = model.view(state.stop, state.filters, {
                 pinned: state.pinned,
-                liftOut: options.liftOut?.() || [],
+                liftOut: now.liftOut,
             });
+            const banner = part('banner');
+            banner.hidden = !now.banner;
+            banner.className = `nearby-banner${now.banner ? ` is-${now.banner.tone || 'attention'}` : ''}`;
+            banner.innerHTML = now.banner
+                ? `${icon('info')}<p><strong>${safe(now.banner.title)}</strong><span>${safe(now.banner.text)}</span></p>`
+                : '';
             const stop = v.stop;
             if (state.line && !stop.lines.some((l) => l.line === state.line))
                 state.line = '';
@@ -261,7 +286,7 @@
             const panelBox = part('panel');
             panelBox.hidden = !state.panel;
             panelBox.innerHTML = state.panel ? panel(v) : '';
-            part('stepnote').hidden = !(state.filters.stepfree && !options.liftOut?.().length);
+            part('stepnote').hidden = !(state.filters.stepfree && !now.liftOut.length);
             part('count').innerHTML = `<span role="status">${v.shown === v.total ? `All ${v.total} departures · soonest first` : `Showing ${v.shown} of ${v.total} departures`}</span>${v.active ? '<button type="button" class="text-action" data-n="clear" data-key="clear">Clear filters</button>' : ''}`;
 
             part('list').innerHTML = v.areas.length
@@ -292,7 +317,7 @@
             else if (stop.map)
                 aside = `<p class="nearby-hint">${wide ? 'Pick a line to see both directions and where it boards, or an area on the map to see everything leaving from it.' : 'Tap an area on the map to see what leaves from it.'}</p>`;
             part('detail').innerHTML = aside;
-            part('footnote').textContent = `${stop.note} · rounded minutes, not live.`;
+            part('footnote').textContent = `${stop.note} · ${now.stale ? 'last times received' : 'rounded minutes'}, not live.`;
             map.sync(stop, area);
             if (focusKey) {
                 container
@@ -334,7 +359,7 @@
                     });
                     const pill = document.createElement('button');
                     pill.type = 'button';
-                    pill.className = `nearby-pill${on ? ' is-on' : ''}${a.blocked || (options.liftOut?.() || []).includes(a.id) ? ' is-blocked' : ''}`;
+                    pill.className = `nearby-pill${on ? ' is-on' : ''}${scene().liftOut.includes(a.id) ? ' is-blocked' : ''}`;
                     pill.dataset.n = 'area';
                     pill.dataset.v = a.id;
                     pill.dataset.key = `pill-${a.id}`;
@@ -541,6 +566,18 @@
                 Object.assign(state, { stop: id, line: '', area: '', panel: '', stopsOpen: false });
                 render();
                 return true;
+            },
+            // A sample situation: its stop, Step-free when a lift is out.
+            applyScenario({ stop, stepfree = false } = {}) {
+                Object.assign(state, {
+                    stop: stop && model.stops.some((s) => s.id === stop) ? stop : model.stops[0].id,
+                    line: '',
+                    area: '',
+                    panel: '',
+                    stopsOpen: false,
+                    filters: { ...model.filterDefaults(), stepfree },
+                });
+                render();
             },
             focus: () => part('bar').querySelector('.nearby-stop')?.focus({ preventScroll: true }),
             destroy() {

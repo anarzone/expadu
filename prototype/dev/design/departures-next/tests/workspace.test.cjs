@@ -714,3 +714,54 @@ test('Composer help waits for a trip; no route offers Composer and the start’s
         /Mülheim,Rheinauhafen,Stadtgarten/,
     );
 });
+
+test('Review situations: a cancelled 13:14 offers the 13:24 and the planner drops it', () => {
+    const w = workspace('?scenario=cancelled', false, false, false, true);
+    w.run('renderNextTrip();');
+    let band = w.element('#next-trip').innerHTML;
+    assert.match(band, /Change of plan · sample cancellation/);
+    assert.match(band, /Your 13:14 is cancelled/);
+    assert.match(band, /„Fällt aus“<\/span>, which means cancelled/);
+    assert.match(band, /at 13:24, gets you there at 13:58: only 2 min early/);
+    assert.match(band, /aren’t in the sample/);
+    assert.doesNotMatch(band, /13:16|tram 18/i);
+    w.run('action("trip-recover", {});');
+    band = w.element('#next-trip').innerHTML;
+    assert.match(band, /Switched to the 13:24 tram 4, because the 13:14 is cancelled \(sample\)/);
+    assert.match(band, /<h2 id="next-trip-title">Leave at 13:20<\/h2>/);
+    assert.match(band, /<b>2 min spare<\/b>/);
+    w.run('closeSheet = done => done?.(); openNextTrip();');
+    const results = w.element('#results').innerHTML;
+    assert.match(results, /Tram 4 at 13:14 is cancelled \(sample\)/);
+    assert.match(results, /The 13:14 isn’t offered: it’s cancelled \(sample\)/);
+    assert.doesNotMatch(results, /data-route-details="day-1314"/);
+});
+
+test('Review situations: missing the 13:14 says how it was noticed', () => {
+    const w = workspace('?scenario=missed', false, false, false, true);
+    w.run('renderNextTrip();');
+    const band = w.element('#next-trip').innerHTML;
+    assert.match(band, /You didn’t set off in time · sample/);
+    assert.match(band, /Tram 4 left at 13:14/);
+    assert.match(band, /Next tram 4 at 13:24<\/strong><small>Leave 13:20 · there 13:58/);
+    assert.match(band, /your location didn’t change after 13:10 \(sample\)/);
+});
+
+test('Review situations move Nearby: a long wait at Merkenich Mitte, a lift out at Neumarkt', () => {
+    const w = workspace('?scenario=longwait', false, true, true, true);
+    assert.equal(w.run('state.view'), 'stop');
+    assert.equal(w.run('nearbyView.state.stop'), 'mitte');
+    assert.match(
+        w.run('nearbyScenario().banner.text'),
+        /To Merkenich: 23:23, then 23:53\. To Zollstock: 23:26, then 23:56\. Recorded Mon 7 Sept, 23:15\./,
+    );
+    assert.equal(w.element('#next-trip').hidden, true);
+    w.run('setScenario("lift");');
+    assert.equal(w.run('nearbyView.state.stop'), 'neumarkt');
+    assert.equal(w.run('nearbyView.state.filters.stepfree'), true);
+    assert.equal(w.run('JSON.stringify(nearbyScenario().liftOut)'), '["neumarkt-3-4-16-18"]');
+    w.run('setScenario("normal");');
+    assert.equal(w.run('nearbyView.state.filters.stepfree'), false);
+    assert.equal(w.element('#next-trip').hidden, false);
+});
+
