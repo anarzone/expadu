@@ -654,8 +654,22 @@
             event.preventDefault();
             render();
         };
+        // A tap outside an open dropdown closes it.
+        const onOutside = (event) => {
+            if (!state.stopsOpen && !state.panel) return;
+            if (
+                event.target.closest?.(
+                    '.nearby-stops, .nearby-panel, [data-n="stops"], [data-n="chip"]',
+                )
+            )
+                return;
+            state.stopsOpen = false;
+            state.panel = '';
+            render();
+        };
         container.addEventListener('click', onClick);
         container.addEventListener('keydown', onKey);
+        document.addEventListener('pointerdown', onOutside);
         render();
         return {
             render,
@@ -694,6 +708,7 @@
             destroy() {
                 container.removeEventListener('click', onClick);
                 container.removeEventListener('keydown', onKey);
+                document.removeEventListener('pointerdown', onOutside);
                 map.destroy();
             },
         };

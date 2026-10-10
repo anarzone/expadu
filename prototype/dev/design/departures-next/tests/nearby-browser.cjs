@@ -187,7 +187,14 @@ const status = (page) =>
                 await page
                     .getByRole('button', { name: 'List', exact: true })
                     .click();
+            // The stop picker opens over the page: the filters don't move.
+            const chipsAt = () =>
+                page
+                    .locator('.nearby-chips')
+                    .evaluate((el) => el.getBoundingClientRect().top + scrollY);
+            const chipsBefore = await chipsAt();
             await page.locator('.nearby-stop').click();
+            assert.equal(await chipsAt(), chipsBefore);
             await page.getByRole('option', { name: /Merkenich Mitte/ }).click();
             assert.equal(
                 await status(page),

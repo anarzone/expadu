@@ -1559,3 +1559,31 @@
     width: 14px;
     height: 14px;
 }
+
+/* Dropdowns open over the page, not into it (owner, 10 Oct 2026): the stop
+   picker and the filter panels float just below their control. Absolute
+   with no top keeps each where it would have been, without pushing. */
+.nearby {
+    position: relative;
+}
+.nearby-stops,
+.nearby-panel {
+    position: absolute;
+    left: 0;
+    z-index: 20;
+}
+.nearby-stops {
+    width: min(460px, 100%);
+}
+.nearby-stops [role='listbox'] {
+    margin: var(--space-2) 0 0;
+}
+.nearby-panel {
+    right: 0;
+    max-width: 560px;
+    margin-top: var(--space-2);
+}
+.nearby-stops[hidden],
+.nearby-panel[hidden] {
+    display: none;
+}
