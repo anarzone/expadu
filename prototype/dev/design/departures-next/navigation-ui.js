@@ -20,7 +20,8 @@
         active = N.restore(S.read()),
         inspected = 0,
         mapView = 'overview',
-        expanded = false;
+        expanded = false,
+        buzz = true;
     let returnFocus,
         previousOverflow,
         panelObserver,
@@ -262,6 +263,69 @@
         const [symbol, title, text] = conditions[active.condition];
         return `<div class="nav-condition" role="status">${icon(symbol)}<div><strong>${title} <small>Sample</small></strong><p>${text}</p>${active.condition === 'changed' ? '<button data-nav="review-route">Review route</button>' : ''}</div>${iconButton('close', 'Reset preview condition', 'normal')}</div>`;
     }
+    /* ---------- Moments: the approved step-by-step trip ----------
+       Each step says what to do now in the trip's own words, from its
+       sample steps. No countdowns, platforms or live positions. */
+    const stopName = (name = '') => name.replace(/^Köln\s+/, '');
+    const minutesBetween = (a, b) =>
+        J.timeline(b, trip()) - J.timeline(a, trip());
+    function vehicle() {
+        const service = root.StationCapture?.services.find(
+            (item) => item.line === route.line,
+        );
+        return service?.type === 'bus' ? 'Bus' : service ? 'Tram' : 'Line';
+    }
+    // The boarding area Nearby knows for this line, if it's a station it has.
+    function boardingArea(board) {
+        if (!root.NearbyModel || !root.StationCapture || !board?.boardStop)
+            return null;
+        const model = root.NearbyModel.create({ capture: root.StationCapture });
+        const stop = model.stops.find((item) => item.id === board.boardStop);
+        const line = stop?.lines.find((item) => item.line === route.line);
+        return stop?.areas.find((area) => area.id === line?.area) || null;
+    }
+    function lineStyle() {
+        const look = root.NearbyModel?.look(route.line, vehicle() === 'Bus' ? 'bus' : 'tram');
+        return look ? `--line:${look.colour};--ink:${look.ink};--tint:${look.tint}` : '';
+    }
+    function momentAction(p) {
+        const list = N.steps(route);
+        const alight = list.find((step) => step.mode === 'alight');
+        const first = p.index === 0;
+        return {
+            walk: first ? 'I’m at the stop' : 'I’ve arrived',
+            transit: 'I’m on board',
+            ride: 'Next stop',
+            alight: `We’re at ${stopName(alight?.title.replace(/^Get off at /, ''))}`,
+            arrive: 'End trip',
+        }[p.step.mode];
+    }
+    function moment(p) {
+        const list = N.steps(route);
+        const board = list.find((step) => step.mode === 'transit');
+        const alight = list.find((step) => step.mode === 'alight');
+        const towards = (board?.detail || '').replace(/^Towards /, '');
+        const offAt = stopName(alight?.title.replace(/^Get off at /, ''));
+        const kind = vehicle();
+        const front = `<div class="moment-front"><span class="moment-sign"><span class="moment-badge">${safe(route.line || '')}</span><strong>${safe(stopName(towards))}</strong></span><span>Look for this on the front of the ${kind === 'Bus' ? 'bus' : 'tram'}. <span lang="de">Richtung</span> means “towards”.</span></div>`;
+        const step = p.step;
+        if (step.mode === 'walk' && p.index === 0) {
+            const area = boardingArea(board);
+            return `<p class="moment-eyebrow">Walk to the stop</p><h2>Walk to ${safe(stopName(board?.title ? step.title.replace(/^Walk to /, '') : step.title))}</h2><p class="moment-sub">${safe(step.detail.replace(' on foot', ''))} · ${kind.toLowerCase()} ${safe(route.line || '')} leaves at ${board?.time || route.depart}</p>${area ? `<div class="moment-card"><strong>Board in the area for ${area.lines.join(' · ')}</strong><small>KVB lists ${area.places.length} boarding points there. Which one your ${kind === 'Bus' ? 'bus' : 'tram'} uses isn’t confirmed.</small></div>` : ''}${board ? front : ''}`;
+        }
+        if (step.mode === 'transit')
+            return `<p class="moment-eyebrow">At the stop</p><div class="moment-ring" aria-hidden="true"><span>Leaves</span><strong>${step.time}</strong></div><h2>${kind} ${safe(route.line || '')} to ${safe(stopName(towards))}</h2><p class="moment-sub">That’s your ${kind === 'Bus' ? 'bus' : 'tram'}. Other lines stop here too.</p>${front}`;
+        if (step.mode === 'ride')
+            return `<p class="moment-eyebrow">On board</p><h2>Stay on to ${safe(offAt)}</h2><p class="moment-sub">Next: ${safe(stopName(step.title))} at ${step.time}</p>`;
+        if (step.mode === 'alight')
+            return `<p class="moment-eyebrow">On board · ${kind.toLowerCase()} ${safe(route.line || '')} towards ${safe(stopName(towards))}</p><h2>Get off at ${safe(offAt)}</h2><p class="moment-sub">At ${step.time} · ${minutesBetween(board.time, step.time)} min ride${board.intermediate?.length ? '' : '. The stops on the way aren’t in the sample.'}</p><div class="moment-card is-tint"><small>You’ll hear</small><strong lang="de">„Nächster Halt: ${safe(offAt)}“</strong><span>Next stop: ${safe(offAt)}</span></div><button type="button" class="moment-switch" role="switch" aria-checked="${buzz}" data-nav="buzz"><span><strong>Buzz me before ${safe(offAt)}</strong><small>${buzz ? 'Not sent in this preview' : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button>`;
+        if (step.mode === 'walk')
+            return `<p class="moment-eyebrow">Get off</p><h2>Walk ${safe(step.detail.replace(' on foot', ''))} to ${safe(trip().place)}</h2><p class="moment-sub">From ${safe(offAt)} at ${step.time}. Street directions weren’t captured.</p><div class="moment-card is-tint"><small>You’ll see</small><strong lang="de">Ausgang</strong><span>Exit</span></div>`;
+        const early = trip().start
+            ? minutesBetween(route.arrive, trip().start)
+            : null;
+        return `<p class="moment-eyebrow">Arrived</p><span class="moment-done">${icon('check')}</span><h2>${early != null ? `You’re ${early} min early` : `You’ve arrived`}</h2><p class="moment-sub">${safe(trip().place)}${trip().start ? ` · ${trip().start}` : ''}</p>${trip().kind === 'official' ? '<a class="moment-paper" href="../bureaucracy-next/">' + icon('document') + '<span><strong>What to bring</strong><small>Your Blue Card checklist in Paperwork</small></span>' + icon('chevron') + '</a>' : ''}`;
+    }
     function timeline() {
         return `<ol class="nav-timeline">${N.steps(route)
             .map(
@@ -296,19 +360,26 @@
                 : walking
                   ? `${icon('walk')}<strong>${walking}</strong> min walk`
                   : '';
-        content.innerHTML = `${conditionMarkup()}<div class="nav-summary">
-            <div class="nav-eyebrow"><span>${icon(running ? modeIcon(p.step.mode) : route.mode === 'transit' ? 'train' : route.mode)}${running ? (p.complete ? 'Arrived · preview' : `Step ${p.index + 1} of ${p.total}`) : route.line ? `Line ${route.line} · Direct` : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span><button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
-            <h2>${safe(title)}</h2><p class="nav-step-description">${safe(secondary)}</p>
-            <div class="nav-facts">${running && p.complete ? '' : `<span>${icon('clock')}<strong>${running ? p.remaining : route.duration}</strong> min${running ? ' left' : ''}</span>`}${movement ? `<span>${movement}</span>` : ''}<span>${running && p.complete ? 'Arrived' : 'Arrive'} <strong>${route.arrive}</strong>${nextDay}</span></div>
-            ${running ? `<div class="nav-progress" role="progressbar" aria-label="Preview steps completed" aria-valuemin="0" aria-valuemax="${p.total - 1}" aria-valuenow="${p.index}"><span style="width:${(p.index / (p.total - 1)) * 100}%"></span></div><p class="nav-next">${p.next ? `<span>Then</span> ${safe(p.next.title)}` : 'End of this sample journey.'}</p>` : ''}
-            <p class="nav-guidance-note">Sample steps · advance manually</p>
+        const segments = running
+            ? `<div class="nav-segments" role="progressbar" aria-label="Trip steps done" aria-valuemin="0" aria-valuemax="${p.total - 1}" aria-valuenow="${p.index}">${N.steps(route)
+                  .map(
+                      (_, index) =>
+                          `<span class="${index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></span>`,
+                  )
+                  .join('')}</div>`
+            : '';
+        content.innerHTML = `${conditionMarkup()}<div class="nav-summary${running ? ' is-moment' : ''}">
+            ${segments}<div class="nav-eyebrow"><span>${icon(running ? modeIcon(p.step.mode) : route.mode === 'transit' ? 'train' : route.mode)}${running ? `${p.index + 1} of ${p.total} · ${trip().id === 'day' ? 'sample day' : 'captured times'}` : route.line ? `Line ${route.line} · Direct` : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span><button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
+            ${running ? `<div class="nav-moment" style="${lineStyle()}">${moment(p)}</div>` : `<h2>${safe(title)}</h2><p class="nav-step-description">${safe(secondary)}</p>
+            <div class="nav-facts"><span>${icon('clock')}<strong>${route.duration}</strong> min</span>${movement ? `<span>${movement}</span>` : ''}<span>Arrive <strong>${route.arrive}</strong>${nextDay}</span></div>`}
+            <p class="nav-guidance-note">Sample steps · advance them yourself</p>
         </div><div id="nav-expanded" class="nav-expanded" ${mobile() && !expanded && journeyView === 'map' ? 'inert' : ''}><div class="nav-detail-scroll"><div class="nav-itinerary-label"><strong>Whole journey</strong><small>${localDate()} · Sample</small></div>${timeline()}${route.delayed ? `<p class="nav-preview-note">${icon('info')}Delay flagged in this capture. Current status is unknown.</p>` : ''}<p class="nav-preview-note">${icon('info')}${trip().id === 'day' ? 'Scheduled sample times; no stops between were recorded.' : 'Times and steps are from a saved capture.'} Advance the preview yourself; live guidance is not connected.</p>
         </div></div>
         <footer class="nav-footer">${
             confirmation
                 ? `<div class="nav-confirm" role="group" aria-label="${confirmation === 'end' ? 'End journey preview?' : 'Replace current journey preview?'}"><span>${confirmation === 'end' ? 'End this preview?' : 'Replace current preview?'}</span><button data-nav="cancel-confirm">Keep</button><button class="nav-primary" data-nav="confirm">${confirmation === 'end' ? 'End' : 'Replace'}</button></div>`
                 : running
-                  ? `${iconButton('back', 'Previous preview step', 'previous', p.index === 0 ? 'disabled' : '')}${iconButton('stop', 'End journey preview', 'end')}<button class="nav-primary" data-nav="${p.complete ? 'finish' : 'next'}">${p.complete ? 'Finish preview' : 'Next step'}${icon(p.complete ? 'check' : 'arrow')}</button>`
+                  ? `${iconButton('back', 'Previous step', 'previous', p.index === 0 ? 'disabled' : '')}${iconButton('stop', 'Stop this trip', 'end')}<button class="nav-primary" data-nav="${p.complete ? 'finish' : 'next'}">${safe(momentAction(p))}${icon(p.complete ? 'check' : 'arrow')}</button>`
                   : `<button class="nav-icon-button" data-save="${route.id}" aria-label="Save journey">${icon('bookmark')}</button><button class="nav-primary" data-nav="start">${icon('play')}Start preview</button>`
         }</footer>`;
         content.querySelector('.nav-detail-scroll').scrollTop = scrollTop;
@@ -319,6 +390,15 @@
                     '[data-nav="next"], [data-nav="finish"], [data-nav="cancel-confirm"], [data-nav="confirm"]',
                 )
             )?.focus({ preventScroll: true });
+        const top = dialog.querySelector('.nav-topbar small');
+        if (top) {
+            const spare = trip().start
+                ? ` · ${minutesBetween(route.arrive, trip().start)} min spare`
+                : '';
+            top.textContent = running
+                ? `To ${trip().place} · there ${route.arrive}${spare}`
+                : `Journey preview · ${localDate()}`;
+        }
         if (typeof savedCount === 'function') savedCount();
         if (expanded) dialog.classList.add('is-expanded');
         measure();
@@ -482,6 +562,9 @@
             announce(
                 `Step ${active.step + 1}. ${N.progress(route, active.step).step.title}`,
             );
+        } else if (action === 'buzz') {
+            buzz = !buzz;
+            render();
         } else if (action === 'end') {
             confirmation = 'end';
             render();

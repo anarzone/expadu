@@ -49,10 +49,22 @@ const status = (page) => page.locator('.nearby-count [role="status"]').innerText
             );
             await page.getByRole('button', { name: 'Other ways' }).click();
             await page.getByRole('button', { name: 'I’m on my way' }).click();
-            await page.locator('#journey-navigation').waitFor();
-            assert.equal(await page.locator('#journey-navigation').evaluate((d) => d.open), true);
-            await page.keyboard.press('Escape');
-            await page.locator('#journey-navigation').waitFor({ state: 'hidden' }).catch(() => {});
+            const trip = page.locator('#journey-navigation');
+            await trip.waitFor();
+            await trip.locator('[data-nav-view="steps"]').click();
+            // One moment at a time, each with its own next action.
+            const moments = [
+                [/Walk to Neumarkt[\s\S]*Board in the area for 3 · 4 · 16 · 18/, 'I’m at the stop'],
+                [/Leaves\s*13:14[\s\S]*Tram 4 to Schlebusch/, 'I’m on board'],
+                [/Get off at Wiener Platz[\s\S]*Nächster Halt: Wiener Platz/, 'We’re at Wiener Platz'],
+                [/Walk 6 min to Blue Card appointment[\s\S]*Ausgang/, 'I’ve arrived'],
+                [/You’re 12 min early[\s\S]*What to bring/, 'End trip'],
+            ];
+            for (const [text, next] of moments) {
+                assert.match(await trip.locator('.nav-moment').innerText(), text);
+                await trip.getByRole('button', { name: next }).click();
+            }
+            await trip.waitFor({ state: 'hidden' });
 
             // Filters open in place and combine.
             await page.getByRole('button', { name: 'Leaving via' }).click();

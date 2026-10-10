@@ -1,0 +1,198 @@
+/* Trip moments (owner-approved design, Travel directions canvas, 10 Oct
+   2026): one step at a time, in the trip's own words. Sample steps that the
+   person advances; no countdowns, platforms or live positions. */
+.nav-segments {
+    display: flex;
+    gap: 4px;
+    margin-bottom: var(--space-8);
+}
+.nav-segments span {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border);
+    transition: background-color var(--duration-base) var(--ease-standard);
+}
+.nav-segments .is-done,
+.nav-segments .is-now {
+    background: var(--color-text);
+}
+.nav-moment {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    margin-top: var(--space-6);
+}
+.nav-moment h2 {
+    margin: 0;
+    font-size: var(--text-display-sm);
+    line-height: 1.05;
+    letter-spacing: -1px;
+}
+.moment-eyebrow {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.moment-sub {
+    margin: 0;
+    font-size: var(--text-body);
+    line-height: var(--leading-snug);
+}
+.moment-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-12) var(--space-14);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    line-height: var(--leading-snug);
+}
+.moment-card small,
+.moment-card span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.moment-card.is-tint {
+    border: 0;
+    background: var(--tint, var(--color-bg-quiet));
+}
+.moment-card.is-tint small {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.moment-card.is-tint strong {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-semibold);
+}
+.moment-front {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    padding: var(--space-12) var(--space-14);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.35;
+}
+.moment-sign {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    padding: 7px 10px;
+    border-radius: 10px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-body);
+}
+.moment-badge {
+    display: grid;
+    place-items: center;
+    min-width: 26px;
+    height: 24px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 6px;
+    background: var(--line, var(--color-select-text));
+    color: var(--ink, var(--color-text-on-action));
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+}
+.moment-ring {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    width: 148px;
+    height: 148px;
+    margin: var(--space-4) auto var(--space-8);
+    box-sizing: border-box;
+    border: 12px solid var(--line, var(--color-select-text));
+    border-radius: var(--radius-round);
+    line-height: 1;
+}
+.moment-ring span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.moment-ring strong {
+    margin-top: 4px;
+    font-size: var(--text-title-lg);
+    font-variant-numeric: tabular-nums;
+}
+.moment-switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-12);
+    width: 100%;
+    min-height: 56px;
+    padding: var(--space-8) var(--space-14);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.moment-switch > span:first-child {
+    display: flex;
+    flex-direction: column;
+    line-height: var(--leading-snug);
+}
+.moment-switch small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.moment-done {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: var(--line, var(--color-text));
+    color: var(--ink, var(--color-text-on-action));
+}
+.moment-done svg {
+    width: 26px;
+    height: 26px;
+    stroke-width: 2.6;
+}
+.moment-paper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    min-height: 60px;
+    padding: var(--space-8) var(--space-14);
+    border-radius: var(--radius-lg);
+    background: var(--color-paper-bg-quiet);
+    color: var(--color-text);
+    text-decoration: none;
+    line-height: var(--leading-snug);
+}
+.moment-paper > svg {
+    width: 20px;
+    height: 20px;
+    color: var(--color-paper-text);
+}
+.moment-paper span {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.moment-paper small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+@media (prefers-reduced-motion: reduce) {
+    .nav-segments span {
+        transition: none;
+    }
+}

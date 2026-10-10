@@ -70,6 +70,15 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
   Avoid broken lines from the canvas became Avoid delays: the preview has
   delay flags, not line outages.
 
+- **Trip moments.** "I'm on my way" (and Start preview) walk the trip one
+  moment at a time, as approved: walk to the stop (with Nearby's boarding
+  area and what the front of the tram says), at the stop (the departure time,
+  no countdown), on board (Nächster Halt, a buzz switch that says it isn't
+  sent in the preview), walk out (Ausgang), and arrived (minutes early, What
+  to bring). The main button says the step's action ("I'm at the stop", "I'm
+  on board", …). The preview's session, Map/Steps, conditions, resume bar and
+  stop timetable link are unchanged (`trip.css`, `navigation-ui.js`).
+
 Data: `nearby.js` (model, `tests/nearby.test.cjs`), `nearby-ui.js` (view),
 `nearby.css`, `plan.css`. No times, platforms or lift states are invented.
 Browser checks: `tests/nearby-browser.cjs` and `tests/plan-browser.cjs` at 390
