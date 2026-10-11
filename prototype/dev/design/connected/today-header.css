@@ -1,4 +1,5 @@
 @import url('tokens.css');
+@import url('section-bar.css');
 /* Approved Today header, scoped to the active connected previews. */
 body.today-header #shell {
     position: sticky;

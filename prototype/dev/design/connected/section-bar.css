@@ -1,0 +1,136 @@
+/* Phones: the five sections sit in a bar at the bottom, where the thumb
+   rests (owner-approved, canvas row 12, 11 Oct 2026). The header keeps the
+   logo, the city, Saved and the account in one row and scrolls away; the
+   bar stays. Desktops and tablets keep the sections in the header.
+   Loaded by today-header.css, and by Today directly. */
+:root {
+    --section-bar: 0px;
+}
+@media (max-width: 700px) {
+    :root {
+        /* 48px tabs + 6px above and below; the home indicator adds its own. */
+        --section-bar: calc(60px + env(safe-area-inset-bottom, 0px));
+    }
+    html body:has(#shell .service-nav) {
+        padding-bottom: var(--section-bar);
+    }
+    html body #shell .app-header {
+        grid-template-columns: 1fr auto;
+        min-height: 52px;
+        padding: 0;
+    }
+    html body #shell .app-header .service-nav {
+        position: fixed;
+        inset: auto 0 0;
+        z-index: 45;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0;
+        margin: 0;
+        padding: 6px 6px max(6px, env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--color-border, #e6ddcb);
+        background: color-mix(
+            in srgb,
+            var(--color-bg-header, #fffdf8) 96%,
+            transparent
+        );
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        transition: translate var(--duration-base, 180ms) ease;
+        /* Stays put while a page slides between screens. */
+        view-transition-name: section-bar;
+    }
+    html body #shell .app-header .service-nav > a {
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        min-width: 0;
+        min-height: 48px;
+        padding: 0;
+        border-radius: 14px;
+        background: transparent;
+        color: var(--color-text, #211d15);
+        font-size: 11.5px;
+        font-weight: 500;
+        line-height: 1.1;
+    }
+    html body #shell .app-header .service-nav > a:is(:hover, :active) {
+        background: transparent;
+    }
+    /* The icon sits in a pill; the current section fills it. */
+    html body #shell .app-header .service-nav > a > svg {
+        box-sizing: border-box;
+        width: 52px;
+        height: 30px;
+        padding: 5px 15px;
+        border-radius: 15px;
+        color: currentColor;
+        transition: background-color var(--duration-fast, 120ms) ease;
+    }
+    html body #shell .app-header .service-nav > a:active > svg {
+        background: var(--color-select-bg-hover, #cceef3);
+    }
+    html body #shell .app-header .service-nav > a[aria-current] {
+        color: #00566a;
+        font-weight: 700;
+        background: transparent;
+    }
+    html body #shell .app-header .service-nav > a[aria-current] > svg {
+        background: var(--color-select-bg, #def5f8);
+    }
+    /* Out of the way while you type, so the keyboard has the room. */
+    body:has(
+            :is(
+                input:not([type='checkbox'], [type='radio'], [type='range']),
+                textarea,
+                select,
+                [contenteditable='true']
+            ):focus
+        )
+        #shell
+        .service-nav {
+        translate: 0 100%;
+    }
+    /* Composer's button sits above the bar, and drops back while you type
+       (the bar has stepped aside). */
+    :root body:is(.today-c, .department-composer) #composer-tray {
+        bottom: calc(var(--section-bar) + 12px);
+        transition: bottom var(--duration-base, 180ms) ease;
+    }
+    :root
+        body:is(.today-c, .department-composer):has(#shell .service-nav):has(
+            :is(
+                input:not([type='checkbox'], [type='radio'], [type='range']),
+                textarea,
+                select,
+                [contenteditable='true']
+            ):focus
+        )
+        #composer-tray {
+        bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    }
+    /* Composer's own page keeps its text box above the bar; short notes
+       (toasts) rise by the same amount. */
+    :root body:has(#shell .service-nav) :is(.studio-input-wrap, #shared-toast) {
+        margin-bottom: var(--section-bar);
+    }
+    :root
+        body:has(#shell .service-nav):has(
+            :is(
+                input:not([type='checkbox'], [type='radio'], [type='range']),
+                textarea,
+                select,
+                [contenteditable='true']
+            ):focus
+        )
+        .studio-input-wrap {
+        margin-bottom: 0;
+    }
+}
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+    html body #shell .app-header .service-nav,
+    html body #shell .app-header .service-nav > a > svg,
+    :root body #composer-tray {
+        transition: none;
+    }
+}

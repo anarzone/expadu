@@ -1,0 +1,87 @@
+/* Phones and tablets: Plan a trip slides in from the right over Nearby,
+   which drifts left and dims a little; Back slides it away (owner-approved,
+   canvas row 12). The section bar and Composer's button stay still. */
+@media (max-width: 999px) {
+    body.travel-palette #composer-tray {
+        view-transition-name: composer-tray;
+    }
+    :root[data-slide]::view-transition-old(root),
+    :root[data-slide]::view-transition-new(root) {
+        mix-blend-mode: normal;
+        animation-fill-mode: both;
+    }
+    :root[data-slide='in']::view-transition-old(root) {
+        animation: travel-drift-left 280ms var(--ease-settle);
+    }
+    :root[data-slide='in']::view-transition-new(root) {
+        z-index: 1;
+        animation: travel-slide-in 280ms var(--ease-settle);
+    }
+    :root[data-slide='back']::view-transition-old(root),
+    :root[data-slide='swipe']::view-transition-old(root) {
+        z-index: 1;
+        animation: travel-slide-out 220ms cubic-bezier(0.4, 0, 1, 1);
+    }
+    :root[data-slide='swipe']::view-transition-old(root) {
+        animation-duration: 180ms;
+        animation-timing-function: ease-out;
+    }
+    :root[data-slide='back']::view-transition-new(root),
+    :root[data-slide='swipe']::view-transition-new(root) {
+        animation: travel-drift-back 220ms var(--ease-settle);
+    }
+    /* While a finger drags the screen back. */
+    body.travel-palette.is-swiping #main {
+        box-shadow: -12px 0 30px #00000026;
+        background: var(--color-bg-canvas);
+    }
+}
+@keyframes travel-slide-in {
+    from {
+        translate: 100% 0;
+        box-shadow: -12px 0 30px #0000002e;
+    }
+    to {
+        box-shadow: -12px 0 30px #00000000;
+    }
+}
+@keyframes travel-drift-left {
+    to {
+        translate: -28% 0;
+        filter: brightness(0.9);
+    }
+}
+@keyframes travel-slide-out {
+    from {
+        translate: var(--slide-from, 0px) 0;
+        box-shadow: -12px 0 30px #0000002e;
+    }
+    to {
+        translate: 100% 0;
+        box-shadow: -12px 0 30px #00000000;
+    }
+}
+@keyframes travel-drift-back {
+    from {
+        translate: -28% 0;
+        filter: brightness(0.9);
+    }
+}
+@keyframes travel-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+@keyframes travel-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+@media (max-width: 999px) and (prefers-reduced-motion: reduce) {
+    :root[data-slide]::view-transition-old(root) {
+        animation: travel-fade-out 120ms ease both;
+    }
+    :root[data-slide]::view-transition-new(root) {
+        animation: travel-fade-in 120ms ease both;
+    }
+}

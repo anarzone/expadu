@@ -901,7 +901,18 @@ body.travel-palette .plan-option > .details-toggle {
     }
 }
 @media (max-width: 700px) {
+    /* The header row steps aside; the section bar stays below. */
     body.travel-palette[data-view='journey'] #shell {
+        box-shadow: none;
+        background: none;
+    }
+    body.travel-palette[data-view='journey'] #shell .app-header {
+        min-height: 0;
+    }
+    body.travel-palette[data-view='journey']
+        #shell
+        .app-header
+        > :not(.service-nav) {
         display: none;
     }
 }

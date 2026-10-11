@@ -297,7 +297,29 @@ function closePopover(restoreFocus = false) {
 }
 // Back walks back through Travel (history.js); absent in unit tests.
 const H = () => window.TravelHistory;
-function setView(view) {
+// Phones and tablets: a deeper screen slides in from the right and Back
+// slides it away (owner-approved, canvas row 12). Only taps and Back slide;
+// code that switches views and carries on straight after stays instant.
+const slides = globalThis.matchMedia?.('(max-width: 999px)');
+function slideTo(view, direction) {
+    const root = document.documentElement;
+    // A swipe back already runs its own transition (swipe-back.js).
+    if (root.dataset.slide === 'swipe') return setView(view, true);
+    if (
+        !slides?.matches ||
+        !document.startViewTransition ||
+        document.hidden ||
+        H()?.browserSlid?.() ||
+        state.view === view
+    )
+        return setView(view);
+    root.dataset.slide = direction;
+    const transition = document.startViewTransition(() => setView(view, true));
+    transition.finished.finally(() => {
+        if (root.dataset.slide === direction) delete root.dataset.slide;
+    });
+}
+function setView(view, sliding = false) {
     const changed = state.view !== view;
     const from = state.view;
     closePopover();
@@ -309,7 +331,11 @@ function setView(view) {
     document.body.dataset.view = view;
     if (changed && view === 'stop') H()?.home();
     else if (changed && from === 'stop')
-        H()?.open('view', () => setView('stop'));
+        H()?.open('view', () =>
+            state.view === 'journey'
+                ? slideTo('stop', 'back')
+                : setView('stop'),
+        );
     $('#journey-view').hidden = view !== 'journey';
     $('#departures').hidden = view !== 'stop';
     $('#day-view').hidden = view !== 'day';
@@ -322,7 +348,7 @@ function setView(view) {
     if (view === 'day') renderDay();
     if (changed && typeof scrollTo === 'function')
         scrollTo({ top: scrolled[view] || 0, behavior: 'instant' });
-    if (changed)
+    if (changed && !sliding)
         animate(
             view === 'stop'
                 ? $('#departures')
@@ -2032,6 +2058,9 @@ document.addEventListener('click', (event) => {
         const view = button.dataset.view;
         if (document.body.classList.contains('trip-open'))
             window.JourneyNavigation?.close(() => setView(view));
+        // Where to? goes deeper; Nearby and My day switch in place.
+        else if (view === 'journey' && state.view === 'stop')
+            slideTo(view, 'in');
         else setView(view);
     } else if (button.dataset.place) {
         if (
@@ -2300,6 +2329,14 @@ desktopPlanner.addEventListener?.('change', () => {
     renderYourDay();
     if (state.view === 'stop') renderDepartures();
     if (state.results) renderPlanner();
+});
+// Tapping Travel in the bottom bar from a deeper screen returns to Nearby
+// first (connected/section-bar.js); a second tap scrolls Nearby to the top.
+window.addEventListener('expadu:section-again', (event) => {
+    const steps = H()?.depth() || 0;
+    if (!steps) return;
+    event.preventDefault();
+    history.go(-steps);
 });
 window.addEventListener('resize', positionPopover);
 window.addEventListener('scroll', positionPopover, true);

@@ -12,7 +12,8 @@
         unwinding = false,
         pending = 0,
         waiting = false,
-        queued = 0;
+        queued = 0,
+        uaSlid = false;
     // Hand-offs that open a screen while the page loads don't add steps.
     document.addEventListener('DOMContentLoaded', () =>
         setTimeout(() => (booting = false), 0),
@@ -62,10 +63,14 @@
         }
         const target = event.state?.travelDepth || 0;
         unwinding = true;
+        // The browser already animated this Back (Safari's edge swipe), so
+        // Travel shouldn't slide again.
+        uaSlid = Boolean(event.hasUAVisualTransition);
         try {
             while (layers.length > target) layers.pop().close();
         } finally {
             unwinding = false;
+            uaSlid = false;
         }
     });
     root.TravelHistory = {
@@ -74,5 +79,6 @@
         home,
         depth: () => layers.length,
         top: () => layers.at(-1)?.name || '',
+        browserSlid: () => uaSlid,
     };
 })(globalThis);

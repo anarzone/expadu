@@ -266,7 +266,8 @@ const status = (page) =>
                     ? page.locator('.where-to')
                     : page.getByRole('button', { name: 'Plan a trip' }).first()
             ).click();
-            assert.equal(await page.locator('#journey-view').isVisible(), true);
+            // On phones Plan a trip slides in, so it lands a frame later.
+            await page.locator('#journey-view').waitFor({ timeout: 1000 });
             await page.goto(
                 base +
                     'departures-next/?from=Neumarkt&to=M%C3%BClheim&date=2026-09-30&arrive=14:00',
