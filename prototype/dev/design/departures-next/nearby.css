@@ -1712,3 +1712,82 @@
         font-size: 11.5px;
     }
 }
+
+/* ---------- The line card, B (owner choice, 11 Oct 2026) ----------
+   Two cards side by side; inside, one row per direction: where it goes,
+   then when and what changed. Names in full (they may wrap); no watermark. */
+.nearby-card:has(.nearby-dir.is-row) .nearby-dirs {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.nearby-dir.is-row {
+    gap: 3px;
+    padding: 7px 0;
+    border-top: 1px solid color-mix(in srgb, var(--line) 16%, transparent);
+}
+.nearby-dir.is-row:first-child {
+    padding-top: 2px;
+    border-top: 0;
+}
+.nearby-dir.is-row .nearby-dest {
+    align-items: flex-start;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    line-height: 1.25;
+    white-space: normal;
+}
+.nearby-dir.is-row .nearby-dest > span {
+    overflow: visible;
+    overflow-wrap: anywhere;
+}
+.nearby-dir.is-row .nearby-dest > svg {
+    margin-top: 2px;
+}
+.nearby-when {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+}
+.nearby-when .tl-chip {
+    margin-top: 0;
+}
+.nearby-dir.is-row .nearby-time strong {
+    font-size: 22px;
+}
+.nearby-time.is-now {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: auto;
+    color: color-mix(in srgb, var(--line) 78%, var(--color-text));
+}
+.nearby-time.is-now i {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+    animation: tl-blink 1.6s ease-in-out infinite;
+}
+.nearby-dir.is-empty .nearby-dest {
+    color: var(--color-text-soft);
+    font-weight: var(--weight-regular);
+}
+@media (prefers-reduced-motion: reduce) {
+    .nearby-time.is-now i {
+        animation: none;
+    }
+}
+.nearby-card:has(.nearby-dir.is-row) {
+    gap: var(--space-4);
+    min-height: 0;
+    padding: var(--space-8) var(--space-10) var(--space-8);
+}
+.nearby-dir.is-row {
+    gap: 2px;
+    padding: 5px 0;
+}
+.nearby-dir.is-row .nearby-time strong {
+    font-size: 21px;
+}

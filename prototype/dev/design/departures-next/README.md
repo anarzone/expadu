@@ -21,11 +21,15 @@ with strength by how much it changes the trip (`labels.js`, `labels.css`).
 - When: "Now" is a filled pill in the line's colour with a slow blink (still
   with reduced motion); destinations read as directions ("→ Buchheim").
 - It won't work: filled coral (Cancelled, Lift out of order, 1 notice).
-- Watch out: amber with an icon ("+2 min" on cards, "+2 min late" elsewhere,
+- Watch out: amber with an icon ("2 min late" everywhere,
   Only 2 min spare, showers likely, a long wait as a strip along the card).
 - Not sure: a dashed outline (Not live · 22:19, Lifts unknown, Either of 2
   boarding points · not confirmed, Scheduled time · not live, Sample).
 - Good to go: quiet (Best for you, 12 min spare, No change).
+
+Line cards (owner chose B, 11 Oct 2026, canvas row 11): two cards side by
+side, one row per direction inside: → destination in full, then the time
+("Now" bold in the line's colour) and what changed. No watermark number.
 
 One strong label per card; a label sits next to what it changes. Paused
 times say "not live" once, on the banner and the station, not on every card.

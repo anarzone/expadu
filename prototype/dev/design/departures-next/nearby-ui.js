@@ -123,15 +123,16 @@
                 ? L.chip('attention', 'clock', `+${dir.delay} min late`, {
                       size: 'sm',
                   })
-                : L.chip('attention', 'clock', `+${dir.delay} min`, {
+                : L.chip('attention', 'clock', `${dir.delay} min late`, {
                       size: 'sm',
-                      hidden: 'late',
                   });
         };
         const time = (dir, look) => {
             const t = when(dir);
+            // "Now" is bold in the line's colour, not a button-like pill
+            // (owner chose card B, 11 Oct 2026).
             if (L && look && t.big === 'now' && !scene().stale)
-                return `<span class="nearby-time is-now">${L.now(look)}</span>`;
+                return `<span class="nearby-time is-now"><i aria-hidden="true"></i><strong>Now</strong></span>`;
             return `<span class="nearby-time${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>`;
         };
         // A destination reads as a direction.
@@ -155,13 +156,16 @@
             const open = state.line === l.line;
             const cols = l.shown
                 .slice(0, 2)
-                .map(
-                    (d) =>
-                        `<span class="nearby-dir">${time(d, l.look)}${toward(d.dest)}${tagOf(d)}</span>`,
+                .map((d) =>
+                    L
+                        ? `<span class="nearby-dir is-row">${toward(d.dest)}<span class="nearby-when">${time(d, l.look)}${tagOf(d)}</span></span>`
+                        : `<span class="nearby-dir">${time(d, l.look)}${toward(d.dest)}${tagOf(d)}</span>`,
                 );
             if (cols.length === 1)
                 cols.push(
-                    `<span class="nearby-dir is-empty"><span class="nearby-time"><strong>–</strong></span><span class="nearby-dest">${l.dirs.length > 1 ? 'Filtered out' : 'Not recorded'}</span></span>`,
+                    L
+                        ? `<span class="nearby-dir is-row is-empty"><span class="nearby-dest"><span>Other way: ${l.dirs.length > 1 ? 'filtered out' : 'not recorded'}</span></span></span>`
+                        : `<span class="nearby-dir is-empty"><span class="nearby-time"><strong>–</strong></span><span class="nearby-dest">${l.dirs.length > 1 ? 'Filtered out' : 'Not recorded'}</span></span>`,
                 );
             const label = `${modeName(l)} ${l.line}: ${l.shown
                 .map((d) => {
@@ -179,7 +183,7 @@
                     ? L.strip('attention', 'moon', `Then ${later.join(' · ')}`)
                     : '';
             return `<button type="button" class="nearby-card${open ? ' is-selected' : ''}" data-n="line" data-v="${safe(l.line)}" data-key="line-${safe(l.line)}" aria-pressed="${open}" aria-label="${safe(label)}" style="--line:${l.look.colour};--tint:${l.look.tint}">
-                <span class="nearby-watermark" aria-hidden="true">${safe(l.line)}</span>
+                ${L ? '' : `<span class="nearby-watermark" aria-hidden="true">${safe(l.line)}</span>`}
                 <span class="nearby-card-head">${L ? L.line(l.line, l.look, { kind: l.mode }) : `${badge(l.line, l.look, 'card')}<span>${modeName(l)}</span>`}${l.pinned ? `<span class="nearby-pinned" aria-label="Pinned">${icon('star')}</span>` : ''}</span>
                 <span class="nearby-dirs">${cols.join('')}</span>${strip}
             </button>`;
