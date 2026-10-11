@@ -652,13 +652,21 @@
                 state.panel = '';
                 focusKey = 'chip-type';
             } else if (name === 'line') {
+                const was = state.line;
                 state.line = state.line === value ? '' : value;
                 if (state.line) state.area = '';
+                // On phones a line opens in place: the phone's Back closes it.
+                if (!desktop()) {
+                    if (was && !state.line) root.TravelHistory?.closed('line');
+                    else if (state.line && !was)
+                        root.TravelHistory?.open('line', closeLine);
+                }
                 focusKey =
                     state.line && !desktop() ? 'close-line' : `line-${value}`;
             } else if (name === 'close-line') {
                 focusKey = `line-${state.line}`;
                 state.line = '';
+                root.TravelHistory?.closed('line');
             } else if (name === 'pin') {
                 state.pinned = toggleIn(state.pinned, value);
                 writePins(state.pinned);
@@ -674,6 +682,8 @@
                 state.view = 'map';
                 focusKey = 'view-map';
             } else if (name === 'row-line') {
+                if (!desktop() && !state.line)
+                    root.TravelHistory?.open('line', closeLine);
                 state.line = value;
                 if (!desktop()) {
                     state.view = 'list';
@@ -685,6 +695,12 @@
                 container
                     .querySelector('.nearby-line.is-inline')
                     ?.scrollIntoView({ block: 'nearest' });
+        }
+        function closeLine() {
+            if (!state.line) return;
+            focusKey = `line-${state.line}`;
+            state.line = '';
+            render();
         }
         const onClick = (event) => {
             const el = event.target.closest('[data-n]');

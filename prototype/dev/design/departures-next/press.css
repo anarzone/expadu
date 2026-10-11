@@ -1,0 +1,46 @@
+/* Every control answers a press (owner, 11 Oct 2026, native-feel check):
+   a quick darken and a slight shrink while the finger is down. `scale`
+   composes with any transform a control already has (map markers are
+   placed by transform), so nothing jumps. Large cards shrink less; with
+   reduced motion only the darken stays. */
+body.travel-palette
+    :is(button, a[href], summary, [role='switch'], [role='radio']):not(
+        :disabled
+    ):not([aria-disabled='true']):active {
+    filter: brightness(0.93);
+    scale: 0.97;
+}
+body.travel-palette
+    :is(
+        .nearby-card,
+        .plan-option-pick,
+        .day-trip-head,
+        .plan-checks-toggle,
+        .nearby-area-row,
+        .day-places button,
+        .where-to,
+        .nearby-stop
+    ):active {
+    scale: 0.985;
+}
+@media (prefers-reduced-motion: reduce) {
+    body.travel-palette
+        :is(button, a[href], summary, [role='switch'], [role='radio']):active {
+        scale: none;
+    }
+}
+
+/* Every tap target at least 44 px (native-feel check, 11 Oct 2026). */
+body.travel-palette .results-heading .icon-button,
+#journey-navigation .nav-view-switch button {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+}
+body.travel-palette .plan-option-way .step-nearby {
+    min-height: var(--touch-target);
+}
+/* The map's own credit links are too small to tap; the caption carries
+   the credit as text instead. */
+#journey-navigation .maplibregl-ctrl-attrib {
+    display: none;
+}

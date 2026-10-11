@@ -133,7 +133,7 @@
             <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div>${route.line ? (L ? L.line(route.line, root.NearbyModel?.look(String(route.line), vehicle() === 'Bus' ? 'bus' : 'tram'), { kind: vehicle() === 'Bus' ? 'bus' : 'tram', size: 'big' }) : `<span class="nav-line" style="${lineStyle()}">${safe(route.line)}</span>`) : ''}<div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
             <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
                 <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
-                <p class="nav-map-caption">Illustrative connections · not street directions</p>
+                <p class="nav-map-caption">Illustrative connections · not street directions · © OpenStreetMap · OpenFreeMap · OpenMapTiles</p>
             </section>
             <section class="nav-panel" aria-label="Journey itinerary"><button class="nav-handle" data-nav="expand" aria-label="Expand itinerary" aria-expanded="false" aria-controls="nav-expanded"><span></span></button><div class="nav-panel-content"></div></section>
             <div id="nav-options" class="nav-options" hidden></div>
@@ -141,6 +141,8 @@
             <p class="sr-only nav-announcement" aria-live="polite"></p>
         </div>`;
         if (!dialog.open) {
+            // The phone's Back closes the trip (history.js).
+            root.TravelHistory?.open('trip', () => close());
             if (wide()) {
                 document.querySelector('.page-navigation')?.after?.(dialog);
                 dialog.show();
@@ -240,11 +242,11 @@
     function close(after) {
         if (!dialog.open || closing) return;
         closing = true;
+        root.TravelHistory?.closed('trip');
         const finish = () => {
             map?.destroy();
             map = null;
-            walkMap?.remove();
-            walkMap = null;
+            dropWalkMap();
             panelObserver?.disconnect();
             dialog.close();
             document.body.classList?.remove('trip-open');
@@ -320,20 +322,43 @@
                 (point.lines || []).map(String).includes(String(route.line)),
         );
     }
-    let walkMap = null;
-    function mountWalkMap() {
+    let walkMap = null,
+        walkBox = null,
+        walkTimer = 0;
+    // The walk's map: built once, after the step has painted, and carried
+    // across redraws of the same step (native-feel check, 11 Oct 2026).
+    const later = (fn, ms) =>
+        typeof setTimeout === 'function' ? setTimeout(fn, ms) : fn();
+    const cancelLater = (id) =>
+        typeof clearTimeout === 'function' && clearTimeout(id);
+    function dropWalkMap() {
+        cancelLater(walkTimer);
         walkMap?.remove();
         walkMap = null;
-        const box = dialog.querySelector('.moment-map-canvas');
+        walkBox = null;
+    }
+    function mountWalkMap() {
+        const slot = dialog.querySelector('.moment-map-canvas');
+        if (!slot) return dropWalkMap();
+        if (walkBox) {
+            if (slot !== walkBox) slot.replaceWith?.(walkBox);
+            walkMap?.resize();
+            return;
+        }
+        walkBox = slot;
+        cancelLater(walkTimer);
+        walkTimer = later(() => buildWalkMap(slot), 60);
+    }
+    function buildWalkMap(box) {
         const load = root.StationMap?.load;
-        const points = box ? linePoints() : [];
-        if (!box || !points.length) return;
+        const points = box.isConnected ? linePoints() : [];
+        if (!points.length) return;
         const fail = () =>
             box.closest('.moment-map')?.toggleAttribute('hidden', true);
         if (!load) return fail();
         load()
             .then(() => {
-                if (!box.isConnected) return;
+                if (!box.isConnected || walkBox !== box) return;
                 const lng = points.map((point) => point.lng),
                     lat = points.map((point) => point.lat);
                 const map = new maplibregl.Map({

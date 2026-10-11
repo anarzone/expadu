@@ -211,6 +211,7 @@ function openSheet(
     if (!alreadyOpen) {
         sheet.showModal();
         animate(sheet);
+        H()?.open('sheet', () => closeSheet());
     } else animate($('#sheet-body'));
     scrollLock();
     (
@@ -228,6 +229,7 @@ function closeSheet(after) {
     }
     if (closingSheet) return;
     closingSheet = true;
+    H()?.closed('sheet');
     ExpaduTime?.close();
     const finish = () => {
         document.body.append($('.toast'));
@@ -293,12 +295,21 @@ function closePopover(restoreFocus = false) {
         popoverAnchor.focus({ preventScroll: true });
     popoverAnchor = null;
 }
+// Back walks back through Travel (history.js); absent in unit tests.
+const H = () => window.TravelHistory;
 function setView(view) {
     const changed = state.view !== view;
+    const from = state.view;
     closePopover();
     hideSuggestions();
+    // Each view keeps its own place on the page, like an app's tabs.
+    const scrolled = (state.scrollAt ||= {});
+    if (changed && typeof scrollY === 'number') scrolled[from] = scrollY;
     state.view = view;
     document.body.dataset.view = view;
+    if (changed && view === 'stop') H()?.home();
+    else if (changed && from === 'stop')
+        H()?.open('view', () => setView('stop'));
     $('#journey-view').hidden = view !== 'journey';
     $('#departures').hidden = view !== 'stop';
     $('#day-view').hidden = view !== 'day';
@@ -309,6 +320,8 @@ function setView(view) {
         );
     if (view === 'stop') renderDepartures();
     if (view === 'day') renderDay();
+    if (changed && typeof scrollTo === 'function')
+        scrollTo({ top: scrolled[view] || 0, behavior: 'instant' });
     if (changed)
         animate(
             view === 'stop'
@@ -683,6 +696,7 @@ function searchJourney() {
         return;
     }
     state.results = true;
+    H()?.open('results', closeResults);
     state.boardRoute = null;
     boardingReturn = null;
     state.editing = false;
@@ -692,6 +706,14 @@ function searchJourney() {
     renderResults();
     animate($('#results'));
     $('#results-title').focus({ preventScroll: true });
+}
+// Back from the options: where and when again, with the destination kept.
+function closeResults() {
+    state.results = false;
+    state.planSaved = null;
+    $('#results').hidden = true;
+    renderPlanner();
+    animate($('#journey-view'), -1);
 }
 function ribbon(route) {
     return `<div class="leg-ribbon" aria-label="${route.legs.map((leg) => (leg.mode === 'transit' ? `Line ${route.line}` : `${leg.duration} minutes ${leg.mode}`)).join(', ')}">${route.legs.map((leg) => `<span class="leg-piece ${leg.mode}">${icon(leg.mode === 'transit' ? 'train' : leg.mode)}<span>${leg.mode === 'transit' ? route.line : `${leg.duration} min`}</span></span>`).join('<span class="leg-connection" aria-hidden="true"></span>')}</div>`;
@@ -1888,6 +1910,12 @@ function action(name, button) {
         if (!saved.includes(id)) saveRoute(id);
         state.planSaved = id;
         rememberComposerRoute(id);
+        H()?.open('saved', () => {
+            const was = state.planSaved;
+            state.planSaved = null;
+            state.expanded = was;
+            renderResults();
+        });
         renderResults();
         animate($('.plan-saved'));
         $('#plan-saved-title')?.focus({ preventScroll: true });
@@ -1897,6 +1925,7 @@ function action(name, button) {
         $('[data-action="remind"]')?.focus({ preventScroll: true });
     } else if (name === 'change-plan') {
         const id = state.planSaved;
+        H()?.closed('saved');
         state.planSaved = null;
         state.expanded = id;
         renderResults();
@@ -1922,13 +1951,17 @@ function action(name, button) {
         if (state.results) {
             state.results = false;
             $('#results').hidden = true;
+            H()?.closed('results');
         }
         renderPlanner();
         renderSampleRoutes();
         to.focus();
     } else if (name === 'plan-back') {
-        // Saved → the options → where and when → Nearby.
-        if (state.results && state.planSaved) action('change-plan', button);
+        // Saved → the options → where and when → Nearby, like the phone's
+        // own Back.
+        if (H()?.depth()) history.back();
+        else if (state.results && state.planSaved)
+            action('change-plan', button);
         else if (state.results && !desktopPlanner.matches) {
             state.results = false;
             $('#results').hidden = true;

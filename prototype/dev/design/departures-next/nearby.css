@@ -1488,8 +1488,8 @@
         white-space: nowrap;
     }
     .next-trip .next-trip-toggle {
-        min-height: 36px;
-        margin-bottom: calc(var(--space-6) * -1);
+        min-height: var(--touch-target);
+        margin-block: -4px calc(var(--space-8) * -1);
     }
 }
 
