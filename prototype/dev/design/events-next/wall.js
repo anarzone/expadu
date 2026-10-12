@@ -329,7 +329,8 @@
         } catch {}
         if (count > 1 && !hinted && !reducedMotion())
             setTimeout(() => {
-                if (drag || Math.round(pos) !== 0) return;
+                // Not when the column isn't shown (the street has its own).
+                if (drag || Math.round(pos) !== 0 || !column.getClientRects().length) return;
                 animateTo(0.22, 420);
                 setTimeout(() => !drag && animateTo(0, 420), 460);
             }, 900);

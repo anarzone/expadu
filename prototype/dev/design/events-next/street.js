@@ -96,6 +96,202 @@
         for (let i = b.length; i < a.length; i++) a[i].remove();
     }
 
+    // ---------- Big moving groups as one picture ----------
+    // A moving group of many shapes (the rain's 1,275 lines, the tree
+    // crown's 1,500 leaves, the clouds) makes Chrome re-sort the street's
+    // layers on every frame the page draws: about 100ms a frame on a
+    // desktop, so taps, swipes and stories stutter. Drawn as one picture of
+    // exactly the same shapes, with the styles they had on the page, it
+    // costs next to nothing. The group itself and its motion stay as they
+    // are; only fixed parts of the drawing (data-s) are pictured.
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const INHERITED = [
+        'fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-opacity',
+        'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'stroke-dashoffset',
+        'stroke-miterlimit', 'paint-order', 'visibility', 'color', 'shape-rendering',
+    ];
+    const OWN = {
+        opacity: '1', filter: 'none', 'clip-path': 'none', mask: 'none', 'mix-blend-mode': 'normal',
+        display: 'inline', 'stop-color': 'rgb(0, 0, 0)', 'stop-opacity': '1', 'vector-effect': 'none',
+    };
+    const PAINT_ATTRS = [...INHERITED, ...Object.keys(OWN)];
+    const HANDLERS = '[data-on-click],[data-on-pointerdown],[data-on-pointerenter],[data-on-dblclick]';
+    const pictures = new Map();
+    let moving = null;
+    // The classes the street animates, read from its own rules.
+    function movingSelector() {
+        if (moving !== null) return moving;
+        const names = new Set();
+        const walk = (rules) => {
+            for (const rule of rules) {
+                if (rule.cssRules && !rule.style) walk(rule.cssRules);
+                else if (rule.style?.animationName && rule.style.animationName !== 'none')
+                    for (const sel of rule.selectorText.split(',')) {
+                        const m = sel.trim().match(/^\.st[dp] \.([\w-]+)$/);
+                        if (m) names.add(m[1]);
+                    }
+            }
+        };
+        for (const sheet of document.styleSheets)
+            if (/street-art\.css/.test(sheet.href || ''))
+                try {
+                    walk(sheet.cssRules);
+                } catch {}
+        moving = [...names].map((n) => '.' + CSS.escape(n)).join(',');
+        return moving;
+    }
+    const localUrl = (value, ids) =>
+        value.replace(/url\((["']?)[^#"')]*#([^"')]+)\1\)/g, (m, q, id) => (ids.add(id), `url(#${id})`));
+    // Reading 1,500 shapes' styles takes a while on a phone: a slice at a
+    // time, so taps and the page's own work go in between.
+    const pause = () => new Promise((resolve) => setTimeout(resolve, 0));
+    async function picture(g, key) {
+        const ids = new Set();
+        const src = [g, ...g.getElementsByTagName('*')];
+        const values = new Map();
+        let widest = 0,
+            filtered = false;
+        const styles = [];
+        let slice = performance.now();
+        for (const [i, el] of src.entries()) {
+            if (performance.now() - slice > 50) {
+                await pause();
+                if (!g.isConnected) return null;
+                slice = performance.now();
+            }
+            styles.push(styleOf(el, i));
+        }
+        function styleOf(el, i) {
+            const cs = getComputedStyle(el);
+            const own = {};
+            for (const p of INHERITED) own[p] = localUrl(cs.getPropertyValue(p), ids);
+            values.set(el, own);
+            widest = Math.max(widest, parseFloat(own['stroke-width']) || 0);
+            if (i === 0) return INHERITED.map((p) => `${p}:${own[p]}`).join(';');
+            const parent = values.get(el.parentNode);
+            let style = '';
+            for (const p of INHERITED) if (own[p] !== parent[p]) style += `${p}:${own[p]};`;
+            for (const [p, initial] of Object.entries(OWN)) {
+                const v = localUrl(cs.getPropertyValue(p), ids);
+                if (v && v !== initial) style += `${p}:${v};`;
+                if (p === 'filter' && v !== initial) filtered = true;
+            }
+            if (!el.hasAttribute('transform') && cs.transform !== 'none')
+                style += `transform:${cs.transform};transform-origin:${cs.transformOrigin};transform-box:${cs.transformBox};`;
+            return style;
+        }
+        // The group changed while it was read: try again next time.
+        if (g.getElementsByTagName('*').length !== src.length - 1 || !src.every((el) => g.contains(el))) return null;
+        const copy = g.cloneNode(true);
+        [copy, ...copy.getElementsByTagName('*')].forEach((el, i) => {
+            for (const a of PAINT_ATTRS) el.removeAttribute(a);
+            for (const a of ['class', 'style', 'aria-hidden']) el.removeAttribute(a);
+            if (i === 0) el.removeAttribute('transform');
+            if (styles[i]) el.setAttribute('style', styles[i]);
+        });
+        const defs = document.createElementNS(SVG_NS, 'defs');
+        const seen = new Set();
+        const define = (id) => {
+            if (seen.has(id)) return;
+            seen.add(id);
+            const def = document.getElementById(id);
+            if (!def) return;
+            defs.append(def.cloneNode(true));
+            for (const el of [def, ...def.getElementsByTagName('*')]) {
+                const href = el.getAttribute('href') || el.getAttribute('xlink:href');
+                if (href?.startsWith('#')) define(href.slice(1));
+                for (const { value } of el.attributes) for (const m of value.matchAll(/url\(#([^)]+)\)/g)) define(m[1]);
+            }
+        };
+        ids.forEach(define);
+        const bb = g.getBBox();
+        const pad = Math.ceil(widest) + (filtered ? 48 : 6);
+        const box = [bb.x - pad, bb.y - pad, bb.width + pad * 2, bb.height + pad * 2].map((n) => +n.toFixed(2));
+        const svg = document.createElementNS(SVG_NS, 'svg');
+        svg.setAttribute('xmlns', SVG_NS);
+        svg.setAttribute('viewBox', box.join(' '));
+        svg.setAttribute('width', box[2]);
+        svg.setAttribute('height', box[3]);
+        svg.append(defs, copy);
+        const url = URL.createObjectURL(
+            new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }),
+        );
+        const made = { url, box };
+        pictures.set(key, made);
+        return made;
+    }
+    function flattener(card) {
+        let queued = false,
+            running = false,
+            again = false;
+        const later = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
+        // What the group's shapes inherit from around it; a new hour can change it.
+        const keyOf = (g, i) => {
+            const cs = getComputedStyle(g);
+            return `${g.closest('[data-s]').dataset.s}:${i}:${INHERITED.map((p) => cs.getPropertyValue(p)).join('|')}:${g.getAttribute('class')}`;
+        };
+        async function run() {
+            queued = false;
+            running = true;
+            try {
+                await pass();
+            } finally {
+                running = false;
+                if (again) {
+                    again = false;
+                    soon();
+                }
+            }
+        }
+        let first = true;
+        function soon() {
+            if (running) again = true;
+            else if (!queued) {
+                queued = true;
+                // Straight after the first drawing (until then every frame
+                // is slow), then whenever the page is idle.
+                if (first) setTimeout(run, 0);
+                else later(run, { timeout: 1500 });
+                first = false;
+            }
+        }
+        async function pass() {
+            const sel = movingSelector();
+            if (!sel || !card.isConnected) return;
+            const groups = [...card.querySelectorAll('g[data-s][class], [data-s] g[class]')].filter((g) => g.matches(sel));
+            for (const [i, g] of groups.entries()) {
+                if (!g.isConnected) continue;
+                const pictured = !!g.__shapes;
+                if (!pictured && (g.getElementsByTagName('*').length < 20 || g.querySelector(sel) || g.querySelector('text') || g.querySelector(HANDLERS)))
+                    continue;
+                const key = keyOf(g, i);
+                if (g.__key === key) continue;
+                if (pictured) g.replaceChildren(...g.__shapes);
+                const made = pictures.get(key) || (await picture(g, key));
+                if (!made || !g.isConnected || g.__key === key) continue;
+                const { url, box } = made;
+                const pre = new Image();
+                pre.src = url;
+                try {
+                    await pre.decode();
+                } catch {
+                    continue;
+                }
+                if (!g.isConnected) continue;
+                const img = document.createElementNS(SVG_NS, 'image');
+                ['x', 'y', 'width', 'height'].forEach((a, k) => img.setAttribute(a, box[k]));
+                img.setAttribute('preserveAspectRatio', 'none');
+                img.setAttribute('href', url);
+                g.__shapes = [...g.childNodes];
+                g.__key = key;
+                g.replaceChildren(img);
+                // One group per pause, so the page stays responsive.
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+        }
+        return { soon };
+    }
+
     // ---------- The board's component ----------
     class Base {
         constructor(root, layout, opts) {
@@ -148,6 +344,7 @@
                 this.__keys = keys;
                 this.opts.onPosters?.();
             }
+            this.flat?.soon();
         }
         poster(p, where) {
             if (!p || !p.id) return '';
@@ -217,6 +414,7 @@
                 card: host.querySelector('.st-card'),
                 story: host.querySelector('.st-story'),
             };
+            s.flat = flattener(s.parts.card);
             const types = ['click', 'dblclick', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'wheel', 'keydown'];
             const listeners = types.map((type) => [type, (event) => s.dispatch(type, event)]);
             listeners.push(['pointerover', (event) => s.enterLeave('pointerenter', event)]);

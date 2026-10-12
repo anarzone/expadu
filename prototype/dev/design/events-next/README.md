@@ -5,6 +5,27 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The street no longer stutters — 13 October 2026
+
+Owner report: the street's animations lagged. Three of its moving groups
+hold many shapes (the rain's 1,275 lines, the plane tree's 1,500 leaves,
+the clouds), and Chrome re-sorted the street's layers for them on every
+frame the page drew, about 100ms a frame on a desktop. Whenever something
+else moved (walking the day, a hover, a story, a lifted poster, scrolling)
+the page ran at about 10 frames a second.
+
+- `street.js` draws each such group as one picture of exactly the same
+  shapes, with the styles they had on the page, once the street is drawn.
+  The group and its motion stay. With the motion stopped, the street
+  matches the committed one pixel for pixel apart from edge smoothing.
+- The old column's once-a-session turn no longer runs while it is hidden
+  (the street has its own column).
+
+Measured in Chromium with the graphics card on: on a desktop, walking,
+hovering, a story, lifting a poster and scrolling went from 10 to 120
+frames a second; on a phone with its processor slowed four times, from
+35–39 to 89–114.
+
 ## The street: the Stories board, as it is — 12 October 2026
 
 Owner decision. The Events page is now the "2 · Stories" board from the
