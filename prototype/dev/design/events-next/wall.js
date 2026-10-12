@@ -1139,6 +1139,135 @@
         if (note.textContent !== text) note.textContent = text;
         note.closest('.event-results-head')?.classList.toggle('has-note', !!text);
     }
+    /* ---------- A turned poster lifts into a large card (owner, 12 Oct 2026) ----------
+       On the wall or the column a poster is too small for its back: on a
+       phone its buttons ran off the screen. Turning one over lifts it into
+       the middle of the screen at the size where every back fits without
+       scrolling (300 x 470, zoomed to the screen). It flies from its place
+       while it turns (the poster's own turn), and goes back the same way:
+       with its turn button, a tap outside or Escape. */
+    let lifted = null;
+    const liftPath = (from, to) =>
+        `translate(${from.left + from.width / 2 - (to.left + to.width / 2)}px, ${from.top + from.height / 2 - (to.top + to.height / 2)}px) scale(${from.width / to.width})`;
+    function lift(card) {
+        if (!card || lifted) return;
+        const zoom =
+            Math.min(380, innerWidth - 50, ((innerHeight - 64) * 300) / 470) / 300;
+        const layer = document.createElement('div');
+        layer.className = 'pp-lift';
+        layer.innerHTML = `<div class="pp-lift-backdrop"></div><div class="pp-lift-card" role="dialog" aria-modal="true" aria-label="${E(card.querySelector('.pp-title')?.textContent || 'Poster')}"></div>`;
+        const box = layer.querySelector('.pp-lift-card');
+        const copy = card.cloneNode(true);
+        copy.removeAttribute('style');
+        copy.classList.remove('is-tilting', 'pp--size-column');
+        copy.classList.add('pp--size-wall');
+        copy.style.setProperty('--lift-zoom', zoom.toFixed(4));
+        box.append(copy);
+        const from = card.getBoundingClientRect();
+        document.body.append(layer);
+        card.classList.add('is-lifted');
+        lifted = { card, layer, box, copy };
+        P.turn(copy.querySelector('.pp-open'));
+        if (!reducedMotion())
+            box.animate(
+                [{ transform: liftPath(from, box.getBoundingClientRect()) }, { transform: 'none' }],
+                { duration: 380, easing: 'cubic-bezier(.22,1,.36,1)' },
+            );
+        layer.addEventListener('click', (event) => {
+            if (
+                event.target.closest('[data-poster-turn]') ||
+                !event.target.closest('.pp-lift-card')
+            )
+                putBack();
+        });
+        layer.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.stopPropagation();
+                putBack();
+            } else if (event.key === 'Tab') {
+                // Focus stays on the card while it's lifted.
+                const stops = [...box.querySelectorAll('button, a[href]')].filter(
+                    (el) => el.offsetParent,
+                );
+                const at = stops.indexOf(document.activeElement);
+                const next = event.shiftKey
+                    ? at <= 0 ? stops.at(-1) : stops[at - 1]
+                    : at === stops.length - 1 ? stops[0] : stops[at + 1];
+                if (next) {
+                    event.preventDefault();
+                    next.focus();
+                }
+            }
+        });
+        // The street stays put underneath.
+        layer.addEventListener('wheel', (event) => event.preventDefault(), {
+            passive: false,
+        });
+    }
+    function putBack() {
+        if (!lifted || lifted.leaving) return;
+        const { card, layer, box, copy } = lifted;
+        lifted.leaving = true;
+        const done = () => {
+            layer.remove();
+            card.classList.remove('is-lifted');
+            card.querySelector('.pp-open')?.focus({ preventScroll: true });
+            lifted = null;
+        };
+        if (reducedMotion()) return done();
+        layer.classList.add('is-leaving');
+        P.turn(copy.querySelector('.pp-turn-back'));
+        box.animate(
+            [{ transform: 'none' }, { transform: liftPath(card.getBoundingClientRect(), box.getBoundingClientRect()) }],
+            { duration: 360, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' },
+        ).onfinish = done;
+    }
+    // On a phone the event sheet is the whole screen, and a swipe down on
+    // its header closes it, as Today's sheets do (today-next/app.js).
+    function sheetSwipe() {
+        const dialog = document.querySelector('#shared-dialog');
+        if (!dialog || dialog.dataset.swipe) return;
+        dialog.dataset.swipe = 'true';
+        let drag = null;
+        const phoneSheet = () =>
+            dialog.querySelector('.phone-sheet') &&
+            matchMedia('(max-width: 700px)').matches;
+        dialog.addEventListener('pointerdown', (event) => {
+            if (
+                !phoneSheet() ||
+                !event.target.closest('.dialog-head') ||
+                event.target.closest('button')
+            )
+                return;
+            drag = { id: event.pointerId, y: event.clientY, at: event.timeStamp, dy: 0 };
+            dialog.setPointerCapture(event.pointerId);
+        });
+        dialog.addEventListener('pointermove', (event) => {
+            if (drag?.id !== event.pointerId) return;
+            drag.dy = Math.max(0, event.clientY - drag.y);
+            dialog.style.transform = `translateY(${drag.dy}px)`;
+        });
+        const release = (event) => {
+            if (drag?.id !== event.pointerId) return;
+            const { dy, at } = drag;
+            drag = null;
+            const fast = dy / Math.max(1, event.timeStamp - at) > 0.5;
+            if (dy > 96 || (fast && dy > 32)) {
+                U.close();
+                return;
+            }
+            const from = dialog.style.transform;
+            dialog.style.transform = '';
+            if (dy)
+                window.ExpaduMotion?.run(
+                    dialog,
+                    [{ transform: from }, { transform: 'translateY(0)' }],
+                    { duration: 200 },
+                );
+        };
+        dialog.addEventListener('pointerup', release);
+        dialog.addEventListener('pointercancel', release);
+    }
     function mount() {
         const main = document.querySelector('#main');
         const catalogue = window.ExpaduEventCatalogue?.() || [];
@@ -1199,10 +1328,14 @@
         window.addEventListener('resize', fitSoon);
         document.fonts?.ready.then(fitSoon);
         gallery.insertAdjacentHTML('afterend', pastStrip(catalogue));
+        sheetSwipe();
         main.addEventListener('click', (event) => {
             const turn = event.target.closest('[data-poster-turn]');
             if (turn) {
-                P.turn(turn);
+                // A poster on the wall or the column lifts to turn over.
+                if (turn.closest('.wall-day, .wall-column-face'))
+                    lift(turn.closest('.pp'));
+                else P.turn(turn);
                 return;
             }
             if (event.target.closest('[data-wall-tilt]')) {

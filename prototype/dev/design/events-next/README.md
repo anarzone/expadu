@@ -5,6 +5,29 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A turned poster lifts into a large card; the sheet fills a phone — 12 October 2026
+
+Owner request, tried first on the "Events reimagined" canvas. A poster on
+the wall or the column was too small for its back: on a phone More about
+it ran 62px past the poster and the page scrolled sideways.
+
+- **Turning a poster lifts it.** It flies from its place to the middle of
+  the screen while it turns (the poster's own turn), over a dimmed street,
+  at 300 x 470 zoomed to the screen (380px wide on a desktop, the screen
+  less 50px on a phone). At that size every back fits without scrolling,
+  with all its buttons. Its place on the wall stays empty until it goes
+  back the same way: its turn button, a tap outside or Escape. Focus stays
+  on the card. More about it opens the sheet over it; the card waits.
+- **On a phone the event sheet is the whole screen** on the Events page,
+  clear of the status bar and the home indicator. It rises from the
+  bottom and goes back down, like Today's sheets, and a swipe down on its
+  header closes it. Desktop keeps the centred sheet; Today's pages keep
+  theirs.
+
+`tests/wall-browser.cjs` checks the lifted back fits with every button, the
+page doesn't widen, Escape puts the poster back, and on a phone that the
+sheet fills the screen and a swipe down closes it.
+
 ## A rounded card on phones, and fixes on narrower desktops — 9 October 2026
 
 Owner request. The wall is a rounded card on every screen: on a phone 12px

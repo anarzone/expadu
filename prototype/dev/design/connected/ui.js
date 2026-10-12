@@ -35,9 +35,10 @@
     const dialog = document.querySelector('#shared-dialog'),
         body = document.querySelector('#dialog-body');
     let toastTimer, undoAction, lastFocus, focusSelector;
-    // Today's sheets slide from the bottom on phones, without a fade over text.
+    // Today's sheets, and the Events page's full-screen event sheet, slide
+    // from the bottom on phones, without a fade over text.
     const phoneSheet = () =>
-        !!body.querySelector('.today-sheet') &&
+        !!body.querySelector('.today-sheet, .phone-sheet') &&
         matchMedia('(max-width: 700px)').matches;
     function open(title, html) {
         const entering =

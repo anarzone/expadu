@@ -146,25 +146,78 @@ const inside = (box, viewport) =>
                 );
             assert.deepEqual(await clippedPosters(), [], 'a poster cuts off its text');
 
-            // Turning a poster over shows its facts and actions, and back.
+            // Turning a poster over lifts it into a large card with its whole
+            // back: facts, how it fits the day and every button, nothing cut
+            // off or scrolling, and the page doesn't widen. Escape puts it
+            // back on the wall.
             const poster = page.locator(
                 '.wall-view--wall [data-poster="today-review-cinema"], #event-featured [data-poster="today-review-culture"]',
             ).first();
             await poster.locator('.pp-open').click();
-            await page.waitForTimeout(450);
-            assert.ok(await poster.locator('.pp-back').isVisible());
+            await page.waitForTimeout(500);
+            const lifted = page.locator('.pp-lift .pp');
+            assert.ok(await lifted.locator('.pp-back').isVisible());
+            assert.ok(await poster.evaluate((pp) => pp.classList.contains('is-lifted')));
             assert.equal(
                 await page.evaluate(() => document.activeElement.className),
                 'pp-turn-back',
             );
-            assert.match(await poster.locator('.pp-facts').innerText(), /Not listed/);
+            assert.match(await lifted.locator('.pp-facts').innerText(), /Not listed/);
             assert.match(
-                await poster.locator('.pp-fit').innerText(),
+                await lifted.locator('.pp-fit').innerText(),
                 /after your Blue Card appointment ends/,
             );
+            const fits = await lifted.evaluate((pp) => {
+                const r = pp.getBoundingClientRect();
+                const body = pp.querySelector('.pp-back-body');
+                return {
+                    scrolls: body.scrollHeight > body.clientHeight + 1,
+                    outside: [...pp.querySelectorAll('.pp-back-actions > *, .pp-turn-back')]
+                        .filter((el) => el.offsetParent)
+                        .some((el) => {
+                            const b = el.getBoundingClientRect();
+                            return b.left < r.left - 0.5 || b.right > r.right + 0.5;
+                        }),
+                    onScreen: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+                    width: document.documentElement.scrollWidth,
+                };
+            });
+            assert.equal(fits.scrolls, false, 'the lifted poster’s back scrolls');
+            assert.equal(fits.outside, false, 'a button sticks out of the lifted poster');
+            assert.ok(fits.onScreen, 'the lifted poster leaves the screen');
+            assert.ok(fits.width <= viewport.width, `sideways scroll with a poster lifted at ${viewport.width}px`);
             await page.keyboard.press('Escape');
-            await page.waitForTimeout(450);
+            await page.waitForTimeout(500);
+            assert.equal(await page.locator('.pp-lift').count(), 0);
             assert.ok(await poster.locator('.pp-front').isVisible());
+            assert.ok(!(await poster.evaluate((pp) => pp.classList.contains('is-lifted'))));
+            // On a phone its sheet takes the whole screen, and a swipe down
+            // on the sheet's header closes it; the lifted poster waits.
+            if (viewport.width <= 700) {
+                await poster.locator('.pp-open').click();
+                await page.waitForTimeout(500);
+                await page.locator('.pp-lift .pp-back-more').click();
+                await page.waitForSelector('.event-sheet.phone-sheet');
+                await page.waitForTimeout(450);
+                const full = await page.evaluate(() => {
+                    const r = document.querySelector('#shared-dialog').getBoundingClientRect();
+                    // A desktop browser keeps room for its scrollbar (15px).
+                    return r.left === 0 && r.top === 0 && r.width >= innerWidth - 16 && Math.round(r.height) === innerHeight;
+                });
+                assert.ok(full, 'the event sheet doesn’t fill a phone screen');
+                const head = await page.locator('#shared-dialog .dialog-head h2').boundingBox();
+                await page.mouse.move(head.x + 20, head.y + 10);
+                await page.mouse.down();
+                for (let i = 1; i <= 8; i++)
+                    await page.mouse.move(head.x + 20, head.y + 10 + i * 30);
+                await page.mouse.up();
+                await page.waitForTimeout(500);
+                assert.equal(await page.locator('#shared-dialog[open]').count(), 0, 'a swipe down leaves the sheet open');
+                assert.equal(await page.locator('.pp-lift').count(), 1);
+                await page.locator('.pp-lift .pp-turn-back').click();
+                await page.waitForTimeout(500);
+                assert.equal(await page.locator('.pp-lift').count(), 0);
+            }
 
             // The column carries the featured pick and the three later city
             // listings (dates only, no planning). No arrows and no list: it
@@ -630,10 +683,10 @@ const inside = (box, viewport) =>
             return rows.filter((r) => Math.abs(r.top - rows[0].top) < 30).length;
         });
         assert.equal(besideCorner, 2, 'two posters beside the corner at 1280px');
-        // A narrow poster's back keeps every button label on one line.
-        const narrowPoster = narrow.locator('.wall-day > .pp').first();
-        await narrowPoster.locator('.pp-open').click();
+        // A lifted poster's back keeps every button label on one line.
+        await narrow.locator('.wall-day > .pp').first().locator('.pp-open').click();
         await narrow.waitForTimeout(500);
+        const narrowPoster = narrow.locator('.pp-lift .pp');
         const wrapped = await narrowPoster.evaluate((pp) =>
             [...pp.querySelectorAll('.pp-back-actions > *, .pp-back-head > *')]
                 .filter((el) => el.offsetParent)

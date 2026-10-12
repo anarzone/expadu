@@ -82,9 +82,13 @@
             : window.ExpaduEventFestival
               ? 'AI illustration, not a photograph of this event or venue'
               : 'Original illustration, not an official poster or venue photo';
+        // On the Events page a phone gives the sheet the whole screen
+        // (owner, 12 Oct 2026); Today's pages keep theirs.
+        const phoneSheet =
+            document.body?.dataset?.page === 'events' ? ' phone-sheet' : '';
         U.open(
             item.title,
-            `<section class="place-sheet event-sheet">
+            `<section class="place-sheet event-sheet${phoneSheet}">
             <div class="event-ticket event-ticket-poster">${imagery.image(item, true)}<span class="event-ticket-shade" aria-hidden="true"></span><div><span class="event-cover-category">${I(categoryIcon)}${E(item.category)}</span><strong>${F.dateLabel(item.date, { weekday: 'short', month: 'short' })}</strong></div><div class="event-ticket-time"><strong>${E(item.start)}${item.end ? '–' + E(item.end) : ''}</strong><small>${past ? 'Already happened' : item.end ? 'Listed time' : 'End time to check'}</small></div></div>
             <nav class="place-sheet-tabs" aria-label="Event actions"><button data-event-section="about" aria-label="About" aria-pressed="true">${I('info')}<span>About</span></button><button data-event-section="plan" aria-label="Plan to go" aria-pressed="false">${I('calendar')}<span>Plan</span></button><button data-event-section="directions" aria-label="Get there" aria-pressed="false">${I('route')}<span>Get there</span></button></nav>
             <div class="place-sheet-panel" data-panel="about"><div class="place-sheet-scroll">
