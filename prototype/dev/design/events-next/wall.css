@@ -3394,3 +3394,48 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
         animation: backdrop-reveal 300ms ease reverse both;
     }
 }
+
+/* ---------- The street (owner, 12 Oct 2026) ----------
+   On the Events page the wall is the Stories board from the "Events
+   reimagined" canvas, as it is: the living street with the hour's sky,
+   the rolling column, the hours' posters and the hours' stories
+   (street.js runs street-art.js). The old column and corner stay for the
+   Skyline view only. */
+main[data-view='wall'] #event-featured {
+    display: none;
+}
+.st-board {
+    display: flex;
+    flex-direction: column;
+}
+.st-root[hidden] {
+    display: none;
+}
+.st-fit {
+    position: relative;
+    margin-inline: auto;
+}
+.st-hint {
+    margin: 8px 16px 0;
+    color: var(--color-text-soft);
+    font-size: 12px;
+    text-align: center;
+}
+/* A poster's slot on the street: placed by the street, not laid out as
+   the old wall's row. */
+#main .st-root .wall-day.st-slot {
+    position: absolute;
+    display: block;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    background: none;
+    scroll-snap-type: none;
+}
+/* An hour's story ring shows its first poster's picture. */
+.st-art {
+    position: relative;
+    overflow: hidden;
+    container-type: inline-size;
+}

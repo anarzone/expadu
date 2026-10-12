@@ -5,6 +5,39 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The street: the Stories board, as it is — 12 October 2026
+
+Owner decision. The Events page is now the "2 · Stories" board from the
+"Events reimagined" canvas, built as it is on desktop and phone:
+
+- **The living street.** A drawn Cologne street: the hour's sky with
+  drifting clouds, birds and a plane, the skyline (Kranhäuser, Colonius,
+  Groß St. Martin, the cathedral), a plane-tree branch dropping leaves, a
+  plastered wall with repairs, bricks and its stencil, the gas lamp, bench,
+  bike and pigeons, and rain and puddles when the sample forecast says so.
+  The sky follows the hour you look at; a past day says the weather wasn't
+  recorded.
+- **The column** rolls the day's posters every six seconds (its lamps pick
+  one; it waits while a poster is lifted, a story or the sheet is open).
+- **The day's posters by the hour.** A desktop walks the day an hour at a
+  time (arrows or drag, Back to now); a phone pages the posters up and down
+  beside the column.
+- **Stories.** Each hour with events is a ring above the street; it plays
+  its posters in turn (tap the sides or swipe, hold to pause), with Save
+  and More about it.
+- The posters, their lifted card, the details sheet, saving, planning and
+  the filters are the page's own, as before. The header and filters stay
+  the page's; Composer's button and the bottom bar too.
+
+`street-art.js` and `street-art.css` are generated from the board's own
+generators (its templates, drawings and logic); `street.js` runs them
+here, filling the poster slots with the page's posters. The old corner and
+column remain only for the Skyline view (`?view=skyline`). `?at=` still
+moves the posters' On now and Over flags; the street's sky keeps the
+board's hour. Tablets (701–999px) show the desktop street scaled down.
+`tests/wall-browser.cjs` covers the street, its stories, column, walk and
+paging, the past day, lifting, the sheet and the Skyline.
+
 ## A turned poster lifts into a large card; the sheet fills a phone — 12 October 2026
 
 Owner request, tried first on the "Events reimagined" canvas. A poster on

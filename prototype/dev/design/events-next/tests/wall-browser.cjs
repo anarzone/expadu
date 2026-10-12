@@ -1,7 +1,9 @@
 // Run with: node prototype/dev/design/events-next/tests/wall-browser.cjs
 // (needs `python3 prototype/serve.py` on port 8765, or BASE=http://host:port).
-// The poster wall: first screen on a phone, turning a poster over, the
-// Skyline view with posters for missing pictures, past and later listings.
+// The Events page: the street (the Stories board from the "Events
+// reimagined" canvas, 12 Oct 2026) on a phone and a desktop, its stories,
+// column and walk, lifting a poster, the sheet; the Skyline view with
+// posters for missing pictures; past listings.
 const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const base = `${process.env.BASE || 'http://127.0.0.1:8765'}/dev/design/events-next/`;
@@ -36,13 +38,13 @@ const inside = (box, viewport) =>
             await page.reload({ waitUntil: 'networkidle' });
             assert.equal(await page.locator('#main').getAttribute('data-view'), 'wall');
 
-            // The column's poster and its Add to plan, and the filters, are on
-            // the first screen of a phone. Composer's button covers no icon
-            // button, label or typed text; it may float over the empty end
-            // of a field that runs to the edge.
+            // The first wall poster and its Add to plan, and the filters, are
+            // on the first screen of a phone. Composer's button covers none
+            // of the filters (icon buttons, labels, typed text).
             if (viewport.width < 700) {
                 const plan = await page
-                    .locator('#event-featured .pp-plan')
+                    .locator('.st-root .wall-day > .pp .pp-plan')
+                    .first()
                     .boundingBox();
                 assert.ok(inside(plan, viewport), 'first poster action is off screen');
                 for (const selector of ['#event-search', '[data-event-picker="sort"]'])
@@ -69,45 +71,29 @@ const inside = (box, viewport) =>
                               );
                     return [
                         ...document.querySelectorAll(
-                            '#main button, #main input, #main a',
+                            '.event-discovery button, .event-discovery input, .event-discovery a',
                         ),
                     ]
                         .filter((el) => shown(el).some((x) => hit(x.getBoundingClientRect())))
                         .map((el) => el.outerHTML.slice(0, 60));
                 }, launcher);
-                assert.deepEqual(covered, [], 'a control sits under Composer');
-                // As on a desktop (owner request, 9 Oct 2026): the filters
-                // lead, then one wall with the column at its left, about 40%
-                // of the screen, and the day's poster pasted beside it. The
-                // date leads the search row (no page
-                // title, owner decision 9 Oct 2026); Sort and the starting
-                // point lead the second row; the search and Area run to the edge.
-                // Free and Saved are in the Category menu (a dot on Category
-                // when one is on), and a resize to a tablet puts them back.
-                const corner = await page.evaluate(() => {
+                assert.deepEqual(covered, [], 'a filter sits under Composer');
+                // The filters lead, then the hours' stories, then the street:
+                // the column at the left of the wall and the day's posters
+                // paging up and down beside it.
+                const order = await page.evaluate(() => {
                     const at = (s) => document.querySelector(s).getBoundingClientRect();
-                    const scene = at('.wall-scene'),
-                        body = at('.wall-column-body'),
-                        poster = at('.wall-view--wall .wall-day > .pp');
                     return {
-                        slim: body.width / innerWidth,
-                        filtersFirst: at('.event-controls').bottom <= at('.wall-board').top,
-                        beside: poster.left >= scene.right - 2 && poster.top < body.bottom,
+                        filtersFirst: at('.event-controls').bottom <= at('.st-rings').top,
+                        ringsThenStreet: at('.st-rings').bottom <= at('.st-fit').top + 1,
+                        street: document.querySelector('.st-root').dataset.layout,
+                        width: at('.st-fit').width / innerWidth,
                     };
                 });
-                assert.ok(corner.slim > 0.3 && corner.slim < 0.45, `the column should be slim on a phone: ${corner.slim}`);
-                assert.ok(corner.filtersFirst, 'the filters should lead the page, above the wall');
-                assert.ok(corner.beside, "the day's poster should hang beside the column");
-                // The whole street, as on a desktop: the wall's decor, its
-                // base and stencil, and the lantern, bench and bike.
-                const street = await page.evaluate(() =>
-                    ['.wall-decor', '.wall-sockel', '.wall-stencil', '.wall-pipe', '.wall-lantern', '.wall-bench', '.wall-bike']
-                        .filter((s) => {
-                            const r = document.querySelector(s)?.getBoundingClientRect();
-                            return !r || !r.width || !r.height;
-                        }),
-                );
-                assert.deepEqual(street, [], 'part of the street is missing on a phone');
+                assert.ok(order.filtersFirst, 'the filters should lead the page');
+                assert.ok(order.ringsThenStreet, 'the stories should sit above the street');
+                assert.equal(order.street, 'phone');
+                assert.ok(order.width > 0.85, `the street should fill a phone's width: ${order.width}`);
                 assert.equal(await page.locator('.event-search-row > .wall-heading:first-child + .event-search').count(), 1);
                 assert.equal(await page.locator('.event-control-scroller > [data-event-picker="sort"]:first-child + [data-event-picker="travel"]').count(), 1);
                 const edges = await page.evaluate(() => {
@@ -150,11 +136,9 @@ const inside = (box, viewport) =>
             // back: facts, how it fits the day and every button, nothing cut
             // off or scrolling, and the page doesn't widen. Escape puts it
             // back on the wall.
-            const poster = page.locator(
-                '.wall-view--wall [data-poster="today-review-cinema"], #event-featured [data-poster="today-review-culture"]',
-            ).first();
+            const poster = page.locator('.st-root .wall-day > .pp').first();
             await poster.locator('.pp-open').click();
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(900);
             const lifted = page.locator('.pp-lift .pp');
             assert.ok(await lifted.locator('.pp-back').isVisible());
             assert.ok(await poster.evaluate((pp) => pp.classList.contains('is-lifted')));
@@ -187,7 +171,7 @@ const inside = (box, viewport) =>
             assert.ok(fits.onScreen, 'the lifted poster leaves the screen');
             assert.ok(fits.width <= viewport.width, `sideways scroll with a poster lifted at ${viewport.width}px`);
             await page.keyboard.press('Escape');
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(900);
             assert.equal(await page.locator('.pp-lift').count(), 0);
             assert.ok(await poster.locator('.pp-front').isVisible());
             assert.ok(!(await poster.evaluate((pp) => pp.classList.contains('is-lifted'))));
@@ -195,7 +179,7 @@ const inside = (box, viewport) =>
             // on the sheet's header closes it; the lifted poster waits.
             if (viewport.width <= 700) {
                 await poster.locator('.pp-open').click();
-                await page.waitForTimeout(500);
+                await page.waitForTimeout(900);
                 await page.locator('.pp-lift .pp-back-more').click();
                 await page.waitForSelector('.event-sheet.phone-sheet');
                 await page.waitForTimeout(450);
@@ -215,36 +199,46 @@ const inside = (box, viewport) =>
                 assert.equal(await page.locator('#shared-dialog[open]').count(), 0, 'a swipe down leaves the sheet open');
                 assert.equal(await page.locator('.pp-lift').count(), 1);
                 await page.locator('.pp-lift .pp-turn-back').click();
-                await page.waitForTimeout(500);
+                await page.waitForTimeout(900);
                 assert.equal(await page.locator('.pp-lift').count(), 0);
             }
 
-            // The column carries the featured pick and the three later city
-            // listings (dates only, no planning). No arrows and no list: it
-            // turns by drag or the arrow keys.
-            const column = page.locator('#event-featured .wall-column');
-            assert.equal(await column.locator('.wall-column-face').count(), 4);
-            assert.equal(await column.locator('.pp.is-listing').count(), 3);
-            assert.equal(
-                await column.locator('.pp.is-listing :is([data-plan-item], [data-save-item])').count(),
-                0,
-            );
-            assert.equal(
-                await page.locator('[data-column-step], .wall-column-controls, .wall-column-index').count(),
-                0,
-            );
-            assert.equal(await column.locator('.wall-column-count').innerText(), '1 of 4');
-            await column.locator('.wall-column-body').focus();
-            await page.keyboard.press('ArrowRight');
+            // The street: today's sky and city over the wall, the weather of
+            // the hour on the wall, labelled as sample weather.
+            const street = page.locator('.st-root');
+            assert.equal(await street.getAttribute('data-layout'), viewport.width <= 700 ? 'phone' : 'desktop');
+            assert.ok((await street.locator('#wall svg').count()) > 2, 'the street isn’t drawn');
+            assert.match(await street.locator('#wall').innerText(), /Sample weather/);
+            // An hour's story: its posters in turn, Save and More about it.
+            const rings = street.locator('.st-rings button');
+            assert.equal(await rings.count(), 2);
+            await rings.last().click();
+            await page.waitForTimeout(700);
+            const story = street.locator('.st-story [role="dialog"]');
+            assert.match(await story.innerText(), /Cinema under the stars/i);
+            assert.equal(await story.locator('.pp[data-poster="today-review-cinema"]').count(), 1);
+            await story.getByRole('button', { name: 'More about it' }).click();
+            await page.waitForSelector('#shared-dialog[open] .event-sheet');
             await page.waitForTimeout(500);
-            assert.equal(await column.locator('.wall-column-count').innerText(), '2 of 4');
-            const front = await column.evaluate((el) =>
-                [...el.querySelectorAll('.wall-column-face')].findIndex((f) => !f.inert),
+            assert.equal(await story.count(), 0, 'the story stays open under the sheet');
+            await page.keyboard.press('Escape');
+            await page.waitForTimeout(400);
+            // The column rolls tonight's posters (its caption on a desktop);
+            // its facing poster lifts.
+            if (viewport.width > 700)
+                assert.match(await street.locator('#wall').innerText(), /Tonight · [12] of 2/);
+            const facing = await page.evaluate(() =>
+                [...document.querySelectorAll('.st-face .pp-open')].findIndex((o) => {
+                    const r = o.getBoundingClientRect();
+                    return o.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+                }),
             );
-            assert.equal(front, 1, 'only the poster facing you can be used');
-            await column.locator('.wall-column-body').focus();
-            await page.keyboard.press('ArrowLeft');
-            await page.waitForTimeout(500);
+            assert.ok(facing >= 0, 'no column poster faces you');
+            await page.locator('.st-face .pp-open').nth(facing).click();
+            await page.waitForTimeout(700);
+            assert.equal(await page.locator('.pp-lift .pp.is-turned').count(), 1);
+            await page.keyboard.press('Escape');
+            await page.waitForTimeout(900);
 
             // Skyline, kept in the preview as a reference at ?view=skyline:
             // the city has the board to itself. Its lights are the day's
@@ -338,45 +332,44 @@ const inside = (box, viewport) =>
             assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed: admission, language/);
             await page.keyboard.press('Escape');
 
-            // The captured past day: faded posters, no Save or Plan.
+            // The captured past day: faded posters, no Save or Plan, no
+            // weather on record, its five hours as stories.
             await page.goto(`${base}?date=2026-09-08`, {
                 waitUntil: 'networkidle',
             });
-            const past = page.locator('.wall-view--wall .pp.is-past');
-            assert.equal(await past.count(), 7);
+            await page.waitForTimeout(600);
+            const past = page.locator('.st-root .wall-day > .pp.is-past');
+            assert.ok((await past.count()) >= (viewport.width > 700 ? 7 : 2), `${await past.count()} past posters`);
             assert.deepEqual(await clippedPosters(), [], 'a past poster cuts off its text');
             assert.equal(
-                await page.locator('.wall-view--wall .pp.is-past .pp-plan, .wall-view--wall .pp.is-past .pp-save').count(),
+                await page.locator('.st-root .pp.is-past .pp-plan, .st-root .pp.is-past .pp-save').count(),
                 0,
             );
-            assert.equal(await page.locator('.wall-past').isHidden(), true);
-            // On a desktop the column stands on its street corner (lantern,
-            // bench, bike, cobbles) on a plastered wall with its stencil, and
-            // a long day's posters flow round it and on below it.
-            if (viewport.width > 700) {
-                for (const part of ['.wall-lantern', '.wall-bench', '.wall-bike', '.wall-scene-ground', '.wall-stencil'])
-                    assert.equal(await page.locator(part).isVisible(), true, `${part} is missing`);
-                const flow = await page.evaluate(() => {
-                    const scene = document.querySelector('.wall-scene').getBoundingClientRect();
-                    return [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')].some((poster) => {
-                        const r = poster.getBoundingClientRect();
-                        return r.top >= scene.bottom - 2 && r.left < scene.right;
-                    });
-                });
-                assert.ok(flow, 'no poster flows on below the street corner');
-                // The corner ends where the row beside it ends: no bare wall.
-                const gap = await page.evaluate(() => {
-                    const scene = document.querySelector('.wall-scene').getBoundingClientRect();
-                    const below = [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')]
-                        .map((pp) => pp.getBoundingClientRect())
-                        .filter((r) => r.left < scene.right)
-                        .sort((a, b) => a.top - b.top)[0];
-                    return Math.round(below.top - scene.bottom);
-                });
-                assert.ok(gap >= 0 && gap < 48, `bare wall under the corner: ${gap}px`);
-                for (const part of ['.wall-pipe', '.wall-sockel', '.wall-bricks', '.wall-streaks'])
-                    assert.equal(await page.locator(part).first().count(), 1, `${part} is missing`);
+            assert.match(await page.locator('#event-list').innerText(), /Already happened/);
+            assert.match(await page.locator('.st-root #wall').innerText(), /Weather not recorded/);
+            assert.equal(await page.locator('.st-rings button').count(), 5);
+            // A desktop walks the day an hour at a time; a phone pages its
+            // posters up and down.
+            const where = () =>
+                page.evaluate(() =>
+                    [...document.querySelectorAll('.st-card div')]
+                        .map((d) => d.style.transform)
+                        .filter((t) => /translate[XY]\(-?\d/.test(t))
+                        .join(' '),
+                );
+            const before = await where();
+            if (viewport.width > 700) await page.getByRole('button', { name: 'Later' }).click();
+            else {
+                await page.locator('.st-card [data-on-wheel]').evaluate((el) => el.scrollIntoView({ block: 'center' }));
+                const zone = await page.locator('.st-card [data-on-wheel]').boundingBox();
+                await page.mouse.move(zone.x + zone.width / 2, zone.y + zone.height / 2 + 60);
+                await page.mouse.down();
+                for (let i = 1; i <= 10; i++)
+                    await page.mouse.move(zone.x + zone.width / 2, zone.y + zone.height / 2 + 60 - i * 16);
+                await page.mouse.up();
             }
+            await page.waitForTimeout(700);
+            assert.notEqual(await where(), before, 'the wall doesn’t move on');
 
             // The same day on the skyline: its lights are out, and labels
             // never overlap each other or another light.
@@ -450,110 +443,16 @@ const inside = (box, viewport) =>
             assert.deepEqual(errors, []);
             await page.close();
         }
-        // Phone tilt: on a touch screen the posters lean with the phone, and
-        // the tilt button turns it off.
+        // The Skyline's lights follow the clock (?at= previews another
+        // time), and on a touch screen the first tap shows a light's hour,
+        // the second opens it.
         const phone = await browser.newContext({
             viewport: { width: 390, height: 844 },
             isMobile: true,
             hasTouch: true,
         });
         const touch = await phone.newPage();
-        await touch.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
-        await touch.evaluate(() => localStorage.removeItem('expadu-wall-tilt'));
-        await touch.reload({ waitUntil: 'networkidle' });
-        assert.equal(await touch.locator('[data-wall-tilt]').getAttribute('aria-pressed'), 'true');
-        const lean = async (beta, gamma) => {
-            await touch.evaluate(
-                ([beta, gamma]) =>
-                    window.dispatchEvent(
-                        new DeviceOrientationEvent('deviceorientation', { beta, gamma, alpha: 0 }),
-                    ),
-                [beta, gamma],
-            );
-            await touch.waitForTimeout(120);
-        };
-        await lean(40, 0);
-        await lean(40, 15);
-        const leaning = await touch.evaluate(() => ({
-            x: Number(getComputedStyle(document.documentElement).getPropertyValue('--phone-x')),
-            column: getComputedStyle(document.querySelector('.wall-column')).transform,
-        }));
-        assert.ok(leaning.x > 0.4, `phone tilt not followed: ${leaning.x}`);
-        assert.notEqual(leaning.column, 'none', 'the column should lean');
-        await touch.locator('[data-wall-tilt]').click();
-        assert.equal(await touch.locator('[data-wall-tilt]').getAttribute('aria-pressed'), 'false');
-        assert.equal(
-            await touch.evaluate(() => document.documentElement.classList.contains('wall-tilting')),
-            false,
-        );
-        // Today's lights follow the clock (?at= previews another time), and
-        // on a touch screen the first tap shows a light's hour, the second
-        // opens it.
-        // At dusk on a phone the column's caption stays dark on the cream
-        // page under the wall, and the cobbles lie right under the column,
-        // above the caption.
-        await touch.goto(`${base}?date=2026-09-30&at=19:30`, { waitUntil: 'networkidle' });
-        const caption = await touch.locator('.wall-column-caption').evaluate((el) => {
-            const [r, g, b] = getComputedStyle(el).color.match(/\d+/g).map(Number);
-            return r + g + b;
-        });
-        assert.ok(caption < 450, `the caption is too light on the cream page: ${caption}`);
-        const order = await touch.evaluate(() => {
-            const at = (s) => document.querySelector(s).getBoundingClientRect();
-            return at('.wall-column-body').bottom <= at('.wall-scene-ground').top + 6 &&
-                at('.wall-scene-ground').bottom <= at('.wall-column-caption').top + 2;
-        });
-        assert.equal(order, true, 'the cobbles should sit between the column and its caption');
-        // On the slim column a flag keeps its own line: the tape doesn't
-        // cover it and no text is cut off.
-        const flagged = await touch.evaluate(() => {
-            const pp = document.querySelector('#event-featured .pp[data-poster="today-review-culture"]');
-            const at = (el) => el.getBoundingClientRect();
-            const open = pp.querySelector('.pp-front .pp-open');
-            return {
-                flag: at(pp.querySelector('.pp-flag')).bottom - at(pp.querySelector('.pp-top')).bottom,
-                tape: at(pp.querySelector('.pp-flag')).bottom - at(pp.querySelector('.pp-front .pp-tape')).top,
-                clipped: open.scrollHeight > open.clientHeight + 1,
-            };
-        });
-        assert.ok(flagged.flag <= 0.5 && flagged.tape <= 4 && !flagged.clipped, `the column poster's flag is covered: ${JSON.stringify(flagged)}`);
-        // One wall, a rounded card 12px from the screen's edges as on a
-        // desktop (owner, 9 Oct 2026): today's sky
-        // with the hour's weather along its top, the column and the day's
-        // posters on its plaster. The plaster darkens at dusk.
-        const plaster = async () =>
-            touch.evaluate(() => {
-                const board = document.querySelector('.wall-board');
-                const sky = board.querySelector(':scope > .wall-sky');
-                const at = (el) => el.getBoundingClientRect();
-                // How light the wall is: its plaster colour.
-                const colour = getComputedStyle(board).backgroundColor;
-                const srgb = colour.match(/color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)/);
-                const rgb = colour.match(/rgba?\((\d+), (\d+), (\d+)/);
-                return {
-                    edges: [at(board).left, at(board).right, parseFloat(getComputedStyle(board).borderTopLeftRadius)],
-                    sky: sky.offsetParent ? Math.abs(at(sky).top - at(board).top) : null,
-                    chip: sky.querySelector('.sky-weather').innerText.replace(/\s+/g, ' '),
-                    shade: srgb ? +srgb[1] + +srgb[2] + +srgb[3] : (+rgb[1] + +rgb[2] + +rgb[3]) / 255,
-                };
-            });
-        const dusk = await plaster();
-        assert.deepEqual(dusk.edges, [12, 378, 22], 'the wall should be a rounded card 12px from the edges');
-        assert.ok(dusk.sky !== null && dusk.sky <= 1, 'today’s sky should run along the wall’s top');
-        assert.match(dusk.chip, /16° Showers 19:30 · Sample weather/);
-        await touch.goto(`${base}?date=2026-09-30&at=13:10`, { waitUntil: 'networkidle' });
-        assert.ok((await plaster()).shade > dusk.shade + 0.5, 'the plaster should darken at dusk');
-        // Another day's posters hang without today's sky: it isn't their weather.
-        await touch.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });
-        const pastDay = await plaster();
-        assert.equal(pastDay.sky, null, 'today’s sky should not hang over another day');
-        assert.deepEqual(pastDay.edges, [12, 378, 22]);
         await touch.goto(`${base}?date=2026-09-30&view=skyline&at=19:30`, { waitUntil: 'networkidle' });
-        assert.equal(
-            await touch.locator('.wall-board > .wall-sky').isVisible(),
-            false,
-            'the Skyline has its own sky',
-        );
         const culture = touch.locator('.sky-light[data-detail="today-review-culture"]');
         assert.match(await culture.getAttribute('class'), /is-now/);
         assert.match(await culture.locator('.sky-line').innerText(), /^Now · Street culture night$/);
@@ -570,8 +469,7 @@ const inside = (box, viewport) =>
         assert.match(await culture.getAttribute('aria-label'), /already over/);
         assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
-        // On phones and tablets the column's finial stands on the wall, not
-        // in the heading, and what the filters show (icon buttons, labels,
+        // On phones and tablets what the filters show (icon buttons, labels,
         // typed text) stops short of Composer's button, so it covers none of
         // it at any height.
         for (const viewport of [
@@ -584,9 +482,7 @@ const inside = (box, viewport) =>
             await tablet.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
             const fit = await tablet.evaluate(() => {
                 const at = (s) => document.querySelector(s).getBoundingClientRect();
-                const finial = at('.wall-column-cap > span').top - 10;
                 return {
-                    finial: finial >= at('.wall-scene').top,
                     filters: Math.max(
                         ...[...document.querySelectorAll('.event-discovery :is(button, input)')]
                             .filter((el) => el.offsetParent)
@@ -602,7 +498,6 @@ const inside = (box, viewport) =>
                     composer: at('.composer-launcher').left,
                 };
             });
-            assert.ok(fit.finial, `the column's finial rises above the wall at ${viewport.width}px`);
             assert.ok(
                 fit.filters <= fit.composer,
                 `a filter reaches under Composer's button at ${viewport.width}px: ${fit.filters} > ${fit.composer}`,
@@ -650,8 +545,8 @@ const inside = (box, viewport) =>
         assert.ok(await sheets.locator('#events-area').isHidden(), 'dragging the sheet down leaves it open');
         await sheets.close();
         // A narrower desktop (owner's screenshot, 9 Oct 2026): the date's
-        // calendar opens on screen, the search keeps room to type, the bench
-        // stands inside the wall, and a poster's flag keeps to one line.
+        // calendar opens on screen, the search keeps room to type, and a
+        // poster's flag keeps to one line.
         {
             const mid = await browser.newPage({ viewport: { width: 1347, height: 1500 } });
             await mid.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
@@ -662,30 +557,26 @@ const inside = (box, viewport) =>
                 return {
                     calendar: at('#event-calendar-panel').left,
                     search: at('.event-search').width,
-                    bench: at('.wall-bench').left - at('.wall-board').left,
-                    flag: document.querySelector('.wall-day .pp-flag').offsetHeight,
+                    flag: document.querySelector('.st-root .wall-day .pp-flag').offsetHeight,
                 };
             });
             assert.ok(fit.calendar >= 0, `the calendar opens off screen: ${fit.calendar}`);
             assert.ok(fit.search >= 160, `the search is squeezed: ${fit.search}px`);
-            assert.ok(fit.bench >= 0, `the bench stands outside the wall: ${fit.bench}`);
             assert.ok(fit.flag <= 27, `the poster's flag wraps: ${fit.flag}px`);
             await mid.close();
         }
-        // A narrower desktop still fits two posters beside the corner.
+        // A narrower desktop: the street fits the page, no sideways scroll.
         const narrow = await browser.newPage({ viewport: { width: 1280, height: 900 } });
         await narrow.goto(`${base}?date=2026-09-08`, { waitUntil: 'networkidle' });
-        const besideCorner = await narrow.evaluate(() => {
-            const scene = document.querySelector('.wall-scene').getBoundingClientRect();
-            const rows = [...document.querySelectorAll('.wall-view--wall .wall-day > .pp')]
-                .map((pp) => pp.getBoundingClientRect())
-                .filter((r) => r.left >= scene.right - 2);
-            return rows.filter((r) => Math.abs(r.top - rows[0].top) < 30).length;
+        const fitsPage = await narrow.evaluate(() => {
+            const card = document.querySelector('.st-fit').getBoundingClientRect();
+            const main = document.querySelector('#main').getBoundingClientRect();
+            return card.right <= main.right + 1 && document.documentElement.scrollWidth <= innerWidth;
         });
-        assert.equal(besideCorner, 2, 'two posters beside the corner at 1280px');
+        assert.ok(fitsPage, 'the street runs off a 1280px page');
         // A lifted poster's back keeps every button label on one line.
-        await narrow.locator('.wall-day > .pp').first().locator('.pp-open').click();
-        await narrow.waitForTimeout(500);
+        await narrow.locator('.st-root .wall-day > .pp').first().locator('.pp-open').click();
+        await narrow.waitForTimeout(900);
         const narrowPoster = narrow.locator('.pp-lift .pp');
         const wrapped = await narrowPoster.evaluate((pp) =>
             [...pp.querySelectorAll('.pp-back-actions > *, .pp-back-head > *')]
@@ -708,50 +599,38 @@ const inside = (box, viewport) =>
         if (await narrowPoster.locator('.pp-back-plan').count())
             assert.equal(await narrowPoster.getByRole('button', { name: 'Add to plan' }).count(), 1);
         await narrow.close();
-        // The street keeps today's time and weather: a dry afternoon at
-        // 13:10; at 19:30 dusk, the lantern on, rain and puddles.
-        const street = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-        await street.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
-        const flags = () =>
-            street.locator('.wall-board').evaluate((el) => ({
-                dark: el.hasAttribute('data-dark'),
-                wet: el.hasAttribute('data-wet'),
-                raining: el.hasAttribute('data-raining'),
-                lamp: el.style.getPropertyValue('--lamp-on'),
-            }));
-        assert.deepEqual(await flags(), { dark: false, wet: false, raining: false, lamp: '0.000' });
-        // From the Skyline: the hour's sky over the city as the backdrop,
-        // saying what it shows, and the rain warning on the outdoor film.
-        assert.match(
-            await street.locator('.wall-board > .wall-sky .sky-weather').innerText(),
-            /21° Sunny\s+13:10 · Sample weather/,
-        );
-        const outdoorFilm = street.locator('.wall-day [data-poster="today-review-cinema"]');
+        // Today's posters follow the clock (?at= previews another time):
+        // the outdoor film warns of rain at 13:10; at 19:30 the street
+        // culture night is on; at 22:40 the film is over, with nothing to
+        // plan.
+        const clock = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+        await clock.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
+        const outdoorFilm = clock.locator('.st-root .wall-day [data-poster="today-review-cinema"]');
         assert.match(await outdoorFilm.locator('.pp-flag--rain').innerText(), /Rain likely · sample forecast/);
-        assert.equal(await street.locator('.pp-flag--now, .pp-flag--over').count(), 0);
-        await street.goto(`${base}?date=2026-09-30&at=19:30`, { waitUntil: 'networkidle' });
-        assert.deepEqual(await flags(), { dark: true, wet: true, raining: true, lamp: '1.000' });
-        // Today's posters follow the clock: on now, then over (no planning).
+        assert.equal(await clock.locator('.st-root .wall-day :is(.pp-flag--now, .pp-flag--over)').count(), 0);
+        await clock.goto(`${base}?date=2026-09-30&at=19:30`, { waitUntil: 'networkidle' });
+        await clock.waitForTimeout(300);
         assert.match(
-            await street.locator('#event-featured [data-poster="today-review-culture"] .pp-flag--now').innerText(),
+            await clock.locator('.st-root .wall-day [data-poster="today-review-culture"] .pp-flag--now').innerText(),
             /On now · until 21:00/,
         );
-        await street.goto(`${base}?date=2026-09-30&at=22:40`, { waitUntil: 'networkidle' });
+        await clock.goto(`${base}?date=2026-09-30&at=22:40`, { waitUntil: 'networkidle' });
+        await clock.waitForTimeout(300);
         assert.equal(await outdoorFilm.getAttribute('data-when'), 'over');
         // Its sheet says Over and offers nothing to plan or be reminded of.
         await outdoorFilm.evaluate((pp) => pp.querySelector('.pp-back-more').click());
-        await street.waitForSelector('.event-sheet');
-        assert.equal(await street.locator('.event-sheet .event-today .pp-flag--over').count(), 1);
+        await clock.waitForSelector('.event-sheet');
+        assert.equal(await clock.locator('.event-sheet .event-today .pp-flag--over').count(), 1);
         assert.equal(
-            await street.locator('.event-sheet :is([data-event-section="plan"], .event-reminder)').count(),
+            await clock.locator('.event-sheet :is([data-event-section="plan"], .event-reminder)').count(),
             0,
         );
-        await street.keyboard.press('Escape');
+        await clock.keyboard.press('Escape');
         assert.equal(await outdoorFilm.locator('.pp-plan').isVisible(), false);
         assert.equal(await outdoorFilm.locator('.pp-flag--rain').count(), 0);
-        await street.close();
-        // The App in colour concept's time switch moves the Wall's sky and
-        // today's posters too.
+        await clock.close();
+        // The App in colour concept's time switch moves today's posters'
+        // flags (the street draws its own hour's sky).
         const concept = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
         await concept.goto(
             `${base.replace('events-next/', 'connected/concepts/app-in-colour-2026-10-07/')}?page=events&width=desktop&mode=concept`,
@@ -760,11 +639,10 @@ const inside = (box, viewport) =>
         const framed = concept.frameLocator('iframe');
         await concept.getByRole('button', { name: 'Night', exact: true }).click();
         await concept.waitForTimeout(1200);
-        assert.match(await framed.locator('.wall-board > .wall-sky .sky-weather').innerText(), /22:30/);
-        assert.equal(await framed.locator('.pp[data-when="over"]').count(), 2);
+        assert.ok((await framed.locator('.st-root .wall-day > .pp[data-when="over"]').count()) >= 2);
         await concept.getByRole('button', { name: '13:10', exact: true }).click();
         await concept.waitForTimeout(1200);
-        assert.match(await framed.locator('.wall-board > .wall-sky .sky-weather').innerText(), /13:10/);
+        assert.equal(await framed.locator('.st-root .pp[data-when="over"]').count(), 0);
         await concept.close();
         console.log('Poster wall checks passed at 390 and 1440px.');
     } finally {

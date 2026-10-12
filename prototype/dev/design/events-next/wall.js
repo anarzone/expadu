@@ -742,6 +742,14 @@
     ) {
         const events = unique(items);
         if (!events.length) return '';
+        // On the Events page the street draws the day (see mount()).
+        if (view === 'wall' && window.ExpaduStreet) {
+            streetDistance = distance;
+            if (streetView)
+                streetView.update(events, window.ExpaduEventCatalogue?.() || []);
+            else streetPending = events;
+            return '';
+        }
         const onWall = discover
             ? events.filter((item) => !shown.includes(item.id))
             : events;
@@ -958,6 +966,9 @@
         return { hour, ctx, st: Sky.at(ctx, hour) };
     };
     function paintStreet() {
+        // The street draws its own hour's light; only the posters' flags
+        // follow the clock there.
+        if (document.querySelector('.st-root')) return markPosters();
         const board = document.querySelector('.wall-board');
         if (!board || !today) return;
         const { hour, ctx, st } = streetNow();
@@ -1139,6 +1150,19 @@
         if (note.textContent !== text) note.textContent = text;
         note.closest('.event-results-head')?.classList.toggle('has-note', !!text);
     }
+    /* ---------- The street's posters (owner, 12 Oct 2026) ----------
+       street.js fills the street's slots with the page's own posters: on
+       the wall and in stories with their distance, on the column without,
+       as before. */
+    let streetView = null,
+        streetPending = null,
+        streetDistance = () => '';
+    const streetPoster = (item, where) =>
+        P.poster(item, {
+            size: where === 'column' ? 'column' : 'wall',
+            ...posterOptions(item, where === 'column' ? '' : streetDistance(item)),
+        });
+
     /* ---------- A turned poster lifts into a large card (owner, 12 Oct 2026) ----------
        On the wall or the column a poster is too small for its back: on a
        phone its buttons ran off the screen. Turning one over lifts it into
@@ -1287,6 +1311,34 @@
         main.querySelector('.event-search-row')?.prepend(heading);
         main.querySelector('.event-browse-heading')?.remove();
         const gallery = main.querySelector('.event-gallery');
+        // The street (owner, 12 Oct 2026): the Stories board from the
+        // "Events reimagined" canvas, as it is (street.js). The Skyline
+        // keeps the wall below.
+        const street = view === 'wall' && !!window.ExpaduStreet;
+        if (street) {
+            const box = document.createElement('section');
+            box.className = 'st-board';
+            box.setAttribute('aria-label', 'Posters');
+            const host = document.createElement('div');
+            host.className = 'st-root';
+            box.append(main.querySelector('#event-list'), host);
+            gallery.append(box);
+            main.querySelector('#event-featured')?.setAttribute('hidden', '');
+            streetView = ExpaduStreet.mount(host, {
+                poster: streetPoster,
+                // After this mount has set up the stamps.
+                onPosters: () =>
+                    requestAnimationFrame(() => {
+                        stamps();
+                        markPosters();
+                    }),
+            });
+            if (streetPending) streetView.update(streetPending, catalogue);
+            // The page's own empty state replaces the street.
+            new MutationObserver(() => {
+                if (main.querySelector('#event-list .event-empty')) host.hidden = true;
+            }).observe(main.querySelector('#event-list'), { childList: true });
+        }
         const board = document.createElement('section');
         board.className = 'wall-board';
         board.setAttribute('aria-label', 'Posters');
@@ -1309,10 +1361,12 @@
                 'beforeend',
                 `<button type="button" class="wall-tilt" data-wall-tilt aria-pressed="false" aria-label="Tilt the posters with your phone" title="Tilt with your phone">${phoneIcon}</button>`,
             );
-        board.append(scene, main.querySelector('#event-list'));
-        board.insertAdjacentHTML('beforeend', next());
-        gallery.append(board);
-        paintStreet();
+        if (!street) {
+            board.append(scene, main.querySelector('#event-list'));
+            board.insertAdjacentHTML('beforeend', next());
+            gallery.append(board);
+            paintStreet();
+        }
         const sheetApi = window.ExpaduEventSheet;
         if (sheetApi && !sheetApi.wallDressed) {
             const open = sheetApi.open;
@@ -1324,16 +1378,18 @@
             sheetApi.wallDressed = true;
         }
         const fitSoon = () => requestAnimationFrame(fitCorner);
-        fitSoon();
-        window.addEventListener('resize', fitSoon);
-        document.fonts?.ready.then(fitSoon);
-        gallery.insertAdjacentHTML('afterend', pastStrip(catalogue));
+        if (!street) {
+            fitSoon();
+            window.addEventListener('resize', fitSoon);
+            document.fonts?.ready.then(fitSoon);
+            gallery.insertAdjacentHTML('afterend', pastStrip(catalogue));
+        }
         sheetSwipe();
         main.addEventListener('click', (event) => {
             const turn = event.target.closest('[data-poster-turn]');
             if (turn) {
                 // A poster on the wall or the column lifts to turn over.
-                if (turn.closest('.wall-day, .wall-column-face'))
+                if (turn.closest('.wall-day, .wall-column-face, .st-face'))
                     lift(turn.closest('.pp'));
                 else P.turn(turn);
                 return;
@@ -1386,6 +1442,7 @@
             tiltChoice = localStorage.getItem('expadu-wall-tilt');
         } catch {}
         if (
+            !street &&
             canTilt() &&
             typeof window.DeviceOrientationEvent?.requestPermission !== 'function' &&
             tiltChoice !== 'off'

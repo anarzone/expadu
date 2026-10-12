@@ -1,0 +1,95 @@
+/* GENERATED from the "Events reimagined" canvas board (2 · Stories) by
+   port_street.py: the street's animations (clouds, birds, rain, smoke,
+   leaves, pigeons), scoped to the desktop (.std) and phone (.stp) street. */
+.std *{box-sizing:border-box}
+@media (prefers-reduced-motion: no-preference) {
+  .std .drift-a{animation:stddrift 190s linear infinite}
+  .std .drift-b{animation:stddrift 120s linear infinite}
+  .std .drift-c{animation:stddrift 80s linear infinite}
+  @keyframes stddrift{from{transform:translateX(0)}to{transform:translateX(-1361px)}}
+  .std .tw{animation:stdtw 3.4s ease-in-out infinite}
+  .std .tw1{animation-delay:-1.1s} .std .tw2{animation-delay:-2.2s;animation-duration:4.6s} .std .tw3{animation-delay:-.6s;animation-duration:2.7s}
+  @keyframes stdtw{0%,100%{opacity:1}50%{opacity:.2}}
+  .std .pulse{transform-box:fill-box;transform-origin:center;animation:stdpulse 7s ease-in-out infinite}
+  @keyframes stdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  .std .flock{animation:stdflock 52s linear infinite}
+  @keyframes stdflock{0%{transform:translate(-140px,40px)}25%{transform:translate(340px,22px)}50%{transform:translate(680px,34px)}75%{transform:translate(1021px,14px)}100%{transform:translate(1501px,26px)}}
+  .std .wing{transform-box:fill-box;transform-origin:center 80%;animation:stdflap .5s ease-in-out infinite alternate}
+  .std .w1{animation-delay:-.18s} .std .w2{animation-delay:-.33s;animation-duration:.6s}
+  @keyframes stdflap{to{transform:scaleY(-.55)}}
+  .std .plane{animation:stdplane 80s linear infinite}
+  @keyframes stdplane{from{transform:translate(1401px,24px)}to{transform:translate(-60px,6px)}}
+  .std .blink{animation:stdblink 1.3s steps(2,jump-none) infinite}
+  @keyframes stdblink{0%{opacity:1}100%{opacity:0}}
+  .std .smoke{transform-box:fill-box;transform-origin:center;animation:stdsmoke 7.5s ease-out infinite}
+  .std .s1{animation-delay:-2.5s} .std .s2{animation-delay:-5s}
+  @keyframes stdsmoke{0%{transform:translate(0,0) scale(.5);opacity:0}15%{opacity:.55}100%{transform:translate(22px,-52px) scale(2.6);opacity:0}}
+  .std .flick{animation:stdflick 11s steps(1) infinite} .std .f1{animation-duration:15s} .std .f2{animation-duration:19s;animation-delay:-6s}
+  @keyframes stdflick{0%,42%{opacity:1}43%,71%{opacity:.12}72%,100%{opacity:1}}
+  .std .sway{animation:stdsway 6.5s ease-in-out infinite alternate}
+  @keyframes stdsway{from{transform:rotate(-1.1deg)}to{transform:rotate(1.3deg)}}
+  .std .fall{animation:stdfall 17s linear infinite;opacity:0}
+  .std .fall1{animation-duration:21s;animation-delay:-6s} .std .fall2{animation-duration:15s;animation-delay:-11s} .std .fall3{animation-duration:24s;animation-delay:-3s} .std .fall4{animation-duration:19s;animation-delay:-15s}
+  @keyframes stdfall{0%{transform:translate(0,0) rotate(0);opacity:0}6%{opacity:1}25%{transform:translate(46px,calc(var(--fall)*.25)) rotate(130deg)}50%{transform:translate(-8px,calc(var(--fall)*.5)) rotate(240deg)}75%{transform:translate(70px,calc(var(--fall)*.76)) rotate(320deg)}94%{opacity:1}100%{transform:translate(40px,var(--fall)) rotate(400deg);opacity:0}}
+  .std .flame{animation:stdflame 2.8s ease-in-out infinite}
+  @keyframes stdflame{0%,100%{filter:brightness(1)}40%{filter:brightness(1.18)}60%{filter:brightness(.92)}}
+  .std .glow{transform-box:fill-box;transform-origin:center;animation:stdglow 3.6s ease-in-out infinite}
+  @keyframes stdglow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  .std .rainfall{animation:stdrain .42s linear infinite}
+  @keyframes stdrain{from{transform:translate(0,0)}to{transform:translate(-19px,64px)}}
+  .std .splash{transform-box:fill-box;transform-origin:center;animation:stdsplash 1.1s ease-out infinite}
+  .std .sp1{animation-delay:-.3s} .std .sp2{animation-delay:-.6s;animation-duration:1.3s} .std .sp3{animation-delay:-.85s}
+  @keyframes stdsplash{0%{transform:scale(.2);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+  .std .pig-head{transform-box:fill-box;transform-origin:15% 90%;animation:stdpeck 4.2s ease-in-out infinite}
+  .std .ph1{animation-delay:-1.4s;animation-duration:5.1s} .std .ph2{animation-delay:-2.9s;animation-duration:3.6s}
+  @keyframes stdpeck{0%,58%,100%{transform:rotate(0)}66%{transform:rotate(40deg) translate(1px,3px)}74%{transform:rotate(0)}82%{transform:rotate(38deg) translate(1px,3px)}90%{transform:rotate(0)}}
+  .std .pig-walk{animation:stdwalk 15s ease-in-out infinite} .std .pw1{animation-duration:19s;animation-delay:-7s} .std .pw2{animation-duration:23s;animation-delay:-12s}
+  @keyframes stdwalk{0%,100%{transform:translateX(0)}40%,52%{transform:translateX(28px)}}
+  .std .ripple{transform-box:fill-box;transform-origin:center;animation:stdsplash 1.6s ease-out infinite}
+}
+.stp *{box-sizing:border-box}
+@media (prefers-reduced-motion: no-preference) {
+  .stp .drift-a{animation:stpdrift 190s linear infinite}
+  .stp .drift-b{animation:stpdrift 120s linear infinite}
+  .stp .drift-c{animation:stpdrift 80s linear infinite}
+  @keyframes stpdrift{from{transform:translateX(0)}to{transform:translateX(-351px)}}
+  .stp .tw{animation:stptw 3.4s ease-in-out infinite}
+  .stp .tw1{animation-delay:-1.1s} .stp .tw2{animation-delay:-2.2s;animation-duration:4.6s} .stp .tw3{animation-delay:-.6s;animation-duration:2.7s}
+  @keyframes stptw{0%,100%{opacity:1}50%{opacity:.2}}
+  .stp .pulse{transform-box:fill-box;transform-origin:center;animation:stppulse 7s ease-in-out infinite}
+  @keyframes stppulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  .stp .flock{animation:stpflock 52s linear infinite}
+  @keyframes stpflock{0%{transform:translate(-140px,40px)}25%{transform:translate(88px,22px)}50%{transform:translate(176px,34px)}75%{transform:translate(263px,14px)}100%{transform:translate(491px,26px)}}
+  .stp .wing{transform-box:fill-box;transform-origin:center 80%;animation:stpflap .5s ease-in-out infinite alternate}
+  .stp .w1{animation-delay:-.18s} .stp .w2{animation-delay:-.33s;animation-duration:.6s}
+  @keyframes stpflap{to{transform:scaleY(-.55)}}
+  .stp .plane{animation:stpplane 80s linear infinite}
+  @keyframes stpplane{from{transform:translate(391px,24px)}to{transform:translate(-60px,6px)}}
+  .stp .blink{animation:stpblink 1.3s steps(2,jump-none) infinite}
+  @keyframes stpblink{0%{opacity:1}100%{opacity:0}}
+  .stp .smoke{transform-box:fill-box;transform-origin:center;animation:stpsmoke 7.5s ease-out infinite}
+  .stp .s1{animation-delay:-2.5s} .stp .s2{animation-delay:-5s}
+  @keyframes stpsmoke{0%{transform:translate(0,0) scale(.5);opacity:0}15%{opacity:.55}100%{transform:translate(22px,-52px) scale(2.6);opacity:0}}
+  .stp .flick{animation:stpflick 11s steps(1) infinite} .stp .f1{animation-duration:15s} .stp .f2{animation-duration:19s;animation-delay:-6s}
+  @keyframes stpflick{0%,42%{opacity:1}43%,71%{opacity:.12}72%,100%{opacity:1}}
+  .stp .sway{animation:stpsway 6.5s ease-in-out infinite alternate}
+  @keyframes stpsway{from{transform:rotate(-1.1deg)}to{transform:rotate(1.3deg)}}
+  .stp .fall{animation:stpfall 17s linear infinite;opacity:0}
+  .stp .fall1{animation-duration:21s;animation-delay:-6s} .stp .fall2{animation-duration:15s;animation-delay:-11s} .stp .fall3{animation-duration:24s;animation-delay:-3s} .stp .fall4{animation-duration:19s;animation-delay:-15s}
+  @keyframes stpfall{0%{transform:translate(0,0) rotate(0);opacity:0}6%{opacity:1}25%{transform:translate(46px,calc(var(--fall)*.25)) rotate(130deg)}50%{transform:translate(-8px,calc(var(--fall)*.5)) rotate(240deg)}75%{transform:translate(70px,calc(var(--fall)*.76)) rotate(320deg)}94%{opacity:1}100%{transform:translate(40px,var(--fall)) rotate(400deg);opacity:0}}
+  .stp .flame{animation:stpflame 2.8s ease-in-out infinite}
+  @keyframes stpflame{0%,100%{filter:brightness(1)}40%{filter:brightness(1.18)}60%{filter:brightness(.92)}}
+  .stp .glow{transform-box:fill-box;transform-origin:center;animation:stpglow 3.6s ease-in-out infinite}
+  @keyframes stpglow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  .stp .rainfall{animation:stprain .42s linear infinite}
+  @keyframes stprain{from{transform:translate(0,0)}to{transform:translate(-19px,64px)}}
+  .stp .splash{transform-box:fill-box;transform-origin:center;animation:stpsplash 1.1s ease-out infinite}
+  .stp .sp1{animation-delay:-.3s} .stp .sp2{animation-delay:-.6s;animation-duration:1.3s} .stp .sp3{animation-delay:-.85s}
+  @keyframes stpsplash{0%{transform:scale(.2);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+  .stp .pig-head{transform-box:fill-box;transform-origin:15% 90%;animation:stppeck 4.2s ease-in-out infinite}
+  .stp .ph1{animation-delay:-1.4s;animation-duration:5.1s} .stp .ph2{animation-delay:-2.9s;animation-duration:3.6s}
+  @keyframes stppeck{0%,58%,100%{transform:rotate(0)}66%{transform:rotate(40deg) translate(1px,3px)}74%{transform:rotate(0)}82%{transform:rotate(38deg) translate(1px,3px)}90%{transform:rotate(0)}}
+  .stp .pig-walk{animation:stpwalk 15s ease-in-out infinite} .stp .pw1{animation-duration:19s;animation-delay:-7s} .stp .pw2{animation-duration:23s;animation-delay:-12s}
+  @keyframes stpwalk{0%,100%{transform:translateX(0)}40%,52%{transform:translateX(28px)}}
+  .stp .ripple{transform-box:fill-box;transform-origin:center;animation:stpsplash 1.6s ease-out infinite}
+}
