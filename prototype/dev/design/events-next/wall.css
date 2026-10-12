@@ -3336,12 +3336,13 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
     }
 }
 
-/* The date leads the search row, so its calendar opens from its left. */
+/* The date leads the search row, so its calendar opens from its left (on
+   a phone too: opened from its right it ran off the screen's left edge). */
+.event-search-row #event-calendar-panel {
+    left: 0;
+    right: auto;
+}
 @media (min-width: 1000px) {
-    .event-search-row #event-calendar-panel {
-        left: 0;
-        right: auto;
-    }
     /* The search keeps room to type next to the date. */
     main[data-view='wall'] .event-gallery-head {
         min-width: 440px;
@@ -3385,6 +3386,23 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
 }
 .pp.is-lifted {
     visibility: hidden;
+}
+/* A lifted card zoomed below 1 (a small or turned phone) keeps 44px on
+   screen to tap each button, no wider than the gap between them. */
+.pp-lift :is(.pp-back-plan, .pp-back-save, .pp-back-more, .pp-turn-back) {
+    position: relative;
+}
+.pp-lift :is(.pp-back-plan, .pp-back-save, .pp-back-more, .pp-turn-back)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, min(44px / var(--lift-zoom, 1), 100% + 8px));
+    height: max(100%, 44px / var(--lift-zoom, 1));
+    translate: -50% -50%;
+}
+.pp-lift .pp-turn-back::after {
+    width: max(100%, 44px / var(--lift-zoom, 1));
 }
 @media (prefers-reduced-motion: no-preference) {
     .pp-lift-backdrop {
@@ -3432,6 +3450,19 @@ main[data-view='wall'] #event-featured {
     overflow: visible;
     background: none;
     scroll-snap-type: none;
+}
+/* The street's small buttons keep 44px on screen to tap, however far the
+   street is scaled down; on a poster the area keeps to the poster
+   (street.js sets --hit-w, --hit-h and the shift, --hit-x and --hit-y). */
+#main .st-root .st-card button[style*='--hit-w']::after {
+    content: '';
+    position: absolute;
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: var(--hit-w);
+    height: var(--hit-h);
+    translate: calc(-50% + var(--hit-x, 0px)) calc(-50% + var(--hit-y, 0px));
 }
 /* An hour's story ring shows its first poster's picture. */
 .st-art {

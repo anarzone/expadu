@@ -5,6 +5,23 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Phones and tablets: taps and the calendar — 13 October 2026
+
+Checked at 320, 360, 375, 390, 414 and 430px wide, turned too, and at
+768px: the page never scrolls sideways, and the lifted card and the
+full-screen sheet fit every phone.
+
+- **The date's calendar** opened from the date's right edge and ran
+  130–170px off a phone's left edge, hiding Monday to Wednesday and
+  Week/Month. It opens from its left on every screen, as on a desktop.
+- **Small buttons on the street.** The street is scaled to the screen (the
+  column's posters twice), so a poster's Save and Plan were 12–37px on a
+  phone and Earlier/Later 24px on a tablet. Each now has an invisible
+  area of 44px on screen round it, kept on its poster and no wider than
+  the gap to its neighbour; the page and column dots are as tall or wide
+  as their spacing allows. The lifted card's buttons keep 44px when the
+  card is zoomed below 1.
+
 ## The street no longer stutters — 13 October 2026
 
 Owner report: the street's animations lagged. Three of its moving groups

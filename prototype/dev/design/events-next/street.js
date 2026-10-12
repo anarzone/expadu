@@ -220,6 +220,57 @@
         pictures.set(key, made);
         return made;
     }
+    // ---------- Touch targets ----------
+    // The street is drawn at the board's size and scaled to the screen, and
+    // the column's posters are scaled again, so its small buttons (a
+    // poster's Save and Plan, the arrows, the dots) can end up 12–37px on a
+    // phone. Each gets an invisible area of at least 44px on screen round it
+    // (--hit-w/--hit-h, wall.css), no wider than the gap to its neighbour.
+    function sizeHits(card) {
+        const buttons = [...card.querySelectorAll('button:not(.pp-open)')].filter(
+            (b) => b.offsetWidth && b.getClientRects().length && !b.closest('[inert], [aria-hidden="true"]'),
+        );
+        const rects = new Map(buttons.map((b) => [b, b.getBoundingClientRect()]));
+        for (const b of buttons) {
+            const r = rects.get(b);
+            const kx = r.width / b.offsetWidth,
+                ky = r.height / b.offsetHeight;
+            // A column face turned to the side keeps its own size.
+            if (!kx || !ky || Math.abs(kx / ky - 1) > 0.15 || (r.width >= 46 && r.height >= 46)) {
+                for (const v of ['--hit-w', '--hit-h', '--hit-x', '--hit-y']) b.style.removeProperty(v);
+                continue;
+            }
+            // 46: a hair over 44, for the posters' slight tilt.
+            let w = 46,
+                h = 46;
+            for (const o of buttons) {
+                if (o === b || o.parentNode !== b.parentNode) continue;
+                const q = rects.get(o);
+                const dx = Math.abs(q.left + q.width / 2 - (r.left + r.width / 2)),
+                    dy = Math.abs(q.top + q.height / 2 - (r.top + r.height / 2));
+                if (q.top < r.bottom && r.top < q.bottom) w = Math.min(w, dx);
+                if (q.left < r.right && r.left < q.right) h = Math.min(h, dy);
+            }
+            w = Math.max(r.width, w);
+            h = Math.max(r.height, h);
+            // On a poster, the area stays on the poster (its edge clips it).
+            let dx = 0,
+                dy = 0;
+            const pp = b.closest('.pp')?.getBoundingClientRect();
+            if (pp && pp.width >= w && pp.height >= h) {
+                const cx = r.left + r.width / 2,
+                    cy = r.top + r.height / 2;
+                dx = Math.max(pp.left - (cx - w / 2), Math.min(0, pp.right - (cx + w / 2)));
+                dy = Math.max(pp.top - (cy - h / 2), Math.min(0, pp.bottom - (cy + h / 2)));
+            }
+            if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
+            b.style.setProperty('--hit-w', `${(w / kx).toFixed(1)}px`);
+            b.style.setProperty('--hit-h', `${(h / ky).toFixed(1)}px`);
+            b.style.setProperty('--hit-x', `${(dx / kx).toFixed(1)}px`);
+            b.style.setProperty('--hit-y', `${(dy / ky).toFixed(1)}px`);
+        }
+    }
+
     function flattener(card) {
         let queued = false,
             running = false,
@@ -257,7 +308,9 @@
         }
         async function pass() {
             const sel = movingSelector();
-            if (!sel || !card.isConnected) return;
+            if (!card.isConnected) return;
+            sizeHits(card);
+            if (!sel) return;
             const groups = [...card.querySelectorAll('g[data-s][class], [data-s] g[class]')].filter((g) => g.matches(sel));
             for (const [i, g] of groups.entries()) {
                 if (!g.isConnected) continue;

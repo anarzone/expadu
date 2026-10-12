@@ -485,7 +485,8 @@ const inside = (box, viewport) =>
                 return {
                     filters: Math.max(
                         ...[...document.querySelectorAll('.event-discovery :is(button, input)')]
-                            .filter((el) => el.offsetParent)
+                            // Shown only: the closed calendar is laid out but hidden.
+                            .filter((el) => el.offsetParent && getComputedStyle(el).visibility !== 'hidden')
                             .flatMap((el) =>
                                 el.tagName === 'INPUT' || el.getBoundingClientRect().width <= 64
                                     ? [el]
