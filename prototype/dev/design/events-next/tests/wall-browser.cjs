@@ -147,7 +147,8 @@ const inside = (box, viewport) =>
             // over): the page starts with the poster as its header, the page
             // doesn't widen, and Escape closes it.
             const poster = page.locator('.st-root .wall-day > .pp').first();
-            assert.match(await poster.locator('.pp-open').getAttribute('aria-label'), /Open details/);
+            // The page names it once the posters are marked (a frame after drawing).
+            await page.waitForFunction(() => /Open details/.test(document.querySelector('.st-root .wall-day > .pp .pp-open')?.getAttribute('aria-label') || ''));
             await poster.locator('.pp-open').click();
             await page.waitForSelector('#shared-dialog[open] .event-hero');
             await page.waitForTimeout(500);
@@ -384,7 +385,7 @@ const inside = (box, viewport) =>
             assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed\s+Admission, language/i);
             assert.deepEqual(
                 await sheet.locator('.event-facts .event-row-label').allInnerTexts(),
-                ['WHERE', 'WHEN', 'WHEN TO ARRIVE', 'NOT LISTED'],
+                ['WHERE · GET THERE', 'WHEN', 'WHEN TO ARRIVE', 'NOT LISTED'],
             );
             assert.match(await sheet.locator('.event-facts .event-row').nth(1).innerText(), /Wed 30 Sept · 20:00–22:00/);
             assert.match(await sheet.locator('.event-about').innerText(), /^About\s/i);
