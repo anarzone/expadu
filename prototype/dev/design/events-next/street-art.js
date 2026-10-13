@@ -81,7 +81,7 @@
   <div style="position:absolute;inset:0;filter:brightness(${h.e(v.k?.["objB"])});transition:filter 1.2s"><svg width="300" height="740" viewbox="0 0 300 740" aria-hidden="true" style="width:300px;height:740px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;position:absolute;left:0;top:0;overflow:visible" data-s="17">${h.s(17)}</svg></div>
   <div data-col-drum="" data-on-pointerenter="${h.on(v.hold)}" data-on-pointerleave="${h.on(v.release)}" style="position:absolute;left:18px;top:124px;width:264px;height:324px;overflow:hidden;background:#d8ccb0;filter:brightness(${h.e(v.k?.["posterB"])});transition:filter 1.2s">
     <div class="wall-board" style="display:contents"><div class="wall-column" style="display:contents"><div style="position:absolute;left:0;top:0;height:100%;width:2000px;${h.e(v.colStyle)}">
-      ${(v.strip || []).map((q, $index) => `<div class="st-face" style="position:absolute;top:4px;left:${h.e(q?.["sx"])}px;width:${h.e(q?.["sw"])}px;height:${h.e(q?.["h"])}px;overflow:hidden;backface-visibility:hidden;transform:${h.e(q?.["tf"])};pointer-events:${h.e(q?.["pe"])}"><div style="position:absolute;top:0;left:${h.e(q?.["off"])}px;width:${h.e(q?.["w"])}px">${h.poster(q, "column")}</div></div>`).join(``)}
+      ${(v.strip || []).map((q, $index) => `<div class="st-face" style="position:absolute;top:4px;left:${h.e(q?.["sx"])}px;width:${h.e(q?.["sw"])}px;height:${h.e(q?.["h"])}px;overflow:hidden;backface-visibility:hidden;transform:${h.e(q?.["tf"])};pointer-events:${h.e(q?.["pe"])};display:${h.e(q?.["disp"])}"><div style="position:absolute;top:0;left:${h.e(q?.["off"])}px;width:${h.e(q?.["w"])}px">${h.poster(q, "column")}</div></div>`).join(``)}
     </div></div></div>
     <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.24) 0%,rgba(0,0,0,.06) 11%,rgba(255,255,255,.12) 33%,rgba(255,255,255,0) 47%,rgba(0,0,0,.03) 74%,rgba(0,0,0,.22) 100%)"></div>
     <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 42% 45%,rgba(255,226,170,.55),rgba(255,200,120,.12) 60%,transparent 75%);mix-blend-mode:screen;opacity:${h.e(v.k?.["colGlow"])};transition:opacity 1.2s"></div>
@@ -213,7 +213,7 @@
   <div style="position:absolute;inset:0;filter:brightness(${h.e(v.k?.["objB"])});transition:filter 1.2s"><svg width="300" height="740" viewbox="0 0 300 740" aria-hidden="true" style="width:300px;height:740px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;position:absolute;left:0;top:0;overflow:visible" data-s="42">${h.s(42)}</svg></div>
   <div data-col-drum="" data-on-pointerenter="${h.on(v.hold)}" data-on-pointerleave="${h.on(v.release)}" style="position:absolute;left:18px;top:124px;width:264px;height:518px;overflow:hidden;background:#d8ccb0;filter:brightness(${h.e(v.k?.["posterB"])});transition:filter 1.2s">
     <div class="wall-board" style="display:contents"><div class="wall-column" style="display:contents"><div style="position:absolute;left:0;top:0;height:100%;width:2000px;${h.e(v.colStyle)}">
-      ${(v.strip || []).map((q, $index) => `<div class="st-face" style="position:absolute;top:4px;left:${h.e(q?.["sx"])}px;width:${h.e(q?.["sw"])}px;height:${h.e(q?.["h"])}px;overflow:hidden;backface-visibility:hidden;transform:${h.e(q?.["tf"])};pointer-events:${h.e(q?.["pe"])}"><div style="position:absolute;top:0;left:${h.e(q?.["off"])}px;width:${h.e(q?.["w"])}px">${h.poster(q, "column")}</div></div>`).join(``)}
+      ${(v.strip || []).map((q, $index) => `<div class="st-face" style="position:absolute;top:4px;left:${h.e(q?.["sx"])}px;width:${h.e(q?.["sw"])}px;height:${h.e(q?.["h"])}px;overflow:hidden;backface-visibility:hidden;transform:${h.e(q?.["tf"])};pointer-events:${h.e(q?.["pe"])};display:${h.e(q?.["disp"])}"><div style="position:absolute;top:0;left:${h.e(q?.["off"])}px;width:${h.e(q?.["w"])}px">${h.poster(q, "column")}</div></div>`).join(``)}
     </div></div></div>
     <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.24) 0%,rgba(0,0,0,.06) 11%,rgba(255,255,255,.12) 33%,rgba(255,255,255,0) 47%,rgba(0,0,0,.03) 74%,rgba(0,0,0,.22) 100%)"></div>
     <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 42% 45%,rgba(255,226,170,.55),rgba(255,200,120,.12) 60%,transparent 75%);mix-blend-mode:screen;opacity:${h.e(v.k?.["colGlow"])};transition:opacity 1.2s"></div>
@@ -311,10 +311,14 @@
       // stopped: redrawing them as it starts made the turn stutter.
       const P = c.col.pitch, R = (5 * P) / (2 * Math.PI), to = pos + dir;
       const ms = done && done.snap ? 520 : 1100;
+      turning.querySelectorAll('.st-face').forEach((f) => (f.style.display = 'block'));
       turning.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.65,0,0.35,1)';
       turning.style.transform = 'perspective(' + c.col.depth + 'px) translateZ(' + (-R).toFixed(3) + 'px) rotateY(' + ((-to * P / R) * 180 / Math.PI).toFixed(3) + 'deg)';
       clearTimeout(this._snap);
-      this._snap = setTimeout(() => this.setState(Object.assign({}, done, { pos: ((to % N) + N) % N, anim: false })), ms);
+      // The drum keeps counting (no wrapping back to the first poster):
+      // each face keeps its poster, so nothing in view is redrawn; only
+      // the face out of sight behind takes the next poster.
+      this._snap = setTimeout(() => this.setState(Object.assign({}, done, { pos: to, anim: false })), ms);
       return;
     }
     const end = Object.assign({ anim: true }, done);
@@ -493,6 +497,7 @@
       // on every move (the next draw puts it where the state says).
       const turning = col.drum && d.drum && d.drum.querySelector('[style*="preserve-3d"]');
       if (turning) {
+        if (!d.shown) { turning.querySelectorAll('.st-face').forEach((f) => (f.style.display = 'block')); d.shown = true; }
         const R = (5 * pitch) / (2 * Math.PI), pos = (this.state && this.state.pos) || 0;
         const turn = (-(pos * pitch - d.dx) / R) * (180 / Math.PI);
         turning.style.transition = 'none';
@@ -670,14 +675,15 @@
       const sw = P / S, chord = 2 * R * Math.tan(Math.PI / 5 / S) + 0.6;
       for (let j = 0; j < 5; j++) {
         const m = (((j - s.pos) % 5) + 5) % 5, d = m > 2 ? m - 5 : m;
-        // A small drum (a phone's) draws only the posters you can see.
-        if (Math.abs(d) > (c.col.reach == null ? 2 : c.col.reach)) continue;
+        // A small drum (a phone's) keeps the faces out of sight behind it,
+        // but doesn't draw them until it turns.
+        const away = Math.abs(d) > (c.col.reach == null ? 2 : c.col.reach);
         const e = tonight[(((s.pos + d) % N) + N) % N];
         for (let k = 0; k < S; k++) {
           const a = j * 72 + (k + 0.5 - S / 2) * (72 / S);
           strip.push(dress(e, {
             sx: r3((c.col.win - chord) / 2), sw: r3(chord), off: r3(chord / 2 - (k + 0.5) * sw), w: c.col.pw, h: c.col.ph,
-            tf: 'rotateY(' + r3(a) + 'deg) translateZ(' + r3(R) + 'px)', pe: Math.abs(d) <= 1 ? 'auto' : 'none',
+            tf: 'rotateY(' + r3(a) + 'deg) translateZ(' + r3(R) + 'px)', pe: Math.abs(d) <= 1 ? 'auto' : 'none', disp: away ? 'none' : 'block',
           }));
         }
       }
@@ -692,8 +698,8 @@
       }
       colStyle = 'transform: translateX(' + (c.col.inset - s.pos * c.col.pitch + (s.colDrag || 0)) + 'px); ' + ease;
     }
-    const current = s.pos % N;
-    const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => this.setState({ pos: i, anim: true, snap: false }) }));
+    const current = (((s.pos || 0) % N) + N) % N;
+    const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => this.setState({ pos: (s.pos || 0) + ((i - current + N) % N), anim: true, snap: false }) }));
     const ruler = [];
     for (let h = 8; h <= 23; h++) {
       const on = visibleHours.indexOf(h) >= 0;

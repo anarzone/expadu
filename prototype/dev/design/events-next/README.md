@@ -25,8 +25,11 @@ version (desktop, and a phone slowed four times):
 - The big moving groups wait, still, until each is one picture.
 - The wide street's cobbles are one stretch of setts repeated, and it is
   drawn up to 2240 across (2560 before).
-- A phone's drum draws only the three posters you can see, in three
-  slices each, and every drum turns before its posters are redrawn.
+- A phone's drum bends its posters in three slices and keeps the faces
+  behind it hidden until it turns; every drum turns before it is redrawn,
+  and keeps counting as it turns, so each face keeps its poster and
+  nothing in view redraws when a turn ends (it used to, owner: "renders
+  twice").
 
 ## The whole day on one wall — 13 October 2026
 

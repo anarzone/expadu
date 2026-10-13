@@ -80,10 +80,14 @@ class Component extends DCLogic {
       // stopped: redrawing them as it starts made the turn stutter.
       const P = c.col.pitch, R = (5 * P) / (2 * Math.PI), to = pos + dir;
       const ms = done && done.snap ? 520 : 1100;
+      turning.querySelectorAll('.st-face').forEach((f) => (f.style.display = 'block'));
       turning.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.65,0,0.35,1)';
       turning.style.transform = 'perspective(' + c.col.depth + 'px) translateZ(' + (-R).toFixed(3) + 'px) rotateY(' + ((-to * P / R) * 180 / Math.PI).toFixed(3) + 'deg)';
       clearTimeout(this._snap);
-      this._snap = setTimeout(() => this.setState(Object.assign({}, done, { pos: ((to % N) + N) % N, anim: false })), ms);
+      // The drum keeps counting (no wrapping back to the first poster):
+      // each face keeps its poster, so nothing in view is redrawn; only
+      // the face out of sight behind takes the next poster.
+      this._snap = setTimeout(() => this.setState(Object.assign({}, done, { pos: to, anim: false })), ms);
       return;
     }
     const end = Object.assign({ anim: true }, done);
@@ -262,6 +266,7 @@ class Component extends DCLogic {
       // on every move (the next draw puts it where the state says).
       const turning = col.drum && d.drum && d.drum.querySelector('[style*="preserve-3d"]');
       if (turning) {
+        if (!d.shown) { turning.querySelectorAll('.st-face').forEach((f) => (f.style.display = 'block')); d.shown = true; }
         const R = (5 * pitch) / (2 * Math.PI), pos = (this.state && this.state.pos) || 0;
         const turn = (-(pos * pitch - d.dx) / R) * (180 / Math.PI);
         turning.style.transition = 'none';
@@ -439,14 +444,15 @@ class Component extends DCLogic {
       const sw = P / S, chord = 2 * R * Math.tan(Math.PI / 5 / S) + 0.6;
       for (let j = 0; j < 5; j++) {
         const m = (((j - s.pos) % 5) + 5) % 5, d = m > 2 ? m - 5 : m;
-        // A small drum (a phone's) draws only the posters you can see.
-        if (Math.abs(d) > (c.col.reach == null ? 2 : c.col.reach)) continue;
+        // A small drum (a phone's) keeps the faces out of sight behind it,
+        // but doesn't draw them until it turns.
+        const away = Math.abs(d) > (c.col.reach == null ? 2 : c.col.reach);
         const e = tonight[(((s.pos + d) % N) + N) % N];
         for (let k = 0; k < S; k++) {
           const a = j * 72 + (k + 0.5 - S / 2) * (72 / S);
           strip.push(dress(e, {
             sx: r3((c.col.win - chord) / 2), sw: r3(chord), off: r3(chord / 2 - (k + 0.5) * sw), w: c.col.pw, h: c.col.ph,
-            tf: 'rotateY(' + r3(a) + 'deg) translateZ(' + r3(R) + 'px)', pe: Math.abs(d) <= 1 ? 'auto' : 'none',
+            tf: 'rotateY(' + r3(a) + 'deg) translateZ(' + r3(R) + 'px)', pe: Math.abs(d) <= 1 ? 'auto' : 'none', disp: away ? 'none' : 'block',
           }));
         }
       }
@@ -461,8 +467,8 @@ class Component extends DCLogic {
       }
       colStyle = 'transform: translateX(' + (c.col.inset - s.pos * c.col.pitch + (s.colDrag || 0)) + 'px); ' + ease;
     }
-    const current = s.pos % N;
-    const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => this.setState({ pos: i, anim: true, snap: false }) }));
+    const current = (((s.pos || 0) % N) + N) % N;
+    const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => this.setState({ pos: (s.pos || 0) + ((i - current + N) % N), anim: true, snap: false }) }));
     const ruler = [];
     for (let h = 8; h <= 23; h++) {
       const on = visibleHours.indexOf(h) >= 0;
@@ -574,7 +580,7 @@ def column(p, s=1.0, mx=False, phone=False):
     if mx == 'mock':
         chain_o = '<div class="wall-board" style="display:contents"><div class="wall-column" style="display:contents">'
         chain_c = '</div></div>'
-        strip_html = (f'''      <sc-for list="{H('strip')}" as="q" hint-placeholder-count="3"><div class="st-face" style="position:absolute;top:4px;left:{H('q.sx')}px;width:{H('q.sw')}px;height:{H('q.h')}px;overflow:hidden;backface-visibility:hidden;transform:{H('q.tf')};pointer-events:{H('q.pe')}">'''
+        strip_html = (f'''      <sc-for list="{H('strip')}" as="q" hint-placeholder-count="3"><div class="st-face" style="position:absolute;top:4px;left:{H('q.sx')}px;width:{H('q.sw')}px;height:{H('q.h')}px;overflow:hidden;backface-visibility:hidden;transform:{H('q.tf')};pointer-events:{H('q.pe')};display:{H('q.disp')}">'''
                       f'''<div style="position:absolute;top:0;left:{H('q.off')}px;width:{H('q.w')}px"><mx-poster v="q" where="column"></mx-poster></div></div></sc-for>''')
     elif mx:
         import mx as MX
