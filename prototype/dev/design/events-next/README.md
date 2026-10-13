@@ -17,8 +17,8 @@ times it runs as smoothly as the flat column did.
 
 ## The column rolls under your finger, without dark edges — 13 October 2026
 
-Owner request. A drag that starts on the advertising column now rolls the
-column (it follows the finger, then settles on the next or previous
+Owner request. A drag that starts anywhere on the advertising column (its
+posters, the old ones below, the lamps, the dome) now rolls the column (it follows the finger, then settles on the next or previous
 poster; a short drag springs back) instead of moving the wall's posters,
 and the timed roll waits its full six seconds after it. The column's
 posters wrap round the drum edge to edge, so the neighbours show at its

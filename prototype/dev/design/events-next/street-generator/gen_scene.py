@@ -212,9 +212,11 @@ class Component extends DCLogic {
     };
   }
   down(e) {
-    // A drag that starts on the column's drum rolls the column; anywhere
-    // else it moves the wall's posters.
-    const drum = e.target && e.target.closest ? e.target.closest('[data-col-drum]') : null;
+    // A drag that starts anywhere on the column (its posters, the old
+    // ones below, the lamps, the dome) rolls the column; anywhere else it
+    // moves the wall's posters.
+    const column = e.target && e.target.closest ? e.target.closest('[data-col]') : null;
+    const drum = column ? column.querySelector('[data-col-drum]') : null;
     // The column can be drawn smaller (a phone's is scaled down).
     const scaled = drum && drum.closest('[style*="scale("]');
     const k = scaled ? parseFloat((scaled.style.transform.match(/scale\(([\d.]+)/) || [])[1]) || 1 : 1;
@@ -716,7 +718,7 @@ def card(cfg):
   <g style="opacity:{H('k.leaves')};transition:opacity 1.2s">{A.falling_leaves(*fs['leaves'])}</g>
 </svg>'''
     cx, cy, cs = cfg['column']
-    col = f'<div style="position:absolute;left:{cx}px;top:{cy}px;width:{300 * cs:.0f}px;height:{740 * cs:.0f}px">{column(p + "c", cs, mx=(cfg.get('mx') if cfg.get('mx') == 'mock' else bool(cfg.get('mx'))), phone=phone)}</div>'
+    col = f'<div data-col style="position:absolute;left:{cx}px;top:{cy}px;width:{300 * cs:.0f}px;height:{740 * cs:.0f}px">{column(p + "c", cs, mx=(cfg.get('mx') if cfg.get('mx') == 'mock' else bool(cfg.get('mx'))), phone=phone)}</div>'
     if fs.get('bikeFront'):
         front_bike = ''
     rainl = f'''<svg width="{W}" height="{Hc}" viewBox="0 0 {W} {Hc}" aria-hidden="true" style="position:absolute;left:0;top:0;pointer-events:none;opacity:{H('k.rain')};transition:opacity 1.2s">

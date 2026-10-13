@@ -77,7 +77,7 @@
     <div style="position:absolute;inset:0;background:linear-gradient(155deg,rgba(255,244,214,.9),rgba(255,244,214,0) 55%);mix-blend-mode:soft-light;opacity:${h.e(v.k?.["sunWash"])};transition:opacity 1.2s"></div>
     <div style="position:absolute;inset:0;background:radial-gradient(circle at 86px 82px,rgba(255,206,130,.75),rgba(255,178,90,.25) 154px,rgba(255,170,80,0) 440px);mix-blend-mode:screen;opacity:${h.e(v.k?.["lamp"])};transition:opacity 1.2s"></div>
   </div>
-  <div style="position:absolute;left:146px;top:194px;width:300px;height:740px"><div style="position:absolute;width:300px;height:740px;transform:scale(1.0);transform-origin:0 0">
+  <div data-col="" style="position:absolute;left:146px;top:194px;width:300px;height:740px"><div style="position:absolute;width:300px;height:740px;transform:scale(1.0);transform-origin:0 0">
   <div style="position:absolute;inset:0;filter:brightness(${h.e(v.k?.["objB"])});transition:filter 1.2s"><svg width="300" height="740" viewbox="0 0 300 740" aria-hidden="true" style="width:300px;height:740px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;position:absolute;left:0;top:0;overflow:visible" data-s="17">${h.s(17)}</svg></div>
   <div data-col-drum="" data-on-pointerenter="${h.on(v.hold)}" data-on-pointerleave="${h.on(v.release)}" style="position:absolute;left:18px;top:124px;width:264px;height:324px;overflow:hidden;background:#d8ccb0;filter:brightness(${h.e(v.k?.["posterB"])});transition:filter 1.2s">
     <div class="wall-board" style="display:contents"><div class="wall-column" style="display:contents"><div style="position:absolute;left:0;top:0;height:100%;width:2000px;${h.e(v.colStyle)}">
@@ -211,7 +211,7 @@
     <div style="position:absolute;inset:0;background:linear-gradient(155deg,rgba(255,244,214,.9),rgba(255,244,214,0) 55%);mix-blend-mode:soft-light;opacity:${h.e(v.k?.["sunWash"])};transition:opacity 1.2s"></div>
     <div style="position:absolute;inset:0;background:radial-gradient(circle at 14px 36px,rgba(255,206,130,.75),rgba(255,178,90,.25) 70px,rgba(255,170,80,0) 200px);mix-blend-mode:screen;opacity:${h.e(v.k?.["lamp"])};transition:opacity 1.2s"></div>
   </div>
-  <div style="position:absolute;left:18px;top:200px;width:146px;height:359px"><div style="position:absolute;width:300px;height:740px;transform:scale(0.485);transform-origin:0 0">
+  <div data-col="" style="position:absolute;left:18px;top:200px;width:146px;height:359px"><div style="position:absolute;width:300px;height:740px;transform:scale(0.485);transform-origin:0 0">
   <div style="position:absolute;inset:0;filter:brightness(${h.e(v.k?.["objB"])});transition:filter 1.2s"><svg width="300" height="740" viewbox="0 0 300 740" aria-hidden="true" style="width:300px;height:740px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;position:absolute;left:0;top:0;overflow:visible" data-s="42">${h.s(42)}</svg></div>
   <div data-col-drum="" data-on-pointerenter="${h.on(v.hold)}" data-on-pointerleave="${h.on(v.release)}" style="position:absolute;left:18px;top:124px;width:264px;height:518px;overflow:hidden;background:#d8ccb0;filter:brightness(${h.e(v.k?.["posterB"])});transition:filter 1.2s">
     <div class="wall-board" style="display:contents"><div class="wall-column" style="display:contents"><div style="position:absolute;left:0;top:0;height:100%;width:2000px;${h.e(v.colStyle)}">
@@ -445,9 +445,11 @@
     };
   }
   down(e) {
-    // A drag that starts on the column's drum rolls the column; anywhere
-    // else it moves the wall's posters.
-    const drum = e.target && e.target.closest ? e.target.closest('[data-col-drum]') : null;
+    // A drag that starts anywhere on the column (its posters, the old
+    // ones below, the lamps, the dome) rolls the column; anywhere else it
+    // moves the wall's posters.
+    const column = e.target && e.target.closest ? e.target.closest('[data-col]') : null;
+    const drum = column ? column.querySelector('[data-col-drum]') : null;
     // The column can be drawn smaller (a phone's is scaled down).
     const scaled = drum && drum.closest('[style*="scale("]');
     const k = scaled ? parseFloat((scaled.style.transform.match(/scale\(([\d.]+)/) || [])[1]) || 1 : 1;
