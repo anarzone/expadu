@@ -246,6 +246,7 @@ def parts(phone):
         # wide as the screen's shape allows; the wider wall has its own
         # patches, scraps and puddles.
         base.update(
+            oneWall=True,
             W0=base['W'], W=WIDE,
             holes=base['holes'] + [(1560, 704, 58, 34), (1904, 846, 66, 20), (2290, 640, 50, 38)],
             scraps=base['scraps'] + [(1500, 780, 112, 62, '#9db4c0', -2), (1760, 268, 96, 70, '#d9a8a8', 2), (2120, 300, 104, 58, '#e8c66a', -1)],
@@ -275,7 +276,7 @@ def parts(phone):
         assert story.count('; top:520px; z-index:41') == 2
         story = story.replace('; top:520px; z-index:41', '; position: fixed; top:calc(50vh - 24px); z-index:59')
     jc = {k: base[k] for k in ('phone', 'mode', 'W', 'SKY') if k in base}
-    jc.update({k: base[k] for k in ('zoneW', 'bayW', 'px', 'pw', 'ph', 'rows', 'per', 'cols', 'pool', 'stepBays', 'spots', 'nowPill', 'vertical', 'pageH') if k in base})
+    jc.update({k: base[k] for k in ('zoneW', 'bayW', 'px', 'pw', 'ph', 'rows', 'per', 'cols', 'pool', 'stepBays', 'spots', 'nowPill', 'vertical', 'pageH', 'oneWall') if k in base})
     jc['col'] = {'pitch': 264, 'pw': 264, 'ph': 515, 'inset': 0} if phone else {'pitch': 205, 'pw': 205, 'ph': 316, 'inset': 29.5}
     # The page's drum is round: its posters bend round it (gen_scene).
     jc['col'].update(drum=True, win=264, slices=4, depth=1600 if phone else 1400)

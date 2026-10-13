@@ -5,6 +5,17 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The whole day on one wall — 13 October 2026
+
+Owner request: no arrows. On a desktop the wall shows the whole day at
+once: the day's hours share out its width, spread out on a quiet day;
+on a day with more hours than fit, their posters overlap like posters
+pasted over each other, and the one you point at comes to the front.
+The wall's posters no longer drag (there is nowhere to go), "Back to
+now" is gone, and an hour with more posters than its two spots shows
+"+N more", which opens that hour's stories. Phones keep paging up and
+down.
+
 ## A round drum on the column — 13 October 2026
 
 Owner request ("a proper 3D shape, not flat"). The column's drum is a

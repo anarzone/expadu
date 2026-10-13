@@ -70,6 +70,15 @@ LOGIC = r'''
     const c = this.cfg();
     const { ev } = this.events();
     const hours = Array.from(new Set(ev.filter((e) => this.match(e)).map((e) => e.h))).sort((a, b) => a - b);
+    if (c.oneWall) {
+      // The whole day on one wall (owner, 13 Oct 2026): the hours share
+      // it out; when more hours than fit, their posters overlap, the last
+      // one ending at the wall's end.
+      const n = hours.length, fits = n * c.bayW <= c.zoneW;
+      const step = fits ? c.zoneW / Math.max(1, n) : (c.zoneW - c.bayW) / Math.max(1, n - 1);
+      this._total = c.zoneW;
+      return hours.map((h, i) => ({ h, w: c.bayW, x: Math.round(fits ? i * step + (step - c.bayW) / 2 : i * step) }));
+    }
     let x = 0;
     const list = hours.map((h) => { const it = { h, w: c.bayW, x }; x += c.bayW; return it; });
     this._total = x;

@@ -218,7 +218,8 @@ class Component extends DCLogic {
     // does nothing (owner, 13 Oct 2026).
     const at = (sel) => (e.target && e.target.closest ? e.target.closest(sel) : null);
     const column = at('[data-col]');
-    if (!column && !at('[data-wall-zone]')) { this._d = null; return; }
+    // On one wall the whole day is in view: its posters don't move.
+    if (!column && (this.cfg().oneWall || !at('[data-wall-zone]'))) { this._d = null; return; }
     const drum = column ? column.querySelector('[data-col-drum]') : null;
     // The column can be drawn smaller (a phone's is scaled down).
     const scaled = drum && drum.closest('[style*="scale("]');
@@ -379,7 +380,9 @@ class Component extends DCLogic {
         return Object.assign({}, it, {
           label: two(it.h) + ':00', isNow: it.h === 13 && c.nowPill !== false, op: it.h < 13 ? 0.72 : 1, posters,
           empty: posters.length === 0, emptyLabel: 'Nothing at ' + two(it.h) + ':00 matches',
-          hasMore: more > 0, moreLabel: '+' + more + ' more', moreHref: '#g' + it.h, more: openHour(it.h),
+          hasMore: more > 0, moreLabel: '+' + more + ' more', moreHref: c.oneWall ? '#' : '#g' + it.h,
+          // On one wall, "+N more" opens the hour's stories.
+          more: c.oneWall ? (ev2) => { if (ev2 && ev2.preventDefault) ev2.preventDefault(); const seen = Object.assign({}, s.seen); seen[it.h] = true; this.setState({ story: { h: it.h, i: 0, t: Date.now() }, seen, sel: 0, stPause: false }); } : openHour(it.h),
         });
       });
       const settledFirst = its.find((it) => it.x >= this.offset() - 1);
@@ -685,7 +688,7 @@ def card(cfg):
         posters = f'''<div data-wall-zone style="position:absolute;left:{zone_l}px;{zone_x};top:{TOP}px;bottom:{Hc - BASE}px;overflow:hidden">
     <div style="position:absolute;left:0;top:{-TOP}px;height:{Hc}px;width:5000px;{H('stripStyle')}">
       {chain_o}<sc-for list="{H('bays')}" as="b" hint-placeholder-count="3">
-        <div style="position:absolute;top:0;bottom:0;left:{H('b.x')}px;width:{H('b.w')}px;opacity:{H('b.op')}">
+        <div class="st-bay" style="position:absolute;top:0;bottom:0;left:{H('b.x')}px;width:{H('b.w')}px;opacity:{H('b.op')}">
           <span style="position:absolute;left:12px;top:{cfg['labelY']}px;{chip}">{H('b.label')}</span>
           <sc-if value="{H('b.isNow')}" hint-placeholder-val="{{{{ false }}}}"><span style="position:absolute;left:82px;top:{cfg['labelY']}px;display:flex;align-items:center;height:26px;padding:0 9px;border-radius:999px;background:#c23b0e;color:#fff;font-size:12px;font-weight:700">Now 13:10</span></sc-if>
           <sc-if value="{H('b.hasMore')}" hint-placeholder-val="{{{{ false }}}}"><a href="{H('b.moreHref')}" onClick="{H('b.more')}" style="position:absolute;{('left:%dpx;top:%dpx;' % cfg['moreAt']) if cfg.get('moreAt') else ('right:%dpx;top:%dpx;' % (6 if phone else 16, cfg['labelY']))}display:flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;background:#fff6c9;color:#211d15;font-size:12.5px;font-weight:700;text-decoration:none;box-shadow:0 2px 6px -3px #0006">{H('b.moreLabel')}</a></sc-if>
@@ -748,6 +751,8 @@ def card(cfg):
         controls = f'''<sc-if value="{H('notAtNow')}" hint-placeholder-val="{{{{ false }}}}"><button type="button" onClick="{H('backToNow')}" style="position:absolute;right:{cfg['chipR']}px;top:{cfg['chipT'] + 48}px;height:34px;padding:0 12px;border:0;border-radius:999px;background:#c23b0e;color:#fff;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;z-index:7">Back to now</button></sc-if>'''
     elif cfg['mode'] == 'walk' and phone:
         controls = f'''<sc-if value="{H('notAtNow')}" hint-placeholder-val="{{{{ false }}}}"><button type="button" onClick="{H('backToNow')}" style="position:absolute;right:{cfg['chipR']}px;top:{cfg['chipT'] + 48}px;height:34px;padding:0 12px;border:0;border-radius:999px;background:#c23b0e;color:#fff;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;z-index:7">Back to now</button></sc-if>'''
+    elif cfg['mode'] == 'walk' and cfg.get('oneWall'):
+        controls = ''
     elif cfg['mode'] == 'walk':
         controls = f'''<button type="button" aria-label="Earlier" onClick="{H('earlier')}" style="{ARROW_BTN}; left:{zone_l - 24}px; top:{cfg['arrowY']}px; z-index:7">{LEFT}</button>
   <button type="button" aria-label="Later" onClick="{H('later')}" style="{ARROW_BTN}; right:34px; top:{cfg['arrowY']}px; z-index:7">{RIGHT}</button>

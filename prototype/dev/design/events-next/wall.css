@@ -3404,6 +3404,12 @@ main[data-view='wall'] #event-featured {
 #main[data-view='wall']:has(.st-root[data-layout='desktop']) {
     padding-bottom: 20px;
 }
+/* The whole day on one wall: where a busy day's posters overlap, the hour
+   you point at (or tab into) comes to the front. */
+#main .st-root .st-bay:hover,
+#main .st-root .st-bay:focus-within {
+    z-index: 3;
+}
 #main .st-root .wall-day.st-slot {
     position: absolute;
     display: block;
