@@ -3422,6 +3422,20 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
 main[data-view='wall'] #event-featured {
     display: none;
 }
+/* app.js first draws the older layout (the big column, "Find your kind of
+   day"); wall.js rebuilds it once every script has loaded. A reload painted
+   that first drawing for a split second, so the page below the header waits
+   for wall.js (data-view). Opacity, as the old column sets its posters
+   visible. If a script never loads, it shows after 2s. */
+#main:not([data-view]) {
+    opacity: 0;
+    animation: wall-late-reveal 0s 2s forwards;
+}
+@keyframes wall-late-reveal {
+    to {
+        opacity: 1;
+    }
+}
 .st-board {
     display: flex;
     flex-direction: column;

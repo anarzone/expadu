@@ -5,6 +5,16 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## No old layout on a reload — 13 October 2026
+
+Owner report: a reload showed the older layout (the big column, "Good things
+to turn up for.", "Find your kind of day") for a split second. app.js draws
+it first and wall.js rebuilds it as the street once every script has
+loaded; when the browser painted in between, that first drawing showed. The
+page below the header now stays blank until wall.js has built it (opacity,
+since the old column sets its posters visible), and shows anyway after 2s if
+a script never loads.
+
 ## Phones and tablets: taps and the calendar — 13 October 2026
 
 Checked at 320, 360, 375, 390, 414 and 430px wide, turned too, and at
