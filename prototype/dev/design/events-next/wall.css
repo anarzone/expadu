@@ -4519,6 +4519,83 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     line-height: 0.9;
     -webkit-text-stroke: 1.5px var(--pp-text);
 }
+/* A shorter phone fits the details in one view too (owner, 13 Oct 2026):
+   up to 860 tall the blocks sit 10 apart; up to 760 (an iPhone SE or 8,
+   or most phones in Safari with its bars) the poster header is shorter and
+   the rows a little tighter. Nothing is left out. */
+@media (max-width: 700px) and (max-height: 860px) {
+    #shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
+        gap: 10px;
+        padding-bottom: 10px;
+    }
+}
+@media (max-width: 700px) and (max-height: 760px) {
+    #shared-dialog .event-sheet .event-ticket.event-hero {
+        min-height: 0;
+        padding: 54px 20px 8px;
+    }
+    #shared-dialog .event-hero > .event-hero-chip {
+        top: 21px;
+        left: 20px;
+        height: 30px;
+    }
+    #shared-dialog .event-hero-body {
+        gap: 4px;
+    }
+    #shared-dialog .event-hero .pp-tape {
+        font-size: 14px;
+    }
+    #shared-dialog .event-hero-title {
+        font-size: 24px;
+    }
+    #shared-dialog .event-hero-time {
+        font-size: 34px;
+    }
+    #shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
+        gap: 8px;
+        padding-top: 12px;
+        padding-bottom: 6px;
+    }
+    #shared-dialog .event-sheet .event-about .event-description {
+        line-height: 1.45;
+    }
+    #shared-dialog .event-sheet .event-row {
+        padding: 6px 0;
+    }
+    #shared-dialog .event-sheet .event-row.event-where {
+        padding-block: 8px;
+    }
+    #shared-dialog .event-sheet .event-today {
+        gap: 6px;
+    }
+    #shared-dialog .event-sheet .event-fit {
+        padding: 10px 12px;
+        font-size: 14.5px !important;
+        line-height: 1.4;
+    }
+    /* For you reads as one sentence after its label. */
+    #shared-dialog .event-sheet .event-fit b {
+        display: inline;
+        margin: 0 6px 0 0;
+    }
+    /* The listing's details line sits on About's label row; opened, they
+       show in place under the description. */
+    #shared-dialog .event-sheet .event-about {
+        position: relative;
+    }
+    #shared-dialog .event-sheet .event-about .event-source {
+        margin: 0;
+    }
+    #shared-dialog .event-sheet .event-about .event-source summary {
+        position: absolute;
+        top: -11px;
+        right: 0;
+    }
+    #shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer {
+        padding-top: 8px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+}
 /* Composer's button on a phone sits at the end of the hour rings, level
    with them, not over the wall's poster (wall.js composerByRings); the rings
    keep room for it. Opened, Composer is where it always is. */

@@ -5,6 +5,18 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The details fit one view on a small phone too — 13 October 2026
+
+Owner request (the remaining open items: a 375 x 667 phone still
+scrolled about 160 px). Up to 760 tall (an iPhone SE or 8, and most
+phones in Safari with its bars) the poster header is shorter (title 24,
+time 34), the rows a little tighter, For you reads as one sentence after
+its label, and the listing's details line sits on About's label row
+(opened, its details show in place under the description). Up to 860
+tall the blocks sit 10 apart instead of 12. Nothing is left out. Neither
+event scrolls on a 375 x 667, 390 x 844 or 414 x 736 phone; a 320 x 568
+phone still scrolls the rest (about 280 px).
+
 ## A touch on the column no longer stalls the street — 13 October 2026
 
 Owner request (the remaining open items: the phone's drum was slightly
