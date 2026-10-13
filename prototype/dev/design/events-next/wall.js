@@ -1473,15 +1473,27 @@
         const closed = past || when === 'over';
 
         // The header is the poster itself (owner, 13 Oct 2026): its art,
-        // category, date tape, title in the poster's type, the venue and
-        // the big time, with Close on it. A poster opens this directly.
+        // category, date tape, title in the poster's type and the big
+        // time, with Close on it (the rows below say where and until when).
+        // A poster opens this directly.
         const ticket = sheet.querySelector('.event-ticket');
         if (ticket) {
             ticket.classList.add('is-wall', 'event-hero', `pp--${P.ink(item)}`);
             const art = ticket.querySelector('.pp-art')?.outerHTML || '';
             const category = ticket.querySelector('.event-cover-category')?.innerHTML || '';
-            const area = sheet.querySelector('.event-venue small')?.textContent || item.area || '';
-            ticket.innerHTML = `${art}<span class="event-hero-shade" aria-hidden="true"></span><span class="event-hero-chip">${category}</span><div class="event-hero-body"><span class="pp-tape">${E(P.tape(item, today))}</span><p class="event-hero-title" aria-hidden="true">${E(item.title)}</p><div class="event-hero-meta"><p class="event-hero-where"><strong>${E(item.venue)}</strong><span>${E(area)}</span></p>${item.start ? `<strong class="event-hero-time">${E(item.start)}</strong>` : ''}</div><p class="event-hero-until">${item.end ? `until ${E(item.end)}` : 'End time to check'} · ${past ? 'already happened' : 'listed times'}</p></div>`;
+            ticket.innerHTML = `${art}<span class="event-hero-shade" aria-hidden="true"></span><span class="event-hero-chip">${category}</span><div class="event-hero-body"><span class="pp-tape">${E(P.tape(item, today))}</span><div class="event-hero-row"><p class="event-hero-title" aria-hidden="true">${E(item.title)}</p>${item.start ? `<strong class="event-hero-time">${E(item.start)}</strong>` : ''}</div></div>`;
+            // The whole page scrolls as one; once the poster has gone by,
+            // Close sits beside the tabs.
+            const dialog = sheet.closest('#shared-dialog');
+            const scroller = dialog?.querySelector('#dialog-body');
+            if (scroller && !scroller.dataset.heroScroll) {
+                scroller.dataset.heroScroll = 'true';
+                scroller.addEventListener('scroll', () => {
+                    const hero = scroller.querySelector('.event-hero');
+                    dialog.classList.toggle('is-scrolled', !!hero && scroller.scrollTop > hero.offsetHeight - 30);
+                }, { passive: true });
+            }
+            dialog?.classList.remove('is-scrolled');
         }
         // The same words as the posters.
         sheet

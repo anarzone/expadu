@@ -3643,11 +3643,49 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     font-size: 13.5px;
 }
 
-/* ---------- The event page's header: the poster (owner, 13 Oct 2026) ----------
-   A poster opens its details directly; the page starts with the poster
-   itself: its art, category, date tape, title in the poster's type, the
-   venue and the big time. Close floats on it; the title is read out from
-   the dialog's own (hidden) heading. wall.js builds it. */
+/* ---------- The event page: one step, one scroll (owner, 13 Oct 2026) ----------
+   A poster opens its details page directly. The page starts with the
+   poster itself (its art, category, date tape, title in the poster's type
+   and the big time; the rows below say where and until when), the whole
+   page scrolls as one, the tabs stick once the poster has gone by (Close
+   beside them), and Save and Add to plan fill the bottom bar. On a desktop
+   the page is as tall as the screen allows. wall.js builds the header. */
+@media (min-width: 701px) {
+    #shared-dialog:has(.event-hero) {
+        height: min(828px, calc(100vh - 32px));
+        max-height: none;
+    }
+}
+#shared-dialog:has(.event-hero) #dialog-body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+#shared-dialog .event-sheet:has(.event-hero) {
+    height: auto;
+    min-height: 100%;
+}
+#shared-dialog .event-sheet:has(.event-hero) > .place-sheet-panel:not([hidden]) {
+    flex: 1 0 auto;
+    height: auto;
+    overflow: visible;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-scroll {
+    flex: none;
+    height: auto;
+    overflow: visible;
+}
+#shared-dialog .event-sheet:has(.event-hero) > .place-sheet-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    box-shadow: 0 0 0 12px var(--color-bg, #faf6ee);
+}
+#shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
+    gap: 14px;
+    padding-top: 14px;
+}
+/* Close floats on the poster; once it has gone by, it sits beside the tabs. */
 #shared-dialog:has(.event-hero) .dialog-head {
     position: absolute;
     top: env(safe-area-inset-top, 0px);
@@ -3675,16 +3713,64 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     color: #fff;
     backdrop-filter: blur(10px);
 }
+#shared-dialog.is-scrolled .dialog-head [data-ui='close'],
+#shared-dialog:has(.event-hero:is(.pp--day, .pp--paper)) .dialog-head [data-ui='close'] {
+    border-color: #e6ddcb;
+    background: #f1ead9;
+    color: var(--color-text);
+    backdrop-filter: none;
+}
+#shared-dialog.is-scrolled .event-sheet > .place-sheet-tabs {
+    margin-right: 56px;
+}
+/* The bottom bar: Save and the wider Add to plan fill it. */
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    display: flex;
+    gap: 10px;
+    padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #e6ddcb;
+    background: var(--color-bg, #faf6ee);
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .button {
+    flex: 1 1 0;
+    justify-content: center;
+    gap: 8px;
+    min-height: 52px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .button.primary {
+    flex: 2 1 0;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action {
+    width: auto;
+    padding: 0 16px;
+    border: 0;
+    background: #f1ead9;
+    color: var(--color-text);
+}
+/* "Save" or "Saved" on screen; screen readers hear the button's full name. */
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action::after {
+    content: 'Save';
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action[aria-pressed='true']::after {
+    content: 'Saved';
+}
+/* The header: the poster. */
 #shared-dialog .event-sheet .event-ticket.event-hero {
     position: relative;
     display: flex;
+    flex: none;
     flex-direction: column;
     justify-content: flex-end;
     height: auto;
-    min-height: 300px;
-    flex-basis: auto;
+    min-height: 200px;
     margin: 0;
-    padding: 76px 24px 22px;
+    padding: 64px 24px 18px;
     overflow: hidden;
     border-radius: 0;
     container-type: inline-size;
@@ -3719,6 +3805,11 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     font-weight: 600;
     backdrop-filter: blur(10px);
 }
+#shared-dialog .event-hero:is(.pp--day, .pp--paper) > .event-hero-chip {
+    border-color: #211d1524;
+    background: #fff8e6cc;
+    color: var(--color-text);
+}
 #shared-dialog .event-hero > .event-hero-chip svg {
     width: 16px;
     height: 16px;
@@ -3727,60 +3818,31 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    color: var(--pp-soft);
-    font-family: var(--font-sans);
+    gap: 8px;
     -webkit-text-stroke: 0;
-}
-#shared-dialog .event-hero:is(.pp--day, .pp--paper) :is(.event-hero-where, .event-hero-until) {
-    text-shadow: none;
-}
-#shared-dialog .event-hero:is(.pp--day, .pp--paper) > .event-hero-chip {
-    border-color: #211d1524;
-    background: #fff8e6cc;
-    color: var(--color-text);
-}
-#shared-dialog:has(.event-hero:is(.pp--day, .pp--paper)) .dialog-head [data-ui='close'] {
-    border-color: #211d1524;
-    background: #fff8e6cc;
-    color: var(--color-text);
 }
 #shared-dialog .event-hero .pp-tape {
     align-self: flex-start;
     transform: rotate(-2deg);
 }
+#shared-dialog .event-hero-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+}
 #shared-dialog .event-hero-title {
+    flex: 1;
+    min-width: 0;
     margin: 0;
     color: var(--pp-text);
     font-family: var(--poster-display);
-    font-size: clamp(30px, 9cqi, 46px);
+    font-size: clamp(28px, 7.5cqi, 40px);
     font-weight: 800;
     line-height: 0.92;
     letter-spacing: -0.02em;
     text-transform: uppercase;
     text-wrap: balance;
-}
-#shared-dialog .event-hero-meta {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px;
-}
-#shared-dialog .event-hero-where {
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    font-size: 14.5px;
-    line-height: 1.35;
-    text-shadow: 0 1px 2px #0006;
-}
-#shared-dialog .event-hero-where strong {
-    color: var(--pp-text);
-    font-size: 16px;
-    font-weight: 700;
-}
-#shared-dialog .event-hero :is(.event-hero-where span, .event-hero-until) {
-    font-weight: 500;
 }
 #shared-dialog .event-hero-time {
     flex: none;
@@ -3790,9 +3852,4 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     font-weight: 800;
     line-height: 0.9;
     -webkit-text-stroke: 1.5px var(--pp-text);
-}
-#shared-dialog .event-hero-until {
-    margin: 0;
-    font-size: 14px;
-    text-shadow: 0 1px 2px #0006;
 }

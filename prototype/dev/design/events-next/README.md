@@ -5,6 +5,22 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The details page in one view: one scroll, a full bottom bar — 13 October 2026
+
+Owner request, from a preview. The first view showed the poster header,
+then repeated its venue and times in the rows below, with room for one
+and a half rows in a small scroll box, and a bottom bar with a lone Save
+icon far from Add to plan.
+
+- **A slimmer poster header** (about 200px): its art, category, date tape,
+  title and the big time. Where and until when are in the rows.
+- **One scroll for the whole page**: the poster scrolls away, the tabs
+  stick at the top (Close moves beside them), and on a desktop the page is
+  as tall as the screen allows. First view on a 14-inch MacBook and on a
+  phone: For you, Where, When, When to arrive and Not listed.
+- **The bottom bar is filled**: Save (shown as Save or Saved) and the wider
+  Add to plan, labelled buttons side by side, above a hairline.
+
 ## One step: a poster opens its details — 13 October 2026
 
 Owner request; the header chosen from two previews.

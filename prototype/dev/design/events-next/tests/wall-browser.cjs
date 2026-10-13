@@ -162,6 +162,21 @@ const inside = (box, viewport) =>
                 return { closeOnHero: close.top >= hero.top - 1 && close.bottom <= hero.bottom, width: document.documentElement.scrollWidth };
             });
             assert.ok(heroFits.closeOnHero, 'Close sits on the poster header');
+            // One scroll for the whole page, with the first rows in view, and a
+            // bottom bar that Save and Add to plan fill.
+            const page1 = await page.evaluate(() => {
+                const bar = document.querySelector('#shared-dialog [data-panel="about"] .place-sheet-footer');
+                const b = bar.getBoundingClientRect();
+                const kids = [...bar.children].filter((x) => x.offsetParent).map((x) => x.getBoundingClientRect());
+                const cs = getComputedStyle(bar);
+                const inner = b.width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+                const filled = (Math.max(...kids.map((r) => r.right)) - Math.min(...kids.map((r) => r.left))) / inner;
+                const rows = [...document.querySelectorAll('#shared-dialog .event-row')].filter((r) => r.getBoundingClientRect().bottom <= b.top).length;
+                return { filled, rows, scroller: getComputedStyle(document.querySelector('#dialog-body')).overflowY };
+            });
+            assert.ok(page1.filled > 0.85, `the bottom bar should be filled: ${page1.filled}`);
+            assert.ok(page1.rows >= 3, `the first view should show the rows: ${page1.rows}`);
+            assert.equal(page1.scroller, 'auto', 'the whole page scrolls');
             assert.ok(heroFits.width <= viewport.width, `sideways scroll with the details open at ${viewport.width}px`);
             await page.keyboard.press('Escape');
             await page.waitForTimeout(500);
