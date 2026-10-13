@@ -10,9 +10,10 @@ sample events; this is not a live catalogue.
 Owner request. The About, Plan and Get there tabs are gone; the page is
 the details.
 
-- **Get there** has its own button under Where ("From …", "arrive by" the
-  start), tinted blue; it (or the Where row) opens the Get there page
-  inside the details, with Back and its title in a bar at the top.
+- **Where is the way there** (owner: they were the same button): the row
+  is tinted blue and adds how you'd set off ("From …", arrive by the
+  start); it opens the Get there page inside the details, with Back and
+  its title in a bar at the top.
 - **Add to plan** in the bottom bar opens the planning page the same way.
 - On those pages the poster header steps aside, Close stays at the top
   right, and the map link in Get there's bar is named "Map".

@@ -1554,17 +1554,28 @@
     }
     /* No tabs (owner, 13 Oct 2026): the page is the details. Get there and
        Add to plan open inside it as their own pages, with Back: Get there
-       from its button under Where (or the Where row), Add to plan from the
-       bottom bar. */
+       from the Where row, which is also the way there (where it is, how far,
+       and from where you'd set off, arriving by the start), Add to plan from
+       the bottom bar. */
     function subPages(sheet, item, closed) {
         if (sheet.querySelector('.event-subhead')) return;
         const from = sheet.querySelector('[data-panel="directions"] input[name="from"]')?.value.trim();
         const way = sheet.querySelector('.event-facts .event-venue');
-        if (way)
-            way.insertAdjacentHTML(
-                'afterend',
-                `<button type="button" class="event-getthere" data-event-section="directions"><span class="event-row-icon">${I('route')}</span><span class="event-row-text"><span class="event-getthere-title">Get there</span><span class="event-row-sub">${from ? `From ${E(from)}` : 'Choose where you start'}${item.start && !closed ? ` · arrive by ${E(item.start)}` : ''}</span></span>${I('arrow')}</button>`,
+        if (way) {
+            way.classList.add('event-where');
+            way.setAttribute('aria-label', `Get there: ${item.venue}`);
+            way.querySelector('.event-row-label').textContent = 'Where · Get there';
+            // The area stays under the venue; how far, from where, and by
+            // when goes on the way-there line, said once.
+            const sub = way.querySelector('.event-row-sub');
+            const [area, distance] = (sub?.textContent || '').split(' · ');
+            if (sub && distance) sub.textContent = area;
+            const start = distance || (from ? `From ${from}` : 'Choose where you start');
+            way.querySelector('.event-row-text')?.insertAdjacentHTML(
+                'beforeend',
+                `<span class="event-where-go">${I('route')}<span>${E(start)}${item.start && !closed ? ` · arrive by ${E(item.start)}` : ''}</span></span>`,
             );
+        }
         sheet.insertAdjacentHTML(
             'afterbegin',
             `<div class="event-subhead"><button type="button" class="event-back" data-event-section="about">${I('back')}<span>Back</span></button><strong class="event-subhead-title" data-for="directions">Get there</strong><strong class="event-subhead-title" data-for="plan">Add to plan</strong></div>`,
@@ -1576,7 +1587,7 @@
             const scroller = sheet.closest('#dialog-body');
             if (scroller) scroller.scrollTop = 0;
             sheet.closest('#shared-dialog')?.classList.remove('is-scrolled');
-            const target = go.dataset.eventSection === 'about' ? sheet.querySelector('.event-getthere') || sheet.querySelector('.event-row') : sheet.querySelector('.event-back');
+            const target = go.dataset.eventSection === 'about' ? sheet.querySelector('.event-where') || sheet.querySelector('.event-row') : sheet.querySelector('.event-back');
             target?.focus({ preventScroll: true });
         });
     }

@@ -3780,37 +3780,47 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     color: var(--color-text);
     backdrop-filter: none;
 }
-/* The way there, a button of its own under Where. */
-#shared-dialog .event-sheet .event-getthere {
-    display: grid;
-    grid-template-columns: 40px minmax(0, 1fr) auto;
-    gap: 14px;
-    align-items: center;
-    width: 100%;
+/* Where is also the way there: tinted, with how you'd set off. */
+#shared-dialog .event-sheet .event-facts:has(> .event-where:first-child) {
+    border-top: 0;
+}
+#shared-dialog .event-sheet .event-row.event-where {
     margin: 12px 0;
-    padding: 12px 14px;
+    padding: 14px;
     border: 0;
     border-radius: 14px;
     background: #e8f0fb;
     color: #12305c;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
 }
-#shared-dialog .event-sheet .event-getthere .event-row-icon {
+#shared-dialog .event-sheet .event-where .event-row-icon {
     background: #fff;
     color: #1d4d8f;
 }
-#shared-dialog .event-sheet .event-getthere .event-getthere-title {
-    font-size: 16px;
-    font-weight: 700;
-}
-#shared-dialog .event-sheet .event-getthere .event-row-sub {
+#shared-dialog .event-sheet .event-where .event-row-label {
     color: #2b4a75;
 }
-#shared-dialog .event-sheet .event-getthere > svg:last-child {
-    width: 20px;
-    height: 20px;
+#shared-dialog .event-sheet .event-where .event-row-value {
+    color: #12305c;
+}
+#shared-dialog .event-sheet .event-where .event-row-sub {
+    color: #2b4a75;
+}
+#shared-dialog .event-sheet .event-where .event-where-go {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    color: #1d4d8f;
+    font-size: 14px;
+    font-weight: 600;
+}
+#shared-dialog .event-sheet .event-where .event-where-go svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+#shared-dialog .event-sheet .event-where > svg:last-child {
+    color: #1d4d8f;
 }
 /* The bottom bar: Save and the wider Add to plan fill it. */
 #shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer {
