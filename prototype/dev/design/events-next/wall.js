@@ -1170,7 +1170,7 @@
        the middle of the screen at the size where every back fits without
        scrolling (300 x 470, zoomed to the screen). It flies from its place
        while it turns (the poster's own turn), and goes back the same way:
-       with its turn button, a tap outside or Escape. */
+       with its Close button (an X), a tap outside or Escape. */
     let lifted = null;
     const liftPath = (from, to) =>
         `translate(${from.left + from.width / 2 - (to.left + to.width / 2)}px, ${from.top + from.height / 2 - (to.top + to.height / 2)}px) scale(${from.width / to.width})`;
@@ -1187,6 +1187,13 @@
         copy.classList.remove('is-tilting', 'pp--size-column');
         copy.classList.add('pp--size-wall');
         copy.style.setProperty('--lift-zoom', zoom.toFixed(4));
+        // It isn't turned over in its place, so its way back is Close, an X
+        // like the sheet's, not the turn icon (owner, 13 Oct 2026).
+        const back = copy.querySelector('.pp-turn-back');
+        if (back) {
+            back.innerHTML = I('close');
+            back.setAttribute('aria-label', 'Close');
+        }
         box.append(copy);
         const from = card.getBoundingClientRect();
         document.body.append(layer);

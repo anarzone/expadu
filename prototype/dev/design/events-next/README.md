@@ -5,6 +5,13 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The lifted card closes with an X — 13 October 2026
+
+Owner request: a lifted poster isn't turned over in its place, so its way
+back is Close, an X like the sheet's, instead of the turn icon. It still
+turns back as it flies home. Posters turned over in place (in a story)
+keep the turn icon.
+
 ## No old layout on a reload — 13 October 2026
 
 Owner report: a reload showed the older layout (the big column, "Good things

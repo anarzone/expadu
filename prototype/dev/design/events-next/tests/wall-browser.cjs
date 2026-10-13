@@ -146,6 +146,12 @@ const inside = (box, viewport) =>
                 await page.evaluate(() => document.activeElement.className),
                 'pp-turn-back',
             );
+            // Not turned over in its place: its way back is Close, an X.
+            assert.equal(await lifted.locator('.pp-turn-back').getAttribute('aria-label'), 'Close');
+            assert.equal(
+                await lifted.locator('.pp-turn-back path').getAttribute('d'),
+                'm6 6 12 12M6 18 18 6',
+            );
             assert.match(await lifted.locator('.pp-facts').innerText(), /Not listed/);
             assert.match(
                 await lifted.locator('.pp-fit').innerText(),
