@@ -271,6 +271,41 @@
         }
     }
 
+    // ---------- The street's own pace ----------
+    // Each frame in which any of the street's drawings moves costs the
+    // whole page a re-fit, whatever moved, so 120 small animations at their
+    // own times made nearly every frame pay it. The rain, clouds, birds and
+    // the rest move together, 30 times a second; the frames in between are
+    // free for whatever you're touching (the column under your finger).
+    function pace(card) {
+        const STEP = 1000 / 30;
+        const clocked = new Map();
+        let seen = 0;
+        const adopt = () => {
+            const now = performance.now();
+            const live = new Set();
+            for (const a of card.getAnimations({ subtree: true })) {
+                if (!/^st[dp]/.test(a.animationName || '')) continue;
+                live.add(a);
+                if (!clocked.has(a)) clocked.set(a, { from: a.currentTime || 0, at: now });
+            }
+            for (const a of clocked.keys()) if (!live.has(a)) clocked.delete(a);
+            seen = now;
+        };
+        const timer = setInterval(() => {
+            const now = performance.now();
+            if (now - seen > 500) adopt();
+            for (const [a, c] of clocked) {
+                // A big group still waiting for its picture stays still.
+                if (a.effect?.target?.closest?.('g')?.__held || a.effect?.target?.__held) continue;
+                if (a.playState !== 'paused') a.pause();
+                a.currentTime = c.from + (now - c.at);
+            }
+        }, STEP);
+        adopt();
+        return { stop: () => clearInterval(timer) };
+    }
+
     function flattener(card) {
         let queued = false,
             running = false,
@@ -492,6 +527,7 @@
                 story: host.querySelector('.st-story'),
             };
             s.flat = flattener(s.parts.card);
+            if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) s.pace = pace(s.parts.card);
             const types = ['click', 'dblclick', 'pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'wheel', 'keydown'];
             const listeners = types.map((type) => [type, (event) => s.dispatch(type, event)]);
             listeners.push(['pointerover', (event) => s.enterLeave('pointerenter', event)]);
@@ -513,6 +549,7 @@
             window.addEventListener('expadu:change', onChange);
             window.addEventListener('storage', onChange);
             s.destroy = () => {
+                s.pace?.stop();
                 s.__alive = false;
                 s.componentWillUnmount?.();
                 for (const [type, fn] of listeners) host.removeEventListener(type, fn);

@@ -5,6 +5,18 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The street keeps its own pace — 13 October 2026
+
+Owner request (dragging the column lagged). Each frame in which any of
+the street's drawings moves costs the whole page a re-fit, whatever
+moved; with about 120 small animations each at its own time, nearly every
+frame paid it (about 60% of the main thread at rest). The street's
+animations now move together, 30 times a second (street.js, "The
+street's own pace"); the frames in between are free for the column under
+your finger. At rest the main thread is about 25% busy; a drag holds 118
+frames a second even with the processor slowed two times (it fell to 87,
+a third of its frames slow) and on a phone slowed four times (101).
+
 ## A tall drum — 13 October 2026
 
 Owner request. On a desktop the column's drum runs its full height, from
