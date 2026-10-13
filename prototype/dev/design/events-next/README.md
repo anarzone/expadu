@@ -5,6 +5,19 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The drum moves like a picker wheel — 13 October 2026
+
+Owner request ("the drum should be smooth enough to enjoy"). It used to
+follow the finger for one poster at most, then snap on in a fixed slide
+once past a fifth of a poster, whatever the hand did. Now (gen_scene,
+"The round drum's motion"): it follows the finger as far as you drag,
+resisting past two posters; let go and it carries on at your speed and
+settles on the poster it comes to, on a spring (a slow release eases in,
+a flick spins on, at most two along); a finger on a turning drum stops
+it where it is, and that tap only stops it. The timed turn and the dots
+ease in and out the same way, and the street's own redraws paint the
+drum where it is, so it never jumps.
+
 ## The street keeps its own pace — 13 October 2026
 
 Owner request (dragging the column lagged). Each frame in which any of

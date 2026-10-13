@@ -297,7 +297,7 @@
   componentWillUnmount() { clearInterval(this._timer); clearInterval(this._story); clearTimeout(this._snap); clearTimeout(this._flyT); }
   tick() {
     const s = this.state || {};
-    if (s.hold || s.sel || s.lift || (this._d && this._d.col)) return;
+    if (s.hold || s.sel || s.lift || (this._d && this._d.col) || this._spin) return;
     if (Object.keys(s.turned || {}).some((k) => s.turned[k] && k.indexOf('column:') === 0)) return;
     this.roll(1, { snap: false });
   }
@@ -305,21 +305,9 @@
     const pos = (this.state && this.state.pos) || 0;
     const N = Math.max(1, this.colList().length);
     const c = this.cfg();
-    const turning = c.col.drum && this.root && this.root.querySelector('[data-col-drum] [style*="preserve-3d"]');
-    if (turning) {
-      // A round drum turns first and its posters are redrawn once it has
-      // stopped: redrawing them as it starts made the turn stutter.
-      const P = c.col.pitch, R = ((c.col.faces || 5) * P) / (2 * Math.PI), to = pos + dir;
-      const ms = done && done.snap ? 520 : 1100;
-      // Only the face that turns into view is drawn for the turn.
-      turning.querySelectorAll('.st-face[data-d="' + (dir > 0 ? 2 : -2) + '"]').forEach((f) => (f.style.display = 'block'));
-      turning.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.65,0,0.35,1)';
-      turning.style.transform = 'perspective(' + c.col.depth + 'px) translateZ(' + (-R).toFixed(3) + 'px) rotateY(' + ((-to * P / R) * 180 / Math.PI).toFixed(3) + 'deg)';
-      clearTimeout(this._snap);
-      // The drum keeps counting (no wrapping back to the first poster):
-      // each face keeps its poster, so nothing in view is redrawn; only
-      // the face out of sight behind takes the next poster.
-      this._snap = setTimeout(() => this.setState(Object.assign({}, done, { pos: to, anim: false })), ms);
+    if (c.col.drum && this.drumEl()) {
+      // A round drum turns to the next poster, easing in and out.
+      this.spinTo((this._spin ? this._spin.k : pos) + dir, 0, done && done.snap ? 520 : 1100);
       return;
     }
     const end = Object.assign({ anim: true }, done);
@@ -460,6 +448,59 @@
       chipNote: forced ? 'Sample weather · tweaked' : 'Sample weather',
     };
   }
+  // ---------- The round drum's motion ----------
+  // The drum's turn lives here, as how far round it is (this._o, in px of
+  // its surface) while it moves; it's painted straight onto the drum, and
+  // the street's own redraws paint the same, so nothing jumps. When it
+  // comes to rest on a poster, pos becomes that poster.
+  drumEl() { return this.root && this.root.querySelector('[data-col-drum] [style*="preserve-3d"]'); }
+  drumGeo() { const c = this.cfg().col; return { c, P: c.pitch, R: ((c.faces || 5) * c.pitch) / (2 * Math.PI) }; }
+  drumAt() { return this._o != null ? this._o : ((this.state && this.state.pos) || 0) * this.cfg().col.pitch; }
+  drumPaint() {
+    const el = this.drumEl();
+    if (!el) return;
+    const { c, R } = this.drumGeo();
+    el.style.transition = 'none';
+    el.style.transform = 'perspective(' + c.depth + 'px) translateZ(' + (-R).toFixed(3) + 'px) rotateY(' + ((-this.drumAt() / R) * (180 / Math.PI)).toFixed(3) + 'deg)';
+  }
+  drumShowAll() { const el = this.drumEl(); if (el) el.querySelectorAll('.st-face').forEach((f) => (f.style.display = 'block')); }
+  // To poster k: by default a spring that starts at the drum's own speed
+  // (v, in px per ms), so a flick carries on and a slow release eases in;
+  // with ms, an ease in and out over that time (the timed turn, the dots).
+  spinTo(k, v, ms) {
+    const { P } = this.drumGeo();
+    const T = k * P, o0 = this.drumAt(), t0 = performance.now();
+    cancelAnimationFrame(this._spinRaf);
+    this._o = o0;
+    this._spin = { k };
+    this.drumShowAll();
+    const W = 10;
+    const step = (now) => {
+      const t = (now - t0) / 1000;
+      let done;
+      if (ms) {
+        const u = Math.min(1, (now - t0) / ms);
+        const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+        this._o = o0 + (T - o0) * e;
+        done = u >= 1;
+      } else {
+        const A = o0 - T, B = (v || 0) * 1000 + W * A;
+        this._o = T + (A + B * t) * Math.exp(-W * t);
+        done = t > 0.1 && Math.abs(this._o - T) < 0.35 && Math.abs((B - W * (A + B * t)) * Math.exp(-W * t)) < 6;
+      }
+      if (done) {
+        this._o = T;
+        this.drumPaint();
+        this._spin = null;
+        this.setState({ pos: k, anim: false, colDrag: 0 });
+        this._o = null;
+        return;
+      }
+      this.drumPaint();
+      this._spinRaf = requestAnimationFrame(step);
+    };
+    this._spinRaf = requestAnimationFrame(step);
+  }
   down(e) {
     // A drag that starts anywhere on the column (its posters, the old
     // ones below, the lamps, the dome) rolls the column; one on the wall's
@@ -474,6 +515,21 @@
     const scaled = drum && drum.closest('[style*="scale("]');
     const k = scaled ? parseFloat((scaled.style.transform.match(/scale\(([\d.]+)/) || [])[1]) || 1 : 1;
     this._d = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId, el: e.currentTarget, col: !!drum, k, drum };
+    if (drum && this.cfg().col.drum) {
+      // A turning drum stops under the finger, where it is.
+      const caught = !!this._spin;
+      cancelAnimationFrame(this._spinRaf);
+      this._spin = null;
+      this._o = this.drumAt();
+      Object.assign(this._d, { caught, o0: this._o, samples: [[performance.now(), this._o]] });
+      // A tap that stops a turning drum only stops it (as on iOS): it
+      // doesn't also open the poster under the finger.
+      if (caught) {
+        const swallow = (ev) => { ev.stopPropagation(); ev.preventDefault(); };
+        drum.addEventListener('click', swallow, true);
+        this._d.unswallow = () => setTimeout(() => drum.removeEventListener('click', swallow, true), 0);
+      }
+    }
   }
   // Phones (Stories): a mouse wheel or trackpad pages the posters too.
   wheel(e) {
@@ -493,6 +549,21 @@
       if (!d.moved && Math.abs(dx) < 6) return;
       if (!d.moved) { d.moved = true; try { d.el.setPointerCapture(d.id); } catch (err) { /* fine */ } }
       const col = this.cfg().col, pitch = col.pitch;
+      if (col.drum && d.o0 != null) {
+        // The drum follows the finger as far as it goes; two posters
+        // either way it starts to resist, as an iOS picker does.
+        const pos = (this.state && this.state.pos) || 0, lo = (pos - 2) * pitch, hi = (pos + 2) * pitch;
+        let o = d.o0 - dx;
+        if (o > hi) o = hi + (o - hi) / 3;
+        if (o < lo) o = lo - (lo - o) / 3;
+        this._o = o;
+        if (!d.shown) { this.drumShowAll(); d.shown = true; }
+        this.drumPaint();
+        const now = performance.now();
+        d.samples.push([now, o]);
+        while (d.samples.length > 2 && now - d.samples[0][0] > 100) d.samples.shift();
+        return;
+      }
       d.dx = Math.max(-pitch, Math.min(pitch, dx));
       // A round drum turns straight away, without redrawing its posters
       // on every move (the next draw puts it where the state says).
@@ -525,6 +596,24 @@
   up() {
     const d = this._d;
     this._d = null;
+    if (d && d.col && d.o0 != null) {
+      d.unswallow?.();
+      this.restartRoll();
+      const { P } = this.drumGeo(), pos = (this.state && this.state.pos) || 0;
+      if (!d.moved) {
+        // A tap that caught a turning drum lets it settle on the nearest poster.
+        if (d.caught) this.spinTo(Math.round(this.drumAt() / P), 0);
+        else this._o = null;
+        return;
+      }
+      // Let go: the drum carries on at its speed and settles on the
+      // poster it would come to, at most two along.
+      const [t0, o0] = d.samples[0], [t1, o1] = d.samples[d.samples.length - 1];
+      const v = t1 > t0 ? (o1 - o0) / (t1 - t0) : 0;
+      const k = Math.max(pos - 2, Math.min(pos + 2, Math.round((this.drumAt() + v * 220) / P)));
+      this.spinTo(k, v);
+      return;
+    }
     if (!d || !d.moved) return;
     if (d.col) {
       // A fifth of a poster rolls to the next or the previous one;
@@ -681,7 +770,7 @@
         const m = (((j - s.pos) % F) + F) % F, d = m > F / 2 ? m - F : m;
         // The faces out of sight behind are kept, but not drawn until
         // the drum turns.
-        const away = Math.abs(d) > (c.col.reach == null ? 2 : c.col.reach);
+        const away = !this._spin && !(this._d && this._d.shown) && Math.abs(d) > (c.col.reach == null ? 2 : c.col.reach);
         const e = tonight[(((s.pos + d + ring.ahead) % N) + N) % N];
         for (let k = 0; k < S; k++) {
           const a = j * A + (k + 0.5 - S / 2) * (A / S);
@@ -691,8 +780,8 @@
           }));
         }
       }
-      const turn = (-(s.pos * P - (s.colDrag || 0)) / R) * (180 / Math.PI);
-      colStyle = 'width:' + c.col.win + 'px; transform-style: preserve-3d; transform: perspective(' + c.col.depth + 'px) translateZ(' + r3(-R) + 'px) rotateY(' + r3(turn) + 'deg); ' + ease;
+      const turn = (-(this._o != null ? this._o : s.pos * P) / R) * (180 / Math.PI);
+      colStyle = 'width:' + c.col.win + 'px; transform-style: preserve-3d; transform: perspective(' + c.col.depth + 'px) translateZ(' + r3(-R) + 'px) rotateY(' + r3(turn) + 'deg); transition: none;';
     } else {
       for (let i = -1; i <= 2 * N && tonight.length; i++) {
         const e = tonight[((i % N) + N) % N];
@@ -703,7 +792,7 @@
       colStyle = 'transform: translateX(' + (c.col.inset - s.pos * c.col.pitch + (s.colDrag || 0)) + 'px); ' + ease;
     }
     const current = (((s.pos || 0) % N) + N) % N;
-    const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => this.setState({ pos: (s.pos || 0) + ((i - current + N) % N), anim: true, snap: false }) }));
+    const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => (c.col.drum ? this.spinTo((s.pos || 0) + ((i - current + N) % N), 0, 900) : this.setState({ pos: (s.pos || 0) + ((i - current + N) % N), anim: true, snap: false })) }));
     const ruler = [];
     for (let h = 8; h <= 23; h++) {
       const on = visibleHours.indexOf(h) >= 0;
