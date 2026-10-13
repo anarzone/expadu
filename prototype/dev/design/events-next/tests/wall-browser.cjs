@@ -121,6 +121,17 @@ const inside = (box, viewport) =>
                 await page.setViewportSize(viewport);
             } else {
                 assert.equal(await page.locator('.event-search-row > #free-only + #saved-events').count(), 1);
+                // The whole street fits the screen; its hour rings float in its sky.
+                const sky = await page.evaluate(() => {
+                    const fit = document.querySelector('.st-fit').getBoundingClientRect();
+                    const rings = document.querySelector('.st-rings').getBoundingClientRect();
+                    return {
+                        fits: fit.top >= 0 && fit.bottom <= innerHeight,
+                        inSky: rings.top >= fit.top && rings.bottom <= fit.top + fit.height * 0.3 && rings.left >= fit.left && rings.right <= fit.right,
+                    };
+                });
+                assert.ok(sky.fits, 'the street should fit the screen');
+                assert.ok(sky.inSky, 'the hour rings should float in the sky');
             }
 
             // No poster's own text is cut off, here or on the past day.

@@ -3486,6 +3486,52 @@ main[data-view='wall'] #event-featured {
     height: var(--hit-h);
     translate: calc(-50% + var(--hit-x, 0px)) calc(-50% + var(--hit-y, 0px));
 }
+/* Stories in the sky (owner, 13 Oct 2026): on a desktop or tablet the
+   hour rings float in the street's sky (street.js places them), so no row
+   stands between the filters and the street, which fits the screen. */
+.st-root[data-layout='desktop'] {
+    position: relative;
+}
+.st-root[data-layout='desktop'] > .st-rings {
+    position: absolute;
+    z-index: 4;
+    left: var(--rings-x, 30%);
+    top: var(--rings-y, 14px);
+    max-width: calc(var(--street-w, 900px) * 0.6);
+}
+.st-root[data-layout='desktop'] > .st-rings > div {
+    gap: 14px !important;
+    padding: 4px 4px 8px !important;
+}
+.st-root[data-layout='desktop'] > .st-rings button > span:first-child {
+    width: 68px !important;
+    height: 68px !important;
+    box-shadow: 0 6px 16px #211d1540;
+}
+.st-root[data-layout='desktop'] > .st-rings .st-art {
+    width: 62px !important;
+    height: 62px !important;
+}
+.st-root[data-layout='desktop'] > .st-rings button > span:last-child {
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: #fffdf8;
+    box-shadow: 0 2px 6px #211d1526;
+}
+/* The distance note: no leading dot (the count before it is hidden), a
+   slim line above the street's right edge on a desktop or tablet. */
+main[data-view='wall'] #event-count-note::before {
+    content: none;
+}
+main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.has-note {
+    width: 100%;
+    max-width: var(--street-w, none);
+    min-height: 0;
+    margin: 8px auto 6px;
+}
+main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.has-note .event-results-count {
+    justify-content: flex-end;
+}
 /* An hour's story ring shows its first poster's picture. */
 .st-art {
     position: relative;

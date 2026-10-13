@@ -505,16 +505,34 @@
         }
         // The card is drawn at the board's size and scaled to the page; a
         // phone's street grows only a little on a bigger phone, centred.
+        // On a desktop or tablet the whole street fits the screen's height
+        // and the hour rings float in its sky (owner, 13 Oct 2026); the
+        // page's distance note lines up with its right edge (--street-w).
         function fit() {
             if (!street) return;
             const [w, h] = ART[layoutName].size;
-            const zoom = Math.max(0.3, Math.min(host.clientWidth / w, layoutName === 'phone' ? 1.25 : Infinity));
-            street.zoom = zoom;
             const box = host.querySelector('.st-fit');
+            let zoom = Math.max(0.3, Math.min(host.clientWidth / w, layoutName === 'phone' ? 1.25 : Infinity));
+            if (layoutName === 'desktop') {
+                const top = box.getBoundingClientRect().top + scrollY;
+                zoom = Math.max(0.45, Math.min(zoom, (innerHeight - top - 20) / h));
+            }
+            street.zoom = zoom;
             box.style.width = `${w}px`;
             box.style.height = `${h}px`;
             box.style.zoom = zoom.toFixed(4);
+            if (layoutName === 'desktop') {
+                const left = (host.clientWidth - w * zoom) / 2;
+                host.style.setProperty('--rings-x', `${Math.round(left + w * zoom * 0.3)}px`);
+                host.style.setProperty('--rings-y', `${Math.round(box.offsetTop + 14)}px`);
+                host.closest('main')?.style.setProperty('--street-w', `${Math.round(w * zoom)}px`);
+            } else host.closest('main')?.style.removeProperty('--street-w');
         }
+        // What sits above the street (the filters, the distance note) can
+        // change its height, and with it the room the street has.
+        const above = new ResizeObserver(() => fit());
+        const board = host.closest('.st-board');
+        for (const el of board?.parentElement?.children || []) if (el !== board) above.observe(el);
         function feed(next, fresh) {
             const s = street;
             const changed =

@@ -5,6 +5,25 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Stories in the sky; the street fits the screen — 13 October 2026
+
+Owner request, chosen from two previews. On a desktop or tablet the space
+between the filters and the street looked empty (two story rings in their
+own row, and a note starting with a stray "·"), and on a 14-inch MacBook
+the street ran below the screen.
+
+- **The hour rings float in the street's sky**, a little smaller, with
+  their hour on a light label; no row stands between the filters and the
+  street. Phones keep the rings above the street.
+- **The whole street fits the screen's height** (never below 0.45 of the
+  board's size), centred; on a 14-inch MacBook it shows at about 0.68.
+- **The distance note** ("Distances from Neumarkt, in a straight line",
+  only when a starting point is set) loses its leading dot and sits as a
+  slim line above the street's right edge.
+
+`tests/wall-browser.cjs` checks the street fits the screen and the rings
+sit in its sky.
+
 ## The lifted card closes with an X — 13 October 2026
 
 Owner request: a lifted poster isn't turned over in its place, so its way
