@@ -8,12 +8,13 @@ sample events; this is not a live catalogue.
 ## A tall drum — 13 October 2026
 
 Owner request. On a desktop the column's drum runs its full height, from
-the trim to the lamps, instead of a drum over flat old-poster blocks: two
-rings of six posters, turning together and meeting at a hoop, the lower
-ring a poster ahead, so a two-event evening shows both at once. The
-posters are a little smaller (162 x 250). Only the faces in view are
+the trim to the lamps, instead of a drum over flat old-poster blocks: one
+event a face, its poster as tall as the drum (220 x 514; the poster lays
+itself out for the shape, as on a phone), narrower than the drum so the
+events either side show turning away. (A first try with two rings of
+smaller posters wasn't what the owner meant.) Only the faces in view are
 drawn; a turn draws just the face it brings in. Phones already had a
-full-height drum (one ring of tall posters) and keep it.
+full-height drum and keep it.
 
 ## No caption on the column — 13 October 2026
 

@@ -440,9 +440,8 @@ class Component extends DCLogic {
       // ones are to its right, the earlier ones to its left; the two out
       // of sight behind take whatever comes next. Every poster you can see
       // takes taps (one turning in is as tappable as the one facing you).
-      // A tall drum (the page's desktop) has two rings of posters, turning
-      // together, the lower one a poster ahead: a two-event evening shows
-      // both at once.
+      // A drum can carry rings of posters one above the other (c.col.rings,
+      // each turning with the rest); the page's has one ring of tall posters.
       const r3 = (v) => Math.round(v * 1000) / 1000;
       const F = c.col.faces || 5, A = 360 / F, rings = c.col.rings || [{ top: 4, ahead: 0 }];
       const P = c.col.pitch, R = (F * P) / (2 * Math.PI), S = c.col.slices || 6;
@@ -602,12 +601,10 @@ def column(p, s=1.0, mx=False, phone=False, tall=False):
         </button>
       </sc-for>'''
     win_h = 518 if ((mx and phone) or tall) else 324
-    # A tall drum's two rings meet at a hoop.
-    hoop = '<div aria-hidden="true" style="position:absolute;left:0;right:0;top:255px;height:8px;pointer-events:none;background:linear-gradient(#c9a94a,#8a6f22 45%,#2c4538 55%,#1d332a);box-shadow:0 2px 4px rgba(0,0,0,.35)"></div>' if tall else ''
     win = f'''<div data-col-drum onPointerEnter="{H('hold')}" onPointerLeave="{H('release')}" style="position:absolute;left:18px;top:124px;width:264px;height:{win_h}px;overflow:hidden;background:#d8ccb0;filter:brightness({H('k.posterB')});transition:filter 1.2s">
     {chain_o}<div style="position:absolute;left:0;top:0;height:100%;width:2000px;{H('colStyle')}">
 {strip_html}
-    </div>{chain_c}{hoop}
+    </div>{chain_c}
     <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.24) 0%,rgba(0,0,0,.06) 11%,rgba(255,255,255,.12) 33%,rgba(255,255,255,0) 47%,rgba(0,0,0,.03) 74%,rgba(0,0,0,.22) 100%)"></div>
     <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 42% 45%,rgba(255,226,170,.55),rgba(255,200,120,.12) 60%,transparent 75%);mix-blend-mode:screen;opacity:{H('k.colGlow')};transition:opacity 1.2s"></div>
   </div>'''
