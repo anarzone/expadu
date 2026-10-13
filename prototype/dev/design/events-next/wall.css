@@ -4203,6 +4203,55 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     margin: 0;
     font-size: 14px;
 }
+/* When: by the start, leaving now or the way back (get-there.js), on the
+   details' segmented rail; the date stays on the line above. */
+#shared-dialog .event-sheet .place-journey:has(.gt-when) .event-arrival > span + span {
+    display: none;
+}
+#shared-dialog .event-sheet .place-journey .gt-when {
+    margin: 12px 0 0;
+}
+#shared-dialog .event-sheet .place-journey .gt-when + fieldset {
+    margin-top: 8px;
+}
+#shared-dialog .event-sheet .place-journey .gt-when label > span {
+    flex-direction: column;
+    gap: 0;
+    min-height: 48px;
+    line-height: 1.2;
+}
+#shared-dialog .event-sheet .gt-when strong {
+    font-size: 14px;
+    font-weight: 600;
+}
+#shared-dialog .event-sheet .gt-when small {
+    color: #6b6457;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+/* The way back: from the venue, back to the place in the field. The venue
+   keeps its pin and your place its dot, as on the map. */
+#shared-dialog .event-sheet .place-route.is-back .event-route-fields {
+    display: flex;
+    flex-direction: column-reverse;
+}
+#shared-dialog .event-sheet .place-route.is-back .event-route-rail {
+    grid-template-rows: 22px minmax(6px, 1fr) 12px;
+    margin-top: 24px;
+    margin-bottom: 15px;
+}
+#shared-dialog .event-sheet .place-route.is-back .event-route-rail > svg {
+    order: -1;
+}
+#shared-dialog .event-sheet .place-route.is-back .event-route-rail .route-dot {
+    order: 1;
+}
+#shared-dialog .event-sheet .place-route.is-back .place-journey-destination {
+    padding: 0 0 12px;
+}
+#shared-dialog .event-sheet .place-route.is-back .route-field-note {
+    display: none;
+}
 /* The reminder's bell sits between Save and Add to plan; on, it's tinted. */
 #shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-bell {
     flex: 0 0 56px;

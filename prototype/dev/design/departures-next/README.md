@@ -11,6 +11,25 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The evening from any district, now or back — 13 October 2026
+
+Owner request (with Events' Get there). The evening's trips now come from
+Neumarkt, Mülheim and every Cologne district, for leaving now (the sample
+day's 13:10) as well as arriving by the start, and the way back from the
+venue after it ends (`../connected/sample-journeys.js` and
+`../connected/journeys/`, captured with `../tools/capture-journeys.py`).
+
+- `journeys.js` keeps a trip there (its "now" and "arrive by" options)
+  and a separate way back per start and event; Leave now shows the 13:10
+  options, Arrive by the ones that make the start, Depart at any that
+  leave after the time. A district's journeys load when a request names
+  it (Plan a trip shows "Finding the ways" meanwhile, and Events'
+  hand-off waits for them).
+- Leaving now reads "4 h 46 min early"; a way back "8 min after it ends",
+  as in Get there.
+- S-Bahn and regional trains are named Train (badges, Show the way); a
+  trip that starts with a bus shows the bus.
+
 ## The evening's events can be planned — 13 October 2026
 
 Owner request (with Events' Get there). Plan a trip to Rheinauhafen (the

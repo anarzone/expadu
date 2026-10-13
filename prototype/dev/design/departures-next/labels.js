@@ -11,7 +11,8 @@
     const ic = (name) => (typeof icon === 'function' ? icon(name) : '');
     const esc = (value) =>
         typeof safe === 'function' ? safe(value) : String(value);
-    const vehicle = (kind) => (kind === 'bus' ? 'Bus' : 'Tram');
+    const vehicle = (kind) =>
+        kind === 'bus' ? 'Bus' : kind === 'rail' ? 'Train' : 'Tram';
     const style = (look = {}) =>
         `--line:${look.colour || 'var(--color-text)'};--ink:${look.ink || '#fff'}`;
     // The line badge with its vehicle inside: lists show the symbol and the

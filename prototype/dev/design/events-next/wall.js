@@ -1768,11 +1768,12 @@
         const observer = new MutationObserver(travelWords);
         if (preview) travelWords();
         // The way there, planned as Travel plans it (get-there.js): real
-        // scheduled options in Travel's cards, in place of the preview.
-        const G = window.ExpaduGetThere;
+        // scheduled options in Travel's cards, in place of the preview, for
+        // the events whose journeys were captured.
+        const G = window.ExpaduGetThere?.covers(item) && preview ? window.ExpaduGetThere : null;
         const marks = {};
         let map, lastWay;
-        if (G && preview) {
+        if (G) {
             preview.hidden = true;
             preview.insertAdjacentHTML('afterend', '<div class="gt" data-gt></div>');
             G.mount(panel.querySelector('[data-gt]'), {

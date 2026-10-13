@@ -823,7 +823,14 @@ const L = window.TravelLabels;
 const spareLabel = (minutes, margin) =>
     minutes < margin
         ? L.chip('attention', 'timer', `Only ${minutes} min spare`)
-        : L.chip('calm', 'check', `${minutes} min spare`);
+        : minutes >= 90
+          ? // Leaving now for the evening: hours early.
+            L.chip(
+                'calm',
+                'clock',
+                `${Math.floor(minutes / 60)} h${minutes % 60 ? ` ${minutes % 60} min` : ''} early`,
+            )
+          : L.chip('calm', 'check', `${minutes} min spare`);
 // The sample day's appointment trip leads Nearby: the tram to take now, with
 // Today's rule for tight official appointments (owner-approved design).
 const skies = {
@@ -1100,11 +1107,13 @@ function checks(tripId, trip, route) {
         {
             short: 'My day',
             title: 'My day',
-            text: day
-                ? between.length
-                    ? `${between.map((place) => `${place.title} at ${place.time}`).join(', ')} before this`
-                    : `Nothing else before ${trip.start}`
-                : 'Not part of your sample day',
+            text: trip.back
+                ? `After ${trip.event}, which ends at ${trip.after}`
+                : day
+                  ? between.length
+                      ? `${between.map((place) => `${place.title} at ${place.time}`).join(', ')} before this`
+                      : `Nothing else before ${trip.start}`
+                  : 'Not part of your sample day',
             muted: !day,
         },
         {
@@ -1248,20 +1257,26 @@ function planOption(route, list, trip, best) {
             ? transit
                   .map((leg, index) => {
                       const id = String(leg.line || route.line);
-                      const bus = vehicleOf(id, leg) === 'Bus';
+                      const vehicle = vehicleOf(id, leg);
+                      const bus = vehicle === 'Bus';
                       const look = window.NearbyModel?.look(id, bus ? 'bus' : 'tram');
                       return L.line(id, look, {
                           word: index === 0,
-                          kind: bus ? 'bus' : 'tram',
+                          kind: bus ? 'bus' : vehicle === 'Train' ? 'rail' : 'tram',
                       });
                   })
                   .join(`<span class="plan-then">${icon('arrow')}</span>`)
             : `<span class="tl-line is-mode">${icon(route.mode)}<span>${route.mode === 'bike' ? 'By bike' : 'On foot'}</span></span>`;
     const title = `<span class="plan-option-title">${badges}</span>`;
+    const after = trip.back
+        ? minutesOf(route.depart) - minutesOf(trip.after) + (route.depart < '12:00' ? 1440 : 0)
+        : null;
     const spareTag =
         spare !== null
             ? spareLabel(spare, trip.kind === 'official' ? 10 : 5)
-            : L.chip('calm', 'clock', `${route.duration} min`);
+            : after !== null
+              ? L.chip('calm', 'clock', after > 0 ? `${after} min after it ends` : 'As it ends')
+              : L.chip('calm', 'clock', `${route.duration} min`);
     return `<article class="plan-option${on ? ' is-on' : ''}" aria-label="${safe(optionTitle(route))}, leave ${route.depart}, there ${route.arrive}${overnight(route.arrive, trip) ? ' next day' : ''}">
         <button type="button" class="plan-option-pick" role="radio" aria-checked="${on}" tabindex="${on ? 0 : -1}" data-pick-route="${route.id}">
             <span class="plan-radio" aria-hidden="true"></span>
@@ -1294,6 +1309,9 @@ function mountPlanMap() {
         padding: () => ({ top: 28, right: 28, bottom: 28, left: 28 }),
     });
 }
+// Districts whose journeys couldn't load: their request shows as not in
+// the preview.
+const unloaded = new Set();
 function renderResults() {
     state.results = true;
     state.view = 'journey';
@@ -1304,6 +1322,23 @@ function renderResults() {
         matched = !!tripId,
         trip = J.trips?.[tripId] || J.capture,
         list = routeList(tripId);
+    // A district's evening journeys load when someone plans from (or back
+    // to) it.
+    const loading = !tripId && J.pending?.(fromPlace(), to.value);
+    if (loading && !unloaded.has(loading)) {
+        const name =
+            window.ExpaduSampleJourneys.starts.find((start) => start.id === loading)
+                ?.name || '';
+        $('#results').innerHTML = `<div class="result-empty" role="status"><span class="empty-symbol">${icon('route')}</span><h2 id="results-title" tabindex="-1">Finding the ways for ${safe(name)}</h2><p>Scheduled times from the VRS timetable for the sample day.</p></div>`;
+        window.ExpaduSampleJourneys.load(loading).then((ok) => {
+            if (!ok) unloaded.add(loading);
+            if (!state.results) return;
+            const focused = document.activeElement?.id === 'results-title';
+            renderResults();
+            if (focused) $('#results-title')?.focus({ preventScroll: true });
+        });
+        return;
+    }
     // Bike and walk options can be chosen too.
     const pool = [
         ...list,

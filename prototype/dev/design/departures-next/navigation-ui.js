@@ -130,7 +130,7 @@
         confirmation = '';
         dialog.classList.remove('is-expanded', 'is-closing');
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div>${route.line ? (L ? L.line(route.line, root.NearbyModel?.look(String(route.line), vehicle() === 'Bus' ? 'bus' : 'tram'), { kind: vehicle() === 'Bus' ? 'bus' : 'tram', size: 'big' }) : `<span class="nav-line" style="${lineStyle()}">${safe(route.line)}</span>`) : ''}<div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div>${route.line ? (L ? L.line(route.line, root.NearbyModel?.look(String(route.line), vehicle() === 'Bus' ? 'bus' : 'tram'), { kind: vehicle() === 'Bus' ? 'bus' : vehicle() === 'Train' ? 'rail' : 'tram', size: 'big' }) : `<span class="nav-line" style="${lineStyle()}">${safe(route.line)}</span>`) : ''}<div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
             <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
                 <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
                 <p class="nav-map-caption">${route.shaped ? 'The way from the VRS timetable · scheduled, not live' : 'Illustrative connections · not street directions'} · © OpenStreetMap · OpenFreeMap · OpenMapTiles</p>
@@ -297,6 +297,10 @@
     const minutesBetween = (a, b) =>
         J.timeline(b, trip()) - J.timeline(a, trip());
     function vehicle() {
+        // A timetable journey knows its first vehicle; otherwise the
+        // station capture.
+        const leg = route.legs?.find((item) => item.mode === 'transit' && item.vehicle);
+        if (leg) return leg.vehicle === 'bus' ? 'Bus' : leg.vehicle === 'rail' ? 'Train' : 'Tram';
         const service = root.StationCapture?.services.find(
             (item) => item.line === route.line,
         );
@@ -430,7 +434,7 @@
         const towards = (board?.detail || '').replace(/^Towards /, '');
         const offAt = stopName(alight?.title.replace(/^Get off at /, ''));
         const kind = vehicle();
-        const front = `<div class="moment-front"><span class="moment-sign"><span class="moment-badge">${safe(route.line || '')}</span><strong>${safe(stopName(towards))}</strong></span><span>Look for this on the front of the ${kind === 'Bus' ? 'bus' : 'tram'}. <span lang="de">Richtung</span> means “towards”.</span></div>`;
+        const front = `<div class="moment-front"><span class="moment-sign"><span class="moment-badge">${safe(route.line || '')}</span><strong>${safe(stopName(towards))}</strong></span><span>Look for this on the front of the ${kind === 'Bus' ? 'bus' : kind === 'Train' ? 'train' : 'tram'}. <span lang="de">Richtung</span> means “towards”.</span></div>`;
         const step = p.step;
         if (step.mode === 'walk' && p.index === 0) {
             const area = boardingArea(board);
@@ -438,7 +442,7 @@
             const stopLabel = stopName(
                 board?.title ? step.title.replace(/^Walk to /, '') : step.title,
             );
-            const vehicleWord = kind === 'Bus' ? 'bus' : 'tram';
+            const vehicleWord = kind === 'Bus' ? 'bus' : kind === 'Train' ? 'train' : 'tram';
             // The canvas: a small map of the stop with this line's recorded
             // boarding points (KVB records; which one is used isn't known).
             const where = points.length

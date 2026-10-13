@@ -5,6 +5,28 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Get there from anywhere in Cologne, now or back — 13 October 2026
+
+Owner request ("fix remaining issues too": the starts, times and way home
+the first Get there didn't cover). Get there now has When: Arrive by the
+start, Leave now (the sample day's 13:10) or Way back after the listed
+end (the card then runs from the venue, back to the place in the field;
+the venue keeps its pin and your place its dot, as on the map). Options
+say what their time means: minutes spare, how early ("4 h 46 min
+early"), or how soon after the end ("8 min after it ends").
+
+Any start the Events page's distances recognise now has real journeys:
+Neumarkt and every Cologne district (`distance.js`), typed as
+"Ehrenfeld", "Köln-Sülz" or "Venloer Str., Ehrenfeld". Mülheim and
+Neumarkt load with the page; a district's journeys
+(`../connected/journeys/<district>.js`, about 37 KB each) load when you
+start there, with a short "Finding the ways" while they do. Seven
+district centres sit off the planner's street map (a hospital campus,
+industrial land, the airport); those start at the nearest stop, and the
+source line says which. Where no tram or bus beats walking (Neustadt-Nord
+to Stadtgarten), it says so and offers the walk. Other events keep their
+own preview.
+
 ## Get there, planned as Travel plans a trip — 13 October 2026
 
 Owner request ("now that Travel is built, build Get there properly").
@@ -22,8 +44,7 @@ holds what a local MOTIS planner answered from the VRS timetable (GTFS)
 for the sample day, arriving by each evening event's start, from Mülheim
 (after the appointment) and from Neumarkt, with bike and walking times and
 each route's shape. `../tools/capture-journeys.py` captures them again
-(the planner must be running). From any other start, Get there says those
-two starts were captured and offers them, or Travel. Options are ordered
+(the planner must be running). Options are ordered
 as Travel orders them (the earliest arrival first, and Best for you); bike
 and walk arrive five minutes before the start, the margin Travel calls
 tight. Open in Travel lands on the same options.

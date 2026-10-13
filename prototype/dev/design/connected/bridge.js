@@ -240,10 +240,12 @@
             renderResults();
         } else if (
             destination &&
-            J.tripFor?.(from.value, to.value) &&
+            (J.tripFor?.(from.value, to.value) ||
+                J.pending?.(from.value, to.value)) &&
             typeof searchJourney === 'function'
         )
-            // A hand-off for a trip in the sample opens on its options.
+            // A hand-off for a trip in the sample opens on its options (a
+            // district's evening journeys load first).
             searchJourney();
         handoff = function () {
             // Read the address now: Travel can open a plan's trip in place.

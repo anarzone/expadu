@@ -286,109 +286,152 @@ globalThis.JourneyModel = (() => {
         : [];
     // The evening's events (owner, 13 Oct 2026): real scheduled journeys
     // from the VRS timetable (connected/sample-journeys.js, through a local
-    // MOTIS planner), from Mülheim and from Neumarkt, with bike and walking
-    // times and each way's shape. Events' Get there shows the same ones.
+    // MOTIS planner), from Mülheim, Neumarkt and every Cologne district (a
+    // district's load when someone starts there): by the start, leaving now
+    // (the sample day's clock) and the way back after the event ends, with
+    // bike and walking times and each way's shape. Events' Get there shows
+    // the same ones.
     const captured = globalThis.ExpaduSampleJourneys;
     const lnglat = (points = []) => points.map(([lat, lng]) => [lng, lat]);
     const eveningRoutes = [];
-    for (const t of captured?.trips || []) {
+    const transitRoute = (o, trip, when, end) => {
+        const rides = o.legs.filter((l) => l.mode !== 'walk');
+        return {
+            id: `evening-${o.id}`,
+            trip,
+            when,
+            line: rides[0]?.line,
+            depart: o.depart,
+            arrive: o.arrive,
+            duration: o.duration,
+            walking: o.walking,
+            changes: o.changes,
+            mode: 'transit',
+            delayed: false,
+            inPlan: false,
+            shaped: true,
+            legs: o.legs.map((l, i) => {
+                const last = i === o.legs.length - 1;
+                return l.mode === 'walk'
+                    ? {
+                          mode: 'walk',
+                          title:
+                              i > 0 && !last
+                                  ? l.from === l.to
+                                      ? `Change at ${l.to}`
+                                      : `Change: walk to ${l.to}`
+                                  : `Walk to ${last ? end : l.to}`,
+                          detail: `${l.minutes} min on foot`,
+                          time: l.depart,
+                          duration: l.minutes,
+                          points: lnglat(l.points),
+                      }
+                    : {
+                          mode: 'transit',
+                          line: l.line,
+                          vehicle: l.mode,
+                          from: l.from,
+                          title: `Take line ${l.line}`,
+                          detail: `Towards ${l.towards} · ${l.stops} stop${l.stops > 1 ? 's' : ''}`,
+                          time: l.depart,
+                          duration: l.minutes,
+                          stop: l.to,
+                          alight: l.arrive,
+                          intermediate: [],
+                          points: lnglat(l.points),
+                      };
+            }),
+        };
+    };
+    // Bike and walk: the same way whenever you go.
+    const directRoute = (way, mode, trip, when, depart, arrive, end) => ({
+        id: `${trip}-${when}-${mode}`,
+        trip,
+        when,
+        mode,
+        depart,
+        arrive,
+        duration: way.minutes,
+        walking: mode === 'walk' ? way.minutes : 0,
+        changes: 0,
+        delayed: false,
+        shaped: true,
+        km: way.km,
+        legs: [
+            {
+                mode,
+                title: `${mode === 'bike' ? 'Cycle' : 'Walk'} to ${end}`,
+                detail: `${way.km} km · ${way.minutes} min`,
+                time: depart,
+                duration: way.minutes,
+                points: lnglat(way.points),
+            },
+        ],
+    });
+    function addEvening(t) {
         const event = sample?.events?.find((e) => e.id === t.event);
         const id = `evening-${t.id}`;
+        if (trips[id]) return;
+        const now = captured?.now || sample?.time || '13:10';
         const first = t.options[0]?.legs.filter((l) => l.mode !== 'walk');
         trips[id] = {
             id,
             date: t.date,
             time: sample?.time || '13:10',
             from: t.from.name,
+            origin: t.from.id,
             to: t.venue,
             place: event?.title || t.venue,
             start: t.arriveBy,
             kind: 'event',
             evening: true,
-            match: t.from.match,
             alightStop: first?.at(-1)?.to || t.venue,
         };
-        for (const o of t.options) {
-            const rides = o.legs.filter((l) => l.mode !== 'walk');
-            eveningRoutes.push({
-                id: `evening-${o.id}`,
-                trip: id,
-                line: rides[0]?.line,
-                depart: o.depart,
-                arrive: o.arrive,
-                duration: o.duration,
-                walking: o.walking,
-                changes: o.changes,
-                mode: 'transit',
-                delayed: false,
-                inPlan: false,
-                shaped: true,
-                legs: o.legs.map((l, i) => {
-                    const last = i === o.legs.length - 1;
-                    return l.mode === 'walk'
-                        ? {
-                              mode: 'walk',
-                              title:
-                                  i > 0 && !last
-                                      ? l.from === l.to
-                                          ? `Change at ${l.to}`
-                                          : `Change: walk to ${l.to}`
-                                      : `Walk to ${last ? t.venue : l.to}`,
-                              detail: `${l.minutes} min on foot`,
-                              time: l.depart,
-                              duration: l.minutes,
-                              points: lnglat(l.points),
-                          }
-                        : {
-                              mode: 'transit',
-                              line: l.line,
-                              vehicle: l.mode,
-                              from: l.from,
-                              title: `Take line ${l.line}`,
-                              detail: `Towards ${l.towards} · ${l.stops} stop${l.stops > 1 ? 's' : ''}`,
-                              time: l.depart,
-                              duration: l.minutes,
-                              stop: l.to,
-                              alight: l.arrive,
-                              intermediate: [],
-                              points: lnglat(l.points),
-                          };
-                }),
-            });
-        }
+        for (const o of t.options) eveningRoutes.push(transitRoute(o, id, 'arrive', t.venue));
+        for (const o of t.now || []) eveningRoutes.push(transitRoute(o, id, 'now', t.venue));
         for (const mode of ['bike', 'walk']) {
             const way = t[mode];
-            if (!way) continue;
-            // Bike and walk keep five minutes in hand, the margin Travel
-            // calls tight.
+            if (!way?.minutes) continue;
+            // By the start, bike and walk keep five minutes in hand, the
+            // margin Travel calls tight; now, they leave at the sample clock.
             const arrive = clock(minutes(t.arriveBy) - 5);
-            const depart = clock(minutes(arrive) - way.minutes);
-            eveningRoutes.push({
-                id: `evening-${t.id}-${mode}`,
-                trip: id,
-                mode,
-                depart,
-                arrive,
-                duration: way.minutes,
-                walking: mode === 'walk' ? way.minutes : 0,
-                changes: 0,
-                delayed: false,
-                shaped: true,
-                km: way.km,
-                legs: [
-                    {
-                        mode,
-                        title: `${mode === 'bike' ? 'Cycle' : 'Walk'} to ${t.venue}`,
-                        detail: `${way.km} km · ${way.minutes} min`,
-                        time: depart,
-                        duration: way.minutes,
-                        points: lnglat(way.points),
-                    },
-                ],
-            });
+            eveningRoutes.push(directRoute(way, mode, id, 'arrive', clock(minutes(arrive) - way.minutes), arrive, t.venue));
+            eveningRoutes.push(directRoute(way, mode, id, 'now', now, clock(minutes(now) + way.minutes), t.venue));
+        }
+        // The way back, from the venue once it ends.
+        if (!t.back) return;
+        const back = `evening-back-${t.id}`;
+        trips[back] = {
+            id: back,
+            date: t.date,
+            time: sample?.time || '13:10',
+            from: t.venue,
+            origin: t.from.id,
+            to: t.from.name,
+            place: t.from.name,
+            event: event?.title || t.venue,
+            after: t.back.after,
+            kind: 'back',
+            evening: true,
+            back: true,
+        };
+        for (const o of t.back.options) eveningRoutes.push(transitRoute(o, back, 'back', t.from.name));
+        for (const mode of ['bike', 'walk']) {
+            const way = t.back[mode];
+            if (way?.minutes)
+                eveningRoutes.push(
+                    directRoute(way, mode, back, 'back', t.back.after, clock(minutes(t.back.after) + way.minutes), t.from.name),
+                );
         }
     }
+    (captured?.trips || []).forEach(addEvening);
     const all = [...routes, ...dayRoutes, ...eveningRoutes];
+    // A district's journeys arrive when someone starts there.
+    globalThis.addEventListener?.('expadu:journeys', (event) => {
+        const before = eveningRoutes.length;
+        event.detail.trips.forEach(addEvening);
+        all.push(...eveningRoutes.slice(before));
+    });
     // A trip on the sample day: the appointment's, or an evening event's.
     const isSampleDay = (id) => id === 'day' || !!trips[id]?.evening;
     const routesOf = (id) => all.filter((item) => item.trip === id);
@@ -415,13 +458,25 @@ globalThis.JourneyModel = (() => {
             [day.to, day.alightStop].some((name) => normal(to) === normal(name))
         )
             return 'day';
-        const evening = Object.values(trips).find(
-            (trip) =>
-                trip.evening &&
-                trip.match.includes(normal(from)) &&
-                [trip.to, trip.place].some((name) => normal(to) === normal(name)),
+        // An evening event from a captured start, or the way back from it.
+        const named = (name, list) => list.some((item) => item && normal(name) === normal(item));
+        const start = captured?.place(from),
+            end = captured?.place(to);
+        const evening = Object.values(trips).find((trip) =>
+            trip?.evening &&
+            (trip.back
+                ? end?.id === trip.origin && named(from, [trip.from, trip.event])
+                : start?.id === trip.origin && named(to, [trip.to, trip.place])),
         );
         return evening ? evening.id : null;
+    }
+    // A request to or from an evening venue whose other end is a captured
+    // start not loaded yet: that start's id, to load.
+    function pending(from, to) {
+        const venues = (sample?.events || []).flatMap((e) => [e.venue, e.title]);
+        const at = (name) => venues.some((v) => normal(v) === normal(name));
+        const start = at(to) ? captured?.place(from) : at(from) ? captured?.place(to) : null;
+        return start && !captured.has(start.id) ? start.id : null;
     }
     function fromStop(route, stopId) {
         if (!route || !stopId) return route;
@@ -472,6 +527,15 @@ globalThis.JourneyModel = (() => {
                     r.walking <= Number(maxWalk) &&
                     (!avoidDelays || !r.delayed) &&
                     (!direct || r.changes === 0) &&
+                    // An evening trip has its own options for leaving now and
+                    // for arriving by the start; the way back has one set.
+                    (!r.when ||
+                        r.when === 'back' ||
+                        (schedule === 'now'
+                            ? r.when === 'now'
+                            : schedule === 'arrive'
+                              ? r.when === 'arrive'
+                              : true)) &&
                     (schedule === 'now' ||
                         (schedule === 'arrive'
                             ? at(r.arrive) <= target
@@ -540,5 +604,6 @@ globalThis.JourneyModel = (() => {
         fromStop,
         isSampleDay,
         routesOf,
+        pending,
     };
 })();
