@@ -218,7 +218,7 @@ class Component extends DCLogic {
     // The column can be drawn smaller (a phone's is scaled down).
     const scaled = drum && drum.closest('[style*="scale("]');
     const k = scaled ? parseFloat((scaled.style.transform.match(/scale\(([\d.]+)/) || [])[1]) || 1 : 1;
-    this._d = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId, el: e.currentTarget, col: !!drum, k };
+    this._d = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId, el: e.currentTarget, col: !!drum, k, drum };
   }
   // Phones (Stories): a mouse wheel or trackpad pages the posters too.
   wheel(e) {
@@ -237,8 +237,17 @@ class Component extends DCLogic {
       const dx = (e.clientX - d.x) / d.k;
       if (!d.moved && Math.abs(dx) < 6) return;
       if (!d.moved) { d.moved = true; try { d.el.setPointerCapture(d.id); } catch (err) { /* fine */ } }
-      const pitch = this.cfg().col.pitch;
-      this.setState({ colDrag: Math.max(-pitch, Math.min(pitch, dx)), anim: false });
+      const col = this.cfg().col, pitch = col.pitch;
+      d.dx = Math.max(-pitch, Math.min(pitch, dx));
+      // A round drum turns straight away, without redrawing its posters
+      // on every move (the next draw puts it where the state says).
+      const turning = col.drum && d.drum && d.drum.querySelector('[style*="preserve-3d"]');
+      if (turning) {
+        const R = (5 * pitch) / (2 * Math.PI), pos = (this.state && this.state.pos) || 0;
+        const turn = (-(pos * pitch - d.dx) / R) * (180 / Math.PI);
+        turning.style.transition = 'none';
+        turning.style.transform = 'perspective(' + col.depth + 'px) translateZ(' + (-R).toFixed(3) + 'px) rotateY(' + turn.toFixed(3) + 'deg)';
+      } else this.setState({ colDrag: d.dx, anim: false });
       return;
     }
     // Posters page sideways, or up and down where the board says so.
@@ -254,7 +263,7 @@ class Component extends DCLogic {
     if (d.col) {
       // A fifth of a poster rolls to the next or the previous one;
       // less springs back.
-      const dx = (this.state && this.state.colDrag) || 0;
+      const dx = d.dx || 0;
       this.restartRoll();
       if (Math.abs(dx) > this.cfg().col.pitch * 0.2) this.roll(dx < 0 ? 1 : -1, { colDrag: 0, snap: true });
       else this.setState({ colDrag: 0, anim: true, snap: true });
@@ -385,13 +394,40 @@ class Component extends DCLogic {
     // Posters wrap round the drum edge to edge: the one before shows at
     // the left too, so the drum's sides are never bare.
     const strip = [];
-    for (let i = -1; i <= 2 * N && tonight.length; i++) {
-      const e = tonight[((i % N) + N) % N];
-      // Only the poster facing you takes taps; the edges of its
-      // neighbours are just the drum's curve.
-      strip.push(dress(e, { left: i * c.col.pitch, w: c.col.pw, h: c.col.ph, pe: i === s.pos ? 'auto' : 'none' }));
+    const ease = 'transition: ' + (s.anim ? 'transform ' + (s.snap ? 520 : 1100) + 'ms cubic-bezier(0.65,0,0.35,1)' : 'none') + ';';
+    let colStyle;
+    if (c.col.drum && tonight.length) {
+      // A real drum (owner, 13 Oct 2026): five posters round it, a fifth
+      // of a turn each, every poster bent round the curve in slices.
+      // Rolling turns the drum. The poster facing you is pos's; the next
+      // ones are to its right, the earlier ones to its left; the two out
+      // of sight behind take whatever comes next. Every poster you can see
+      // takes taps (one turning in is as tappable as the one facing you).
+      const r3 = (v) => Math.round(v * 1000) / 1000;
+      const P = c.col.pitch, R = (5 * P) / (2 * Math.PI), S = c.col.slices || 6;
+      const sw = P / S, chord = 2 * R * Math.tan(Math.PI / 5 / S) + 0.6;
+      for (let j = 0; j < 5; j++) {
+        const m = (((j - s.pos) % 5) + 5) % 5, d = m > 2 ? m - 5 : m;
+        const e = tonight[(((s.pos + d) % N) + N) % N];
+        for (let k = 0; k < S; k++) {
+          const a = j * 72 + (k + 0.5 - S / 2) * (72 / S);
+          strip.push(dress(e, {
+            sx: r3((c.col.win - chord) / 2), sw: r3(chord), off: r3(chord / 2 - (k + 0.5) * sw), w: c.col.pw, h: c.col.ph,
+            tf: 'rotateY(' + r3(a) + 'deg) translateZ(' + r3(R) + 'px)', pe: Math.abs(d) <= 1 ? 'auto' : 'none',
+          }));
+        }
+      }
+      const turn = (-(s.pos * P - (s.colDrag || 0)) / R) * (180 / Math.PI);
+      colStyle = 'width:' + c.col.win + 'px; transform-style: preserve-3d; transform: perspective(' + c.col.depth + 'px) translateZ(' + r3(-R) + 'px) rotateY(' + r3(turn) + 'deg); ' + ease;
+    } else {
+      for (let i = -1; i <= 2 * N && tonight.length; i++) {
+        const e = tonight[((i % N) + N) % N];
+        // Only the poster facing you takes taps; the edges of its
+        // neighbours are just the drum's curve.
+        strip.push(dress(e, { left: i * c.col.pitch, w: c.col.pw, h: c.col.ph, pe: i === s.pos ? 'auto' : 'none' }));
+      }
+      colStyle = 'transform: translateX(' + (c.col.inset - s.pos * c.col.pitch + (s.colDrag || 0)) + 'px); ' + ease;
     }
-    const colStyle = 'transform: translateX(' + (c.col.inset - s.pos * c.col.pitch + (s.colDrag || 0)) + 'px); transition: ' + (s.anim ? 'transform ' + (s.snap ? 520 : 1100) + 'ms cubic-bezier(0.65,0,0.35,1)' : 'none') + ';';
     const current = s.pos % N;
     const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => this.setState({ pos: i, anim: true, snap: false }) }));
     const ruler = [];
@@ -505,8 +541,8 @@ def column(p, s=1.0, mx=False, phone=False):
     if mx == 'mock':
         chain_o = '<div class="wall-board" style="display:contents"><div class="wall-column" style="display:contents">'
         chain_c = '</div></div>'
-        strip_html = (f'''      <sc-for list="{H('strip')}" as="q" hint-placeholder-count="3"><div class="st-face" style="position:absolute;top:4px;left:{H('q.left')}px;pointer-events:{H('q.pe')}">'''
-                      '<mx-poster v="q" where="column"></mx-poster></div></sc-for>')
+        strip_html = (f'''      <sc-for list="{H('strip')}" as="q" hint-placeholder-count="3"><div class="st-face" style="position:absolute;top:4px;left:{H('q.sx')}px;width:{H('q.sw')}px;height:{H('q.h')}px;overflow:hidden;backface-visibility:hidden;transform:{H('q.tf')};pointer-events:{H('q.pe')}">'''
+                      f'''<div style="position:absolute;top:0;left:{H('q.off')}px;width:{H('q.w')}px"><mx-poster v="q" where="column"></mx-poster></div></div></sc-for>''')
     elif mx:
         import mx as MX
         chain_o, chain_c = MX.chain_open('column', 'wall-column-face')

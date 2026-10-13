@@ -5,6 +5,16 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A round drum on the column — 13 October 2026
+
+Owner request ("a proper 3D shape, not flat"). The column's drum is a
+real cylinder: five posters round it, each bent round the curve in four
+slices, with the ones beside the front poster turning away at the sides.
+Rolling turns the drum (by hand, the dots or the timer); a drag turns it
+straight away and settles on the next or previous poster. Every poster
+you can see takes taps and opens its own details. On a phone slowed four
+times it runs as smoothly as the flat column did.
+
 ## The column rolls under your finger, without dark edges — 13 October 2026
 
 Owner request. A drag that starts on the advertising column now rolls the
