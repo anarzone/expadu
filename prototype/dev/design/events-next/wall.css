@@ -3404,9 +3404,9 @@ main[data-view='wall'] #event-featured {
 #main[data-view='wall']:has(.st-root[data-layout='desktop']) {
     padding-bottom: 20px;
 }
-/* The column's posters carry no Add to plan (owner, 13 Oct 2026); a tap
-   opens the details, which has it. */
-#main .st-root [data-col-drum] .pp-plan {
+/* The street's posters (the column's and the wall's) carry no Add to plan
+   (owner, 13 Oct 2026); a tap opens the details, which has it. */
+#main .st-root .st-card .pp-plan {
     display: none;
 }
 /* What the hour hides (stars by day, the plane, the lit windows, a lamp's
