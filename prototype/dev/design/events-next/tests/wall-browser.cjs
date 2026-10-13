@@ -226,7 +226,9 @@ const inside = (box, viewport) =>
             assert.equal(await street.getAttribute('data-layout'), viewport.width <= 700 ? 'phone' : 'desktop');
             assert.ok((await street.locator('#wall svg').count()) > 2, 'the street isn’t drawn');
             assert.match(await street.locator('#wall').innerText(), /Sample weather/);
-            // An hour's story: its posters in turn, Save and More about it.
+            // An hour's story: its posters in turn, the bar gliding (no redraws),
+            // no buttons under the poster. Its poster turns over in place, holds
+            // the story, has no turn button and turns back with a tap on its back.
             const rings = street.locator('.st-rings button');
             assert.equal(await rings.count(), 2);
             await rings.last().click();
@@ -234,11 +236,38 @@ const inside = (box, viewport) =>
             const story = street.locator('.st-story [role="dialog"]');
             assert.match(await story.innerText(), /Cinema under the stars/i);
             assert.equal(await story.locator('.pp[data-poster="today-review-cinema"]').count(), 1);
-            await story.getByRole('button', { name: 'More about it' }).click();
+            assert.equal(
+                await story.evaluate((d) => [...d.querySelectorAll('button')].filter((b) => !b.closest('.st-story-poster') && /^(Save|Saved|More about it)$/.test(b.textContent.trim())).length),
+                0,
+                'no buttons under the story poster',
+            );
+            const glide = await page.evaluate(() => new Promise((done) => {
+                const bar = document.querySelector('.st-story [role="dialog"] i');
+                let redraws = 0;
+                new MutationObserver((l) => (redraws += l.length)).observe(document.querySelector('.st-story'), { subtree: true, attributes: true, childList: true });
+                const a = bar.getBoundingClientRect().width;
+                setTimeout(() => done({ grew: bar.getBoundingClientRect().width - a, redraws }), 400);
+            }));
+            assert.ok(glide.grew > 0 && glide.redraws === 0, `the story bar should glide: ${JSON.stringify(glide)}`);
+            await story.locator('.pp-open').click();
+            await page.waitForTimeout(500);
+            assert.equal(await story.locator('.pp.is-turned').count(), 1);
+            assert.equal(await story.locator('.pp-turn-back').isVisible(), false, 'no turn button in a story');
+            const facts = await story.locator('.pp-facts').boundingBox();
+            await page.mouse.click(facts.x + facts.width / 2, facts.y + 6);
+            await page.waitForTimeout(500);
+            assert.equal(await story.locator('.pp.is-turned').count(), 0, 'a tap on the back turns it back');
+            await story.locator('.pp-open').click();
+            await page.waitForTimeout(500);
+            await story.locator('.pp-back-more').click();
             await page.waitForSelector('#shared-dialog[open] .event-sheet');
             await page.waitForTimeout(500);
-            assert.equal(await story.count(), 0, 'the story stays open under the sheet');
+            // The sheet opens over the story, which waits underneath.
+            assert.equal(await story.count(), 1, 'the story waits under the sheet');
             await page.keyboard.press('Escape');
+            await page.waitForTimeout(400);
+            assert.equal(await page.locator('#shared-dialog[open]').count(), 0);
+            if (await story.count()) await story.getByRole('button', { name: 'Close stories' }).click();
             await page.waitForTimeout(400);
             // The column rolls tonight's posters (its caption on a desktop);
             // its facing poster lifts.

@@ -29,14 +29,18 @@ EXTRA = r'''
     return 'linear-gradient(' + (dir || '180deg') + ',' + k.s1 + ',' + k.s2 + ' 30%,' + k.s3 + ' 62%,' + k.s4 + ' 86%,' + k.s5 + ')';
   }
   // Stories move on by themselves, as in Instagram; holding pauses them.
+  // The bar glides by itself (a CSS transition); the tick only steps on.
   storyTick() {
     const s = this.state || {};
     const st = s.story;
     if (!st) return;
-    if ((s.turned || {})['story:0']) { this.setState({ story: Object.assign({}, st, { t: st.t + 120 }) }); return; }
-    if (Date.now() - st.t < 3600) { this.setState({ now: Date.now() }); return; }
+    if (this.storyPaused()) { this._paused = true; this.setState({ story: Object.assign({}, st, { t: st.t + 120 }) }); return; }
+    if (this._paused) { this._paused = false; this.setState({ now: Date.now() }); return; }
+    if (Date.now() - st.t < 3600) return;
     this.storyStep(1);
   }
+  // A story waits while its poster is turned over.
+  storyPaused() { return !!((this.state || {}).turned || {})['story:0']; }
   storyHours() { const out = []; for (let h = 13; h <= 23; h++) out.push(h); return out.concat([8, 9, 10, 11, 12]); }
   storyList(h) {
     const s = this.state || {};
@@ -193,9 +197,12 @@ EXTRA = r'''
         const e = list[Math.min(s.story.i, list.length - 1)] || ev[0];
         const t = s.press ? (s.pressAt - s.story.t) : (Date.now() - s.story.t);
         const prog = Math.max(0, Math.min(1, t / 3600));
+        // The current bar glides to its end in the time left, or holds where it is.
+        const held = s.press || this.storyPaused();
+        const run = held ? 'width:' + (prog * 100).toFixed(2) + '%' : 'width:100%;transition:width ' + Math.max(0, Math.round(3600 - t)) + 'ms linear';
         const k = this.sky(s.story.h + 0.5);
         v.st = {
-          bars: list.map((x, j) => ({ w: (j < s.story.i ? 100 : j === s.story.i ? Math.round(prog * 100) : 0) + '%' })),
+          bars: list.map((x, j) => ({ w: j < s.story.i ? 'width:100%' : j === s.story.i ? run : 'width:0%' })),
           bg: 'linear-gradient(180deg,' + k.s1 + ',' + k.s2 + ' 30%,' + k.s3 + ' 60%,' + k.s5 + ')',
           title: two(s.story.h) + ':00', count: (s.story.i + 1) + ' of ' + list.length, weather: k.temp + ' ' + k.name,
           p: thumb(e, c.storyW, c.storyH), line1: e.ph ? 'Layout placeholder #' + e.n : e.title,
@@ -420,7 +427,7 @@ def story_viewer(phone):
   {backdrop}{outer}
   <div role="dialog" aria-label="Stories at {H('st.title')}" style="{shell}">
     <div style="display:flex;gap:4px;padding:12px 12px 0">
-      <sc-for list="{H('st.bars')}" as="b" hint-placeholder-count="5"><span style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.35);overflow:hidden"><i style="display:block;height:100%;width:{H('b.w')};background:#fff"></i></span></sc-for>
+      <sc-for list="{H('st.bars')}" as="b" hint-placeholder-count="5"><span style="flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.35);overflow:hidden"><i style="display:block;height:100%;{H('b.w')};background:#fff"></i></span></sc-for>
     </div>
     <div style="display:flex;align-items:center;gap:10px;padding:12px 8px 0 14px">
       <span style="display:flex;align-items:center;height:30px;padding:0 10px;border-radius:7px;background:#1d4d8f;box-shadow:inset 0 0 0 2px #fff;font-weight:800;font-variant-numeric:tabular-nums">{H('st.title')}</span>
@@ -431,15 +438,6 @@ def story_viewer(phone):
       <button type="button" aria-label="Previous poster" onClick="{H('st.prev')}" style="position:absolute;left:0;top:0;bottom:0;width:calc((100% - {w}px) / 2);border:0;background:none;cursor:pointer"></button>
       <button type="button" aria-label="Next poster" onClick="{H('st.next')}" style="position:absolute;right:0;top:0;bottom:0;width:calc((100% - {w}px) / 2);border:0;background:none;cursor:pointer"></button>
       <div class="mx" style="position:relative;width:{w}px;height:{h}px;filter:drop-shadow(0 20px 30px rgba(0,0,0,.4))">{MX.poster_markup('st.p', 'story')}</div>
-    </div>
-    <div style="padding:40px 16px {34 if phone else 22}px;margin-top:-40px;background:linear-gradient(180deg,rgba(15,10,30,0),rgba(15,10,30,.62) 45%,rgba(15,10,30,.78))">
-      <strong style="display:block;font-size:18px;text-shadow:0 1px 3px #0007">{H('st.line1')}</strong>
-      <span style="display:block;font-size:13px;opacity:.95;text-shadow:0 1px 3px #0007">{H('st.line2')}</span>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button type="button" onClick="{H('st.save')}" style="height:44px;padding:0 18px;border:1.5px solid;border-radius:999px;font:inherit;font-weight:700;cursor:pointer;{H('st.saveStyle')}">{H('st.saveLabel')}</button>
-        <button type="button" onClick="{H('st.more')}" style="height:44px;padding:0 18px;border:0;border-radius:999px;background:#fffdf8;color:#211d15;font:inherit;font-weight:700;cursor:pointer">More about it</button>
-      </div>
-      <sc-if value="{H('st.planOpen')}" hint-placeholder-val="{{{{ false }}}}"><p style="margin:8px 0 0;padding:8px 10px;border-radius:10px;background:#fffdf8;color:#00566a;font-size:12.5px">{H('st.planText')}</p></sc-if>
     </div>
   </div>
 </sc-if>'''

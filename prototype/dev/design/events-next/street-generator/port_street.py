@@ -340,7 +340,9 @@ def logic():
     L = L.replace("if (s.hold || s.sel || s.lift) return;", "if (s.hold || this.mxBusy()) return;")
     L = L.replace("if (s.hold || s.sel || s.story) return;", "if (s.hold || this.mxBusy()) return;")
     # A story waits while its poster is turned over.
-    L = L.replace("if ((s.turned || {})['story:0']) {", "if (document.querySelector('.st-story-poster .pp.is-turned')) {")
+    old = "storyPaused() { return !!((this.state || {}).turned || {})['story:0']; }"
+    assert old in L
+    L = L.replace(old, "storyPaused() { return !!document.querySelector('.st-story-poster .pp.is-turned'); }")
     L = L.replace('__AMAP__', '{}')
     head = L.index('class Component extends DCLogic {')
     body = L[head + len('class Component extends DCLogic {'):]

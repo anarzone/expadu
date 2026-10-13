@@ -5,6 +5,23 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A smoother, simpler story — 13 October 2026
+
+Owner request.
+
+- **The progress bar glides**: the current bar runs to its end with one
+  CSS transition instead of being redrawn every 120ms, so it no longer
+  steps, and the street isn't redrawn while a story plays. It holds while
+  the story is pressed or its poster is turned over.
+- **Nothing under the poster**: the caption and its Save and More about it
+  went; the poster's own back has Save, Add to plan and More about it,
+  and More about it opens the sheet over the story, which waits.
+- **No turn button in a story**: the poster turns over with a tap on it
+  and back with a tap on its back (or Escape).
+
+The viewer's template and logic are in `street-generator/gen_apps.py`
+(regenerated); the tap on the back is in `wall.js`.
+
 ## Stories in the sky; the street fits the screen — 13 October 2026
 
 Owner request, chosen from two previews. On a desktop or tablet the space

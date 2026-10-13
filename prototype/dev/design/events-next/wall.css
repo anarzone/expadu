@@ -3532,6 +3532,21 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.has-note .event-results-count {
     justify-content: flex-end;
 }
+/* A story's poster turns back with a tap on its back, or Escape; it has
+   no turn button (owner, 13 Oct 2026). */
+.st-story-poster .pp.is-turned .pp-back {
+    cursor: pointer;
+}
+.st-story-poster .pp-turn-back {
+    display: none;
+}
+/* A story's progress bar glides from empty when it first appears. */
+.st-story [role='dialog'] i {
+    @starting-style {
+        /* Over the bar's own (inline) width. */
+        width: 0 !important;
+    }
+}
 /* An hour's story ring shows its first poster's picture. */
 .st-art {
     position: relative;

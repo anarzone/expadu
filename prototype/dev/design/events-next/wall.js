@@ -1428,6 +1428,13 @@
         }
         sheetSwipe();
         main.addEventListener('click', (event) => {
+            // In a story the poster turns over in its place, and a tap on
+            // its back turns it back: no turn button (owner, 13 Oct 2026).
+            const back = event.target.closest('.st-story-poster .pp.is-turned .pp-back');
+            if (back && !event.target.closest('button, a, input, select, textarea, label, summary')) {
+                P.turn(back);
+                return;
+            }
             const turn = event.target.closest('[data-poster-turn]');
             if (turn) {
                 // A poster on the wall or the column lifts to turn over.
