@@ -5,6 +5,14 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## No big gaps in the details — 13 October 2026
+
+Owner request, with Apple's spacing as the reference: one rhythm of 16
+under the poster, 12 between blocks and 20 above the bottom bar. Rows are
+44 tall at least, with smaller icon tiles. On a desktop, Get there and Add
+to plan are as tall as what's on them instead of leaving the rest of the
+screen empty.
+
 ## No tabs: Get there and Add to plan open inside, with Back — 13 October 2026
 
 Owner request. The About, Plan and Get there tabs are gone; the page is

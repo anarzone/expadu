@@ -3495,14 +3495,15 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 #shared-dialog .event-sheet .event-today {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    margin: 0;
 }
 #shared-dialog .event-sheet .event-fit {
     display: flex;
     gap: 12px;
     align-items: flex-start;
     margin: 0 !important;
-    padding: 14px 16px;
+    padding: 12px 14px;
     border-radius: 14px;
     background: #fff1cc;
     color: #2b2414;
@@ -3539,13 +3540,13 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 }
 #shared-dialog .event-sheet .event-row {
     display: grid;
-    grid-template-columns: 40px minmax(0, 1fr) auto;
-    gap: 14px;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    gap: 12px;
     align-items: center;
     width: 100%;
-    min-height: 0;
+    min-height: 44px;
     margin: 0;
-    padding: 13px 0;
+    padding: 10px 0;
     border: 0;
     border-bottom: 1px solid #e6ddcb;
     border-radius: 0;
@@ -3566,9 +3567,9 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 #shared-dialog .event-sheet .event-row-icon {
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: #f1ead9;
     color: #4b4437;
 }
@@ -3606,7 +3607,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     font-weight: 400;
 }
 #shared-dialog .event-sheet .event-about .event-row-label {
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 #shared-dialog .event-sheet .event-about .event-description {
     max-width: 62ch;
@@ -3620,7 +3621,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     color: #4f493d;
 }
 #shared-dialog .event-sheet .event-reminder {
-    padding: 12px 0;
+    padding: 10px 0;
     border: 0;
     border-top: 1px solid #e6ddcb;
     border-bottom: 1px solid #e6ddcb;
@@ -3629,9 +3630,9 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     box-shadow: none;
 }
 #shared-dialog .event-sheet .event-reminder .event-fact-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: #f1ead9;
 }
 #shared-dialog .event-sheet .event-reminder strong {
@@ -3681,9 +3682,37 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     z-index: 4;
     box-shadow: 0 0 0 12px var(--color-bg, #faf6ee);
 }
+/* One rhythm, as in Apple's grouped lists: 16 under the poster, 12 between
+   blocks, 20 above the bottom bar; rows are 44 tall at least. */
 #shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
-    gap: 14px;
-    padding-top: 14px;
+    gap: 12px;
+    padding-top: 16px;
+    padding-bottom: 20px;
+}
+#shared-dialog .event-sheet [data-panel='about'] .event-source {
+    margin-top: 0;
+}
+#shared-dialog .event-sheet:has(.event-hero) > .place-sheet-panel {
+    margin-top: 0;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-scroll {
+    padding-top: 16px;
+    padding-bottom: 20px;
+}
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-scroll > :last-child,
+#shared-dialog .event-sheet[data-section='plan'] .selection-hint {
+    margin-bottom: 0;
+}
+/* A short sub-page doesn't leave the rest of the screen empty: the page is
+   as tall as what's on it. */
+@media (min-width: 701px) {
+    #shared-dialog:has(.event-sheet[data-section]:not([data-section='about'])) {
+        height: fit-content;
+        max-height: min(828px, calc(100vh - 32px));
+    }
+    #shared-dialog:has(.event-hero) .event-sheet[data-section]:not([data-section='about']) {
+        min-height: 0;
+    }
 }
 /* Close floats on the poster; once it has gone by, it sits beside the tabs. */
 #shared-dialog:has(.event-hero) .dialog-head {
@@ -3785,8 +3814,8 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     border-top: 0;
 }
 #shared-dialog .event-sheet .event-row.event-where {
-    margin: 12px 0;
-    padding: 14px;
+    margin: 0 0 2px;
+    padding: 12px 14px;
     border: 0;
     border-radius: 14px;
     background: #e8f0fb;
@@ -3809,7 +3838,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 6px;
+    margin-top: 4px;
     color: #1d4d8f;
     font-size: 14px;
     font-weight: 600;
