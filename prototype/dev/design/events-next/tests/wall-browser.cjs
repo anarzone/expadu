@@ -386,7 +386,14 @@ const inside = (box, viewport) =>
             assert.match(await sheet.locator('.event-today .pp-flag--rain').innerText(), /Rain likely at 20:00 · sample forecast/);
             assert.match(await sheet.locator('.event-today .pp-fit').innerText(), /after your Blue Card appointment ends/);
             assert.equal(await sheet.locator('.event-know dd.is-unknown').count(), 0);
-            assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed: admission, language/);
+            // The About tab as labelled rows: where, when, what's not listed.
+            assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed\s+Admission, language/i);
+            assert.deepEqual(
+                await sheet.locator('.event-facts .event-row-label').allInnerTexts(),
+                ['WHERE', 'WHEN', 'WHEN TO ARRIVE', 'NOT LISTED'],
+            );
+            assert.match(await sheet.locator('.event-facts .event-row').nth(1).innerText(), /Wed 30 Sept · 20:00–22:00/);
+            assert.match(await sheet.locator('.event-about').innerText(), /^About\s/i);
             await page.keyboard.press('Escape');
 
             // The captured past day: faded posters, no Save or Plan, no

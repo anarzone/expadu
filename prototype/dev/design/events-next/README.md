@@ -5,6 +5,25 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A readable About tab — 13 October 2026
+
+Owner request, from a preview. The event sheet's About tab was the same
+grey (13px) almost everywhere, its cards barely lighter than the sheet,
+and nothing said what mattered most.
+
+- **For you** leads: how the event fits your day, dark on a warm
+  highlight.
+- **Labelled rows** split by hairlines, each with its icon: Where (the
+  venue, its area and distance; it opens Get there), When (the date and
+  listed times), what the listing says (When to arrive, and any other
+  known fact) and **Not listed** (quieter, with "Check with the organiser
+  before you go").
+- The description under its own **About** label, in dark 16px text; the
+  reminder as a row, not a floating card; Listing details last.
+
+`wall.js` builds the rows on the Events page (`aboutRows`); other pages'
+sheets are unchanged.
+
 ## A smoother, simpler story — 13 October 2026
 
 Owner request.

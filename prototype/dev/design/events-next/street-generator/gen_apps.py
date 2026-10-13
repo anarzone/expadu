@@ -34,8 +34,9 @@ EXTRA = r'''
     const s = this.state || {};
     const st = s.story;
     if (!st) return;
-    if (this.storyPaused()) { this._paused = true; this.setState({ story: Object.assign({}, st, { t: st.t + 120 }) }); return; }
-    if (this._paused) { this._paused = false; this.setState({ now: Date.now() }); return; }
+    // A pause keeps the time it had when it began (_held), exactly.
+    if (this.storyPaused()) { if (this._held == null) { this._held = Date.now() - st.t; this.setState({ now: Date.now() }); } return; }
+    if (this._held != null) { const held = this._held; this._held = null; this.setState({ story: Object.assign({}, st, { t: Date.now() - held }) }); return; }
     if (Date.now() - st.t < 3600) return;
     this.storyStep(1);
   }
@@ -50,6 +51,7 @@ EXTRA = r'''
     return ev.filter((e) => e.h === h && (cat === 'all' || this.catOf(e) === cat));
   }
   storyStep(dir) {
+    this._held = null;
     const s = this.state || {};
     const st = s.story;
     if (!st) return;
@@ -193,10 +195,14 @@ EXTRA = r'''
         }).filter((x) => x.has);
       }
       v.storyOpen = !!s.story;
+      if (!s.story) this._held = null;
       if (s.story) {
         const list = this.storyList(s.story.h);
         const e = list[Math.min(s.story.i, list.length - 1)] || ev[0];
-        const t = s.press ? (s.pressAt - s.story.t) : (Date.now() - s.story.t);
+        const pausedNow = !s.press && this.storyPaused();
+        if (pausedNow && this._held == null) this._held = Date.now() - s.story.t;
+        // Paused, or just resumed (the tick moves the start on): the held time.
+        const t = s.press ? (s.pressAt - s.story.t) : this._held != null ? this._held : (Date.now() - s.story.t);
         const prog = Math.max(0, Math.min(1, t / 3600));
         // The current bar glides to its end in the time left, or holds where it is.
         const held = s.press || this.storyPaused();

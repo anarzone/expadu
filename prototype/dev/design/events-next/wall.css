@@ -3553,3 +3553,164 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     overflow: hidden;
     container-type: inline-size;
 }
+
+/* ---------- The event sheet's About tab (owner, 13 Oct 2026) ----------
+   It was the same grey everywhere, with cards barely lighter than the
+   sheet. How it fits your day leads, on a warm highlight; then labelled
+   rows split by hairlines with dark values; the description under its own
+   label; the reminder as a row. wall.js builds the rows. */
+#shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+#shared-dialog .event-sheet .event-today {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#shared-dialog .event-sheet .event-fit {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 0 !important;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #fff1cc;
+    color: #2b2414;
+    font-size: 15.5px !important;
+    font-weight: 500;
+    line-height: 1.45;
+}
+#shared-dialog .event-sheet .event-fit > span {
+    flex: 1;
+    width: auto;
+    height: auto;
+    margin: 0;
+    border-radius: 0;
+    background: none;
+}
+#shared-dialog .event-sheet .event-fit > svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    color: #8a5a00;
+}
+#shared-dialog .event-sheet .event-fit b {
+    display: block;
+    margin-bottom: 2px;
+    color: #8a5a00;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+#shared-dialog .event-sheet .event-facts {
+    border-top: 1px solid #e6ddcb;
+}
+#shared-dialog .event-sheet .event-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 13px 0;
+    border: 0;
+    border-bottom: 1px solid #e6ddcb;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: #211d15;
+    font: inherit;
+    text-align: left;
+}
+#shared-dialog .event-sheet button.event-row {
+    cursor: pointer;
+}
+#shared-dialog .event-sheet button.event-row > svg:last-child {
+    width: 20px;
+    height: 20px;
+    color: #4b4437;
+}
+#shared-dialog .event-sheet .event-row-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #f1ead9;
+    color: #4b4437;
+}
+#shared-dialog .event-sheet .event-row-icon svg {
+    width: 20px;
+    height: 20px;
+}
+#shared-dialog .event-sheet .event-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+#shared-dialog .event-sheet .event-row-label {
+    margin: 0;
+    color: #6b6457;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+#shared-dialog .event-sheet .event-row-value {
+    color: #211d15;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+#shared-dialog .event-sheet .event-row-sub {
+    color: #4f493d;
+    font-size: 14px;
+    line-height: 1.35;
+}
+/* What the listing doesn't say reads quieter than what it does. */
+#shared-dialog .event-sheet .event-unlisted .event-row-value {
+    font-weight: 400;
+}
+#shared-dialog .event-sheet .event-about .event-row-label {
+    margin-bottom: 6px;
+}
+#shared-dialog .event-sheet .event-about .event-description {
+    max-width: 62ch;
+    margin: 0;
+    color: #2b261d;
+    font-size: 16px;
+    line-height: 1.55;
+}
+#shared-dialog .event-sheet .event-about .event-about-source {
+    margin: 6px 0 0;
+    color: #4f493d;
+}
+#shared-dialog .event-sheet .event-reminder {
+    padding: 12px 0;
+    border: 0;
+    border-top: 1px solid #e6ddcb;
+    border-bottom: 1px solid #e6ddcb;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+#shared-dialog .event-sheet .event-reminder .event-fact-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #f1ead9;
+}
+#shared-dialog .event-sheet .event-reminder strong {
+    color: #211d15;
+    font-size: 15.5px;
+}
+#shared-dialog .event-sheet .event-reminder small {
+    color: #4f493d;
+    font-size: 13.5px;
+}

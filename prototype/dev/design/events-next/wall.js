@@ -1673,6 +1673,71 @@
                     `<p class="event-unlisted"><strong>Not listed:</strong> ${E(listWords(words))}.${closed ? '' : ' Check with the organiser before you go.'}</p>`,
                 );
         }
+        if (about) aboutRows(about, item, closed);
+    }
+    /* The About tab as one clear list (owner, 13 Oct 2026): it was the same
+       grey everywhere, with cards barely lighter than the sheet. How the
+       event fits your day leads, highlighted; then labelled rows split by
+       hairlines (where, when, what the listing says, what it doesn't), the
+       description under its own label, and the reminder as a row. */
+    const factIcons = { Admission: 'ticket', 'When to arrive': 'walk', Language: 'chat', 'Who it’s for': 'people', Accessibility: 'wheelchair' };
+    function aboutRows(about, item, closed) {
+        if (about.querySelector('.event-facts')) return;
+        const row = (icon, label, value, sub, cls = '') =>
+            `<div class="event-row${cls}"><span class="event-row-icon">${I(icon)}</span><span class="event-row-text"><span class="event-row-label">${label}</span><span class="event-row-value">${value}</span>${sub ? `<span class="event-row-sub">${sub}</span>` : ''}</span></div>`;
+        const fit = about.querySelector('.event-today .pp-fit');
+        if (fit) {
+            fit.classList.add('event-fit');
+            const text = fit.textContent.trim();
+            fit.innerHTML = `${I('spark')}<span><b>For you</b>${E(text)}</span>`;
+        }
+        const facts = document.createElement('div');
+        facts.className = 'event-facts';
+        const venue = about.querySelector('.event-venue');
+        if (venue) {
+            venue.classList.add('event-row');
+            venue.querySelector('.event-fact-icon')?.classList.add('event-row-icon');
+            const text = venue.querySelector(':scope > span:nth-child(2)');
+            text?.classList.add('event-row-text');
+            text?.insertAdjacentHTML('afterbegin', '<span class="event-row-label">Where</span>');
+            text?.querySelector('strong')?.classList.add('event-row-value');
+            text?.querySelector('small')?.classList.add('event-row-sub');
+            facts.append(venue);
+        }
+        const day = F.dateLabel(item.date, { weekday: 'short', month: 'short' });
+        const times = `${E(item.start || '')}${item.end ? `–${E(item.end)}` : ''}`;
+        facts.insertAdjacentHTML(
+            'beforeend',
+            row('clock', 'When', `${E(day)}${times ? ` · ${times}` : ''}`, closed ? 'Already happened' : item.end ? 'Listed times' : 'End time to check'),
+        );
+        const know = about.querySelector('.event-know');
+        know?.querySelectorAll('dl > div').forEach((fact) => {
+            const label = fact.querySelector('dt').textContent;
+            facts.insertAdjacentHTML('beforeend', row(factIcons[label] || 'info', E(label), E(fact.querySelector('dd').textContent)));
+        });
+        const unlisted = know?.querySelector('.event-unlisted');
+        if (unlisted) {
+            const words = unlisted.textContent.replace(/^Not listed:\s*/, '').replace(/\.\s*Check.*$|\.$/, '');
+            facts.insertAdjacentHTML(
+                'beforeend',
+                row('info', 'Not listed', E(words.charAt(0).toUpperCase() + words.slice(1)), closed ? '' : 'Check with the organiser before you go.', ' event-unlisted'),
+            );
+        }
+        know?.remove();
+        const start = about.querySelector('.event-today') || about.querySelector('.event-past-note');
+        const lead = about.querySelector('.event-translation') || start;
+        if (lead) lead.after(facts);
+        else about.prepend(facts);
+        const description = about.querySelector('.event-description');
+        if (description) {
+            const box = document.createElement('section');
+            box.className = 'event-about';
+            box.innerHTML = '<h3 class="event-row-label">About</h3>';
+            facts.after(box);
+            box.append(description);
+            const source = about.querySelector('.event-about-source');
+            if (source) box.append(source);
+        }
     }
 
     // The event sheet's cover follows the view: the poster's art on the
