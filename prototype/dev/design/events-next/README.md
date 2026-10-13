@@ -5,6 +5,15 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## About first, then when and where — 13 October 2026
+
+Owner request. The details read in order: About (what it is), then the
+times (When, When to arrive), then Where, then the rest (how it fits
+your day, what isn't listed, the reminder, the listing). Where is three
+lines like When: the label, the place with its area, and where you'd
+set off and how far away it is ("From Neumarkt · 2.0 km away"); why
+you'd start there is on the Get there page.
+
 ## Buttons that say what they do — 13 October 2026
 
 Owner request, after a review of every button's words.

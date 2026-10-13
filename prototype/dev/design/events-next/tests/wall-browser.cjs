@@ -185,7 +185,8 @@ const inside = (box, viewport) =>
             assert.equal(await page.locator('#shared-dialog .event-getthere').count(), 0, 'one way there: the Where row');
             const whereRow = await page.locator('#shared-dialog .event-where').innerText();
             assert.match(whereRow, /^Where$/im);
-            assert.match(whereRow, /^Get there from /m, 'the Where row says where you’d set off');
+            assert.match(whereRow, /^From .+ · [\d.]+ km away$/m, 'the Where row says where you’d set off and how far');
+            assert.equal(whereRow.split('\n').length, 3, 'Where is three lines, like When');
             assert.doesNotMatch(whereRow, /arrive by/, 'the arrival time is the When row’s');
             await page.locator('#shared-dialog .event-where').click();
             await page.waitForTimeout(400);
@@ -320,12 +321,13 @@ const inside = (box, viewport) =>
                         return o.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
                     }),
                 );
-                assert.ok(facing >= 0, 'no column poster faces you');
                 try {
+                    // Mid-turn, no poster faces you yet.
+                    assert.ok(facing >= 0, 'no column poster faces you');
                     await page.locator('.st-face .pp-open').nth(facing).click({ timeout: 3000 });
                     break;
                 } catch (error) {
-                    if (attempt === 3) throw error;
+                    if (attempt === 5) throw error;
                     await page.waitForTimeout(500);
                 }
             }
@@ -422,13 +424,19 @@ const inside = (box, viewport) =>
             assert.match(await sheet.locator('.event-today .pp-flag--rain').innerText(), /Rain likely at 20:00 · sample forecast/);
             assert.match(await sheet.locator('.event-today .pp-fit').innerText(), /after your Blue Card appointment ends/);
             assert.equal(await sheet.locator('.event-know dd.is-unknown').count(), 0);
-            // The About tab as labelled rows: where, when, what's not listed.
+            // The details in order: what it is, when, where, then the rest.
             assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed\s+Admission, language/i);
             assert.deepEqual(
-                await sheet.locator('.event-facts .event-row-label').allInnerTexts(),
-                ['WHERE', 'WHEN', 'WHEN TO ARRIVE', 'NOT LISTED'],
+                await sheet.locator('[data-panel="about"] .place-sheet-scroll').evaluate((scroll) =>
+                    [...scroll.children].map((block) => block.className.split(' ')[0]),
+                ),
+                ['event-about', 'event-facts', 'event-today', 'event-facts', 'event-reminder', 'event-source'],
             );
-            assert.match(await sheet.locator('.event-facts .event-row').nth(1).innerText(), /Wed 30 Sept · 20:00–22:00/);
+            assert.deepEqual(
+                await sheet.locator('.event-facts .event-row-label').allInnerTexts(),
+                ['WHEN', 'WHEN TO ARRIVE', 'WHERE', 'NOT LISTED'],
+            );
+            assert.match(await sheet.locator('.event-facts .event-row').first().innerText(), /Wed 30 Sept · 20:00–22:00/);
             assert.match(await sheet.locator('.event-about').innerText(), /^About\s/i);
             await page.keyboard.press('Escape');
 

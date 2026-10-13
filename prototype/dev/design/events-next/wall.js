@@ -1827,21 +1827,23 @@
             way.classList.add('event-where');
             way.setAttribute('aria-label', `Get there: ${item.venue}`);
             way.querySelector('.event-row-label').textContent = 'Where';
-            // The area stays under the venue; the way-there line says where
-            // you'd set off and how far away it is (in a straight line, so
-            // "away", not a route), and why, when the start is your last
-            // plan. The arrival time is the When row's.
+            // Three lines, like When (owner, 13 Oct 2026): the label, the
+            // place with its area, and where you'd set off and how far it is
+            // (in a straight line, so "away"). Why you'd start there is on
+            // the Get there page.
             const sub = way.querySelector('.event-row-sub');
             const [area, distance] = (sub?.textContent || '').split(' · ');
-            if (sub && distance) sub.textContent = area;
+            sub?.remove();
+            if (area) way.querySelector('.event-row-value')?.insertAdjacentHTML('beforeend', `<span class="event-where-area"> · ${E(area)}</span>`);
             const far = distance?.match(/^(.+?) from (.+)$/);
-            const note = sheet.querySelector('[data-panel="directions"] [data-from-note]')?.textContent.trim() || '';
-            const after = note.match(/^After (.+), which ends at/)?.[1];
+            const D = window.ExpaduEventDistance;
+            const origin = !far && from ? D?.locate(from, []) : null;
+            const km = origin && Number.isFinite(item.lat) ? D.format(D.km(origin, item)) : '';
             const go = far
-                ? `Get there from ${far[2]} · ${far[1]} away`
+                ? `From ${far[2]} · ${far[1]} away`
                 : from
-                  ? `Get there from ${from}${after ? `, after ${/appointment$/i.test(after) ? 'your appointment' : after}` : ''}`
-                  : 'Get there · choose where you start';
+                  ? `From ${from}${km ? ` · ${km} away` : ''}`
+                  : 'Choose where you start';
             way.querySelector('.event-row-text')?.insertAdjacentHTML(
                 'beforeend',
                 `<span class="event-where-go">${I('route')}<span>${E(go)}</span></span>`,
@@ -1878,8 +1880,12 @@
             const text = fit.textContent.trim();
             fit.innerHTML = `${I('spark')}<span><b>For you</b>${E(text)}</span>`;
         }
+        // The order (owner, 13 Oct 2026): what it is, when, where, then the
+        // rest (how it fits your day, what the listing says and doesn't).
         const facts = document.createElement('div');
         facts.className = 'event-facts';
+        const more = document.createElement('div');
+        more.className = 'event-facts event-facts--more';
         const venue = about.querySelector('.event-venue');
         if (venue) {
             venue.classList.add('event-row');
@@ -1889,7 +1895,6 @@
             text?.insertAdjacentHTML('afterbegin', '<span class="event-row-label">Where</span>');
             text?.querySelector('strong')?.classList.add('event-row-value');
             text?.querySelector('small')?.classList.add('event-row-sub');
-            facts.append(venue);
         }
         const day = F.dateLabel(item.date, { weekday: 'short', month: 'short' });
         const times = `${E(item.start || '')}${item.end ? `–${E(item.end)}` : ''}`;
@@ -1900,31 +1905,41 @@
         const know = about.querySelector('.event-know');
         know?.querySelectorAll('dl > div').forEach((fact) => {
             const label = fact.querySelector('dt').textContent;
-            facts.insertAdjacentHTML('beforeend', row(factIcons[label] || 'info', E(label), E(fact.querySelector('dd').textContent)));
+            (label === 'When to arrive' ? facts : more).insertAdjacentHTML('beforeend', row(factIcons[label] || 'info', E(label), E(fact.querySelector('dd').textContent)));
         });
+        if (venue) facts.append(venue);
         const unlisted = know?.querySelector('.event-unlisted');
         if (unlisted) {
             const words = unlisted.textContent.replace(/^Not listed:\s*/, '').replace(/\.\s*Check.*$|\.$/, '');
-            facts.insertAdjacentHTML(
+            more.insertAdjacentHTML(
                 'beforeend',
                 row('info', 'Not listed', E(words.charAt(0).toUpperCase() + words.slice(1)), closed ? '' : 'Check with the organiser before you go.', ' event-unlisted'),
             );
         }
         know?.remove();
-        const start = about.querySelector('.event-today') || about.querySelector('.event-past-note');
-        const lead = about.querySelector('.event-translation') || start;
-        if (lead) lead.after(facts);
-        else about.prepend(facts);
+        // An event that has already happened says so above everything.
+        const past = about.querySelector('.event-past-note');
+        if (past) about.prepend(past);
         const description = about.querySelector('.event-description');
+        let box;
         if (description) {
-            const box = document.createElement('section');
+            box = document.createElement('section');
             box.className = 'event-about';
             box.innerHTML = '<h3 class="event-row-label">About</h3>';
-            facts.after(box);
+            const translation = about.querySelector('.event-translation');
             box.append(description);
+            if (translation) box.append(translation);
             const source = about.querySelector('.event-about-source');
             if (source) box.append(source);
+            if (past) past.after(box);
+            else about.prepend(box);
         }
+        if (box || past) (box || past).after(facts);
+        else about.prepend(facts);
+        const today = about.querySelector('.event-today');
+        if (today) facts.after(today);
+        (today || facts).after(more);
+        if (!more.children.length) more.remove();
     }
 
     // The event sheet's cover follows the view: the poster's art on the

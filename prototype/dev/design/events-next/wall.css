@@ -3814,7 +3814,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     border-top: 0;
 }
 #shared-dialog .event-sheet .event-row.event-where {
-    margin: 0 0 2px;
+    margin: 8px 0;
     padding: 12px 14px;
     border: 0;
     border-radius: 14px;
@@ -3831,14 +3831,16 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 #shared-dialog .event-sheet .event-where .event-row-value {
     color: #12305c;
 }
-#shared-dialog .event-sheet .event-where .event-row-sub {
+#shared-dialog .event-sheet .event-where .event-row-sub,
+#shared-dialog .event-sheet .event-where .event-where-area {
     color: #2b4a75;
+    font-weight: 400;
 }
 #shared-dialog .event-sheet .event-where .event-where-go {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 4px;
+    margin-top: 2px;
     color: #1d4d8f;
     font-size: 14px;
     font-weight: 600;
