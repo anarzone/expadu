@@ -4519,3 +4519,17 @@ html[data-pointer] #shared-dialog:has(.event-hero) :focus-visible {
     line-height: 0.9;
     -webkit-text-stroke: 1.5px var(--pp-text);
 }
+/* Composer's button on a phone sits at the end of the hour rings, level
+   with them, not over the wall's poster (wall.js composerByRings); the rings
+   keep room for it. Opened, Composer is where it always is. */
+@media (max-width: 700px) {
+    :root body.composer-by-rings #composer-tray:not(.is-active) {
+        position: absolute;
+        top: var(--composer-top, 0px);
+        bottom: auto;
+        z-index: 5;
+    }
+    body.composer-by-rings .st-root[data-layout='phone'] .st-rings > div {
+        padding-right: 64px !important;
+    }
+}

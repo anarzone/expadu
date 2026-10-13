@@ -1253,6 +1253,7 @@
                     }),
             });
             if (streetPending) streetView.update(streetPending, catalogue);
+            composerByRings(host, main);
             // The page's own empty state replaces the street.
             new MutationObserver(() => {
                 if (main.querySelector('#event-list .event-empty')) host.hidden = true;
@@ -1991,6 +1992,33 @@
         if (today) facts.after(today);
         (today || facts).after(more);
         if (!more.children.length) more.remove();
+    }
+
+    /* Composer's button on a phone (owner, 13 Oct 2026): it sits at the end
+       of the hour rings, level with them, instead of floating over the
+       wall's poster. With no rings (nothing that day) it floats as on every
+       other page; opened, Composer is where it always is. */
+    function composerByRings(host, main) {
+        const phone = matchMedia('(max-width: 700px)');
+        let frame = 0;
+        const place = () => {
+            frame = 0;
+            const tray = document.getElementById('composer-tray');
+            const ring = host.querySelector('.st-rings button > span');
+            const on = !!tray && !!ring && phone.matches && !host.hidden && host.dataset.layout === 'phone';
+            document.body.classList.toggle('composer-by-rings', on);
+            if (!on) return;
+            const r = ring.getBoundingClientRect();
+            const parent = (tray.offsetParent || document.body).getBoundingClientRect();
+            tray.style.setProperty('--composer-top', `${Math.round(r.top - parent.top + r.height / 2 - 24)}px`);
+        };
+        const soon = () => (frame ||= requestAnimationFrame(place));
+        new ResizeObserver(soon).observe(main);
+        new MutationObserver(soon).observe(host, { childList: true, subtree: true, attributeFilter: ['data-layout', 'hidden'] });
+        phone.addEventListener('change', soon);
+        addEventListener('resize', soon);
+        addEventListener('load', soon);
+        soon();
     }
 
     // The event sheet's cover follows the view: the poster's art on the

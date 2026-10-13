@@ -5,6 +5,16 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Composer's button beside the hours on a phone — 13 October 2026
+
+Owner request (the remaining open items). On a phone, Composer's floating
+button covered the bottom-right corner of the wall's poster. On this page
+it now sits at the end of the hour rings, level with them, and scrolls
+with them; the rings keep room for it. Opened, Composer is where it always
+is, and on a day with no events (no rings) the button floats as on every
+other page (`wall.js` composerByRings). On a laptop it already sits beside
+the street, over the pavement's corner only, so it stays put there.
+
 ## Tablets held upright get a bigger street — 13 October 2026
 
 Owner request (the remaining open items). On a tall, narrow screen the
