@@ -183,20 +183,51 @@ const inside = (box, viewport) =>
             assert.equal(await page.locator('#shared-dialog .place-sheet-tabs').isVisible(), false, 'no tabs');
             const sheetEl = page.locator('#shared-dialog .event-sheet');
             assert.equal(await page.locator('#shared-dialog .event-getthere').count(), 0, 'one way there: the Where row');
-            assert.match(await page.locator('#shared-dialog .event-where').innerText(), /arrive by 18:30/);
+            const whereRow = await page.locator('#shared-dialog .event-where').innerText();
+            assert.match(whereRow, /^Where$/im);
+            assert.match(whereRow, /^Get there from /m, 'the Where row says where you’d set off');
+            assert.doesNotMatch(whereRow, /arrive by/, 'the arrival time is the When row’s');
             await page.locator('#shared-dialog .event-where').click();
             await page.waitForTimeout(400);
             assert.equal(await sheetEl.getAttribute('data-section'), 'directions');
             assert.equal(await page.locator('#shared-dialog .event-subhead-title[data-for="directions"]').innerText(), 'Get there');
             assert.equal(await page.locator('#shared-dialog .event-hero').isVisible(), false);
+            // Get there stays in the app: our own map, no link out, Travel
+            // named as the nav names it, the ways to travel labelled.
+            const way = page.locator('#shared-dialog [data-panel="directions"]');
+            assert.equal(await way.locator('a[href^="http"]').count(), 0, 'no link out of the app');
+            assert.equal(await way.locator('.event-way-map').count(), 1, 'a map of the venue on the page');
+            assert.equal(await way.locator('.place-sheet-footer').innerText(), 'Open in Travel');
+            assert.deepEqual(await way.locator('fieldset label').allInnerTexts(), ['Transit', 'Walk', 'Bike']);
+            assert.match(await way.locator('.event-route-preview header').innerText(), /^Routes in Travel/);
             await page.locator('#shared-dialog .event-back').click();
             await page.waitForTimeout(400);
             assert.equal(await sheetEl.getAttribute('data-section'), 'about');
-            await page.locator('#shared-dialog [data-panel="about"] .place-sheet-footer .button.primary').click();
-            await page.waitForTimeout(400);
+            // Add to plan adds in one tap (listed times), with Undo; then it
+            // says "In your plan" and opens what's planned, with Remove.
+            const add = page.locator('#shared-dialog [data-panel="about"] .place-sheet-footer .button.primary');
+            await add.click();
+            await page.waitForTimeout(300);
+            assert.equal(await sheetEl.getAttribute('data-section'), 'about', 'adding stays on the page');
+            assert.equal(await add.innerText(), 'In your plan');
+            assert.match(await page.locator('#shared-dialog .event-plan-notice').innerText(), /^Added to your plan · 18:30–21:00/);
+            await page.locator('#shared-dialog .event-plan-notice button').click();
+            await page.waitForTimeout(300);
+            assert.equal(await add.innerText(), 'Add to plan', 'Undo takes it out again');
+            await add.click();
+            await page.waitForTimeout(300);
+            await add.click();
+            await page.waitForTimeout(500);
             assert.equal(await sheetEl.getAttribute('data-section'), 'plan');
+            assert.equal(await page.locator('#shared-dialog .event-subhead-title[data-for="plan"]').innerText(), 'Your plan');
+            await page.locator('#shared-dialog [data-event-remove]').click();
+            await page.locator('#shared-dialog [data-confirm-event-remove]').click();
+            await page.waitForTimeout(500);
+            assert.equal(await page.locator('#shared-dialog .event-subhead-title[data-for="plan"]').innerText(), 'Add to plan');
+            assert.match(await page.locator('#shared-dialog .selection-agenda summary').innerText(), /^Your plan\s+nothing planned yet/);
             await page.locator('#shared-dialog .event-back').click();
             await page.waitForTimeout(400);
+            assert.equal(await page.locator('#shared-dialog [data-panel="about"] .place-sheet-footer .button.primary').innerText(), 'Add to plan');
             assert.ok(heroFits.width <= viewport.width, `sideways scroll with the details open at ${viewport.width}px`);
             await page.keyboard.press('Escape');
             await page.waitForTimeout(500);
@@ -280,14 +311,24 @@ const inside = (box, viewport) =>
             // its facing poster opens its details.
             if (viewport.width > 700)
                 assert.match(await street.locator('#wall').innerText(), /Tonight · [12] of 2/);
-            const facing = await page.evaluate(() =>
-                [...document.querySelectorAll('.st-face .pp-open')].findIndex((o) => {
-                    const r = o.getBoundingClientRect();
-                    return o.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
-                }),
-            );
-            assert.ok(facing >= 0, 'no column poster faces you');
-            await page.locator('.st-face .pp-open').nth(facing).click();
+            // The column keeps rolling, so the poster facing you can turn
+            // away between finding it and tapping it: find it again then.
+            for (let attempt = 0; ; attempt++) {
+                const facing = await page.evaluate(() =>
+                    [...document.querySelectorAll('.st-face .pp-open')].findIndex((o) => {
+                        const r = o.getBoundingClientRect();
+                        return o.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2));
+                    }),
+                );
+                assert.ok(facing >= 0, 'no column poster faces you');
+                try {
+                    await page.locator('.st-face .pp-open').nth(facing).click({ timeout: 3000 });
+                    break;
+                } catch (error) {
+                    if (attempt === 3) throw error;
+                    await page.waitForTimeout(500);
+                }
+            }
             await page.waitForSelector('#shared-dialog[open] .event-hero');
             await page.keyboard.press('Escape');
             await page.waitForTimeout(500);
@@ -385,7 +426,7 @@ const inside = (box, viewport) =>
             assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed\s+Admission, language/i);
             assert.deepEqual(
                 await sheet.locator('.event-facts .event-row-label').allInnerTexts(),
-                ['WHERE · GET THERE', 'WHEN', 'WHEN TO ARRIVE', 'NOT LISTED'],
+                ['WHERE', 'WHEN', 'WHEN TO ARRIVE', 'NOT LISTED'],
             );
             assert.match(await sheet.locator('.event-facts .event-row').nth(1).innerText(), /Wed 30 Sept · 20:00–22:00/);
             assert.match(await sheet.locator('.event-about').innerText(), /^About\s/i);

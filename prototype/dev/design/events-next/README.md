@@ -5,6 +5,30 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Buttons that say what they do — 13 October 2026
+
+Owner request, after a review of every button's words.
+
+- **Add to plan adds**: an event with a listed start and end goes into
+  your plan in one tap, with Undo above the bar; the button then reads
+  "In your plan" and opens what's planned (Remove, Review in Composer).
+  An event whose finish or visit time you choose says "Choose a time"
+  and opens the planning page.
+- **Where**: the label is just "Where"; its blue line says where you'd
+  set off and how far away it is ("Get there from Neumarkt · 2.0 km
+  away", or "from Mülheim, after your appointment"). The arrival time is
+  the When row's, so it's no longer repeated.
+- **Get there stays in the app**: a map of the venue (and where you'd set
+  off) on the page instead of a link to OpenStreetMap; "Routes in Travel"
+  and "Open in Travel", as the nav names it; the ways to travel labelled
+  (Transit, Walk, Bike).
+- **The planning page says "plan"** throughout: "Your plan · nothing
+  planned yet", the event "Not added yet", no second line repeating the
+  listed times.
+- **No Composer teal**: the start dot is the Where blue, the date square
+  the action colour, the small tags warm; focus rings are blue and show
+  for the keyboard only.
+
 ## No big gaps in the details — 13 October 2026
 
 Owner request, with Apple's spacing as the reference: one rhythm of 16

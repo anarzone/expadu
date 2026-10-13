@@ -1551,6 +1551,268 @@
         }
         if (about) aboutRows(about, item, closed);
         subPages(sheet, item, closed);
+        planButton(sheet, item, closed);
+        planPage(sheet, item);
+        getThere(sheet, item);
+    }
+    /* Add to plan adds (owner, 13 Oct 2026). An event with a listed start
+       and end goes into your plan in one tap, and the button then says
+       "In your plan" (it opens what's planned, with Remove). One whose
+       finish or visit time you choose says "Choose a time" and opens the
+       planning page. Adding works as on the planning page: the same
+       schedule, clash check and Undo. */
+    const listedTimes = (item) => (item.attendancePolicy || 'unknown') !== 'window' && !!item.start && !!item.end;
+    function planned(item) {
+        const S = window.ExpaduStore,
+            H = window.ExpaduHandoffs;
+        return H.dayItems(S.read(), S.studio(), item.date).find(
+            (entry) => String(entry.id).replace(/^event:/, '') === item.id,
+        );
+    }
+    function planButton(sheet, item, closed) {
+        const button = sheet.querySelector('.place-sheet-footer [data-event-section="plan"]');
+        if (closed || !button || button.dataset.direct) return;
+        button.dataset.direct = 'true';
+        const footer = button.closest('.place-sheet-footer');
+        const paint = () => {
+            if (!button.isConnected) {
+                window.removeEventListener('expadu:change', paint);
+                return;
+            }
+            const yes = !!planned(item);
+            button.classList.toggle('is-planned', yes);
+            button.innerHTML = yes
+                ? `${I('check')}In your plan`
+                : `${I('calendar')}${listedTimes(item) ? 'Add to plan' : 'Choose a time'}`;
+            if (yes) button.setAttribute('aria-label', `In your plan. Open ${item.title} in your plan`);
+            else button.removeAttribute('aria-label');
+        };
+        let hide;
+        const notice = (text, undo) => {
+            footer.querySelector('.event-plan-notice')?.remove();
+            clearTimeout(hide);
+            footer.insertAdjacentHTML(
+                'afterbegin',
+                `<div class="event-plan-notice" role="status"><span>${E(text)}</span>${undo ? '<button type="button">Undo</button>' : ''}</div>`,
+            );
+            const strip = footer.querySelector('.event-plan-notice');
+            strip.querySelector('button')?.addEventListener('click', () => {
+                undo();
+                strip.remove();
+                button.focus({ preventScroll: true });
+            });
+            hide = setTimeout(() => strip.remove(), 8000);
+        };
+        button.addEventListener(
+            'click',
+            (event) => {
+                if (planned(item)) {
+                    event.stopImmediatePropagation();
+                    window.ExpaduEventSheet.open(item, 'plan');
+                    return;
+                }
+                if (!listedTimes(item)) return;
+                const S = window.ExpaduStore,
+                    M = window.ExpaduModel,
+                    H = window.ExpaduHandoffs;
+                let selected;
+                try {
+                    selected = H.schedule(item, { date: item.date, attendance: 'session', start: item.start, end: item.end });
+                    if (H.conflict(S.read(), S.studio(), selected)) return; // the planning page says why
+                } catch {
+                    return;
+                }
+                event.stopImmediatePropagation();
+                let previous;
+                const previousDate = S.read().brief.date;
+                S.update((s) => {
+                    previous = M.remove(s, M.key(selected));
+                    s.brief.date = selected.date;
+                    M.add(s, selected);
+                });
+                if (!S.isPersistent()) {
+                    notice('Could not keep this. Keep the page open and try again.');
+                    return;
+                }
+                paint();
+                notice(`Added to your plan · ${selected.start}–${selected.end}`, () =>
+                    S.update((s) => {
+                        M.remove(s, M.key(selected));
+                        if (previous) M.restore(s, previous);
+                        if (s.brief.date === selected.date) s.brief.date = previousDate;
+                    }),
+                );
+                window.ExpaduMotion?.feedback(button);
+            },
+            true,
+        );
+        window.addEventListener('expadu:change', paint);
+        paint();
+    }
+    /* The planning page in the same words: "plan" throughout (not "your
+       day" or "activities"), the event you haven't added yet marked so,
+       and no second line repeating the listed times. */
+    function planPage(sheet, item) {
+        const box = sheet.querySelector('[data-place-planning]');
+        if (!box || box.dataset.words) return;
+        box.dataset.words = 'true';
+        sheet.classList.toggle('is-listed-times', listedTimes(item));
+        const title = sheet.querySelector('.event-subhead-title[data-for="plan"]');
+        const swap = (element, from, to) => {
+            if (element && element.textContent.trim() === from) element.lastChild.textContent = to;
+        };
+        const words = () => {
+            observer.disconnect();
+            if (title) title.textContent = box.querySelector('.event-added') ? 'Your plan' : 'Add to plan';
+            const summary = box.querySelector('.selection-agenda summary > span');
+            if (summary) {
+                const label = [...summary.childNodes].find((node) => node.nodeType === 3 && node.textContent.includes('Your day'));
+                if (label) label.textContent = 'Your plan ';
+                const count = summary.querySelector('small');
+                const n = parseInt(count?.textContent, 10);
+                if (count && Number.isFinite(n)) count.textContent = n ? `${n} planned` : 'nothing planned yet';
+            }
+            box.querySelectorAll('.visit-day-timeline span, .visit-day-timeline small, .visit-day-timeline em').forEach((el) => {
+                if (el.children.length === 0 && el.textContent === 'Preview') el.textContent = 'Not added yet';
+            });
+            swap(box.querySelector('.event-added h3'), 'Already in your day.', 'In your plan.');
+            box.querySelectorAll('[data-event-remove]').forEach((b) => {
+                swap(b, 'Remove from day', 'Remove from plan');
+                swap(b, 'Remove selection', 'Remove from plan');
+            });
+            // Review happens in Composer, so the button says where it goes.
+            swap(box.querySelector('[data-event-review]'), 'Review plan', 'Review in Composer');
+            const removed = box.querySelector('.event-removed-notice > span');
+            if (removed?.textContent === 'Removed from your day') removed.textContent = 'Removed from your plan';
+            observer.observe(box, { childList: true, subtree: true, characterData: true });
+        };
+        const observer = new MutationObserver(words);
+        words();
+    }
+    /* Get there stays in the app (owner, 13 Oct 2026): a map of the venue
+       (and where you'd set off) on the page instead of a link out, the
+       Travel page named as the nav names it, and the ways to travel
+       labelled. */
+    // Focus rings show for the keyboard, not after a tap or a click.
+    document.addEventListener('pointerdown', () => (document.documentElement.dataset.pointer = 'true'), true);
+    document.addEventListener(
+        'keydown',
+        (event) => {
+            if (event.key === 'Tab' || event.key.startsWith('Arrow')) delete document.documentElement.dataset.pointer;
+        },
+        true,
+    );
+    let mapLibrary;
+    const loadMap = () =>
+        (mapLibrary ||= new Promise((resolve, reject) => {
+            if (window.maplibregl) return resolve();
+            const base = new URL('../places-optional/vendor/', document.baseURI);
+            const css = document.createElement('link');
+            css.rel = 'stylesheet';
+            css.href = new URL('maplibre-gl.css', base).href;
+            const script = document.createElement('script');
+            script.src = new URL('maplibre-gl.js', base).href;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.append(css, script);
+        }).catch((error) => {
+            mapLibrary = null;
+            throw error;
+        }));
+    function getThere(sheet, item) {
+        const panel = sheet.querySelector('[data-panel="directions"]');
+        if (!panel || panel.dataset.words) return;
+        panel.dataset.words = 'true';
+        panel.querySelector('.place-sheet-footer a.event-icon-action')?.remove();
+        const go = panel.querySelector('.place-sheet-footer button[type="submit"]');
+        if (go) go.innerHTML = `${I('route')}Open in Travel`;
+        const names = { Transit: 'Transit', Walk: 'Walk', Cycle: 'Bike' };
+        panel.querySelectorAll('fieldset label[title]').forEach((label) => {
+            const name = names[label.title] || label.title;
+            label.querySelector('input')?.setAttribute('aria-label', name);
+            label.querySelector(':scope > span')?.insertAdjacentHTML('beforeend', `<span class="event-mode-name" aria-hidden="true">${E(name)}</span>`);
+            label.removeAttribute('title');
+        });
+        const preview = panel.querySelector('[data-mini-departures]');
+        const travelWords = () => {
+            observer.disconnect();
+            const head = preview.querySelector('header strong');
+            if (head?.textContent === 'Get there with Departures') head.textContent = 'Routes in Travel';
+            const mode = preview.querySelector('.event-route-mode');
+            if (mode?.firstChild?.nodeType === 3 && mode.firstChild.textContent.startsWith('Cycle route')) mode.firstChild.textContent = 'Bike route ';
+            const small = preview.querySelector('small');
+            if (small) small.textContent = small.textContent.replace('The full planner contains clearly marked sample journeys.', 'Travel shows clearly marked sample journeys.');
+            observer.observe(preview, { childList: true, subtree: true });
+        };
+        const observer = new MutationObserver(travelWords);
+        if (preview) travelWords();
+        if (!Number.isFinite(item.lat) || !Number.isFinite(item.lng)) return;
+        panel.querySelector('.place-route')?.insertAdjacentHTML(
+            'afterend',
+            `<div class="event-way-map" role="img" aria-label="Map of ${E(item.venue)}"><div class="event-way-map-canvas"></div><span class="event-way-map-note">Loading the map</span><small class="event-way-map-credit">OpenFreeMap © OpenMapTiles © OpenStreetMap</small></div>`,
+        );
+        const box = panel.querySelector('.event-way-map');
+        const input = panel.querySelector('input[name="from"]');
+        let map, start;
+        const place = () => {
+            const D = window.ExpaduEventDistance;
+            const origin = D?.locate(input?.value.trim() || '', []);
+            start?.remove();
+            start = null;
+            const venue = [item.lng, item.lat];
+            if (origin && Number.isFinite(origin.lat) && D.km(origin, item) > 0.05) {
+                const dot = document.createElement('span');
+                dot.className = 'event-way-pin is-start';
+                start = new window.maplibregl.Marker({ element: dot }).setLngLat([origin.lng, origin.lat]).addTo(map);
+                map.fitBounds(
+                    [
+                        [Math.min(venue[0], origin.lng), Math.min(venue[1], origin.lat)],
+                        [Math.max(venue[0], origin.lng), Math.max(venue[1], origin.lat)],
+                    ],
+                    { padding: 40, maxZoom: 15, duration: 0 },
+                );
+                box.setAttribute('aria-label', `Map of ${item.venue} and ${origin.name}`);
+            } else {
+                map.jumpTo({ center: venue, zoom: 14.5 });
+                box.setAttribute('aria-label', `Map of ${item.venue}`);
+            }
+        };
+        const fail = () => {
+            box.classList.add('is-failed');
+            box.querySelector('.event-way-map-note').textContent = 'The map couldn’t load right now.';
+        };
+        const show = () => {
+            if (box.dataset.ready) return;
+            box.dataset.ready = 'true';
+            loadMap()
+                .then(() => {
+                    map = new window.maplibregl.Map({
+                        container: box.querySelector('.event-way-map-canvas'),
+                        style: 'https://tiles.openfreemap.org/styles/positron',
+                        center: [item.lng, item.lat],
+                        zoom: 14.5,
+                        interactive: false,
+                        attributionControl: false,
+                        fadeDuration: 0,
+                    });
+                    const pin = document.createElement('span');
+                    pin.className = 'event-way-pin is-venue';
+                    pin.innerHTML = I('pin');
+                    new window.maplibregl.Marker({ element: pin, anchor: 'bottom' }).setLngLat([item.lng, item.lat]).addTo(map);
+                    map.once('load', () => box.classList.add('is-ready'));
+                    map.on('error', () => {
+                        if (!box.classList.contains('is-ready')) fail();
+                    });
+                    place();
+                    input?.addEventListener('change', place);
+                })
+                .catch(fail);
+        };
+        if (sheet.dataset.section === 'directions') show();
+        new MutationObserver(() => sheet.dataset.section === 'directions' && show()).observe(sheet, {
+            attributes: true,
+            attributeFilter: ['data-section'],
+        });
     }
     /* No tabs (owner, 13 Oct 2026): the page is the details. Get there and
        Add to plan open inside it as their own pages, with Back: Get there
@@ -1564,16 +1826,25 @@
         if (way) {
             way.classList.add('event-where');
             way.setAttribute('aria-label', `Get there: ${item.venue}`);
-            way.querySelector('.event-row-label').textContent = 'Where · Get there';
-            // The area stays under the venue; how far, from where, and by
-            // when goes on the way-there line, said once.
+            way.querySelector('.event-row-label').textContent = 'Where';
+            // The area stays under the venue; the way-there line says where
+            // you'd set off and how far away it is (in a straight line, so
+            // "away", not a route), and why, when the start is your last
+            // plan. The arrival time is the When row's.
             const sub = way.querySelector('.event-row-sub');
             const [area, distance] = (sub?.textContent || '').split(' · ');
             if (sub && distance) sub.textContent = area;
-            const start = distance || (from ? `From ${from}` : 'Choose where you start');
+            const far = distance?.match(/^(.+?) from (.+)$/);
+            const note = sheet.querySelector('[data-panel="directions"] [data-from-note]')?.textContent.trim() || '';
+            const after = note.match(/^After (.+), which ends at/)?.[1];
+            const go = far
+                ? `Get there from ${far[2]} · ${far[1]} away`
+                : from
+                  ? `Get there from ${from}${after ? `, after ${/appointment$/i.test(after) ? 'your appointment' : after}` : ''}`
+                  : 'Get there · choose where you start';
             way.querySelector('.event-row-text')?.insertAdjacentHTML(
                 'beforeend',
-                `<span class="event-where-go">${I('route')}<span>${E(start)}${item.start && !closed ? ` · arrive by ${E(item.start)}` : ''}</span></span>`,
+                `<span class="event-where-go">${I('route')}<span>${E(go)}</span></span>`,
             );
         }
         sheet.insertAdjacentHTML(
