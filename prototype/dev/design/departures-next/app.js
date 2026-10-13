@@ -1604,6 +1604,18 @@ function renderDay() {
         return `<section class="day-event${skipped ? ' is-skipped' : ''}" aria-label="${safe(event.title)}"><strong>${safe(event.title)}</strong><span>${safe(event.venue)} · until ${event.end}</span>${w?.wet ? L.chip('attention', 'cloud', `${w.sky} likely · sample forecast`, { size: 'sm' }) : ''}${skipped ? '<small>Skipping this one</small>' : ''}</section>`;
     };
     const end = state.dayPick === 'culture' ? first : second || first;
+    // The way to the evening from the appointment's area: the best scheduled
+    // option that arrives by the start (VRS timetable).
+    const going = state.dayPick === 'cinema' && second ? second : first;
+    const goingTrip = going && J.tripFor(trip.to, going.venue);
+    const way = goingTrip
+        ? J.filtered({
+              trip: goingTrip,
+              schedule: 'arrive',
+              date: trip.date,
+              time: going.start,
+          })[0]
+        : null;
     const steps = J.tripSteps(route)
         .map(
             (step) =>
@@ -1632,11 +1644,11 @@ function renderDay() {
                           .join('')}</ul></div></li>`
                     : ''
             }
-            ${first ? `<li class="is-later"><time>later</time><span class="day-rail is-dashed"></span><div><section class="day-open"><strong>Getting to ${safe(first.venue)}</strong><small>Route times aren’t in the sample yet.</small><button type="button" class="quiet-button" data-action="plan-way" data-place="${safe(first.venue)}">Plan the way</button></section></div></li>` : ''}
+            ${going ? `<li class="is-later"><time>${way ? way.depart : 'later'}</time><span class="day-rail is-dashed"></span><div><section class="day-open"><strong>Getting to ${safe(going.venue)}</strong><small>${way ? `Leave ${way.depart} → there ${way.arrive} · from ${safe(placeName(trip.to))}, line ${way.legs.filter((leg) => leg.mode === 'transit').map((leg) => safe(leg.line)).join(', then ')} · VRS timetable` : 'Route times aren’t in the sample yet.'}</small><button type="button" class="quiet-button" data-action="plan-way" data-place="${safe(going.venue)}"${way ? ` data-from="${safe(placeName(trip.to))}"` : ''}>Plan the way</button></section></div></li>` : ''}
             ${first ? `<li><time>${first.start}</time><span class="day-rail is-event"><i class="day-dot is-event"></i></span><div>${ev(first, 'culture')}</div></li>` : ''}
             ${overlap ? `<li class="is-choice"><time></time><span class="day-rail is-event"></span><div><div class="day-overlap"><strong>${L.chip('attention', 'alert', 'Overlap')} These overlap from ${overlap.from} to ${overlap.to}. Which one?</strong><div role="group" aria-label="Choose an evening plan"><button type="button" data-action="day-pick" data-pick="culture" aria-pressed="${state.dayPick === 'culture'}">Street culture</button><button type="button" data-action="day-pick" data-pick="cinema" aria-pressed="${state.dayPick === 'cinema'}">Cinema</button></div></div></div></li>` : ''}
             ${second ? `<li><time>${second.start}</time><span class="day-rail is-event"><i class="day-dot is-event"></i></span><div>${ev(second, 'cinema')}</div></li>` : ''}
-            ${end ? `<li class="is-home"><time>${end.end}</time><span class="day-rail"><i class="day-dot is-home"></i></span><div><section class="day-open"><strong>Getting home</strong><small>Add your home and Expadu plans the way back from ${safe(end.venue)}.</small><button type="button" class="quiet-button" data-action="saved-place">${icon('home')}Add home</button></section></div></li>` : ''}
+            ${end ? `<li class="is-home"><time>${end.end}</time><span class="day-rail"><i class="day-dot is-home"></i></span><div><section class="day-open"><strong>Getting home</strong><small>Add your home and Expadu plans the way back from ${safe(end.venue)}.</small><div class="day-open-actions"><button type="button" class="quiet-button" data-action="saved-place">${icon('home')}Add home</button>${J.tripFor(end.venue, trip.from) ? `<button type="button" class="quiet-button" data-action="way-back" data-place="${safe(end.venue)}" data-to="${safe(placeName(trip.from))}" data-time="${end.end}">${icon('route')}Back to ${safe(placeName(trip.from))}</button>` : ''}</div></section></div></li>` : ''}
         </ol>`;
 }
 // Sample situations to review (the footer's Review menu, ?scenario=).
@@ -1936,7 +1948,7 @@ function action(name, button) {
         const place = dayPlaces().find(
             (item) => item.place === button.dataset.place,
         );
-        from.value = yourLocation;
+        from.value = button.dataset.from || yourLocation;
         to.value = button.dataset.place;
         state.planPlace = place || null;
         if (place)
@@ -2037,6 +2049,21 @@ function action(name, button) {
             setView('stop');
             $('.where-to')?.focus({ preventScroll: true });
         }
+    } else if (name === 'way-back') {
+        // The way back after the evening, from its venue once it ends.
+        if ((atYourLocation() ? '' : from.value.trim()) || to.value.trim())
+            previousRequest = captureRequest();
+        from.value = button.dataset.place;
+        to.value = button.dataset.to;
+        state.planPlace = null;
+        Object.assign(state, {
+            schedule: 'depart',
+            date: home.date,
+            time: button.dataset.time,
+        });
+        syncControls();
+        setView('journey');
+        searchJourney();
     } else if (name === 'saved-place')
         toast('Saved places aren’t in this preview.');
     else if (name === 'ask-composer') {

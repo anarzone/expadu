@@ -27,6 +27,9 @@ venue after it ends (`../connected/sample-journeys.js` and
   hand-off waits for them).
 - Leaving now reads "4 h 46 min early"; a way back "8 min after it ends",
   as in Get there.
+- My day shows the real way to the evening from the appointment's area
+  ("Leave 17:41 → there 18:14 · from Mülheim, line 18, then 133") and, by
+  Add home, the way back to Neumarkt, where the sample day starts.
 - S-Bahn and regional trains are named Train (badges, Show the way); a
   trip that starts with a bus shows the bus.
 

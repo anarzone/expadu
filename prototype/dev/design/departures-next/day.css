@@ -468,6 +468,12 @@
     gap: var(--space-6);
     margin-top: var(--space-8);
 }
+/* Add home, or the way back to where the day started. */
+.day-open-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-8);
+}
 .day-event {
     transition: opacity var(--duration-fast) var(--ease-standard);
 }
