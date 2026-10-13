@@ -66,9 +66,11 @@ const minutesOf = (time) => {
     return h * 60 + m;
 };
 const sourceNote = (route) =>
-    tripOf(route).id === 'day'
-        ? 'Sample day · scheduled times'
-        : '7 Sep 2026 capture';
+    tripOf(route).evening
+        ? 'Sample day · VRS timetable, scheduled times'
+        : tripOf(route).id === 'day'
+          ? 'Sample day · scheduled times'
+          : '7 Sep 2026 capture';
 const placeName = (name) => name.replace(/^Köln\s+/, '');
 // Stops that are also points in the place layer (connected/places.js
 // anchors), so a stop can open "Around here".
@@ -1039,11 +1041,11 @@ function stepsMarkup(route) {
 }
 function details(route) {
     const trip = tripOf(route);
-    return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>${safe(trip.place)}</h2></div><div class="journey-timeband"><span><small>Leave ${safe(placeName(trip.from))}</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < trip.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>${trip.id === 'day' ? 'Sample day, scheduled times.' : '7 Sep 2026 · 23:37 capture.'} ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'Saved journey' : 'Save journey'}">${icon('bookmark')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
+    return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>${safe(trip.place)}</h2></div><div class="journey-timeband"><span><small>Leave ${safe(placeName(trip.from))}</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < trip.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>${trip.evening ? 'Sample day, scheduled times from the VRS timetable.' : trip.id === 'day' ? 'Sample day, scheduled times.' : '7 Sep 2026 · 23:37 capture.'} ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'Saved journey' : 'Save journey'}">${icon('bookmark')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
 }
 // What the planner looked at for this trip, and what the preview has of it.
 function checks(tripId, trip, route) {
-    const day = tripId === 'day';
+    const day = J.isSampleDay ? J.isSampleDay(tripId) : tripId === 'day';
     const weather =
         day && route ? sampleWeather(trip.date, route.depart) : null;
     const between = day
@@ -1057,7 +1059,9 @@ function checks(tripId, trip, route) {
             icon: day ? 'check' : 'offline',
             tone: day ? 'calm' : 'unsure',
             title: day ? 'Departures' : 'Departures, as captured',
-            text: day
+            text: trip.evening
+                ? `Scheduled times from the VRS timetable for ${boardDateLabel(trip.date)}, captured 13 Oct`
+                : day
                 ? `Scheduled sample times for ${boardDateLabel(trip.date)}`
                 : `Captured ${boardDateLabel(trip.date)} at ${trip.time}: that night’s times`,
         },
@@ -1162,7 +1166,9 @@ function lineBadge(line) {
     );
     return `<span class="plan-line"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${safe(line)}</span>`;
 }
-function vehicleOf(line) {
+function vehicleOf(line, leg) {
+    // A captured journey knows its vehicle; otherwise the station capture.
+    if (leg?.vehicle) return leg.vehicle === 'bus' ? 'Bus' : leg.vehicle === 'rail' ? 'Train' : 'Tram';
     const service = window.StationCapture?.services.find(
         (item) => item.line === String(line),
     );
@@ -1201,7 +1207,7 @@ function optionReasons(route, trip) {
                 : ['No change', 'ok', 'check'],
         );
     const weather =
-        trip.id === 'day' ? sampleWeather(trip.date, route.depart) : null;
+        (J.isSampleDay ? J.isSampleDay(trip.id) : trip.id === 'day') ? sampleWeather(trip.date, route.depart) : null;
     if (route.walking || route.mode !== 'transit')
         reasons.push([
             `${route.mode === 'transit' ? route.walking : route.duration} min ${route.mode === 'bike' ? 'cycling' : 'walking'}`,
@@ -1242,13 +1248,11 @@ function planOption(route, list, trip, best) {
             ? transit
                   .map((leg, index) => {
                       const id = String(leg.line || route.line);
-                      const look = window.NearbyModel?.look(
-                          id,
-                          vehicleOf(id) === 'Bus' ? 'bus' : 'tram',
-                      );
+                      const bus = vehicleOf(id, leg) === 'Bus';
+                      const look = window.NearbyModel?.look(id, bus ? 'bus' : 'tram');
                       return L.line(id, look, {
                           word: index === 0,
-                          kind: vehicleOf(id) === 'Bus' ? 'bus' : 'tram',
+                          kind: bus ? 'bus' : 'tram',
                       });
                   })
                   .join(`<span class="plan-then">${icon('arrow')}</span>`)
@@ -1333,14 +1337,14 @@ function renderResults() {
     }
     state.planSaved = null;
     const title =
-        tripId === 'day' && trip.place
+        (J.isSampleDay ? J.isSampleDay(tripId) : tripId === 'day') && trip.place
             ? trip.place
             : placeName(to.value.trim());
     const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? `To ${safe(title)}` : 'Your journey'}</h2><div class="results-heading"><span>${safe(planSummary())} · from ${safe(fromLabel())}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
     const empty = matched
         ? U.emptyReason(state, trip, [
               ...new Set(
-                  (tripId === 'day' ? J.dayRoutes : J.routes).map(
+                  (J.routesOf ? J.routesOf(tripId) : tripId === 'day' ? J.dayRoutes : J.routes).map(
                       (route) => route.mode,
                   ),
               ),

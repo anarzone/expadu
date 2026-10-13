@@ -19,7 +19,27 @@
         wienerplatz: { name: 'Wiener Platz', point: [7.0048, 50.96103] },
     };
     const tripOf = (route) => J.tripOf?.(route) || J.capture;
+    // A captured journey (the evening's, from the VRS timetable) brings its
+    // own shape: each step is where it happens, the line is the real way.
+    const stepPlace = (step) =>
+        step.mode === 'transit'
+            ? step.from
+            : step.mode === 'alight'
+              ? step.title.replace(/^Get off at /, '')
+              : step.mode === 'arrive'
+                ? step.title
+                : step.title.replace(/^(Walk to|Change: walk to|Change at|Cycle to) /, '');
+    function shapedSteps(route) {
+        return J.tripSteps(route).map((step) => ({
+            ...step,
+            place: null,
+            destination: step.mode === 'arrive',
+            point: step.point || step.points?.[0] || route.legs[0].points?.[0],
+            placeName: stepPlace(step),
+        }));
+    }
     function steps(route) {
+        if (route.shaped) return shapedSteps(route);
         const day = tripOf(route).id === 'day';
         const alight = route.legs.find((leg) => leg.mode === 'transit')?.stop;
         const stop = day
@@ -49,6 +69,12 @@
         });
     }
     function geometry(route) {
+        if (route.shaped)
+            return {
+                type: 'Feature',
+                properties: { illustrative: false },
+                geometry: { type: 'LineString', coordinates: route.legs.flatMap((leg) => leg.points || []) },
+            };
         const points = steps(route)
             .map((step) => step.point)
             .filter(

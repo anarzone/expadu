@@ -11,6 +11,28 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The evening's events can be planned — 13 October 2026
+
+Owner request (with Events' Get there). Plan a trip to Rheinauhafen (the
+18:30 Street culture night) or Stadtgarten (the 20:00 cinema) from
+Mülheim or Neumarkt now shows real scheduled journeys: what a local MOTIS
+planner answered from the VRS timetable for the sample day
+(`../connected/sample-journeys.js`, captured 13 Oct with
+`../tools/capture-journeys.py`), with changes, bike and walk. Events'
+Get there shows the same ones, and its Open in Travel lands here.
+
+- `journeys.js` turns them into Travel's routes (one trip per start and
+  event, matched by From and To); a route's steps name each line, so a
+  change reads "Board line 18 … Board line 133".
+- They keep their real shapes: the map and Show the way draw the way the
+  timetable gives (`navigation-model.js`), captioned "The way from the
+  VRS timetable · scheduled, not live", and each step sits where it
+  happens. A trip with a change says so ("Line 18, then 133 · 1 change").
+- They count as the sample day (the To heading, the weather on the way,
+  My day); Departures in "We checked" names the timetable. Bike and walk
+  arrive five minutes before the start.
+- A line's vehicle comes from the journey when it knows it (bus 133).
+
 ## Labels — 10 October 2026 (owner-approved, canvas row 10)
 
 What people mustn't miss is a label: an icon and a word, never colour alone,
