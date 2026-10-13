@@ -281,13 +281,22 @@
         const STEP = 1000 / 30;
         const clocked = new Map();
         let seen = 0;
+        // Everything that asks an animation about itself (its play state,
+        // its time) makes the browser bring the page's styles up to date,
+        // so a tick that asked before each change paid that 40 times over.
+        // An animation is paused and its group found once, when it's first
+        // seen; a tick only sets the times.
         const adopt = () => {
             const now = performance.now();
             const live = new Set();
             for (const a of card.getAnimations({ subtree: true })) {
                 if (!/^st[dp]/.test(a.animationName || '')) continue;
                 live.add(a);
-                if (!clocked.has(a)) clocked.set(a, { from: a.currentTime || 0, at: now });
+                if (!clocked.has(a)) {
+                    const target = a.effect?.target;
+                    clocked.set(a, { from: a.currentTime || 0, at: now, target, group: target?.closest?.('g') });
+                }
+                if (a.playState !== 'paused') a.pause();
             }
             for (const a of clocked.keys()) if (!live.has(a)) clocked.delete(a);
             seen = now;
@@ -297,8 +306,7 @@
             if (now - seen > 500) adopt();
             for (const [a, c] of clocked) {
                 // A big group still waiting for its picture stays still.
-                if (a.effect?.target?.closest?.('g')?.__held || a.effect?.target?.__held) continue;
-                if (a.playState !== 'paused') a.pause();
+                if (c.group?.__held || c.target?.__held) continue;
                 a.currentTime = c.from + (now - c.at);
             }
         }, STEP);

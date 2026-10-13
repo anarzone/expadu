@@ -1715,12 +1715,22 @@
        (and where you'd set off) on the page instead of a link out, the
        Travel page named as the nav names it, and the ways to travel
        labelled. */
-    // Focus rings show for the keyboard, not after a tap or a click.
-    document.addEventListener('pointerdown', () => (document.documentElement.dataset.pointer = 'true'), true);
+    // Focus rings show for the keyboard, not after a tap or a click. The
+    // mark sits on the details' dialog, not the whole page: there, the
+    // first touch made the browser restyle the entire street.
+    const modal = () => document.getElementById('shared-dialog');
+    document.addEventListener(
+        'pointerdown',
+        () => {
+            const dialog = modal();
+            if (dialog && !dialog.dataset.pointer) dialog.dataset.pointer = 'true';
+        },
+        true,
+    );
     document.addEventListener(
         'keydown',
         (event) => {
-            if (event.key === 'Tab' || event.key.startsWith('Arrow')) delete document.documentElement.dataset.pointer;
+            if (event.key === 'Tab' || event.key.startsWith('Arrow')) delete modal()?.dataset.pointer;
         },
         true,
     );

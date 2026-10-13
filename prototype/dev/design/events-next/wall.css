@@ -4414,7 +4414,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 #shared-dialog:has(.event-hero) :focus-visible {
     outline-color: #1d4d8f;
 }
-html[data-pointer] #shared-dialog:has(.event-hero) :focus-visible {
+#shared-dialog[data-pointer]:has(.event-hero) :focus-visible {
     outline: none;
 }
 /* With listed times, the planning page doesn't repeat them by its button. */

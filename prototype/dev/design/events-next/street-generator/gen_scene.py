@@ -609,7 +609,10 @@ class Component extends DCLogic {
       k, bays, grid, stripStyle, gridStyle, ruler, groups, strip, colStyle, dots,
       colLabel: this.colPrefix() + ' · ' + (current + 1) + ' of ' + N,
       colNext: () => this.roll(1), colPrev: () => this.roll(-1),
-      hold: go({ hold: true }), release: go({ hold: false }),
+      // A finger or pointer on the column only pauses its roll, which
+      // nothing on screen shows: no redraw of the street for it.
+      hold: () => { this.state = Object.assign({}, this.state, { hold: true }); },
+      release: () => { this.state = Object.assign({}, this.state, { hold: false }); },
       hasPanel: !!panel, panel: panel || { title: '', line: '', note: '', saveLabel: '', planText: '' }, closePanel: go({ sel: 0, plan: false }),
       down: (e) => this.down(e), move: (e) => this.move(e), up: () => this.up(), wheel: (e) => this.wheel(e),
       earlier: () => this.step(-1), later: () => this.step(1),

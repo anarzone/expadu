@@ -5,6 +5,30 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A touch on the column no longer stalls the street — 13 October 2026
+
+Owner request (the remaining open items: the phone's drum was slightly
+slower than the street without it). Measured on a phone with its
+processor slowed 4×, three things cost more than the drum itself:
+
+- The street's animation clock (`street.js` pace) asked each animation
+  for its state before setting its time, and each question made the
+  browser restyle the page: about 4.7 ms a tick, 30 times a second, even
+  at rest. Animations are now paused and their groups found once, when
+  first seen; a tick only sets times (about 0.1 ms).
+- A finger or pointer on the column redrew the whole street (twice: on
+  and off) just to pause its six-second turn, which nothing on screen
+  shows; it now only sets the pause (`street-generator/gen_scene.py`,
+  regenerated).
+- The keyboard-or-pointer mark for focus rings sat on the whole page, so
+  the first touch restyled the entire street; it now sits on the details'
+  dialog, the only place that uses it.
+
+Dragging the drum now runs at 114–119 frames a second against 117–120
+with no drum at all (it was 105–109), and its worst frame fell from
+83–142 ms to 16–66 ms. What remains is one frame as a finger lands
+(about 15 ms on a real phone) and the redraw once a turn has stopped.
+
 ## Composer's button beside the hours on a phone — 13 October 2026
 
 Owner request (the remaining open items). On a phone, Composer's floating
