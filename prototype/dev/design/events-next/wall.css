@@ -3404,6 +3404,13 @@ main[data-view='wall'] #event-featured {
 #main[data-view='wall']:has(.st-root[data-layout='desktop']) {
     padding-bottom: 20px;
 }
+/* What the hour hides (stars by day, the plane, the lit windows, a lamp's
+   flame) is drawn at opacity 0: it leaves the drawing altogether, so its
+   animations don't cost every frame. */
+#main .st-root .st-card svg [style^='opacity:0;'],
+#main .st-root .st-card svg [style='opacity:0'] {
+    display: none;
+}
 /* The whole day on one wall: where a busy day's posters overlap, the hour
    you point at (or tab into) comes to the front. */
 #main .st-root .st-bay:hover,

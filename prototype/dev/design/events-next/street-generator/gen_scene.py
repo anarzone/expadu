@@ -73,6 +73,19 @@ class Component extends DCLogic {
   roll(dir, done) {
     const pos = (this.state && this.state.pos) || 0;
     const N = Math.max(1, this.colList().length);
+    const c = this.cfg();
+    const turning = c.col.drum && this.root && this.root.querySelector('[data-col-drum] [style*="preserve-3d"]');
+    if (turning) {
+      // A round drum turns first and its posters are redrawn once it has
+      // stopped: redrawing them as it starts made the turn stutter.
+      const P = c.col.pitch, R = (5 * P) / (2 * Math.PI), to = pos + dir;
+      const ms = done && done.snap ? 520 : 1100;
+      turning.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.65,0,0.35,1)';
+      turning.style.transform = 'perspective(' + c.col.depth + 'px) translateZ(' + (-R).toFixed(3) + 'px) rotateY(' + ((-to * P / R) * 180 / Math.PI).toFixed(3) + 'deg)';
+      clearTimeout(this._snap);
+      this._snap = setTimeout(() => this.setState(Object.assign({}, done, { pos: ((to % N) + N) % N, anim: false })), ms);
+      return;
+    }
     const end = Object.assign({ anim: true }, done);
     // The drum carries its posters twice, so it wraps without a jump.
     if (dir > 0 && pos >= N) {
@@ -426,6 +439,8 @@ class Component extends DCLogic {
       const sw = P / S, chord = 2 * R * Math.tan(Math.PI / 5 / S) + 0.6;
       for (let j = 0; j < 5; j++) {
         const m = (((j - s.pos) % 5) + 5) % 5, d = m > 2 ? m - 5 : m;
+        // A small drum (a phone's) draws only the posters you can see.
+        if (Math.abs(d) > (c.col.reach == null ? 2 : c.col.reach)) continue;
         const e = tonight[(((s.pos + d) % N) + N) % N];
         for (let k = 0; k < S; k++) {
           const a = j * 72 + (k + 0.5 - S / 2) * (72 / S);

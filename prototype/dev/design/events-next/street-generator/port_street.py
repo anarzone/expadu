@@ -15,7 +15,7 @@ import json, os, re, sys
 from html.parser import HTMLParser
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else '.'
-WIDE = 2560  # the widest the desktop street is drawn
+WIDE = 2240  # the widest the desktop street is drawn (a 1920 x 800 screen needs about 2230)
 sys.argv = sys.argv[:1]  # the generators read an asset map from argv
 import gen_scene as GS
 import gen_apps as GA
@@ -248,9 +248,9 @@ def parts(phone):
         base.update(
             oneWall=True,
             W0=base['W'], W=WIDE,
-            holes=base['holes'] + [(1560, 704, 58, 34), (1904, 846, 66, 20), (2290, 640, 50, 38)],
-            scraps=base['scraps'] + [(1500, 780, 112, 62, '#9db4c0', -2), (1760, 268, 96, 70, '#d9a8a8', 2), (2120, 300, 104, 58, '#e8c66a', -1)],
-            front=dict(base['front'], puddles=base['front']['puddles'] + [(1520, 948, 60), (1880, 944, 78), (2260, 950, 66)]),
+            holes=base['holes'] + [(1560, 704, 58, 34), (1904, 846, 66, 20), (2150, 640, 50, 38)],
+            scraps=base['scraps'] + [(1500, 780, 112, 62, '#9db4c0', -2), (1760, 268, 96, 70, '#d9a8a8', 2), (2080, 300, 104, 58, '#e8c66a', -1)],
+            front=dict(base['front'], puddles=base['front']['puddles'] + [(1520, 948, 60), (1880, 944, 78), (2150, 950, 66)]),
         )
     card = GS.card(base)
     # The page sets the card's place; the board's margin goes.
@@ -279,7 +279,7 @@ def parts(phone):
     jc.update({k: base[k] for k in ('zoneW', 'bayW', 'px', 'pw', 'ph', 'rows', 'per', 'cols', 'pool', 'stepBays', 'spots', 'nowPill', 'vertical', 'pageH', 'oneWall') if k in base})
     jc['col'] = {'pitch': 264, 'pw': 264, 'ph': 515, 'inset': 0} if phone else {'pitch': 205, 'pw': 205, 'ph': 316, 'inset': 29.5}
     # The page's drum is round: its posters bend round it (gen_scene).
-    jc['col'].update(drum=True, win=264, slices=4, depth=1600 if phone else 1400)
+    jc['col'].update(drum=True, win=264, slices=3 if phone else 4, reach=1 if phone else 2, depth=1600 if phone else 1400)
     jc['mxSizes'] = ({'wallW': 142, 'wallH': 270, 'colW': 264, 'colH': 515} if phone
                      else {'wallZoom': round(190 / 300, 4), 'colZoom': round(316 / 560, 4), 'storyZoom': round(380 / 300, 4)})
     jc['model'] = 'stories'

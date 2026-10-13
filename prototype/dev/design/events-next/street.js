@@ -295,7 +295,27 @@
             }
         }
         let first = true;
+        const big = (g, sel) =>
+            g.matches(sel) && g.getElementsByTagName('*').length >= 20 && !g.querySelector(sel) && !g.querySelector('text') && !g.querySelector(HANDLERS);
+        // Until a big moving group is one picture, every frame of its
+        // animation moves all its shapes (the slow frames while the street
+        // first shows): it waits, still, until its picture is in.
+        function hold() {
+            const sel = movingSelector();
+            if (!sel || !card.isConnected) return;
+            for (const g of card.querySelectorAll('g[data-s][class], [data-s] g[class]')) {
+                if (g.__key || g.__held || !big(g, sel)) continue;
+                for (const a of g.getAnimations()) a.pause();
+                g.__held = true;
+            }
+        }
+        const release = (g) => {
+            if (!g.__held) return;
+            for (const a of g.getAnimations()) a.play();
+            g.__held = false;
+        };
         function soon() {
+            hold();
             if (running) again = true;
             else if (!queued) {
                 queued = true;
@@ -315,11 +335,14 @@
             for (const [i, g] of groups.entries()) {
                 if (!g.isConnected) continue;
                 const pictured = !!g.__shapes;
-                if (!pictured && (g.getElementsByTagName('*').length < 20 || g.querySelector(sel) || g.querySelector('text') || g.querySelector(HANDLERS)))
-                    continue;
+                if (!pictured && !big(g, sel)) continue;
                 const key = keyOf(g, i);
                 if (g.__key === key) continue;
-                if (pictured) g.replaceChildren(...g.__shapes);
+                if (pictured) {
+                    for (const a of g.getAnimations()) a.pause();
+                    g.__held = true;
+                    g.replaceChildren(...g.__shapes);
+                }
                 const made = pictures.get(key) || (await picture(g, key));
                 if (!made || !g.isConnected || g.__key === key) continue;
                 const { url, box } = made;
@@ -338,6 +361,7 @@
                 g.__shapes = [...g.childNodes];
                 g.__key = key;
                 g.replaceChildren(img);
+                release(g);
                 // One group per pause, so the page stays responsive.
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }

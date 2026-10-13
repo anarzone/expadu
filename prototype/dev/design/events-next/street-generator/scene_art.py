@@ -511,24 +511,32 @@ def wall(p, W, H, top, base, pave, seed=21, phone=False, holes=None, scraps=None
     parts.append(f'<rect y="{base - 2}" width="{W}" height="3" fill="#8b857c"/>')
     if stencil:
         parts.append(stencil_text(W - (34 if not phone else 12), base, pave, phone))
-    # Cobbles.
+    # Cobbles. A wide street lays them as one stretch of setts repeated (a
+    # few hundred shapes instead of thousands, drawn once).
     parts.append(f'<rect y="{pave}" width="{W}" height="{H - pave}" fill="#5f5a53"/>')
     cs = 1.0 if not phone else 0.7
     y = pave + 1.5
     row = 0
+    tile = 480 if ref else None
+    setts = []
     while y < H:
         ch2 = (7 + row * 0.8) * cs
         x = -(r.uniform(0, 8))
-        while x < W:
+        while x < (tile or W):
             w = r.uniform(10, 15) * cs * (1 + row * 0.08)
             g = r.choice([0x8a, 0x94, 0x9c, 0xa3, 0x80, 0x8f])
             tint = r.choice([(0, 0, 0), (6, 2, -4), (-2, 0, 4)])
             col = '#%02x%02x%02x' % (g + tint[0], g - 4 + tint[1], g - 10 + tint[2])
-            parts.append(f'<rect x="{f(x + 0.8)}" y="{f(y)}" width="{f(w - 1.6)}" height="{f(ch2)}" rx="{f(ch2 * 0.42)}" fill="{col}"/>')
-            parts.append(f'<rect x="{f(x + 2)}" y="{f(y + 0.6)}" width="{f(w - 4)}" height="1.3" rx="0.6" fill="#fff" opacity="0.18"/>')
+            setts.append(f'<rect x="{f(x + 0.8)}" y="{f(y)}" width="{f(w - 1.6)}" height="{f(ch2)}" rx="{f(ch2 * 0.42)}" fill="{col}"/>')
+            setts.append(f'<rect x="{f(x + 2)}" y="{f(y + 0.6)}" width="{f(w - 4)}" height="1.3" rx="0.6" fill="#fff" opacity="0.18"/>')
             x += w
         y += ch2 + 1.4
         row += 1
+    if tile:
+        parts.append(f'<defs><pattern id="{p}setts" patternUnits="userSpaceOnUse" x="0" y="0" width="{tile}" height="{H}">{"".join(setts)}</pattern></defs>')
+        parts.append(f'<rect y="{pave}" width="{W}" height="{H - pave}" fill="url(#{p}setts)"/>')
+    else:
+        parts.extend(setts)
     return ''.join(parts)
 
 
@@ -597,15 +605,17 @@ def pigeon(i, flip=False):
 
 
 def rain(W, H, density=1.0):
-    lines = []
+    # One shape with a stroke per drop: it looks the same as a line per
+    # drop, but the page handles one shape a frame instead of thousands.
+    drops = []
     cols = int(W / 18 * density)
     for c in range(cols):
         x = c * (W / cols) + (c * 37) % 11
         dy = (c * 29) % 64
         for row in range(int(H / 64) + 2):
             y = (row - 1) * 64 + dy
-            lines.append(f'<line x1="{f(x)}" y1="{y}" x2="{f(x - 5)}" y2="{y + 17}"/>')
-    return f'<g class="rainfall" stroke="#dde6ff" stroke-width="1.15" stroke-linecap="round" opacity="0.6">{"".join(lines)}</g>'
+            drops.append(f'M{f(x)} {y}l-5 17')
+    return f'<g class="rainfall" stroke="#dde6ff" stroke-width="1.15" stroke-linecap="round" opacity="0.6"><path fill="none" d="{"".join(drops)}"/></g>'
 
 
 def splashes(W, y, n, seed=2):

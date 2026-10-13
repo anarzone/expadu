@@ -5,6 +5,23 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Faster again — 13 October 2026
+
+Owner request (the page felt slow). Measured against this morning's
+version (desktop, and a phone slowed four times):
+
+- The rain is one shape with a stroke per drop instead of 2,100 lines;
+  those lines made each of the first seconds' frames take 265-430ms on a
+  desktop. The street now shows in 0.35s and the page is never blocked
+  (it was 0.55s and 0.4s this morning, 1.8s and 2.7s before this fix).
+- What the hour hides (stars by day, the lit windows, the plane, a lamp's
+  flame) leaves the drawing, so its 75 animations no longer cost frames.
+- The big moving groups wait, still, until each is one picture.
+- The wide street's cobbles are one stretch of setts repeated, and it is
+  drawn up to 2240 across (2560 before).
+- A phone's drum draws only the three posters you can see, in three
+  slices each, and every drum turns before its posters are redrawn.
+
 ## The whole day on one wall — 13 October 2026
 
 Owner request: no arrows. On a desktop the wall shows the whole day at
