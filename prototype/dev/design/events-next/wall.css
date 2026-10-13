@@ -3922,6 +3922,29 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 #shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action[data-save-item][aria-pressed='true']::after {
     content: 'Saved';
 }
+/* The reminder's bell sits between Save and Add to plan; on, it's tinted. */
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-bell {
+    flex: 0 0 56px;
+    padding: 0;
+}
+#shared-dialog .event-sheet .place-sheet-footer > .event-bell svg {
+    width: 22px;
+    height: 22px;
+}
+#shared-dialog .event-sheet .place-sheet-footer > .event-bell[aria-pressed='true'] {
+    background: #f8e1d5;
+    color: #8a2f10;
+}
+/* The listing's details: one small line under About. */
+#shared-dialog .event-sheet .event-about .event-source {
+    margin: 2px 0 0;
+    border: 0;
+}
+#shared-dialog .event-sheet .event-about .event-source summary {
+    min-height: 36px;
+    padding: 0;
+    font-size: 13px;
+}
 /* Added: the button says so, in a quieter tone; Undo shows above the bar
    for a while. */
 #shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer {

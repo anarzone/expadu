@@ -1552,6 +1552,7 @@
         if (about) aboutRows(about, item, closed);
         subPages(sheet, item, closed);
         planButton(sheet, item, closed);
+        reminderBell(sheet);
         planPage(sheet, item);
         getThere(sheet, item);
     }
@@ -1568,6 +1569,41 @@
         return H.dayItems(S.read(), S.studio(), item.date).find(
             (entry) => String(entry.id).replace(/^event:/, '') === item.id,
         );
+    }
+    // A short note above the bottom bar (Undo when there is one).
+    function footNotice(footer, text, undo) {
+        footer.querySelector('.event-plan-notice')?.remove();
+        clearTimeout(footer.__hide);
+        footer.insertAdjacentHTML(
+            'afterbegin',
+            `<div class="event-plan-notice" role="status"><span>${E(text)}</span>${undo ? '<button type="button">Undo</button>' : ''}</div>`,
+        );
+        const strip = footer.querySelector('.event-plan-notice');
+        strip.querySelector('button')?.addEventListener('click', () => {
+            undo();
+            strip.remove();
+        });
+        footer.__hide = setTimeout(() => strip.remove(), undo ? 8000 : 4000);
+    }
+    /* The reminder is a bell in the bottom bar (owner, 13 Oct 2026: the
+       page fits one view). It works the sheet's own switch, which keeps
+       the reminder; turning it on says it isn't sent in this preview. */
+    function reminderBell(sheet) {
+        const row = sheet.querySelector('[data-panel="about"] .event-reminder');
+        const input = row?.querySelector('[data-event-reminder]');
+        const save = sheet.querySelector('[data-panel="about"] .place-sheet-footer [data-save-item]');
+        if (!input || !save || sheet.querySelector('.event-bell')) return;
+        row.hidden = true;
+        save.insertAdjacentHTML(
+            'afterend',
+            `<button type="button" class="button secondary event-icon-action event-bell" aria-pressed="${input.checked}" aria-label="Remind me before it starts (not sent in this preview)" title="Remind me before it starts">${I('bell')}</button>`,
+        );
+        const bell = save.nextElementSibling;
+        bell.addEventListener('click', () => {
+            input.click();
+            bell.setAttribute('aria-pressed', String(input.checked));
+            footNotice(bell.closest('.place-sheet-footer'), input.checked ? 'Reminder on · not sent in this preview' : 'Reminder off');
+        });
     }
     function planButton(sheet, item, closed) {
         const button = sheet.querySelector('.place-sheet-footer [data-event-section="plan"]');
@@ -1587,22 +1623,7 @@
             if (yes) button.setAttribute('aria-label', `In your plan. Open ${item.title} in your plan`);
             else button.removeAttribute('aria-label');
         };
-        let hide;
-        const notice = (text, undo) => {
-            footer.querySelector('.event-plan-notice')?.remove();
-            clearTimeout(hide);
-            footer.insertAdjacentHTML(
-                'afterbegin',
-                `<div class="event-plan-notice" role="status"><span>${E(text)}</span>${undo ? '<button type="button">Undo</button>' : ''}</div>`,
-            );
-            const strip = footer.querySelector('.event-plan-notice');
-            strip.querySelector('button')?.addEventListener('click', () => {
-                undo();
-                strip.remove();
-                button.focus({ preventScroll: true });
-            });
-            hide = setTimeout(() => strip.remove(), 8000);
-        };
+        const notice = (text, undo) => footNotice(footer, text, undo);
         button.addEventListener(
             'click',
             (event) => {
@@ -1898,14 +1919,19 @@
         }
         const day = F.dateLabel(item.date, { weekday: 'short', month: 'short' });
         const times = `${E(item.start || '')}${item.end ? `–${E(item.end)}` : ''}`;
-        facts.insertAdjacentHTML(
-            'beforeend',
-            row('clock', 'When', `${E(day)}${times ? ` · ${times}` : ''}`, closed ? 'Already happened' : item.end ? 'Listed times' : 'End time to check'),
-        );
         const know = about.querySelector('.event-know');
-        know?.querySelectorAll('dl > div').forEach((fact) => {
+        // When to arrive is part of when (owner, 13 Oct 2026: the page fits
+        // one view): "Listed times · arrive by the start time".
+        const facts2 = [...(know?.querySelectorAll('dl > div') || [])];
+        const arriving = facts2.find((fact) => fact.querySelector('dt').textContent === 'When to arrive');
+        const arrive = arriving?.querySelector('dd').textContent.trim();
+        let whenSub = closed ? 'Already happened' : item.end ? 'Listed times' : 'End time to check';
+        if (arrive && !closed) whenSub += ` · arrive ${arrive.charAt(0).toLowerCase()}${arrive.slice(1)}`;
+        facts.insertAdjacentHTML('beforeend', row('clock', 'When', `${E(day)}${times ? ` · ${times}` : ''}`, E(whenSub)));
+        facts2.forEach((fact) => {
+            if (fact === arriving) return;
             const label = fact.querySelector('dt').textContent;
-            (label === 'When to arrive' ? facts : more).insertAdjacentHTML('beforeend', row(factIcons[label] || 'info', E(label), E(fact.querySelector('dd').textContent)));
+            more.insertAdjacentHTML('beforeend', row(factIcons[label] || 'info', E(label), E(fact.querySelector('dd').textContent)));
         });
         if (venue) facts.append(venue);
         const unlisted = know?.querySelector('.event-unlisted');
@@ -1936,6 +1962,9 @@
         }
         if (box || past) (box || past).after(facts);
         else about.prepend(facts);
+        // The listing's details: one small line under About.
+        const source = about.querySelector('.event-source');
+        if (source && box) box.append(source);
         const today = about.querySelector('.event-today');
         if (today) facts.after(today);
         (today || facts).after(more);

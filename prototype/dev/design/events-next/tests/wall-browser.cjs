@@ -428,11 +428,11 @@ const inside = (box, viewport) =>
                 await sheet.locator('[data-panel="about"] .place-sheet-scroll').evaluate((scroll) =>
                     [...scroll.children].map((block) => block.className.split(' ')[0]),
                 ),
-                ['event-about', 'event-facts', 'event-today', 'event-facts', 'event-reminder', 'event-source'],
+                ['event-about', 'event-facts', 'event-today', 'event-facts', 'event-reminder'],
             );
             assert.deepEqual(
                 await sheet.locator('.event-facts .event-row-label').allInnerTexts(),
-                ['WHEN', 'WHEN TO ARRIVE', 'WHERE', 'NOT LISTED'],
+                ['WHEN', 'WHERE', 'NOT LISTED'],
             );
             assert.match(await sheet.locator('.event-facts .event-row').first().innerText(), /Wed 30 Sept · 20:00–22:00/);
             assert.match(await sheet.locator('.event-about').innerText(), /^About\s/i);

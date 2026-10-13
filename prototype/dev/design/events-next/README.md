@@ -5,6 +5,16 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The details fit one view — 13 October 2026
+
+Owner request (the details still scrolled when they opened). When to
+arrive is part of the When row ("Listed times · arrive by the start
+time"), the reminder is a bell in the bottom bar between Save and Add to
+plan (it works the sheet's own switch; turning it on says it isn't sent
+in this preview), and the listing's details are one small line under
+About, still marked Sample. Nothing scrolls on a 1512 x 821 or 1440 x 900
+screen or a 390 x 844 phone; a small phone (375 x 667) scrolls the rest.
+
 ## The drum moves like a picker wheel — 13 October 2026
 
 Owner request ("the drum should be smooth enough to enjoy"). It used to
