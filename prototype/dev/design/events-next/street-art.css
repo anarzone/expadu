@@ -6,19 +6,19 @@
   .std .drift-a{animation:stddrift 190s linear infinite}
   .std .drift-b{animation:stddrift 120s linear infinite}
   .std .drift-c{animation:stddrift 80s linear infinite}
-  @keyframes stddrift{from{transform:translateX(0)}to{transform:translateX(-2560px)}}
+  @keyframes stddrift{from{transform:translateX(0)}to{transform:translateX(-2240px)}}
   .std .tw{animation:stdtw 3.4s ease-in-out infinite}
   .std .tw1{animation-delay:-1.1s} .std .tw2{animation-delay:-2.2s;animation-duration:4.6s} .std .tw3{animation-delay:-.6s;animation-duration:2.7s}
   @keyframes stdtw{0%,100%{opacity:1}50%{opacity:.2}}
   .std .pulse{transform-box:fill-box;transform-origin:center;animation:stdpulse 7s ease-in-out infinite}
   @keyframes stdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
   .std .flock{animation:stdflock 52s linear infinite}
-  @keyframes stdflock{0%{transform:translate(-140px,40px)}25%{transform:translate(640px,22px)}50%{transform:translate(1280px,34px)}75%{transform:translate(1920px,14px)}100%{transform:translate(2700px,26px)}}
+  @keyframes stdflock{0%{transform:translate(-140px,40px)}25%{transform:translate(560px,22px)}50%{transform:translate(1120px,34px)}75%{transform:translate(1680px,14px)}100%{transform:translate(2380px,26px)}}
   .std .wing{transform-box:fill-box;transform-origin:center 80%;animation:stdflap .5s ease-in-out infinite alternate}
   .std .w1{animation-delay:-.18s} .std .w2{animation-delay:-.33s;animation-duration:.6s}
   @keyframes stdflap{to{transform:scaleY(-.55)}}
   .std .plane{animation:stdplane 80s linear infinite}
-  @keyframes stdplane{from{transform:translate(2600px,24px)}to{transform:translate(-60px,6px)}}
+  @keyframes stdplane{from{transform:translate(2280px,24px)}to{transform:translate(-60px,6px)}}
   .std .blink{animation:stdblink 1.3s steps(2,jump-none) infinite}
   @keyframes stdblink{0%{opacity:1}100%{opacity:0}}
   .std .smoke{transform-box:fill-box;transform-origin:center;animation:stdsmoke 7.5s ease-out infinite}
