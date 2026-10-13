@@ -105,17 +105,19 @@
                 <div class="gt-disclosure"${open ? '' : ' hidden'}>${steps(o)}</div>
             </article>`;
         }
-        // On foot or by bike: one way, leaving in time to be there by the start.
+        // On foot or by bike: one way, there five minutes before the start
+        // (as Travel shows it: the margin it calls tight).
         function direct(trip, mode) {
             const way = trip[mode];
             if (!way) return `<p class="gt-none">${chip('unsure', 'info', 'Not in the capture')} ${mode === 'bike' ? 'Cycling' : 'Walking'} wasn’t captured for this start.</p>`;
-            const leave = clock(mins(item.start) - way.minutes);
+            const there = clock(mins(item.start) - 5);
+            const leave = clock(mins(there) - way.minutes);
             const w = weatherAt(leave);
             const reasons = [
-                [`${way.km} km`, 'ok', 'route'],
+                [`${way.minutes} min ${mode === 'bike' ? 'cycling' : 'walking'} · ${way.km} km`, 'ok', mode],
                 ...(w ? [w.wet ? [`${w.sky} likely on the way (sample)`, 'warn', 'cloud'] : ['Dry on the way (sample)', 'ok', 'sun']] : []),
             ];
-            return `<div class="plan-options"><article class="plan-option is-on"><div class="plan-option-pick is-static"><span class="plan-radio" aria-hidden="true"></span><span class="plan-option-body"><span class="plan-option-head"><span class="tl-line is-mode">${I(mode)}<span>${mode === 'bike' ? 'By bike' : 'On foot'}</span></span>${chip('calm', 'clock', `${way.minutes} min`)}</span><span class="plan-option-times">Leave by <strong>${leave}</strong> → there <strong>${item.start}</strong></span><span class="plan-option-reasons">${reasons
+            return `<div class="plan-options"><article class="plan-option is-on"><div class="plan-option-pick is-static"><span class="plan-radio" aria-hidden="true"></span><span class="plan-option-body"><span class="plan-option-head"><span class="tl-line is-mode">${I(mode)}<span>${mode === 'bike' ? 'By bike' : 'On foot'}</span></span>${chip('calm', 'check', '5 min spare')}</span><span class="plan-option-times">Leave <strong>${leave}</strong> → there <strong>${there}</strong></span><span class="plan-option-reasons">${reasons
                 .map(([text, kind, name]) => `<span class="is-${kind}"><span class="plan-reason-icon">${icon(name)}</span>${E(text)}</span>`)
                 .join('')}</span></span></div></article></div>`;
         }
@@ -137,7 +139,9 @@
                 return;
             }
             const spareOf = (o) => mins(item.start) - mins(o.arrive);
-            const best = trip.options.find((o) => spareOf(o) >= 5) || trip.options[0];
+            // As Travel orders them: the earliest arrival first, and best.
+            const options = [...trip.options].sort((a, b) => mins(a.arrive) - mins(b.arrive));
+            const best = options[0];
             if (!trip.options.some((o) => o.id === state.pick)) state.pick = best?.id || null;
             const checked = [
                 chip('calm', 'check', 'Timetable'),
@@ -147,7 +151,7 @@
             ];
             const list =
                 mode === 'transit'
-                    ? `<div class="plan-options" role="radiogroup" aria-label="Ways to ${E(item.venue)}">${[best, ...trip.options.filter((o) => o !== best)].map((o) => option(o, o === best, spareOf(o))).join('')}</div>`
+                    ? `<div class="plan-options" role="radiogroup" aria-label="Ways to ${E(item.venue)}">${options.map((o) => option(o, o === best, spareOf(o))).join('')}</div>`
                     : direct(trip, mode);
             put(`<section class="gt-checked" aria-label="What we checked"><h3>We checked</h3><div>${checked.join('')}</div></section>${list}<p class="gt-source">${I('info')}<span>Scheduled times from the VRS timetable for ${E(new Date(item.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))}, captured ${E(new Date(root.ExpaduSampleJourneys.captured + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}. Not live: check departures before you go.</span></p>`);
             const picked = mode === 'transit' ? trip.options.find((o) => o.id === state.pick) : null;

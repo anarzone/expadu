@@ -23,7 +23,10 @@ for the sample day, arriving by each evening event's start, from Mülheim
 (after the appointment) and from Neumarkt, with bike and walking times and
 each route's shape. `../tools/capture-journeys.py` captures them again
 (the planner must be running). From any other start, Get there says those
-two starts were captured and offers them, or Travel.
+two starts were captured and offers them, or Travel. Options are ordered
+as Travel orders them (the earliest arrival first, and Best for you); bike
+and walk arrive five minutes before the start, the margin Travel calls
+tight. Open in Travel lands on the same options.
 
 ## The details fit one view — 13 October 2026
 
