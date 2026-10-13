@@ -5,6 +5,17 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Tablets held upright get a bigger street — 13 October 2026
+
+Owner request (the remaining open items). On a tall, narrow screen the
+street was drawn at its full 1361 width and shrunk to fit, about half
+size, with the screen's lower part empty. It is now drawn narrower there
+(down to 1100 across: less wall, still room for two hours' posters side
+by side) so it grows into the height: posters are about a quarter bigger
+on an iPad mini, Air and Pro held upright (`street.js` fit). Laptops and
+landscape tablets are unchanged; the street keeps its landscape shape,
+so an upright screen still has room below it.
+
 ## Get there from anywhere in Cologne, now or back — 13 October 2026
 
 Owner request ("fix remaining issues too": the starts, times and way home

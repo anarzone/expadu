@@ -572,6 +572,11 @@
         // It also fills the screen's width (owner, 13 Oct 2026): on a wide,
         // short screen the street is wider (more wall, sky and pavement,
         // more hours of posters at once), up to how wide it's drawn.
+        // A tall, narrow screen (a tablet held upright) gets a narrower street
+        // rather than a smaller one: down to MIN_W across (less wall, still
+        // room for two hours' posters side by side), so it grows into the
+        // height instead of shrinking to the width.
+        const MIN_W = 1100;
         function fit() {
             if (!street) return;
             const art = ART[layoutName];
@@ -581,8 +586,9 @@
             let zoom = Math.max(0.3, Math.min(host.clientWidth / w0, layoutName === 'phone' ? 1.25 : Infinity));
             if (layoutName === 'desktop') {
                 const top = box.getBoundingClientRect().top + scrollY;
-                zoom = Math.max(0.45, Math.min(zoom, (innerHeight - top - 20) / h));
-                w = Math.min(art.maxW || w0, Math.max(w0, Math.floor(host.clientWidth / zoom)));
+                const narrow = Math.min(w0, MIN_W);
+                zoom = Math.max(0.45, Math.min(host.clientWidth / narrow, (innerHeight - top - 20) / h));
+                w = Math.min(art.maxW || w0, Math.max(narrow, Math.floor(host.clientWidth / zoom)));
             }
             if (street.__cfg.W !== w) {
                 const base = art.cfg;
