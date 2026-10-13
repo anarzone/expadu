@@ -5,6 +5,12 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## No caption on the column — 13 October 2026
+
+Owner request. The "Tonight · 1 of 2" caption on the column's base is
+gone; the base's lamps still show which poster faces you (and say so to
+screen readers). The round drum stays on phones too.
+
 ## Faster again — 13 October 2026
 
 Owner request (the page felt slow). Measured against this morning's

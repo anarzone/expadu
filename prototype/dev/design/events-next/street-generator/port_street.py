@@ -247,6 +247,9 @@ def parts(phone):
         # patches, scraps and puddles.
         base.update(
             oneWall=True,
+            # No caption on the column's base (owner, 13 Oct 2026): its
+            # lamps show which poster faces you.
+            noColLabel=True,
             W0=base['W'], W=WIDE,
             holes=base['holes'] + [(1560, 704, 58, 34), (1904, 846, 66, 20), (2150, 640, 50, 38)],
             scraps=base['scraps'] + [(1500, 780, 112, 62, '#9db4c0', -2), (1760, 268, 96, 70, '#d9a8a8', 2), (2080, 300, 104, 58, '#e8c66a', -1)],

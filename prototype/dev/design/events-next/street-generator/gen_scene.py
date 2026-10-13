@@ -803,7 +803,7 @@ def card(cfg):
   {light}
   {col}
   {front}
-  {'' if phone else f'<div style="position:absolute;left:{cx}px;top:{cy + 700}px;width:300px;text-align:center;z-index:6;pointer-events:none"><span style="display:inline-block;padding:2px 10px;border-radius:4px;background:linear-gradient(#e8cc6e,#b8952f);color:#2a2008;font-size:11.5px;font-weight:700;letter-spacing:.04em;box-shadow:0 1px 0 #fff6 inset">{H("colLabel")}</span></div>'}
+  {'' if phone or cfg.get('noColLabel') else f'<div style="position:absolute;left:{cx}px;top:{cy + 700}px;width:300px;text-align:center;z-index:6;pointer-events:none"><span style="display:inline-block;padding:2px 10px;border-radius:4px;background:linear-gradient(#e8cc6e,#b8952f);color:#2a2008;font-size:11.5px;font-weight:700;letter-spacing:.04em;box-shadow:0 1px 0 #fff6 inset">{H("colLabel")}</span></div>'}
   {rainl}
   {cfg.get('emptyHtml', '')}
   {chipbox}

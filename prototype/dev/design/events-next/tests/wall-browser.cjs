@@ -310,8 +310,6 @@ const inside = (box, viewport) =>
             await page.waitForTimeout(400);
             // The column rolls tonight's posters (its caption on a desktop);
             // its facing poster opens its details.
-            if (viewport.width > 700)
-                assert.match(await street.locator('#wall').innerText(), /Tonight · [12] of 2/);
             // The column keeps rolling, so the poster facing you can turn
             // away between finding it and tapping it: find it again then.
             for (let attempt = 0; ; attempt++) {

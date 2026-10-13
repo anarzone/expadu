@@ -105,7 +105,7 @@
   <g transform="translate(86 936) scale(1.0)"><g style="opacity:${h.e(v.k?.["lamp"])};transition:opacity 1.2s"><circle class="glow" cx="0" cy="-602" r="120" fill="url(#stdlamp)"></circle></g></g>
   <g style="opacity:${h.e(v.k?.["leaves"])};transition:opacity 1.2s"><g data-s="22">${h.s(22)}</g></g>
 </svg>
-  <div style="position:absolute;left:146px;top:894px;width:300px;text-align:center;z-index:6;pointer-events:none"><span style="display:inline-block;padding:2px 10px;border-radius:4px;background:linear-gradient(#e8cc6e,#b8952f);color:#2a2008;font-size:11.5px;font-weight:700;letter-spacing:.04em;box-shadow:0 1px 0 #fff6 inset">${h.t(v.colLabel)}</span></div>
+  
   <svg width="2240" height="960" viewbox="0 0 2240 960" aria-hidden="true" style="width:2240px;height:960px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;position:absolute;left:0;top:0;pointer-events:none;opacity:${h.e(v.k?.["rain"])};transition:opacity 1.2s">
   <g data-s="23">${h.s(23)}</g></svg>
   
