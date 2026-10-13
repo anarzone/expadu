@@ -87,8 +87,9 @@ Owner decision. The Events page is now the "2 · Stories" board from the
   the page's; Composer's button and the bottom bar too.
 
 `street-art.js` and `street-art.css` are generated from the board's own
-generators (its templates, drawings and logic); `street.js` runs them
-here, filling the poster slots with the page's posters. The old corner and
+generators (its templates, drawings and logic), kept in `street-generator/`
+(see its README; `python3 port_street.py ..` regenerates them); `street.js`
+runs them here, filling the poster slots with the page's posters. The old corner and
 column remain only for the Skyline view (`?view=skyline`). `?at=` still
 moves the posters' On now and Over flags; the street's sky keeps the
 board's hour. Tablets (701–999px) show the desktop street scaled down.
