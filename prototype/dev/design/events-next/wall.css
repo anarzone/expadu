@@ -3720,8 +3720,97 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     color: var(--color-text);
     backdrop-filter: none;
 }
-#shared-dialog.is-scrolled .event-sheet > .place-sheet-tabs {
-    margin-right: 56px;
+/* No tabs: Get there and Add to plan are pages inside, with Back. */
+#shared-dialog .event-sheet:has(.event-hero) > .place-sheet-tabs {
+    display: none;
+}
+#shared-dialog .event-sheet > .event-subhead {
+    display: none;
+}
+#shared-dialog .event-sheet:not([data-section='about']):has(.event-hero) > .event-hero {
+    display: none;
+}
+#shared-dialog .event-sheet:not([data-section='about']) > .event-subhead {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+    padding: 14px 72px 14px 16px;
+    border-bottom: 1px solid #e6ddcb;
+    background: var(--color-bg, #faf6ee);
+}
+#shared-dialog .event-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 14px 0 10px;
+    border: 0;
+    border-radius: 999px;
+    background: #f1ead9;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+#shared-dialog .event-back svg {
+    width: 20px;
+    height: 20px;
+}
+#shared-dialog .event-subhead-title {
+    display: none;
+    font-size: 18px;
+    color: var(--color-text);
+}
+#shared-dialog .event-sheet[data-section='directions'] .event-subhead-title[data-for='directions'],
+#shared-dialog .event-sheet[data-section='plan'] .event-subhead-title[data-for='plan'] {
+    display: block;
+}
+/* On a page inside, the head is only Close, clear of Back. */
+#shared-dialog:has(.event-sheet:not([data-section='about'])) .dialog-head {
+    left: auto;
+}
+#shared-dialog:has(.event-sheet:not([data-section='about'])) .dialog-head [data-ui='close'] {
+    border-color: #e6ddcb;
+    background: #f1ead9;
+    color: var(--color-text);
+    backdrop-filter: none;
+}
+/* The way there, a button of its own under Where. */
+#shared-dialog .event-sheet .event-getthere {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    width: 100%;
+    margin: 12px 0;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 14px;
+    background: #e8f0fb;
+    color: #12305c;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+#shared-dialog .event-sheet .event-getthere .event-row-icon {
+    background: #fff;
+    color: #1d4d8f;
+}
+#shared-dialog .event-sheet .event-getthere .event-getthere-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+#shared-dialog .event-sheet .event-getthere .event-row-sub {
+    color: #2b4a75;
+}
+#shared-dialog .event-sheet .event-getthere > svg:last-child {
+    width: 20px;
+    height: 20px;
 }
 /* The bottom bar: Save and the wider Add to plan fill it. */
 #shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer {
@@ -3754,11 +3843,15 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     color: var(--color-text);
 }
 /* "Save" or "Saved" on screen; screen readers hear the button's full name. */
-#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action::after {
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action[data-save-item]::after {
     content: 'Save';
 }
-#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action[aria-pressed='true']::after {
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > .event-icon-action[data-save-item][aria-pressed='true']::after {
     content: 'Saved';
+}
+/* Get there's map link, named on screen too. */
+#shared-dialog .event-sheet:has(.event-hero) .place-sheet-footer > a.event-icon-action::after {
+    content: 'Map';
 }
 /* The header: the poster. */
 #shared-dialog .event-sheet .event-ticket.event-hero {

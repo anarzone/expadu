@@ -1550,6 +1550,35 @@
                 );
         }
         if (about) aboutRows(about, item, closed);
+        subPages(sheet, item, closed);
+    }
+    /* No tabs (owner, 13 Oct 2026): the page is the details. Get there and
+       Add to plan open inside it as their own pages, with Back: Get there
+       from its button under Where (or the Where row), Add to plan from the
+       bottom bar. */
+    function subPages(sheet, item, closed) {
+        if (sheet.querySelector('.event-subhead')) return;
+        const from = sheet.querySelector('[data-panel="directions"] input[name="from"]')?.value.trim();
+        const way = sheet.querySelector('.event-facts .event-venue');
+        if (way)
+            way.insertAdjacentHTML(
+                'afterend',
+                `<button type="button" class="event-getthere" data-event-section="directions"><span class="event-row-icon">${I('route')}</span><span class="event-row-text"><span class="event-getthere-title">Get there</span><span class="event-row-sub">${from ? `From ${E(from)}` : 'Choose where you start'}${item.start && !closed ? ` · arrive by ${E(item.start)}` : ''}</span></span>${I('arrow')}</button>`,
+            );
+        sheet.insertAdjacentHTML(
+            'afterbegin',
+            `<div class="event-subhead"><button type="button" class="event-back" data-event-section="about">${I('back')}<span>Back</span></button><strong class="event-subhead-title" data-for="directions">Get there</strong><strong class="event-subhead-title" data-for="plan">Add to plan</strong></div>`,
+        );
+        // A page starts at its top, with Back in reach.
+        sheet.addEventListener('click', (event) => {
+            const go = event.target.closest('[data-event-section]');
+            if (!go) return;
+            const scroller = sheet.closest('#dialog-body');
+            if (scroller) scroller.scrollTop = 0;
+            sheet.closest('#shared-dialog')?.classList.remove('is-scrolled');
+            const target = go.dataset.eventSection === 'about' ? sheet.querySelector('.event-getthere') || sheet.querySelector('.event-row') : sheet.querySelector('.event-back');
+            target?.focus({ preventScroll: true });
+        });
     }
     /* The About tab as one clear list (owner, 13 Oct 2026): it was the same
        grey everywhere, with cards barely lighter than the sheet. How the

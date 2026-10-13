@@ -177,6 +177,23 @@ const inside = (box, viewport) =>
             assert.ok(page1.filled > 0.85, `the bottom bar should be filled: ${page1.filled}`);
             assert.ok(page1.rows >= 3, `the first view should show the rows: ${page1.rows}`);
             assert.equal(page1.scroller, 'auto', 'the whole page scrolls');
+            // No tabs: Get there (its button under Where) and Add to plan (the
+            // bottom bar) open as pages inside, each with Back.
+            assert.equal(await page.locator('#shared-dialog .place-sheet-tabs').isVisible(), false, 'no tabs');
+            const sheetEl = page.locator('#shared-dialog .event-sheet');
+            await page.locator('#shared-dialog .event-getthere').click();
+            await page.waitForTimeout(400);
+            assert.equal(await sheetEl.getAttribute('data-section'), 'directions');
+            assert.equal(await page.locator('#shared-dialog .event-subhead-title[data-for="directions"]').innerText(), 'Get there');
+            assert.equal(await page.locator('#shared-dialog .event-hero').isVisible(), false);
+            await page.locator('#shared-dialog .event-back').click();
+            await page.waitForTimeout(400);
+            assert.equal(await sheetEl.getAttribute('data-section'), 'about');
+            await page.locator('#shared-dialog [data-panel="about"] .place-sheet-footer .button.primary').click();
+            await page.waitForTimeout(400);
+            assert.equal(await sheetEl.getAttribute('data-section'), 'plan');
+            await page.locator('#shared-dialog .event-back').click();
+            await page.waitForTimeout(400);
             assert.ok(heroFits.width <= viewport.width, `sideways scroll with the details open at ${viewport.width}px`);
             await page.keyboard.press('Escape');
             await page.waitForTimeout(500);
