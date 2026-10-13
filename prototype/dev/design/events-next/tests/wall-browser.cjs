@@ -249,6 +249,17 @@ const inside = (box, viewport) =>
                 setTimeout(() => done({ grew: bar.getBoundingClientRect().width - a, redraws }), 400);
             }));
             assert.ok(glide.grew > 0 && glide.redraws === 0, `the story bar should glide: ${JSON.stringify(glide)}`);
+            // Its pause button holds it; Play goes on.
+            const barWidth = () => story.locator('i').first().evaluate((i) => i.getBoundingClientRect().width);
+            await story.getByRole('button', { name: 'Pause story' }).click();
+            await page.waitForTimeout(300);
+            const held = await barWidth();
+            await page.waitForTimeout(800);
+            assert.ok(Math.abs((await barWidth()) - held) < 1, 'a paused story holds');
+            assert.equal(await story.getByRole('button', { name: 'Play story' }).getAttribute('aria-pressed'), 'true');
+            await story.getByRole('button', { name: 'Play story' }).click();
+            await page.waitForTimeout(500);
+            assert.ok((await barWidth()) > held, 'Play goes on');
             await story.locator('.pp-open').click();
             await page.waitForTimeout(500);
             assert.equal(await story.locator('.pp.is-turned').count(), 1);

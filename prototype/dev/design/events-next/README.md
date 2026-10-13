@@ -18,6 +18,8 @@ Owner request.
   and More about it opens the sheet over the story, which waits.
 - **No turn button in a story**: the poster turns over with a tap on it
   and back with a tap on its back (or Escape).
+- **A pause button** beside Close holds the story (its bar and the next
+  poster) until Play; a new story starts playing.
 
 The viewer's template and logic are in `street-generator/gen_apps.py`
 (regenerated); the tap on the back is in `wall.js`.

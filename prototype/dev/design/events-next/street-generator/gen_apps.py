@@ -39,8 +39,9 @@ EXTRA = r'''
     if (Date.now() - st.t < 3600) return;
     this.storyStep(1);
   }
-  // A story waits while its poster is turned over.
-  storyPaused() { return !!((this.state || {}).turned || {})['story:0']; }
+  // A story waits while it's paused (its pause button) or its poster is turned over.
+  storyPaused() { return !!(this.state || {}).stPause || this.storyTurned(); }
+  storyTurned() { return !!((this.state || {}).turned || {})['story:0']; }
   storyHours() { const out = []; for (let h = 13; h <= 23; h++) out.push(h); return out.concat([8, 9, 10, 11, 12]); }
   storyList(h) {
     const s = this.state || {};
@@ -171,7 +172,7 @@ EXTRA = r'''
         const seen = !!s.seen[h];
         return { label: h === 13 ? 'Now' : two(h) + ':00', cover: list.length ? list[0].src : '', art: list.length ? this.mxArt(list[0]) : '', has: list.length > 0, aria: two(h) + ':00 · ' + list.length + ' events',
           ring: !list.length ? '#e6ddcb' : seen ? '#cdbfa3' : 'conic-gradient(from 200deg,#f2c94c,#ef7d2a,#c23b0e,#e8cc6e,#f2c94c)', fw: seen ? 500 : 700, op: list.length ? 1 : 0.4,
-          open: () => { if (!list.length) return; const sn = Object.assign({}, s.seen); sn[h] = true; this.setState({ story: { h, i: 0, t: Date.now() }, seen: sn, sel: 0 }); } };
+          open: () => { if (!list.length) return; const sn = Object.assign({}, s.seen); sn[h] = true; this.setState({ story: { h, i: 0, t: Date.now() }, seen: sn, sel: 0, stPause: false }); } };
       });
       if (c.feed) {
         const onWall = this.pool().slice(0, c.per).map((e) => e.n);
@@ -182,7 +183,7 @@ EXTRA = r'''
             rot: [-1.2, 0.9, -0.5, 1.3][e.n % 4],
             saveLabel: s.saved[e.n] ? 'Saved' : 'Save', saveStyle: s.saved[e.n] ? 'background:#c23b0e;color:#fff;border-color:#c23b0e' : 'background:#fffdf8;color:#211d15;border-color:#211d15',
             save: () => { const sv = Object.assign({}, s.saved); if (sv[e.n]) delete sv[e.n]; else sv[e.n] = true; this.setState({ saved: sv }); },
-            watch: () => { const sn = Object.assign({}, s.seen); sn[h] = true; this.setState({ story: { h, i: list.indexOf(e), t: Date.now() }, seen: sn, sel: 0 }); },
+            watch: () => { const sn = Object.assign({}, s.seen); sn[h] = true; this.setState({ story: { h, i: list.indexOf(e), t: Date.now() }, seen: sn, sel: 0, stPause: false }); },
             line1: e.ph ? two(h) + ':00 hour · Placeholder #' + e.n : e.time + ' · ' + e.title,
             line2: e.ph ? 'Not a real event · one of 100 on a busy day' : e.place + ' · ' + e.until + ' · ' + e.price,
           }));
@@ -213,7 +214,9 @@ EXTRA = r'''
           real: !e.ph, plan: go({ plan: !s.plan }), planOpen: !!s.plan, planText: 'In the app, this opens Travel with the way to ' + (e.place || '') + '. Not connected in this preview.',
           next: () => { if (Date.now() - (this._swiped || 0) < 400) return; this.storyStep(1); },
           prev: () => { if (Date.now() - (this._swiped || 0) < 400) return; this.storyStep(-1); },
-          close: go({ story: null, plan: false }),
+          close: go({ story: null, plan: false, stPause: false }),
+          paused: !!s.stPause, playing: !s.stPause, pauseLabel: s.stPause ? 'Play story' : 'Pause story', pausePressed: s.stPause ? 'true' : 'false',
+          pause: () => this.setState({ stPause: !(this.state || {}).stPause }),
           hold: (x) => { this._sy = x && x.clientY; this.setState({ press: true, pressAt: Date.now() }); },
           letgo: (x) => {
             const st = this.state || {};
@@ -432,7 +435,8 @@ def story_viewer(phone):
     <div style="display:flex;align-items:center;gap:10px;padding:12px 8px 0 14px">
       <span style="display:flex;align-items:center;height:30px;padding:0 10px;border-radius:7px;background:#1d4d8f;box-shadow:inset 0 0 0 2px #fff;font-weight:800;font-variant-numeric:tabular-nums">{H('st.title')}</span>
       <span style="font-size:13px;line-height:1.2;text-shadow:0 1px 2px #0006"><strong>{H('st.count')}</strong><br>{H('st.weather')} · sample weather</span>
-      <button type="button" aria-label="Close stories" onClick="{H('st.close')}" style="margin-left:auto;width:44px;height:44px;border:0;background:none;color:#fff;font-size:26px;cursor:pointer">×</button>
+      <button type="button" aria-label="{H('st.pauseLabel')}" aria-pressed="{H('st.pausePressed')}" onClick="{H('st.pause')}" style="margin-left:auto;display:grid;place-items:center;width:44px;height:44px;border:0;background:none;color:#fff;cursor:pointer;filter:drop-shadow(0 1px 2px #0006)"><sc-if value="{H('st.paused')}" hint-placeholder-val="{{{{ false }}}}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:block;fill:currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z"></path></svg></sc-if><sc-if value="{H('st.playing')}" hint-placeholder-val="{{{{ true }}}}"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:block;fill:currentColor"><rect x="6" y="5" width="4" height="14" rx="1.2"></rect><rect x="14" y="5" width="4" height="14" rx="1.2"></rect></svg></sc-if></button>
+      <button type="button" aria-label="Close stories" onClick="{H('st.close')}" style="width:44px;height:44px;border:0;background:none;color:#fff;font-size:26px;cursor:pointer">×</button>
     </div>
     <div style="position:relative;flex:1;display:grid;place-items:center;touch-action:none" onPointerDown="{H('st.hold')}" onPointerUp="{H('st.letgo')}" onPointerLeave="{H('st.letgo')}">
       <button type="button" aria-label="Previous poster" onClick="{H('st.prev')}" style="position:absolute;left:0;top:0;bottom:0;width:calc((100% - {w}px) / 2);border:0;background:none;cursor:pointer"></button>
