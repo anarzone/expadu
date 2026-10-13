@@ -20,7 +20,10 @@ times it runs as smoothly as the flat column did.
 Owner request. A drag that starts anywhere on the advertising column (its
 posters, the old ones below, the lamps, the dome) now rolls the column (it follows the finger, then settles on the next or previous
 poster; a short drag springs back) instead of moving the wall's posters,
-and the timed roll waits its full six seconds after it. The column's
+and the timed roll waits its full six seconds after it. Only the wall's poster
+area moves the wall's posters: a drag on bare wall beside the column, the
+sky or the pavement does nothing, and past either end of the posters the
+wall gives only a little, as an iOS list does. The column's
 posters wrap round the drum edge to edge, so the neighbours show at its
 sides under a light curve instead of dark green bands; only the poster
 facing you takes taps.

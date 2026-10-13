@@ -213,9 +213,12 @@ class Component extends DCLogic {
   }
   down(e) {
     // A drag that starts anywhere on the column (its posters, the old
-    // ones below, the lamps, the dome) rolls the column; anywhere else it
-    // moves the wall's posters.
-    const column = e.target && e.target.closest ? e.target.closest('[data-col]') : null;
+    // ones below, the lamps, the dome) rolls the column; one on the wall's
+    // posters moves them. Anywhere else (bare wall, sky, pavement) a drag
+    // does nothing (owner, 13 Oct 2026).
+    const at = (sel) => (e.target && e.target.closest ? e.target.closest(sel) : null);
+    const column = at('[data-col]');
+    if (!column && !at('[data-wall-zone]')) { this._d = null; return; }
     const drum = column ? column.querySelector('[data-col-drum]') : null;
     // The column can be drawn smaller (a phone's is scaled down).
     const scaled = drum && drum.closest('[style*="scale("]');
@@ -256,7 +259,17 @@ class Component extends DCLogic {
     const dx = this.cfg().vertical ? e.clientY - d.y : e.clientX - d.x;
     if (!d.moved && Math.abs(dx) < 6) return;
     if (!d.moved) { d.moved = true; try { d.el.setPointerCapture(d.id); } catch (err) { /* fine */ } }
-    this.setState({ drag: dx });
+    // Past either end the wall only gives a little, as an iOS list does;
+    // with nothing more to show it barely moves.
+    let drag = dx;
+    if (this.cfg().mode === 'walk') {
+      const stops = this.stops(), max = stops[stops.length - 1] || 0, off = this.offset();
+      let to = off - dx;
+      if (to < 0) to /= 4;
+      else if (to > max) to = max + (to - max) / 4;
+      drag = off - to;
+    }
+    this.setState({ drag });
   }
   up() {
     const d = this._d;
@@ -669,7 +682,7 @@ def card(cfg):
     elif cfg['mode'] == 'walk':
         chip = 'display:flex;align-items:center;height:26px;padding:0 10px;border-radius:6px;background:#211d15;color:#fffdf8;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums'
         zone_x = f'right:{W0 - zone_l - zone_w}px' if W0 else f'width:{zone_w}px'
-        posters = f'''<div style="position:absolute;left:{zone_l}px;{zone_x};top:{TOP}px;bottom:{Hc - BASE}px;overflow:hidden">
+        posters = f'''<div data-wall-zone style="position:absolute;left:{zone_l}px;{zone_x};top:{TOP}px;bottom:{Hc - BASE}px;overflow:hidden">
     <div style="position:absolute;left:0;top:{-TOP}px;height:{Hc}px;width:5000px;{H('stripStyle')}">
       {chain_o}<sc-for list="{H('bays')}" as="b" hint-placeholder-count="3">
         <div style="position:absolute;top:0;bottom:0;left:{H('b.x')}px;width:{H('b.w')}px;opacity:{H('b.op')}">
@@ -684,14 +697,14 @@ def card(cfg):
   </div>'''
     elif cfg.get('vertical'):
         vd = f'''<sc-for list="{H('pdots')}" as="d" hint-placeholder-count="3"><button type="button" aria-label="{H('d.label')}" onClick="{H('d.pick')}" style="display:grid;place-items:center;width:24px;height:30px;padding:0;border:0;background:none;cursor:pointer"><i style="display:block;width:7px;border-radius:4px;{H('d.vstyle')}"></i></button></sc-for>'''
-        posters = f'''<div onWheel="{H('wheel')}" style="position:absolute;left:{zone_l}px;width:{zone_w}px;top:{TOP}px;height:{BASE - TOP}px;overflow:hidden;touch-action:none">
+        posters = f'''<div data-wall-zone onWheel="{H('wheel')}" style="position:absolute;left:{zone_l}px;width:{zone_w}px;top:{TOP}px;height:{BASE - TOP}px;overflow:hidden;touch-action:none">
     <div style="position:absolute;left:0;right:0;top:{-TOP}px;height:{Hc}px;{H('gridStyle')}">
       {chain_o}<sc-for list="{H('grid')}" as="P" hint-placeholder-count="2">{slot}</sc-for>{chain_c}
     </div>
   </div>
   <div role="group" aria-label="Pages" style="position:absolute;left:{zone_l - 22}px;top:{(TOP + BASE) // 2 - 45}px;display:flex;flex-direction:column;align-items:center;z-index:6">{vd}</div>'''
     else:
-        posters = f'''<div style="position:absolute;left:{zone_l}px;width:{zone_w}px;top:0;bottom:0;overflow:hidden">
+        posters = f'''<div data-wall-zone style="position:absolute;left:{zone_l}px;width:{zone_w}px;top:0;bottom:0;overflow:hidden">
     <div style="position:absolute;inset:0;{H('gridStyle')}">
       <sc-for list="{H('grid')}" as="P" hint-placeholder-count="2">{slot}</sc-for>
     </div>

@@ -58,7 +58,7 @@
   <g transform="translate(0 -6)"><g style="filter:brightness(${h.e(v.k?.["objB"])});transition:filter 1.2s"><g transform="scale(1.0)" data-s="15">${h.s(15)}</g></g></g>
 </svg>
   <svg width="420" height="960" viewbox="941 0 420 960" aria-hidden="true" style="width:420px;height:960px;fill:initial;stroke:initial;stroke-width:initial;stroke-linecap:initial;stroke-linejoin:initial;flex-shrink:1;position:absolute;right:0;top:0" data-s="16">${h.s(16)}</svg>
-  <div style="position:absolute;left:548px;right:24px;top:250px;bottom:80px;overflow:hidden">
+  <div data-wall-zone="" style="position:absolute;left:548px;right:24px;top:250px;bottom:80px;overflow:hidden">
     <div style="position:absolute;left:0;top:-250px;height:960px;width:5000px;${h.e(v.stripStyle)}">
       <div class="wall-board" style="display:contents"><div class="wall-view wall-view--wall" style="display:contents">${(v.bays || []).map((b, $index) => `
         <div style="position:absolute;top:0;bottom:0;left:${h.e(b?.["x"])}px;width:${h.e(b?.["w"])}px;opacity:${h.e(b?.["op"])}">
@@ -199,7 +199,7 @@
   <g style="opacity:${h.e(v.k?.["shadow"])};transition:opacity 1.2s" fill="#3a2614" filter="url(#stpsofter)"><path d="M160 214 L176 214 L206 534 L166 534 Z"></path></g>
   <g transform="translate(0 -4)"><g style="filter:brightness(${h.e(v.k?.["objB"])});transition:filter 1.2s"><g transform="scale(0.55)" data-s="41">${h.s(41)}</g></g></g>
 </svg>
-  <div data-on-wheel="${h.on(v.wheel)}" style="position:absolute;left:192px;width:154px;top:162px;height:372px;overflow:hidden;touch-action:none">
+  <div data-wall-zone="" data-on-wheel="${h.on(v.wheel)}" style="position:absolute;left:192px;width:154px;top:162px;height:372px;overflow:hidden;touch-action:none">
     <div style="position:absolute;left:0;right:0;top:-162px;height:590px;${h.e(v.gridStyle)}">
       <div class="wall-board" style="display:contents"><div class="wall-view wall-view--wall" style="display:contents">${(v.grid || []).map((P, $index) => `<div class="wall-day st-slot" style="position:absolute;left:${h.e(P?.["x"])}px;top:${h.e(P?.["y"])}px">${h.poster(P, "wall")}</div>`).join(``)}</div></div>
     </div>
@@ -446,9 +446,12 @@
   }
   down(e) {
     // A drag that starts anywhere on the column (its posters, the old
-    // ones below, the lamps, the dome) rolls the column; anywhere else it
-    // moves the wall's posters.
-    const column = e.target && e.target.closest ? e.target.closest('[data-col]') : null;
+    // ones below, the lamps, the dome) rolls the column; one on the wall's
+    // posters moves them. Anywhere else (bare wall, sky, pavement) a drag
+    // does nothing (owner, 13 Oct 2026).
+    const at = (sel) => (e.target && e.target.closest ? e.target.closest(sel) : null);
+    const column = at('[data-col]');
+    if (!column && !at('[data-wall-zone]')) { this._d = null; return; }
     const drum = column ? column.querySelector('[data-col-drum]') : null;
     // The column can be drawn smaller (a phone's is scaled down).
     const scaled = drum && drum.closest('[style*="scale("]');
@@ -489,7 +492,17 @@
     const dx = this.cfg().vertical ? e.clientY - d.y : e.clientX - d.x;
     if (!d.moved && Math.abs(dx) < 6) return;
     if (!d.moved) { d.moved = true; try { d.el.setPointerCapture(d.id); } catch (err) { /* fine */ } }
-    this.setState({ drag: dx });
+    // Past either end the wall only gives a little, as an iOS list does;
+    // with nothing more to show it barely moves.
+    let drag = dx;
+    if (this.cfg().mode === 'walk') {
+      const stops = this.stops(), max = stops[stops.length - 1] || 0, off = this.offset();
+      let to = off - dx;
+      if (to < 0) to /= 4;
+      else if (to > max) to = max + (to - max) / 4;
+      drag = off - to;
+    }
+    this.setState({ drag });
   }
   up() {
     const d = this._d;
