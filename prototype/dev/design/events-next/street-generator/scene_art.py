@@ -100,7 +100,8 @@ def puffs(r, cx, cy, w, h):
     return ''.join(out)
 
 
-def sky(p, W, SKY, seed=3):
+def sky(p, W, SKY, seed=3, ref=None):
+    ref = ref or W
     r = random.Random(seed)
     stars = []
     for i in range(int(W / 18)):
@@ -115,10 +116,10 @@ def sky(p, W, SKY, seed=3):
         shapes = []
         x = r.uniform(0, W * 0.2)
         while x < W:
-            w = r.uniform(70, 150) * scale * (W / 1361) ** 0.5
+            w = r.uniform(70, 150) * scale * (ref / 1361) ** 0.5
             h = w * r.uniform(0.28, 0.4)
             shapes.append(puffs(r, x, yb + r.uniform(-SKY * 0.06, SKY * 0.06), w, h))
-            x += w + r.uniform(60, 220) * (W / 1361) ** 0.6
+            x += w + r.uniform(60, 220) * (ref / 1361) ** 0.6
         body = ''.join(shapes)
         layers.append(f'<g style="opacity:{H(hole)};transition:opacity 1.2s"><g class="{cls}" fill="url(#{p}cloud)">{body}<g transform="translate({W} 0)">{body}</g></g></g>')
     birds = []
@@ -170,10 +171,10 @@ def spire(x, base, top, w, step=6):
     return ''.join(parts)
 
 
-def skyline(p, W, SKY, seed=9, phone=False):
+def skyline(p, W, SKY, seed=9, phone=False, ref=None):
     r = random.Random(seed)
     B = SKY + 2
-    k = W / 1361 if not phone else 1.0
+    k = (ref or W) / 1361 if not phone else 1.0
     far = []
     sc = 0.62 if phone else 1.0
     def X(v):
@@ -434,25 +435,26 @@ def scrap(p, r, x, y, w, h, colour, rot):
     return f'<g transform="rotate({rot} {f(x + w / 2)} {f(y + h / 2)})"><path d="{d}" fill="{colour}" opacity="0.78" filter="url(#{p}torn)"/>{ghost}<path d="{d}" fill="none" stroke="#fffaf0" stroke-opacity="0.35" stroke-width="1.2"/>{tape}</g>'
 
 
-def wall(p, W, H, top, base, pave, seed=21, phone=False, holes=None, scraps=None, plate=None, pipe_x=None, stencil=True):
+def wall(p, W, H, top, base, pave, seed=21, phone=False, holes=None, scraps=None, plate=None, pipe_x=None, stencil=True, ref=None):
     """Coping, plaster with grain and mottling, damp streaks, brick patches,
     cracks, old paper, a house number, the drainpipe, the basalt base and the
     cobbles."""
     r = random.Random(seed)
     s = 0.55 if phone else 1.0
+    more = (W / ref) if ref else 1
     parts = []
     # Plaster.
     parts.append(f'<rect y="{top}" width="{W}" height="{base - top}" fill="#e7dbc4"/>')
     parts.append(f'<rect y="{top}" width="{W}" height="{base - top}" filter="url(#{p}mottle)" opacity="0.85"/>')
     parts.append(f'<rect y="{top}" width="{W}" height="{base - top}" filter="url(#{p}bloom)" opacity="0.8"/>')
     # Patched repairs in a slightly different plaster.
-    for _ in range(4 if not phone else 2):
+    for _ in range(round((4 if not phone else 2) * more)):
         px, py = r.uniform(0.05, 0.9) * W, r.uniform(top + 40, base - 120)
         pw, ph = r.uniform(70, 180) * s, r.uniform(40, 110) * s
         tone = r.choice(['#ece2cf', '#dccdb1', '#e3d6bd'])
         parts.append(f'<rect x="{f(px)}" y="{f(py)}" width="{f(pw)}" height="{f(ph)}" rx="6" fill="{tone}" opacity="0.75" filter="url(#{p}torn)"/>')
     # Old paste, where posters were scraped off.
-    for _ in range(5 if not phone else 2):
+    for _ in range(round((5 if not phone else 2) * more)):
         px, py = r.uniform(0.3, 0.95) * W, r.uniform(top + 20, base - 90)
         parts.append(f'<rect x="{f(px)}" y="{f(py)}" width="{f(r.uniform(40, 110) * s)}" height="{f(r.uniform(30, 90) * s)}" fill="#fbf6ea" opacity="0.38" filter="url(#{p}torn)"/>')
     parts.append(f'<rect y="{top}" width="{W}" height="{base - top}" filter="url(#{p}grain)" opacity="0.6"/>')
@@ -492,18 +494,8 @@ def wall(p, W, H, top, base, pave, seed=21, phone=False, holes=None, scraps=None
         parts.append(f'''<g transform="translate({f(px)} {f(py)})"><rect width="{f(pw)}" height="{f(ph)}" rx="{f(pw * 0.14)}" fill="#1d4d8f"/><rect x="{f(pw * 0.07)}" y="{f(pw * 0.07)}" width="{f(pw * 0.86)}" height="{f(ph - pw * 0.14)}" rx="{f(pw * 0.1)}" fill="none" stroke="#fff" stroke-width="{f(max(1.2, pw * 0.05))}"/>
       <text x="{f(pw / 2)}" y="{f(ph * 0.74)}" text-anchor="middle" font-family="Geist, system-ui, sans-serif" font-weight="700" font-size="{f(ph * 0.62)}" fill="#fff">17</text>
       <rect x="2" y="2" width="{f(pw - 4)}" height="{f(ph * 0.42)}" rx="{f(pw * 0.12)}" fill="#ffffff" opacity="0.16"/><rect x="0" y="{f(ph + 1)}" width="{f(pw)}" height="2" fill="#000" opacity="0.12"/></g>''')
-    # The drainpipe with brackets, hopper and shoe.
     if pipe_x is not None:
-        pw = 16 * s + 3
-        parts.append(f'<rect x="{f(pipe_x + 4)}" y="{top}" width="{f(pw)}" height="{base - top}" fill="#000" opacity="0.10" filter="url(#{p}soft)"/>')
-        parts.append(f'<path d="M{f(pipe_x - 6 * s)} {f(top - 6)} h{f(pw + 12 * s)} l{f(-6 * s)} {f(18 * s)} h{f(-pw)} Z" fill="url(#{p}pipe)"/>')
-        parts.append(f'<rect x="{f(pipe_x)}" y="{f(top + 10 * s)}" width="{f(pw)}" height="{f(base - top - 4)}" fill="url(#{p}pipe)"/>')
-        y = top + 60 * s
-        while y < base - 30:
-            parts.append(f'<rect x="{f(pipe_x - 3)}" y="{f(y)}" width="{f(pw + 6)}" height="{f(6 * s + 2)}" rx="1.5" fill="#5f666d"/><circle cx="{f(pipe_x + pw / 2)}" cy="{f(y + 3 * s + 1)}" r="1.2" fill="#3a4045"/>')
-            y += 170 * s
-        parts.append(f'<path d="M{f(pipe_x)} {f(base - 8)} h{f(pw)} q0 {f(14 * s)} {f(14 * s)} {f(16 * s)} v{f(6 * s)} h{f(-pw - 14 * s)} Z" fill="url(#{p}pipe)"/>')
-        parts.append(f'<circle cx="{f(pipe_x + pw / 2)}" cy="{f(top + (base - top) * 0.55)}" r="{f(7 * s + 2)}" fill="#e94f37"/><circle cx="{f(pipe_x + pw / 2)}" cy="{f(top + (base - top) * 0.55)}" r="{f(3 * s + 1)}" fill="#fff4dd"/>')
+        parts.append(pipe(p, pipe_x, top, base, s))
     # The basalt base.
     parts.append(f'<rect y="{base}" width="{W}" height="{pave - base}" fill="#67635d"/>')
     row_h = (pave - base) / 2
@@ -518,8 +510,7 @@ def wall(p, W, H, top, base, pave, seed=21, phone=False, holes=None, scraps=None
     parts.append(f'<rect y="{base}" width="{W}" height="{pave - base}" filter="url(#{p}grain)" opacity="0.8"/>')
     parts.append(f'<rect y="{base - 2}" width="{W}" height="3" fill="#8b857c"/>')
     if stencil:
-        fs = 18 if not phone else 9.5
-        parts.append(f'<text x="{f(W - (34 if not phone else 12))}" y="{f(base + (pave - base) * 0.68)}" text-anchor="end" font-family="\'Courier New\', monospace" font-weight="700" font-size="{fs}" letter-spacing="{f(fs * 0.38)}" fill="#ece6da" opacity="0.62">PLAKATIEREN VERBOTEN</text>')
+        parts.append(stencil_text(W - (34 if not phone else 12), base, pave, phone))
     # Cobbles.
     parts.append(f'<rect y="{pave}" width="{W}" height="{H - pave}" fill="#5f5a53"/>')
     cs = 1.0 if not phone else 0.7
@@ -620,3 +611,24 @@ def rain(W, H, density=1.0):
 def splashes(W, y, n, seed=2):
     r = random.Random(seed)
     return ''.join(f'<ellipse class="splash sp{i % 4}" cx="{f(r.uniform(10, W - 10))}" cy="{f(y + r.uniform(0, 12))}" rx="5" ry="1.4" fill="none" stroke="#e6eefc" stroke-width="1"/>' for i in range(n))
+
+
+def pipe(p, pipe_x, top, base, s):
+    """The drainpipe with brackets, hopper and shoe."""
+    parts = []
+    pw = 16 * s + 3
+    parts.append(f'<rect x="{f(pipe_x + 4)}" y="{top}" width="{f(pw)}" height="{base - top}" fill="#000" opacity="0.10" filter="url(#{p}soft)"/>')
+    parts.append(f'<path d="M{f(pipe_x - 6 * s)} {f(top - 6)} h{f(pw + 12 * s)} l{f(-6 * s)} {f(18 * s)} h{f(-pw)} Z" fill="url(#{p}pipe)"/>')
+    parts.append(f'<rect x="{f(pipe_x)}" y="{f(top + 10 * s)}" width="{f(pw)}" height="{f(base - top - 4)}" fill="url(#{p}pipe)"/>')
+    y = top + 60 * s
+    while y < base - 30:
+        parts.append(f'<rect x="{f(pipe_x - 3)}" y="{f(y)}" width="{f(pw + 6)}" height="{f(6 * s + 2)}" rx="1.5" fill="#5f666d"/><circle cx="{f(pipe_x + pw / 2)}" cy="{f(y + 3 * s + 1)}" r="1.2" fill="#3a4045"/>')
+        y += 170 * s
+    parts.append(f'<path d="M{f(pipe_x)} {f(base - 8)} h{f(pw)} q0 {f(14 * s)} {f(14 * s)} {f(16 * s)} v{f(6 * s)} h{f(-pw - 14 * s)} Z" fill="url(#{p}pipe)"/>')
+    parts.append(f'<circle cx="{f(pipe_x + pw / 2)}" cy="{f(top + (base - top) * 0.55)}" r="{f(7 * s + 2)}" fill="#e94f37"/><circle cx="{f(pipe_x + pw / 2)}" cy="{f(top + (base - top) * 0.55)}" r="{f(3 * s + 1)}" fill="#fff4dd"/>')
+    return ''.join(parts)
+
+
+def stencil_text(x, base, pave, phone=False):
+    fs = 18 if not phone else 9.5
+    return f'<text x="{f(x)}" y="{f(base + (pave - base) * 0.68)}" text-anchor="end" font-family="\'Courier New\', monospace" font-weight="700" font-size="{fs}" letter-spacing="{f(fs * 0.38)}" fill="#ece6da" opacity="0.62">PLAKATIEREN VERBOTEN</text>'

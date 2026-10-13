@@ -15,6 +15,7 @@ import json, os, re, sys
 from html.parser import HTMLParser
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else '.'
+WIDE = 2560  # the widest the desktop street is drawn
 sys.argv = sys.argv[:1]  # the generators read an asset map from argv
 import gen_scene as GS
 import gen_apps as GA
@@ -239,6 +240,17 @@ def parts(phone):
     base['emptyHtml'] = ''
     if phone:
         base.update(vertical=True, pageH=372, zoneLeft=192, zoneW=154, cols=[6], rows=[213], per=1, pw=142, ph=270, pool='day')
+    else:
+        # On the page the street fills the screen (owner, 13 Oct 2026): it
+        # is drawn up to WIDE across and shown from the board's 1361 up, as
+        # wide as the screen's shape allows; the wider wall has its own
+        # patches, scraps and puddles.
+        base.update(
+            W0=base['W'], W=WIDE,
+            holes=base['holes'] + [(1560, 704, 58, 34), (1904, 846, 66, 20), (2290, 640, 50, 38)],
+            scraps=base['scraps'] + [(1500, 780, 112, 62, '#9db4c0', -2), (1760, 268, 96, 70, '#d9a8a8', 2), (2120, 300, 104, 58, '#e8c66a', -1)],
+            front=dict(base['front'], puddles=base['front']['puddles'] + [(1520, 948, 60), (1880, 944, 78), (2260, 950, 66)]),
+        )
     card = GS.card(base)
     # The page sets the card's place; the board's margin goes.
     card = card.replace(f'margin:{"0 19px" if phone else "0 0 0 32px"};', 'margin:0;', 1)
@@ -270,7 +282,9 @@ def parts(phone):
     jc['model'] = 'stories'
     jc.update(storyW=300 if phone else 380, storyH=420 if phone else 532, feed=False, chrome=False)
     css = GS.css(base['W'], base['p']).replace('body{margin:0}\n', '')
-    return {'card': card, 'rings': rings, 'story': story, 'cfg': jc, 'css': css, 'W': base['W'], 'H': base['H']}
+    if not phone:
+        jc['W'] = base['W0']
+    return {'card': card, 'rings': rings, 'story': story, 'cfg': jc, 'css': css, 'W': base.get('W0', base['W']), 'H': base['H'], 'maxW': base['W']}
 
 
 MOCK_LOGIC = r'''
@@ -371,6 +385,7 @@ def main():
         js.append(f'    art[{json.dumps(name)}] = {{')
         js.append(f'        cfg: {json.dumps(P["cfg"])},')
         js.append(f'        size: {json.dumps([P["W"], P["H"]])},')
+        js.append(f'        maxW: {json.dumps(P["maxW"])},')
         js.append(f'        card: {template(P["card"])},')
         js.append(f'        rings: {template(P["rings"])},')
         js.append(f'        story: {template(P["story"])},')

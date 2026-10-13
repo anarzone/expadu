@@ -508,22 +508,34 @@
         // On a desktop or tablet the whole street fits the screen's height
         // and the hour rings float in its sky (owner, 13 Oct 2026); the
         // page's distance note lines up with its right edge (--street-w).
+        // It also fills the screen's width (owner, 13 Oct 2026): on a wide,
+        // short screen the street is wider (more wall, sky and pavement,
+        // more hours of posters at once), up to how wide it's drawn.
         function fit() {
             if (!street) return;
-            const [w, h] = ART[layoutName].size;
+            const art = ART[layoutName];
+            const [w0, h] = art.size;
             const box = host.querySelector('.st-fit');
-            let zoom = Math.max(0.3, Math.min(host.clientWidth / w, layoutName === 'phone' ? 1.25 : Infinity));
+            let w = w0;
+            let zoom = Math.max(0.3, Math.min(host.clientWidth / w0, layoutName === 'phone' ? 1.25 : Infinity));
             if (layoutName === 'desktop') {
                 const top = box.getBoundingClientRect().top + scrollY;
                 zoom = Math.max(0.45, Math.min(zoom, (innerHeight - top - 20) / h));
+                w = Math.min(art.maxW || w0, Math.max(w0, Math.floor(host.clientWidth / zoom)));
+            }
+            if (street.__cfg.W !== w) {
+                const base = art.cfg;
+                street.__cfg = Object.assign({}, base, { W: w, zoneW: base.zoneW + w - w0 });
+                if (street.__alive) street.setState({});
             }
             street.zoom = zoom;
+            box.style.setProperty('--st-w', `${w}px`);
             box.style.width = `${w}px`;
             box.style.height = `${h}px`;
             box.style.zoom = zoom.toFixed(4);
             if (layoutName === 'desktop') {
                 const left = (host.clientWidth - w * zoom) / 2;
-                host.style.setProperty('--rings-x', `${Math.round(left + w * zoom * 0.3)}px`);
+                host.style.setProperty('--rings-x', `${Math.round(left + w0 * zoom * 0.3)}px`);
                 host.style.setProperty('--rings-y', `${Math.round(box.offsetTop + 14)}px`);
                 host.closest('main')?.style.setProperty('--street-w', `${Math.round(w * zoom)}px`);
             } else host.closest('main')?.style.removeProperty('--street-w');

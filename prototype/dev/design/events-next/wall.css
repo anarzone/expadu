@@ -3399,6 +3399,11 @@ main[data-view='wall'] #event-featured {
 }
 /* A poster's slot on the street: placed by the street, not laid out as
    the old wall's row. */
+/* On a desktop the street ends 20px above the screen's bottom, and the
+   page does too: one screen, no scroll. */
+#main[data-view='wall']:has(.st-root[data-layout='desktop']) {
+    padding-bottom: 20px;
+}
 #main .st-root .wall-day.st-slot {
     position: absolute;
     display: block;

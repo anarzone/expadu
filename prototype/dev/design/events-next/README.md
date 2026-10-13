@@ -5,6 +5,17 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The street fills the screen — 13 October 2026
+
+Owner request (a 14-inch MacBook showed empty space beside the street).
+On a desktop the street is as tall as the screen allows and now also as
+wide as the page: on a wide, short screen it is wider, with more wall,
+sky and pavement and room for more hours of posters at once. It is drawn
+up to 2560 across and shown from the board's 1361 up; the drainpipe, the
+stencil, the arrows and the poster area keep to its right edge. With the
+street showing, the page ends 20px under it, so a desktop screen holds it
+all without scrolling. Phones are unchanged.
+
 ## About first, then when and where — 13 October 2026
 
 Owner request. The details read in order: About (what it is), then the

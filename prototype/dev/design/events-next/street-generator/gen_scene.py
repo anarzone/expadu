@@ -557,15 +557,25 @@ def card(cfg):
     p = cfg['p']
     W, Hc, SKY, TOP, BASE, PAVE = cfg['W'], cfg['H'], cfg['SKY'], cfg['TOP'], cfg['BASE'], cfg['PAVE']
     phone = cfg['phone']
+    # A fluid street (the Events page on a desktop) is drawn as wide as it
+    # can get (W) and shown as wide as the screen allows (--st-w, from W0):
+    # the drainpipe, the stencil, the arrows and the poster zone keep to its
+    # right edge.
+    W0 = cfg.get('W0')
+    ref = W0 if W0 else None
     back = f'''<svg width="{W}" height="{Hc}" viewBox="0 0 {W} {Hc}" aria-hidden="true" style="position:absolute;left:0;top:0">
   {A.defs(p, W, SKY)}
-  {A.sky(p, W, SKY)}
-  {A.skyline(p, W, SKY, phone=phone)}
-  {A.wall(p, W, Hc, TOP, BASE, PAVE, phone=phone, holes=cfg['holes'], scraps=cfg['scraps'], plate=cfg['plate'], pipe_x=cfg['pipe'])}
+  {A.sky(p, W, SKY, ref=ref)}
+  {A.skyline(p, W, SKY, phone=phone, ref=ref)}
+  {A.wall(p, W, Hc, TOP, BASE, PAVE, phone=phone, holes=cfg['holes'], scraps=cfg['scraps'], plate=cfg['plate'], pipe_x=None if W0 else cfg['pipe'], stencil=not W0, ref=ref)}
   <g style="opacity:{H('k.wet')};transition:opacity 1.2s"><rect y="{TOP}" width="{W}" height="{BASE - TOP}" fill="url(#{p}wet)"/></g>
   <g style="opacity:{H('k.shadow')};transition:opacity 1.2s" fill="#3a2614" filter="url(#{p}softer)">{''.join(f'<path d="{d}"/>' for d in cfg['shadows'])}</g>
   <g transform="translate({cfg['tree'][0]} {cfg['tree'][1]})"><g style="filter:brightness({H('k.objB')});transition:filter 1.2s">{A.tree(p, cfg['tree'][2])}</g></g>
 </svg>'''
+    if W0:
+        edge = 420
+        back += f'''
+  <svg width="{edge}" height="{Hc}" viewBox="{W0 - edge} 0 {edge} {Hc}" aria-hidden="true" style="position:absolute;right:0;top:0">{A.pipe(p, cfg['pipe'], TOP, BASE, 1.0)}{A.stencil_text(W0 - 34, BASE, PAVE)}</svg>'''
     zone_l, zone_w = cfg['zoneLeft'], cfg['zoneW']
     slot = (f'<button type="button" onClick="{H("P.open")}" aria-label="{H("P.alt")}" style="position:absolute;left:{H("P.x")}px;top:{H("P.y")}px;width:{H("P.w")}px;height:{H("P.h")}px;padding:0;border:0;background:none;cursor:pointer;transform:rotate({H("P.rot")}deg)">'
             f'<dc-import name="WallPoster" p="{H("P")}" hint-size="100%,100%"></dc-import><span aria-hidden="true" style="position:absolute;inset:0;z-index:3"></span></button>')
@@ -582,7 +592,8 @@ def card(cfg):
         posters = cfg['deck']
     elif cfg['mode'] == 'walk':
         chip = 'display:flex;align-items:center;height:26px;padding:0 10px;border-radius:6px;background:#211d15;color:#fffdf8;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums'
-        posters = f'''<div style="position:absolute;left:{zone_l}px;width:{zone_w}px;top:{TOP}px;bottom:{Hc - BASE}px;overflow:hidden">
+        zone_x = f'right:{W0 - zone_l - zone_w}px' if W0 else f'width:{zone_w}px'
+        posters = f'''<div style="position:absolute;left:{zone_l}px;{zone_x};top:{TOP}px;bottom:{Hc - BASE}px;overflow:hidden">
     <div style="position:absolute;left:0;top:{-TOP}px;height:{Hc}px;width:5000px;{H('stripStyle')}">
       {chain_o}<sc-for list="{H('bays')}" as="b" hint-placeholder-count="3">
         <div style="position:absolute;top:0;bottom:0;left:{H('b.x')}px;width:{H('b.w')}px;opacity:{H('b.op')}">
@@ -677,7 +688,7 @@ def card(cfg):
     if cfg.get('noPanel'):
         panel = ''
     margin = '0 19px' if phone else '0 0 0 32px'
-    return f'''<div id="wall" class="{p}" style="position:relative;width:{W}px;height:{Hc}px;margin:{margin};overflow:hidden;border-radius:{24 if phone else 28}px;touch-action:pan-y;user-select:none;scroll-margin-top:8px;background:#e7dbc4"{'' if cfg['mode'] == 'deck' or cfg.get('noDrag') else ' onPointerDown="' + H('down') + '" onPointerMove="' + H('move') + '" onPointerUp="' + H('up') + '" onPointerCancel="' + H('up') + '"'}>
+    return f'''<div id="wall" class="{p}" style="position:relative;width:{f'var(--st-w, {W0}px)' if W0 else f'{W}px'};height:{Hc}px;margin:{margin};overflow:hidden;border-radius:{24 if phone else 28}px;touch-action:pan-y;user-select:none;scroll-margin-top:8px;background:#e7dbc4"{'' if cfg['mode'] == 'deck' or cfg.get('noDrag') else ' onPointerDown="' + H('down') + '" onPointerMove="' + H('move') + '" onPointerUp="' + H('up') + '" onPointerCancel="' + H('up') + '"'}>
   {back}
   {posters}
   {light}

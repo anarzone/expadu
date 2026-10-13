@@ -40,7 +40,9 @@ It prints the size of each file. Then refresh the page's asset versions
 - `mx.py`, `mxcss.py`: the canvas boards' copy of the Events page's own
   posters and details sheet, read from `mx/capture.json`.
 - `port_street.py`: turns the Stories board into the page's
-  `street-art.js` and `street-art.css`.
+  `street-art.js` and `street-art.css`. The desktop street is drawn up to
+  `WIDE` (2560) across and shown from 1361 up (`street.js` picks the width
+  that fills the screen); the canvas boards stay 1361.
 
 ## The capture
 
