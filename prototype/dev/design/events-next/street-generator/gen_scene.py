@@ -56,30 +56,36 @@ class Component extends DCLogic {
   componentDidMount() {
     this._still = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     // The column rolls to its next poster every six seconds.
+    this.restartRoll();
+  }
+  // Rolling it by hand gives each poster its full six seconds again.
+  restartRoll() {
+    clearInterval(this._timer);
     if (!this._still) this._timer = setInterval(() => this.tick(), 6000);
   }
   componentWillUnmount() { clearInterval(this._timer); clearTimeout(this._snap); }
   tick() {
     const s = this.state || {};
-    if (s.hold || s.sel || s.lift) return;
+    if (s.hold || s.sel || s.lift || (this._d && this._d.col)) return;
     if (Object.keys(s.turned || {}).some((k) => s.turned[k] && k.indexOf('column:') === 0)) return;
-    this.roll(1);
+    this.roll(1, { snap: false });
   }
-  roll(dir) {
+  roll(dir, done) {
     const pos = (this.state && this.state.pos) || 0;
     const N = Math.max(1, this.colList().length);
+    const end = Object.assign({ anim: true }, done);
     // The drum carries its posters twice, so it wraps without a jump.
     if (dir > 0 && pos >= N) {
       this.setState({ pos: pos - N, anim: false });
-      this._snap = setTimeout(() => this.setState({ pos: pos - N + 1, anim: true }), 40);
+      this._snap = setTimeout(() => this.setState(Object.assign({ pos: pos - N + 1 }, end)), 40);
       return;
     }
     if (dir < 0 && pos <= 0) {
       this.setState({ pos: pos + N, anim: false });
-      this._snap = setTimeout(() => this.setState({ pos: pos + N - 1, anim: true }), 40);
+      this._snap = setTimeout(() => this.setState(Object.assign({ pos: pos + N - 1 }, end)), 40);
       return;
     }
-    this.setState({ pos: pos + dir, anim: true });
+    this.setState(Object.assign({ pos: pos + dir }, end));
   }
   // What the column rolls: tonight's posters, one per hour from 18:00.
   colList() {
@@ -205,7 +211,15 @@ class Component extends DCLogic {
       chipNote: forced ? 'Sample weather · tweaked' : 'Sample weather',
     };
   }
-  down(e) { this._d = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId, el: e.currentTarget }; }
+  down(e) {
+    // A drag that starts on the column's drum rolls the column; anywhere
+    // else it moves the wall's posters.
+    const drum = e.target && e.target.closest ? e.target.closest('[data-col-drum]') : null;
+    // The column can be drawn smaller (a phone's is scaled down).
+    const scaled = drum && drum.closest('[style*="scale("]');
+    const k = scaled ? parseFloat((scaled.style.transform.match(/scale\(([\d.]+)/) || [])[1]) || 1 : 1;
+    this._d = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId, el: e.currentTarget, col: !!drum, k };
+  }
   // Phones (Stories): a mouse wheel or trackpad pages the posters too.
   wheel(e) {
     if (Math.abs(e.deltaY) < 20 || Date.now() - (this._wt || 0) < 450) return;
@@ -216,6 +230,17 @@ class Component extends DCLogic {
   move(e) {
     const d = this._d;
     if (!d) return;
+    if (d.col) {
+      // The drum follows the finger, a poster's width at most each way
+      // (the pointer is already in the street's own units, not the
+      // column's).
+      const dx = (e.clientX - d.x) / d.k;
+      if (!d.moved && Math.abs(dx) < 6) return;
+      if (!d.moved) { d.moved = true; try { d.el.setPointerCapture(d.id); } catch (err) { /* fine */ } }
+      const pitch = this.cfg().col.pitch;
+      this.setState({ colDrag: Math.max(-pitch, Math.min(pitch, dx)), anim: false });
+      return;
+    }
     // Posters page sideways, or up and down where the board says so.
     const dx = this.cfg().vertical ? e.clientY - d.y : e.clientX - d.x;
     if (!d.moved && Math.abs(dx) < 6) return;
@@ -226,6 +251,15 @@ class Component extends DCLogic {
     const d = this._d;
     this._d = null;
     if (!d || !d.moved) return;
+    if (d.col) {
+      // A fifth of a poster rolls to the next or the previous one;
+      // less springs back.
+      const dx = (this.state && this.state.colDrag) || 0;
+      this.restartRoll();
+      if (Math.abs(dx) > this.cfg().col.pitch * 0.2) this.roll(dx < 0 ? 1 : -1, { colDrag: 0, snap: true });
+      else this.setState({ colDrag: 0, anim: true, snap: true });
+      return;
+    }
     this.settle((this.state && this.state.drag) || 0);
   }
   settle(dx) {
@@ -348,14 +382,18 @@ class Component extends DCLogic {
     // The column rolls through tonight's posters, one per hour from 18:00.
     const tonight = this.colList();
     const N = Math.max(1, tonight.length);
+    // Posters wrap round the drum edge to edge: the one before shows at
+    // the left too, so the drum's sides are never bare.
     const strip = [];
-    for (let i = 0; i < 2 * N && tonight.length; i++) {
-      const e = tonight[i % N];
-      strip.push(dress(e, { left: i * c.col.pitch, w: c.col.pw, h: c.col.ph }));
+    for (let i = -1; i <= 2 * N && tonight.length; i++) {
+      const e = tonight[((i % N) + N) % N];
+      // Only the poster facing you takes taps; the edges of its
+      // neighbours are just the drum's curve.
+      strip.push(dress(e, { left: i * c.col.pitch, w: c.col.pw, h: c.col.ph, pe: i === s.pos ? 'auto' : 'none' }));
     }
-    const colStyle = 'transform: translateX(' + (c.col.inset - s.pos * c.col.pitch) + 'px); transition: ' + (s.anim ? 'transform 1100ms cubic-bezier(0.65,0,0.35,1)' : 'none') + ';';
+    const colStyle = 'transform: translateX(' + (c.col.inset - s.pos * c.col.pitch + (s.colDrag || 0)) + 'px); transition: ' + (s.anim ? 'transform ' + (s.snap ? 520 : 1100) + 'ms cubic-bezier(0.65,0,0.35,1)' : 'none') + ';';
     const current = s.pos % N;
-    const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => this.setState({ pos: i, anim: true }) }));
+    const dots = tonight.map((x, i) => ({ style: i === current ? 'background:#ffd27a;box-shadow:0 0 6px #ffd27a' : 'background:#6f6a4a', label: 'Show poster ' + (i + 1) + ' of ' + N, pick: () => this.setState({ pos: i, anim: true, snap: false }) }));
     const ruler = [];
     for (let h = 8; h <= 23; h++) {
       const on = visibleHours.indexOf(h) >= 0;
@@ -467,7 +505,7 @@ def column(p, s=1.0, mx=False, phone=False):
     if mx == 'mock':
         chain_o = '<div class="wall-board" style="display:contents"><div class="wall-column" style="display:contents">'
         chain_c = '</div></div>'
-        strip_html = (f'''      <sc-for list="{H('strip')}" as="q" hint-placeholder-count="3"><div class="st-face" style="position:absolute;top:4px;left:{H('q.left')}px">'''
+        strip_html = (f'''      <sc-for list="{H('strip')}" as="q" hint-placeholder-count="3"><div class="st-face" style="position:absolute;top:4px;left:{H('q.left')}px;pointer-events:{H('q.pe')}">'''
                       '<mx-poster v="q" where="column"></mx-poster></div></sc-for>')
     elif mx:
         import mx as MX
@@ -482,11 +520,11 @@ def column(p, s=1.0, mx=False, phone=False):
         </button>
       </sc-for>'''
     win_h = 518 if (mx and phone) else 324
-    win = f'''<div onPointerEnter="{H('hold')}" onPointerLeave="{H('release')}" style="position:absolute;left:18px;top:124px;width:264px;height:{win_h}px;overflow:hidden;background:#24392f;filter:brightness({H('k.posterB')});transition:filter 1.2s">
+    win = f'''<div data-col-drum onPointerEnter="{H('hold')}" onPointerLeave="{H('release')}" style="position:absolute;left:18px;top:124px;width:264px;height:{win_h}px;overflow:hidden;background:#d8ccb0;filter:brightness({H('k.posterB')});transition:filter 1.2s">
     {chain_o}<div style="position:absolute;left:0;top:0;height:100%;width:2000px;{H('colStyle')}">
 {strip_html}
     </div>{chain_c}
-    <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.66) 0%,rgba(0,0,0,.2) 13%,rgba(255,255,255,.14) 33%,rgba(255,255,255,0) 47%,rgba(0,0,0,.1) 72%,rgba(0,0,0,.62) 100%)"></div>
+    <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.24) 0%,rgba(0,0,0,.06) 11%,rgba(255,255,255,.12) 33%,rgba(255,255,255,0) 47%,rgba(0,0,0,.03) 74%,rgba(0,0,0,.22) 100%)"></div>
     <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 42% 45%,rgba(255,226,170,.55),rgba(255,200,120,.12) 60%,transparent 75%);mix-blend-mode:screen;opacity:{H('k.colGlow')};transition:opacity 1.2s"></div>
   </div>'''
     lamps = f'''<div style="position:absolute;left:0;right:0;top:642px;height:24px;display:flex;justify-content:center;gap:2px">

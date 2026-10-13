@@ -5,6 +5,16 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The column rolls under your finger, without dark edges — 13 October 2026
+
+Owner request. A drag that starts on the advertising column now rolls the
+column (it follows the finger, then settles on the next or previous
+poster; a short drag springs back) instead of moving the wall's posters,
+and the timed roll waits its full six seconds after it. The column's
+posters wrap round the drum edge to edge, so the neighbours show at its
+sides under a light curve instead of dark green bands; only the poster
+facing you takes taps.
+
 ## The street fills the screen — 13 October 2026
 
 Owner request (a 14-inch MacBook showed empty space beside the street).

@@ -276,7 +276,7 @@ def parts(phone):
         story = story.replace('; top:520px; z-index:41', '; position: fixed; top:calc(50vh - 24px); z-index:59')
     jc = {k: base[k] for k in ('phone', 'mode', 'W', 'SKY') if k in base}
     jc.update({k: base[k] for k in ('zoneW', 'bayW', 'px', 'pw', 'ph', 'rows', 'per', 'cols', 'pool', 'stepBays', 'spots', 'nowPill', 'vertical', 'pageH') if k in base})
-    jc['col'] = {'pitch': 264, 'pw': 264, 'ph': 515, 'inset': 0} if phone else {'pitch': 264, 'pw': 205, 'ph': 316, 'inset': 29.5}
+    jc['col'] = {'pitch': 264, 'pw': 264, 'ph': 515, 'inset': 0} if phone else {'pitch': 209, 'pw': 205, 'ph': 316, 'inset': 29.5}
     jc['mxSizes'] = ({'wallW': 142, 'wallH': 270, 'colW': 264, 'colH': 515} if phone
                      else {'wallZoom': round(190 / 300, 4), 'colZoom': round(316 / 560, 4), 'storyZoom': round(380 / 300, 4)})
     jc['model'] = 'stories'
