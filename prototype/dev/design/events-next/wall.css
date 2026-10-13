@@ -3357,70 +3357,6 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
 }
 
 
-/* ---------- A turned poster, lifted (owner, 12 Oct 2026) ----------
-   Turning a poster on the wall or the column lifts it into the middle of
-   the screen at 300 x 470, where every back fits without scrolling,
-   zoomed to the screen (wall.js sets --lift-zoom). Its place on the wall
-   stays empty until it goes back. Below the toast, above the bars. */
-.pp-lift {
-    position: fixed;
-    inset: 0;
-    z-index: 55;
-    display: grid;
-    place-items: center;
-    touch-action: none;
-}
-.pp-lift-backdrop {
-    position: absolute;
-    inset: 0;
-    background: #0005;
-}
-.pp-lift-card {
-    position: relative;
-    filter: drop-shadow(0 24px 36px #211d1559);
-}
-.pp-lift-card > .pp {
-    width: 300px;
-    height: 470px;
-    zoom: var(--lift-zoom, 1);
-}
-/* The poster's front over the card while it grows or shrinks (wall.js). */
-.pp-lift-card > .pp-lift-face {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 5;
-    pointer-events: none;
-}
-.pp.is-lifted {
-    visibility: hidden;
-}
-/* A lifted card zoomed below 1 (a small or turned phone) keeps 44px on
-   screen to tap each button, no wider than the gap between them. */
-.pp-lift :is(.pp-back-plan, .pp-back-save, .pp-back-more, .pp-turn-back) {
-    position: relative;
-}
-.pp-lift :is(.pp-back-plan, .pp-back-save, .pp-back-more, .pp-turn-back)::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: max(100%, min(44px / var(--lift-zoom, 1), 100% + 8px));
-    height: max(100%, 44px / var(--lift-zoom, 1));
-    translate: -50% -50%;
-}
-.pp-lift .pp-turn-back::after {
-    width: max(100%, 44px / var(--lift-zoom, 1));
-}
-@media (prefers-reduced-motion: no-preference) {
-    .pp-lift-backdrop {
-        animation: backdrop-reveal 240ms ease both;
-    }
-    .pp-lift.is-leaving .pp-lift-backdrop {
-        animation: backdrop-reveal 300ms ease reverse both;
-    }
-}
-
 /* ---------- The street (owner, 12 Oct 2026) ----------
    On the Events page the wall is the Stories board from the "Events
    reimagined" canvas, as it is: the living street with the hour's sky,
@@ -3531,14 +3467,6 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 }
 main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.has-note .event-results-count {
     justify-content: flex-end;
-}
-/* A story's poster turns back with a tap on its back, or Escape; it has
-   no turn button (owner, 13 Oct 2026). */
-.st-story-poster .pp.is-turned .pp-back {
-    cursor: pointer;
-}
-.st-story-poster .pp-turn-back {
-    display: none;
 }
 /* A story's progress bar glides from empty when it first appears. */
 .st-story [role='dialog'] i {
@@ -3713,4 +3641,158 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 #shared-dialog .event-sheet .event-reminder small {
     color: #4f493d;
     font-size: 13.5px;
+}
+
+/* ---------- The event page's header: the poster (owner, 13 Oct 2026) ----------
+   A poster opens its details directly; the page starts with the poster
+   itself: its art, category, date tape, title in the poster's type, the
+   venue and the big time. Close floats on it; the title is read out from
+   the dialog's own (hidden) heading. wall.js builds it. */
+#shared-dialog:has(.event-hero) .dialog-head {
+    position: absolute;
+    top: env(safe-area-inset-top, 0px);
+    right: 0;
+    left: 0;
+    z-index: 5;
+    justify-content: flex-end;
+    padding: 14px 14px 0;
+    border: 0;
+    background: none;
+}
+#shared-dialog:has(.event-hero) .dialog-head h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+#shared-dialog:has(.event-hero) .dialog-head [data-ui='close'] {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #ffffff59;
+    border-radius: 50%;
+    background: #ffffff2e;
+    color: #fff;
+    backdrop-filter: blur(10px);
+}
+#shared-dialog .event-sheet .event-ticket.event-hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: auto;
+    min-height: 300px;
+    flex-basis: auto;
+    margin: 0;
+    padding: 76px 24px 22px;
+    overflow: hidden;
+    border-radius: 0;
+    container-type: inline-size;
+}
+#shared-dialog .event-hero > .pp-art {
+    position: absolute;
+    inset: 0;
+}
+#shared-dialog .event-hero > .event-hero-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, #0000 20%, #000a 100%);
+}
+/* A light poster (day, paper) keeps dark type on a light shade. */
+#shared-dialog .event-hero:is(.pp--day, .pp--paper) > .event-hero-shade {
+    background: linear-gradient(180deg, #fff8e600 20%, #fff8e6e6 100%);
+}
+#shared-dialog .event-hero > .event-hero-chip {
+    position: absolute;
+    top: 20px;
+    left: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #ffffff59;
+    border-radius: 999px;
+    background: #ffffff2e;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+#shared-dialog .event-hero > .event-hero-chip svg {
+    width: 16px;
+    height: 16px;
+}
+#shared-dialog .event-hero-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--pp-soft);
+    font-family: var(--font-sans);
+    -webkit-text-stroke: 0;
+}
+#shared-dialog .event-hero:is(.pp--day, .pp--paper) :is(.event-hero-where, .event-hero-until) {
+    text-shadow: none;
+}
+#shared-dialog .event-hero:is(.pp--day, .pp--paper) > .event-hero-chip {
+    border-color: #211d1524;
+    background: #fff8e6cc;
+    color: var(--color-text);
+}
+#shared-dialog:has(.event-hero:is(.pp--day, .pp--paper)) .dialog-head [data-ui='close'] {
+    border-color: #211d1524;
+    background: #fff8e6cc;
+    color: var(--color-text);
+}
+#shared-dialog .event-hero .pp-tape {
+    align-self: flex-start;
+    transform: rotate(-2deg);
+}
+#shared-dialog .event-hero-title {
+    margin: 0;
+    color: var(--pp-text);
+    font-family: var(--poster-display);
+    font-size: clamp(30px, 9cqi, 46px);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+#shared-dialog .event-hero-meta {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+}
+#shared-dialog .event-hero-where {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.35;
+    text-shadow: 0 1px 2px #0006;
+}
+#shared-dialog .event-hero-where strong {
+    color: var(--pp-text);
+    font-size: 16px;
+    font-weight: 700;
+}
+#shared-dialog .event-hero :is(.event-hero-where span, .event-hero-until) {
+    font-weight: 500;
+}
+#shared-dialog .event-hero-time {
+    flex: none;
+    color: transparent;
+    font-family: var(--poster-display);
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 0.9;
+    -webkit-text-stroke: 1.5px var(--pp-text);
+}
+#shared-dialog .event-hero-until {
+    margin: 0;
+    font-size: 14px;
+    text-shadow: 0 1px 2px #0006;
 }

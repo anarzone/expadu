@@ -668,7 +668,7 @@
   }
   // A story waits while it's paused (its pause button) or its poster is turned over.
   storyPaused() { return !!(this.state || {}).stPause || this.storyTurned(); }
-  storyTurned() { return !!document.querySelector('.st-story-poster .pp.is-turned'); }
+  storyTurned() { return !!document.querySelector('.st-story-poster .pp.is-turned, #shared-dialog[open]'); }
   storyHours() { const out = []; for (let h = 13; h <= 23; h++) out.push(h); return out.concat([8, 9, 10, 11, 12]); }
   storyList(h) {
     const s = this.state || {};

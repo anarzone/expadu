@@ -1096,7 +1096,8 @@
         document.querySelectorAll('#main .pp[data-event-card]').forEach((card) => {
             const open = card.querySelector('.pp-open');
             if (!open) return;
-            open.dataset.label ??= open.getAttribute('aria-label');
+            // A poster opens its details here, not its back.
+            open.dataset.label ??= open.getAttribute('aria-label').replace('Turn the poster over for details', 'Open details');
             card.querySelector('.pp-flags')?.remove();
             delete card.dataset.when;
             open.setAttribute('aria-label', open.dataset.label);
@@ -1164,130 +1165,6 @@
             ...posterOptions(item, where === 'column' ? '' : streetDistance(item)),
         });
 
-    /* ---------- A turned poster lifts into a large card (owner, 12 Oct 2026) ----------
-       On the wall or the column a poster is too small for its back: on a
-       phone its buttons ran off the screen. Turning one over lifts it into
-       the middle of the screen at the size where every back fits without
-       scrolling (300 x 470, zoomed to the screen). It grows from its place
-       while its front fades into the back, and goes back the same way:
-       with its Close button (an X), a tap outside or Escape. */
-    let lifted = null;
-    // The card shows its back at once: it isn't turned over in its place.
-    const showBack = (pp, toBack) => {
-        pp.classList.toggle('is-turned', toBack);
-        pp.querySelector('.pp-front').hidden = toBack;
-        pp.querySelector('.pp-back').hidden = !toBack;
-        pp.querySelector('.pp-open')?.setAttribute('aria-expanded', String(toBack));
-    };
-    // The poster's front over the card while it grows or shrinks: the
-    // front fades into the back on the way out and back in on the way home.
-    function frontFace(copy) {
-        const face = copy.cloneNode(true);
-        showBack(face, false);
-        face.classList.add('pp-lift-face');
-        face.setAttribute('aria-hidden', 'true');
-        face.inert = true;
-        return face;
-    }
-    const liftPath = (from, to) =>
-        `translate(${from.left + from.width / 2 - (to.left + to.width / 2)}px, ${from.top + from.height / 2 - (to.top + to.height / 2)}px) scale(${from.width / to.width})`;
-    function lift(card) {
-        if (!card || lifted) return;
-        const zoom =
-            Math.min(380, innerWidth - 50, ((innerHeight - 64) * 300) / 470) / 300;
-        const layer = document.createElement('div');
-        layer.className = 'pp-lift';
-        layer.innerHTML = `<div class="pp-lift-backdrop"></div><div class="pp-lift-card" role="dialog" aria-modal="true" aria-label="${E(card.querySelector('.pp-title')?.textContent || 'Poster')}"></div>`;
-        const box = layer.querySelector('.pp-lift-card');
-        const copy = card.cloneNode(true);
-        copy.removeAttribute('style');
-        copy.classList.remove('is-tilting', 'pp--size-column');
-        copy.classList.add('pp--size-wall');
-        copy.style.setProperty('--lift-zoom', zoom.toFixed(4));
-        // It isn't turned over in its place, so its way back is Close, an X
-        // like the sheet's, not the turn icon (owner, 13 Oct 2026).
-        const back = copy.querySelector('.pp-turn-back');
-        if (back) {
-            back.innerHTML = I('close');
-            back.setAttribute('aria-label', 'Close');
-        }
-        box.append(copy);
-        const from = card.getBoundingClientRect();
-        document.body.append(layer);
-        card.classList.add('is-lifted');
-        lifted = { card, layer, box, copy };
-        // It grows from its place into the card (no turn: it closes with an
-        // X), its front fading into the back as it comes (owner, 13 Oct 2026).
-        showBack(copy, true);
-        copy.querySelector('.pp-turn-back')?.focus({ preventScroll: true });
-        if (!reducedMotion()) {
-            const face = frontFace(copy);
-            box.append(face);
-            box.animate(
-                [{ transform: liftPath(from, box.getBoundingClientRect()) }, { transform: 'none' }],
-                { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' },
-            );
-            face.animate([{ opacity: 1 }, { opacity: 1, offset: 0.12 }, { opacity: 0, offset: 0.6 }, { opacity: 0 }], {
-                duration: 420,
-                fill: 'forwards',
-            }).onfinish = () => face.remove();
-        }
-        layer.addEventListener('click', (event) => {
-            if (
-                event.target.closest('[data-poster-turn]') ||
-                !event.target.closest('.pp-lift-card')
-            )
-                putBack();
-        });
-        layer.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                event.stopPropagation();
-                putBack();
-            } else if (event.key === 'Tab') {
-                // Focus stays on the card while it's lifted.
-                const stops = [...box.querySelectorAll('button, a[href]')].filter(
-                    (el) => el.offsetParent,
-                );
-                const at = stops.indexOf(document.activeElement);
-                const next = event.shiftKey
-                    ? at <= 0 ? stops.at(-1) : stops[at - 1]
-                    : at === stops.length - 1 ? stops[0] : stops[at + 1];
-                if (next) {
-                    event.preventDefault();
-                    next.focus();
-                }
-            }
-        });
-        // The street stays put underneath.
-        layer.addEventListener('wheel', (event) => event.preventDefault(), {
-            passive: false,
-        });
-    }
-    function putBack() {
-        if (!lifted || lifted.leaving) return;
-        const { card, layer, box, copy } = lifted;
-        lifted.leaving = true;
-        const done = () => {
-            layer.remove();
-            card.classList.remove('is-lifted');
-            card.querySelector('.pp-open')?.focus({ preventScroll: true });
-            lifted = null;
-        };
-        if (reducedMotion()) return done();
-        layer.classList.add('is-leaving');
-        // The way it came: it shrinks into its place, the front coming back.
-        box.querySelector('.pp-lift-face')?.remove();
-        const face = frontFace(copy);
-        box.append(face);
-        face.animate([{ opacity: 0 }, { opacity: 0, offset: 0.25 }, { opacity: 1, offset: 0.75 }, { opacity: 1 }], {
-            duration: 360,
-            fill: 'forwards',
-        });
-        box.animate(
-            [{ transform: 'none' }, { transform: liftPath(card.getBoundingClientRect(), box.getBoundingClientRect()) }],
-            { duration: 360, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' },
-        ).onfinish = done;
-    }
     // On a phone the event sheet is the whole screen, and a swipe down on
     // its header closes it, as Today's sheets do (today-next/app.js).
     function sheetSwipe() {
@@ -1428,33 +1305,20 @@
         }
         sheetSwipe();
         main.addEventListener('click', (event) => {
-            // In a story the poster turns over in its place, and a tap on
-            // its back turns it back: no turn button (owner, 13 Oct 2026).
-            const back = event.target.closest('.st-story-poster .pp.is-turned .pp-back');
-            if (back && !event.target.closest('button, a, input, select, textarea, label, summary')) {
-                P.turn(back);
-                return;
-            }
+            // A poster opens its details page directly, wherever it is (the
+            // wall, the column, a story): one step, no turning over (owner,
+            // 13 Oct 2026).
             const turn = event.target.closest('[data-poster-turn]');
             if (turn) {
-                // A poster on the wall or the column lifts to turn over.
-                if (turn.closest('.wall-day, .wall-column-face, .st-face'))
-                    lift(turn.closest('.pp'));
+                const card = turn.closest('.pp');
+                const item = catalogue.find((x) => x.id === card?.dataset.poster);
+                if (item && window.ExpaduEventSheet) window.ExpaduEventSheet.open(item, 'about');
                 else P.turn(turn);
                 return;
             }
             if (event.target.closest('[data-wall-tilt]')) {
                 toggleTilt();
                 return;
-            }
-        });
-        // A turned poster turns back with Escape.
-        main.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape') return;
-            const turned = event.target.closest?.('.pp.is-turned');
-            if (turned) {
-                event.stopPropagation();
-                P.turn(turned.querySelector('.pp-turn-back'));
             }
         });
         // Shown below the day only while it isn't the captured past day.
@@ -1608,16 +1472,16 @@
             Sky.rainLikely(ctx.weather, item.start);
         const closed = past || when === 'over';
 
-        // The cover: the poster's ink, its date tape and its big time.
+        // The header is the poster itself (owner, 13 Oct 2026): its art,
+        // category, date tape, title in the poster's type, the venue and
+        // the big time, with Close on it. A poster opens this directly.
         const ticket = sheet.querySelector('.event-ticket');
         if (ticket) {
-            ticket.classList.add('is-wall', `pp--${P.ink(item)}`);
-            const date = ticket.querySelector(':scope > div:not(.event-ticket-time) strong');
-            if (date) date.outerHTML = `<span class="pp-tape">${E(P.tape(item, today))}</span>`;
-            // The start big, as on the poster; the end small beneath it.
-            const time = ticket.querySelector('.event-ticket-time');
-            if (time && item.start)
-                time.innerHTML = `<strong>${E(item.start)}</strong><small>${item.end ? `until ${E(item.end)}` : 'End time to check'}${past ? ' · already happened' : ''}</small>`;
+            ticket.classList.add('is-wall', 'event-hero', `pp--${P.ink(item)}`);
+            const art = ticket.querySelector('.pp-art')?.outerHTML || '';
+            const category = ticket.querySelector('.event-cover-category')?.innerHTML || '';
+            const area = sheet.querySelector('.event-venue small')?.textContent || item.area || '';
+            ticket.innerHTML = `${art}<span class="event-hero-shade" aria-hidden="true"></span><span class="event-hero-chip">${category}</span><div class="event-hero-body"><span class="pp-tape">${E(P.tape(item, today))}</span><p class="event-hero-title" aria-hidden="true">${E(item.title)}</p><div class="event-hero-meta"><p class="event-hero-where"><strong>${E(item.venue)}</strong><span>${E(area)}</span></p>${item.start ? `<strong class="event-hero-time">${E(item.start)}</strong>` : ''}</div><p class="event-hero-until">${item.end ? `until ${E(item.end)}` : 'End time to check'} · ${past ? 'already happened' : 'listed times'}</p></div>`;
         }
         // The same words as the posters.
         sheet

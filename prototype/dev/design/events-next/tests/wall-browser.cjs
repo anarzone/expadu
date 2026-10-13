@@ -143,61 +143,33 @@ const inside = (box, viewport) =>
                 );
             assert.deepEqual(await clippedPosters(), [], 'a poster cuts off its text');
 
-            // Turning a poster over lifts it into a large card with its whole
-            // back: facts, how it fits the day and every button, nothing cut
-            // off or scrolling, and the page doesn't widen. Escape puts it
-            // back on the wall.
+            // A poster opens its details page directly (one step, no turning
+            // over): the page starts with the poster as its header, the page
+            // doesn't widen, and Escape closes it.
             const poster = page.locator('.st-root .wall-day > .pp').first();
+            assert.match(await poster.locator('.pp-open').getAttribute('aria-label'), /Open details/);
             await poster.locator('.pp-open').click();
-            await page.waitForTimeout(900);
-            const lifted = page.locator('.pp-lift .pp');
-            assert.ok(await lifted.locator('.pp-back').isVisible());
-            assert.ok(await poster.evaluate((pp) => pp.classList.contains('is-lifted')));
-            assert.equal(
-                await page.evaluate(() => document.activeElement.className),
-                'pp-turn-back',
-            );
-            // Not turned over in its place: its way back is Close, an X.
-            assert.equal(await lifted.locator('.pp-turn-back').getAttribute('aria-label'), 'Close');
-            assert.equal(
-                await lifted.locator('.pp-turn-back path').getAttribute('d'),
-                'm6 6 12 12M6 18 18 6',
-            );
-            assert.match(await lifted.locator('.pp-facts').innerText(), /Not listed/);
-            assert.match(
-                await lifted.locator('.pp-fit').innerText(),
-                /after your Blue Card appointment ends/,
-            );
-            const fits = await lifted.evaluate((pp) => {
-                const r = pp.getBoundingClientRect();
-                const body = pp.querySelector('.pp-back-body');
-                return {
-                    scrolls: body.scrollHeight > body.clientHeight + 1,
-                    outside: [...pp.querySelectorAll('.pp-back-actions > *, .pp-turn-back')]
-                        .filter((el) => el.offsetParent)
-                        .some((el) => {
-                            const b = el.getBoundingClientRect();
-                            return b.left < r.left - 0.5 || b.right > r.right + 0.5;
-                        }),
-                    onScreen: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
-                    width: document.documentElement.scrollWidth,
-                };
+            await page.waitForSelector('#shared-dialog[open] .event-hero');
+            await page.waitForTimeout(500);
+            assert.equal(await page.locator('.pp-lift, .pp.is-turned').count(), 0, 'no lifted or turned poster');
+            assert.match(await page.locator('#shared-dialog .event-hero-title').innerText(), /street culture night/i);
+            assert.match(await page.locator('#shared-dialog .event-hero .pp-tape').innerText(), /tonight · 30 sept/i);
+            assert.equal(await page.locator('#shared-dialog .event-hero-time').innerText(), '18:30');
+            assert.ok(await page.locator('#shared-dialog .dialog-head [data-ui="close"]').isVisible());
+            const heroFits = await page.evaluate(() => {
+                const hero = document.querySelector('#shared-dialog .event-hero').getBoundingClientRect();
+                const close = document.querySelector('#shared-dialog .dialog-head [data-ui="close"]').getBoundingClientRect();
+                return { closeOnHero: close.top >= hero.top - 1 && close.bottom <= hero.bottom, width: document.documentElement.scrollWidth };
             });
-            assert.equal(fits.scrolls, false, 'the lifted poster’s back scrolls');
-            assert.equal(fits.outside, false, 'a button sticks out of the lifted poster');
-            assert.ok(fits.onScreen, 'the lifted poster leaves the screen');
-            assert.ok(fits.width <= viewport.width, `sideways scroll with a poster lifted at ${viewport.width}px`);
+            assert.ok(heroFits.closeOnHero, 'Close sits on the poster header');
+            assert.ok(heroFits.width <= viewport.width, `sideways scroll with the details open at ${viewport.width}px`);
             await page.keyboard.press('Escape');
-            await page.waitForTimeout(900);
-            assert.equal(await page.locator('.pp-lift').count(), 0);
-            assert.ok(await poster.locator('.pp-front').isVisible());
-            assert.ok(!(await poster.evaluate((pp) => pp.classList.contains('is-lifted'))));
-            // On a phone its sheet takes the whole screen, and a swipe down
-            // on the sheet's header closes it; the lifted poster waits.
+            await page.waitForTimeout(500);
+            assert.equal(await page.locator('#shared-dialog[open]').count(), 0);
+            // On a phone the page takes the whole screen, and a swipe down
+            // from its top closes it.
             if (viewport.width <= 700) {
                 await poster.locator('.pp-open').click();
-                await page.waitForTimeout(900);
-                await page.locator('.pp-lift .pp-back-more').click();
                 await page.waitForSelector('.event-sheet.phone-sheet');
                 await page.waitForTimeout(450);
                 const full = await page.evaluate(() => {
@@ -206,18 +178,14 @@ const inside = (box, viewport) =>
                     return r.left === 0 && r.top === 0 && r.width >= innerWidth - 16 && Math.round(r.height) === innerHeight;
                 });
                 assert.ok(full, 'the event sheet doesn’t fill a phone screen');
-                const head = await page.locator('#shared-dialog .dialog-head h2').boundingBox();
-                await page.mouse.move(head.x + 20, head.y + 10);
+                const head = await page.locator('#shared-dialog .dialog-head').boundingBox();
+                await page.mouse.move(head.x + 40, head.y + 20);
                 await page.mouse.down();
                 for (let i = 1; i <= 8; i++)
-                    await page.mouse.move(head.x + 20, head.y + 10 + i * 30);
+                    await page.mouse.move(head.x + 40, head.y + 20 + i * 30);
                 await page.mouse.up();
                 await page.waitForTimeout(500);
                 assert.equal(await page.locator('#shared-dialog[open]').count(), 0, 'a swipe down leaves the sheet open');
-                assert.equal(await page.locator('.pp-lift').count(), 1);
-                await page.locator('.pp-lift .pp-turn-back').click();
-                await page.waitForTimeout(900);
-                assert.equal(await page.locator('.pp-lift').count(), 0);
             }
 
             // The street: today's sky and city over the wall, the weather of
@@ -227,8 +195,8 @@ const inside = (box, viewport) =>
             assert.ok((await street.locator('#wall svg').count()) > 2, 'the street isn’t drawn');
             assert.match(await street.locator('#wall').innerText(), /Sample weather/);
             // An hour's story: its posters in turn, the bar gliding (no redraws),
-            // no buttons under the poster. Its poster turns over in place, holds
-            // the story, has no turn button and turns back with a tap on its back.
+            // no buttons under the poster. Its poster opens its details over
+            // the story, which waits underneath.
             const rings = street.locator('.st-rings button');
             assert.equal(await rings.count(), 2);
             await rings.last().click();
@@ -261,27 +229,20 @@ const inside = (box, viewport) =>
             await page.waitForTimeout(500);
             assert.ok((await barWidth()) > held, 'Play goes on');
             await story.locator('.pp-open').click();
-            await page.waitForTimeout(500);
-            assert.equal(await story.locator('.pp.is-turned').count(), 1);
-            assert.equal(await story.locator('.pp-turn-back').isVisible(), false, 'no turn button in a story');
-            const facts = await story.locator('.pp-facts').boundingBox();
-            await page.mouse.click(facts.x + facts.width / 2, facts.y + 6);
-            await page.waitForTimeout(500);
-            assert.equal(await story.locator('.pp.is-turned').count(), 0, 'a tap on the back turns it back');
-            await story.locator('.pp-open').click();
-            await page.waitForTimeout(500);
-            await story.locator('.pp-back-more').click();
-            await page.waitForSelector('#shared-dialog[open] .event-sheet');
-            await page.waitForTimeout(500);
-            // The sheet opens over the story, which waits underneath.
+            await page.waitForSelector('#shared-dialog[open] .event-hero');
+            await page.waitForTimeout(300);
+            assert.equal(await story.locator('.pp.is-turned').count(), 0, 'a story poster doesn’t turn over');
             assert.equal(await story.count(), 1, 'the story waits under the sheet');
+            const waits = await barWidth();
+            await page.waitForTimeout(600);
+            assert.ok(Math.abs((await barWidth()) - waits) < 1, 'the story holds while its details are open');
             await page.keyboard.press('Escape');
             await page.waitForTimeout(400);
             assert.equal(await page.locator('#shared-dialog[open]').count(), 0);
             if (await story.count()) await story.getByRole('button', { name: 'Close stories' }).click();
             await page.waitForTimeout(400);
             // The column rolls tonight's posters (its caption on a desktop);
-            // its facing poster lifts.
+            // its facing poster opens its details.
             if (viewport.width > 700)
                 assert.match(await street.locator('#wall').innerText(), /Tonight · [12] of 2/);
             const facing = await page.evaluate(() =>
@@ -292,10 +253,9 @@ const inside = (box, viewport) =>
             );
             assert.ok(facing >= 0, 'no column poster faces you');
             await page.locator('.st-face .pp-open').nth(facing).click();
-            await page.waitForTimeout(700);
-            assert.equal(await page.locator('.pp-lift .pp.is-turned').count(), 1);
+            await page.waitForSelector('#shared-dialog[open] .event-hero');
             await page.keyboard.press('Escape');
-            await page.waitForTimeout(900);
+            await page.waitForTimeout(500);
 
             // Skyline, kept in the preview as a reference at ?view=skyline:
             // the city has the board to itself. Its lights are the day's
@@ -372,7 +332,7 @@ const inside = (box, viewport) =>
             // The sheet's cover shows when it's on, above the poster's art.
             await page.waitForTimeout(500);
             const timeOnTop = await page.evaluate(() => {
-                const time = document.querySelector('.event-sheet .event-ticket-time strong');
+                const time = document.querySelector('.event-sheet .event-hero-time');
                 const r = time.getBoundingClientRect();
                 return time.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
             });
@@ -381,7 +341,7 @@ const inside = (box, viewport) =>
             // rain warning and fit, and what isn't listed on one line.
             const sheet = page.locator('.event-sheet');
             assert.match(await sheet.locator('.event-ticket .pp-tape').innerText(), /tonight · 30 sept/i);
-            assert.equal(await sheet.locator('.event-ticket-time strong').innerText(), '20:00');
+            assert.equal(await sheet.locator('.event-hero-time').innerText(), '20:00');
             assert.match(await sheet.locator('[data-panel="about"] .place-sheet-footer .button.primary').innerText(), /^Add to plan$/);
             assert.match(await sheet.locator('.event-today .pp-flag--rain').innerText(), /Rain likely at 20:00 · sample forecast/);
             assert.match(await sheet.locator('.event-today .pp-fit').innerText(), /after your Blue Card appointment ends/);
@@ -639,30 +599,10 @@ const inside = (box, viewport) =>
             return card.right <= main.right + 1 && document.documentElement.scrollWidth <= innerWidth;
         });
         assert.ok(fitsPage, 'the street runs off a 1280px page');
-        // A lifted poster's back keeps every button label on one line.
+        // A poster there opens its details too, the page no wider.
         await narrow.locator('.st-root .wall-day > .pp').first().locator('.pp-open').click();
-        await narrow.waitForTimeout(900);
-        const narrowPoster = narrow.locator('.pp-lift .pp');
-        const wrapped = await narrowPoster.evaluate((pp) =>
-            [...pp.querySelectorAll('.pp-back-actions > *, .pp-back-head > *')]
-                .filter((el) => el.offsetParent)
-                .filter((el) => {
-                    const line = parseFloat(getComputedStyle(el).lineHeight) || 20;
-                    return el.scrollHeight > Math.max(el.clientHeight, 52) || el.getClientRects().length > 1 || el.offsetHeight > line * 2 + 24;
-                })
-                .map((el) => el.className),
-        );
-        assert.deepEqual(wrapped, [], 'a button on the back of a narrow poster wraps');
-        // There, Add to plan and Save are icons in one row with More about
-        // it; the icons keep their names for screen readers.
-        const backRow = await narrowPoster.evaluate((pp) =>
-            [...pp.querySelectorAll('.pp-back-actions > *')]
-                .filter((el) => el.offsetParent)
-                .map((el) => Math.round(el.getBoundingClientRect().top)),
-        );
-        assert.ok(backRow.every((top) => Math.abs(top - backRow[0]) < 6), 'the back actions share one row');
-        if (await narrowPoster.locator('.pp-back-plan').count())
-            assert.equal(await narrowPoster.getByRole('button', { name: 'Add to plan' }).count(), 1);
+        await narrow.waitForSelector('#shared-dialog[open] .event-hero');
+        assert.ok(await narrow.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
         await narrow.close();
         // Today's posters follow the clock (?at= previews another time):
         // the outdoor film warns of rain at 13:10; at 19:30 the street
@@ -683,7 +623,7 @@ const inside = (box, viewport) =>
         await clock.waitForTimeout(300);
         assert.equal(await outdoorFilm.getAttribute('data-when'), 'over');
         // Its sheet says Over and offers nothing to plan or be reminded of.
-        await outdoorFilm.evaluate((pp) => pp.querySelector('.pp-back-more').click());
+        await outdoorFilm.evaluate((pp) => pp.querySelector('.pp-open').click());
         await clock.waitForSelector('.event-sheet');
         assert.equal(await clock.locator('.event-sheet .event-today .pp-flag--over').count(), 1);
         assert.equal(

@@ -339,10 +339,11 @@ def logic():
     # The column holds while something is open over the street.
     L = L.replace("if (s.hold || s.sel || s.lift) return;", "if (s.hold || this.mxBusy()) return;")
     L = L.replace("if (s.hold || s.sel || s.story) return;", "if (s.hold || this.mxBusy()) return;")
-    # A story waits while its poster is turned over.
+    # A story waits while its poster is turned over or its details are open.
     old = "storyTurned() { return !!((this.state || {}).turned || {})['story:0']; }"
     assert old in L
-    L = L.replace(old, "storyTurned() { return !!document.querySelector('.st-story-poster .pp.is-turned'); }")
+    # On the page a story also waits while its poster's details are open over it.
+    L = L.replace(old, "storyTurned() { return !!document.querySelector('.st-story-poster .pp.is-turned, #shared-dialog[open]'); }")
     L = L.replace('__AMAP__', '{}')
     head = L.index('class Component extends DCLogic {')
     body = L[head + len('class Component extends DCLogic {'):]

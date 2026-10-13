@@ -5,6 +5,24 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## One step: a poster opens its details — 13 October 2026
+
+Owner request; the header chosen from two previews.
+
+- **A poster opens its details page directly**, on the wall, the column
+  or in a story: no lifted card and no turning over (the lifted card of
+  12 October is gone). A story waits underneath while the page is open.
+  The posters' label reads "Open details".
+- **The page starts with the poster itself**: its art full width, the
+  category, the date tape, the title in the poster's type, the venue (and
+  its distance when a starting point is set), the big start time and when
+  it ends, with Close floating on it. Light posters (day, paper) keep dark
+  type on a light shade. The title is read out from the dialog's own
+  heading.
+
+`wall.js` opens the page and builds the header; the street generator's
+converter makes a story wait while the page is open.
+
 ## A readable About tab — 13 October 2026
 
 Owner request, from a preview. The event sheet's About tab was the same
