@@ -1767,6 +1767,26 @@
         };
         const observer = new MutationObserver(travelWords);
         if (preview) travelWords();
+        // The way there, planned as Travel plans it (get-there.js): real
+        // scheduled options in Travel's cards, in place of the preview.
+        const G = window.ExpaduGetThere;
+        const marks = {};
+        let map, lastWay;
+        if (G && preview) {
+            preview.hidden = true;
+            preview.insertAdjacentHTML('afterend', '<div class="gt" data-gt></div>');
+            G.mount(panel.querySelector('[data-gt]'), {
+                item,
+                panel,
+                input: panel.querySelector('input[name="from"]'),
+                I,
+                E,
+                onWay: (way) => {
+                    lastWay = way;
+                    if (map) G.paint(map, item, way, I, marks);
+                },
+            });
+        }
         if (!Number.isFinite(item.lat) || !Number.isFinite(item.lng)) return;
         panel.querySelector('.place-route')?.insertAdjacentHTML(
             'afterend',
@@ -1774,8 +1794,9 @@
         );
         const box = panel.querySelector('.event-way-map');
         const input = panel.querySelector('input[name="from"]');
-        let map, start;
+        let start;
         const place = () => {
+            if (G) return G.paint(map, item, lastWay, I, marks);
             const D = window.ExpaduEventDistance;
             const origin = D?.locate(input?.value.trim() || '', []);
             start?.remove();

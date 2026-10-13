@@ -5,6 +5,26 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Get there, planned as Travel plans a trip — 13 October 2026
+
+Owner request ("now that Travel is built, build Get there properly").
+Get there shows real scheduled journeys to the event, in Travel's own
+option cards, line badges and labels (`get-there.js`;
+`../departures-next/labels.css` loaded as is): Best for you, minutes to
+spare, changes, walking, the sample weather on the way, and Journey
+details step by step, with the chosen way drawn on the map in its lines'
+colours. Transit, Walk and Bike each show their way; "We checked" says
+what the plan used (the timetable, the sample weather, your day) and that
+it isn't live.
+
+The journeys are real, not invented: `../connected/sample-journeys.js`
+holds what a local MOTIS planner answered from the VRS timetable (GTFS)
+for the sample day, arriving by each evening event's start, from Mülheim
+(after the appointment) and from Neumarkt, with bike and walking times and
+each route's shape. `../tools/capture-journeys.py` captures them again
+(the planner must be running). From any other start, Get there says those
+two starts were captured and offers them, or Travel.
+
 ## The details fit one view — 13 October 2026
 
 Owner request (the details still scrolled when they opened). When to
