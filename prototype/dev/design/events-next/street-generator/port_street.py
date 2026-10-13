@@ -247,6 +247,7 @@ def parts(phone):
         # patches, scraps and puddles.
         base.update(
             oneWall=True,
+            tallDrum=True,
             # No caption on the column's base (owner, 13 Oct 2026): its
             # lamps show which poster faces you.
             noColLabel=True,
@@ -280,13 +281,17 @@ def parts(phone):
         story = story.replace('; top:520px; z-index:41', '; position: fixed; top:calc(50vh - 24px); z-index:59')
     jc = {k: base[k] for k in ('phone', 'mode', 'W', 'SKY') if k in base}
     jc.update({k: base[k] for k in ('zoneW', 'bayW', 'px', 'pw', 'ph', 'rows', 'per', 'cols', 'pool', 'stepBays', 'spots', 'nowPill', 'vertical', 'pageH', 'oneWall') if k in base})
-    jc['col'] = {'pitch': 264, 'pw': 264, 'ph': 515, 'inset': 0} if phone else {'pitch': 205, 'pw': 205, 'ph': 316, 'inset': 29.5}
+    jc['col'] = {'pitch': 264, 'pw': 264, 'ph': 515, 'inset': 0} if phone else {'pitch': 162, 'pw': 162, 'ph': 250, 'inset': 51}
+    if not phone:
+        # The tall drum (owner, 13 Oct 2026): two rings of six posters,
+        # the lower one a poster ahead, meeting at a hoop.
+        jc['col'].update(faces=6, rings=[{'top': 4, 'ahead': 0}, {'top': 264, 'ahead': 1}])
     # The page's drum is round: its posters bend round it (gen_scene).
     # A phone's drum bends its posters in fewer slices and keeps the faces
     # behind it hidden until it turns (gen_scene).
-    jc['col'].update(drum=True, win=264, slices=3 if phone else 4, reach=1 if phone else 2, depth=1600 if phone else 1400)
+    jc['col'].update(drum=True, win=264, slices=3, reach=1, depth=1600 if phone else 1400)
     jc['mxSizes'] = ({'wallW': 142, 'wallH': 270, 'colW': 264, 'colH': 515} if phone
-                     else {'wallZoom': round(190 / 300, 4), 'colZoom': round(316 / 560, 4), 'storyZoom': round(380 / 300, 4)})
+                     else {'wallZoom': round(190 / 300, 4), 'colZoom': round(250 / 560, 4), 'storyZoom': round(380 / 300, 4)})
     jc['model'] = 'stories'
     jc.update(storyW=300 if phone else 380, storyH=420 if phone else 532, feed=False, chrome=False)
     css = GS.css(base['W'], base['p']).replace('body{margin:0}\n', '')

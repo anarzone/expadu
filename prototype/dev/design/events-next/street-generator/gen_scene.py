@@ -78,9 +78,10 @@ class Component extends DCLogic {
     if (turning) {
       // A round drum turns first and its posters are redrawn once it has
       // stopped: redrawing them as it starts made the turn stutter.
-      const P = c.col.pitch, R = (5 * P) / (2 * Math.PI), to = pos + dir;
+      const P = c.col.pitch, R = ((c.col.faces || 5) * P) / (2 * Math.PI), to = pos + dir;
       const ms = done && done.snap ? 520 : 1100;
-      turning.querySelectorAll('.st-face').forEach((f) => (f.style.display = 'block'));
+      // Only the face that turns into view is drawn for the turn.
+      turning.querySelectorAll('.st-face[data-d="' + (dir > 0 ? 2 : -2) + '"]').forEach((f) => (f.style.display = 'block'));
       turning.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.65,0,0.35,1)';
       turning.style.transform = 'perspective(' + c.col.depth + 'px) translateZ(' + (-R).toFixed(3) + 'px) rotateY(' + ((-to * P / R) * 180 / Math.PI).toFixed(3) + 'deg)';
       clearTimeout(this._snap);
@@ -266,8 +267,8 @@ class Component extends DCLogic {
       // on every move (the next draw puts it where the state says).
       const turning = col.drum && d.drum && d.drum.querySelector('[style*="preserve-3d"]');
       if (turning) {
-        if (!d.shown) { turning.querySelectorAll('.st-face').forEach((f) => (f.style.display = 'block')); d.shown = true; }
-        const R = (5 * pitch) / (2 * Math.PI), pos = (this.state && this.state.pos) || 0;
+        if (!d.shown) { turning.querySelectorAll('.st-face[data-d="2"], .st-face[data-d="-2"]').forEach((f) => (f.style.display = 'block')); d.shown = true; }
+        const R = ((col.faces || 5) * pitch) / (2 * Math.PI), pos = (this.state && this.state.pos) || 0;
         const turn = (-(pos * pitch - d.dx) / R) * (180 / Math.PI);
         turning.style.transition = 'none';
         turning.style.transform = 'perspective(' + col.depth + 'px) translateZ(' + (-R).toFixed(3) + 'px) rotateY(' + turn.toFixed(3) + 'deg)';
@@ -439,20 +440,24 @@ class Component extends DCLogic {
       // ones are to its right, the earlier ones to its left; the two out
       // of sight behind take whatever comes next. Every poster you can see
       // takes taps (one turning in is as tappable as the one facing you).
+      // A tall drum (the page's desktop) has two rings of posters, turning
+      // together, the lower one a poster ahead: a two-event evening shows
+      // both at once.
       const r3 = (v) => Math.round(v * 1000) / 1000;
-      const P = c.col.pitch, R = (5 * P) / (2 * Math.PI), S = c.col.slices || 6;
-      const sw = P / S, chord = 2 * R * Math.tan(Math.PI / 5 / S) + 0.6;
-      for (let j = 0; j < 5; j++) {
-        const m = (((j - s.pos) % 5) + 5) % 5, d = m > 2 ? m - 5 : m;
-        // A small drum (a phone's) keeps the faces out of sight behind it,
-        // but doesn't draw them until it turns.
+      const F = c.col.faces || 5, A = 360 / F, rings = c.col.rings || [{ top: 4, ahead: 0 }];
+      const P = c.col.pitch, R = (F * P) / (2 * Math.PI), S = c.col.slices || 6;
+      const sw = P / S, chord = 2 * R * Math.tan(Math.PI / F / S) + 0.6;
+      for (const ring of rings) for (let j = 0; j < F; j++) {
+        const m = (((j - s.pos) % F) + F) % F, d = m > F / 2 ? m - F : m;
+        // The faces out of sight behind are kept, but not drawn until
+        // the drum turns.
         const away = Math.abs(d) > (c.col.reach == null ? 2 : c.col.reach);
-        const e = tonight[(((s.pos + d) % N) + N) % N];
+        const e = tonight[(((s.pos + d + ring.ahead) % N) + N) % N];
         for (let k = 0; k < S; k++) {
-          const a = j * 72 + (k + 0.5 - S / 2) * (72 / S);
+          const a = j * A + (k + 0.5 - S / 2) * (A / S);
           strip.push(dress(e, {
-            sx: r3((c.col.win - chord) / 2), sw: r3(chord), off: r3(chord / 2 - (k + 0.5) * sw), w: c.col.pw, h: c.col.ph,
-            tf: 'rotateY(' + r3(a) + 'deg) translateZ(' + r3(R) + 'px)', pe: Math.abs(d) <= 1 ? 'auto' : 'none', disp: away ? 'none' : 'block',
+            sx: r3((c.col.win - chord) / 2), sw: r3(chord), off: r3(chord / 2 - (k + 0.5) * sw), w: c.col.pw, h: c.col.ph, top: ring.top,
+            tf: 'rotateY(' + r3(a) + 'deg) translateZ(' + r3(R) + 'px)', pe: Math.abs(d) <= 1 ? 'auto' : 'none', disp: away ? 'none' : 'block', d,
           }));
         }
       }
@@ -531,7 +536,7 @@ class Component extends DCLogic {
 '''
 
 
-def column(p, s=1.0, mx=False, phone=False):
+def column(p, s=1.0, mx=False, phone=False, tall=False):
     """The advertising column: dome, scalloped trim, frieze, the rolling
     drum, older posters below, band with its four lamps, plinth. Local
     size 300x740 (scaled by s)."""
@@ -544,6 +549,8 @@ def column(p, s=1.0, mx=False, phone=False):
            '<path d="M150 452 h126 v186 h-126 Z" fill="#b9a6d6"/><circle cx="214" cy="520" r="38" fill="none" stroke="#efe6ff" stroke-width="8" opacity="0.7"/>'
            '<path d="M24 600 h252 v40 h-252 Z" fill="#9fc5c0" opacity="0.85"/>'
            '</g>').replace('{p}', p)
+    if tall:
+        old = ''  # the tall drum covers where the old posters were
     svg = f'''<svg width="{W}" height="{Hh}" viewBox="0 0 {W} {Hh}" aria-hidden="true" style="position:absolute;left:0;top:0;overflow:visible">
   <defs>
     <linearGradient id="{p}drum" x1="0" y1="0" x2="1" y2="0">
@@ -580,7 +587,7 @@ def column(p, s=1.0, mx=False, phone=False):
     if mx == 'mock':
         chain_o = '<div class="wall-board" style="display:contents"><div class="wall-column" style="display:contents">'
         chain_c = '</div></div>'
-        strip_html = (f'''      <sc-for list="{H('strip')}" as="q" hint-placeholder-count="3"><div class="st-face" style="position:absolute;top:4px;left:{H('q.sx')}px;width:{H('q.sw')}px;height:{H('q.h')}px;overflow:hidden;backface-visibility:hidden;transform:{H('q.tf')};pointer-events:{H('q.pe')};display:{H('q.disp')}">'''
+        strip_html = (f'''      <sc-for list="{H('strip')}" as="q" hint-placeholder-count="3"><div class="st-face" data-d="{H('q.d')}" style="position:absolute;top:{H('q.top')}px;left:{H('q.sx')}px;width:{H('q.sw')}px;height:{H('q.h')}px;overflow:hidden;backface-visibility:hidden;transform:{H('q.tf')};pointer-events:{H('q.pe')};display:{H('q.disp')}">'''
                       f'''<div style="position:absolute;top:0;left:{H('q.off')}px;width:{H('q.w')}px"><mx-poster v="q" where="column"></mx-poster></div></div></sc-for>''')
     elif mx:
         import mx as MX
@@ -594,11 +601,13 @@ def column(p, s=1.0, mx=False, phone=False):
           <dc-import name="WallPoster" p="{H('q')}" hint-size="100%,100%"></dc-import><span aria-hidden="true" style="position:absolute;inset:0;z-index:3"></span>
         </button>
       </sc-for>'''
-    win_h = 518 if (mx and phone) else 324
+    win_h = 518 if ((mx and phone) or tall) else 324
+    # A tall drum's two rings meet at a hoop.
+    hoop = '<div aria-hidden="true" style="position:absolute;left:0;right:0;top:255px;height:8px;pointer-events:none;background:linear-gradient(#c9a94a,#8a6f22 45%,#2c4538 55%,#1d332a);box-shadow:0 2px 4px rgba(0,0,0,.35)"></div>' if tall else ''
     win = f'''<div data-col-drum onPointerEnter="{H('hold')}" onPointerLeave="{H('release')}" style="position:absolute;left:18px;top:124px;width:264px;height:{win_h}px;overflow:hidden;background:#d8ccb0;filter:brightness({H('k.posterB')});transition:filter 1.2s">
     {chain_o}<div style="position:absolute;left:0;top:0;height:100%;width:2000px;{H('colStyle')}">
 {strip_html}
-    </div>{chain_c}
+    </div>{chain_c}{hoop}
     <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.24) 0%,rgba(0,0,0,.06) 11%,rgba(255,255,255,.12) 33%,rgba(255,255,255,0) 47%,rgba(0,0,0,.03) 74%,rgba(0,0,0,.22) 100%)"></div>
     <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 42% 45%,rgba(255,226,170,.55),rgba(255,200,120,.12) 60%,transparent 75%);mix-blend-mode:screen;opacity:{H('k.colGlow')};transition:opacity 1.2s"></div>
   </div>'''
@@ -755,7 +764,7 @@ def card(cfg):
   <g style="opacity:{H('k.leaves')};transition:opacity 1.2s">{A.falling_leaves(*fs['leaves'])}</g>
 </svg>'''
     cx, cy, cs = cfg['column']
-    col = f'<div data-col style="position:absolute;left:{cx}px;top:{cy}px;width:{300 * cs:.0f}px;height:{740 * cs:.0f}px">{column(p + "c", cs, mx=(cfg.get('mx') if cfg.get('mx') == 'mock' else bool(cfg.get('mx'))), phone=phone)}</div>'
+    col = f'<div data-col style="position:absolute;left:{cx}px;top:{cy}px;width:{300 * cs:.0f}px;height:{740 * cs:.0f}px">{column(p + "c", cs, mx=(cfg.get('mx') if cfg.get('mx') == 'mock' else bool(cfg.get('mx'))), phone=phone, tall=cfg.get('tallDrum', False))}</div>'
     if fs.get('bikeFront'):
         front_bike = ''
     rainl = f'''<svg width="{W}" height="{Hc}" viewBox="0 0 {W} {Hc}" aria-hidden="true" style="position:absolute;left:0;top:0;pointer-events:none;opacity:{H('k.rain')};transition:opacity 1.2s">

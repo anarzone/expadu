@@ -5,6 +5,16 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## A tall drum — 13 October 2026
+
+Owner request. On a desktop the column's drum runs its full height, from
+the trim to the lamps, instead of a drum over flat old-poster blocks: two
+rings of six posters, turning together and meeting at a hoop, the lower
+ring a poster ahead, so a two-event evening shows both at once. The
+posters are a little smaller (162 x 250). Only the faces in view are
+drawn; a turn draws just the face it brings in. Phones already had a
+full-height drum (one ring of tall posters) and keep it.
+
 ## No caption on the column — 13 October 2026
 
 Owner request. The "Tonight · 1 of 2" caption on the column's base is
