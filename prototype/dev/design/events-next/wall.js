@@ -1168,10 +1168,27 @@
        On the wall or the column a poster is too small for its back: on a
        phone its buttons ran off the screen. Turning one over lifts it into
        the middle of the screen at the size where every back fits without
-       scrolling (300 x 470, zoomed to the screen). It flies from its place
-       while it turns (the poster's own turn), and goes back the same way:
+       scrolling (300 x 470, zoomed to the screen). It grows from its place
+       while its front fades into the back, and goes back the same way:
        with its Close button (an X), a tap outside or Escape. */
     let lifted = null;
+    // The card shows its back at once: it isn't turned over in its place.
+    const showBack = (pp, toBack) => {
+        pp.classList.toggle('is-turned', toBack);
+        pp.querySelector('.pp-front').hidden = toBack;
+        pp.querySelector('.pp-back').hidden = !toBack;
+        pp.querySelector('.pp-open')?.setAttribute('aria-expanded', String(toBack));
+    };
+    // The poster's front over the card while it grows or shrinks: the
+    // front fades into the back on the way out and back in on the way home.
+    function frontFace(copy) {
+        const face = copy.cloneNode(true);
+        showBack(face, false);
+        face.classList.add('pp-lift-face');
+        face.setAttribute('aria-hidden', 'true');
+        face.inert = true;
+        return face;
+    }
     const liftPath = (from, to) =>
         `translate(${from.left + from.width / 2 - (to.left + to.width / 2)}px, ${from.top + from.height / 2 - (to.top + to.height / 2)}px) scale(${from.width / to.width})`;
     function lift(card) {
@@ -1199,12 +1216,22 @@
         document.body.append(layer);
         card.classList.add('is-lifted');
         lifted = { card, layer, box, copy };
-        P.turn(copy.querySelector('.pp-open'));
-        if (!reducedMotion())
+        // It grows from its place into the card (no turn: it closes with an
+        // X), its front fading into the back as it comes (owner, 13 Oct 2026).
+        showBack(copy, true);
+        copy.querySelector('.pp-turn-back')?.focus({ preventScroll: true });
+        if (!reducedMotion()) {
+            const face = frontFace(copy);
+            box.append(face);
             box.animate(
                 [{ transform: liftPath(from, box.getBoundingClientRect()) }, { transform: 'none' }],
-                { duration: 380, easing: 'cubic-bezier(.22,1,.36,1)' },
+                { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' },
             );
+            face.animate([{ opacity: 1 }, { opacity: 1, offset: 0.12 }, { opacity: 0, offset: 0.6 }, { opacity: 0 }], {
+                duration: 420,
+                fill: 'forwards',
+            }).onfinish = () => face.remove();
+        }
         layer.addEventListener('click', (event) => {
             if (
                 event.target.closest('[data-poster-turn]') ||
@@ -1248,7 +1275,14 @@
         };
         if (reducedMotion()) return done();
         layer.classList.add('is-leaving');
-        P.turn(copy.querySelector('.pp-turn-back'));
+        // The way it came: it shrinks into its place, the front coming back.
+        box.querySelector('.pp-lift-face')?.remove();
+        const face = frontFace(copy);
+        box.append(face);
+        face.animate([{ opacity: 0 }, { opacity: 0, offset: 0.25 }, { opacity: 1, offset: 0.75 }, { opacity: 1 }], {
+            duration: 360,
+            fill: 'forwards',
+        });
         box.animate(
             [{ transform: 'none' }, { transform: liftPath(card.getBoundingClientRect(), box.getBoundingClientRect()) }],
             { duration: 360, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' },

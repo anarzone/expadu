@@ -8,9 +8,11 @@ sample events; this is not a live catalogue.
 ## The lifted card closes with an X — 13 October 2026
 
 Owner request: a lifted poster isn't turned over in its place, so its way
-back is Close, an X like the sheet's, instead of the turn icon. It still
-turns back as it flies home. Posters turned over in place (in a story)
-keep the turn icon.
+back is Close, an X like the sheet's, instead of the turn icon, and it no
+longer turns over on the way: it grows from its place into the card while
+its front fades into the back, and closing shrinks it back into its place
+as the front returns. Posters turned over in place (in a story) keep the
+turn icon and the turn.
 
 ## No old layout on a reload — 13 October 2026
 

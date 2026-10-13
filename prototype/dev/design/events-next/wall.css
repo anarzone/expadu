@@ -3384,6 +3384,14 @@ main[data-view='wall'] .event-results-head :is(#event-count, .event-sample) {
     height: 470px;
     zoom: var(--lift-zoom, 1);
 }
+/* The poster's front over the card while it grows or shrinks (wall.js). */
+.pp-lift-card > .pp-lift-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+    pointer-events: none;
+}
 .pp.is-lifted {
     visibility: hidden;
 }
