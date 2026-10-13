@@ -3813,13 +3813,22 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
 #shared-dialog .event-sheet .event-facts:has(> .event-where:first-child) {
     border-top: 0;
 }
+/* A band across the sheet, so its icon and words line up with the other
+   rows' (the sheet's side gutter is 20px, 16px on a phone). */
 #shared-dialog .event-sheet .event-row.event-where {
-    margin: 8px 0;
-    padding: 12px 14px;
+    --gutter: 20px;
+    width: calc(100% + 2 * var(--gutter));
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 12px var(--gutter);
     border: 0;
-    border-radius: 14px;
+    border-radius: 0;
     background: #e8f0fb;
     color: #12305c;
+}
+@media (max-width: 700px) {
+    #shared-dialog .event-sheet .event-row.event-where {
+        --gutter: 16px;
+    }
 }
 #shared-dialog .event-sheet .event-where .event-row-icon {
     background: #fff;
