@@ -326,9 +326,16 @@ function setView(view, sliding = false) {
     const from = state.view;
     closePopover();
     hideSuggestions();
-    // Each view keeps its own place on the page, like an app's tabs.
+    // Each view keeps its own place on the page, like an app's tabs. A view
+    // left near its top (the tabs still showing) comes back at the top, so
+    // the tabs don't sit higher on one view than the other (owner, 14 Oct
+    // 2026).
     const scrolled = (state.scrollAt ||= {});
-    if (changed && typeof scrollY === 'number') scrolled[from] = scrollY;
+    if (changed && typeof scrollY === 'number') {
+        const tabs = document.querySelector('.page-navigation');
+        const below = tabs ? tabs.getBoundingClientRect().bottom + scrollY : 0;
+        scrolled[from] = scrollY < below ? 0 : scrollY;
+    }
     state.view = view;
     document.body.dataset.view = view;
     if (changed && view === 'stop') H()?.home();
