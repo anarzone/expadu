@@ -11,6 +11,29 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Plan a trip's panel beside Nearby — 14 October 2026
+
+Owner-agreed on the Travel directions canvas, row 16 (after options A–C in
+rows 13–15 and a first build that was reverted).
+
+- Desktop: no Nearby / Plan a trip tabs. Plan a trip is a 420px panel on the
+  left (sticky, its own scroll) and Nearby fills the rest. Bigger (top right
+  of the panel, once there are options) grows it smoothly to two thirds,
+  with the form beside the options; Nearby keeps a third.
+- Every size: at rest the panel is "Where to?" with Favourites and today's
+  places; typing where to opens From above it, as Google Maps does. On
+  desktop a picked place (today's or a suggestion) shows its ways at once.
+- One Saved: the header's bookmark (saved ideas). Travel's own Saved
+  journeys bookmark is gone; a way goes to My day with "Add to plan" (it was
+  "Save this plan"; the step after it says "Added to your plan").
+- ★ Favourites (`favourites.js`, on this device): the star beside a stop's
+  name in Nearby adds it; favourites lead the panel's start, with Home and
+  Work. Neumarkt is starred as the sample. The star is ink, not amber,
+  because amber means "watch out" in the labels.
+- Desktop controls are sized for a mouse (52px rows, 38px When switch); the
+  air between groups stays. `hub.css` holds the layout; `app.js`
+  `syncPanel()` the panel's stage and size.
+
 ## One When control, one frame — 14 October 2026
 
 - Plan a trip asked "when" twice: the When row (Leave now / Leave at /

@@ -1,0 +1,294 @@
+@import url('../connected/tokens.css');
+/* Plan a trip's panel (owner, 14 Oct 2026; Travel directions canvas, row 16).
+   Desktop: no Nearby / Plan a trip tabs. Plan a trip is a panel beside
+   Nearby, 420px, that grows to two thirds of the page. Every size: at rest
+   the panel offers your favourites and today's places; typing where to
+   opens From above it, as Google Maps does; a picked place shows its ways.
+   An app, not a website: the panel slides and resizes, From opens with
+   motion, and the controls are sized for a mouse on desktop. */
+
+/* ★ beside a stop's name (every size). */
+.nearby-star {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-left: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    cursor: pointer;
+}
+.nearby-star svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.nearby-star[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.nearby-star:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+}
+
+/* Favourites at the top of the panel's start: starred stops, Home, Work. */
+.favourite-stops {
+    display: grid;
+    gap: var(--space-8);
+    margin-bottom: var(--space-8);
+}
+.favourite-stops:empty {
+    display: none;
+}
+.favourite-stops button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    min-height: 56px;
+    padding: var(--space-8) var(--space-14);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.favourite-stops button > span:last-child {
+    display: flex;
+    flex-direction: column;
+}
+.favourite-stops small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.favourite-mark {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.favourite-mark svg {
+    width: 17px;
+    height: 17px;
+    fill: currentColor;
+    stroke: currentColor;
+}
+#journey-start .plan-subhead + .favourite-stops {
+    margin-top: var(--space-10);
+}
+#journey-start .saved-places {
+    margin-bottom: 28px;
+}
+
+/* The panel's own header (desktop): what it is, the sample clock, and the
+   bigger / smaller button once there are ways to compare. */
+.plan-panel-head {
+    display: none;
+}
+
+/* From opens once you type where to (every size). */
+body.travel-palette .journey-fields > .from-field {
+    max-height: 120px;
+    overflow: hidden;
+    transition:
+        max-height 380ms var(--ease),
+        opacity 260ms ease,
+        padding 380ms var(--ease);
+}
+body.travel-palette[data-plan-stage='rest'] .journey-fields > .from-field {
+    max-height: 0;
+    padding-block: 0;
+    opacity: 0;
+}
+body.travel-palette[data-plan-stage='rest']
+    .journey-fields
+    > .from-field::after {
+    display: none;
+}
+body.travel-palette .journey-fields > .swap {
+    transition:
+        opacity 260ms ease,
+        transform 320ms var(--ease);
+}
+body.travel-palette[data-plan-stage='rest'] .journey-fields > .swap {
+    opacity: 0;
+    transform: scale(0.6);
+    pointer-events: none;
+}
+/* At rest the field is just "Where to?" (its To label returns with From). */
+body.travel-palette[data-plan-stage='rest'] .to-field > label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+body.travel-palette[data-plan-stage='rest'] .to-field input {
+    font-size: var(--text-section);
+}
+/* Home and Work side by side, as on the canvas. */
+#journey-start .saved-places {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8);
+}
+/* At rest the panel is "Where to?" with favourites and today's places. */
+body.travel-palette[data-plan-stage='rest']
+    :is(.plan-controls, .find-routes, #plan-hint, .travel-composer-helper) {
+    display: none;
+}
+
+@media (min-width: 1000px) {
+    /* Two panes: Plan a trip's panel, then Nearby. */
+    body.travel-palette .page-navigation {
+        display: none;
+    }
+    body.travel-palette.departures-page #main {
+        display: grid;
+        grid-template-columns: 420px minmax(0, 1fr);
+        column-gap: var(--space-32);
+        align-items: start;
+        transition: grid-template-columns 460ms var(--ease);
+    }
+    body.travel-palette.departures-page.plan-big #main {
+        grid-template-columns: calc(66.6% - 16px) minmax(0, 1fr);
+    }
+    body.travel-palette.departures-page #main > :not(#journey-view) {
+        grid-column: 2;
+    }
+    body.travel-palette.departures-page #main > :is(#active-trip, #day-view) {
+        grid-column: 1 / -1;
+    }
+    body.travel-palette #journey-view {
+        grid-column: 1;
+        grid-row: 1 / span 6;
+        position: sticky;
+        top: 96px;
+        max-height: calc(100vh - 120px);
+        box-sizing: border-box;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: var(--space-24);
+        border: 1px solid var(--color-border);
+        border-radius: 28px;
+        background: var(--color-bg-surface);
+        box-shadow: 0 18px 50px -36px #211d1559;
+        scrollbar-width: thin;
+    }
+    body.trip-open #journey-view {
+        display: none;
+    }
+    .plan-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-12);
+        margin-bottom: var(--space-20);
+    }
+    .plan-panel-title {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .plan-panel-title strong {
+        font-size: 21px;
+        letter-spacing: -0.3px;
+    }
+    .plan-panel-title small {
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+    }
+    body.travel-palette .plan-grow {
+        flex: none;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--color-border);
+        border-radius: 14px;
+        background: var(--color-bg-surface);
+        transition:
+            background-color 160ms ease,
+            transform 140ms ease;
+    }
+    body.travel-palette .plan-grow:hover {
+        background: var(--color-bg-quiet);
+    }
+    body.travel-palette .plan-grow:active {
+        transform: scale(0.96);
+    }
+    body.travel-palette .plan-grow[hidden] {
+        display: none;
+    }
+    body.travel-palette .plan-grow svg {
+        width: 18px;
+        height: 18px;
+    }
+    /* The panel names itself; the form's own heading isn't needed. */
+    body.travel-palette .planner-heading {
+        display: none;
+    }
+    /* One column in the panel; options beside the form when it's big. */
+    body.travel-palette .journey-intro-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 28px;
+    }
+    body.travel-palette.plan-big .journey-intro-grid {
+        grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.4fr);
+        gap: 36px;
+    }
+    body.travel-palette .journey-results {
+        padding: 0;
+        border: 0;
+    }
+    body.travel-palette.plan-big .journey-results {
+        padding-left: 36px;
+        border-left: 1px solid var(--color-border);
+    }
+    /* Nearby in its third while the panel is big: departures, then the
+       stop's map under them. */
+    body.travel-palette.plan-big .nearby-workspace {
+        flex-direction: column;
+    }
+    body.travel-palette.plan-big .nearby-divider {
+        display: none;
+    }
+    body.travel-palette.plan-big .nearby-aside {
+        position: static;
+        flex: none;
+        width: 100%;
+    }
+    /* A narrow panel stacks a way's steps over its map. */
+    body.travel-palette:not(.plan-big) .plan-option-way {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    /* Options show as soon as a place is picked, and update as you change
+       when or what matters, so the panel needs no Plan it button then. */
+    body.travel-palette[data-plan-stage='picked'] .find-routes {
+        display: none;
+    }
+    /* Desktop controls are sized for a mouse; the air stays between groups. */
+    body.travel-palette #journey-view :is(.day-places, .saved-places) button,
+    body.travel-palette #journey-view .favourite-stops button {
+        min-height: 52px;
+        padding-block: var(--space-8);
+    }
+    body.travel-palette #journey-view .plan-when button {
+        min-height: 38px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.travel-palette.departures-page #main,
+    body.travel-palette .journey-fields > .from-field,
+    body.travel-palette .journey-fields > .swap {
+        transition: none;
+    }
+}
