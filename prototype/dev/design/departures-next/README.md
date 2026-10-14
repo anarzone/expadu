@@ -39,6 +39,10 @@ rows 13–15 and a first build that was reverted).
   the groups. A narrow column (a phone, or Nearby beside a big panel) folds a
   strip into two rows. A picked line opens in place at every size, and on
   desktop the stop's map is under the strips instead of beside them.
+- Phones keep "Where to?" at the top (never a bottom input): tapping it
+  unfolds Plan a trip down from the field, and its top arrow (now a fold-up
+  chevron, "Fold Plan a trip away") folds it back up into it (`slide.css`
+  `travel-unfold` / `travel-fold`, view transitions; reduced motion fades).
 
 ## One When control, one frame — 14 October 2026
 
