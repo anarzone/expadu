@@ -5,7 +5,6 @@ import {
     IconCloud,
     IconDots,
     IconFileText,
-    IconGridDots,
     IconRoute,
     IconTrain,
 } from '@tabler/icons-react';
@@ -17,14 +16,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ICON_STROKE } from '@/constants/icons';
-import {
-    alerts,
-    bureaucracy,
-    composer,
-    events,
-    services,
-    timetable,
-} from '@/routes';
+import { alerts, bureaucracy, composer, events, timetable } from '@/routes';
 
 export type TileAction = 'done' | 'snooze' | 'dismiss';
 export type Weather = {
@@ -193,10 +185,6 @@ export function CityHelp({
                 <Link href={timetable({ query: { view: 'timetable' } })}>
                     <IconTrain size={20} stroke={ICON_STROKE} />
                     <span>Check departures</span>
-                </Link>
-                <Link href={services()}>
-                    <IconGridDots size={20} stroke={ICON_STROKE} />
-                    <span>Local services</span>
                 </Link>
             </div>
         </section>

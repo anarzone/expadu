@@ -5,7 +5,6 @@ import {
     IconBookmark,
     IconCalendarEvent,
     IconFileText,
-    IconGridDots,
     IconHome,
     IconMoonStars,
     IconSun,
@@ -31,7 +30,6 @@ import {
     bureaucracy,
     dashboard,
     events,
-    services,
     timetable,
 } from '@/routes';
 
@@ -40,7 +38,7 @@ const destinations = [
     { label: 'Events', route: events, icon: IconCalendarEvent },
     { label: 'Paperwork', route: bureaucracy, icon: IconFileText },
     { label: 'Travel', route: timetable, icon: IconTrain },
-    { label: 'Services', route: services, icon: IconGridDots },
+    // Services is hidden until its idea is finished (owner, 14 Oct 2026).
 ];
 
 /** One compact, labelled navigation shared by the connected departments. */
@@ -81,7 +79,7 @@ export function ConnectedAppHeader({ showBack }: { showBack?: boolean }) {
                 </div>
                 <nav
                     aria-label="Main navigation"
-                    className="col-span-2 row-start-2 grid grid-cols-5 gap-1 py-1.5 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:flex lg:gap-1.5 lg:py-0"
+                    className="col-span-2 row-start-2 grid grid-cols-4 gap-1 py-1.5 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:flex lg:gap-1.5 lg:py-0"
                 >
                     {destinations.map(({ label, route, icon: Icon }) => {
                         const active =

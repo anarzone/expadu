@@ -21,7 +21,6 @@ const sections = [
     ['events', 'calendar', 'Events', '../events-next/'],
     ['bureaucracy', 'document', 'Paperwork', '../bureaucracy-next/'],
     ['departures', 'train', 'Travel', '../departures-next/'],
-    ['services', 'grid', 'Services', '../services-next/'],
 ];
 const icons = {};
 vm.runInNewContext(

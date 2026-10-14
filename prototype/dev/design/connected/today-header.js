@@ -13,7 +13,6 @@
             events: ['calendar', 'Events'],
             bureaucracy: ['document', 'Paperwork'],
             departures: ['train', 'Travel'],
-            services: ['grid', 'Services'],
         };
 
         menu.classList.add('service-nav');

@@ -3,7 +3,6 @@ import {
     IconHome,
     IconCompass,
     IconCalendarEvent,
-    IconFirstAidKit,
     IconBuildingBank,
     IconBell,
     IconUser,
@@ -23,12 +22,6 @@ const menuGroups: Array<{
             { title: 'Today', href: '/dashboard', icon: IconHome },
             { title: 'Places', href: '/explore', icon: IconCompass },
             { title: 'Events', href: '/events', icon: IconCalendarEvent },
-        ],
-    },
-    {
-        label: 'City',
-        items: [
-            { title: 'Services', href: '/services', icon: IconFirstAidKit },
         ],
     },
     {

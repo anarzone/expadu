@@ -4,7 +4,6 @@ import {
     IconCompass,
     IconBell,
     IconCalendarEvent,
-    IconFirstAidKit,
     IconFileText,
     IconBus,
     IconUser,
@@ -48,7 +47,6 @@ function buildNavGroups(): NavGroup[] {
             items: [
                 { title: 'Departures', href: '/timetable', icon: IconBus },
                 { title: 'Events', href: '/events', icon: IconCalendarEvent },
-                { title: 'Services', href: '/services', icon: IconFirstAidKit },
             ],
         },
         {

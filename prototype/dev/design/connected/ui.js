@@ -20,7 +20,6 @@
         ['events', 'calendar', 'Events'],
         ['bureaucracy', 'document', 'Bureaucracy'],
         ['departures', 'train', 'Departures'],
-        ['services', 'grid', 'Services'],
     ];
     const top = document.querySelector('#shell');
     if (top && !top.querySelector('[data-static-header]'))
