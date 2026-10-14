@@ -274,11 +274,13 @@
             if (!options.some((o) => o.id === state.pick)) state.pick = best?.id || null;
             minutes(trip, best);
             const sky = weatherAt(state.when === 'now' ? J.now : back ? item.end : item.start);
+            // What the plan used, as one quiet line (owner, 14 Oct 2026); wet
+            // weather keeps its warning colour.
             const checked = [
-                chip('calm', 'check', 'Timetable'),
-                sky ? (sky.wet ? chip('attention', 'cloud', `${sky.sky} likely · sample`) : chip('calm', 'sun', 'Dry · sample')) : '',
-                chip('calm', 'check', 'Your day'),
-                chip('unsure', 'info', 'Not live'),
+                'Timetable',
+                'your day',
+                ...(sky ? [sky.wet ? `<b>${sky.sky.toLowerCase()} (sample)</b>` : 'dry (sample)'] : []),
+                'not live',
             ];
             const walk = ways.walk;
             const body =
@@ -294,7 +296,7 @@
             const day = new Date(item.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
             const captured = new Date(J.captured + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
             put(
-                `<section class="gt-checked" aria-label="What we checked"><h3>We checked</h3><div>${checked.join('')}</div></section>${body}<p class="gt-source">${I('info')}<span>Scheduled times from the VRS timetable for ${E(day)}, captured ${E(captured)}.${snapped ? ` The way ${back ? 'ends' : 'starts'} at ${E(trip.from.stop)}, the stop nearest ${E(trip.from.name)}’s centre.` : ''}${state.when === 'now' ? ` “Now” is the sample day’s ${E(J.now)}.` : ''} Not live: check departures before you go.</span></p>`,
+                `<p class="gt-checked">${I('check')}<span><span class="sr-only">We checked: </span>${checked.join(' · ')}</span></p>${body}<p class="gt-source">${I('info')}<span>Scheduled times from the VRS timetable for ${E(day)}, captured ${E(captured)}.${snapped ? ` The way ${back ? 'ends' : 'starts'} at ${E(trip.from.stop)}, the stop nearest ${E(trip.from.name)}’s centre.` : ''}${state.when === 'now' ? ` “Now” is the sample day’s ${E(J.now)}.` : ''} Not live: check departures before you go.</span></p>`,
             );
             const picked = mode === 'transit' ? options.find((o) => o.id === state.pick) : null;
             ctx.onWay?.({

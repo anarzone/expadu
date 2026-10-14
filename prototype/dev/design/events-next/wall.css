@@ -3931,18 +3931,26 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     gap: 12px;
     margin-top: 12px;
 }
-#shared-dialog .event-sheet .gt-checked h3 {
-    margin: 0 0 6px;
-    color: #6b6457;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-}
-#shared-dialog .event-sheet .gt-checked > div {
+/* What the plan used: one quiet line above the options. */
+#shared-dialog .event-sheet .gt-checked {
     display: flex;
-    flex-wrap: wrap;
+    align-items: flex-start;
     gap: 6px;
+    margin: 0;
+    color: #6b6457;
+    font-size: 13px;
+    line-height: 1.4;
+}
+#shared-dialog .event-sheet .gt-checked > svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    margin-top: 1px;
+    stroke-width: 2;
+}
+#shared-dialog .event-sheet .gt-checked b {
+    color: #8a5a00;
+    font-weight: 600;
 }
 #shared-dialog .event-sheet .gt .plan-options {
     display: flex;

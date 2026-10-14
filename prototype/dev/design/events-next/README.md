@@ -21,6 +21,12 @@ a narrower one it scrolls sideways and fades where it's cut. The map
 follows the row. Other events (without captured journeys) keep their
 preview and rails.
 
+"We checked" is one quiet line too (owner, same day): "✓ Timetable ·
+your day · showers (sample) · not live", wet weather in the warning
+colour, "We checked" read out to screen readers. It wraps only on a
+320 px phone. The whole best option now fits the first screen of a
+390 x 844 phone.
+
 ## The details fit one view on a small phone too — 13 October 2026
 
 Owner request (the remaining open items: a 375 x 667 phone still
