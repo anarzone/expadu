@@ -69,21 +69,59 @@
         const state = { pick: null, open: null, when: 'arrive' };
         const failed = new Set();
 
-        // When: by the start, now (the sample day's clock) or back after it
-        // ends. The date stays on the line above; its time moves here.
-        panel.querySelector('fieldset')?.insertAdjacentHTML(
-            'beforebegin',
-            `<fieldset class="gt-when"><legend>When</legend>${[
-                ['arrive', 'Arrive by', item.start],
-                ['now', 'Leave now', J.now],
-                ...(item.end ? [['back', 'Way back', `after ${item.end}`]] : []),
-            ]
-                .map(([value, label, time]) => `<label><input type="radio" name="when" value="${value}"${value === 'arrive' ? ' checked' : ''}><span><strong>${label}</strong><small>${E(time)}</small></span></label>`)
-                .join('')}</fieldset>`,
+        // When and how, as small filters under the route (owner, 14 Oct
+        // 2026, option A on the canvas): the time is a chip whose menu floats
+        // over the page (by the start, now on the sample day's clock, or the
+        // way back after it ends); the ways are chips with their minutes.
+        // The form's own mode radios stay, so Open in Travel reads them.
+        const route = panel.querySelector('.place-route');
+        const whens = [
+            ['arrive', `Arrive by ${item.start}`, 'When it starts', `By ${item.start}`],
+            ['now', 'Leave now', `${J.now}, the sample day’s clock`, 'Now'],
+            ...(item.end ? [['back', 'Way back', `After it ends at ${item.end}`, 'Way back']] : []),
+        ];
+        const menuId = `gt-when-${item.id}`;
+        const date = new Date(item.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        route?.insertAdjacentHTML(
+            'afterend',
+            `<div class="gt-bar"><div class="gt-bar-row"><button type="button" class="gt-time" aria-haspopup="menu" aria-expanded="false" aria-controls="${menuId}"><span class="gt-pill">${I('clock')}<span data-gt-when-label></span>${I('down')}</span></button><span class="gt-bar-rule" aria-hidden="true"></span></div><div class="gt-menu" id="${menuId}" role="menu" aria-label="When" hidden><small>${E(date)}</small>${whens
+                .map(([value, title, sub]) => `<button type="button" role="menuitemradio" aria-checked="false" data-gt-when="${value}"><span><strong>${E(title)}</strong><small>${E(sub)}</small></span>${I('check')}</button>`)
+                .join('')}</div></div>`,
         );
+        const bar = panel.querySelector('.gt-bar');
+        const timeButton = bar?.querySelector('.gt-time');
+        const menu = bar?.querySelector('.gt-menu');
+        const ways = panel.querySelector('fieldset');
+        if (bar && ways) {
+            ways.classList.add('gt-modes');
+            bar.querySelector('.gt-bar-row').append(ways);
+            ways.querySelectorAll('label > span').forEach((face) => face.insertAdjacentHTML('beforeend', '<span class="gt-mins"></span>'));
+        }
+        // A row that doesn't fit scrolls sideways and fades where it's cut.
+        const row = bar?.querySelector('.gt-bar-row');
+        const clip = () => row?.classList.toggle('is-clipped', row.scrollWidth - row.clientWidth - row.scrollLeft > 2);
+        row?.addEventListener('scroll', clip, { passive: true });
+        addEventListener('resize', clip);
+        // Each way's chip shows how long it takes, for the time chosen: the
+        // best tram or bus, the walk, the ride. Unknown, it shows its name.
+        function minutes(trip, best) {
+            const back = state.when === 'back';
+            for (const radio of panel.querySelectorAll('input[name="mode"]')) {
+                radio.dataset.name ||= radio.getAttribute('aria-label') || radio.value;
+                const way = trip && (back ? trip.back : trip)[radio.value];
+                const n = !trip ? null : radio.value === 'transit' ? best?.duration : way?.minutes;
+                // Short, so the row fits a phone: "25 min", "1 h 29".
+                const text = n ? (n < 60 ? `${n} min` : `${Math.floor(n / 60)} h${n % 60 ? ` ${n % 60}` : ''}`) : trip && radio.value !== 'transit' ? '2 h+' : '';
+                const label = radio.closest('label');
+                label?.classList.toggle('is-timed', !!text);
+                const slot = label?.querySelector('.gt-mins');
+                if (slot) slot.textContent = text;
+                radio.setAttribute('aria-label', text ? `${radio.dataset.name}, ${n ? span(n) : 'over 2 hours'}` : radio.dataset.name);
+            }
+            clip();
+        }
         // The way back runs the other way: from the venue, back to the place
         // in the field.
-        const route = panel.querySelector('.place-route');
         const fieldLabel = [...(panel.querySelector('label.route-field')?.childNodes || [])].find((n) => n.nodeType === 3 && n.textContent.trim());
         const venueLabel = panel.querySelector('.place-journey-destination small');
         function direction() {
@@ -91,6 +129,11 @@
             route?.classList.toggle('is-back', back);
             if (fieldLabel) fieldLabel.textContent = back ? 'Back to' : 'From';
             if (venueLabel) venueLabel.textContent = back ? 'From' : 'To';
+            const chosen = whens.find(([value]) => value === state.when) || whens[0];
+            const label = bar?.querySelector('[data-gt-when-label]');
+            if (label) label.textContent = chosen[3];
+            timeButton?.setAttribute('aria-label', `When: ${chosen[1]}, ${date}`);
+            menu?.querySelectorAll('[data-gt-when]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.gtWhen === state.when)));
         }
 
         // Steps of one option, as Travel's journey details list them.
@@ -197,11 +240,13 @@
             const back = state.when === 'back';
             const start = J?.place(from);
             if (!start) {
+                minutes(null);
                 put(unknown(from));
                 ctx.onWay?.(null);
                 return;
             }
             if (!J.has(start.id)) {
+                minutes(null);
                 ctx.onWay?.(null);
                 if (failed.has(start.id)) {
                     put(`<div class="gt-empty">${chip('unsure', 'info', 'Not loaded')}<p><strong>The ways ${back ? 'to' : 'from'} ${E(start.name)} couldn’t load</strong><span>They’re part of this preview’s timetable capture.</span></p><div class="gt-starts"><button type="button" class="gt-start" data-gt-retry="${E(start.id)}">Try again</button></div></div>`);
@@ -216,6 +261,7 @@
             }
             const trip = tripFor(item, from);
             if (!trip) {
+                minutes(null);
                 put(unknown(from));
                 ctx.onWay?.(null);
                 return;
@@ -226,6 +272,7 @@
             const options = [...list].sort((a, b) => late(a.arrive) - late(b.arrive));
             const best = options[0];
             if (!options.some((o) => o.id === state.pick)) state.pick = best?.id || null;
+            minutes(trip, best);
             const sky = weatherAt(state.when === 'now' ? J.now : back ? item.end : item.start);
             const checked = [
                 chip('calm', 'check', 'Timetable'),
@@ -300,12 +347,44 @@
             next.click();
         });
         panel.addEventListener('change', (event) => {
-            if (event.target.matches('input[name="when"]')) {
-                state.when = event.target.value;
-                state.open = null;
-            }
-            if (event.target.matches('input[name="mode"], input[name="from"], input[name="when"]')) render();
+            if (event.target.matches('input[name="mode"], input[name="from"]')) render();
         });
+        // The time's menu floats over the page; a choice, Escape or a tap
+        // outside closes it.
+        const showMenu = (open) => {
+            if (!menu) return;
+            menu.hidden = !open;
+            timeButton.setAttribute('aria-expanded', String(open));
+            if (open) menu.querySelector('[aria-checked="true"]')?.focus({ preventScroll: true });
+        };
+        timeButton?.addEventListener('click', () => showMenu(menu.hidden));
+        menu?.addEventListener('click', (event) => {
+            const choice = event.target.closest('[data-gt-when]');
+            if (!choice) return;
+            state.when = choice.dataset.gtWhen;
+            state.open = null;
+            showMenu(false);
+            timeButton.focus({ preventScroll: true });
+            render();
+        });
+        menu?.addEventListener('keydown', (event) => {
+            const items = [...menu.querySelectorAll('[data-gt-when]')];
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                showMenu(false);
+                timeButton.focus({ preventScroll: true });
+            } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                const at = items.indexOf(document.activeElement);
+                items[(at + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+            }
+        });
+        const outside = (event) => {
+            if (!bar?.isConnected) return document.removeEventListener('pointerdown', outside, true);
+            if (!menu.hidden && !bar.contains(event.target)) showMenu(false);
+        };
+        document.addEventListener('pointerdown', outside, true);
         input?.addEventListener('input', render);
         // Open in Travel takes the same request: by the start (the details'
         // own hand-off), leaving now, or the way back from the venue after

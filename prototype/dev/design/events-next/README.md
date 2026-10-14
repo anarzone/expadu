@@ -5,6 +5,22 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Get there: small filters instead of two big rails — 14 October 2026
+
+Owner request ("replace big chunky elements by small filters"); option A
+of three compared on the "Events reimagined" canvas (row "Get there ·
+small filters"). The date line, the When rail and the Travel by rail are
+now one row of chips under the route card: a time chip ("By 18:30",
+"Now", "Way back") whose menu floats over the page (the date, Arrive by
+18:30 when it starts, Leave now at the sample day's 13:10, Way back after
+it ends at 21:00), then a chip for each way with its minutes for that
+time ("25 min", "36 min", "11 min"; "1 h 29" for a long walk; "2 h+"
+where the planner found none under two hours). A choice, Escape or a tap
+outside closes the menu. The row fits a 375–430 phone in every state; on
+a narrower one it scrolls sideways and fades where it's cut. The map
+follows the row. Other events (without captured journeys) keep their
+preview and rails.
+
 ## The details fit one view on a small phone too — 13 October 2026
 
 Owner request (the remaining open items: a 375 x 667 phone still

@@ -1800,7 +1800,8 @@
             });
         }
         if (!Number.isFinite(item.lat) || !Number.isFinite(item.lng)) return;
-        panel.querySelector('.place-route')?.insertAdjacentHTML(
+        // The map follows the route and its time and ways (get-there.js).
+        (panel.querySelector('.gt-bar') || panel.querySelector('.place-route'))?.insertAdjacentHTML(
             'afterend',
             `<div class="event-way-map" role="img" aria-label="Map of ${E(item.venue)}"><div class="event-way-map-canvas"></div><span class="event-way-map-note">Loading the map</span><small class="event-way-map-credit">OpenFreeMap © OpenMapTiles © OpenStreetMap</small></div>`,
         );

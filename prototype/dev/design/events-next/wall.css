@@ -4203,31 +4203,183 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     margin: 0;
     font-size: 14px;
 }
-/* When: by the start, leaving now or the way back (get-there.js), on the
-   details' segmented rail; the date stays on the line above. */
-#shared-dialog .event-sheet .place-journey:has(.gt-when) .event-arrival > span + span {
+/* When and how, as small filters under the route (owner, 14 Oct 2026,
+   option A on the canvas): a time chip whose menu floats over the page, then
+   a chip for each way with its minutes. The date is in the menu. */
+#shared-dialog .event-sheet .place-journey:has(.gt-bar) .event-arrival {
     display: none;
 }
-#shared-dialog .event-sheet .place-journey .gt-when {
-    margin: 12px 0 0;
-}
-#shared-dialog .event-sheet .place-journey .gt-when + fieldset {
+#shared-dialog .event-sheet .gt-bar {
+    position: relative;
     margin-top: 8px;
 }
-#shared-dialog .event-sheet .place-journey .gt-when label > span {
-    flex-direction: column;
-    gap: 0;
-    min-height: 48px;
-    line-height: 1.2;
+#shared-dialog .event-sheet .gt-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
 }
-#shared-dialog .event-sheet .gt-when strong {
-    font-size: 14px;
+#shared-dialog .event-sheet .gt-bar-row::-webkit-scrollbar {
+    display: none;
+}
+/* When the chips don't all fit (a narrow phone, a long walk), the row
+   scrolls sideways and fades where it's cut. */
+#shared-dialog .event-sheet .gt-bar-row.is-clipped {
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+}
+@media (max-width: 380px) {
+    #shared-dialog .event-sheet .gt-time .gt-pill > svg:first-child {
+        display: none;
+    }
+}
+#shared-dialog .event-sheet .gt-time {
+    flex: none;
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #211d15;
+    font: inherit;
+    cursor: pointer;
+}
+#shared-dialog .event-sheet .gt-pill,
+#shared-dialog .event-sheet .place-journey .gt-modes label > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 36px;
+    min-height: 0;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 999px;
+    font-size: 13px;
     font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
 }
-#shared-dialog .event-sheet .gt-when small {
+#shared-dialog .event-sheet .gt-time .gt-pill {
+    border: 1px solid #d9cfbd;
+    background: #fffdf8;
+}
+#shared-dialog .event-sheet .gt-time[aria-expanded='true'] .gt-pill {
+    border-color: #211d15;
+}
+#shared-dialog .event-sheet .gt-pill svg,
+#shared-dialog .event-sheet .place-journey .gt-modes label > span svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+}
+#shared-dialog .event-sheet .gt-time .gt-pill > svg:last-child {
+    width: 12px;
+    height: 12px;
+}
+#shared-dialog .event-sheet .gt-bar-rule {
+    display: none;
+}
+#shared-dialog .event-sheet .place-journey fieldset.gt-modes {
+    display: flex;
+    flex: none;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+}
+#shared-dialog .event-sheet .place-journey .gt-modes label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}
+#shared-dialog .event-sheet .place-journey .gt-modes label > span {
+    background: #f1ebdf;
+    color: #211d15;
+    box-shadow: none;
+}
+#shared-dialog .event-sheet .place-journey .gt-modes label:has(:checked) > span {
+    background: #211d15;
+    color: #fff;
+    box-shadow: none;
+}
+#shared-dialog .event-sheet .gt-modes label.is-timed .event-mode-name,
+#shared-dialog .event-sheet .gt-modes .gt-mins:empty {
+    display: none;
+}
+#shared-dialog .event-sheet .gt-modes .gt-mins {
+    font-variant-numeric: tabular-nums;
+}
+#shared-dialog .event-sheet .gt-menu {
+    position: absolute;
+    top: 46px;
+    left: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    width: min(300px, 100%);
+    box-sizing: border-box;
+    padding: 6px;
+    border: 1px solid #e6ddcb;
+    border-radius: 14px;
+    background: #fffdf8;
+    box-shadow: 0 14px 34px -14px rgb(20 12 4 / 45%);
+}
+#shared-dialog .event-sheet .gt-menu[hidden] {
+    display: none;
+}
+#shared-dialog .event-sheet .gt-menu > small {
+    padding: 8px 10px 4px;
     color: #6b6457;
     font-size: 12px;
-    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+#shared-dialog .event-sheet .gt-menu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 52px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: #211d15;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+#shared-dialog .event-sheet .gt-menu button[aria-checked='true'] {
+    background: #f1ebdf;
+}
+#shared-dialog .event-sheet .gt-menu button > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+#shared-dialog .event-sheet .gt-menu button strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+#shared-dialog .event-sheet .gt-menu button small {
+    color: #4f493d;
+    font-size: 12.5px;
+}
+#shared-dialog .event-sheet .gt-menu button > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    visibility: hidden;
+}
+#shared-dialog .event-sheet .gt-menu button[aria-checked='true'] > svg {
+    visibility: visible;
 }
 /* The way back: from the venue, back to the place in the field. The venue
    keeps its pin and your place its dot, as on the map. */
