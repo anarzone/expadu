@@ -1,0 +1,22 @@
+/* One page frame for every section (owner, 14 Oct 2026: Travel looked
+   compact next to the other pages; "unify all pages with one shared frame").
+   Pages used to set their own column: Today up to 1560px, Events 1440px,
+   Paperwork, Services and Places 1240px, Travel 1120px. From 701px up, every
+   page's main column is now the same width with the same 32px sides. Each
+   page keeps its own top and bottom spacing, and phones keep their own
+   sides.
+
+   Load this file last on a page so it wins over the page's own main rule. */
+:root {
+    --page-max: 1440px;
+    --page-gutter: 32px;
+}
+@media (min-width: 701px) {
+    :root body main#main {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: var(--page-max);
+        margin-inline: auto;
+        padding-inline: var(--page-gutter);
+    }
+}
