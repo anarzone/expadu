@@ -11,6 +11,21 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## One When control, one frame — 14 October 2026
+
+- Plan a trip asked "when" twice: the When row (Leave now / Leave at /
+  Arrive by), then the time under it opened an older popover with the same
+  three choices again, one of them called "Depart at". The time now opens
+  a date and time picker titled after the row's choice ("Be there by" or
+  "Leave at"), as the approved canvas board has it. Trip summaries say
+  "Leave at" too.
+- The Nearby / Plan a trip tabs no longer sit higher on one view: a view
+  left with its tabs showing comes back at the top; a view scrolled further
+  down is still remembered.
+- Travel's column was 1120px, the narrowest of the sections. Every section
+  now shares `../connected/page-frame.css` (1440px column, 32px sides from
+  701px up).
+
 ## The evening from any district, now or back — 13 October 2026
 
 Owner request (with Events' Get there). The evening's trips now come from
@@ -21,7 +36,7 @@ venue after it ends (`../connected/sample-journeys.js` and
 
 - `journeys.js` keeps a trip there (its "now" and "arrive by" options)
   and a separate way back per start and event; Leave now shows the 13:10
-  options, Arrive by the ones that make the start, Depart at any that
+  options, Arrive by the ones that make the start, Leave at any that
   leave after the time. A district's journeys load when a request names
   it (Plan a trip shows "Finding the ways" meanwhile, and Events'
   hand-off waits for them).

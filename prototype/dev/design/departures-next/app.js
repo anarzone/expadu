@@ -467,21 +467,13 @@ function syncServicePreference() {
         ? `<div><small>Service to consider</small><strong>${safe(ServiceContext.summary(state.servicePreference))}</strong><p>${safe(ServiceContext.description(state.servicePreference))}</p></div><button type="button" class="icon-button" data-action="clear-service-preference" aria-label="Remove service preference">${icon('close')}</button>`
         : '';
 }
+// The time under When (owner, 14 Oct 2026): Leave now, Leave at or Arrive by
+// is chosen in the When row, so this picks only the date and time, as the
+// approved canvas board does.
 function showSchedule(anchor) {
     openPopover(
-        'When are you travelling?',
-        `<form id="schedule-form"><div class="segmented schedule-modes" role="group" aria-label="Journey time">${[
-            ['now', 'Leave now'],
-            ['depart', 'Depart at'],
-            ['arrive', 'Arrive by'],
-        ]
-            .map(
-                ([id, label]) =>
-                    `<button type="button" data-schedule="${id}" aria-pressed="${state.schedule === id}">${label}</button>`,
-            )
-            .join(
-                '',
-            )}</div><input type="hidden" id="schedule-mode" value="${state.schedule}"><div id="scheduled-fields" ${state.schedule === 'now' ? 'hidden' : ''}><label for="travel-date">Date</label><input type="date" id="travel-date" value="${safe(state.date)}"><label for="travel-time">Time</label><input type="text" id="travel-time" name="start" data-time-input inputmode="numeric" value="${safe(state.time)}" placeholder="HH:MM" maxlength="5" aria-label="Travel time" autocomplete="off"></div><p id="schedule-error" class="form-error" role="alert" hidden></p><div class="popover-footer"><small>${requestTrip() === 'capture' || !J.day ? 'Captured clock · 7 Sep, 23:37' : `Sample day · ${boardDateLabel(J.day.date)}, ${J.day.time}`}</small><button class="text-action" type="submit">Done</button></div></form>`,
+        state.schedule === 'arrive' ? 'Be there by' : 'Leave at',
+        `<form id="schedule-form"><input type="hidden" id="schedule-mode" value="${state.schedule}"><div id="scheduled-fields"><label for="travel-date">Date</label><input type="date" id="travel-date" value="${safe(state.date)}"><label for="travel-time">Time</label><input type="text" id="travel-time" name="start" data-time-input inputmode="numeric" value="${safe(state.time)}" placeholder="HH:MM" maxlength="5" aria-label="Travel time" autocomplete="off"></div><p id="schedule-error" class="form-error" role="alert" hidden></p><div class="popover-footer"><small>${requestTrip() === 'capture' || !J.day ? 'Captured clock · 7 Sep, 23:37' : `Sample day · ${boardDateLabel(J.day.date)}, ${J.day.time}`}</small><button class="text-action" type="submit">Done</button></div></form>`,
         anchor,
         'schedule',
     );
@@ -2199,15 +2191,6 @@ document.addEventListener('click', (event) => {
         renderSampleRoutes();
         syncPlanStage();
         $('.find-routes')?.focus({ preventScroll: true });
-    } else if (button.dataset.schedule) {
-        $('#schedule-mode').value = button.dataset.schedule;
-        $('#scheduled-fields').hidden = button.dataset.schedule === 'now';
-        popover
-            .querySelectorAll('[data-schedule]')
-            .forEach((item) =>
-                item.setAttribute('aria-pressed', item === button),
-            );
-        positionPopover();
     } else if (button.dataset.sort) {
         state.sort = button.dataset.sort;
         closePopover();

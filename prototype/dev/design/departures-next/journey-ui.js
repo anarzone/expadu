@@ -22,7 +22,7 @@
                   month: 'short',
               }).format(new Date(state.date + 'T12:00:00'))
             : 'Choose date';
-        return `${state.schedule === 'arrive' ? 'Arrive by' : 'Depart at'} ${date}, ${state.time}`;
+        return `${state.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${date}, ${state.time}`;
     }
     // `trip` is the sample the request matches; `modes` lists the travel
     // modes that sample has at all.

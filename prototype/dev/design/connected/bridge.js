@@ -211,7 +211,7 @@
             scheduleLabel = function () {
                 return state.schedule === 'now'
                     ? originalScheduleLabel()
-                    : `${state.schedule === 'arrive' ? 'Arrive by' : 'Depart at'} ${new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(state.date + 'T12:00:00'))}, ${state.time}`;
+                    : `${state.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(state.date + 'T12:00:00'))}, ${state.time}`;
             };
             state.schedule = params.get('arrive') ? 'arrive' : 'depart';
             state.date = params.get('date');

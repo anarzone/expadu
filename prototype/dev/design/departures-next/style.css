@@ -1134,10 +1134,6 @@ sup {
     border-color: #6bb9ce;
     box-shadow: inset 0 0 0 1px #6bb9ce;
 }
-.schedule-modes button {
-    padding-inline: 10px;
-    font-size: var(--text-small);
-}
 .popover-footer {
     display: flex;
     justify-content: space-between;
