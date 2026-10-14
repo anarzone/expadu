@@ -135,9 +135,6 @@
                 return `<span class="nearby-time is-now"><i aria-hidden="true"></i><strong>Now</strong></span>`;
             return `<span class="nearby-time${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>`;
         };
-        // A destination reads as a direction.
-        const toward = (dest) =>
-            `<span class="nearby-dest">${L ? icon('arrow') : ''}<span>${safe(dest)}</span></span>`;
         const placesOf = (stop) =>
             stop.areas.reduce((n, a) => n + a.places.length, 0);
         const areaOfLine = (stop, line) =>
@@ -154,26 +151,15 @@
 
         function card(stop, l) {
             const open = state.line === l.line;
-            const cols = l.shown
-                .slice(0, 2)
-                .map((d) =>
-                    L
-                        ? `<span class="nearby-dir is-row">${toward(d.dest)}<span class="nearby-when">${time(d, l.look)}${tagOf(d)}</span></span>`
-                        : `<span class="nearby-dir">${time(d, l.look)}${toward(d.dest)}${tagOf(d)}</span>`,
-                );
-            if (cols.length === 1)
-                cols.push(
-                    L
-                        ? `<span class="nearby-dir is-row is-empty"><span class="nearby-dest"><span>Other way: ${l.dirs.length > 1 ? 'filtered out' : 'not recorded'}</span></span></span>`
-                        : `<span class="nearby-dir is-empty"><span class="nearby-time"><strong>–</strong></span><span class="nearby-dest">${l.dirs.length > 1 ? 'Filtered out' : 'Not recorded'}</span></span>`,
-                );
             const label = `${modeName(l)} ${l.line}: ${l.shown
                 .map((d) => {
                     const t = when(d);
                     return `${d.dest} ${t.big}${t.unit ? ` ${t.unit}` : ''}`;
                 })
                 .join(', ')}`;
-            if (open && !desktop()) return detail(stop, l, true);
+            // A picked line opens in place at every size (owner, 14 Oct
+            // 2026): the strips have the width; the map is under them.
+            if (open) return detail(stop, l, true);
             // A long wait is about the whole card: a strip along its foot.
             const later = scene().laterTags
                 ? l.shown.map((d) => d.later[0]).filter(Boolean)
@@ -182,10 +168,19 @@
                 L && later.length
                     ? L.strip('attention', 'moon', `Then ${later.join(' · ')}`)
                     : '';
-            return `<button type="button" class="nearby-card${open ? ' is-selected' : ''}" data-n="line" data-v="${safe(l.line)}" data-key="line-${safe(l.line)}" aria-pressed="${open}" aria-label="${safe(label)}" style="--line:${l.look.colour};--tint:${l.look.tint}">
-                ${L ? '' : `<span class="nearby-watermark" aria-hidden="true">${safe(l.line)}</span>`}
-                <span class="nearby-card-head">${L ? L.line(l.line, l.look, { kind: l.mode }) : `${badge(l.line, l.look, 'card')}<span>${modeName(l)}</span>`}${l.pinned ? `<span class="nearby-pinned" aria-label="Pinned">${icon('star')}</span>` : ''}</span>
-                <span class="nearby-dirs">${cols.join('')}</span>${strip}
+            // A line as a strip through the stop (owner, 14 Oct 2026, Travel
+            // directions canvas row 16): each end is where it goes, via which
+            // stops, and when. Narrow columns fold it into two rows (CSS).
+            const end = (d, side) =>
+                d
+                    ? `<span class="strip-end is-${side}"><span class="strip-dest">${side === 'left' ? icon('back') : ''}<span>${safe(d.dest)}</span>${side === 'right' ? icon('arrow') : ''}</span>${d.via?.length ? `<small class="strip-via">via ${safe(d.via.join(' · '))}</small>` : ''}<span class="strip-when">${time(d, l.look)}${tagOf(d)}</span></span>`
+                    : `<span class="strip-end is-${side} is-empty"><small>Other way: ${l.dirs.length > 1 ? 'filtered out' : 'not recorded'}</small></span>`;
+            const [first, second] = l.shown;
+            return `<button type="button" class="nearby-strip${open ? ' is-selected' : ''}" data-n="line" data-v="${safe(l.line)}" data-key="line-${safe(l.line)}" aria-pressed="${open}" aria-label="${safe(label)}" style="--line:${l.look.colour};--tint:${l.look.tint}">
+                <span class="strip-badge">${L ? L.line(l.line, l.look, { kind: l.mode }) : badge(l.line, l.look, 'card')}${l.pinned ? `<span class="nearby-pinned" aria-label="Pinned">${icon('star')}</span>` : ''}</span>
+                ${end(second, 'left')}
+                <span class="strip-track" aria-hidden="true"><i></i><b></b><small>${safe(stop.name)}</small></span>
+                ${end(first, 'right')}${strip}
             </button>`;
         }
 
@@ -430,7 +425,11 @@
                     <div class="nearby-cards">${area.cards.map((c) => card(stop, c)).join('')}</div>
                 </section>`,
                       )
-                      .join('')
+                      .join(
+                          stop.map
+                              ? `<p class="nearby-change">${icon('route')}<span>Change here to the other lines. Their boarding points differ; walking times weren’t recorded.</span></p>`
+                              : '',
+                      )
                 : `<div class="nearby-empty"><strong>Nothing matches these filters</strong><span>These are recorded departures, so a missing line may still run.</span><button type="button" class="quiet-button" data-n="clear" data-key="clear-empty">Clear filters</button></div>`;
 
             // The aside: the map, then the picked line (desktop) or area.
@@ -444,8 +443,7 @@
                 (selectedLine && areaOfLine(stop, selectedLine.line)) ||
                 stop.areas.find((a) => a.id === picked);
             let aside = '';
-            if (wide && selectedLine) aside = detail(stop, selectedLine, false);
-            else if (area && stop.map) aside = areaPanel(stop, v, area);
+            if (area && stop.map) aside = areaPanel(stop, v, area);
             else if (stop.map)
                 aside = `<p class="nearby-hint">${wide ? 'Pick a line to see both directions and where it boards, or an area on the map to see everything leaving from it.' : 'Tap an area on the map to see what leaves from it.'}</p>`;
             part('detail').innerHTML = aside;

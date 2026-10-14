@@ -33,6 +33,12 @@ rows 13–15 and a first build that was reverted).
 - Desktop controls are sized for a mouse (52px rows, 38px When switch); the
   air between groups stays. `hub.css` holds the layout; `app.js`
   `syncPanel()` the panel's stage and size.
+- Stations as line strips, not a map: each boarding group is a card, and
+  each line runs through the stop's dot with where it goes, via which stops
+  and when at each end (`nearby-ui.js` `card()`); "Change here" sits between
+  the groups. A narrow column (a phone, or Nearby beside a big panel) folds a
+  strip into two rows. A picked line opens in place at every size, and on
+  desktop the stop's map is under the strips instead of beside them.
 
 ## One When control, one frame — 14 October 2026
 
