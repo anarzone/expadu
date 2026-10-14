@@ -26,6 +26,10 @@ rows 13–15 and a first build that was reverted).
 - One Saved: the header's bookmark (saved ideas). Travel's own Saved
   journeys bookmark is gone; a way goes to My day with "Add to plan" (it was
   "Save this plan"; the step after it says "Added to your plan").
+- A favourite fills "Where to?" (owner, 14 Oct 2026), as today's places do;
+  the stop you're at says "You're here" and shows its departures instead.
+  Home and Work without an address open an inline "Home address" step
+  (kept on this device); My day's "Add home" opens it too.
 - ★ Favourites (`favourites.js`, on this device): the star beside a stop's
   name in Nearby adds it; favourites lead the panel's start, with Home and
   Work. Neumarkt is starred as the sample. The star is ink, not amber,

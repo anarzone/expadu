@@ -687,15 +687,48 @@ function syncPanel() {
     }
 }
 const favourites = () => window.TravelFavourites?.list() || [];
+// Favourites at the top of Plan a trip (owner, 14 Oct 2026): a starred
+// stop or a saved Home or Work fills "Where to?". The stop you're at shows
+// its departures instead; Home and Work without an address ask for it.
+const hereStop = () => J.capture?.boardingStop?.id || 'neumarkt';
+let addingPlace = '';
 function renderFavourites() {
+    const F = window.TravelFavourites;
     const stops = $('#favourite-stops');
     if (stops)
         stops.innerHTML = favourites()
-            .map(
-                (item) =>
-                    `<button type="button" data-action="favourite-go" data-stop="${safe(item.id)}"><span class="favourite-mark">${icon('star')}</span><span><strong>${safe(item.name)}</strong><small>Stop · its departures</small></span></button>`,
-            )
+            .filter((item) => item.kind === 'stop')
+            .map((item) => {
+                const here = item.id === hereStop();
+                return `<button type="button" data-action="${here ? 'favourite-go' : 'favourite-to'}" data-stop="${safe(item.id)}" data-name="${safe(item.name)}"><span class="favourite-mark">${icon('star')}</span><span class="favourite-text"><strong>${safe(item.name)}</strong><small>${here ? 'Stop · its departures' : 'Stop'}</small></span>${here ? '<span class="favourite-here">You’re here</span>' : ''}</button>`;
+            })
             .join('');
+    const places = $('#favourite-places');
+    if (!places || !F) return;
+    const row = (kind, label, shape) => {
+        const address = F.place(kind);
+        if (addingPlace === kind)
+            return `<form class="favourite-add" data-kind="${kind}"><label for="favourite-${kind}">${label} address</label><input id="favourite-${kind}" name="address" autocomplete="street-address" placeholder="Street and number, or a place" maxlength="120" required /><div class="favourite-add-actions"><button type="submit" class="primary">Save ${label}</button><button type="button" class="quiet-button" data-action="favourite-cancel">Cancel</button></div><small>Kept on this device.</small></form>`;
+        return address
+            ? `<button type="button" data-action="favourite-to" data-place-text="${safe(address)}">${icon(shape)}<span><strong>${label}</strong><small>${safe(address)}</small></span></button>`
+            : `<button type="button" class="is-empty" data-action="favourite-add" data-kind="${kind}">${icon(shape)}<span><strong>${label}</strong><small>Add an address</small></span></button>`;
+    };
+    places.classList.toggle('is-adding', !!addingPlace);
+    places.innerHTML =
+        row('home', 'Home', 'home') + row('work', 'Work', 'briefcase');
+}
+// A favourite fills "Where to?", as one of today's places does.
+function goToFavourite(place) {
+    if (!from.value.trim()) from.value = yourLocation;
+    to.value = place;
+    state.planPlace = null;
+    hideSuggestions();
+    syncServicePreference();
+    syncComposerHelper();
+    renderSampleRoutes();
+    syncPlanStage();
+    if (desktopPlanner.matches) searchJourney();
+    else $('.find-routes')?.focus({ preventScroll: true });
 }
 // The place picked from today, while To still says it.
 function pickedPlace() {
@@ -1939,6 +1972,31 @@ function action(name, button) {
         $('[data-action="plan-big"]')?.focus({ preventScroll: true });
         return;
     }
+    if (name === 'favourite-to') {
+        goToFavourite(button.dataset.placeText || button.dataset.name);
+        return;
+    }
+    if (name === 'favourite-add') {
+        addingPlace = button.dataset.kind;
+        renderFavourites();
+        $(`#favourite-${addingPlace}`)?.focus();
+        return;
+    }
+    if (name === 'favourite-cancel') {
+        const kind = addingPlace;
+        addingPlace = '';
+        renderFavourites();
+        $(`[data-action="favourite-add"][data-kind="${kind}"]`)?.focus();
+        return;
+    }
+    // My day's "Add home" opens Plan a trip on adding Home.
+    if (name === 'saved-place') {
+        addingPlace = 'home';
+        renderFavourites();
+        if (state.view !== 'journey') slideTo('journey', 'in');
+        setTimeout(() => $('#favourite-home')?.focus(), 450);
+        return;
+    }
     if (name === 'favourite-go') {
         showStop(button.dataset.stop);
         if (desktopPlanner.matches)
@@ -2147,11 +2205,7 @@ function action(name, button) {
         syncControls();
         setView('journey');
         searchJourney();
-    } else if (name === 'saved-place')
-        toast(
-            `${button.dataset.savedPlace || 'This place'}: adding an address isn’t in this preview.`,
-        );
-    else if (name === 'ask-composer') {
+    } else if (name === 'ask-composer') {
         if (to.value.trim()) handoff();
         else $('.composer-launcher')?.click();
     } else if (name === 'to-composer') handoff();
@@ -2335,13 +2389,23 @@ document.addEventListener('submit', (event) => {
     if (
         !['journey-form', 'schedule-form', 'compose-form'].includes(
             event.target.id,
-        )
+        ) &&
+        !event.target.matches?.('.favourite-add')
     )
         return;
     event.preventDefault();
     if (event.target.id === 'journey-form') searchJourney();
     else if (event.target.id === 'compose-form') compose();
-    else if (event.target.id === 'schedule-form') {
+    else if (event.target.matches?.('.favourite-add')) {
+        const kind = event.target.dataset.kind;
+        const address = event.target.elements.address.value.trim();
+        if (!address) return;
+        window.TravelFavourites?.setPlace(kind, address);
+        addingPlace = '';
+        renderFavourites();
+        toast(`${kind === 'home' ? 'Home' : 'Work'} saved on this device`);
+        $(`[data-action="favourite-to"][data-place-text="${CSS.escape(address)}"]`)?.focus();
+    } else if (event.target.id === 'schedule-form') {
         const mode = $('#schedule-mode').value,
             time = ExpaduTime.normalizeTime($('#travel-time').value),
             date = $('#travel-date').value;

@@ -59,7 +59,7 @@
     text-align: left;
     cursor: pointer;
 }
-.favourite-stops button > span:last-child {
+.favourite-stops .favourite-text {
     display: flex;
     flex-direction: column;
 }
@@ -86,6 +86,102 @@
 }
 #journey-start .saved-places {
     margin-bottom: 28px;
+}
+
+/* The stop you're at: its departures, not a destination. */
+.favourite-here {
+    margin-left: auto;
+    padding: 2px 9px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+/* Home and Work: dashed until they have an address, then a plain row. */
+#favourite-places button svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+#favourite-places button:not(.is-empty) {
+    border-style: solid;
+    border-width: 1px;
+    border-color: var(--color-border);
+    background: var(--color-bg-surface);
+}
+#favourite-places button:not(.is-empty) small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#favourite-places button > span:last-child {
+    min-width: 0;
+}
+#journey-start #favourite-places.is-adding {
+    grid-template-columns: minmax(0, 1fr);
+}
+.favourite-add {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    padding: var(--space-14);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    animation: favourite-open 260ms var(--ease) both;
+}
+.favourite-add label {
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.favourite-add input {
+    min-height: 44px;
+    padding: 0 var(--space-12);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: #fff;
+    font: inherit;
+    font-size: var(--text-body);
+}
+.favourite-add input:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 1px;
+}
+.favourite-add-actions {
+    display: flex;
+    gap: var(--space-8);
+}
+#favourite-places .favourite-add-actions button {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 var(--space-14);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+#favourite-places .favourite-add-actions button.primary {
+    border-color: var(--color-action);
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+}
+.favourite-add small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+@keyframes favourite-open {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
 }
 
 /* The panel's own header (desktop): what it is, the sample clock, and the
