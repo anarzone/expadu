@@ -389,16 +389,8 @@
             const metaLabels = L
                 ? `<span class="tl-chips">${L.chip('calm', 'pin', stop.map ? `Closest · ${stop.areas.length} areas` : stop.kind.split(' · ')[0])}${L.chip('unsure', 'offline', now.stale ? `Not live · last times ${clock}` : `Not live · ${clock}`)}</span>`
                 : `<small>${safe(meta)}</small>`;
-            // ☆ beside the stop's name stars it: it then sits with
-            // Favourites beside "Where to?" (owner, 14 Oct 2026).
-            const favouriteButton = (s) => {
-                const F = window.TravelFavourites;
-                if (!F) return '';
-                const on = F.has(s.id);
-                return `<button type="button" class="nearby-star" data-action="favourite-stop" data-stop="${safe(s.id)}" data-name="${safe(s.name)}" aria-pressed="${on}" aria-label="${on ? `${safe(s.name)} is in your favourites` : `Add ${safe(s.name)} to favourites`}" title="${on ? 'In your favourites' : 'Add to favourites'}">${icon('star')}</button>`;
-            };
             part('bar').innerHTML =
-                `<button type="button" class="nearby-stop" data-n="stops" data-key="stops" aria-expanded="${state.stopsOpen}" aria-label="Change stop, now ${safe(stop.name)}"><span class="nearby-stop-name">${safe(stop.name)}${icon('down')}</span>${metaLabels}</button>${favouriteButton(stop)}${stop.map ? `<div class="nearby-views" role="group" aria-label="Show as"><button type="button" data-n="view" data-v="list" data-key="view-list" aria-pressed="${state.view === 'list'}" aria-label="List">${icon('list')}</button><button type="button" data-n="view" data-v="map" data-key="view-map" aria-pressed="${state.view === 'map'}" aria-label="Map">${icon('map')}</button></div>` : ''}`;
+                `<button type="button" class="nearby-stop" data-n="stops" data-key="stops" aria-expanded="${state.stopsOpen}" aria-label="Change stop, now ${safe(stop.name)}"><span class="nearby-stop-name">${safe(stop.name)}${icon('down')}</span>${metaLabels}</button>${stop.map ? `<div class="nearby-views" role="group" aria-label="Show as"><button type="button" data-n="view" data-v="list" data-key="view-list" aria-pressed="${state.view === 'list'}" aria-label="List">${icon('list')}</button><button type="button" data-n="view" data-v="map" data-key="view-map" aria-pressed="${state.view === 'map'}" aria-label="Map">${icon('map')}</button></div>` : ''}`;
             const stops = part('stops');
             stops.hidden = !state.stopsOpen;
             stops.innerHTML = state.stopsOpen

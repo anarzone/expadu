@@ -11,26 +11,6 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
-## Plan a trip on the Nearby page — 14 October 2026
-
-Owner-picked option A from the Travel directions canvas (rows 13–15), for
-desktop; phones keep their own Travel layout.
-
-- No Nearby / Plan a trip tabs on desktop. Plan a trip is a section above
-  Nearby with three sizes (the buttons at its top right):
-  - small: "Where to?" alone, with Favourites and today's places as chips;
-  - medium: typing where to (or picking a place) opens From above it, as
-    Google Maps does, with When, What matters and the options;
-  - large: Plan a trip takes the page; Nearby is back when it's smaller.
-- One Saved: the header's bookmark (saved ideas). Travel's own Saved
-  journeys bookmark is gone; a way goes to My day with "Add to plan" (it was
-  "Save this plan"; the step after it says "Added to your plan").
-- ★ Favourites (`favourites.js`, on this device): the star beside a stop's
-  name in Nearby adds it; favourites sit beside "Where to?" and in Plan a
-  trip's start (with Home and Work). Neumarkt is starred as the sample. The
-  star is ink, not amber, because amber means "watch out" in the labels.
-- `hub.css` holds the layout; `app.js` `setPlanSize()` the sizes.
-
 ## One When control, one frame — 14 October 2026
 
 - Plan a trip asked "when" twice: the When row (Leave now / Leave at /

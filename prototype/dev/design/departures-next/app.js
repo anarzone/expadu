@@ -49,8 +49,6 @@ const state = {
     active: null,
     step: 0,
     mobileDetail: false,
-    // Desktop: Plan a trip above Nearby, small, medium or large.
-    planSize: 'small',
 };
 const sheet = $('#sheet'),
     popover = $('#journey-popover'),
@@ -347,22 +345,16 @@ function setView(view, sliding = false) {
                 ? slideTo('stop', 'back')
                 : setView('stop'),
         );
-    // Desktop (owner, 14 Oct 2026): Plan a trip sits above Nearby on one
-    // page, so both stay; phones keep one view at a time.
-    const together = desktopPlanner.matches && view !== 'day';
-    $('#journey-view').hidden = !together && view !== 'journey';
-    $('#departures').hidden = !together && view !== 'stop';
+    $('#journey-view').hidden = view !== 'journey';
+    $('#departures').hidden = view !== 'stop';
     $('#day-view').hidden = view !== 'day';
-    if (together && view === 'journey' && state.planSize === 'small')
-        setPlanSize('medium');
     document
         .querySelectorAll('[data-view][aria-pressed]')
         .forEach((button) =>
             button.setAttribute('aria-pressed', button.dataset.view === view),
         );
-    if (view === 'stop' || together) renderDepartures();
+    if (view === 'stop') renderDepartures();
     if (view === 'day') renderDay();
-    if (together) return;
     if (changed && typeof scrollTo === 'function')
         scrollTo({ top: scrolled[view] || 0, behavior: 'instant' });
     if (changed && !sliding)
@@ -650,72 +642,6 @@ function renderPlanner() {
     );
     $('#journey-start').hidden = state.results;
     syncPlanStage();
-    syncPlanSize();
-}
-// Desktop (owner, 14 Oct 2026, option A on the Travel canvas): Plan a trip
-// is a section above Nearby that is small, medium or large. Small is "Where
-// to?" with favourites and today's places; typing where to opens From above
-// it, as Google Maps does; large gives the chosen way its steps and map.
-const planSizes = ['small', 'medium', 'large'];
-function setPlanSize(size) {
-    const at = planSizes.indexOf(size);
-    if (at < 0) return;
-    state.planSize = size;
-    document.body.dataset.planSize = size;
-    if (size !== 'small' && !from.value.trim()) {
-        from.value = yourLocation;
-        syncPlanStage();
-    }
-    if (size === 'small') hideSuggestions();
-    if (size === 'large' && state.results && !state.expanded) {
-        state.expanded = state.selected || routeList()[0]?.id || null;
-        renderResults();
-    }
-    if (size === 'large')
-        $('#journey-view').scrollIntoView({ block: 'start' });
-    syncPlanSize();
-}
-function syncPlanSize() {
-    const at = planSizes.indexOf(state.planSize);
-    const down = $('[data-action="plan-size"][data-size="down"]'),
-        up = $('[data-action="plan-size"][data-size="up"]');
-    if (down) down.hidden = at === 0;
-    // Large gives Plan a trip the page; Nearby is back when it's smaller.
-    if (up) up.hidden = at === 2;
-    to.placeholder =
-        state.planSize === 'small' ? 'Where to?' : 'Address, place or stop';
-}
-const favourites = () => window.TravelFavourites?.list() || [];
-function renderPlanChips() {
-    const box = $('#plan-chips');
-    if (box) {
-        const places = dayPlaces();
-        box.innerHTML = `<span class="plan-chips-label is-fav">${icon('star')}Favourites</span>${favourites()
-            .map(
-                (item) =>
-                    `<button type="button" class="plan-chip is-fav" data-action="favourite-go" data-stop="${safe(item.id)}">${icon('star')}<span>${safe(item.name)}</span><small>stop</small></button>`,
-            )
-            .join(
-                '',
-            )}<button type="button" class="plan-chip is-add" data-action="saved-place" data-saved-place="Home">${icon('home')}<span>Home</span><small>Add</small></button><button type="button" class="plan-chip is-add" data-action="saved-place" data-saved-place="Work">${icon('briefcase')}<span>Work</span><small>Add</small></button>${
-            places.length
-                ? `<span class="plan-chips-rule" aria-hidden="true"></span><span class="plan-chips-label">Today</span>${places
-                      .map(
-                          (place) =>
-                              `<button type="button" class="plan-chip" data-day-place="${safe(place.place)}"><span>${safe(place.title)}</span><small>${place.time}</small></button>`,
-                      )
-                      .join('')}`
-                : ''
-        }`;
-    }
-    const stops = $('#favourite-stops');
-    if (stops)
-        stops.innerHTML = favourites()
-            .map(
-                (item) =>
-                    `<button type="button" data-action="favourite-go" data-stop="${safe(item.id)}"><span class="favourite-mark">${icon('star')}</span><span><strong>${safe(item.name)}</strong><small>Stop · its departures</small></span></button>`,
-            )
-            .join('');
 }
 // The place picked from today, while To still says it.
 function pickedPlace() {
@@ -797,8 +723,6 @@ function searchJourney() {
         return;
     }
     state.results = true;
-    if (desktopPlanner.matches && state.planSize === 'small')
-        setPlanSize('medium');
     H()?.open('results', closeResults);
     state.boardRoute = null;
     boardingReturn = null;
@@ -855,7 +779,7 @@ function option(route, list, preview = false, best = false) {
         <div class="option-top"><div class="option-summary">${best ? '<span class="best-tag">Best for you</span>' : ''}<div class="route-clock">${route.depart}<span class="time-connector" aria-label="to"></span>${route.arrive}${overnight(route.arrive, trip)}<span class="route-duration">${route.duration} min</span></div><p class="option-caption">${caption}</p></div></div>
         ${ribbon(route)}
         <div class="option-foot"><button class="details-toggle" ${preview ? `data-example-route="${route.id}" aria-label="Explore sample ${routeName(route)} journey details"` : `data-route-details="${route.id}" aria-expanded="${expanded}" aria-controls="route-disclosure-${route.id}"`}>Journey details ${icon('down')}</button>${routeTag(route, list)}</div>
-        ${preview ? '' : `<div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="inline-itinerary">${stepsMarkup(route)}${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}<p class="route-note">${sourceNote(route)} · ${route.mode === 'transit' ? 'Check current departures before travelling.' : 'Street directions weren’t captured.'}</p><div class="inline-route-actions"><button class="primary" data-action="save-plan" data-route-id="${route.id}">${saved.includes(route.id) ? 'In your plan · see it' : 'Add to plan'}</button><button class="quiet-button" data-map="${route.id}">${icon('route')}Journey preview</button></div></div></div></div>`}
+        ${preview ? '' : `<div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="inline-itinerary">${stepsMarkup(route)}${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}<p class="route-note">${sourceNote(route)} · ${route.mode === 'transit' ? 'Check current departures before travelling.' : 'Street directions weren’t captured.'}</p><div class="inline-route-actions"><button class="primary" data-action="save-plan" data-route-id="${route.id}">${saved.includes(route.id) ? 'Saved · see the plan' : 'Save this plan'}</button><button class="quiet-button" data-map="${route.id}">${icon('route')}Journey preview</button></div></div></div></div>`}
     </article>`;
 }
 // Plan a trip starts from today's places: the appointment and the evening's
@@ -1123,7 +1047,7 @@ function stepsMarkup(route) {
 }
 function details(route) {
     const trip = tripOf(route);
-    return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>${safe(trip.place)}</h2></div><div class="journey-timeband"><span><small>Leave ${safe(placeName(trip.from))}</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < trip.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>${trip.evening ? 'Sample day, scheduled times from the VRS timetable.' : trip.id === 'day' ? 'Sample day, scheduled times.' : '7 Sep 2026 · 23:37 capture.'} ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove from your plan' : 'Add to plan'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'In your plan' : 'Add to plan'}">${icon('plus')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
+    return `<div class="route-detail-content"><div class="detail-topline"><span>${icon(routeIcon(route))}${routeName(route)} · ${route.duration} min</span><span class="sample-tag">Sample journey</span></div><div class="detail-destination"><small>To</small><h2>${safe(trip.place)}</h2></div><div class="journey-timeband"><span><small>Leave ${safe(placeName(trip.from))}</small><strong>${route.depart}</strong></span><span class="timeband-connection">${icon('arrow')}<small>${route.duration} min</small></span><span><small>Arrive${route.arrive < trip.time ? ' next day' : ''}</small><strong>${route.arrive}</strong></span></div><div class="itinerary-heading"><h3>Your route</h3></div>${stepsMarkup(route)}${route.delayed ? `<p class="route-notice">${icon('info')}<span>Delay flagged in this capture. Current status is unknown.</span></p>` : ''}<p class="route-note">${icon('info')}<span>${trip.evening ? 'Sample day, scheduled times from the VRS timetable.' : trip.id === 'day' ? 'Sample day, scheduled times.' : '7 Sep 2026 · 23:37 capture.'} ${route.mode === 'transit' ? 'Check current departures, platform and ticket before travelling.' : 'Street directions weren’t captured.'}</span></p></div><div class="detail-footer"><button class="icon-button save-route ${saved.includes(route.id) ? 'is-saved' : ''}" data-save="${route.id}" aria-label="${saved.includes(route.id) ? 'Remove saved journey' : 'Save journey'}" aria-pressed="${saved.includes(route.id)}" title="${saved.includes(route.id) ? 'Saved journey' : 'Save journey'}">${icon('bookmark')}</button><button class="primary" data-map="${route.id}">${icon('route')}Journey preview</button></div>`;
 }
 // What the planner looked at for this trip, and what the preview has of it.
 function checks(tripId, trip, route) {
@@ -1230,7 +1154,7 @@ function savedPlan(route) {
     const day = desktopPlanner.matches
         ? `<button type="button" data-action="plan-done"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on My day</strong><small>Travel shows it as your next trip${trip.start ? `, between now and your ${trip.start}` : ''}</small></span>${icon('chevron')}</button>`
         : `<button type="button" data-view="day"><span class="plan-saved-icon">${icon('calendar')}</span><span><strong>It’s on My day</strong><small>${trip.start ? `Between now and your ${trip.start}` : 'With the rest of today'}</small></span>${icon('chevron')}</button>`;
-    return `<section class="plan-saved" aria-labelledby="plan-saved-title"><span class="plan-saved-mark"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${icon('check')}</span><h2 id="plan-saved-title" tabindex="-1">Added to your plan</h2><p class="plan-saved-summary">${safe(optionTitle(route))} · leave ${route.depart} · there ${route.arrive}</p><ul class="plan-saved-list"><li>${day}</li><li><button type="button" role="switch" aria-checked="${state.remind}" data-action="remind"><span class="plan-saved-icon">${icon('bell')}</span><span><strong>Remind me when to leave</strong><small>${state.remind ? `At ${remindAt}, five minutes before you need to go. Not sent in this preview.` : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button></li><li class="is-note"><span class="plan-saved-icon is-watch">${icon('eye')}</span><span><strong>We keep watching it</strong><small>Live delays, KVB notices and the weather. If something changes, you get a “Change of plan” with a new way. This preview doesn’t watch.</small></span></li></ul><div class="plan-saved-actions"><button type="button" class="quiet-button" data-action="change-plan">Change the plan</button><button type="button" class="primary is-ink" data-action="plan-done">Done</button></div></section>`;
+    return `<section class="plan-saved" aria-labelledby="plan-saved-title"><span class="plan-saved-mark"${look ? ` style="--line:${look.colour};--ink:${look.ink}"` : ''}>${icon('check')}</span><h2 id="plan-saved-title" tabindex="-1">Plan saved</h2><p class="plan-saved-summary">${safe(optionTitle(route))} · leave ${route.depart} · there ${route.arrive}</p><ul class="plan-saved-list"><li>${day}</li><li><button type="button" role="switch" aria-checked="${state.remind}" data-action="remind"><span class="plan-saved-icon">${icon('bell')}</span><span><strong>Remind me when to leave</strong><small>${state.remind ? `At ${remindAt}, five minutes before you need to go. Not sent in this preview.` : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button></li><li class="is-note"><span class="plan-saved-icon is-watch">${icon('eye')}</span><span><strong>We keep watching it</strong><small>Live delays, KVB notices and the weather. If something changes, you get a “Change of plan” with a new way. This preview doesn’t watch.</small></span></li></ul><div class="plan-saved-actions"><button type="button" class="quiet-button" data-action="change-plan">Change the plan</button><button type="button" class="primary is-ink" data-action="plan-done">Done</button></div></section>`;
 }
 // "Arrive by 14:00", with the date only when it isn't the planner's day.
 function planSummary() {
@@ -1366,7 +1290,7 @@ function planOption(route, list, trip, best) {
                 .join('')}</span></span>
         </button>
         <button class="details-toggle" data-route-details="${route.id}" aria-expanded="${expanded}" aria-controls="route-disclosure-${route.id}">Journey details ${icon('down')}</button>
-        <div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="plan-option-way">${stepsMarkup(route)}<div class="plan-option-side"><div class="plan-option-map" role="img" aria-label="Map of this way"><div class="plan-map-canvas" data-route-map="${route.id}"></div><div class="nav-map-fallback"><strong>Loading the map</strong></div><small class="plan-map-credit">OpenFreeMap © OpenMapTiles © OpenStreetMap</small></div><button type="button" class="primary plan-go" data-route="${route.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-keep" data-action="save-plan" data-route-id="${route.id}">${saved.includes(route.id) ? 'In your plan · see it' : 'Add to plan'}</button><p class="route-note">${sourceNote(route)}${route.mode === 'transit' ? '' : ' · Street directions weren’t captured.'}</p></div></div>${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}</div></div>
+        <div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="plan-option-way">${stepsMarkup(route)}<div class="plan-option-side"><div class="plan-option-map" role="img" aria-label="Map of this way"><div class="plan-map-canvas" data-route-map="${route.id}"></div><div class="nav-map-fallback"><strong>Loading the map</strong></div><small class="plan-map-credit">OpenFreeMap © OpenMapTiles © OpenStreetMap</small></div><button type="button" class="primary plan-go" data-route="${route.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-keep" data-action="save-plan" data-route-id="${route.id}">${saved.includes(route.id) ? 'Saved · see the plan' : 'Save this plan'}</button><p class="route-note">${sourceNote(route)}${route.mode === 'transit' ? '' : ' · Street directions weren’t captured.'}</p></div></div>${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}</div></div>
     </article>`;
 }
 let planMap = null;
@@ -1501,7 +1425,7 @@ function renderResults() {
               : `<p class="route-note other-ways-note">${L.chip('unsure', 'info', 'Not in the sample')}<span>Bike or walk times</span></p>`)
         : '';
     const contents = list.length
-        ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="plan-options" role="radiogroup" aria-label="Your options">${shown.map((route, index) => planOption(route, list, trip, index === 0 && shown.length > 1)).join('')}</div>${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}${others}${chosen ? `<div class="plan-actions"><button type="button" class="primary plan-go" data-route="${chosen.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-save" data-action="save-plan" data-route-id="${chosen.id}">${saved.includes(chosen.id) ? 'In your plan · see it' : 'Add to plan'}</button></div>` : ''}</div>`
+        ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="plan-options" role="radiogroup" aria-label="Your options">${shown.map((route, index) => planOption(route, list, trip, index === 0 && shown.length > 1)).join('')}</div>${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}${others}${chosen ? `<div class="plan-actions"><button type="button" class="primary plan-go" data-route="${chosen.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-save" data-action="save-plan" data-route-id="${chosen.id}">${saved.includes(chosen.id) ? 'Saved · see the plan' : 'Save this plan'}</button></div>` : ''}</div>`
         : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : `${empty.composer ? `<button class="quiet-button" data-action="composer-help">${icon('spark')}Ask Composer</button>` : ''}${empty.composer && fromStop ? `<button class="quiet-button" data-action="from-departures" data-stop-id="${safe(fromStop.id)}">${icon('train')}Departures from ${safe(placeName(fromStop.name))}</button>` : ''}<button class="quiet-button" data-action="example">Explore sample routes</button>`}</div></div>`;
     const captureNote = list.length
         ? `<p class="sample-footnote">${icon('info')}<span>${sourceNote(list[0])} · No live travel status.</span></p>`
@@ -1509,7 +1433,6 @@ function renderResults() {
     $('#results').innerHTML = restore + header + contents + captureNote;
     syncComposerHelper();
     syncPlanStage();
-    syncPlanSize();
     mountPlanMap();
 }
 function selectedRoute(id, boardingOrigin = undefined) {
@@ -1551,9 +1474,9 @@ function savedCount() {
         button.setAttribute('aria-pressed', String(selected));
         button.setAttribute(
             'aria-label',
-            selected ? 'Remove from your plan' : 'Add to plan',
+            selected ? 'Remove saved journey' : 'Save journey',
         );
-        button.title = selected ? 'In your plan' : 'Add to plan';
+        button.title = selected ? 'Saved journey' : 'Save journey';
     });
 }
 function saveRoute(id) {
@@ -1564,10 +1487,10 @@ function saveRoute(id) {
     savedCount();
     toast(
         removing
-            ? 'Removed from your plan'
+            ? 'Journey removed from saved'
             : persisted
-              ? 'Added to your plan on this device'
-              : 'Added to your plan for this session',
+              ? 'Journey saved on this device'
+              : 'Journey kept for this session',
         () => {
             saved = prior;
             persistSaved();
@@ -1951,36 +1874,6 @@ function compose() {
     handoff();
 }
 function action(name, button) {
-    if (name === 'plan-size') {
-        const at = planSizes.indexOf(state.planSize);
-        const next = planSizes[at + (button.dataset.size === 'up' ? 1 : -1)];
-        if (next) setPlanSize(next);
-        const same = $(`[data-action="plan-size"][data-size="${button.dataset.size}"]`);
-        (same && !same.hidden
-            ? same
-            : $('[data-action="plan-size"]:not([hidden])')
-        )?.focus({ preventScroll: true });
-        return;
-    }
-    if (name === 'favourite-go') {
-        showStop(button.dataset.stop);
-        if (desktopPlanner.matches)
-            $('#departures').scrollIntoView({ block: 'start' });
-        return;
-    }
-    if (name === 'favourite-stop') {
-        const on = window.TravelFavourites?.toggle({
-            kind: 'stop',
-            id: button.dataset.stop,
-            name: button.dataset.name,
-        });
-        toast(
-            on
-                ? `${button.dataset.name} is in your favourites`
-                : `${button.dataset.name} removed from favourites`,
-        );
-        return;
-    }
     if (name === 'dismiss-composer-help') {
         state.composerHelpDismissed = true;
         try {
@@ -2171,9 +2064,7 @@ function action(name, button) {
         setView('journey');
         searchJourney();
     } else if (name === 'saved-place')
-        toast(
-            `${button.dataset.savedPlace || 'This place'}: adding an address isn’t in this preview.`,
-        );
+        toast('Saved places aren’t in this preview.');
     else if (name === 'ask-composer') {
         if (to.value.trim()) handoff();
         else $('.composer-launcher')?.click();
@@ -2289,8 +2180,6 @@ document.addEventListener('click', (event) => {
             (item) => item.place === button.dataset.dayPlace,
         );
         if (!from.value.trim()) from.value = yourLocation;
-        if (desktopPlanner.matches && state.planSize === 'small')
-            setPlanSize('medium');
         to.value = button.dataset.dayPlace;
         state.planPlace = place || null;
         Object.assign(state, {
@@ -2395,15 +2284,6 @@ document.addEventListener('input', (event) => {
         syncPlanStage();
         syncServicePreference();
         syncComposerHelper();
-        if (
-            event.target === to &&
-            to.value.trim() &&
-            desktopPlanner.matches &&
-            state.planSize === 'small'
-        ) {
-            setPlanSize('medium');
-            to.focus();
-        }
         suggestions(event.target);
         $('#form-error').hidden = true;
         if (state.results) {
@@ -2502,7 +2382,6 @@ sheet.addEventListener('click', (event) => {
         closeSheet();
 });
 desktopPlanner.addEventListener?.('change', () => {
-    setView(state.view);
     renderYourDay();
     if (state.view === 'stop') renderDepartures();
     if (state.results) renderPlanner();
@@ -2528,13 +2407,6 @@ if (J.day && $('.sample-label-text'))
         `Sample day · ${boardDateLabel(J.day.date)}, ${J.day.time}`;
 renderSampleRoutes();
 renderNextTrip();
-$('.plan-size')?.prepend($('.sample-label'));
-renderPlanChips();
-setPlanSize(state.planSize);
-window.TravelFavourites?.onChange(() => {
-    renderPlanChips();
-    nearbyView?.render();
-});
 // Travel opens on Nearby. A trip hand-off (Today, Composer, a saved route)
 // opens Plan a trip; Today's stop shortcut (?view=timetable&stop=) and
 // ?view=nearby open Nearby on that stop.
