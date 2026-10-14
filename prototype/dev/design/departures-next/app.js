@@ -670,7 +670,12 @@ function renderPlanner() {
 // On desktop the panel sits beside Nearby and can grow to two thirds.
 function syncPanel() {
     const place = to.value.trim();
-    const stage = state.results ? 'picked' : place ? 'typing' : 'rest';
+    // Setting Home or Work keeps the single line (no From yet).
+    const stage = state.results
+        ? 'picked'
+        : place && !settingPlace
+          ? 'typing'
+          : 'rest';
     document.body.dataset.planStage = stage;
     if (stage !== 'rest' && !from.value.trim()) from.value = yourLocation;
     const big = desktopPlanner.matches && state.results && state.planBig;
@@ -687,38 +692,62 @@ function syncPanel() {
     }
 }
 const favourites = () => window.TravelFavourites?.list() || [];
-// Favourites at the top of Plan a trip (owner, 14 Oct 2026): a starred
-// stop or a saved Home or Work fills "Where to?". The stop you're at shows
-// its departures instead; Home and Work without an address ask for it.
+// Favourites at the top of Plan a trip (owner, 14 Oct 2026): tapping one
+// fills the "Where to?" line, as one of today's places does. Home and Work
+// without an address turn that line into their address line, as Google Maps
+// does; what you pick there is saved and fills it.
 const hereStop = () => J.capture?.boardingStop?.id || 'neumarkt';
-let addingPlace = '';
+const placeLabels = { home: 'Home', work: 'Work' };
+let settingPlace = '';
 function renderFavourites() {
     const F = window.TravelFavourites;
     const stops = $('#favourite-stops');
     if (stops)
         stops.innerHTML = favourites()
             .filter((item) => item.kind === 'stop')
-            .map((item) => {
-                const here = item.id === hereStop();
-                return `<button type="button" data-action="${here ? 'favourite-go' : 'favourite-to'}" data-stop="${safe(item.id)}" data-name="${safe(item.name)}"><span class="favourite-mark">${icon('star')}</span><span class="favourite-text"><strong>${safe(item.name)}</strong><small>${here ? 'Stop · its departures' : 'Stop'}</small></span>${here ? '<span class="favourite-here">You’re here</span>' : ''}</button>`;
-            })
+            .map(
+                (item) =>
+                    `<button type="button" data-action="favourite-to" data-name="${safe(item.name)}"><span class="favourite-mark">${icon('star')}</span><span class="favourite-text"><strong>${safe(item.name)}</strong><small>${item.id === hereStop() ? 'Stop · nearest you' : 'Stop'}</small></span></button>`,
+            )
             .join('');
     const places = $('#favourite-places');
     if (!places || !F) return;
-    const row = (kind, label, shape) => {
+    const row = (kind, shape) => {
+        const label = placeLabels[kind];
         const address = F.place(kind);
-        if (addingPlace === kind)
-            return `<form class="favourite-add" data-kind="${kind}"><label for="favourite-${kind}">${label} address</label><input id="favourite-${kind}" name="address" autocomplete="street-address" placeholder="Street and number, or a place" maxlength="120" required /><div class="favourite-add-actions"><button type="submit" class="primary">Save ${label}</button><button type="button" class="quiet-button" data-action="favourite-cancel">Cancel</button></div><small>Kept on this device.</small></form>`;
         return address
             ? `<button type="button" data-action="favourite-to" data-place-text="${safe(address)}">${icon(shape)}<span><strong>${label}</strong><small>${safe(address)}</small></span></button>`
-            : `<button type="button" class="is-empty" data-action="favourite-add" data-kind="${kind}">${icon(shape)}<span><strong>${label}</strong><small>Add an address</small></span></button>`;
+            : `<button type="button" class="is-empty" data-action="favourite-set" data-kind="${kind}" aria-pressed="${settingPlace === kind}">${icon(shape)}<span><strong>${label}</strong><small>${settingPlace === kind ? 'Type it in the line above' : 'Add an address'}</small></span></button>`;
     };
-    places.classList.toggle('is-adding', !!addingPlace);
-    places.innerHTML =
-        row('home', 'Home', 'home') + row('work', 'Work', 'briefcase');
+    places.innerHTML = row('home', 'home') + row('work', 'briefcase');
+}
+// The "Where to?" line as Home's or Work's address line, or back to normal.
+function setPlaceMode(kind) {
+    settingPlace = kind || '';
+    const label = $('.to-field > label');
+    if (label)
+        label.textContent = kind ? `${placeLabels[kind]} address` : 'To';
+    to.placeholder = kind
+        ? 'Street and number, or a place'
+        : 'Where to?';
+    $('.to-field')?.classList.toggle('is-setting', !!kind);
+    document.body.classList.toggle('plan-setting', !!kind);
+    renderFavourites();
+    syncPanel();
+}
+// What was typed or picked in the address line becomes Home or Work.
+function keepSettingPlace() {
+    const kind = settingPlace,
+        address = to.value.trim();
+    if (!kind || !address) return false;
+    window.TravelFavourites?.setPlace(kind, address);
+    setPlaceMode('');
+    toast(`${placeLabels[kind]} saved on this device`);
+    return true;
 }
 // A favourite fills "Where to?", as one of today's places does.
 function goToFavourite(place) {
+    if (settingPlace) setPlaceMode('');
     if (!from.value.trim()) from.value = yourLocation;
     to.value = place;
     state.planPlace = null;
@@ -799,6 +828,7 @@ function plannerControl(selector) {
     ).querySelector(selector);
 }
 function searchJourney() {
+    keepSettingPlace();
     hideSuggestions();
     closePopover();
     const error =
@@ -1467,7 +1497,21 @@ function renderResults() {
             ? trip.place
             : placeName(to.value.trim());
     const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? `To ${safe(title)}` : 'Your journey'}</h2><div class="results-heading"><span>${safe(planSummary())} · from ${safe(fromLabel())}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
-    const empty = matched
+    // The stop you're near (owner, 14 Oct 2026): a short walk, not a trip.
+    const nearStop =
+        atYourLocation() &&
+        J.capture?.boardingStop &&
+        placeName(to.value.trim()).toLocaleLowerCase() ===
+            placeName(J.capture.boardingStop.name).toLocaleLowerCase();
+    const walkThere =
+        window.ExpaduSampleDay?.appointment?.journey?.accessWalkMinutes;
+    const empty = nearStop
+        ? {
+              title: `${placeName(J.capture.boardingStop.name)} is ${walkThere ? `a ${walkThere}-minute walk` : 'a short walk'}`,
+              text: 'It’s the stop nearest your location (sample), so there’s no trip to plan. Its departures are under Nearby.',
+              near: true,
+          }
+        : matched
         ? U.emptyReason(state, trip, [
               ...new Set(
                   (J.routesOf ? J.routesOf(tripId) : tripId === 'day' ? J.dayRoutes : J.routes).map(
@@ -1518,7 +1562,7 @@ function renderResults() {
         : '';
     const contents = list.length
         ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="plan-options" role="radiogroup" aria-label="Your options">${shown.map((route, index) => planOption(route, list, trip, index === 0 && shown.length > 1)).join('')}</div>${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}${others}${chosen ? `<div class="plan-actions"><button type="button" class="primary plan-go" data-route="${chosen.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-save" data-action="save-plan" data-route-id="${chosen.id}">${saved.includes(chosen.id) ? 'In your plan · see it' : 'Add to plan'}</button></div>` : ''}</div>`
-        : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : `${empty.composer ? `<button class="quiet-button" data-action="composer-help">${icon('spark')}Ask Composer</button>` : ''}${empty.composer && fromStop ? `<button class="quiet-button" data-action="from-departures" data-stop-id="${safe(fromStop.id)}">${icon('train')}Departures from ${safe(placeName(fromStop.name))}</button>` : ''}<button class="quiet-button" data-action="example">Explore sample routes</button>`}</div></div>`;
+        : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.near ? `<button class="quiet-button" data-action="favourite-go" data-stop="${safe(hereStop())}">${icon('train')}See its departures</button>` : empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : `${empty.composer ? `<button class="quiet-button" data-action="composer-help">${icon('spark')}Ask Composer</button>` : ''}${empty.composer && fromStop ? `<button class="quiet-button" data-action="from-departures" data-stop-id="${safe(fromStop.id)}">${icon('train')}Departures from ${safe(placeName(fromStop.name))}</button>` : ''}<button class="quiet-button" data-action="example">Explore sample routes</button>`}</div></div>`;
     const captureNote = list.length
         ? `<p class="sample-footnote">${icon('info')}<span>${sourceNote(list[0])} · No live travel status.</span></p>`
         : '';
@@ -1976,25 +2020,20 @@ function action(name, button) {
         goToFavourite(button.dataset.placeText || button.dataset.name);
         return;
     }
-    if (name === 'favourite-add') {
-        addingPlace = button.dataset.kind;
-        renderFavourites();
-        $(`#favourite-${addingPlace}`)?.focus();
+    if (name === 'favourite-set') {
+        if (state.results) closeResults();
+        to.value = '';
+        setPlaceMode(button.dataset.kind);
+        to.focus();
+        suggestions(to);
         return;
     }
-    if (name === 'favourite-cancel') {
-        const kind = addingPlace;
-        addingPlace = '';
-        renderFavourites();
-        $(`[data-action="favourite-add"][data-kind="${kind}"]`)?.focus();
-        return;
-    }
-    // My day's "Add home" opens Plan a trip on adding Home.
+    // My day's "Add home" opens Plan a trip with its line set for Home.
     if (name === 'saved-place') {
-        addingPlace = 'home';
-        renderFavourites();
         if (state.view !== 'journey') slideTo('journey', 'in');
-        setTimeout(() => $('#favourite-home')?.focus(), 450);
+        to.value = '';
+        setPlaceMode('home');
+        setTimeout(() => to.focus(), 450);
         return;
     }
     if (name === 'favourite-go') {
@@ -2164,6 +2203,7 @@ function action(name, button) {
             preventScroll: true,
         });
     } else if (name === 'clear-to') {
+        if (settingPlace) setPlaceMode('');
         to.value = '';
         state.planPlace = null;
         if (state.results) {
@@ -2276,6 +2316,7 @@ document.addEventListener('click', (event) => {
             state.boardingRoute = null;
         }
         searchField.value = button.dataset.place;
+        if (searchField === to) keepSettingPlace();
         syncServicePreference();
         syncComposerHelper();
         hideSuggestions();
@@ -2323,6 +2364,7 @@ document.addEventListener('click', (event) => {
         const place = dayPlaces().find(
             (item) => item.place === button.dataset.dayPlace,
         );
+        if (settingPlace) setPlaceMode('');
         if (!from.value.trim()) from.value = yourLocation;
         to.value = button.dataset.dayPlace;
         state.planPlace = place || null;
@@ -2389,23 +2431,13 @@ document.addEventListener('submit', (event) => {
     if (
         !['journey-form', 'schedule-form', 'compose-form'].includes(
             event.target.id,
-        ) &&
-        !event.target.matches?.('.favourite-add')
+        )
     )
         return;
     event.preventDefault();
     if (event.target.id === 'journey-form') searchJourney();
     else if (event.target.id === 'compose-form') compose();
-    else if (event.target.matches?.('.favourite-add')) {
-        const kind = event.target.dataset.kind;
-        const address = event.target.elements.address.value.trim();
-        if (!address) return;
-        window.TravelFavourites?.setPlace(kind, address);
-        addingPlace = '';
-        renderFavourites();
-        toast(`${kind === 'home' ? 'Home' : 'Work'} saved on this device`);
-        $(`[data-action="favourite-to"][data-place-text="${CSS.escape(address)}"]`)?.focus();
-    } else if (event.target.id === 'schedule-form') {
+    else if (event.target.id === 'schedule-form') {
         const mode = $('#schedule-mode').value,
             time = ExpaduTime.normalizeTime($('#travel-time').value),
             date = $('#travel-date').value;
