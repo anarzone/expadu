@@ -30,10 +30,42 @@
     :root[data-slide='swipe']::view-transition-new(root) {
         animation: travel-drift-back 220ms var(--ease-settle);
     }
+    /* Plan a trip unfolds down from "Where to?" and folds back up into
+       it (owner, 14 Oct 2026); Nearby stays still beneath. */
+    :root[data-slide='unfold']::view-transition-old(root) {
+        animation: none;
+    }
+    :root[data-slide='unfold']::view-transition-new(root) {
+        z-index: 1;
+        animation: travel-unfold 420ms var(--ease-settle);
+    }
+    :root[data-slide='fold']::view-transition-new(root) {
+        animation: none;
+    }
+    :root[data-slide='fold']::view-transition-old(root) {
+        z-index: 1;
+        animation: travel-fold 320ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
     /* While a finger drags the screen back. */
     body.travel-palette.is-swiping #main {
         box-shadow: -12px 0 30px #00000026;
         background: var(--color-bg-canvas);
+    }
+}
+@keyframes travel-unfold {
+    from {
+        clip-path: inset(var(--fold-top, 120px) 0 calc(100% - var(--fold-top, 120px)) 0);
+    }
+    to {
+        clip-path: inset(0);
+    }
+}
+@keyframes travel-fold {
+    from {
+        clip-path: inset(0);
+    }
+    to {
+        clip-path: inset(var(--fold-top, 120px) 0 calc(100% - var(--fold-top, 120px)) 0);
     }
 }
 @keyframes travel-slide-in {

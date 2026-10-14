@@ -2,6 +2,7 @@ const shapes = {
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
     back: '<path d="M20 12H4m6-6-6 6 6 6"/>',
     down: '<path d="m7 10 5 5 5-5"/>',
+    up: '<path d="m7 14 5-5 5 5"/>',
     close: '<path d="m6 6 12 12M6 18 18 6"/>',
     train: '<rect x="5" y="2" width="14" height="17" rx="4"/><path d="M5 11h14M12 2v9M8 22l2-3m6 3-2-3"/>',
     bus: '<rect x="3" y="4" width="18" height="15" rx="3"/><path d="M3 12h18M8 4v8m8-8v8M7 19v2m10-2v2M7 16h1m8 0h1"/>',

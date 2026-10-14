@@ -317,10 +317,25 @@ function slideTo(view, direction) {
         state.view === view
     )
         return setView(view);
-    root.dataset.slide = direction;
+    // Plan a trip unfolds down from "Where to?" and folds back up into it
+    // (owner, 14 Oct 2026, canvas row 16), instead of sliding in sideways.
+    const motion =
+        view === 'journey' && direction === 'in'
+            ? 'unfold'
+            : state.view === 'journey' && view === 'stop' && direction === 'back'
+              ? 'fold'
+              : direction;
+    if (motion === 'unfold') {
+        const field = $('.where-to')?.getBoundingClientRect();
+        root.style.setProperty(
+            '--fold-top',
+            `${Math.round(field ? field.bottom : 120)}px`,
+        );
+    }
+    root.dataset.slide = motion;
     const transition = document.startViewTransition(() => setView(view, true));
     transition.finished.finally(() => {
-        if (root.dataset.slide === direction) delete root.dataset.slide;
+        if (root.dataset.slide === motion) delete root.dataset.slide;
     });
 }
 function setView(view, sliding = false) {
@@ -718,14 +733,17 @@ function syncPlanStage() {
           : 'Plan a trip';
     $('#plan-bar-sub').hidden = !results || !!saved;
     $('#plan-bar-sub').textContent = `${planSummary()} · from ${fromLabel()}`;
-    $('[data-action="plan-back"]').setAttribute(
+    const back = $('[data-action="plan-back"]');
+    back.setAttribute(
         'aria-label',
         saved
             ? 'Back to your options'
             : results
               ? 'Back to where and when'
-              : 'Back to Nearby',
+              : 'Fold Plan a trip away',
     );
+    // Back to Nearby folds the planner up; deeper steps go back.
+    back.innerHTML = icon(saved || results ? 'back' : 'up');
     placeComposerHelper();
     syncPanel();
 }
