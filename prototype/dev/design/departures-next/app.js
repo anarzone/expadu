@@ -697,6 +697,13 @@ const favourites = () => window.TravelFavourites?.list() || [];
 // without an address turn that line into their address line, as Google Maps
 // does; what you pick there is saved and fills it.
 const hereStop = () => J.capture?.boardingStop?.id || 'neumarkt';
+const samePlace = (a, b) =>
+    !!a.trim() &&
+    placeName(a.trim()).toLocaleLowerCase() ===
+        placeName(b.trim()).toLocaleLowerCase();
+const isHereStop = (place) =>
+    !!J.capture?.boardingStop &&
+    samePlace(place, J.capture.boardingStop.name);
 const placeLabels = { home: 'Home', work: 'Work' };
 let settingPlace = '';
 function renderFavourites() {
@@ -831,11 +838,14 @@ function searchJourney() {
     keepSettingPlace();
     hideSuggestions();
     closePopover();
+    // "Köln Neumarkt" and "Neumarkt" are one place. The stop you're at is
+    // answered in the options (its departures); any other same pair isn't a
+    // trip at all.
+    const same = samePlace(from.value, to.value);
     const error =
         !from.value.trim() || !to.value.trim()
             ? 'Add a starting point and destination.'
-            : from.value.trim().toLocaleLowerCase() ===
-                to.value.trim().toLocaleLowerCase()
+            : same && !isHereStop(to.value)
               ? 'Choose a different destination.'
               : '';
     $('#form-error').hidden = !error;
@@ -1498,16 +1508,24 @@ function renderResults() {
             : placeName(to.value.trim());
     const header = `<div class="results-top"><h2 id="results-title" tabindex="-1">${list.length ? `To ${safe(title)}` : 'Your journey'}</h2><div class="results-heading"><span>${safe(planSummary())} · from ${safe(fromLabel())}</span>${list.length ? `<button class="icon-button" data-action="sort" aria-label="Sort routes" title="Sort routes" aria-haspopup="dialog" aria-expanded="false">${icon('sort')}</button>` : ''}</div></div>`;
     // The stop you're near (owner, 14 Oct 2026): a short walk, not a trip.
+    // From your location or from the stop itself: no trip to plan.
+    const atStop = isHereStop(to.value) && samePlace(from.value, to.value);
     const nearStop =
-        atYourLocation() &&
-        J.capture?.boardingStop &&
-        placeName(to.value.trim()).toLocaleLowerCase() ===
-            placeName(J.capture.boardingStop.name).toLocaleLowerCase();
+        isHereStop(to.value) && (atYourLocation() || atStop);
     const walkThere =
         window.ExpaduSampleDay?.appointment?.journey?.accessWalkMinutes;
-    const empty = nearStop
+    const stopName = J.capture?.boardingStop
+        ? placeName(J.capture.boardingStop.name)
+        : '';
+    const empty = atStop
         ? {
-              title: `${placeName(J.capture.boardingStop.name)} is ${walkThere ? `a ${walkThere}-minute walk` : 'a short walk'}`,
+              title: `You’re at ${stopName}`,
+              text: 'From and To are the same stop, so there’s no trip to plan. Its departures are under Nearby.',
+              near: true,
+          }
+        : nearStop
+        ? {
+              title: `${stopName} is ${walkThere ? `a ${walkThere}-minute walk` : 'a short walk'}`,
               text: 'It’s the stop nearest your location (sample), so there’s no trip to plan. Its departures are under Nearby.',
               near: true,
           }

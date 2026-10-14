@@ -539,6 +539,10 @@ body.travel-palette .nearby-area .nearby-cards {
         padding-left: 36px;
         border-left: 1px solid var(--color-border);
     }
+    /* Nearby sizes its parts to the width it has, not the window's. */
+    body.travel-palette #departures {
+        container-type: inline-size;
+    }
     /* Nearby: the strips get the width; the stop's map is under them. */
     body.travel-palette .nearby-workspace {
         flex-direction: column;
@@ -574,6 +578,26 @@ body.travel-palette .nearby-area .nearby-cards {
     }
     body.travel-palette #journey-view .plan-when button {
         min-height: 38px;
+    }
+}
+
+/* The next-trip card (desktop): side by side while there's room; then its
+   actions become a full-width row under the trip, never a narrow column
+   beside empty space. */
+@container (min-width: 720px) {
+    body.travel-palette .next-trip {
+        flex-wrap: nowrap;
+    }
+    body.travel-palette .next-trip-main {
+        flex: 1 1 0;
+    }
+    body.travel-palette .next-trip-side {
+        flex: 0 0 300px;
+    }
+}
+@container (max-width: 719px) {
+    body.travel-palette .next-trip-side {
+        flex: 1 1 100%;
     }
 }
 
