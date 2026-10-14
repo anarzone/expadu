@@ -1,0 +1,246 @@
+@import url('../connected/tokens.css');
+/* Plan a trip on the Nearby page (owner, 14 Oct 2026; Travel directions
+   canvas, option A, desktop): no Nearby / Plan a trip tabs. Plan a trip is a
+   section above Nearby that is small, medium or large. Small is "Where to?"
+   with favourites and today's places; typing where to opens From above it,
+   as Google Maps does. Phones keep their own Travel layout. */
+
+.plan-size,
+.plan-chips {
+    display: none;
+}
+
+/* ★ beside a stop's name (every size). */
+.nearby-star {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-left: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    cursor: pointer;
+}
+.nearby-star svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+.nearby-star[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+.nearby-star:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: 2px;
+}
+
+/* Favourites in Plan a trip's start (every size): starred stops. */
+.favourite-stops {
+    display: grid;
+    gap: var(--space-8);
+    margin-bottom: var(--space-8);
+}
+.favourite-stops:empty {
+    display: none;
+}
+.favourite-stops button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    min-height: 56px;
+    padding: var(--space-8) var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.favourite-stops button > span:last-child {
+    display: flex;
+    flex-direction: column;
+}
+.favourite-stops small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.favourite-mark svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    stroke: currentColor;
+}
+
+@media (min-width: 1000px) {
+    /* One page: the tab row goes; Plan a trip is a card above Nearby. */
+    body.travel-palette .page-navigation {
+        display: none;
+    }
+    body.travel-palette #journey-view {
+        position: relative;
+        margin: 0 0 var(--space-24);
+        padding: var(--space-20) var(--space-24);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        background: var(--color-bg-surface);
+    }
+    /* Jumps to the planner or to Nearby land below the sticky header. */
+    body.travel-palette :is(#journey-view, #departures) {
+        scroll-margin-top: 96px;
+    }
+    body.trip-open #journey-view {
+        display: none;
+    }
+    .plan-size {
+        position: absolute;
+        top: var(--space-20);
+        right: var(--space-24);
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        gap: var(--space-8);
+    }
+    .plan-size .icon-button {
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-bg-surface);
+    }
+    .plan-size .icon-button[hidden] {
+        display: none;
+    }
+    .plan-size .sample-label {
+        margin-right: var(--space-8);
+    }
+    /* Medium and large: the size buttons get their own row at the top,
+       so they never sit on the options' heading. */
+    body:not([data-plan-size='small']) .plan-size {
+        position: static;
+        justify-content: flex-end;
+        margin: calc(var(--space-8) * -1) 0 var(--space-8);
+    }
+
+    /* ── Small: "Where to?", then favourites and today's places ── */
+    body[data-plan-size='small'] .journey-intro-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+    }
+    body[data-plan-size='small']
+        :is(
+            .planner-heading,
+            .from-field,
+            .swap,
+            .plan-controls,
+            .find-routes,
+            #plan-hint,
+            .journey-results,
+            .travel-composer-helper,
+            #service-preference,
+            #journey-summary
+        ) {
+        display: none;
+    }
+    body[data-plan-size='small'] .journey-fields {
+        max-width: min(720px, calc(100% - 360px));
+        padding-right: 0;
+    }
+    body[data-plan-size='small'] .to-field label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+    body[data-plan-size='small'] .to-field input {
+        font-size: var(--text-section);
+    }
+    body[data-plan-size='small'] .plan-chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-8);
+        margin-top: var(--space-14);
+    }
+    .plan-chips-label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-4);
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+        font-weight: var(--weight-semibold);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .plan-chips-label svg {
+        width: 13px;
+        height: 13px;
+        fill: currentColor;
+        stroke: currentColor;
+    }
+    .plan-chips-rule {
+        width: 1px;
+        height: 24px;
+        margin-inline: var(--space-4);
+        background: var(--color-border);
+    }
+    .plan-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-6);
+        min-height: 40px;
+        padding: 0 var(--space-12);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-pill);
+        background: var(--color-bg-surface);
+        color: var(--color-text);
+        font: inherit;
+        font-size: var(--text-control);
+        font-weight: var(--weight-medium);
+        white-space: nowrap;
+        cursor: pointer;
+    }
+    .plan-chip small {
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+    }
+    .plan-chip svg {
+        width: 15px;
+        height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+    }
+    .plan-chip.is-fav {
+        font-weight: var(--weight-semibold);
+    }
+    .plan-chip.is-fav svg {
+        fill: currentColor;
+    }
+    .plan-chip.is-add {
+        border-style: dashed;
+        border-color: var(--color-border-strong);
+        background: transparent;
+        color: var(--color-text-soft);
+    }
+    .plan-chip:hover {
+        background: var(--color-bg-quiet);
+    }
+    .plan-chip:focus-visible {
+        outline: 2px solid var(--teal);
+        outline-offset: 2px;
+    }
+
+    /* ── Large: Plan a trip takes the page; Nearby comes back when it's
+       made smaller ── */
+    body[data-plan-size='large'] #departures {
+        display: none;
+    }
+}
