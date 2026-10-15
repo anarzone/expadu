@@ -354,9 +354,26 @@
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
-#journey-navigation .nav-start .nav-text-button {
+#journey-navigation .nav-start .nav-text-button,
+#journey-navigation .nav-in-plan {
     flex: none;
     color: var(--color-text);
+}
+#journey-navigation .nav-start .nav-text-button.is-saved svg {
+    fill: currentColor;
+}
+/* Already in your plan (the sample day's): said, not offered. */
+#journey-navigation .nav-in-plan {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--touch-target);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-in-plan svg {
+    width: 16px;
+    height: 16px;
 }
 /* The top bar: progress, the count, and that it's a sample. */
 #journey-navigation .nav-trip-progress {

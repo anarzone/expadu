@@ -134,21 +134,21 @@
             location: [
                 'locate',
                 'Location unavailable',
-                'Follow the itinerary manually. Your place in the journey is kept.',
+                'It follows the timetable until your location is back. Your place in the trip is kept.',
             ],
             offline: [
                 'offline',
                 'Connection lost',
-                'Showing the captured itinerary.',
+                'Times won’t update until you’re back online.',
             ],
             changed: [
                 'route',
                 'Route change to review',
-                'No replacement is connected. Review your current route before continuing.',
+                'This way may not work any more. Plan again from where you are.',
             ],
         };
         const [symbol, title, text] = conditions[active.condition];
-        return `<div class="nav-condition" role="status">${icon(symbol)}<div><strong>${title} <small>Sample</small></strong><p>${text}</p></div>${iconButton('close', 'Reset preview condition', 'normal')}</div>`;
+        return `<div class="nav-condition" role="status">${icon(symbol)}<div><strong>${title} <small>Sample</small></strong><p>${text}</p>${active.condition === 'changed' ? '<button data-nav="elsewhere">Plan again</button>' : ''}</div>${iconButton('close', 'Reset preview condition', 'normal')}</div>`;
     }
     /* ---------- Moments: the approved step-by-step trip ----------
        Each step says what to do now in the trip's own words, from its
@@ -339,6 +339,7 @@
             exit: () =>
                 '<span class="nav-look-tile is-exit" lang="de">Ausgang</span>',
             walk: () => `<span class="nav-look-tile">${icon('walk')}</span>`,
+            bike: () => `<span class="nav-look-tile">${icon('bike')}</span>`,
             doc: () => `<span class="nav-look-tile">${icon('document')}</span>`,
             pin: () => `<span class="nav-look-tile">${icon('pin')}</span>`,
         };
@@ -348,7 +349,7 @@
             : `<div class="nav-look">${body}</div>`;
     }
     // What the page says now: the ring, the words, how it knows.
-    function momentNow(p) {
+    function momentNow(p, running = true) {
         const list = N.steps(route);
         const step = p.step;
         const cur = currentMoment(p);
@@ -398,37 +399,67 @@
             done: false,
             canMiss: firstTransit >= 0 && p.index <= firstTransit && !was,
         };
+        // A cancelled or missed earlier tram (sample scenarios): the later
+        // trip says so from its first moment, as Nearby does.
+        const coral = sc === 'cancelled' && !missedFrom;
+        const warn = was
+            ? {
+                  tone: coral ? 'conflict' : 'attention',
+                  why: coral ? `${was} cancelled · ` : `Missed the ${was} · `,
+              }
+            : {};
+        const board = list.find((item) => item.mode === 'transit');
+        const nextLook = (at) => ({
+            tile: 'badge',
+            line: lineOf(board),
+            colour: lookOf(board).colour,
+            title: `Next: ${word(board)} ${lineOf(board)} at ${board.time}`,
+            text: at
+                ? `From ${place(board)} · ${at.note.replace(' · ', ', ')}`
+                : `From ${place(board)}`,
+        });
+        // A way with no tram or bus: nothing to look for but where it ends.
+        const ownWay = (item) => ({
+            tile: item.mode === 'bike' ? 'bike' : 'walk',
+            title: 'Street directions weren’t captured',
+            text: `${trip().place} · there ${route.arrive}`,
+        });
+        // Before you start: when to leave, counted from now (the sample's
+        // clock), and what you do first (canvas row 22, review 15 Oct).
+        if (!running) {
+            const wait = minutesBetween(trip().time, route.depart);
+            const first = list[0];
+            const at = platformOf(board);
+            return {
+                ...base,
+                ...warn,
+                tone: warn.tone || (wait <= 0 ? 'attention' : 'calm'),
+                ring:
+                    wait <= 0
+                        ? { text: 'now', label: '', arc: 100 }
+                        : ring(wait),
+                title: wait <= 0 ? 'Leave now' : `Leave at ${route.depart}`,
+                sub: `${first.title.replace(/Köln\s+/g, '')} · ${first.detail}${was ? spareText : ''}`,
+                map: at ? at.note : `Your way · ${route.duration} min`,
+                stand: !!at,
+                look: board ? nextLook(at) : ownWay(first),
+            };
+        }
         if (step.mode === 'walk' && p.index === 0) {
-            const board = list.find((item) => item.mode === 'transit');
             const to = stopName(step.title.replace(/^Walk to /, ''));
             const at = platformOf(board);
             return {
                 ...base,
+                ...warn,
                 ring: ring(left(board ? board.time : route.arrive)),
                 title: `Walk to ${to}`,
-                sub: board
-                    ? `${step.detail} · ${word(board)} ${lineOf(board)} leaves at ${board.time}`
-                    : `${step.detail} · there ${route.arrive}`,
+                sub: `${step.detail}${was ? spareText : ''}`,
                 how: board
                     ? 'We’ll see when you reach the stop'
                     : 'We’ll see when you arrive',
                 map: at ? at.note : `The walk to ${to}`,
                 stand: !!board,
-                look: board
-                    ? {
-                          tile: 'badge',
-                          line: lineOf(board),
-                          colour: lookOf(board).colour,
-                          title: `Next: ${word(board)} ${lineOf(board)} at ${board.time}`,
-                          text: at
-                              ? `From ${place(board)} · ${at.note.replace(' · ', ', ')}`
-                              : `From ${place(board)}`,
-                      }
-                    : {
-                          tile: 'walk',
-                          title: step.detail,
-                          text: 'Street directions weren’t captured',
-                      },
+                look: board ? nextLook(at) : ownWay(step),
             };
         }
         if (step.mode === 'transit') {
@@ -445,12 +476,10 @@
                     `Look for ${lineOf(step)} ${towardsOf(step)}`,
             };
             if (was) {
-                const coral = sc === 'cancelled' && !missedFrom;
                 return {
                     ...base,
-                    tone: coral ? 'conflict' : 'attention',
+                    ...warn,
                     ring: { text: '!', label: '', arc: 100 },
-                    why: coral ? `${was} cancelled · ` : `Missed the ${was} · `,
                     title: coral
                         ? `Take the ${step.time} instead`
                         : `Take the ${step.time}`,
@@ -539,7 +568,7 @@
                     ...base,
                     ring: ring(left(after.time)),
                     title,
-                    sub: `${step.detail} · ${word(after)} ${lineOf(after)} leaves at ${after.time}`,
+                    sub: step.detail,
                     how: 'We’ll see when you reach the stop',
                     map: title,
                     look: {
@@ -585,11 +614,7 @@
                 sub: step.detail,
                 how: 'We’ll see when you arrive',
                 map: step.title,
-                look: {
-                    tile: 'walk',
-                    title: step.detail,
-                    text: 'Street directions weren’t captured',
-                },
+                look: ownWay(step),
             };
         const early = trip().start
             ? minutesBetween(route.arrive, trip().start)
@@ -637,7 +662,7 @@
             : '';
         const follow = running
             ? `<div class="nav-follow"><span>${icon('locate')}${safe(how)}</span>${now.done ? '' : `<button data-nav="not-right" aria-expanded="${menuOpen}">Not right?${icon('down')}</button>`}</div>${menu}`
-            : `<div class="nav-start"><button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button><div><span>Then it follows you: nothing to confirm</span><button class="nav-text-button" data-save="${route.id}">${icon('bookmark')}Add to plan</button></div></div>`;
+            : `<div class="nav-start"><button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button><div><span>It moves on by itself as you go</span>${route.inPlan ? `<span class="nav-in-plan">${icon('calendar')}In your plan</span>` : `<button class="nav-text-button" data-save="${route.id}">${icon('bookmark')}<span data-save-label>Add to plan</span></button>`}</div></div>`;
         return `<section class="nav-step-card is-${now.tone}" aria-label="${running ? 'Now' : 'First'}"><div class="nav-step-lead">${ring}<div><h2>${safe(now.title)}</h2><p class="moment-sub">${now.why ? `<b class="nav-why">${safe(now.why)}</b>` : ''}${safe(now.sub)}</p></div></div>${lookRow(now.look)}${follow}${notice ? `<p class="nav-notice" role="status">${safe(notice)}</p>` : ''}</section>`;
     }
     // Your way as a line of stations: a row for each part, the one you're on
@@ -725,7 +750,7 @@
        One map while the trip runs: where to stand while you walk to the
        stop and wait (the stop's street close-up, when it has one), then your
        way drawn as a line of stations with you on it. */
-    function wayDrawing(p) {
+    function wayDrawing(p, running) {
         const list = N.steps(route);
         const nodes = [{ name: 'You' }];
         const legs = [];
@@ -783,8 +808,10 @@
                 };
             else if (step.mode === 'arrive') atStep[index] = { done: true };
         });
-        let at = atStep[p.index] || { done: true };
-        if (p.step.mode === 'alight' && nudge) at = { ...at, t: 0.88 };
+        // Before you start the whole way is drawn, with nobody on it yet.
+        let at = running ? atStep[p.index] || { done: true } : null;
+        if (running && p.step.mode === 'alight' && nudge)
+            at = { ...at, t: 0.88 };
         const label = `Your way: ${legs
             .map((leg, index) =>
                 leg.mode === 'ride'
@@ -794,7 +821,7 @@
             .join(', ')}`;
         return M.trip({ nodes, legs, at, label });
     }
-    function mapCard(p, now) {
+    function mapCard(p, now, running) {
         if (!M) return '';
         const board =
             p.step.mode === 'transit'
@@ -806,7 +833,7 @@
         const colour = lookOf(board).colour || '#211d15';
         const body = stand
             ? `${M.closeUp(stand.stop, stand.lit, colour)}${M.legend(stand.stop, stand.lit)}`
-            : wayDrawing(p);
+            : wayDrawing(p, running);
         return `<section class="nav-mapcard" aria-label="On the map"><h3 class="nav-way-title">On the map</h3><div class="nav-mapcard-box"><span class="nav-map-note">${safe(now.map)}</span>${body}</div></section>`;
     }
     let youWas = '';
@@ -820,11 +847,20 @@
         const confirm = confirmation
             ? `<div class="nav-confirm" role="group" aria-label="${confirmation === 'end' ? 'Stop this trip?' : 'Replace the trip you’re on?'}"><span>${confirmation === 'end' ? 'Stop this trip?' : 'Replace the trip you’re on?'}</span><button data-nav="cancel-confirm">Keep</button><button class="nav-primary" data-nav="confirm">${confirmation === 'end' ? 'Stop' : 'Replace'}</button></div>`
             : '';
-        const now = momentNow(p);
-        content.innerHTML = `${conditionMarkup()}<div class="nav-summary">${stepCard(now, running)}</div>${mapCard(p, now)}<div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p, running)}</div></div>${confirm ? `<footer class="nav-footer">${confirm}</footer>` : ''}`;
-        // The top bar: when to leave before you start; where you are in the
-        // trip (and, on desktop, that it's a sample) once it runs.
+        const now = momentNow(p, running);
+        content.innerHTML = `${conditionMarkup()}<div class="nav-summary">${stepCard(now, running)}</div>${mapCard(p, now, running)}<div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p, running)}</div></div>${confirm ? `<footer class="nav-footer">${confirm}</footer>` : ''}`;
+        // The top bar: the day, when to leave before you start, where you are
+        // in the trip once it runs; always that it's a sample (desktop: the
+        // dashed label; phones: the line under the title).
         dialog.querySelector('.nav-trip-progress')?.remove();
+        dialog.querySelector('.nav-topbar > .nav-sample')?.remove();
+        if (wide())
+            dialog
+                .querySelector('.nav-topbar [data-nav="options"]')
+                .insertAdjacentHTML(
+                    'beforebegin',
+                    '<span class="nav-sample">Sample · not live</span>',
+                );
         if (running) {
             const parts = N.steps(route).filter(
                 (step) => step.mode !== 'arrive',
@@ -834,7 +870,7 @@
                 .querySelector('.nav-topbar > div')
                 .insertAdjacentHTML(
                     'afterend',
-                    `<div class="nav-trip-progress"><span class="nav-bars" role="progressbar" aria-label="Trip progress" aria-valuemin="0" aria-valuemax="${parts}" aria-valuenow="${arrived ? parts : p.index}">${Array.from({ length: parts }, (_, index) => `<i class="${arrived || index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></i>`).join('')}</span><span class="nav-count">${arrived ? 'Arrived' : `${p.index + 1} of ${parts}`}</span>${wide() ? '<span class="nav-sample">Sample · not live</span>' : ''}</div>`,
+                    `<div class="nav-trip-progress"><span class="nav-bars" role="progressbar" aria-label="Trip progress" aria-valuemin="0" aria-valuemax="${parts}" aria-valuenow="${arrived ? parts : p.index}">${Array.from({ length: parts }, (_, index) => `<i class="${arrived || index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></i>`).join('')}</span><span class="nav-count">${arrived ? 'Arrived' : `${p.index + 1} of ${parts}`}</span></div>`,
                 );
         }
         if (focus)
@@ -848,9 +884,12 @@
             ? ` · ${minutesBetween(route.arrive, trip().start)} min spare`
             : '';
         dialog.querySelector('#nav-title').textContent = `To ${trip().place}`;
-        dialog.querySelector('.nav-topbar small').textContent = running
-            ? `There ${route.arrive}${spare}`
-            : `Leave ${route.depart} · there ${route.arrive}${spare}`;
+        const day = new Date(`${trip().date}T12:00:00`).toLocaleDateString(
+            'en-GB',
+            { weekday: 'short', day: 'numeric', month: 'short' },
+        );
+        dialog.querySelector('.nav-topbar small').textContent =
+            `${wide() ? '' : 'Sample · '}${day} · ${running ? `there ${route.arrive}` : `leave ${route.depart} · there ${route.arrive}`}${spare}`;
         if (typeof savedCount === 'function') savedCount();
         // You move along your way rather than jump.
         const you = content.querySelector('.tmap-you');

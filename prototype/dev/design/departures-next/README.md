@@ -25,6 +25,26 @@ page").
 - Plan a trip's Show the way opens it; Nearby's "I'm on my way" starts it
   straight away. Starting another trip while one runs asks "Replace the trip
   you're on?".
+- After the owner's critical review (same day):
+  - Before you start, the ring counts down to when you leave, from the
+    sample's clock (13:10 on the sample day, 23:37 for the 7 Sept capture):
+    "Leave now" (amber) or "Leave at 17:51" with "4 h", then what you do first.
+    It used to count the trip's own first step, so a 17:51 trip said "3 min" at
+    13:10.
+  - A cancelled or missed 13:14 shows from the first moment, as Nearby does:
+    "13:14 cancelled · … only 2 min spare" in coral (amber when missed).
+  - The top bar has the day at every size ("Wed 30 Sept", "Mon 7 Sept") and
+    says it's a sample: the dashed "Sample · not live" on desktop, "Sample ·"
+    in the line under the title on phones; before and after you start.
+  - Before you start, the drawing shows the whole way with nobody on it;
+    arriving keeps it at full strength.
+  - A trip already in your plan says "In your plan"; Add to plan turns into
+    "In your plan" when tapped.
+  - Preview conditions say what the page does now; "Route change" offers Plan
+    again.
+  - Two rides get a wider drawing with bigger words (12px or more in the 380px
+    column). The step card stops repeating the next tram; a bike trip shows a
+    bike; "It moves on by itself as you go" replaces "nothing to confirm".
 - Phones and tablets: one scroll (the step, the map card, your way); a
   confirmation stays at the bottom of the screen. Before, the map card left
   your way a sliver on phones and nothing on tablets.

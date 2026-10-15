@@ -1647,6 +1647,9 @@ function savedCount() {
             selected ? 'Remove from your plan' : 'Add to plan',
         );
         button.title = selected ? 'In your plan' : 'Add to plan';
+        // A worded button (the trip page's) says it too.
+        const label = button.querySelector('[data-save-label]');
+        if (label) label.textContent = selected ? 'In your plan' : 'Add to plan';
     });
 }
 function saveRoute(id) {

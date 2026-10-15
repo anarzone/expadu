@@ -220,7 +220,10 @@
        one line of stations, like the station's map. */
     function trip({ nodes, legs, at, label }) {
         const rides = legs.filter((leg) => leg.mode === 'ride').length;
-        const W = rides > 1 ? 560 : 460,
+        // Two rides: more room and bigger words, so the 380px column still
+        // reads at 12px or more.
+        const big = rides > 1 ? 1.25 : 1;
+        const W = rides > 1 ? 600 : 460,
             LOW = 186,
             HIGH = 104,
             LEFT = 40,
@@ -232,10 +235,10 @@
                 : !rides
                   ? W - LEFT - RIGHT
                   : index === 0
-                    ? rides > 1 ? 44 : 56
+                    ? rides > 1 ? 70 : 56
                     : index === legs.length - 1
-                      ? rides > 1 ? 52 : 62
-                      : 30;
+                      ? rides > 1 ? 64 : 62
+                      : 36;
         const fixed = legs.reduce((sum, leg, index) => sum + walkWidth(leg, index), 0);
         const rideWidth = rides ? (W - LEFT - RIGHT - fixed) / rides : 0;
         let x = LEFT,
@@ -260,7 +263,7 @@
             return points;
         });
         const nodeAt = [shapes[0][0], ...shapes.map((points) => points.at(-1))];
-        const strength = (index) => (!at ? 1 : at.done ? 0.35 : index === at.leg ? 1 : 0.35);
+        const strength = (index) => (!at || at.done ? 1 : index === at.leg ? 1 : 0.35);
         const pathD = (points) => `M${points.map(([px, py]) => `${Math.round(px)} ${Math.round(py)}`).join(' L')}`;
         const lines = legs
             .map((leg, index) => {
@@ -282,7 +285,7 @@
                 const down = bend[1] === HIGH;
                 const y1 = down ? bend[1] + 34 : bend[1] - 40;
                 const note = first
-                    ? `<text x="${Math.round(mid[0])}" y="${y1}" text-anchor="middle" font-size="16" font-weight="600" fill="#7a705f">${esc(first)}</text>${second ? `<text x="${Math.round(mid[0])}" y="${y1 + 18}" text-anchor="middle" font-size="13" fill="#7a705f">${esc(second)}</text>` : ''}`
+                    ? `<text x="${Math.round(mid[0])}" y="${y1}" text-anchor="middle" font-size="${16 * big}" font-weight="600" fill="#7a705f">${esc(first)}</text>${second ? `<text x="${Math.round(mid[0])}" y="${y1 + 18 * big}" text-anchor="middle" font-size="${13 * big}" fill="#7a705f">${esc(second)}</text>` : ''}`
                     : '';
                 return `<path d="${d}" fill="none" stroke="#fffdf8" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><g opacity="${o}"><path d="${d}" fill="none" stroke="${leg.tint}" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>${ticks}<rect x="${Math.round(mid[0] - w / 2)}" y="${bend[1] - 13}" width="${w}" height="26" rx="8" fill="${leg.tint}"/><text x="${Math.round(mid[0])}" y="${bend[1] + 6}" text-anchor="middle" font-size="17" font-weight="700" fill="#fff">${esc(leg.line)}</text></g>${note}`;
             })
@@ -297,9 +300,9 @@
                 if (Math.abs(words.slice(0, k).join(' ').length - name.length / 2) < Math.abs(words.slice(0, best).join(' ').length - name.length / 2)) best = k;
             return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
         };
-        const text = (name, nx, ny, anchor, below, size = 17) => {
+        const text = (name, nx, ny, anchor, below, size = 17 * big) => {
             const rows = rowsOf(name);
-            const first = below ? ny + 32 : ny - 22 - (rows.length - 1) * (size + 2);
+            const first = below ? ny + 15 + size : ny - 22 - (rows.length - 1) * (size + 2);
             return `<text x="${Math.round(nx)}" y="${Math.round(first)}" text-anchor="${anchor}" font-size="${size}" font-weight="700" fill="#211d15" ${halo} stroke-width="5">${rows.map((row, k) => `<tspan x="${Math.round(nx)}" dy="${k ? size + 2 : 0}">${esc(row)}</tspan>`).join('')}</text>`;
         };
         const marks = nodes
