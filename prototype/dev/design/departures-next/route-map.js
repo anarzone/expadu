@@ -75,31 +75,6 @@
                 },
             );
         }
-        // Where to stand: a line's recorded boarding points, on this map while
-        // you walk to the stop and wait (owner, 15 Oct 2026: one map, not one
-        // laid over another). Without points it clears them.
-        let standing = [];
-        function stand(points, colour, animate = true) {
-            standing.forEach((marker) => marker.remove());
-            standing = [];
-            if (!ready || !points?.length) return false;
-            const bounds = new maplibregl.LngLatBounds();
-            points.forEach((point) => {
-                const dot = document.createElement('span');
-                dot.className = 'nearby-dot is-on';
-                if (colour) dot.style.setProperty('--line', colour);
-                standing.push(
-                    new maplibregl.Marker({ element: dot }).setLngLat(point).addTo(map),
-                );
-                bounds.extend(point);
-            });
-            map.fitBounds(bounds, {
-                padding: pad(),
-                maxZoom: 17.5,
-                duration: animate ? duration() : 0,
-            });
-            return true;
-        }
         function position(index, visible = true) {
             active = visible;
             selected = index;
@@ -110,7 +85,6 @@
         const controller = {
             overview,
             focus,
-            stand,
             position,
             zoom: (delta) => {
                 if (ready)

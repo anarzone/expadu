@@ -1,6 +1,7 @@
 /* Nearby: the closest station by boarding area (owner-approved design,
-   Travel directions canvas, 10 Oct 2026). Stacked to 999px; from 1000px the
-   map and the picked line sit beside the list, split by a hairline. */
+   Travel directions canvas, 10 Oct 2026). Its map opens where you ask for it
+   (canvas row 20, 15 Oct 2026): in the list's place on desktop, as its own
+   screen on phones. */
 .nearby {
     --nearby-gap: var(--space-24);
     color: var(--color-text);
@@ -333,9 +334,6 @@
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
 }
-.nearby-area-map[aria-pressed='true'] {
-    background: var(--color-bg-quiet);
-}
 .nearby-area-map svg {
     width: 16px;
     height: 16px;
@@ -597,192 +595,316 @@
     fill: currentColor;
 }
 
-/* ---------- The aside: map, area, hint ---------- */
-.nearby-aside {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-14);
-    min-width: 0;
-}
-.nearby-map {
-    position: relative;
-    aspect-ratio: 600 / 460;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    background: var(--color-bg-quiet);
-}
-.nearby-map[hidden] {
-    display: none;
-}
-/* MapLibre's stylesheet loads later and makes its map position: relative. */
-.nearby-map .nearby-map-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-}
-.nearby-map-canvas .maplibregl-canvas {
-    filter: sepia(0.18) saturate(1.05);
-}
-.nearby-map-fallback {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: center;
-    justify-content: center;
-    gap: var(--space-8);
-    padding: var(--space-16);
-    text-align: center;
-}
-.nearby-map-fallback[hidden] {
-    display: none;
-}
-.nearby-map-fallback p {
-    flex-basis: 100%;
-    margin: 0;
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-}
-.nearby-map-credit {
-    position: absolute;
-    left: 8px;
-    top: 8px;
-    padding: 2px 7px;
-    border-radius: 6px;
-    background: color-mix(in srgb, var(--color-bg-surface) 90%, transparent);
-    color: var(--color-text-soft);
-    font-size: var(--text-micro);
-    pointer-events: none;
-}
-.nearby-dot {
-    width: 12px;
-    height: 12px;
-    box-sizing: border-box;
-    border: 2px solid var(--color-bg-surface);
-    border-radius: var(--radius-round);
-    background: var(--line);
-    box-shadow:
-        var(--shadow-flat),
-        0 1px 4px color-mix(in srgb, var(--color-text) 30%, transparent);
-    transition:
-        width var(--duration-fast) var(--ease-standard),
-        height var(--duration-fast) var(--ease-standard),
-        opacity var(--duration-fast) var(--ease-standard);
-}
-.nearby-dot.is-on {
-    width: 18px;
-    height: 18px;
-}
-.nearby-dot.is-muted {
-    opacity: 0.45;
-}
-.nearby-pill {
-    display: flex;
-    align-items: center;
-    min-height: var(--touch-target);
-    padding: 0 4px;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-}
-.nearby-pill > span {
-    display: flex;
-    gap: 3px;
-    padding: 4px 5px;
-    border: 2px solid var(--color-bg-surface);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
-    box-shadow: var(--shadow-menu);
-}
-.nearby-pill.is-blocked > span {
-    border-color: var(--color-conflict-text);
-    background: var(--color-conflict-bg);
-}
-.nearby-pill.is-on > span {
-    border-color: var(--color-text);
-    background: var(--color-text);
-}
-.nearby-pill .nearby-badge {
-    min-width: 22px;
-    height: 20px;
-    font-size: 11.5px;
-}
-.nearby-nomap {
-    margin: 0;
-    padding: var(--space-16) var(--space-20);
-    border: 1px dashed var(--color-border-strong);
-    border-radius: var(--radius-lg);
-    color: var(--color-text-soft);
-    font-size: var(--text-control);
-}
-.nearby-area-panel {
-    line-height: var(--leading-snug);
-}
-.nearby-area-panel-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-8);
-    padding-bottom: var(--space-8);
-    border-bottom: 1px solid var(--color-border);
-}
-.nearby-area-row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-10);
-    width: 100%;
-    min-height: 46px;
-    padding: 0;
-    border: 0;
-    border-bottom: 1px solid var(--color-border);
-    background: none;
-    text-align: left;
-}
-.nearby-area-row .nearby-badge {
-    width: 38px;
-}
-.nearby-area-row .nearby-dest {
-    flex: 1;
-    font-size: var(--text-body);
-}
-.nearby-area-row strong {
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-.nearby-area-row .nearby-tag {
-    align-self: center;
-}
-.nearby-area-note,
-.nearby-area-empty,
-.nearby-hint {
-    margin: var(--space-8) 0 0;
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-    line-height: 1.45;
-}
-.nearby-hint {
-    margin: 0;
-}
 .nearby-footnote {
     margin: var(--space-16) 0 0;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
 
+/* ---------- The map (transit-map.js) ----------
+   One map: stations and the lines between them in their colours. A pick
+   fades the other lines; where it boards comes up close beside it. */
+.nearby-open-map {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-left: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+.nearby-open-map svg {
+    width: 18px;
+    height: 18px;
+}
+.nearby-mapview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-14);
+}
+.mapview-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+}
+.mapview-head > span {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.mapview-head strong {
+    font-size: var(--text-title-sm);
+    letter-spacing: -0.3px;
+}
+.mapview-head small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.mapview-close {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: var(--touch-target);
+    height: var(--touch-target);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.mapview-close svg {
+    width: 18px;
+    height: 18px;
+}
+.mapview-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-8);
+}
+.mapview-chip {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 36px;
+    padding: 0 var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    transition:
+        background-color var(--duration-fast) var(--ease-standard),
+        color var(--duration-fast) var(--ease-standard);
+}
+.mapview-chip i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: var(--line);
+}
+.mapview-chip[aria-pressed='true'] {
+    border-color: var(--color-text);
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
+.mapview-canvas {
+    aspect-ratio: 820 / 660;
+}
+/* The map's drawings set their own paint; the page's icon defaults
+   (style.css: every svg is a 21px stroked icon) don't reach them. */
+:is(.tmap-diagram, .tmap-closeup svg, .tmap-trip) {
+    fill: none;
+    stroke: none;
+    stroke-width: 1;
+}
+.tmap-diagram {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+.tmap-diagram :is([data-line], [data-lines]) {
+    transition: opacity 260ms var(--ease-standard);
+}
+.mapview-drag {
+    margin: calc(var(--space-4) * -1) 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    text-align: center;
+}
+.mapview-groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+.mapview-groups h3 {
+    margin: 0;
+    font-size: var(--text-small);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.mapview-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-10);
+    width: 100%;
+    min-height: 56px;
+    padding: var(--space-8) var(--space-12);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    text-align: left;
+}
+.mapview-group > span:nth-child(2) {
+    flex: 1;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: var(--leading-snug);
+}
+.mapview-group > svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+.mapview-groups p {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.mapview-stand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+    padding: var(--space-16);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-bg-surface);
+    animation: mapview-rise 320ms var(--ease-settle) both;
+}
+@keyframes mapview-rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+.mapview-stand-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.mapview-stand-head small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+/* Where to stand (shared with the trip page): the streets as one picture,
+   the platforms, ways down and names drawn on top. */
+.tmap-closeup {
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+}
+.tmap-closeup img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+.tmap-closeup svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+.tmap-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6) var(--space-14);
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.tmap-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.tmap-legend svg {
+    width: 13px;
+    height: 13px;
+    stroke: none;
+}
+/* Phones and tablets: the map is its own screen; it slides in from the
+   right and Back slides it away. */
+@media (max-width: 999px) {
+    .nearby-mapview {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        gap: var(--space-10);
+        padding-top: env(safe-area-inset-top, 0px);
+        background: var(--color-bg-canvas);
+        box-shadow: -18px 0 40px -30px #211d1580;
+        transform: translateX(104%);
+        visibility: hidden;
+        transition:
+            transform 420ms var(--ease-settle),
+            visibility 0s linear 420ms;
+    }
+    .nearby[data-view='map'] .nearby-mapview {
+        transform: none;
+        visibility: visible;
+        transition: transform 420ms var(--ease-settle);
+    }
+    .mapview-head {
+        padding: var(--space-10) var(--space-12) 0;
+    }
+    .mapview-head strong {
+        font-size: 17px;
+    }
+    .mapview-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 2px var(--space-16) var(--space-4);
+        scrollbar-width: none;
+    }
+    .mapview-body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-12);
+        padding: var(--space-4) var(--space-12) calc(var(--space-24) + env(safe-area-inset-bottom, 0px));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+    /* The diagram is drawn larger than the screen: drag it around. */
+    .mapview-frame {
+        flex: none;
+        height: 380px;
+        overflow: auto;
+        border: 1px solid var(--color-border);
+        border-radius: 20px;
+        background: var(--color-bg-canvas);
+        overscroll-behavior: contain;
+    }
+    .mapview-canvas {
+        width: 680px;
+    }
+}
+/* Desktop: the map takes the list's place; ✕ brings the list back. */
+@media (min-width: 1000px) {
+    .nearby[data-view='list'] .nearby-mapview,
+    .nearby[data-view='map']
+        :is(.nearby-list, .nearby-chips, .nearby-panel, .nearby-stepnote, .nearby-count) {
+        display: none;
+    }
+    .nearby-mapview {
+        margin-top: var(--space-4);
+        padding: 20px 24px 24px;
+        border: 1px solid var(--color-border);
+        border-radius: 26px;
+        background: var(--color-bg-surface);
+        animation: mapview-rise 320ms var(--ease-settle) both;
+    }
+    .mapview-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: var(--space-24);
+        align-items: start;
+    }
+    .mapview-canvas {
+        max-height: 560px;
+        margin-inline: auto;
+    }
+    .mapview-drag {
+        display: none;
+    }
+}
+
 /* ---------- Phones and tablets: one view at a time ---------- */
 @media (max-width: 999px) {
-    .nearby-divider {
-        display: none;
-    }
-    .nearby[data-view='list'] .nearby-aside,
-    .nearby[data-view='map'] .nearby-list {
-        display: none;
-    }
-    .nearby[data-view='map'] .nearby-aside {
-        margin-top: var(--space-8);
-    }
     /* The approved phone layout: an icon-only pin at the area's start. */
     .nearby-area-map {
         order: -1;
@@ -799,13 +921,6 @@
         clip: rect(0 0 0 0);
         white-space: nowrap;
     }
-    .nearby-map {
-        margin-inline: calc(var(--space-16) * -1);
-        border-inline: 0;
-        border-radius: 0;
-        aspect-ratio: auto;
-        height: 300px;
-    }
 }
 @media (max-width: 359px) {
     .nearby-cards {
@@ -813,37 +928,14 @@
     }
 }
 
-/* ---------- Desktop: the list beside the map ---------- */
+/* ---------- Desktop ---------- */
 @media (min-width: 1000px) {
-    .nearby-views {
-        display: none;
-    }
     .nearby-chips {
         flex-wrap: wrap;
         overflow: visible;
     }
-    .nearby-workspace {
-        display: flex;
-        align-items: stretch;
-        margin-top: var(--space-4);
-    }
     .nearby-list {
-        flex: 1 1 560px;
-        min-width: 0;
-        align-self: flex-start;
-    }
-    .nearby-divider {
-        flex: none;
-        width: 1px;
-        margin: 0 28px;
-        background: var(--color-border);
-    }
-    .nearby-aside {
-        position: sticky;
-        top: var(--space-16);
-        flex: 0 1 400px;
-        align-self: flex-start;
-        margin-top: var(--space-12);
+        margin-top: var(--space-4);
     }
     .nearby-cards {
         grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -863,9 +955,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .nearby *,
-    .nearby-dot {
+    .nearby * {
         transition: none !important;
+        animation: none !important;
     }
 }
 /* The next trip's button, in Nearby's line and My day. */
@@ -1096,17 +1188,6 @@
 }
 .nearby-area-head .tl-chip.is-calm {
     font-weight: var(--weight-semibold);
-}
-.nearby-area-row .tl-line {
-    height: 24px;
-    min-width: 50px;
-    justify-content: center;
-}
-.nearby-area-row .tl-chip {
-    margin-left: auto;
-}
-.nearby-area-row .tl-chip + strong {
-    margin-left: 0;
 }
 .nearby-line-head .tl-line {
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 25%, transparent);

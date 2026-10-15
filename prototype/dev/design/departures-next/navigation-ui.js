@@ -8,8 +8,9 @@
     dialog.setAttribute('aria-labelledby', 'nav-title');
     document.body.append(dialog);
     const viewPreferenceKey = 'expadu.journey-preview-view.v1';
-    // The trip opens on its steps, one moment at a time; the map is a tap
-    // away (owner-approved Moments, Steps | Map).
+    // A way you're only looking at opens on its steps; its street map is a
+    // tap away (Steps | Map). A trip under way has one map card instead
+    // (owner, 15 Oct 2026; Travel directions canvas row 20).
     let journeyView = 'steps';
     try {
         if (localStorage.getItem(viewPreferenceKey) === 'map')
@@ -37,7 +38,10 @@
     // Desktops keep the trip in Travel's column, beside its map; smaller
     // screens give it the whole screen (owner-approved workspace layout).
     const wide = () => matchMedia('(min-width: 1000px)').matches;
-    const showMap = () => journeyView === 'map' || wide();
+    // The street map is for a way you're looking at; under way, the map
+    // card (transit-map.js) takes its place.
+    const streetMap = () => !isActive() && (journeyView === 'map' || wide());
+    const M = root.TravelMap;
     const reduced = () =>
         matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isActive = () =>
@@ -126,12 +130,10 @@
         settings = false;
         confirmation = '';
         dialog.classList.remove('is-expanded', 'is-closing');
+        const looking = !isActive();
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div><div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
-            <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
-                <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
-                <p class="nav-map-caption">${route.shaped ? 'The way from the VRS timetable · scheduled, not live' : 'Illustrative connections · not street directions'} · © OpenStreetMap · OpenFreeMap · OpenMapTiles</p>
-            </section>
+            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div>${looking ? `<div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>` : ''}${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            ${looking ? streetMapMarkup() : ''}
             <section class="nav-panel" aria-label="Journey itinerary"><button class="nav-handle" data-nav="expand" aria-label="Expand itinerary" aria-expanded="false" aria-controls="nav-expanded"><span></span></button><div class="nav-panel-content"></div></section>
             <div id="nav-options" class="nav-options" hidden></div>
             <p class="nav-session-note" role="status" hidden>Progress is kept for this page only.</p>
@@ -186,8 +188,14 @@
                 restoration.scrollTop;
         if (autoStart && !isActive()) startCurrent();
     }
+    function streetMapMarkup() {
+        return `<section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
+                <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
+                <p class="nav-map-caption">${route.shaped ? 'The way from the VRS timetable · scheduled, not live' : 'Illustrative connections · not street directions'} · © OpenStreetMap · OpenFreeMap · OpenMapTiles</p>
+            </section>`;
+    }
     function mountMap() {
-        if (!showMap() || map) return;
+        if (!streetMap() || map) return;
         map = root.JourneyRouteMap.mount(
             dialog.querySelector('.nav-map-canvas'),
             route,
@@ -206,8 +214,9 @@
         );
     }
     function syncView() {
-        dialog.classList.toggle('is-steps-view', !showMap());
-        dialog.querySelector('.nav-map-area').hidden = !showMap();
+        dialog.classList.toggle('is-steps-view', !wide() && !streetMap());
+        const area = dialog.querySelector('.nav-map-area');
+        if (area) area.hidden = !streetMap();
         dialog.querySelectorAll('[data-nav-view]').forEach((button) => {
             button.setAttribute(
                 'aria-pressed',
@@ -225,7 +234,7 @@
         }
         syncView();
         render();
-        if (showMap()) {
+        if (streetMap()) {
             mountMap();
             map?.resize();
             updateMap(false);
@@ -243,7 +252,6 @@
         const finish = () => {
             map?.destroy();
             map = null;
-            dropStepMap();
             panelObserver?.disconnect();
             dialog.close();
             document.body.classList?.remove('trip-open');
@@ -311,86 +319,6 @@
         const stop = model.stops.find((item) => item.id === board.boardStop);
         const line = stop?.lines.find((item) => item.line === route.line);
         return stop?.areas.find((area) => area.id === line?.area) || null;
-    }
-    // This line's recorded boarding points at its stop, when Nearby knows
-    // the stop (KVB point records from the station capture).
-    function linePoints() {
-        const board = N.steps(route).find((step) => step.mode === 'transit');
-        if (!route.line || !boardingArea(board)) return [];
-        return (root.StationCapture?.boardingPoints || []).filter(
-            (point) =>
-                Number.isFinite(point.lat) &&
-                (point.lines || []).map(String).includes(String(route.line)),
-        );
-    }
-    let stepMap = null,
-        stepBox = null,
-        stepTimer = 0;
-    // The small map under the step (steps view): built once the step has
-    // painted, carried across redraws of the same moment, rebuilt when the
-    // moment changes (native-feel check, 11 Oct 2026).
-    const later = (fn, ms) =>
-        typeof setTimeout === 'function' ? setTimeout(fn, ms) : fn();
-    const cancelLater = (id) =>
-        typeof clearTimeout === 'function' && clearTimeout(id);
-    let stepKey = '';
-    function dropStepMap() {
-        cancelLater(stepTimer);
-        stepMap?.remove();
-        stepMap = null;
-        stepBox = null;
-        stepKey = '';
-    }
-    function mountStepMap(spec) {
-        const slot = dialog.querySelector('.moment-map-canvas');
-        if (!slot || !spec) return dropStepMap();
-        if (stepBox && stepKey === spec.key) {
-            if (slot !== stepBox) slot.replaceWith?.(stepBox);
-            stepMap?.resize();
-            return;
-        }
-        dropStepMap();
-        stepBox = slot;
-        stepKey = spec.key;
-        stepTimer = later(() => buildStepMap(slot, spec), 60);
-    }
-    function buildStepMap(box, spec) {
-        const load = root.StationMap?.load;
-        const points = box.isConnected ? spec.points : [];
-        // Without points or the map library the quiet background stays.
-        if (!points.length || !load) return;
-        load()
-            .then(() => {
-                if (!box.isConnected || stepBox !== box) return;
-                const lng = points.map((point) => point[0]),
-                    lat = points.map((point) => point[1]);
-                const map = new maplibregl.Map({
-                    container: box,
-                    style: 'https://tiles.openfreemap.org/styles/positron',
-                    ...(points.length === 1
-                        ? { center: points[0], zoom: 15.2 }
-                        : {
-                              bounds: [
-                                  [Math.min(...lng), Math.min(...lat)],
-                                  [Math.max(...lng), Math.max(...lat)],
-                              ],
-                              fitBoundsOptions: { padding: 60, maxZoom: 17.5 },
-                          }),
-                    interactive: false,
-                    attributionControl: false,
-                });
-                stepMap = map;
-                const look = root.NearbyModel?.look(String(spec.line || route.line), 'tram');
-                points.forEach((point) => {
-                    const dot = document.createElement('span');
-                    dot.className = spec.stand ? 'nearby-dot is-on' : 'nav-place-dot';
-                    if (look && spec.stand) dot.style.setProperty('--line', look.colour);
-                    new maplibregl.Marker({ element: dot })
-                        .setLngLat(point)
-                        .addTo(map);
-                });
-            })
-            .catch(() => {});
     }
     /* ---------- The trip follows you (owner, 15 Oct 2026; Travel
        directions canvas row 19) ----------
@@ -492,6 +420,15 @@
     }
     const lookOf = (step) =>
         root.NearbyModel?.look(lineOf(step), word(step) === 'bus' ? 'bus' : 'tram') || {};
+    // Where a line leaves from, when its stop has the OpenStreetMap close-up
+    // (station-closeup.js): the platform for its direction, or both of the
+    // line's when the timetable's name for the direction isn't one we know.
+    function platformOf(board) {
+        const stop = board?.boardStop || '';
+        if (!M?.hasCloseUp(stop)) return null;
+        const lit = M.platformFor(stop, lineOf(board), towardsOf(board));
+        return lit.length ? { stop, lit, note: M.note(stop, lit) } : null;
+    }
     // What to look for now: one row, the same size at every moment (owner,
     // 15 Oct 2026: "why three different uis when changing clocks?").
     function lookRow(look) {
@@ -509,22 +446,6 @@
             ? `<a class="nav-look" href="${look.href}">${body}${icon('chevron')}</a>`
             : `<div class="nav-look">${body}</div>`;
     }
-    // The moment's map: where to stand while you walk to the stop and wait,
-    // otherwise the moment's place.
-    function mapSpec(p, now) {
-        const points = now.stand ? linePoints() : [];
-        if (points.length)
-            return {
-                key: `stand-${route.line}`,
-                stand: true,
-                line: route.line,
-                points: points.map((point) => [point.lng, point.lat]),
-            };
-        const point = N.steps(route)[p.index]?.point;
-        return point ? { key: `at-${p.index}`, stand: false, points: [point] } : null;
-    }
-    const momentMap = (now) =>
-        `<div class="moment-map"><div class="moment-map-canvas"></div><span class="moment-map-label">${safe(now.map)}</span><small class="moment-map-credit">© OpenStreetMap · OpenFreeMap</small></div>`;
     // What the page says now: the ring, the words, how it knows.
     function momentNow(p) {
         const list = N.steps(route);
@@ -570,6 +491,7 @@
         if (step.mode === 'walk' && p.index === 0) {
             const board = list.find((item) => item.mode === 'transit');
             const to = stopName(step.title.replace(/^Walk to /, ''));
+            const at = platformOf(board);
             return {
                 ...base,
                 ring: ring(left(board ? board.time : route.arrive)),
@@ -580,9 +502,7 @@
                 how: board
                     ? 'We’ll see when you reach the stop'
                     : 'We’ll see when you arrive',
-                map: board && linePoints().length
-                    ? `Board at one of these ${linePoints().length === 2 ? 'two' : linePoints().length} points · not confirmed`
-                    : `The walk to ${to}`,
+                map: at ? at.note : `The walk to ${to}`,
                 stand: !!board,
                 look: board
                     ? {
@@ -590,8 +510,8 @@
                           line: lineOf(board),
                           colour: lookOf(board).colour,
                           title: `Next: ${word(board)} ${lineOf(board)} at ${board.time}`,
-                          text: linePoints().length
-                              ? `From ${place(board)} · either of ${linePoints().length} boarding points`
+                          text: at
+                              ? `From ${place(board)} · ${at.note.replace(' · ', ', ')}`
                               : `From ${place(board)}`,
                       }
                     : { tile: 'walk', title: step.detail, text: 'Street directions weren’t captured' },
@@ -599,10 +519,7 @@
         }
         if (step.mode === 'transit') {
             const from = place(step);
-            const points = linePoints().length;
-            const standNote = points
-                ? `Board at one of these ${points === 2 ? 'two' : points} points · not confirmed`
-                : `Board at ${from}`;
+            const standNote = platformOf(step)?.note || `Board at ${from}`;
             const look = {
                 tile: 'sign',
                 line: lineOf(step),
@@ -842,6 +759,67 @@
         if (step.mode === 'arrive') return 'Arrived';
         return step.title.replace(/Köln\s+/g, '');
     }
+    /* ---------- The map card (owner, 15 Oct 2026; canvas row 20) ----------
+       One map while the trip runs: where to stand while you walk to the
+       stop and wait (the stop's street close-up, when it has one), then your
+       way drawn as a line of stations with you on it. */
+    function wayDrawing(p) {
+        const list = N.steps(route);
+        const nodes = [{ name: 'You' }];
+        const legs = [];
+        const atStep = [];
+        let ride = null;
+        list.forEach((step, index) => {
+            const next = list[index + 1];
+            if (step.mode === 'walk' || step.mode === 'bike') {
+                legs.push({ mode: step.mode });
+                nodes.push({
+                    name: next?.mode === 'transit' ? place(next) : trip().place,
+                });
+                atStep[index] = { leg: legs.length - 1, t: 0.5 };
+            } else if (step.mode === 'transit') {
+                const alight = list.slice(index).find((item) => item.mode === 'alight');
+                const between = list
+                    .slice(index + 1, list.indexOf(alight))
+                    .filter((item) => item.mode === 'ride').length;
+                const counted = Number((step.detail.match(/· (\d+) stops?/) || [])[1]) || 0;
+                const minutes = alight ? minutesBetween(step.time, alight.time) : 0;
+                ride = { mode: 'ride', line: lineOf(step), tint: lookOf(step).colour || '#211d15', stops: between || Math.max(0, counted - 1), rides: between, seen: 0 };
+                ride.note = [
+                    `${minutes} min`,
+                    counted ? `${counted} stops` : between ? `${between} stop${between > 1 ? 's' : ''} between` : 'stops between not recorded',
+                ];
+                legs.push(ride);
+                nodes.push({ name: alight ? offAt(alight) : '' });
+                atStep[index] = { leg: legs.length - 1, t: 0 };
+            } else if (step.mode === 'ride') {
+                ride.seen++;
+                atStep[index] = { leg: legs.length - 1, t: ride.seen / (ride.rides + 1) };
+            } else if (step.mode === 'alight')
+                atStep[index] = { leg: legs.length - 1, t: ride.rides ? 0.8 : 0.2 };
+            else if (step.mode === 'arrive') atStep[index] = { done: true };
+        });
+        let at = atStep[p.index] || { done: true };
+        if (p.step.mode === 'alight' && nudge) at = { ...at, t: 0.88 };
+        const label = `Your way: ${legs
+            .map((leg, index) =>
+                leg.mode === 'ride'
+                    ? `${word(list.find((item) => item.mode === 'transit' && lineOf(item) === leg.line))} ${leg.line} to ${nodes[index + 1].name}`
+                    : `${leg.mode === 'bike' ? 'cycle' : 'walk'} to ${nodes[index + 1].name}`,
+            )
+            .join(', ')}`;
+        return M.trip({ nodes, legs, at, label });
+    }
+    function mapCard(p, now) {
+        if (!M) return '';
+        const board = p.step.mode === 'transit' ? p.step : N.steps(route).slice(p.index).find((item) => item.mode === 'transit');
+        const stand = now.stand && platformOf(board);
+        const colour = lookOf(board).colour || '#211d15';
+        const body = stand
+            ? `${M.closeUp(stand.stop, stand.lit, colour)}${M.legend(stand.stop, stand.lit)}`
+            : wayDrawing(p);
+        return `<section class="nav-mapcard" aria-label="On the map"><h3 class="nav-way-title">On the map</h3><div class="nav-mapcard-box"><span class="nav-map-note">${safe(now.map)}</span>${body}</div></section>`;
+    }
     function timeline() {
         return `<ol class="nav-timeline">${N.steps(route)
             .map(
@@ -853,6 +831,7 @@
             )
             .join('')}</ol>`;
     }
+    let youWas = '';
     function render() {
         const running = isActive();
         const p = N.progress(route, running ? active.step : 0);
@@ -868,7 +847,7 @@
             : '';
         const now = running ? momentNow(p) : null;
         if (running)
-            content.innerHTML = `${conditionMarkup()}<div class="nav-summary">${stepCard(now)}${showMap() ? '' : momentMap(now)}</div><div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p)}</div></div>${confirm ? `<footer class="nav-footer">${confirm}</footer>` : ''}`;
+            content.innerHTML = `${conditionMarkup()}<div class="nav-summary">${stepCard(now)}</div>${mapCard(p, now)}<div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p)}</div></div>${confirm ? `<footer class="nav-footer">${confirm}</footer>` : ''}`;
         else {
             const nextDay = route.arrive < route.depart ? ' · next day' : '';
             const movement = route.walking
@@ -883,10 +862,8 @@
         <footer class="nav-footer">${confirm || `<button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button><div class="nav-footer-more"><span></span><button class="nav-text-button" data-save="${route.id}">${icon('bookmark')}Save to Saved journeys</button></div>`}</footer>`;
         }
         // The top bar: where you are in the trip, and (on desktop) that it's a
-        // sample. The map's caption follows the step. Both exist only while
-        // a trip runs.
+        // sample. It exists only while a trip runs.
         dialog.querySelector('.nav-trip-progress')?.remove();
-        dialog.querySelector('.nav-map-note')?.remove();
         if (running) {
             const parts = N.steps(route).filter((step) => step.mode !== 'arrive').length;
             const arrived = p.step.mode === 'arrive';
@@ -894,10 +871,6 @@
                 'afterend',
                 `<div class="nav-trip-progress"><span class="nav-bars" role="progressbar" aria-label="Trip progress" aria-valuemin="0" aria-valuemax="${parts}" aria-valuenow="${arrived ? parts : p.index}">${Array.from({ length: parts }, (_, index) => `<i class="${arrived || index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></i>`).join('')}</span><span class="nav-count">${arrived ? 'Arrived' : `${p.index + 1} of ${parts}`}</span>${wide() ? '<span class="nav-sample">Sample · not live</span>' : ''}</div>`,
             );
-            if (showMap())
-                dialog
-                    .querySelector('.nav-map-area')
-                    .insertAdjacentHTML('afterbegin', `<span class="nav-map-note">${safe(now.map)}</span>`);
         }
         content.querySelector('.nav-detail-scroll').scrollTop = scrollTop;
         if (focus)
@@ -920,7 +893,14 @@
         }
         if (typeof savedCount === 'function') savedCount();
         if (expanded) dialog.classList.add('is-expanded');
-        mountStepMap(running && !showMap() ? mapSpec(p, now) : null);
+        // You move along your way rather than jump.
+        const you = content.querySelector('.tmap-you');
+        if (you && youWas && youWas !== you.style.transform && !reduced())
+            you.animate([{ transform: youWas }, { transform: you.style.transform }], {
+                duration: 420,
+                easing: 'cubic-bezier(.22,.7,.2,1)',
+            });
+        youWas = you?.style.transform || '';
         measure();
     }
     function measure() {
@@ -937,19 +917,8 @@
         dialog.style.setProperty('--nav-collapsed-height', `${height}px`);
     }
     function updateMap(animate = true) {
-        if (!map || !showMap()) return;
-        map.position(
-            isActive() ? active.step : 0,
-            isActive() && active.condition !== 'location',
-        );
-        // While you walk to the stop and wait, the map shows where to stand.
-        if (isActive() && mapView === 'step') {
-            const p = N.progress(route, active.step);
-            const spec = mapSpec(p, momentNow(p));
-            if (spec?.stand && map.stand(spec.points, lookOf(N.steps(route).find((step) => step.mode === 'transit')).colour, animate))
-                return;
-        }
-        map.stand(null);
+        if (!map || !streetMap()) return;
+        map.position(0, false);
         if (mapView === 'step') map.focus(inspected, animate);
         else map.overview(animate);
     }
@@ -973,6 +942,12 @@
         missedFrom = '';
         notice = '';
         persist();
+        // Under way, the map card takes the street map's place.
+        map?.destroy();
+        map = null;
+        dialog.querySelector('.nav-map-area')?.remove();
+        dialog.querySelector('.nav-view-switch')?.remove();
+        syncView();
         // Under way, the moment leads; the stops wait behind Itinerary.
         setExpanded(false);
         announce('Trip started. It moves on by itself.');
@@ -1001,7 +976,7 @@
         mapView = 'step';
         if (reveal) setExpanded(true);
         else render();
-        if (showMap()) map?.focus(index);
+        if (streetMap()) map?.focus(index);
         dialog
             .querySelector(`[data-nav-step="${index}"]`)
             ?.focus({ preventScroll: true });
@@ -1226,7 +1201,7 @@
     // Drag the dedicated handle; scrolling the itinerary or panning the map stays native.
     dialog.addEventListener('pointerdown', (event) => {
         const handle = event.target.closest('.nav-handle');
-        if (!handle || !mobile() || journeyView === 'steps' || event.button > 0)
+        if (!handle || !mobile() || !streetMap() || event.button > 0)
             return;
         drag = {
             id: event.pointerId,

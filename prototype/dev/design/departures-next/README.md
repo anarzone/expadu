@@ -11,6 +11,50 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## One map — 15 October 2026
+
+Owner-agreed on the Travel directions canvas, row 20 ("single map design with
+stations and lines in between designed with colored and beautifully on it",
+opened as an inner screen with back or ✕).
+
+- One map in Travel's style (`transit-map.js`): Neumarkt's lines in their
+  colours, each one's next stops and where it ends, stations as capsules.
+  It's not a street map: it's drawn from the stops each line passes, so it
+  says "not to scale". Buses 136 · 146 are listed beside it, not drawn.
+- It opens where you ask for it: List | Map beside the stop's name, "Show on
+  the map" on an area, "Where it boards" in an open line. On desktop it takes
+  the list's place (✕ or Esc brings the list back); on phones it slides in as
+  its own screen, the diagram is larger than the screen and drags, and Back
+  slides it away. The old street map under the strips and its area panel are
+  gone.
+- Pick a line or a group (chips, or the groups beside the map): the other
+  lines fade and Where to stand comes up: Neumarkt's streets with that line's
+  platforms in its colour, the stairs down and the lifts when they're
+  underground, and "Platforms from OpenStreetMap · not confirmed by KVB".
+- Where to stand comes from OpenStreetMap (owner, same day: check the open
+  data first). Its platforms carry their signs (Gleis 1–6, bus stop A), Gleis
+  1 and 2 are underground, and the lines' route relations say which direction
+  stops where: tram 4 to Schlebusch is Gleis 2, to Rochusplatz Gleis 1. The
+  VRS timetable has one point for all of Neumarkt, and KVB's point records
+  don't say which direction uses which, so neither can say this.
+  `osm/neumarkt.py` writes `neumarkt-streets.svg` (the streets as one picture)
+  and `station-closeup.js` (platforms, ways down, street names, directions)
+  from an OpenStreetMap extract; its docstring has the command. ODbL: every
+  close-up says "© OpenStreetMap contributors".
+- Nearby's areas say where they board: "Gleis 1 · 2 · underground",
+  "Gleis 3 · 4", "Stop A".
+- The trip page under way has one map card instead of the street map: while
+  you walk to the stop and wait, the stop's close-up with your platform
+  ("Gleis 2 · underground"); then your way as a line of stations in the same
+  style, you on it, the part you're on full strength. Any trip draws: a change
+  (tram 18 then bus 133) keeps one capsule for the station, a bike ride is one
+  dotted line. Stops without a close-up show the way from the start. A way
+  you're only looking at (before "I'm on my way") keeps its street map, and so
+  does Plan a trip; both wait for a design in this style.
+- Removed with the old maps: `station-map.js` and `station-map.css` (and their
+  test), the trip's small map under the step, the route map's boarding
+  points, the area panel and its rows, and their styles.
+
 ## The trip follows you — 15 October 2026
 
 Owner-agreed on the Travel directions canvas, row 19 ("why user needs to
@@ -33,10 +77,10 @@ click buttons to confirm something and why that many times?").
   are both the tram's row, marked "You're here". Getting off is the end of
   the ride, not a row of its own.
 - At the stop: what's on the tram's front, "Trams 3, 16 and 18 stop here
-  too: take the 4", All departures at Neumarkt, and the boarding points.
-- Desktop: the step | your way | a smaller map whose caption follows the
-  step (your way goes under the step below 1280px). Phones: the way under
-  the step, no Itinerary to open.
+  too: take the 4", All departures at Neumarkt, and the platform.
+- Desktop: the step | your way | the map card, whose caption follows the
+  step (your way goes under the step below 1280px). Phones: the map card and
+  the way under the step, no Itinerary to open.
 - To review another moment: ⋯ → Trip moment (13:10 Walking to Neumarkt ·
   13:12 At Neumarkt · 13:28 On tram 4 · 13:41 Next stop: Wiener Platz ·
   13:44 Walk to your appointment · 13:48 Arrived), next to the preview
@@ -49,9 +93,7 @@ click buttons to confirm something and why that many times?").
   uis when changing clocks?"): the ring with the instruction, one "what to
   look for" row the same size (the next tram · what's on its front · what
   you'll hear, „Nächster Halt“ · „Ausgang“, not after a bus · what to
-  bring), then how the page knows. One map: the route map shows the
-  boarding points while you walk there and wait; in the phones' steps view
-  a small map sits under the step instead.
+  bring), then how the page knows. One map: the map card (see One map).
 
 ## Your next thing as one line — 15 October 2026
 
@@ -114,8 +156,8 @@ rows 13–15 and a first build that was reverted).
   each line runs through the stop's dot with where it goes, via which stops
   and when at each end (`nearby-ui.js` `card()`); "Change here" sits between
   the groups. A narrow column (a phone, or Nearby beside a big panel) folds a
-  strip into two rows. A picked line opens in place at every size, and on
-  desktop the stop's map is under the strips instead of beside them.
+  strip into two rows. A picked line opens in place at every size; the map
+  opens in the list's place (see One map).
 - Phones keep "Where to?" at the top (never a bottom input): tapping it
   unfolds Plan a trip down from the field, and its top arrow (now a fold-up
   chevron, "Fold Plan a trip away") folds it back up into it (`slide.css`
@@ -216,19 +258,17 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
 - **By boarding area.** Neumarkt's ten KVB point records form three areas:
   points that list a shared line belong together (1·7·9, 3·4·16·18,
   136·146). The capture doesn't say which point a departure uses, so a line
-  belongs to its area, never to one point, and the map says so.
+  belongs to its area, never to one point. Which platform each direction
+  uses comes from OpenStreetMap (see One map).
 - **Line cards** show both directions with rounded minutes from the 4 Oct
-  22:19 capture, and delays as recorded. Phones open a line in place; desktops
-  show it beside the list with the map. Pin keeps a line first in its area
-  (this browser only).
+  22:19 capture, and delays as recorded. A line opens in place. Pin keeps a
+  line first in its area (this browser only).
 - **Filters open in place:** type, lines, leaving via (the first stop after
   the station, from the capture), next 10/30/60 min, delayed and step-free.
   Lift status isn't in the preview, so step-free says it hides nothing yet.
-- **Map:** List | Map on phones, beside the list on desktop. One label per
-  area; labels move aside rather than cover each other. Without the map, the
-  areas stay choosable.
+- **Map:** see One map (15 October 2026).
 - **Stop picker:** Neumarkt and the 7 Sept Merkenich captures, each with its
-  own clock. Stops without recorded points say so instead of showing a map.
+  own clock. Stops without a map have no Map switch.
 - **Line colours:** KVB's, darkened where white text needs 4.5:1 (as approved
   on the canvas); unlisted lines use the travel colour, buses grey. The colour
   roles in `design-decisions.md` still describe cyan line badges; that entry
@@ -239,7 +279,7 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
   `station-refinement.css`, `stop-discovery.css`) and the ~280 rules in
   `style.css`, `workspace.css`, `soft-palette.css` and `station-context.css`
   that only styled them. `timetable.js` stays for the service hand-off and
-  Today's brief; `station-map.js` stays for its MapLibre loader.
+  Today's brief.
 
 - **Your next trip leads Nearby** (moved from Plan a trip). Today's rule
   still picks the 13:14 (12 min spare) over the planned 13:24 (2 min). Phones

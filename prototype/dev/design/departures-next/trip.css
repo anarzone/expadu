@@ -167,44 +167,6 @@
     }
 }
 
-/* The small map under the step: where to stand, or the moment's place. */
-.moment-map {
-    position: relative;
-    height: 210px;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-quiet);
-}
-.moment-map .moment-map-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-}
-.moment-map-label {
-    position: absolute;
-    left: var(--space-10);
-    bottom: var(--space-10);
-    padding: 5px var(--space-10);
-    border-radius: var(--radius-pill);
-    background: var(--color-text);
-    color: var(--color-text-on-action);
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-    pointer-events: none;
-}
-.moment-map-credit {
-    position: absolute;
-    right: 6px;
-    top: 4px;
-    padding: 0 4px;
-    border-radius: 4px;
-    background: color-mix(in srgb, var(--color-bg-surface) 85%, transparent);
-    color: var(--color-text-soft);
-    font-size: 10px;
-    pointer-events: none;
-}
 @media (max-width: 999px) {
     /* The whole "To …" title, on two lines if it needs them. */
     #journey-navigation .nav-topbar h1 {
@@ -595,32 +557,66 @@
     font-style: normal;
     font-weight: var(--weight-bold);
 }
-/* The map's caption follows the step. */
+/* The map card (owner, 15 Oct 2026; canvas row 20): where to stand while
+   you walk to the stop and wait, then your way with you on it. Its caption
+   follows the step. */
+#journey-navigation .nav-mapcard-box {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+    padding: 48px 10px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-bg-canvas);
+}
 #journey-navigation .nav-map-note {
     position: absolute;
     top: 12px;
     left: 12px;
-    z-index: 2;
-    max-width: calc(100% - 92px);
-    padding: 6px 12px;
-    border-radius: 14px;
+    max-width: calc(100% - 24px);
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
     background: var(--color-text);
     color: var(--color-bg-surface);
     font-size: 13px;
     font-weight: var(--weight-semibold);
     line-height: 1.3;
 }
+#journey-navigation .tmap-trip {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+/* Above the trip page's own icon size (navigation.css). */
+#journey-navigation .tmap-closeup svg {
+    width: 100%;
+    height: 100%;
+}
+#journey-navigation .tmap-legend svg {
+    width: 13px;
+    height: 13px;
+}
+#journey-navigation .tmap-you {
+    transition: transform 420ms cubic-bezier(0.22, 0.7, 0.2, 1);
+}
 @media (max-width: 999px) {
-    /* Under the trip's top bar, which floats over the map on phones. */
-    #journey-navigation .nav-map-note {
-        top: 124px;
+    #journey-navigation .nav-mapcard {
+        padding: 0 16px 8px;
+    }
+    #journey-navigation .nav-mapcard .nav-way-title {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
     }
 }
-/* Desktop: the step | your way | a smaller map. */
+/* Desktop: the step | your way | the map card. */
 @media (min-width: 1000px) {
     #journey-navigation.is-running:not(:modal) .nav-workspace {
-        grid-template: auto auto / minmax(0, 1fr) 380px;
-        column-gap: var(--space-32);
+        grid-template: auto auto / minmax(0, 1fr);
     }
     #journey-navigation.is-running:not(:modal) .nav-topbar {
         gap: var(--space-16);
@@ -631,7 +627,7 @@
     }
     #journey-navigation.is-running:not(:modal) .nav-panel-content {
         display: grid;
-        grid-template-columns: minmax(0, 500px) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 500px) minmax(0, 1fr) 380px;
         column-gap: var(--space-32);
         align-items: start;
     }
@@ -652,20 +648,20 @@
         grid-area: 3 / 1;
         padding: var(--space-16) 0 0;
     }
-    #journey-navigation.is-running:not(:modal) .nav-map-area {
-        grid-area: 2 / 2;
-        height: 320px;
-        margin-left: 0;
-        margin-top: 30px;
+    #journey-navigation.is-running:not(:modal) .nav-mapcard {
+        grid-area: 2 / 3;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-mapcard .nav-way-title {
+        margin: 4px 0 var(--space-12);
     }
 }
 /* Smaller desktops: your way goes under the step, the map stays beside. */
 @media (min-width: 1000px) and (max-width: 1279px) {
-    #journey-navigation.is-running:not(:modal) .nav-workspace {
+    #journey-navigation.is-running:not(:modal) .nav-panel-content {
         grid-template-columns: minmax(0, 1fr) 320px;
     }
-    #journey-navigation.is-running:not(:modal) .nav-panel-content {
-        grid-template-columns: minmax(0, 1fr);
+    #journey-navigation.is-running:not(:modal) .nav-mapcard {
+        grid-area: 2 / 2 / 5;
     }
     #journey-navigation.is-running:not(:modal) .nav-expanded {
         grid-area: 3 / 1;
@@ -673,9 +669,6 @@
     }
     #journey-navigation.is-running:not(:modal) .nav-footer {
         grid-area: 4 / 1;
-    }
-    #journey-navigation.is-running:not(:modal) .nav-map-area {
-        margin-top: 0;
     }
 }
 /* Phones and tablets: the way stays under the step (no Itinerary to open),
@@ -843,22 +836,6 @@
     color: #fff;
     font-size: 13px;
     font-weight: var(--weight-bold);
-}
-/* One map at a time: the route map shows where to stand; in the steps
-   view (phones) a small map sits under the step instead. */
-#journey-navigation .nav-summary > .moment-map {
-    height: 190px;
-    margin-top: var(--space-16);
-    border-radius: 20px;
-}
-.nav-place-dot {
-    width: 16px;
-    height: 16px;
-    box-sizing: border-box;
-    border: 3px solid var(--color-bg-surface);
-    border-radius: 50%;
-    background: var(--color-select-text);
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-select-text) 22%, transparent);
 }
 @media (max-width: 700px) {
     #journey-navigation .nav-step-lead {

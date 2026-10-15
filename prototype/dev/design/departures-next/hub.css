@@ -544,24 +544,6 @@ body.travel-palette .nearby-area .nearby-cards {
     body.travel-palette #departures {
         container-type: inline-size;
     }
-    /* Nearby: the strips get the width; the stop's map is under them. */
-    body.travel-palette .nearby-workspace {
-        flex-direction: column;
-    }
-    body.travel-palette .nearby-list {
-        flex: none;
-        width: 100%;
-        align-self: stretch;
-    }
-    body.travel-palette .nearby-divider {
-        display: none;
-    }
-    body.travel-palette .nearby-aside {
-        position: static;
-        flex: none;
-        width: 100%;
-        margin-top: var(--space-24);
-    }
     /* A narrow panel stacks a way's steps over its map. */
     body.travel-palette:not(.plan-big) .plan-option-way {
         grid-template-columns: minmax(0, 1fr);

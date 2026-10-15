@@ -1,6 +1,9 @@
-/* Nearby's view: the station by area, its filters and the map. Phones switch
-   List | Map and open a line in place; desktops keep the map and the picked
-   line beside the list. Every time comes from a capture, never live. */
+/* Nearby's view: the station by area, its filters and its map. A line opens
+   in place. The map (transit-map.js) opens where you ask for it: List | Map,
+   "Show on the map" or "Where it boards". On desktop it takes the list's
+   place and ✕ brings the list back; on phones it slides in as its own screen
+   and Back slides it away (owner, 15 Oct 2026; canvas row 20). Every time
+   comes from a capture, never live. */
 (function (root) {
     const pinKey = 'expadu.travel.pinned-lines.v1';
     const readPins = () => {
@@ -45,11 +48,13 @@
         const N = root.NearbyModel;
         // The approved label set (labels.js); plain words if it's missing.
         const L = root.TravelLabels;
+        const M = root.TravelMap;
         const state = {
             stop: model.stops[0].id,
             view: 'list',
             line: '',
-            area: '',
+            // The map's pick: a line, a group ('A', 'B', 'BUS') or nothing.
+            pick: '',
             panel: '',
             stopsOpen: false,
             filters: model.filterDefaults(),
@@ -66,24 +71,20 @@
             <div class="nearby-panel" hidden></div>
             <p class="nearby-stepnote" hidden>Lift status isn’t in this preview, so step-free hides nothing yet.</p>
             <div class="nearby-count"></div>
-            <div class="nearby-workspace">
-                <div class="nearby-list"></div>
-                <span class="nearby-divider" aria-hidden="true"></span>
-                <aside class="nearby-aside" aria-label="Map and details">
-                    <div class="nearby-map">
-                        <div class="nearby-map-canvas" role="region"></div>
-                        <div class="nearby-map-fallback" hidden></div>
-                        <span class="nearby-map-credit">© OpenStreetMap · OpenFreeMap</span>
-                    </div>
-                    <p class="nearby-nomap" hidden></p>
-                    <div class="nearby-detail"></div>
-                </aside>
-            </div>
+            <div class="nearby-list"></div>
+            <section class="nearby-mapview" aria-labelledby="nearby-map-title" inert>
+                <div class="mapview-head"></div>
+                <div class="mapview-chips" role="group" aria-label="Lines"></div>
+                <div class="mapview-body">
+                    <div class="mapview-frame"><div class="mapview-canvas"></div></div>
+                    <p class="mapview-drag">Drag the map to see where the lines go</p>
+                    <div class="mapview-side"></div>
+                </div>
+            </section>
             <p class="nearby-footnote"></p>`;
         const part = (name) => container.querySelector(`.nearby-${name}`);
-        const mapBox = part('map'),
-            canvas = part('map-canvas'),
-            fallback = part('map-fallback');
+        const mapPart = (name) => container.querySelector(`.mapview-${name}`);
+        const hasMap = (stop) => !!M?.has(stop.id);
 
         /* ---------- Pieces ---------- */
         const badge = (line, look, size = '') =>
@@ -158,8 +159,8 @@
                 })
                 .join(', ')}`;
             // A picked line opens in place at every size (owner, 14 Oct
-            // 2026): the strips have the width; the map is under them.
-            if (open) return detail(stop, l, true);
+            // 2026): the strips have the width.
+            if (open) return detail(stop, l);
             // A long wait is about the whole card: a strip along its foot.
             const later = scene().laterTags
                 ? l.shown.map((d) => d.later[0]).filter(Boolean)
@@ -184,7 +185,7 @@
             </button>`;
         }
 
-        function detail(stop, l, inline) {
+        function detail(stop, l) {
             const pinned = state.pinned.includes(l.line);
             const dirs = l.dirs
                 .map((d, i) => {
@@ -193,40 +194,11 @@
                 })
                 .join('');
             const first = l.dirs[0].dest;
-            return `<section class="nearby-line${inline ? ' is-inline' : ''}" aria-label="${modeName(l)} ${safe(l.line)}" style="--line:${l.look.colour};--ink:${l.look.ink};--tint:${l.look.tint}">
+            return `<section class="nearby-line is-inline" aria-label="${modeName(l)} ${safe(l.line)}" style="--line:${l.look.colour};--ink:${l.look.ink};--tint:${l.look.tint}">
                 <div class="nearby-line-head">${L ? L.line(l.line, { colour: '#fff', ink: l.look.colour }, { kind: l.mode, size: 'big' }) : `<span class="nearby-line-number">${safe(l.line)}</span>`}<span><strong>${modeName(l)} ${safe(l.line)}</strong><small>${safe(others(stop, l.line))}</small></span><button type="button" class="nearby-line-close" data-n="close-line" data-key="close-line" aria-label="Close line ${safe(l.line)}">${icon('close')}</button></div>
                 ${dirs}
                 <p class="nearby-front"><small>${l.mode === 'bus' ? 'On the front of the bus' : 'On the front of the tram'}</small><strong>${safe(l.line)} ${safe(first)}</strong> · <span lang="de">Richtung</span> ${safe(first)} means “towards ${safe(first)}”.</p>
-                <div class="nearby-line-actions"><button type="button" class="nearby-pin" data-n="pin" data-v="${safe(l.line)}" data-key="pin-${safe(l.line)}" aria-pressed="${pinned}">${icon('star')}${pinned ? 'Pinned' : `Pin line ${safe(l.line)}`}</button>${inline && stop.map ? `<button type="button" class="quiet-button" data-n="boards" data-v="${safe(l.line)}" data-key="boards-${safe(l.line)}">${icon('pin')}Where it boards</button>` : ''}${inline ? '' : `<small>${stop.map ? 'Its area is marked on the map. Which point it uses isn’t confirmed.' : 'Boarding points weren’t recorded here.'}</small>`}</div>
-            </section>`;
-        }
-
-        function areaPanel(stop, v, area) {
-            const shown = v.areas.find((a) => a.id === area.id);
-            const rows = (shown ? shown.cards : [])
-                .flatMap((c) => c.shown.map((d) => ({ c, d })))
-                .sort((a, b) => a.d.mins - b.d.mins)
-                .slice(0, 8);
-            const status = shown?.blocked
-                ? L
-                    ? L.chip('conflict', 'lift', 'Lift out of order')
-                    : '<span class="nearby-tag is-conflict">Lift out of order</span>'
-                : '';
-            const note = shown?.hidden
-                ? 'Hidden by Step-free: no step-free way to these platforms right now (sample).'
-                : shown?.blocked
-                  ? 'No step-free way to these platforms right now (sample).'
-                  : 'KVB lists these lines here. Which point each one uses isn’t confirmed.';
-            return `<section class="nearby-area-panel" aria-label="Departures from the area for lines ${area.lines.join(', ')}">
-                <div class="nearby-area-panel-head">${badgesOf(area.lines, stop)}<strong>${area.places.length} boarding points</strong>${status}</div>
-                ${rows
-                    .map(
-                        ({ c, d }) =>
-                            `<button type="button" class="nearby-area-row" data-n="row-line" data-v="${safe(c.line)}" data-key="row-${safe(d.id)}">${L ? L.line(c.line, c.look, { kind: c.mode }) : badge(c.line, c.look)}<span class="nearby-dest">${safe(d.dest)}</span>${tagOf(d, true)}<strong>${when(d).big}${when(d).unit ? ` ${when(d).unit}` : ''}</strong></button>`,
-                    )
-                    .join('')}
-                ${rows.length ? '' : '<p class="nearby-area-empty">Nothing from here matches the filters.</p>'}
-                <p class="nearby-area-note">${note}</p>
+                <div class="nearby-line-actions"><button type="button" class="nearby-pin" data-n="pin" data-v="${safe(l.line)}" data-key="pin-${safe(l.line)}" aria-pressed="${pinned}">${icon('star')}${pinned ? 'Pinned' : `Pin line ${safe(l.line)}`}</button>${hasMap(stop) ? `<button type="button" class="quiet-button" data-n="boards" data-v="${safe(l.line)}" data-key="boards-${safe(l.line)}">${icon('pin')}Where it boards</button>` : ''}</div>
             </section>`;
         }
 
@@ -354,26 +326,8 @@
             const stop = v.stop;
             if (state.line && !stop.lines.some((l) => l.line === state.line))
                 state.line = '';
-            if (
-                state.area &&
-                state.area !== 'none' &&
-                !stop.areas.some((a) => a.id === state.area)
-            )
-                state.area = '';
-            // An area is always picked beside the map, the first one unless
-            // you choose (owner-approved canvas: no empty map column).
-            const showsMap = desktop() || state.view === 'map';
-            const picked =
-                state.area === 'none'
-                    ? ''
-                    : state.area ||
-                      (stop.map && showsMap
-                          ? v.areas[0]?.id || stop.areas[0]?.id
-                          : '') ||
-                      '';
-            state.shownArea = picked;
-            const wide = desktop();
-            container.dataset.view = wide ? 'both' : state.view;
+            if (!hasMap(stop)) state.view = 'list';
+            container.dataset.view = state.view;
             const places = placesOf(stop);
             const meta = stop.map
                 ? `Closest station · ${stop.areas.length} areas · ${places} boarding points · ${stop.note.replace('Recorded', 'recorded')}`
@@ -392,8 +346,15 @@
                 const on = F.has(s.id);
                 return `<button type="button" class="nearby-star" data-action="favourite-stop" data-stop="${safe(s.id)}" data-name="${safe(s.name)}" aria-pressed="${on}" aria-label="${on ? `${safe(s.name)} is in your favourites` : `Add ${safe(s.name)} to favourites`}" title="${on ? 'In your favourites' : 'Add to favourites'}">${icon('star')}</button>`;
             };
+            // The map's switch: List | Map on desktop; on phones one button
+            // that opens the map's screen.
+            const views = !hasMap(stop)
+                ? ''
+                : desktop()
+                  ? `<div class="nearby-views" role="group" aria-label="Show as"><button type="button" data-n="view" data-v="list" data-key="view-list" aria-pressed="${state.view === 'list'}" aria-label="List">${icon('list')}</button><button type="button" data-n="view" data-v="map" data-key="view-map" aria-pressed="${state.view === 'map'}" aria-label="Map">${icon('map')}</button></div>`
+                  : `<button type="button" class="nearby-open-map" data-n="view" data-v="map" data-key="view-map" aria-label="Open the map" title="Map">${icon('map')}</button>`;
             part('bar').innerHTML =
-                `<button type="button" class="nearby-stop" data-n="stops" data-key="stops" aria-expanded="${state.stopsOpen}" aria-label="Change stop, now ${safe(stop.name)}"><span class="nearby-stop-name">${safe(stop.name)}${icon('down')}</span>${metaLabels}</button>${favouriteButton(stop)}${stop.map ? `<div class="nearby-views" role="group" aria-label="Show as"><button type="button" data-n="view" data-v="list" data-key="view-list" aria-pressed="${state.view === 'list'}" aria-label="List">${icon('list')}</button><button type="button" data-n="view" data-v="map" data-key="view-map" aria-pressed="${state.view === 'map'}" aria-label="Map">${icon('map')}</button></div>` : ''}`;
+                `<button type="button" class="nearby-stop" data-n="stops" data-key="stops" aria-expanded="${state.stopsOpen}" aria-label="Change stop, now ${safe(stop.name)}"><span class="nearby-stop-name">${safe(stop.name)}${icon('down')}</span>${metaLabels}</button>${favouriteButton(stop)}${views}`;
             const stops = part('stops');
             stops.hidden = !state.stopsOpen;
             stops.innerHTML = state.stopsOpen
@@ -414,13 +375,19 @@
             part('count').innerHTML =
                 `<span role="status">${v.shown === v.total ? `All ${v.total} departures · soonest first` : `Showing ${v.shown} of ${v.total} departures`}</span>${v.active ? '<button type="button" class="text-action" data-n="clear" data-key="clear">Clear filters</button>' : ''}`;
 
+            // Each area says where it boards (OpenStreetMap's platforms) and
+            // opens the map on its lines.
+            const boards = (area) =>
+                hasMap(stop)
+                    ? M.short(stop.id, M.groupOf(area.lines)) || `${area.places.length} boarding points`
+                    : 'Boarding points not recorded';
             part('list').innerHTML = v.areas.length
                 ? v.areas
                       .map(
                           (
                               area,
                           ) => `<section class="nearby-area" aria-label="Area for lines ${area.lines.join(', ')}">
-                    <div class="nearby-area-head"><span class="nearby-badges">${badgesOf(area.lines, stop)}</span>${L ? L.chip(stop.map ? 'calm' : 'unsure', 'pin', stop.map ? `${area.places.length} boarding points${area.mode === 'bus' ? ' · buses' : ''}` : 'Boarding points not recorded') : `<span class="nearby-area-meta">${stop.map ? `${area.places.length} boarding points${area.mode === 'bus' ? ' · buses' : ''}` : 'Boarding points not recorded'}</span>`}${area.blocked ? (L ? L.chip('conflict', 'lift', 'Lift out of order') : '<span class="nearby-tag is-conflict">Lift out of order</span>') : ''}${stop.map ? `<button type="button" class="nearby-area-map" data-n="area" data-v="${safe(area.id)}" data-key="area-${safe(area.id)}" aria-pressed="${picked === area.id && !state.line}">${icon(L ? 'map' : 'pin')}<span>${picked === area.id && !state.line ? 'On the map' : 'Show on the map'}</span></button>` : ''}</div>
+                    <div class="nearby-area-head"><span class="nearby-badges">${badgesOf(area.lines, stop)}</span>${L ? L.chip(hasMap(stop) ? 'calm' : 'unsure', 'pin', boards(area)) : `<span class="nearby-area-meta">${boards(area)}</span>`}${area.blocked ? (L ? L.chip('conflict', 'lift', 'Lift out of order') : '<span class="nearby-tag is-conflict">Lift out of order</span>') : ''}${hasMap(stop) ? `<button type="button" class="nearby-area-map" data-n="show" data-v="${M.groupOf(area.lines)}" data-key="show-${safe(area.id)}">${icon(L ? 'map' : 'pin')}<span>Show on the map</span></button>` : ''}</div>
                     ${area.blocked ? `<p class="nearby-area-warning">${area.hidden ? 'Hidden by Step-free: no step-free way to these platforms right now (sample).' : 'No step-free way to these platforms right now (sample).'}</p>` : ''}
                     <div class="nearby-cards">${area.cards.map((c) => card(stop, c)).join('')}</div>
                 </section>`,
@@ -431,25 +398,9 @@
                               : '',
                       )
                 : `<div class="nearby-empty"><strong>Nothing matches these filters</strong><span>These are recorded departures, so a missing line may still run.</span><button type="button" class="quiet-button" data-n="clear" data-key="clear-empty">Clear filters</button></div>`;
-
-            // The aside: the map, then the picked line (desktop) or area.
-            part('nomap').hidden = stop.map;
-            part('nomap').textContent = stop.map
-                ? ''
-                : `No map for ${stop.name} yet: its boarding points weren’t recorded.`;
-            mapBox.hidden = !stop.map;
-            const selectedLine = stop.lines.find((l) => l.line === state.line);
-            const area =
-                (selectedLine && areaOfLine(stop, selectedLine.line)) ||
-                stop.areas.find((a) => a.id === picked);
-            let aside = '';
-            if (area && stop.map) aside = areaPanel(stop, v, area);
-            else if (stop.map)
-                aside = `<p class="nearby-hint">${wide ? 'Pick a line to see both directions and where it boards, or an area on the map to see everything leaving from it.' : 'Tap an area on the map to see what leaves from it.'}</p>`;
-            part('detail').innerHTML = aside;
             part('footnote').textContent =
                 `${stop.note} · ${now.stale ? 'last times received' : 'rounded minutes'}, not live.`;
-            map.sync(stop, area);
+            if (hasMap(stop)) renderMap(stop);
             if (focusKey) {
                 container
                     .querySelector(`[data-key="${CSS.escape(focusKey)}"]`)
@@ -458,171 +409,94 @@
             }
         }
 
-        /* ---------- Map ---------- */
-        const map = (() => {
-            let instance = null,
-                status = 'idle',
-                shownStop = null,
-                markers = [];
-            const showFallback = (stop) => {
-                status = 'failed';
-                canvas.hidden = true;
-                fallback.hidden = false;
-                fallback.innerHTML = `<p>The map couldn’t load. Choose an area:</p>${stop.areas
-                    .map(
-                        (a) =>
-                            `<button type="button" class="quiet-button" data-n="area" data-v="${safe(a.id)}" data-key="fallback-${safe(a.id)}">${badgesOf(a.lines, stop)}</button>`,
-                    )
-                    .join('')}`;
-            };
-            function draw(stop, picked) {
-                markers.forEach((m) => m.remove());
-                markers = [];
-                const pills = [];
-                stop.areas.forEach((a) => {
-                    const on = picked?.id === a.id;
-                    const muted = picked && !on;
-                    a.places.forEach((p) => {
-                        const dot = document.createElement('span');
-                        dot.className = `nearby-dot${on ? ' is-on' : ''}${muted ? ' is-muted' : ''}`;
-                        dot.style.setProperty(
-                            '--line',
-                            N.look(a.lines[0], a.mode).colour,
-                        );
-                        markers.push(
-                            new maplibregl.Marker({ element: dot })
-                                .setLngLat([p.lng, p.lat])
-                                .addTo(instance),
-                        );
-                    });
-                    const pill = document.createElement('button');
-                    pill.type = 'button';
-                    pill.className = `nearby-pill${on ? ' is-on' : ''}${scene().liftOut.includes(a.id) ? ' is-blocked' : ''}`;
-                    pill.dataset.n = 'area';
-                    pill.dataset.v = a.id;
-                    pill.dataset.key = `pill-${a.id}`;
-                    pill.setAttribute('aria-pressed', String(on));
-                    pill.setAttribute(
-                        'aria-label',
-                        `Area for lines ${a.lines.join(', ')}`,
-                    );
-                    pill.innerHTML = `<span>${badgesOf(a.lines, stop)}</span>`;
-                    const marker = new maplibregl.Marker({ element: pill })
-                        .setLngLat([a.lng, a.lat])
-                        .addTo(instance);
-                    markers.push(marker);
-                    pills.push({ marker, pill, at: [a.lng, a.lat] });
+        /* ---------- The map ----------
+           Drawn once per stop; a pick fades the other lines. Beside it (below
+           it on phones): the station's groups, or where the pick boards. */
+        let drawn = '',
+            mapReturn = '';
+        const lookOf = (stop, line) =>
+            stop.lines.find((l) => l.line === line)?.look ||
+            N.look(line, ['136', '146'].includes(line) ? 'bus' : 'tram');
+        function standCard(stop, pick) {
+            const group = M.groups[pick];
+            const name = group
+                ? group.name
+                : `${lookOf(stop, pick).bus ? 'Bus' : 'Tram'} ${pick}`;
+            const lit = M.platformsOf(stop.id, pick);
+            const tint = ['A', 'B'].includes(pick)
+                ? '#211d15'
+                : lookOf(stop, group ? group.lines[0] : pick).colour;
+            return `<section class="mapview-stand" aria-labelledby="mapview-stand-title"><span class="mapview-stand-head"><strong id="mapview-stand-title">Where to stand · ${safe(name)}</strong><small>${safe(M.where(stop.id, pick))}</small></span>${M.closeUp(stop.id, lit, tint)}${M.legend(stop.id, lit)}</section>`;
+        }
+        function groupsList(stop) {
+            const rows = Object.entries(M.groups)
+                .filter(([, g]) => g.lines.some((line) => stop.lines.some((l) => l.line === line)))
+                .map(
+                    ([key, g]) =>
+                        `<button type="button" class="mapview-group" data-n="pick" data-v="${key}" data-key="pick-${key}"><span class="nearby-badges">${badgesOf(g.lines, stop)}</span><span>${safe(M.where(stop.id, key))}</span>${icon('chevron')}</button>`,
+                )
+                .join('');
+            return `<div class="mapview-groups"><h3>At ${safe(stop.name)}</h3>${rows}<p>Pick a line or a group to see where it boards. The map is drawn from the stops each line passes, not to scale.</p></div>`;
+        }
+        function renderMap(stop) {
+            const open = state.view === 'map';
+            part('mapview').inert = !open;
+            if (drawn !== stop.id) {
+                mapPart('canvas').innerHTML = M.diagram();
+                drawn = stop.id;
+            }
+            const pick = state.pick;
+            M.paint(mapPart('canvas').firstElementChild, pick);
+            const title = pick ? 'Where it boards' : 'Lines and stops';
+            mapPart('head').innerHTML = desktop()
+                ? `<span><strong id="nearby-map-title">${title}</strong><small>${safe(stop.name)} · drawn from the stops each line passes</small></span><button type="button" class="mapview-close" data-n="view" data-v="list" data-key="map-close" aria-label="Close the map">${icon('close')}</button>`
+                : `<button type="button" class="mapview-close" data-n="view" data-v="list" data-key="map-close" aria-label="Back">${icon('back')}</button><span><strong id="nearby-map-title">${title}</strong><small>${safe(stop.name)} · not to scale</small></span>`;
+            const chip = (key, label, colour) =>
+                `<button type="button" class="mapview-chip" data-n="pick" data-v="${key}" data-key="pick-${key || 'all'}" aria-pressed="${pick === key}">${colour ? `<i style="--line:${colour}" aria-hidden="true"></i>` : ''}${label}</button>`;
+            mapPart('chips').innerHTML =
+                chip('', 'All lines') +
+                Object.values(M.groups)
+                    .flatMap((g) => g.lines)
+                    .filter((line) => stop.lines.some((l) => l.line === line))
+                    .map((line) => chip(line, line, lookOf(stop, line).colour))
+                    .join('');
+            mapPart('side').innerHTML = pick ? standCard(stop, pick) : groupsList(stop);
+        }
+        // Phones: the screen opens on Neumarkt, the rest a drag away.
+        function centreMap() {
+            const frame = mapPart('frame'),
+                canvas = mapPart('canvas');
+            frame.scrollLeft = canvas.offsetWidth * (400 / 820) - frame.clientWidth / 2;
+            frame.scrollTop = canvas.offsetHeight * (321 / 660) - frame.clientHeight / 2;
+            mapPart('body').scrollTop = 0;
+        }
+        function openMap(pick, from) {
+            const was = state.view;
+            state.view = 'map';
+            state.pick = pick;
+            mapReturn = from || 'view-map';
+            focusKey = 'map-close';
+            if (!desktop() && was !== 'map')
+                root.TravelHistory?.open('map', () => closeMap(true));
+            render();
+            if (was === 'map') return;
+            if (desktop())
+                part('mapview').scrollIntoView({
+                    block: 'nearest',
+                    behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
                 });
-                place(pills);
-            }
-            // Labels sit beside their area: above, below, right or left,
-            // whichever doesn't cover a label already placed.
-            function place(pills) {
-                const taken = [];
-                pills.forEach(({ marker, pill, at }) => {
-                    const { x, y } = instance.project(at);
-                    const w = pill.offsetWidth || 90,
-                        h = pill.offsetHeight || 44;
-                    const tries = [
-                        [0, -(h / 2 + 4)],
-                        [0, h / 2 + 4],
-                        [w / 2 + 8, 0],
-                        [-(w / 2 + 8), 0],
-                    ];
-                    const box = ([dx, dy]) => ({
-                        left: x + dx - w / 2,
-                        right: x + dx + w / 2,
-                        top: y + dy - h / 2 + 6,
-                        bottom: y + dy + h / 2 - 6,
-                    });
-                    const clear = (b) =>
-                        taken.every(
-                            (t) =>
-                                b.right <= t.left ||
-                                b.left >= t.right ||
-                                b.bottom <= t.top ||
-                                b.top >= t.bottom,
-                        );
-                    const pick = tries.find((t) => clear(box(t))) || tries[0];
-                    marker.setOffset(pick);
-                    taken.push(box(pick));
-                });
-            }
-            function fit(stop) {
-                const points = stop.areas.flatMap((a) => a.places);
-                const lng = points.map((p) => p.lng),
-                    lat = points.map((p) => p.lat);
-                instance.fitBounds(
-                    [
-                        [Math.min(...lng), Math.min(...lat)],
-                        [Math.max(...lng), Math.max(...lat)],
-                    ],
-                    {
-                        padding: { top: 64, bottom: 28, left: 44, right: 44 },
-                        animate: false,
-                        maxZoom: 17.5,
-                    },
-                );
-            }
-            function sync(stop, picked) {
-                const visible = stop.map && (desktop() || state.view === 'map');
-                if (!visible) return;
-                if (status === 'failed') return showFallback(stop);
-                if (status === 'ready') {
-                    instance.resize();
-                    if (shownStop !== stop.id) fit(stop);
-                    shownStop = stop.id;
-                    draw(stop, picked);
-                    return;
-                }
-                if (status === 'loading') return;
-                const load = root.StationMap?.load;
-                if (!load || typeof document === 'undefined')
-                    return showFallback(stop);
-                status = 'loading';
-                canvas.setAttribute(
-                    'aria-label',
-                    `Map of ${stop.name}’s boarding areas`,
-                );
-                const timer = setTimeout(
-                    () => status === 'loading' && showFallback(stop),
-                    10000,
-                );
-                load()
-                    .then(() => {
-                        instance = new maplibregl.Map({
-                            container: canvas,
-                            style: 'https://tiles.openfreemap.org/styles/positron',
-                            center: [stop.lng, stop.lat],
-                            zoom: 16.5,
-                            attributionControl: false,
-                            scrollZoom: false,
-                            dragRotate: false,
-                            pitchWithRotate: false,
-                        });
-                        instance.on('load', () => {
-                            clearTimeout(timer);
-                            if (status !== 'loading') return;
-                            status = 'ready';
-                            render();
-                        });
-                        instance.on('error', () => {
-                            if (status === 'loading') showFallback(stop);
-                        });
-                    })
-                    .catch(() => {
-                        clearTimeout(timer);
-                        showFallback(stop);
-                    });
-            }
-            return {
-                sync,
-                destroy: () => {
-                    markers.forEach((m) => m.remove());
-                    instance?.remove();
-                },
-            };
-        })();
+            else centreMap();
+        }
+        function closeMap(fromBack = false) {
+            if (state.view !== 'map') return;
+            state.view = 'list';
+            state.pick = '';
+            if (!fromBack && !desktop()) root.TravelHistory?.closed('map');
+            focusKey = container.querySelector(`[data-key="${CSS.escape(mapReturn)}"]`)
+                ? mapReturn
+                : 'view-map';
+            render();
+        }
 
         /* ---------- Events ---------- */
         function act(name, value, el) {
@@ -634,12 +508,21 @@
                     stop: value,
                     stopsOpen: false,
                     line: '',
-                    area: '',
+                    pick: '',
                     panel: '',
                     filters: model.filterDefaults(),
                 });
                 focusKey = 'stops';
-            } else if (name === 'view') state.view = value;
+            } else if (name === 'view') {
+                if (value === 'map') openMap('', el.dataset.key);
+                else closeMap();
+                return;
+            } else if (name === 'show' || name === 'boards') {
+                // "Show on the map" opens it on the area's lines; "Where it
+                // boards" on the open line.
+                openMap(value, el.dataset.key);
+                return;
+            } else if (name === 'pick') state.pick = state.pick === value ? '' : value;
             else if (name === 'chip') {
                 if (value === 'delayed') f.delayed = !f.delayed;
                 else if (value === 'stepfree') f.stepfree = !f.stepfree;
@@ -660,7 +543,6 @@
             } else if (name === 'line') {
                 const was = state.line;
                 state.line = state.line === value ? '' : value;
-                if (state.line) state.area = '';
                 // On phones a line opens in place: the phone's Back closes it.
                 if (!desktop()) {
                     if (was && !state.line) root.TravelHistory?.closed('line');
@@ -676,31 +558,8 @@
             } else if (name === 'pin') {
                 state.pinned = toggleIn(state.pinned, value);
                 writePins(state.pinned);
-            } else if (name === 'area') {
-                const on = state.shownArea === value && !state.line;
-                state.area = on ? 'none' : value;
-                state.line = '';
-                if (!desktop() && !on) state.view = 'map';
-            } else if (name === 'boards') {
-                const stop = model.stopOf(state.stop);
-                state.area = areaOfLine(stop, value)?.id || '';
-                state.line = '';
-                state.view = 'map';
-                focusKey = 'view-map';
-            } else if (name === 'row-line') {
-                if (!desktop() && !state.line)
-                    root.TravelHistory?.open('line', closeLine);
-                state.line = value;
-                if (!desktop()) {
-                    state.view = 'list';
-                    focusKey = 'close-line';
-                } else focusKey = 'close-line';
             }
             render();
-            if (name === 'row-line' && !desktop())
-                container
-                    .querySelector('.nearby-line.is-inline')
-                    ?.scrollIntoView({ block: 'nearest' });
         }
         function closeLine() {
             if (!state.line) return;
@@ -721,6 +580,10 @@
             } else if (state.stopsOpen) {
                 state.stopsOpen = false;
                 focusKey = 'stops';
+            } else if (state.view === 'map') {
+                event.preventDefault();
+                closeMap();
+                return;
             } else if (state.line) {
                 focusKey = `line-${state.line}`;
                 state.line = '';
@@ -753,7 +616,7 @@
                 Object.assign(state, {
                     stop: id,
                     line: '',
-                    area: '',
+                    pick: '',
                     panel: '',
                     stopsOpen: false,
                 });
@@ -768,7 +631,7 @@
                             ? stop
                             : model.stops[0].id,
                     line: '',
-                    area: '',
+                    pick: '',
                     panel: '',
                     stopsOpen: false,
                     filters: { ...model.filterDefaults(), stepfree },
@@ -783,7 +646,6 @@
                 container.removeEventListener('click', onClick);
                 container.removeEventListener('keydown', onKey);
                 document.removeEventListener('pointerdown', onOutside);
-                map.destroy();
             },
         };
     }
