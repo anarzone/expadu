@@ -4,6 +4,15 @@
 @media (max-width: 999px) {
     body.travel-palette #composer-tray {
         view-transition-name: composer-tray;
+        transition:
+            translate 260ms var(--ease-settle),
+            opacity 200ms ease;
+    }
+    /* Scrolling down, Composer's button steps aside off the minutes (app.js). */
+    body.travel-palette.composer-tucked #composer-tray:not(.is-active) {
+        translate: 0 calc(100% + 96px);
+        opacity: 0;
+        pointer-events: none;
     }
     :root[data-slide]::view-transition-old(root),
     :root[data-slide]::view-transition-new(root) {

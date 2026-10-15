@@ -876,6 +876,11 @@ body.travel-palette .plan-option > .details-toggle {
         clip-path: inset(50%);
         white-space: nowrap;
     }
+    /* Phones sort from the bar (.plan-bar-sort), so the hidden heading
+       keeps no second, unseen sort button. */
+    body.travel-palette #results .results-heading .icon-button {
+        display: none;
+    }
     .plan-check-chips {
         order: 2;
         flex-basis: 100%;

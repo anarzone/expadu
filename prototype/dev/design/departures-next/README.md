@@ -11,6 +11,38 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The whole page, reviewed — 15 October 2026
+
+After the owner's critical review of all of Travel ("fix them all"):
+
+- Two clocks: the sample day is Wed 30 Sept, 13:10, but the departures were
+  recorded on Sun 4 Oct at 22:19. The station's dashed label now says so
+  ("Recorded Sun 4 Oct, 22:19", was "Not live · 22:19"); the footnote is
+  "Rounded minutes, not live."
+- A lift out of order (Review menu) keeps the trip line: "No step-free way to
+  tram 4 · Lift out of order · It leaves from Gleis 2, underground at
+  Neumarkt" in coral, with "Plan another way" instead of "I'm on my way". The
+  trip page says it too ("… · no step-free way down (sample)"). The
+  underground platform comes from the OpenStreetMap close-up.
+- When the line suggests an earlier tram than your plan's, it says why, in a
+  quiet grey: "Your 13:24 leaves only 2 min spare".
+- Phones: names and vias wrap instead of ending in "…"; Composer's round
+  button steps aside while you scroll down and comes back when you scroll up;
+  Plan a trip's options sort from the bar's sort button (the hidden heading
+  keeps none).
+- Desktop: once a place is picked, When and What matters fold into one line
+  ("When · what matters / Arrive by 14:00") so the options come first; it
+  opens in place.
+- Steps say the trip page's words everywhere: "Walk to Neumarkt", "Tram 4 to
+  Wiener Platz · From Neumarkt · towards Schlebusch" (was "Board line 4" and
+  "Köln …").
+- The way's strip uses the map's marks: you a dot, a stop a capsule, there a
+  square.
+- Less noise: "Change here" names the lines and where they board ("Change
+  here to 1 · 7 · 9: Gleis 3 · 4"); a line says "Later departures aren't in
+  the recording" once, not under each direction; the station's name under
+  each strip's dot is gone (it's the heading).
+
 ## One trip page — 15 October 2026
 
 Owner-agreed on the Travel directions canvas, row 22 ("make it the same
@@ -157,7 +189,7 @@ Owner-agreed on the Travel directions canvas: option B (rows 17–18), after
   day's rail; the appointment's dot on that rail is ink, not orange.
 - Top of Nearby: a ring counting down to leaving, "Leave now · Blue Card
   appointment, 14:00", the way in one sentence, "I'm on my way" and an
-  arrow that opens the way as a strip of stations (each name under its dot)
+  arrow that opens the way as a strip of stations (each name under its mark)
   with the other ways. On phones and in a narrow Nearby the button goes
   under the line.
 - Missed or cancelled 13:14 (Review menu): "Take the 13:24" with the reason
@@ -285,7 +317,7 @@ with strength by how much it changes the trip (`labels.js`, `labels.css`).
 - It won't work: filled coral (Cancelled, Lift out of order, 1 notice).
 - Watch out: amber with an icon ("2 min late" everywhere,
   Only 2 min spare, showers likely, a long wait as a strip along the card).
-- Not sure: a dashed outline (Not live · 22:19, Lifts unknown, Either of 2
+- Not sure: a dashed outline (Recorded Sun 4 Oct, 22:19, Lifts unknown, Either of 2
   boarding points · not confirmed, Scheduled time · not live, Sample).
 - Good to go: quiet (Best for you, 12 min spare, No change).
 
@@ -380,6 +412,7 @@ rest is in `docs/superpowers/plans/2026-10-10-travel-combined.md`.
     next tram after ("then 23:53").
   - *A lift is out of order:* Step-free leads the filters and is on; the
     area without a step-free way in comes first, hidden with its warning.
+    The trip line stays and says there's no step-free way to tram 4.
   - *Live times paused:* clock times marked not live, from 22:19.
 
 - **Phones** get the approved bar: **Where to?** (opens Plan a trip, which

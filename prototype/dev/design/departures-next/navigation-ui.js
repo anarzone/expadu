@@ -409,6 +409,23 @@
               }
             : {};
         const board = list.find((item) => item.mode === 'transit');
+        // A lift out of order (sample): an underground platform has no
+        // step-free way down, said from the first moment as Nearby does.
+        const liftOut =
+            !was &&
+            sc === 'lift' &&
+            !!board &&
+            !!platformOf(board)?.note.includes('underground');
+        const warning = was
+            ? warn
+            : liftOut
+              ? { tone: 'conflict', why: 'Lift out of order · ' }
+              : {};
+        const extra = was
+            ? spareText
+            : liftOut
+              ? ' · no step-free way down (sample)'
+              : '';
         const nextLook = (at) => ({
             tile: 'badge',
             line: lineOf(board),
@@ -432,14 +449,14 @@
             const at = platformOf(board);
             return {
                 ...base,
-                ...warn,
-                tone: warn.tone || (wait <= 0 ? 'attention' : 'calm'),
+                ...warning,
+                tone: warning.tone || (wait <= 0 ? 'attention' : 'calm'),
                 ring:
                     wait <= 0
                         ? { text: 'now', label: '', arc: 100 }
                         : ring(wait),
                 title: wait <= 0 ? 'Leave now' : `Leave at ${route.depart}`,
-                sub: `${first.title.replace(/Köln\s+/g, '')} · ${first.detail}${was ? spareText : ''}`,
+                sub: `${first.title.replace(/Köln\s+/g, '')} · ${first.detail}${extra}`,
                 map: at ? at.note : `Your way · ${route.duration} min`,
                 stand: !!at,
                 look: board ? nextLook(at) : ownWay(first),
@@ -450,10 +467,10 @@
             const at = platformOf(board);
             return {
                 ...base,
-                ...warn,
+                ...warning,
                 ring: ring(left(board ? board.time : route.arrive)),
                 title: `Walk to ${to}`,
-                sub: `${step.detail}${was ? spareText : ''}`,
+                sub: `${step.detail}${extra}`,
                 how: board
                     ? 'We’ll see when you reach the stop'
                     : 'We’ll see when you arrive',

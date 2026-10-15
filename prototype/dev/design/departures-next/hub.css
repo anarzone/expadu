@@ -270,13 +270,12 @@ body.travel-palette .nearby-area .nearby-cards {
     stroke: var(--color-text-soft);
     stroke-width: 2;
 }
+/* Names and vias in full; they wrap rather than end in "…" (the approved
+   line card; review, 15 Oct 2026). */
 .strip-via {
     max-width: 100%;
-    overflow: hidden;
     color: var(--color-text-soft);
     font-size: 12.5px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 .strip-when {
     display: inline-flex;
@@ -312,15 +311,6 @@ body.travel-palette .nearby-area .nearby-cards {
     border: 4px solid var(--line);
     border-radius: 50%;
     background: var(--color-bg-surface);
-}
-.strip-track small {
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translate(-50%, -6px);
-    color: var(--color-text-soft);
-    font-size: 11px;
-    white-space: nowrap;
 }
 .nearby-strip > .tl-strip {
     grid-column: 1 / -1;
@@ -377,9 +367,6 @@ body.travel-palette .nearby-area .nearby-cards {
         margin: -6px 0 0 -6px;
         border-width: 3px;
     }
-    .strip-track small {
-        display: none;
-    }
     .strip-end.is-right {
         grid-area: first;
     }
@@ -414,9 +401,6 @@ body.travel-palette .nearby-area .nearby-cards {
     }
     .strip-dest > span {
         min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
     .strip-end.is-left .strip-dest svg {
         display: none;
@@ -699,7 +683,9 @@ body.travel-palette {
 .trip-line.is-conflict .trip-line-why {
     color: var(--color-conflict-text);
 }
-.trip-line-why.is-quiet {
+/* A reason that isn't urgent (why not your plan's tram) stays quiet even
+   on an amber line. */
+.trip-line .trip-line-why.is-quiet {
     color: var(--color-text-soft);
 }
 .trip-line .next-trip-go {
@@ -791,7 +777,9 @@ body.travel-palette {
     width: 14px;
     height: 14px;
 }
-/* The strip of stations: each name and time sits under its dot. */
+/* The strip of stations: each name and time sits under its mark, the
+   one map's marks (owner, 15 Oct review): you a dot, a stop a capsule,
+   there a square. */
 .way-strip {
     display: flex;
     align-items: center;
@@ -808,11 +796,11 @@ body.travel-palette {
 }
 .way-node > i {
     display: block;
-    width: 14px;
-    height: 14px;
+    width: 24px;
+    height: 15px;
     box-sizing: border-box;
-    border: 3px solid var(--line);
-    border-radius: 50%;
+    border: 2.5px solid var(--color-text);
+    border-radius: 999px;
     background: var(--color-bg-surface);
 }
 .way-node.is-you > i {
@@ -1027,5 +1015,55 @@ body.travel-palette .nearby-banner.is-labelled .tl-banner.is-unsure .tl-tile {
     }
     .trip-line-way {
         animation: none;
+    }
+}
+/* Desktop, once a place is picked: When and What matters fold into one line
+   under To, so the options come first; the line opens them in place
+   (review, 15 Oct 2026). */
+.plan-choices-summary {
+    display: none;
+}
+@media (min-width: 1000px) {
+    body.travel-palette[data-plan-stage='picked'] .plan-choices-summary {
+        display: flex;
+        align-items: center;
+        gap: var(--space-10);
+        width: 100%;
+        min-height: 52px;
+        margin-top: var(--space-10);
+        padding: var(--space-8) var(--space-14);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-bg-surface);
+        color: var(--color-text);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+    .plan-choices-summary > span:first-child {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        line-height: var(--leading-snug);
+    }
+    .plan-choices-summary small {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .plan-choices-summary strong {
+        font-size: var(--text-control);
+        font-weight: var(--weight-semibold);
+    }
+    .plan-choices-summary > span:last-child svg {
+        width: 16px;
+        height: 16px;
+        transition: transform var(--duration-fast) var(--ease-standard);
+    }
+    .plan-choices-summary[aria-expanded='true'] > span:last-child svg {
+        transform: rotate(180deg);
+    }
+    body.travel-palette[data-plan-stage='picked'] .plan-controls:not(.is-open) {
+        display: none;
     }
 }

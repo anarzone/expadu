@@ -49,8 +49,8 @@
         <script defer src="./service-context.js?v=bbb3393e63ce"></script>
         <script defer src="./nearby.js?v=011793fa8825"></script>
         <script defer src="./favourites.js?v=f85e0385d4c1"></script>
-        <script defer src="./nearby-ui.js?v=c3cfd9e99857"></script>
-        <script defer src="./app.js?v=efaa15632923"></script>
+        <script defer src="./nearby-ui.js?v=1598059b2056"></script>
+        <script defer src="./app.js?v=843bdbc69164"></script>
         <script defer src="../connected/model.js?v=b727e359c259"></script>
         <script defer src="../connected/store.js?v=17618b25abbe"></script>
         <script defer src="../connected/bridge.js?v=4e0208eb36ca"></script>
@@ -110,7 +110,7 @@
         <link rel="stylesheet" href="./navigation.css?v=1e69f8a31cdb" />
         <link rel="stylesheet" href="./trip.css?v=baf6cfa909a1" />
         <script defer src="./navigation-model.js?v=e7661730149c"></script>
-        <script defer src="./navigation-ui.js?v=0ff9678b2821"></script>
+        <script defer src="./navigation-ui.js?v=5a8e07dbf2fc"></script>
         <link
             rel="stylesheet"
             href="../connected/today-palette.css?v=a12f6afe0787"
@@ -122,13 +122,13 @@
         <link rel="stylesheet" href="./soft-palette.css?v=80891a54ed58" />
         <link rel="stylesheet" href="./workspace.css?v=970cd8f55a4a" />
         <link rel="stylesheet" href="./station-context.css?v=1347d89c30fa" />
-        <link rel="stylesheet" href="./nearby.css?v=cc83315ca4bc" />
-        <link rel="stylesheet" href="./plan.css?v=7880d8b5ff18" />
+        <link rel="stylesheet" href="./nearby.css?v=3b499b3aaeb9" />
+        <link rel="stylesheet" href="./plan.css?v=3c2ef6e90863" />
         <link rel="stylesheet" href="./day.css?v=541ef0685b1a" />
         <link rel="stylesheet" href="./labels.css?v=55fa39dc5c91" />
         <link rel="stylesheet" href="./press.css?v=45276e390144" />
-        <link rel="stylesheet" href="./hub.css?v=150e4fb73bbf" />
-        <link rel="stylesheet" href="./slide.css?v=aee158c3f5ce" />
+        <link rel="stylesheet" href="./hub.css?v=f5690523ee3a" />
+        <link rel="stylesheet" href="./slide.css?v=c7707ddbd00f" />
         <link rel="stylesheet" href="../connected/page-frame.css?v=b10bf58c94f1" />
     </head>
     <body
@@ -375,6 +375,19 @@
                         ><strong id="plan-bar-title">Plan a trip</strong
                         ><small id="plan-bar-sub" hidden></small
                     ></span>
+                    <!-- Phones sort the options from the bar (review,
+                         15 Oct 2026); desktop's sort is beside the title. -->
+                    <button
+                        type="button"
+                        class="icon-button plan-bar-sort"
+                        data-action="sort"
+                        aria-label="Sort routes"
+                        title="Sort routes"
+                        aria-haspopup="dialog"
+                        hidden
+                    >
+                        <span data-icon="sort"></span>
+                    </button>
                 </div>
                 <!-- Plan a trip's panel (owner, 14 Oct 2026; Travel directions
                      canvas, row 16): beside Nearby on desktop, growing to two
@@ -511,7 +524,23 @@
                                     aria-label="Suggested locations"
                                 ></div>
                             </div>
-                            <div class="plan-controls">
+                            <!-- Desktop, once a place is picked: When and What
+                                 matters fold into this line so the options
+                                 come first (review, 15 Oct 2026). -->
+                            <button
+                                type="button"
+                                class="plan-choices-summary"
+                                data-action="plan-choices"
+                                aria-expanded="false"
+                                aria-controls="plan-choices"
+                            >
+                                <span
+                                    ><small>When · what matters</small
+                                    ><strong id="plan-choices-text"></strong
+                                ></span>
+                                <span data-icon="down"></span>
+                            </button>
+                            <div class="plan-controls" id="plan-choices">
                                 <span class="plan-label" id="when-label"
                                     >When</span
                                 >

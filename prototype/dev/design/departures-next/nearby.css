@@ -545,6 +545,12 @@
 .nearby-line.is-inline .nearby-front {
     margin: 0 var(--space-12);
 }
+/* One note for the line when the recording has no later departures. */
+.nearby-later {
+    margin: 0 var(--space-12);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
 .nearby-front small {
     display: block;
     color: var(--color-text-soft);

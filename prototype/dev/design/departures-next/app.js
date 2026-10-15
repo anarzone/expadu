@@ -299,6 +299,25 @@ function closePopover(restoreFocus = false) {
 }
 // Back walks back through Travel (history.js); absent in unit tests.
 const H = () => window.TravelHistory;
+// Phones and tablets: Composer's round button steps aside while you scroll
+// down the departures and comes back when you scroll up, so it never sits on
+// the minutes (review, 15 Oct 2026).
+{
+    let lastY = window.scrollY || 0;
+    addEventListener(
+        'scroll',
+        () => {
+            const y = window.scrollY || 0;
+            const tray = document.querySelector('#composer-tray');
+            if (Math.abs(y - lastY) < 6) return;
+            const tuck =
+                y > lastY && y > 80 && !tray?.classList.contains('is-active');
+            document.body.classList.toggle('composer-tucked', tuck);
+            lastY = y;
+        },
+        { passive: true },
+    );
+}
 // Phones and tablets: a deeper screen slides in from the right and Back
 // slides it away (owner-approved, canvas row 12). Only taps and Back slide;
 // code that switches views and carries on straight after stays instant.
@@ -675,6 +694,18 @@ function syncPanel() {
           ? 'typing'
           : 'rest';
     document.body.dataset.planStage = stage;
+    // When and What matters fold into one line on desktop once a place is
+    // picked; a new place starts folded again.
+    if (stage !== 'picked') {
+        $('#plan-choices')?.classList.remove('is-open');
+        $('.plan-choices-summary')?.setAttribute('aria-expanded', 'false');
+    }
+    const chosen = [
+        ...document.querySelectorAll('.plan-prefs [aria-pressed="true"] span'),
+    ].map((label) => label.textContent.trim());
+    const choicesText = $('#plan-choices-text');
+    if (choicesText)
+        choicesText.textContent = [planSummary(), ...chosen].join(' · ');
     if (stage !== 'rest' && !from.value.trim()) from.value = yourLocation;
     const big = desktopPlanner.matches && state.results && state.planBig;
     document.body.classList.toggle('plan-big', big);
@@ -799,6 +830,8 @@ function syncPlanStage() {
           ? `To ${title}`
           : 'Plan a trip';
     $('#plan-bar-sub').hidden = !results || !!saved;
+    $('.plan-bar-sort').hidden =
+        !results || !!saved || !$('#results [data-pick-route]');
     $('#plan-bar-sub').textContent = `${planSummary()} · from ${fromLabel()}`;
     const back = $('[data-action="plan-back"]');
     back.setAttribute(
@@ -1004,6 +1037,10 @@ function tripNow(trip = J.day) {
     const broken = ['cancelled', 'missed'].includes(sc);
     const route = broken ? choice.planned : choice.best;
     const leaveIn = minutesOf(route.depart) - minutesOf(trip.time);
+    // A lift out of order (sample): the trip still shows, with why it won't
+    // work step-free, not a station notice in its place.
+    if (sc === 'lift' && stepFreeBlocked(route))
+        return { kind: 'lift', route, leaveIn, tone: 'conflict', ...choice };
     const tone =
         sc === 'cancelled'
             ? 'conflict'
@@ -1013,6 +1050,30 @@ function tripNow(trip = J.day) {
     return { kind: broken ? sc : 'trip', route, leaveIn, tone, ...choice };
 }
 const rideOf = (route) => route.legs.find((leg) => leg.mode === 'transit');
+// The platform a route's tram leaves from, when its stop has the
+// OpenStreetMap close-up (transit-map.js).
+function platformOfRoute(route) {
+    const ride = rideOf(route);
+    const stop = ride?.boardStop || route.boardingStop;
+    if (!ride || !window.TravelMap?.hasCloseUp(stop)) return null;
+    const towards = (ride.detail || '')
+        .replace(/^Towards /, '')
+        .split(' · ')[0];
+    const lit = TravelMap.platformFor(stop, ride.line || route.line, towards);
+    return lit.length
+        ? {
+              stop,
+              lit,
+              note: TravelMap.note(stop, lit),
+              under: lit.some(
+                  ([sign]) =>
+                      window.StationCloseUp?.[stop]?.platforms[sign]?.under,
+              ),
+          }
+        : null;
+}
+// The sample's lift is the one down to Neumarkt's underground platforms.
+const stepFreeBlocked = (route) => !!platformOfRoute(route)?.under;
 function tripRing(now) {
     if (now.kind === 'unplanned')
         return `<span class="trip-ring is-icon" aria-hidden="true">${icon('calendar')}</span>`;
@@ -1073,21 +1134,34 @@ function tripLine(key, trip = J.day) {
     const gone = J.dayRoutes.find((r) => !r.inPlan);
     const goneTime = gone ? rideOf(gone).time : '';
     const weather = sampleWeather(trip.date, trip.start);
+    // Why this tram and not your plan's, when they differ (review, 15 Oct).
+    const overPlan =
+        now.kind === 'trip' && planned !== best
+            ? `Your ${rideOf(planned).time} leaves only ${spare(planned)} min spare · `
+            : '';
     const why =
         now.kind === 'cancelled'
             ? `${goneTime} cancelled · `
             : now.kind === 'missed'
               ? `Missed the ${goneTime} · `
-              : weather?.wet
-                ? `${weather.sky} likely at ${trip.start} · sample · `
-                : '';
+              : now.kind === 'lift'
+                ? 'Lift out of order · '
+                : weather?.wet
+                  ? `${weather.sky} likely at ${trip.start} · sample · `
+                  : overPlan;
+    const vehicle = L.vehicle(look.bus ? 'bus' : 'tram');
     const title =
-        now.kind !== 'trip'
-            ? `Take the ${ride.time}`
-            : now.leaveIn <= 0
-              ? 'Leave now'
-              : `Leave at ${route.depart}`;
-    const sub = `${L.vehicle(look.bus ? 'bus' : 'tram')} ${safe(route.line)} from ${safe(placeName(trip.from))} at ${ride.time} · there ${route.arrive} · ${left < margin ? `only ${left} min spare` : `${left} min spare`}${now.kind === 'trip' ? '' : ' (sample)'}`;
+        now.kind === 'lift'
+            ? `No step-free way to ${vehicle.toLowerCase()} ${route.line}`
+            : now.kind !== 'trip'
+              ? `Take the ${ride.time}`
+              : now.leaveIn <= 0
+                ? 'Leave now'
+                : `Leave at ${route.depart}`;
+    const sub =
+        now.kind === 'lift'
+            ? `It leaves from ${platformOfRoute(route).note.replace(' · ', ', ')} at ${safe(placeName(trip.from))}, ${ride.time} (sample)`
+            : `${vehicle} ${safe(route.line)} from ${safe(placeName(trip.from))} at ${ride.time} · there ${route.arrive} · ${left < margin ? `only ${left} min spare` : `${left} min spare`}${now.kind === 'trip' ? '' : ' (sample)'}`;
     const note =
         now.kind === 'missed'
             ? `We noticed because your location didn’t change after ${trip.time} (sample). Indoors this can be wrong.`
@@ -1104,17 +1178,16 @@ function tripLine(key, trip = J.day) {
             : '<li><span><strong>Taxi</strong><small>Time and price aren’t in the sample</small></span></li>',
     ].join('');
     const open = state.tripOthers;
-    return `<div class="trip-line-row">${tripRing(now)}<p class="trip-line-text"><strong id="${id}-title">${title}</strong>${onDay ? '' : `<span class="trip-line-for">${safe(trip.place)}, ${trip.start}</span>`}<span class="trip-line-sub">${why ? `<b class="trip-line-why${weather?.wet && now.kind === 'trip' ? ' is-attention' : ''}">${safe(why)}</b>` : ''}${sub}</span></p><button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}I’m on my way</button>${onDay ? '</div>' : `<button type="button" class="trip-line-more" data-action="trip-others" aria-expanded="${open}" aria-controls="${id}-way" aria-label="${open ? 'Hide the way' : 'Show the way'}">${icon('down')}</button></div><div id="${id}-way" class="trip-line-way"${open ? '' : ' hidden'}>${wayStrip(route, trip)}${note ? `<p class="trip-line-note">${icon('info')}<span>${safe(note)}</span></p>` : ''}<div class="trip-line-others"><h3>Other ways</h3><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div></div>`}`;
+    return `<div class="trip-line-row">${tripRing(now)}<p class="trip-line-text"><strong id="${id}-title">${title}</strong>${onDay ? '' : `<span class="trip-line-for">${safe(trip.place)}, ${trip.start}</span>`}<span class="trip-line-sub">${why ? `<b class="trip-line-why${weather?.wet && now.kind === 'trip' ? ' is-attention' : why === overPlan ? ' is-quiet' : ''}">${safe(why)}</b>` : ''}${sub}</span></p>${now.kind === 'lift' ? `<button type="button" class="primary next-trip-go" data-action="next-trip">${icon('route')}Plan another way</button>` : `<button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}I’m on my way</button>`}${onDay ? '</div>' : `<button type="button" class="trip-line-more" data-action="trip-others" aria-expanded="${open}" aria-controls="${id}-way" aria-label="${open ? 'Hide the way' : 'Show the way'}">${icon('down')}</button></div><div id="${id}-way" class="trip-line-way"${open ? '' : ' hidden'}>${wayStrip(route, trip)}${note ? `<p class="trip-line-note">${icon('info')}<span>${safe(note)}</span></p>` : ''}<div class="trip-line-others"><h3>Other ways</h3><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div></div>`}`;
 }
 function renderNextTrip() {
     const panel = $('#next-trip');
     if (!panel) return;
     const trip = J.day;
     const now = trip && tripNow(trip);
-    // Late-night, lift and paused-times situations are about the station
-    // (its own notice), not a trip.
-    panel.hidden =
-        !now || ['longwait', 'lift', 'stale'].includes(state.scenario);
+    // Late-night and paused-times situations are about the station (its own
+    // notice), not a trip; a lift out of order stays on the trip it stops.
+    panel.hidden = !now || ['longwait', 'stale'].includes(state.scenario);
     if (panel.hidden) return;
     panel.className = `trip-line is-${now.tone}`;
     panel.setAttribute('aria-labelledby', 'nearby-trip-title');
@@ -1200,12 +1273,38 @@ function platformOnStep(route, step) {
     const colour = window.NearbyModel?.look(line, 'tram')?.colour || '#211d15';
     return `<button type="button" class="step-platform" data-action="stand" aria-expanded="false" aria-controls="${id}" aria-label="Where to stand: ${safe(M.note(step.boardStop, lit))}">${icon('pin')}<span>${safe(M.note(step.boardStop, lit))}</span>${icon('down')}</button><div class="step-stand" id="${id}" hidden>${M.closeUp(step.boardStop, lit, colour)}${M.legend(step.boardStop, lit)}</div>`;
 }
+// A way's steps in the trip page's words (review, 15 Oct 2026): "Walk to
+// Neumarkt", "Tram 4 to Wiener Platz · From Neumarkt · towards Schlebusch",
+// never "Köln …" or "Board line 4".
+function stepWords(route, step, steps, index) {
+    const plain = (text = '') => text.replace(/Köln\s+/g, '');
+    if (step.mode !== 'transit')
+        return { title: plain(step.title), detail: plain(step.detail) };
+    const line = step.line || route.line;
+    const off = steps.slice(index).find((item) => item.mode === 'alight');
+    const kind =
+        step.vehicle === 'bus' || window.NearbyModel?.look(line, 'tram')?.bus
+            ? 'Bus'
+            : step.vehicle === 'rail'
+              ? 'Train'
+              : 'Tram';
+    return {
+        title: `${kind} ${line} to ${plain(off?.title.replace(/^Get off at /, '') || '')}`,
+        detail: `From ${plain(step.placeName || step.from || '')} · ${plain(step.detail).replace(/^Towards /, 'towards ')}`,
+    };
+}
 function stepsMarkup(route) {
     const trip = tripOf(route);
-    return `<ol class="route-steps">${J.tripSteps(route)
+    const steps =
+        window.JourneyNavigationModel?.steps(route) || J.tripSteps(route);
+    return `<ol class="route-steps">${steps
+        .map((step, index) => ({
+            step,
+            words: stepWords(route, step, steps, index),
+        }))
         .map(
-            (step) =>
-                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time, trip)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small>${step.mode === 'transit' ? platformOnStep(route, step) : ''}${step.mode === 'alight' && nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time) ? `<a class="step-nearby" href="${nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time)}">${icon('pin')}Places nearby${icon('arrow')}</a>` : ''}${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
+            ({ step, words }) =>
+                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time, trip)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(words.title)}</strong><small>${safe(words.detail)}</small>${step.mode === 'transit' ? platformOnStep(route, step) : ''}${step.mode === 'alight' && nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time) ? `<a class="step-nearby" href="${nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time)}">${icon('pin')}Places nearby${icon('arrow')}</a>` : ''}${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
         )
         .join('')}</ol>`;
 }
@@ -1541,25 +1640,28 @@ function renderResults() {
               near: true,
           }
         : nearStop
-        ? {
-              title: `${stopName} is ${walkThere ? `a ${walkThere}-minute walk` : 'a short walk'}`,
-              text: 'It’s the stop nearest your location (sample), so there’s no trip to plan. Its departures are under Nearby.',
-              near: true,
-          }
-        : matched
-        ? U.emptyReason(state, trip, [
-              ...new Set(
-                  (J.routesOf ? J.routesOf(tripId) : tripId === 'day' ? J.dayRoutes : J.routes).map(
-                      (route) => route.mode,
+          ? {
+                title: `${stopName} is ${walkThere ? `a ${walkThere}-minute walk` : 'a short walk'}`,
+                text: 'It’s the stop nearest your location (sample), so there’s no trip to plan. Its departures are under Nearby.',
+                near: true,
+            }
+          : matched
+            ? U.emptyReason(state, trip, [
+                  ...new Set(
+                      (J.routesOf
+                          ? J.routesOf(tripId)
+                          : tripId === 'day'
+                            ? J.dayRoutes
+                            : J.routes
+                      ).map((route) => route.mode),
                   ),
-              ),
-          ])
-        : {
-              title: 'No route available for this request',
-              text: 'Live route search isn’t connected in this preview. Composer can keep your request, or explore the captured sample routes.',
-              reset: false,
-              composer: true,
-          };
+              ])
+            : {
+                  title: 'No route available for this request',
+                  text: 'Live route search isn’t connected in this preview. Composer can keep your request, or explore the captured sample routes.',
+                  reset: false,
+                  composer: true,
+              };
     // A start at a known stop still has its departures.
     const fromStop = T.stops.find(
         (stop) =>
@@ -2038,6 +2140,12 @@ function compose() {
     handoff();
 }
 function action(name, button) {
+    if (name === 'plan-choices') {
+        const open = button.getAttribute('aria-expanded') !== 'true';
+        button.setAttribute('aria-expanded', String(open));
+        $('#plan-choices').classList.toggle('is-open', open);
+        return;
+    }
     // Where to stand opens and closes in place, under the tram's step.
     if (name === 'stand') {
         const open = button.getAttribute('aria-expanded') !== 'true';
@@ -2409,7 +2517,11 @@ document.addEventListener('click', (event) => {
         state.sort = button.dataset.sort;
         closePopover();
         renderResults();
-        $('[data-action="sort"]')?.focus({ preventScroll: true });
+        // Back to the sort button you used: the bar's on phones.
+        (desktopPlanner.matches
+            ? $('#results [data-action="sort"]')
+            : $('.plan-bar-sort')
+        )?.focus({ preventScroll: true });
     } else if (button.dataset.routeMode) {
         state.routeMode = button.dataset.routeMode;
         state.selected = null;

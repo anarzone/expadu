@@ -180,7 +180,7 @@
             return `<button type="button" class="nearby-strip${open ? ' is-selected' : ''}" data-n="line" data-v="${safe(l.line)}" data-key="line-${safe(l.line)}" aria-pressed="${open}" aria-label="${safe(label)}" style="--line:${l.look.colour};--tint:${l.look.tint}">
                 <span class="strip-badge">${L ? L.line(l.line, l.look, { kind: l.mode }) : badge(l.line, l.look, 'card')}${l.pinned ? `<span class="nearby-pinned" aria-label="Pinned">${icon('star')}</span>` : ''}</span>
                 ${end(second, 'left')}
-                <span class="strip-track" aria-hidden="true"><i></i><b></b><small>${safe(stop.name)}</small></span>
+                <span class="strip-track" aria-hidden="true"><i></i><b></b></span>
                 ${end(first, 'right')}${strip}
             </button>`;
         }
@@ -190,13 +190,14 @@
             const dirs = l.dirs
                 .map((d, i) => {
                     const t = when(d);
-                    return `<div class="nearby-detail-dir"><span><strong>→ ${safe(d.dest)}</strong>${d.via.length ? `<small>via ${safe(d.via.join(', '))}</small>` : ''}<small>${d.later.length ? `Then ${d.later.join(' · ')}` : 'Later ones aren’t in the recording'}</small></span><span class="nearby-detail-time"><span class="nearby-time is-large${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>${tagOf(d, true)}</span></div>`;
+                    return `<div class="nearby-detail-dir"><span><strong>→ ${safe(d.dest)}</strong>${d.via.length ? `<small>via ${safe(d.via.join(', '))}</small>` : ''}${d.later.length ? `<small>Then ${d.later.join(' · ')}</small>` : ''}</span><span class="nearby-detail-time"><span class="nearby-time is-large${scene().stale ? ' is-paused' : ''}"><strong>${t.big}</strong>${t.unit ? `<small>${t.unit}</small>` : ''}</span>${tagOf(d, true)}</span></div>`;
                 })
                 .join('');
             const first = l.dirs[0].dest;
+            const noLater = l.dirs.some((d) => !d.later.length);
             return `<section class="nearby-line is-inline" aria-label="${modeName(l)} ${safe(l.line)}" style="--line:${l.look.colour};--ink:${l.look.ink};--tint:${l.look.tint}">
                 <div class="nearby-line-head">${L ? L.line(l.line, { colour: '#fff', ink: l.look.colour }, { kind: l.mode, size: 'big' }) : `<span class="nearby-line-number">${safe(l.line)}</span>`}<span><strong>${modeName(l)} ${safe(l.line)}</strong><small>${safe(others(stop, l.line))}</small></span><button type="button" class="nearby-line-close" data-n="close-line" data-key="close-line" aria-label="Close line ${safe(l.line)}">${icon('close')}</button></div>
-                ${dirs}
+                ${dirs}${noLater ? '<p class="nearby-later">Later departures aren’t in the recording.</p>' : ''}
                 <p class="nearby-front"><small>${l.mode === 'bus' ? 'On the front of the bus' : 'On the front of the tram'}</small><strong>${safe(l.line)} ${safe(first)}</strong> · <span lang="de">Richtung</span> ${safe(first)} means “towards ${safe(first)}”.</p>
                 <div class="nearby-line-actions"><button type="button" class="nearby-pin" data-n="pin" data-v="${safe(l.line)}" data-key="pin-${safe(l.line)}" aria-pressed="${pinned}">${icon('star')}${pinned ? 'Pinned' : `Pin line ${safe(l.line)}`}</button>${hasMap(stop) ? `<button type="button" class="quiet-button" data-n="boards" data-v="${safe(l.line)}" data-key="boards-${safe(l.line)}">${icon('pin')}Where it boards</button>` : ''}</div>
             </section>`;
@@ -333,10 +334,11 @@
                 ? `Closest station · ${stop.areas.length} areas · ${places} boarding points · ${stop.note.replace('Recorded', 'recorded')}`
                 : `${stop.kind} · boarding points weren’t recorded`;
             // The station's facts as labels: what it is, and that its times
-            // aren't live (recorded, or the last ones we had).
+            // aren't live: recorded on another day than the sample's, said
+            // with the day (review, 15 Oct 2026), or the last ones we had.
             const clock = (stop.note.match(/\d{1,2}:\d{2}/) || [''])[0];
             const metaLabels = L
-                ? `<span class="tl-chips">${L.chip('calm', 'pin', stop.map ? `Closest · ${stop.areas.length} areas` : stop.kind.split(' · ')[0])}${L.chip('unsure', 'offline', now.stale ? `Not live · last times ${clock}` : `Not live · ${clock}`)}</span>`
+                ? `<span class="tl-chips">${L.chip('calm', 'pin', stop.map ? `Closest · ${stop.areas.length} areas` : stop.kind.split(' · ')[0])}${L.chip('unsure', 'offline', now.stale ? `Not live · last times ${clock}` : stop.note)}</span>`
                 : `<small>${safe(meta)}</small>`;
             // ☆ beside the stop's name stars it: it then sits with
             // Favourites beside "Where to?" (owner, 14 Oct 2026).
@@ -381,25 +383,30 @@
                 hasMap(stop)
                     ? M.short(stop.id, M.groupOf(area.lines)) || `${area.places.length} boarding points`
                     : 'Boarding points not recorded';
+            // Between areas: change here, to which lines and where they board.
+            const changeTo = (next) =>
+                stop.map
+                    ? `<p class="nearby-change">${icon('route')}<span>${
+                          hasMap(stop)
+                              ? `Change here to ${next.lines.join(' · ')}: ${M.short(stop.id, M.groupOf(next.lines)) || 'other boarding points'}. Walking times weren’t recorded.`
+                              : 'Change here to the other lines. Their boarding points differ; walking times weren’t recorded.'
+                      }</span></p>`
+                    : '';
             part('list').innerHTML = v.areas.length
                 ? v.areas
                       .map(
-                          (
-                              area,
-                          ) => `<section class="nearby-area" aria-label="Area for lines ${area.lines.join(', ')}">
+                          (area, index) =>
+                              `${index ? changeTo(area) : ''}<section class="nearby-area" aria-label="Area for lines ${area.lines.join(', ')}">
                     <div class="nearby-area-head"><span class="nearby-badges">${badgesOf(area.lines, stop)}</span>${L ? L.chip(hasMap(stop) ? 'calm' : 'unsure', 'pin', boards(area)) : `<span class="nearby-area-meta">${boards(area)}</span>`}${area.blocked ? (L ? L.chip('conflict', 'lift', 'Lift out of order') : '<span class="nearby-tag is-conflict">Lift out of order</span>') : ''}${hasMap(stop) ? `<button type="button" class="nearby-area-map" data-n="show" data-v="${M.groupOf(area.lines)}" data-key="show-${safe(area.id)}">${icon(L ? 'map' : 'pin')}<span>Show on the map</span></button>` : ''}</div>
                     ${area.blocked ? `<p class="nearby-area-warning">${area.hidden ? 'Hidden by Step-free: no step-free way to these platforms right now (sample).' : 'No step-free way to these platforms right now (sample).'}</p>` : ''}
                     <div class="nearby-cards">${area.cards.map((c) => card(stop, c)).join('')}</div>
                 </section>`,
                       )
-                      .join(
-                          stop.map
-                              ? `<p class="nearby-change">${icon('route')}<span>Change here to the other lines. Their boarding points differ; walking times weren’t recorded.</span></p>`
-                              : '',
-                      )
+                      .join('')
                 : `<div class="nearby-empty"><strong>Nothing matches these filters</strong><span>These are recorded departures, so a missing line may still run.</span><button type="button" class="quiet-button" data-n="clear" data-key="clear-empty">Clear filters</button></div>`;
-            part('footnote').textContent =
-                `${stop.note} · ${now.stale ? 'last times received' : 'rounded minutes'}, not live.`;
+            part('footnote').textContent = now.stale
+                ? 'The last times received, not live.'
+                : 'Rounded minutes, not live.';
             if (hasMap(stop)) renderMap(stop);
             if (focusKey) {
                 container
