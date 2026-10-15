@@ -11,6 +11,37 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The trip follows you — 15 October 2026
+
+Owner-agreed on the Travel directions canvas, row 19 ("why user needs to
+click buttons to confirm something and why that many times?").
+
+- One tap starts it (Nearby's "I'm on my way"). After that nothing asks to
+  be confirmed: in the app your location (while the page is open), the
+  timetable and a nudge one stop before you get off move it on. Each step
+  says how it knows ("We'll move on when the tram leaves with you").
+- "Not right?" corrects it: I missed the tram (the sample day switches to
+  the 13:24, amber, "Missed the 13:14"), I'm somewhere else (Plan a trip to
+  the same place, from your location), Stop the trip (asks first).
+- The ring is Nearby's: minutes to the next thing, plain while there's
+  time, amber when it's leaving or it's the next stop, coral when the
+  13:14 is cancelled (Review menu).
+- One "where am I": the bar and "2 of 4" in the top bar, "Arrived" at the
+  end; the step tag, "Current preview step" and the extra sample notes are
+  gone ("Sample · not live" once, in the top bar).
+- Your way is a line of stations, a row for each part; waiting and riding
+  are both the tram's row, marked "You're here". Getting off is the end of
+  the ride, not a row of its own.
+- At the stop: what's on the tram's front, "Trams 3, 16 and 18 stop here
+  too: take the 4", All departures at Neumarkt, and the boarding points.
+- Desktop: the step | your way | a smaller map whose caption follows the
+  step (your way goes under the step below 1280px). Phones: the way under
+  the step, no Itinerary to open.
+- The dashed sample clock (13:10 · 13:12 · 13:28 · 13:41 · 13:44 · 13:48)
+  stands in for time and location while reviewing; it's built from each
+  trip's own steps, so the evening's tram 18 then bus 133 works too.
+- A way you're only looking at (before "I'm on my way") keeps its overview.
+
 ## Your next thing as one line — 15 October 2026
 
 Owner-agreed on the Travel directions canvas: option B (rows 17–18), after

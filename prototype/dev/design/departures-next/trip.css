@@ -542,3 +542,606 @@
 .nav-moment .tl-chips {
     margin-top: -2px;
 }
+
+/* ---------- The trip follows you (owner, 15 Oct 2026; Travel directions
+   canvas row 19). Nothing to confirm: the step card says what's now, how
+   the page knows, and "Not right?" corrects it. The ring is Nearby's line
+   ring; colour says how much it matters, never which line. ---------- */
+#journey-navigation {
+    --trip-amber: #b07800;
+    --trip-amber-edge: #e8c77a;
+    --trip-ink: color-mix(in srgb, var(--color-text) 78%, var(--color-bg-surface));
+}
+#journey-navigation .nav-step-card {
+    --trip-tone: var(--color-text-soft);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+    padding: 22px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 26px;
+    background: var(--color-bg-surface);
+    transition: border-color 300ms var(--ease-standard);
+}
+#journey-navigation .nav-step-card.is-attention {
+    --trip-tone: var(--trip-amber);
+    border-color: var(--trip-amber-edge);
+}
+#journey-navigation .nav-step-card.is-conflict {
+    --trip-tone: var(--color-conflict-text);
+    border-color: var(--color-conflict-border);
+}
+#journey-navigation .nav-step-lead {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    animation: nav-step-in 320ms var(--ease-standard) both;
+}
+@keyframes nav-step-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+#journey-navigation .nav-step-lead > div {
+    min-width: 0;
+}
+#journey-navigation .nav-step-card h2 {
+    margin: 0 0 4px;
+    font-size: 30px;
+    letter-spacing: -0.6px;
+    line-height: 1.1;
+}
+#journey-navigation .nav-step-card .moment-sub {
+    margin: 0;
+    color: var(--trip-ink);
+    font-size: 15px;
+    line-height: 1.4;
+}
+#journey-navigation .nav-why {
+    font-weight: var(--weight-bold);
+}
+#journey-navigation .is-attention .nav-why {
+    color: var(--color-attention-text);
+}
+#journey-navigation .is-conflict .nav-why {
+    color: var(--color-conflict-text);
+}
+#journey-navigation .nav-ring {
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    color: var(--trip-tone);
+}
+#journey-navigation .nav-ring svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    fill: none;
+    stroke-width: 2.6;
+}
+#journey-navigation .nav-ring circle:first-child {
+    stroke: var(--color-border);
+}
+#journey-navigation .nav-ring circle + circle {
+    stroke: currentColor;
+    stroke-linecap: round;
+    transition:
+        stroke-dasharray 500ms var(--ease-standard),
+        stroke 300ms var(--ease-standard);
+}
+#journey-navigation .nav-ring > span {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+}
+#journey-navigation .nav-ring strong {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+}
+#journey-navigation .nav-ring small {
+    font-size: 11px;
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-ring.is-done > svg:last-child {
+    position: relative;
+    inset: auto;
+    width: 32px;
+    height: 32px;
+    transform: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+}
+/* What's on the front of the tram, and the other lines here. */
+#journey-navigation .nav-front {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-10);
+    padding: 14px 16px;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+}
+#journey-navigation .nav-front small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-front p {
+    margin: 0;
+    font-size: 14px;
+}
+#journey-navigation .nav-front .nav-board-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 36px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--action);
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-front .nav-board-link svg {
+    width: 14px;
+    height: 14px;
+}
+/* How the page knows, and the way to correct it. */
+#journey-navigation .nav-follow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-12);
+    padding-top: 4px;
+    border-top: 1px solid var(--color-border);
+}
+#journey-navigation .nav-follow > span {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: var(--touch-target);
+    color: var(--color-text-soft);
+    font-size: 13.5px;
+    line-height: 1.35;
+}
+#journey-navigation .nav-follow > span svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+#journey-navigation .nav-follow > button {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-target);
+    padding: 0 4px;
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-follow > button svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 240ms var(--ease-standard);
+}
+#journey-navigation .nav-follow > button[aria-expanded='true'] svg {
+    transform: rotate(180deg);
+}
+#journey-navigation .nav-not-right {
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-surface);
+    box-shadow: 0 16px 34px -22px #211d1580;
+    animation: nav-step-in 240ms var(--ease-standard) both;
+}
+#journey-navigation .nav-not-right button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-10);
+    min-height: var(--touch-target);
+    padding: 0 12px;
+    border-radius: 10px;
+    text-align: left;
+}
+#journey-navigation .nav-not-right button:hover {
+    background: var(--color-bg-quiet);
+}
+#journey-navigation .nav-not-right button[data-nav='end'] {
+    color: var(--color-text-soft);
+}
+#journey-navigation .nav-not-right svg {
+    width: 16px;
+    height: 16px;
+}
+#journey-navigation .nav-notice {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+/* The top bar: progress, the count, and that it's a sample. */
+#journey-navigation .nav-trip-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+}
+#journey-navigation .nav-trip-progress[hidden] {
+    display: none;
+}
+#journey-navigation .nav-bars {
+    display: flex;
+    gap: 4px;
+    width: 220px;
+}
+#journey-navigation .nav-bars i {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--color-border);
+    transition: background-color 300ms var(--ease-standard);
+}
+#journey-navigation .nav-bars i.is-done {
+    background: var(--color-text);
+}
+#journey-navigation .nav-bars i.is-now {
+    background: color-mix(in srgb, var(--color-text) 40%, transparent);
+}
+#journey-navigation .nav-count {
+    color: var(--color-text-soft);
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+#journey-navigation .nav-sample {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: 999px;
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+/* Your way: a line of stations, the part you're on marked. */
+#journey-navigation .nav-way-title {
+    margin: 0 0 var(--space-12);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+#journey-navigation .nav-way {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+#journey-navigation .nav-way li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px 16px minmax(0, 1fr);
+    column-gap: 12px;
+    padding-bottom: 20px;
+}
+#journey-navigation .nav-way li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    bottom: 2px;
+    left: 67px;
+    border-left: 2px dotted
+        color-mix(in srgb, var(--color-border-strong) 60%, var(--color-bg-surface));
+}
+#journey-navigation .nav-way li.is-ride::before {
+    left: 66px;
+    border-left: 4px solid var(--line);
+}
+#journey-navigation .nav-way time {
+    padding-top: 1px;
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+}
+#journey-navigation .nav-way li > i {
+    justify-self: center;
+    width: 14px;
+    height: 14px;
+    margin-top: 3px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: var(--color-text);
+}
+#journey-navigation .nav-way li:is(.is-ride, .is-from-stop) > i {
+    border: 3px solid var(--line);
+    background: var(--color-bg-surface);
+}
+#journey-navigation .nav-way li.is-end > i {
+    border-radius: 4px;
+}
+#journey-navigation .nav-way strong {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    font-size: 15px;
+    font-weight: var(--weight-semibold);
+}
+#journey-navigation .nav-way .tl-line {
+    height: 22px;
+    font-size: 12.5px;
+}
+#journey-navigation .nav-way .tl-line svg {
+    width: 13px;
+    height: 13px;
+}
+#journey-navigation .nav-way small {
+    display: block;
+    margin-top: 2px;
+    color: var(--color-text-soft);
+    font-size: 13px;
+}
+#journey-navigation .nav-way li.is-done :is(time, strong) {
+    color: var(--color-text-soft);
+}
+#journey-navigation .nav-way li.is-now strong {
+    font-weight: var(--weight-bold);
+}
+#journey-navigation .nav-way em {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-size: 12px;
+    font-style: normal;
+    font-weight: var(--weight-bold);
+}
+/* For reviewing only: the sample clock, dashed so it never reads as the page. */
+#journey-navigation .nav-footer > .nav-clock {
+    flex: 1 1 100%;
+}
+#journey-navigation .nav-clock {
+    display: flex;
+    align-items: center;
+    gap: var(--space-10);
+    padding: 8px 12px;
+    border: 1.5px dashed
+        color-mix(in srgb, var(--color-border-strong) 55%, var(--color-bg-surface));
+    border-radius: 16px;
+    background: var(--color-bg-surface);
+}
+#journey-navigation .nav-clock > span {
+    flex: none;
+    color: var(--color-text-soft);
+    font-size: 11.5px;
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+}
+#journey-navigation .nav-clock > div {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 2px;
+}
+#journey-navigation .nav-clock [data-nav='clock'] {
+    flex: none;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    transition: background-color 200ms var(--ease-standard);
+}
+#journey-navigation .nav-clock [data-nav='clock'][aria-pressed='true'] {
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+}
+#journey-navigation .nav-clock-next {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-bg-surface);
+}
+#journey-navigation .nav-clock-next svg {
+    width: 16px;
+    height: 16px;
+}
+/* The map's caption follows the step. */
+#journey-navigation .nav-map-note {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    max-width: calc(100% - 80px);
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#journey-navigation .nav-map-note[hidden] {
+    display: none;
+}
+/* Desktop: the step | your way | a smaller map. */
+@media (min-width: 1000px) {
+    #journey-navigation.is-running:not(:modal) .nav-workspace {
+        grid-template: auto auto / minmax(0, 1fr) 380px;
+        column-gap: var(--space-32);
+    }
+    #journey-navigation.is-running:not(:modal) .nav-topbar {
+        gap: var(--space-16);
+    }
+    #journey-navigation.is-running:not(:modal) .nav-panel {
+        padding-right: 0;
+        border-right: 0;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-panel-content {
+        display: grid;
+        grid-template-columns: minmax(0, 500px) minmax(0, 1fr);
+        column-gap: var(--space-32);
+        align-items: start;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-condition {
+        grid-column: 1 / -1;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-summary {
+        grid-area: 2 / 1;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-expanded {
+        grid-area: 2 / 2;
+        border-top: 0;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-detail-scroll {
+        padding-top: 4px;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-footer {
+        grid-area: 3 / 1 / 4 / -1;
+        padding: var(--space-24) 0 0;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-map-area {
+        grid-area: 2 / 2;
+        height: 320px;
+        margin-left: 0;
+        margin-top: 30px;
+    }
+}
+/* Smaller desktops: your way goes under the step, the map stays beside. */
+@media (min-width: 1000px) and (max-width: 1279px) {
+    #journey-navigation.is-running:not(:modal) .nav-workspace {
+        grid-template-columns: minmax(0, 1fr) 320px;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-panel-content {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    #journey-navigation.is-running:not(:modal) .nav-expanded {
+        grid-area: 3 / 1;
+        margin-top: var(--space-24);
+    }
+    #journey-navigation.is-running:not(:modal) .nav-footer {
+        grid-area: 4 / 1;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-map-area {
+        margin-top: 0;
+    }
+}
+/* Phones and tablets: the way stays under the step (no Itinerary to open),
+   the top bar keeps the count, the sample clock sits at the bottom. */
+@media (max-width: 999px) {
+    #journey-navigation.is-running.is-steps-view .nav-expanded {
+        display: flex;
+    }
+    /* The count gets its own row under the title. */
+    #journey-navigation.is-running .nav-topbar {
+        flex-wrap: wrap;
+        row-gap: var(--space-10);
+    }
+    #journey-navigation.is-running .nav-topbar > .nav-trip-progress {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        order: 9;
+        flex: 1 1 100%;
+    }
+    #journey-navigation.is-running .nav-bars {
+        flex: 1;
+        width: auto;
+    }
+    #journey-navigation.is-running .nav-sample {
+        display: none;
+    }
+    #journey-navigation.is-running .nav-summary {
+        padding: 16px 16px 8px;
+    }
+    #journey-navigation.is-running .nav-detail-scroll {
+        padding: 16px;
+    }
+}
+@media (max-width: 700px) {
+    #journey-navigation .nav-step-card {
+        gap: var(--space-14);
+        padding: 16px;
+        border-radius: 22px;
+    }
+    #journey-navigation .nav-step-lead {
+        gap: 14px;
+    }
+    #journey-navigation .nav-ring {
+        width: 64px;
+        height: 64px;
+    }
+    #journey-navigation .nav-ring strong {
+        font-size: 18px;
+    }
+    #journey-navigation .nav-ring small {
+        font-size: 9.5px;
+    }
+    #journey-navigation .nav-step-card h2 {
+        font-size: 22px;
+    }
+    #journey-navigation .nav-step-card .moment-sub {
+        font-size: 14px;
+    }
+    #journey-navigation .nav-way li {
+        grid-template-columns: 44px 16px minmax(0, 1fr);
+    }
+    #journey-navigation .nav-way li:not(:last-child)::before {
+        left: 63px;
+    }
+    #journey-navigation .nav-way li.is-ride::before {
+        left: 62px;
+    }
+    #journey-navigation .nav-clock {
+        gap: 6px;
+        padding: 8px 10px;
+    }
+    #journey-navigation .nav-clock small,
+    #journey-navigation .nav-clock-next {
+        display: none;
+    }
+    #journey-navigation .nav-clock > span {
+        width: 44px;
+    }
+    #journey-navigation .nav-clock > div {
+        justify-content: space-between;
+        gap: 0;
+    }
+    #journey-navigation .nav-clock [data-nav='clock'] {
+        padding: 0 5px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    #journey-navigation :is(.nav-step-lead, .nav-not-right) {
+        animation: none;
+    }
+    #journey-navigation :is(.nav-ring circle + circle, .nav-bars i, .nav-step-card) {
+        transition: none;
+    }
+}

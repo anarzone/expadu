@@ -1989,6 +1989,10 @@ function useStop(id, departureId) {
         to.focus();
     });
 }
+// The trip page's "Not right? · I'm somewhere else": plan the way to the
+// same place again, from where you are now.
+globalThis.TravelPlanTo = (place) =>
+    place && action('plan-way', { dataset: { place } });
 function simulate(id) {
     if (window.JourneyNavigation) {
         JourneyNavigation.start(currentRoute(id));

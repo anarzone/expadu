@@ -22,8 +22,7 @@
         active = N.restore(S.read()),
         inspected = 0,
         mapView = 'overview',
-        expanded = false,
-        buzz = true;
+        expanded = false;
     let returnFocus,
         previousOverflow,
         panelObserver,
@@ -128,8 +127,8 @@
         confirmation = '';
         dialog.classList.remove('is-expanded', 'is-closing');
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div>${route.line ? (L ? L.line(route.line, root.NearbyModel?.look(String(route.line), vehicle() === 'Bus' ? 'bus' : 'tram'), { kind: vehicle() === 'Bus' ? 'bus' : vehicle() === 'Train' ? 'rail' : 'tram', size: 'big' }) : `<span class="nav-line" style="${lineStyle()}">${safe(route.line)}</span>`) : ''}<div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
-            <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
+            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div><div class="nav-trip-progress" hidden></div><div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><span class="nav-map-note" hidden></span><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
                 <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
                 <p class="nav-map-caption">${route.shaped ? 'The way from the VRS timetable · scheduled, not live' : 'Illustrative connections · not street directions'} · © OpenStreetMap · OpenFreeMap · OpenMapTiles</p>
             </section>
@@ -399,69 +398,356 @@
             ? `--line:${look.colour};--ink:${look.ink};--tint:${look.tint}`
             : '';
     }
-    function momentAction(p) {
-        const list = N.steps(route);
-        const alight = list.find((step) => step.mode === 'alight');
-        const first = p.index === 0;
-        return {
-            walk: first ? 'I’m at the stop' : 'I’ve arrived',
-            transit: 'I’m on board',
-            ride: 'Next stop',
-            alight: `We’re at ${stopName(alight?.title.replace(/^Get off at /, ''))}`,
-            arrive: 'End trip',
-        }[p.step.mode];
-    }
-    // The moment's name, as the canvas labels it.
-    function momentLabel(p) {
-        const mode = p.step.mode;
-        if (mode === 'walk')
-            return p.index === 0 ? 'Walk to the stop' : 'Get off';
-        return (
-            {
-                transit: 'At the stop',
-                ride: 'On board',
-                alight: 'On board',
-                arrive: 'Arrived',
-            }[mode] || ''
-        );
-    }
-    function moment(p) {
-        const list = N.steps(route);
-        const board = list.find((step) => step.mode === 'transit');
-        const alight = list.find((step) => step.mode === 'alight');
-        const towards = (board?.detail || '').replace(/^Towards /, '');
-        const offAt = stopName(alight?.title.replace(/^Get off at /, ''));
-        const kind = vehicle();
-        const front = `<div class="moment-front"><span class="moment-sign"><span class="moment-badge">${safe(route.line || '')}</span><strong>${safe(stopName(towards))}</strong></span><span>Look for this on the front of the ${kind === 'Bus' ? 'bus' : kind === 'Train' ? 'train' : 'tram'}. <span lang="de">Richtung</span> means “towards”.</span></div>`;
-        const step = p.step;
-        if (step.mode === 'walk' && p.index === 0) {
-            const area = boardingArea(board);
-            const points = linePoints();
-            const stopLabel = stopName(
-                board?.title ? step.title.replace(/^Walk to /, '') : step.title,
-            );
-            const vehicleWord = kind === 'Bus' ? 'bus' : kind === 'Train' ? 'train' : 'tram';
-            // The canvas: a small map of the stop with this line's recorded
-            // boarding points (KVB records; which one is used isn't known).
-            const where = points.length
-                ? `<div class="moment-map" role="img" aria-label="Map of ${safe(stopLabel)} with the ${points.length} recorded boarding point${points.length === 1 ? '' : 's'} for ${vehicleWord} ${safe(route.line || '')}"><div class="moment-map-canvas"></div><span class="moment-map-label">${points.length === 1 ? 'Board at this point' : `Board at one of these ${points.length === 2 ? 'two' : points.length} points`}</span><small class="moment-map-credit">© OpenStreetMap · OpenFreeMap</small></div>${L ? `<span class="tl-chips">${L.chip('unsure', 'pin', points.length === 1 ? 'Boarding point not confirmed' : `Either of ${points.length} boarding points · not confirmed`)}</span>` : ''}<p class="moment-note"${L ? ' hidden' : ''}>KVB lists ${points.length === 1 ? 'this point' : points.length === 2 ? 'both points' : `all ${points.length} points`} for this line. Which one your ${vehicleWord} uses isn’t confirmed.</p>`
-                : area
-                  ? `<div class="moment-card"><strong>Board in the area for ${area.lines.join(' · ')}</strong><small>KVB lists ${area.places.length} boarding points there. Which one your ${vehicleWord} uses isn’t confirmed.</small></div>`
-                  : '';
-            return `<h2>Walk to ${safe(stopLabel)}</h2><p class="moment-sub">${safe(step.detail.replace(' on foot', ''))} · ${kind.toLowerCase()} ${safe(route.line || '')} leaves at ${board?.time || route.depart}</p>${where}${board ? front : ''}`;
+    /* ---------- The trip follows you (owner, 15 Oct 2026; Travel
+       directions canvas row 19) ----------
+       One tap starts it (Nearby's "I'm on my way"); after that your
+       location while the page is open, the timetable when it isn't, and a
+       nudge one stop before you get off move it on. Nothing to confirm:
+       "Not right?" corrects it. Here the sample clock stands in for time and
+       location. The ring is Nearby's: minutes to the next thing, coloured by
+       how much it matters, never by the line. */
+    let nudge = false,
+        menuOpen = false,
+        missedFrom = '',
+        notice = '';
+    const at = (time, delta = 0) => {
+        const total =
+            (((Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)) + delta) %
+                1440) +
+                1440) %
+            1440;
+        return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+    };
+    // Each line says its own vehicle: the evening's tram 18, then bus 133.
+    const word = (step) => {
+        const legs = (route.legs || []).filter((item) => item.mode === 'transit');
+        const leg =
+            step &&
+            (legs.find((item) => String(item.line) === lineOf(step) && item.time === step.time) ||
+                legs.find((item) => String(item.line) === lineOf(step)));
+        const kind = step && leg?.vehicle
+            ? leg.vehicle === 'bus' ? 'Bus' : leg.vehicle === 'rail' ? 'Train' : 'Tram'
+            : vehicle();
+        return kind === 'Bus' ? 'bus' : kind === 'Train' ? 'train' : 'tram';
+    };
+    const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+    const lineOf = (step) => String(step?.line || route.line || '');
+    const towardsOf = (step) =>
+        stopName((step?.detail || '').replace(/^Towards /, '').split(' · ')[0]);
+    const offAt = (step) =>
+        stopName((step?.title || '').replace(/^Get off at /, ''));
+    const place = (step) => stopName(step?.placeName || '');
+    const scenario = () => {
+        try {
+            return new URL(location.href).searchParams.get('scenario') || '';
+        } catch {
+            return '';
         }
-        if (step.mode === 'transit')
-            return `<div class="moment-ring" aria-hidden="true"><span>Leaves</span><strong>${step.time}</strong></div><h2>${kind} ${safe(route.line || '')} to ${safe(stopName(towards))}</h2>${L ? `<span class="tl-chips">${L.chip('unsure', 'offline', trip().id === 'day' ? 'Scheduled time · not live' : 'Captured time · not live')}</span>` : ''}<p class="moment-sub">That’s your ${kind === 'Bus' ? 'bus' : 'tram'}. Other lines stop here too.</p>${front}`;
-        if (step.mode === 'ride')
-            return `<h2>Stay on to ${safe(offAt)}</h2><p class="moment-sub">Next: ${safe(stopName(step.title))} at ${step.time}</p>`;
-        if (step.mode === 'alight')
-            return `<p class="moment-eyebrow">On ${kind.toLowerCase()} ${safe(route.line || '')} towards ${safe(stopName(towards))}</p><h2>Get off at ${safe(offAt)}</h2><p class="moment-sub">At ${step.time} · ${minutesBetween(board.time, step.time)} min ride</p><div class="moment-card moment-ride"><span class="moment-ride-ends"><strong>${safe(stopName(list.find((item) => item.mode === 'walk')?.title.replace(/^Walk to /, '') || trip().from))} ${board.time}</strong><strong>${safe(offAt)} ${step.time}</strong></span><span class="moment-ride-track" aria-hidden="true"><i></i><i></i></span><small>${board.intermediate?.length ? `${board.intermediate.length} stops on the way.` : 'The stops on the way aren’t in the sample.'} No live position in this preview.</small></div><div class="moment-card is-tint"><small>You’ll hear</small><strong lang="de">„Nächster Halt: ${safe(offAt)}“</strong><span>Next stop: ${safe(offAt)}</span></div><button type="button" class="moment-switch" role="switch" aria-checked="${buzz}" data-nav="buzz"><span><strong>Buzz me before ${safe(offAt)}</strong><small>${buzz ? 'Not sent in this preview' : 'Off'}</small></span><span class="plan-switch" aria-hidden="true"></span></button>`;
-        if (step.mode === 'walk')
-            return `<h2>Walk ${safe(step.detail.replace(' on foot', ''))} to ${safe(trip().place)}</h2><p class="moment-sub">From ${safe(offAt)} at ${step.time}. Street directions weren’t captured.</p><div class="moment-card is-tint"><small>You’ll see</small><strong lang="de">Ausgang</strong><span>Exit</span></div>`;
-        const early = trip().start
-            ? minutesBetween(route.arrive, trip().start)
-            : null;
-        return `<span class="moment-done">${icon('check')}</span><h2>${early != null ? `You’re ${early} min early` : `You’ve arrived`}</h2><p class="moment-sub">${safe(trip().place)}${trip().start ? ` · ${trip().start}` : ''}</p>${trip().kind === 'official' ? '<a class="moment-paper" href="../bureaucracy-next/">' + icon('document') + '<span><strong>What to bring</strong><small>Your Blue Card checklist in Paperwork</small></span>' + icon('chevron') + '</a>' : ''}`;
+    };
+    // The moments the trip passes through, each at its sample-clock time.
+    function moments() {
+        const list = N.steps(route);
+        const out = [];
+        list.forEach((step, index) => {
+            const before = list[index - 1];
+            if (step.mode === 'transit')
+                out.push({ step: index, nudge: false, clock: at(step.time, -2) });
+            else if (step.mode === 'alight') {
+                if (before?.mode === 'transit')
+                    out.push({
+                        step: index,
+                        nudge: false,
+                        clock: at(
+                            before.time,
+                            Math.round(minutesBetween(before.time, step.time) / 2),
+                        ),
+                    });
+                out.push({ step: index, nudge: true, clock: at(step.time, -1) });
+            } else if (step.mode === 'walk' && index > 0)
+                out.push({
+                    step: index,
+                    nudge: false,
+                    // A change between lines is quick; the last walk less so.
+                    clock: at(step.time, list.slice(index).some((item) => item.mode === 'transit') ? 1 : 2),
+                });
+            else out.push({ step: index, nudge: false, clock: step.time });
+        });
+        // Never before the moment ahead of it (changes can be quick).
+        out.forEach((item, index) => {
+            if (index && minutesBetween(out[index - 1].clock, item.clock) < 0)
+                item.clock = out[index - 1].clock;
+        });
+        return out;
+    }
+    const currentMoment = (p, list = moments()) =>
+        list.find((item) => item.step === p.index && item.nudge === nudge) ||
+        list.find((item) => item.step === p.index);
+    // Where to stand: this line's recorded boarding points at its stop.
+    function whereToStand(board, stopLabel) {
+        const area = boardingArea(board);
+        const points = linePoints();
+        const vehicleWord = word(board);
+        return points.length
+            ? `<div class="moment-map" role="img" aria-label="Map of ${safe(stopLabel)} with the ${points.length} recorded boarding point${points.length === 1 ? '' : 's'} for ${vehicleWord} ${safe(route.line || '')}"><div class="moment-map-canvas"></div><span class="moment-map-label">${points.length === 1 ? 'Board at this point' : `Board at one of these ${points.length === 2 ? 'two' : points.length} points`}</span><small class="moment-map-credit">© OpenStreetMap · OpenFreeMap</small></div>${L ? `<span class="tl-chips">${L.chip('unsure', 'pin', points.length === 1 ? 'Boarding point not confirmed' : `Either of ${points.length} boarding points · not confirmed`)}</span>` : ''}`
+            : area
+              ? `<div class="moment-card"><strong>Board in the area for ${area.lines.join(' · ')}</strong><small>KVB lists ${area.places.length} boarding points there. Which one your ${vehicleWord} uses isn’t confirmed.</small></div>`
+              : '';
+    }
+    // What's on the front of the vehicle, and the other lines that stop here.
+    function frontCard(step) {
+        const line = lineOf(step);
+        const others = (boardingArea(step)?.lines || [])
+            .map(String)
+            .filter((item) => item !== line);
+        const names =
+            others.length > 1
+                ? `${others.slice(0, -1).join(', ')} and ${others.at(-1)}`
+                : others[0];
+        const many = { tram: 'Trams', bus: 'Buses', train: 'Trains' }[word(step)];
+        return `<div class="nav-front"><small>On the front of the ${word(step)}</small><span class="moment-sign"><span class="moment-badge">${safe(line)}</span><strong>${safe(towardsOf(step))}</strong></span>${others.length ? `<p>${many} ${safe(names)} stop here too: take the ${safe(line)}.</p>` : ''}${step.boardStop ? `<button class="nav-board-link" data-nav="board" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-stop="${step.boardStop}" data-board-time="${step.time}">All departures at ${safe(place(step))}${icon('chevron')}</button>` : ''}</div>`;
+    }
+    // What the page says now: the ring, the words, how it knows.
+    function momentNow(p) {
+        const list = N.steps(route);
+        const step = p.step;
+        const cur = currentMoment(p);
+        const left = (time) => Math.max(0, minutesBetween(cur.clock, time));
+        const ring = (minutes, full = false) => ({
+            text: minutes >= 60 ? `${Math.floor(minutes / 60)} h` : String(minutes),
+            label: minutes >= 60 ? '' : 'min',
+            arc:
+                full || minutes === 0
+                    ? 100
+                    : Math.max(8, Math.round((Math.min(minutes, 30) / 30) * 100)),
+        });
+        const firstTransit = list.findIndex((item) => item.mode === 'transit');
+        const sc = scenario();
+        // The sample day's earlier tram, when this trip is the later one.
+        const gone =
+            trip().id === 'day'
+                ? J.dayRoutes?.find(
+                      (item) =>
+                          item.id !== route.id &&
+                          minutesBetween(item.depart, route.depart) > 0,
+                  )
+                : null;
+        const goneTime = gone?.legs.find((leg) => leg.mode === 'transit')?.time;
+        const was = missedFrom || (['cancelled', 'missed'].includes(sc) ? goneTime : '');
+        const spare = trip().start ? minutesBetween(route.arrive, trip().start) : null;
+        const spareText =
+            spare == null
+                ? ''
+                : spare < (trip().kind === 'official' ? 10 : 5)
+                  ? ` · only ${spare} min spare`
+                  : ` · ${spare} min spare`;
+        const base = {
+            tone: 'calm',
+            why: '',
+            extra: '',
+            done: false,
+            canMiss:
+                firstTransit >= 0 && p.index <= firstTransit && !was,
+        };
+        if (step.mode === 'walk' && p.index === 0) {
+            const board = list.find((item) => item.mode === 'transit');
+            const to = stopName(step.title.replace(/^Walk to /, ''));
+            return {
+                ...base,
+                ring: ring(left(board ? board.time : route.arrive)),
+                title: `Walk to ${to}`,
+                sub: board
+                    ? `${step.detail} · ${word(board)} ${lineOf(board)} leaves at ${board.time}`
+                    : `${step.detail} · there ${route.arrive}`,
+                how: board
+                    ? 'We’ll see when you reach the stop'
+                    : 'We’ll see when you arrive',
+                map: `The walk to ${to}`,
+                extra: board ? whereToStand(board, to) : '',
+            };
+        }
+        if (step.mode === 'transit') {
+            const from = place(step);
+            const extra = `${frontCard(step)}${whereToStand(step, from)}`;
+            if (was) {
+                const coral = sc === 'cancelled' && !missedFrom;
+                return {
+                    ...base,
+                    tone: coral ? 'conflict' : 'attention',
+                    ring: { text: '!', label: '', arc: 100 },
+                    why: coral ? `${was} cancelled · ` : `Missed the ${was} · `,
+                    title: coral ? `Take the ${step.time} instead` : `Take the ${step.time}`,
+                    sub: `${capital(word(step))} ${lineOf(step)} to ${towardsOf(step)} · there ${route.arrive}${spareText} (sample)`,
+                    how: coral
+                        ? 'We’ll move on when it leaves with you'
+                        : `We noticed you were still at the stop after ${was} (sample)`,
+                    map: `Board at ${from}`,
+                    extra,
+                };
+            }
+            const minutes = left(step.time);
+            return {
+                ...base,
+                tone: minutes === 0 ? 'attention' : 'calm',
+                ring: ring(minutes),
+                why: minutes === 0 ? 'It’s leaving · ' : '',
+                title: `Take ${word(step)} ${lineOf(step)} to ${towardsOf(step)}`,
+                sub: `Leaves ${from} at ${step.time}`,
+                how: `We’ll move on when the ${word(step)} leaves with you`,
+                map: `Board at ${from}`,
+                extra,
+            };
+        }
+        if (step.mode === 'ride' || step.mode === 'alight') {
+            const board = list
+                .slice(0, p.index + 1)
+                .reverse()
+                .find((item) => item.mode === 'transit');
+            const alight =
+                step.mode === 'alight'
+                    ? step
+                    : list.slice(p.index).find((item) => item.mode === 'alight');
+            const ride = `${capital(word(board))} ${lineOf(board)} to ${offAt(alight)}`;
+            if (step.mode === 'alight' && cur.nudge)
+                return {
+                    ...base,
+                    tone: 'attention',
+                    ring: ring(Math.max(1, left(step.time)), true),
+                    why: 'Next stop · ',
+                    title: 'Get off at the next stop',
+                    sub: `${offAt(step)} at ${step.time}`,
+                    how: 'Your phone buzzes here, even with the screen off (with notifications on)',
+                    map: ride,
+                };
+            return {
+                ...base,
+                ring: ring(left(alight.time)),
+                title: step.mode === 'ride' ? `Stay on to ${offAt(alight)}` : `Ride to ${offAt(alight)}`,
+                sub:
+                    step.mode === 'ride'
+                        ? `Next: ${stopName(step.title)} at ${step.time}`
+                        : `Get off at ${alight.time} · ${word(board)} ${lineOf(board)} towards ${towardsOf(board)}`,
+                how: 'We’ll tell you one stop before',
+                map: ride,
+            };
+        }
+        if (step.mode === 'walk') {
+            const after = list.slice(p.index + 1).find((item) => item.mode === 'transit');
+            const off = list
+                .slice(0, p.index)
+                .reverse()
+                .find((item) => item.mode === 'alight');
+            const title = step.title.replace(/Köln\s+/g, '');
+            if (after)
+                return {
+                    ...base,
+                    ring: ring(left(after.time)),
+                    title,
+                    sub: `${step.detail} · ${word(after)} ${lineOf(after)} leaves at ${after.time}`,
+                    how: 'We’ll see when you reach the stop',
+                    map: title,
+                };
+            return {
+                ...base,
+                ring: ring(left(route.arrive)),
+                title,
+                sub: `${off ? `From ${offAt(off)} · ` : ''}there ${route.arrive}`,
+                how: 'We’ll see when you arrive',
+                map: title,
+            };
+        }
+        if (step.mode !== 'arrive')
+            return {
+                ...base,
+                ring: ring(left(list[p.index + 1]?.time || route.arrive)),
+                title: step.title,
+                sub: step.detail,
+                how: 'We’ll see when you arrive',
+                map: step.title,
+            };
+        const early = trip().start ? minutesBetween(route.arrive, trip().start) : null;
+        return {
+            ...base,
+            done: true,
+            canMiss: false,
+            title:
+                early != null && early >= 0
+                    ? `You’re ${early} min early`
+                    : 'You’ve arrived',
+            sub: `${trip().place}${trip().start ? ` · ${trip().start}` : ''}${trip().to ? ` · ${stopName(trip().to)}` : ''}`,
+            how: 'The trip ends by itself',
+            map: trip().place,
+            extra:
+                trip().kind === 'official'
+                    ? `<a class="moment-paper" href="../bureaucracy-next/">${icon('document')}<span><strong>What to bring</strong><small>Your Blue Card checklist in Paperwork</small></span>${icon('chevron')}</a>`
+                    : '',
+        };
+    }
+    function stepCard(now) {
+        const circles = (arc) =>
+            `<svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" pathLength="100"></circle><circle cx="18" cy="18" r="16" pathLength="100" stroke-dasharray="${arc} 100"></circle></svg>`;
+        const ring = now.done
+            ? `<span class="nav-ring is-done" aria-hidden="true">${circles(100)}${icon('check')}</span>`
+            : `<span class="nav-ring" aria-hidden="true">${circles(now.ring.arc)}<span><strong>${now.ring.text}</strong>${now.ring.label ? `<small>${now.ring.label}</small>` : ''}</span></span>`;
+        const how =
+            active?.condition === 'location' && !now.done
+                ? 'Location is off: following the timetable'
+                : now.how;
+        const menu = menuOpen
+            ? `<div class="nav-not-right" role="menu" aria-label="Not right?">${now.canMiss ? `<button role="menuitem" data-nav="missed">${icon('clock')}I missed the ${word()}</button>` : ''}<button role="menuitem" data-nav="elsewhere">${icon('pin')}I’m somewhere else</button><button role="menuitem" data-nav="end">${icon('stop')}Stop the trip</button></div>`
+            : '';
+        return `<section class="nav-step-card is-${now.tone}" aria-label="Now"><div class="nav-step-lead">${ring}<div><h2>${safe(now.title)}</h2><p class="moment-sub">${now.why ? `<b class="nav-why">${safe(now.why)}</b>` : ''}${safe(now.sub)}</p></div></div>${now.extra}<div class="nav-follow"><span>${icon('locate')}${safe(how)}</span>${now.done ? '' : `<button data-nav="not-right" aria-expanded="${menuOpen}">Not right?${icon('down')}</button>`}</div>${menu}${notice ? `<p class="nav-notice" role="status">${safe(notice)}</p>` : ''}</section>`;
+    }
+    // Your way as a line of stations: a row for each part, the one you're on
+    // marked. Waiting at the stop and riding are both the tram's row.
+    function wayRows(p) {
+        const list = N.steps(route);
+        const rows = [];
+        let current = 0;
+        let lastOff = null;
+        list.forEach((step, index) => {
+            if (step.mode === 'transit') {
+                const alight = list.slice(index).find((item) => item.mode === 'alight');
+                const look = root.NearbyModel?.look(lineOf(step), word(step) === 'bus' ? 'bus' : 'tram');
+                rows.push({
+                    kind: 'ride',
+                    look,
+                    time: step.time,
+                    badge: L && lineOf(step) ? L.line(lineOf(step), look || {}) : '',
+                    title: `${capital(word(step))} ${lineOf(step)} to ${offAt(alight)}`,
+                    sub: `From ${place(step)} · towards ${towardsOf(step)}${alight ? ` · get off at ${alight.time}` : ''}`,
+                });
+            } else if (step.mode === 'walk')
+                rows.push({
+                    kind: index && lastOff ? 'walk is-from-stop' : 'walk',
+                    look: rows.at(-1)?.look,
+                    time: step.time,
+                    title: step.title.replace(/Köln\s+/g, ''),
+                    sub: lastOff ? `From ${offAt(lastOff)} · ${step.detail}` : step.detail,
+                });
+            else if (step.mode === 'arrive')
+                rows.push({
+                    kind: 'end',
+                    time: step.time,
+                    title: trip().place,
+                    sub: `${trip().start ? `Starts at ${trip().start}` : 'There'}${trip().to ? ` · ${stopName(trip().to)}` : ''}`,
+                });
+            else if (!['ride', 'alight'].includes(step.mode))
+                rows.push({ kind: 'walk', time: step.time, title: step.title, sub: step.detail });
+            if (step.mode === 'alight') lastOff = step;
+            if (index <= p.index) current = rows.length - 1;
+        });
+        return `<ol class="nav-way">${rows
+            .map(
+                (row, index) =>
+                    `<li class="is-${row.kind}${index < current ? ' is-done' : ''}${index === current ? ' is-now' : ''}"${row.look ? ` style="--line:${row.look.colour}"` : ''}${index === current ? ' aria-current="step"' : ''}><time>${row.time}</time><i aria-hidden="true"></i><div><strong>${row.badge || ''}<span>${safe(row.title)}</span>${index === current ? '<em>You’re here</em>' : ''}</strong><small>${safe(row.sub)}</small></div></li>`,
+            )
+            .join('')}</ol>`;
+    }
+    // For reviewing only: the sample clock stands in for time and your location.
+    function sampleClock(p) {
+        const list = moments();
+        const cur = currentMoment(p, list);
+        return `<div class="nav-clock" role="group" aria-label="Sample clock: it stands in for time and your location"><span>Sample clock<small> · stands in for time and your location</small></span><div>${list.map((item, index) => `<button data-nav="clock" data-clock="${index}" aria-pressed="${item === cur}">${item.clock}</button>`).join('')}</div><button class="nav-clock-next" data-nav="clock-next" aria-label="Move the clock on">${icon('chevron')}</button></div>`;
     }
     function timeline() {
         return `<ol class="nav-timeline">${N.steps(route)
@@ -477,55 +763,47 @@
     function render() {
         const running = isActive();
         const p = N.progress(route, running ? active.step : 0);
+        dialog.classList.toggle('is-running', running);
         const content = dialog.querySelector('.nav-panel-content');
         const focus = content.contains(document.activeElement)
             ? document.activeElement.dataset.nav
             : null;
         const scrollTop =
             content.querySelector('.nav-detail-scroll')?.scrollTop || 0;
-        const title = running
-            ? p.step.title
-            : `${route.depart} – ${route.arrive}`;
-        const secondary = running
-            ? p.step.detail
-            : `${trip().from.replace(/^Köln\s+/, '')} to ${trip().place}`;
-        const nextDay = route.arrive < route.depart ? ' · next day' : '';
-        const walking = running ? p.walkingRemaining : route.walking;
-        const movement =
-            running && p.stopsRemaining
-                ? `${icon('train')}<strong>${p.stopsRemaining}</strong> stop${p.stopsRemaining === 1 ? '' : 's'} left`
-                : walking
-                  ? `${icon('walk')}<strong>${walking}</strong> min walk`
-                  : '';
-        // The bar and the count follow the steps the whole journey lists
-        // (owner, 15 Oct 2026: "3 of 6" beside five steps didn't add up).
-        const segments = running
-            ? `<div class="nav-segments" style="${lineStyle()}" role="progressbar" aria-label="Trip steps done" aria-valuemin="0" aria-valuemax="${p.total - 1}" aria-valuenow="${p.index}">${N.steps(route)
-                  .map((_, index) => index)
-                  .map(
-                      (index) =>
-                          `<span class="${index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></span>`,
-                  )
-                  .join('')}</div>`
+        const confirm = confirmation
+            ? `<div class="nav-confirm" role="group" aria-label="${confirmation === 'end' ? 'Stop this trip?' : 'Replace current journey preview?'}"><span>${confirmation === 'end' ? 'Stop this trip?' : 'Replace current preview?'}</span><button data-nav="cancel-confirm">Keep</button><button class="nav-primary" data-nav="confirm">${confirmation === 'end' ? 'Stop' : 'Replace'}</button></div>`
             : '';
-        content.innerHTML = `${conditionMarkup()}<div class="nav-summary${running ? ' is-moment' : ''}">
-            ${segments}<div class="nav-eyebrow">${running ? `${L ? `<span class="nav-stage tl-chip is-select">${icon(modeIcon(p.step.mode))}<span>${momentLabel(p)}</span></span>` : `<strong class="nav-stage">${momentLabel(p)}</strong>`}<span class="nav-count">${p.index + 1} of ${p.total} · ${trip().id === 'day' || trip().evening ? 'sample day' : 'captured times'}</span>` : `<span>${icon(route.mode === 'transit' ? 'train' : route.mode)}${route.line ? (route.changes ? `Line ${route.legs.filter((leg) => leg.mode === 'transit').map((leg) => leg.line || route.line).join(', then ')} · ${route.changes} change${route.changes > 1 ? 's' : ''}` : `Line ${route.line} · Direct`) : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span>`}<button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
-            ${
-                running
-                    ? `<div class="nav-moment" style="${lineStyle()}">${moment(p)}</div>`
-                    : `<h2>${safe(title)}</h2><p class="nav-step-description">${safe(secondary)}</p>
-            <div class="nav-facts"><span>${icon('clock')}<strong>${route.duration}</strong> min</span>${movement ? `<span>${movement}</span>` : ''}<span>Arrive <strong>${route.arrive}</strong>${nextDay}</span></div>`
-            }
-            <p class="nav-guidance-note">Sample steps · advance them yourself</p>
-        </div><div id="nav-expanded" class="nav-expanded" ${!wide() && !expanded ? 'inert' : ''}><div class="nav-detail-scroll"><div class="nav-itinerary-label"><strong>Whole journey</strong><small>${localDate()} · Sample</small></div>${timeline()}${route.delayed ? `<p class="nav-preview-note">${icon('info')}Delay flagged in this capture. Current status is unknown.</p>` : ''}<p class="nav-preview-note">${icon('info')}${trip().id === 'day' ? 'Scheduled sample times; no stops between were recorded.' : 'Times and steps are from a saved capture.'} Advance the preview yourself; live guidance is not connected.</p>
+        const now = running ? momentNow(p) : null;
+        if (running)
+            content.innerHTML = `${conditionMarkup()}<div class="nav-summary is-moment">${stepCard(now)}</div><div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p)}</div></div><footer class="nav-footer">${confirm || sampleClock(p)}</footer>`;
+        else {
+            const nextDay = route.arrive < route.depart ? ' · next day' : '';
+            const movement = route.walking
+                ? `${icon('walk')}<strong>${route.walking}</strong> min walk`
+                : '';
+            content.innerHTML = `${conditionMarkup()}<div class="nav-summary">
+            <div class="nav-eyebrow"><span>${icon(route.mode === 'transit' ? 'train' : route.mode)}${route.line ? (route.changes ? `Line ${route.legs.filter((leg) => leg.mode === 'transit').map((leg) => leg.line || route.line).join(', then ')} · ${route.changes} change${route.changes > 1 ? 's' : ''}` : `Line ${route.line} · Direct`) : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span><button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
+            <h2>${safe(`${route.depart} – ${route.arrive}`)}</h2><p class="nav-step-description">${safe(`${trip().from.replace(/^Köln\s+/, '')} to ${trip().place}`)}</p>
+            <div class="nav-facts"><span>${icon('clock')}<strong>${route.duration}</strong> min</span>${movement ? `<span>${movement}</span>` : ''}<span>Arrive <strong>${route.arrive}</strong>${nextDay}</span></div>
+        </div><div id="nav-expanded" class="nav-expanded" ${!wide() && !expanded ? 'inert' : ''}><div class="nav-detail-scroll"><div class="nav-itinerary-label"><strong>Whole journey</strong><small>${localDate()} · Sample</small></div>${timeline()}${route.delayed ? `<p class="nav-preview-note">${icon('info')}Delay flagged in this capture. Current status is unknown.</p>` : ''}<p class="nav-preview-note">${icon('info')}${trip().id === 'day' ? 'Scheduled sample times; no stops between were recorded.' : 'Times and steps are from a saved capture.'} Live guidance isn’t connected in this preview.</p>
         </div></div>
-        <footer class="nav-footer">${
-            confirmation
-                ? `<div class="nav-confirm" role="group" aria-label="${confirmation === 'end' ? 'End journey preview?' : 'Replace current journey preview?'}"><span>${confirmation === 'end' ? 'End this preview?' : 'Replace current preview?'}</span><button data-nav="cancel-confirm">Keep</button><button class="nav-primary" data-nav="confirm">${confirmation === 'end' ? 'End' : 'Replace'}</button></div>`
-                : running
-                  ? `<button class="nav-primary" data-nav="${p.complete ? 'finish' : 'next'}">${safe(momentAction(p))}${icon(p.complete ? 'check' : 'arrow')}</button><div class="nav-footer-more">${p.index === 0 ? '<span></span>' : `<button class="nav-text-button" data-nav="previous">${icon('back')}Back a step</button>`}${p.complete ? '' : `<button class="nav-text-button" data-nav="end">${icon('stop')}Stop the trip</button>`}</div>`
-                  : `<button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button><div class="nav-footer-more"><span></span><button class="nav-text-button" data-save="${route.id}">${icon('bookmark')}Save to Saved journeys</button></div>`
-        }</footer>`;
+        <footer class="nav-footer">${confirm || `<button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button><div class="nav-footer-more"><span></span><button class="nav-text-button" data-save="${route.id}">${icon('bookmark')}Save to Saved journeys</button></div>`}</footer>`;
+        }
+        // The top bar: where you are in the trip, and that it's a sample.
+        const progress = dialog.querySelector('.nav-trip-progress');
+        if (progress) {
+            progress.hidden = !running;
+            if (running) {
+                const parts = N.steps(route).filter((step) => step.mode !== 'arrive').length;
+                const arrived = p.step.mode === 'arrive';
+                progress.innerHTML = `<span class="nav-bars" role="progressbar" aria-label="Trip progress" aria-valuemin="0" aria-valuemax="${parts}" aria-valuenow="${arrived ? parts : p.index}">${Array.from({ length: parts }, (_, index) => `<i class="${arrived || index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></i>`).join('')}</span><span class="nav-count">${arrived ? 'Arrived' : `${p.index + 1} of ${parts}`}</span><span class="nav-sample">Sample · not live</span>`;
+            }
+        }
+        const note = dialog.querySelector('.nav-map-note');
+        if (note) {
+            note.hidden = !running;
+            note.textContent = running ? now.map : '';
+        }
         content.querySelector('.nav-detail-scroll').scrollTop = scrollTop;
         if (focus)
             (
@@ -587,10 +865,14 @@
         inspected = 0;
         mapView = 'step';
         confirmation = '';
+        nudge = false;
+        menuOpen = false;
+        missedFrom = '';
+        notice = '';
         persist();
         // Under way, the moment leads; the stops wait behind Itinerary.
         setExpanded(false);
-        announce('Journey preview started. Advance steps manually.');
+        announce('Trip started. It moves on by itself.');
     }
     function announce(text) {
         dialog.querySelector('.nav-announcement').textContent = text;
@@ -692,6 +974,75 @@
             return;
         }
         const action = button.dataset.nav;
+        if (action === 'clock' || action === 'clock-next') {
+            const list = moments();
+            const from = list.indexOf(currentMoment(N.progress(route, active.step), list));
+            const index =
+                action === 'clock'
+                    ? Number(button.dataset.clock)
+                    : Math.min(list.length - 1, from + 1);
+            const item = list[index];
+            active.step = item.step;
+            nudge = item.nudge;
+            inspected = item.step;
+            mapView = 'step';
+            menuOpen = false;
+            notice = '';
+            persist();
+            render();
+            updateMap();
+            dialog
+                .querySelector('[data-nav="clock"][aria-pressed="true"]')
+                ?.focus({ preventScroll: true });
+            announce(`${item.clock}. ${momentNow(N.progress(route, active.step)).title}`);
+            return;
+        }
+        if (action === 'not-right') {
+            menuOpen = !menuOpen;
+            notice = '';
+            render();
+            dialog
+                .querySelector(menuOpen ? '.nav-not-right button' : '[data-nav="not-right"]')
+                ?.focus({ preventScroll: true });
+            return;
+        }
+        if (action === 'missed') {
+            menuOpen = false;
+            // The sample day has a later tram 4; other trips plan again.
+            const later =
+                trip().id === 'day'
+                    ? J.dayRoutes?.find(
+                          (item) =>
+                              item.id !== route.id &&
+                              minutesBetween(route.depart, item.depart) > 0,
+                      )
+                    : null;
+            if (!later) {
+                notice = `No later ${word()} is in the sample. Plan a trip can look again.`;
+                render();
+                return;
+            }
+            missedFrom =
+                route.legs.find((leg) => leg.mode === 'transit')?.time || '';
+            nudge = false;
+            S.write({
+                routeId: later.id,
+                step: Math.max(
+                    0,
+                    N.steps(later).findIndex((step) => step.mode === 'transit'),
+                ),
+                condition: active.condition || 'normal',
+            });
+            open(later);
+            announce(`Switched to the ${later.legs.find((leg) => leg.mode === 'transit')?.time}.`);
+            return;
+        }
+        if (action === 'elsewhere') {
+            menuOpen = false;
+            const to = trip().to;
+            close(() => root.TravelPlanTo?.(to));
+            return;
+        }
         if (action === 'close') close();
         else if (action === 'expand') setExpanded(!expanded);
         else if (action === 'options') options();
@@ -709,10 +1060,8 @@
             announce(
                 `Step ${active.step + 1}. ${N.progress(route, active.step).step.title}`,
             );
-        } else if (action === 'buzz') {
-            buzz = !buzz;
-            render();
         } else if (action === 'end') {
+            menuOpen = false;
             confirmation = 'end';
             render();
         } else if (action === 'cancel-confirm') {
