@@ -11,6 +11,31 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Your next thing as one line — 15 October 2026
+
+Owner-agreed on the Travel directions canvas: option B (rows 17–18), after
+"pink means something urgent" (the old card was tinted with tram 4's colour).
+
+- Colour says how much it matters, never which line: neutral while there's
+  time, amber when it's time to go or you missed it (sample), coral when it
+  won't work (sample). Line colours stay on the badge, the strip and My
+  day's rail; the appointment's dot on that rail is ink, not orange.
+- Top of Nearby: a ring counting down to leaving, "Leave now · Blue Card
+  appointment, 14:00", the way in one sentence, "I'm on my way" and an
+  arrow that opens the way as a strip of stations (each name under its dot)
+  with the other ways. On phones and in a narrow Nearby the button goes
+  under the line.
+- Missed or cancelled 13:14 (Review menu): "Take the 13:24" with the reason
+  in the line's colour. "I'm on my way" takes it; there's no Switch step.
+- Nothing planned yet: the same line offers the next place on My day with
+  "Plan the way". Desktop's three-column My day card is gone (it repeated
+  Today's places in the panel).
+- My day shows the same line on the day's rail, without the destination
+  (the appointment comes next) or the arrow.
+- Station notices (a long wait, a lift out, paused times) use the same
+  look: the icon in a ring, the colour on the edge.
+- "Later today" left the card; it's in My day and Today's places.
+
 ## Plan a trip's panel beside Nearby — 14 October 2026
 
 Owner-agreed on the Travel directions canvas, row 16 (after options A–C in

@@ -26,11 +26,9 @@ const state = {
     // A sample situation from the Review menu, and whether its change of plan
     // was taken.
     scenario: 'normal',
-    recovered: false,
     // My day: the evening's choice where two plans overlap, and whether the
     // trip's steps are open.
     dayPick: '',
-    dayTripOpen: false,
     boardingRoute: null,
     routeMode: 'transit',
     sort: 'arrival',
@@ -988,122 +986,139 @@ function nextTripChoice(trip = J.day) {
     const best = spare(planned) < margin && earlier ? earlier : planned;
     return { best, planned, spare };
 }
-// The 13:14 is cancelled, or it left before you did (sample situations):
-// the next tram 4 is the only timed way the sample has.
-function changeOfPlan(trip, planned, spare) {
-    const tram = planned.legs.find((leg) => leg.mode === 'transit');
-    const missed = state.scenario === 'missed';
-    const ways = `<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li><li><span><strong>Taxi</strong><small>Time and price aren’t in the sample</small></span></li>`;
-    if (missed)
-        return `<div class="next-trip-main"><p class="next-trip-eyebrow is-conflict">${L.chip('attention', 'clock', 'Missed')}You didn’t set off in time · sample · for your ${trip.start}</p><div class="next-trip-lead"><h2 id="next-trip-title">Tram ${safe(planned.line)} left at 13:14</h2></div><p class="next-trip-sub is-shown">That’s fine. Here’s what still gets you there by ${trip.start}:</p><ul class="next-trip-ways"><li class="is-first"><span class="next-trip-badge">${safe(planned.line)}</span><span><strong>Next tram ${safe(planned.line)} at ${tram.time}</strong><small>Leave ${planned.depart} · there ${planned.arrive}</small>${spareLabel(spare(planned), trip.kind === 'official' ? 10 : 5)}</span><button type="button" class="primary" data-action="trip-recover">Take it</button></li>${ways}</ul><p class="next-trip-note">We noticed because your location didn’t change after ${trip.time} (sample). Indoors this can be wrong.</p></div>`;
-    return `<div class="next-trip-main"><p class="next-trip-eyebrow is-change">${L.chip('conflict', 'cancel', 'Cancelled')}Change of plan · sample · for your ${trip.start}</p><div class="next-trip-lead"><h2 id="next-trip-title">Your 13:14 is cancelled</h2></div><ul class="next-trip-reasons"><li class="is-cause"><span aria-hidden="true">${icon('cancel')}</span><span><strong>Tram ${safe(planned.line)} at 13:14 is cancelled.</strong> The stop display says <span lang="de">„Fällt aus“</span>, which means cancelled.</span></li><li><span aria-hidden="true">${icon('arrow')}</span><span>The next tram ${safe(planned.line)}, at ${tram.time}, gets you there at ${planned.arrive}: only ${spare(planned)} min early.</span></li><li><span aria-hidden="true">${icon('info')}</span><span>Other lines from ${safe(placeName(trip.from))} to ${safe(trip.to)} aren’t in the sample. Composer can help you compare.</span></li></ul></div><div class="next-trip-side"><button type="button" class="primary next-trip-go" data-action="trip-recover">Take the ${tram.time} · leave ${planned.depart}</button><button type="button" class="text-action next-trip-toggle" data-action="trip-others" aria-expanded="${state.tripOthers}" aria-controls="next-trip-others">Every other way${icon('down')}</button><div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${ways}</ul><button type="button" class="text-action" data-action="ask-composer">Ask Composer${icon('arrow')}</button></div></div>`;
+// Your next thing as one line (owner, 15 Oct 2026: option B on the Travel
+// directions canvas, rows 17–18). A ring counts down to leaving, and its
+// colour says how much it matters, never which line: neutral = there's
+// time, amber = time to go or you missed it (sample), coral = it won't work
+// (sample). The arrow opens the way. "I'm on my way" takes the trip shown,
+// so a missed or cancelled 13:14 needs no Switch step. With nothing planned
+// yet, the same line offers the next place on My day (it replaces desktop's
+// My day card, which repeated Today's places in the panel).
+function tripNow(trip = J.day) {
+    const sc = state.scenario;
+    if (sc === 'unplanned') {
+        const place = dayPlaces()[0];
+        return place ? { kind: 'unplanned', place, tone: 'calm' } : null;
+    }
+    const choice = nextTripChoice(trip);
+    const broken = ['cancelled', 'missed'].includes(sc);
+    const route = broken ? choice.planned : choice.best;
+    const leaveIn = minutesOf(route.depart) - minutesOf(trip.time);
+    const tone =
+        sc === 'cancelled'
+            ? 'conflict'
+            : broken || leaveIn <= 0
+              ? 'attention'
+              : 'calm';
+    return { kind: broken ? sc : 'trip', route, leaveIn, tone, ...choice };
+}
+const rideOf = (route) => route.legs.find((leg) => leg.mode === 'transit');
+function tripRing(now) {
+    if (now.kind === 'unplanned')
+        return `<span class="trip-ring is-icon" aria-hidden="true">${icon('calendar')}</span>`;
+    const left = Math.max(0, now.leaveIn);
+    const go = now.kind !== 'trip' || left === 0;
+    // The arc is what's left of the last half hour; it's full when it's time.
+    const arc = go ? 100 : Math.max(8, Math.round((Math.min(left, 30) / 30) * 100));
+    const text =
+        now.kind !== 'trip'
+            ? '!'
+            : go
+              ? 'now'
+              : left >= 60
+                ? `${Math.floor(left / 60)} h`
+                : left;
+    return `<span class="trip-ring" aria-hidden="true"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" pathLength="100"></circle><circle cx="18" cy="18" r="15.9" pathLength="100" stroke-dasharray="${arc} 100"></circle></svg><span><strong>${text}</strong>${go || left >= 60 ? '' : '<small>min</small>'}</span></span>`;
+}
+// The way as one strip of stations, each name and time under its dot.
+function wayStrip(route, trip) {
+    const node = (kind, name, time, look) =>
+        `<span class="way-node is-${kind}"${look ? ` style="--line:${look.colour}"` : ''}><i></i><span>${safe(name)}<small>${time}</small></span></span>`;
+    const parts = [node('you', 'You', route.depart)];
+    let before = null;
+    for (const leg of route.legs) {
+        if (leg.mode === 'walk') {
+            parts.push('<span class="way-walk"></span>');
+            continue;
+        }
+        const line = leg.line || route.line;
+        const look = window.NearbyModel?.look(line, 'tram') || {};
+        parts.push(
+            node('stop', before ? before.stop : placeName(trip.from), leg.time, look),
+            `<span class="way-ride" style="--line:${look.colour}">${L.line(line, look)}</span>`,
+            node('stop', placeName(leg.stop || trip.alightStop || ''), leg.alight || route.arrive, look),
+        );
+        before = leg;
+    }
+    parts.push(node('there', 'There', route.arrive));
+    return `<div class="way-strip" aria-hidden="true">${parts.join('')}</div>`;
+}
+// One line for the next thing; Nearby and My day both show it (`key` keeps
+// their ids apart). On My day's rail the appointment comes next, so the line
+// leaves out where it's going and the way (canvas row 18).
+function tripLine(key, trip = J.day) {
+    const onDay = key === 'day';
+    const now = trip && tripNow(trip);
+    if (!now) return '';
+    const id = `${key}-trip`;
+    if (now.kind === 'unplanned') {
+        const { place } = now;
+        return `<div class="trip-line-row">${tripRing(now)}<p class="trip-line-text"><strong id="${id}-title">${safe(place.title)}</strong><span class="trip-line-for">${place.time}</span><span class="trip-line-sub"><b class="trip-line-why is-quiet">No way picked yet · </b>${safe(place.detail || place.place)}</span></p><button type="button" class="primary next-trip-go" data-action="plan-way" data-place="${safe(place.place)}">${icon('route')}Plan the way</button></div>`;
+    }
+    const { route, planned, best, spare } = now;
+    const ride = rideOf(route);
+    const look = window.NearbyModel?.look(route.line, 'tram') || {};
+    const margin = trip.kind === 'official' ? 10 : 5;
+    const left = spare(route);
+    const gone = J.dayRoutes.find((r) => !r.inPlan);
+    const goneTime = gone ? rideOf(gone).time : '';
+    const weather = sampleWeather(trip.date, trip.start);
+    const why =
+        now.kind === 'cancelled'
+            ? `${goneTime} cancelled · `
+            : now.kind === 'missed'
+              ? `Missed the ${goneTime} · `
+              : weather?.wet
+                ? `${weather.sky} likely at ${trip.start} · sample · `
+                : '';
+    const title =
+        now.kind !== 'trip'
+            ? `Take the ${ride.time}`
+            : now.leaveIn <= 0
+              ? 'Leave now'
+              : `Leave at ${route.depart}`;
+    const sub = `${L.vehicle(look.bus ? 'bus' : 'tram')} ${safe(route.line)} from ${safe(placeName(trip.from))} at ${ride.time} · there ${route.arrive} · ${left < margin ? `only ${left} min spare` : `${left} min spare`}${now.kind === 'trip' ? '' : ' (sample)'}`;
+    const note =
+        now.kind === 'missed'
+            ? `We noticed because your location didn’t change after ${trip.time} (sample). Indoors this can be wrong.`
+            : now.kind === 'cancelled'
+              ? 'The stop display says „Fällt aus“, which means cancelled (sample).'
+              : '';
+    const others = [
+        planned !== best && now.kind === 'trip'
+            ? `<li><span><strong>The ${rideOf(planned).time} tram ${safe(planned.line)}</strong><small>In your plan · there ${planned.arrive} · ${spare(planned)} min spare</small></span></li>`
+            : '',
+        '<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li>',
+        now.kind === 'trip'
+            ? ''
+            : '<li><span><strong>Taxi</strong><small>Time and price aren’t in the sample</small></span></li>',
+    ].join('');
+    const open = state.tripOthers;
+    return `<div class="trip-line-row">${tripRing(now)}<p class="trip-line-text"><strong id="${id}-title">${title}</strong>${onDay ? '' : `<span class="trip-line-for">${safe(trip.place)}, ${trip.start}</span>`}<span class="trip-line-sub">${why ? `<b class="trip-line-why${weather?.wet && now.kind === 'trip' ? ' is-attention' : ''}">${safe(why)}</b>` : ''}${sub}</span></p><button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}I’m on my way</button>${onDay ? '</div>' : `<button type="button" class="trip-line-more" data-action="trip-others" aria-expanded="${open}" aria-controls="${id}-way" aria-label="${open ? 'Hide the way' : 'Show the way'}">${icon('down')}</button></div><div id="${id}-way" class="trip-line-way"${open ? '' : ' hidden'}>${wayStrip(route, trip)}${note ? `<p class="trip-line-note">${icon('info')}<span>${safe(note)}</span></p>` : ''}<div class="trip-line-others"><h3>Other ways</h3><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div></div>`}`;
 }
 function renderNextTrip() {
     const panel = $('#next-trip');
-    const trip = J.day;
     if (!panel) return;
-    const sc = state.scenario;
+    const trip = J.day;
+    const now = trip && tripNow(trip);
+    // Late-night, lift and paused-times situations are about the station
+    // (its own notice), not a trip.
     panel.hidden =
-        !trip || ['unplanned', 'longwait', 'lift', 'stale'].includes(sc);
-    renderYourDay();
+        !now || ['longwait', 'lift', 'stale'].includes(state.scenario);
     if (panel.hidden) return;
-    const choice = nextTripChoice(trip);
-    const { planned, spare } = choice;
-    const broken = ['cancelled', 'missed'].includes(sc);
-    panel.classList.toggle(
-        'is-change',
-        broken && !state.recovered && sc === 'cancelled',
-    );
-    panel.classList.toggle(
-        'is-missed',
-        broken && !state.recovered && sc === 'missed',
-    );
-    const lineLook = window.NearbyModel?.look(planned.line, 'tram');
-    if (lineLook)
-        panel.setAttribute(
-            'style',
-            `--line:${lineLook.colour};--tint:${lineLook.tint};--ink:${lineLook.ink}`,
-        );
-    if (broken && !state.recovered) {
-        panel.innerHTML = changeOfPlan(trip, planned, spare);
-        return;
-    }
-    // After a change of plan, the 13:24 is the trip.
-    const best = broken ? planned : choice.best;
-    const switchNote = broken
-        ? `Switched to the ${planned.legs.find((leg) => leg.mode === 'transit').time} tram ${planned.line}, because the 13:14 ${sc === 'cancelled' ? 'is cancelled' : 'left without you'} (sample).`
-        : '';
-    const tram = (route) => route.legs.find((leg) => leg.mode === 'transit');
-    const ride = tram(best);
-    const walkIn = best.legs[0].mode === 'walk' ? best.legs[0].duration : 0;
-    const walkOut =
-        best.legs.at(-1).mode === 'walk' ? best.legs.at(-1).duration : 0;
-    const leaveIn = minutesOf(best.depart) - minutesOf(trip.time);
-    const look = window.NearbyModel?.look(best.line, 'tram') || {
-        colour: 'var(--color-select-text)',
-        tint: 'var(--color-select-bg)',
-        ink: '#fff',
-    };
-    const total = walkIn + ride.duration + walkOut;
-    const weather = sampleWeather(trip.date, best.depart);
-    const later = (window.ExpaduSampleDay?.events || [])
-        .filter((event) => event.start > trip.start)
-        .map((event) => ({
-            event,
-            weather: sampleWeather(trip.date, event.start),
-        }));
-    const others = [
-        planned !== best && !broken
-            ? `<li><span><strong>The ${tram(planned).time} tram ${safe(planned.line)}</strong><small>In your plan · there ${planned.arrive}</small></span>${spareLabel(spare(planned), trip.kind === 'official' ? 10 : 5)}</li>`
-            : '',
-        '<li><span><strong>Bike or walk</strong><small>Times aren’t in the sample</small></span></li>',
-    ].join('');
-    panel.setAttribute(
-        'style',
-        `--line:${look.colour};--tint:${look.tint};--ink:${look.ink}`,
-    );
-    panel.innerHTML = `<div class="next-trip-main">
-            ${switchNote ? `<p class="next-trip-switched">${icon('check')}${safe(switchNote)}</p>` : ''}
-            <p class="next-trip-eyebrow"><span>Next · ${safe(trip.place)} · ${trip.start}<span class="next-trip-to"> · ${safe(trip.to)}</span></span>${L.chip('unsure', 'info', 'Sample', { size: 'sm' })}</p>
-            <div class="next-trip-lead"><h2 id="next-trip-title">${leaveIn <= 0 ? 'Leave now' : `Leave at ${best.depart}`}</h2>${L.line(best.line, look)}</div>
-            <p class="next-trip-from">${ride.time} from ${safe(placeName(trip.from))} · there ${best.arrive}</p>
-            <p class="next-trip-sub">Tram ${safe(best.line)} leaves ${safe(placeName(trip.from))} at ${ride.time}.${walkIn ? ` It’s a ${walkIn} min walk.` : ''}</p>
-            <div class="next-trip-line" aria-hidden="true" style="--walk-in:${walkIn};--ride:${ride.duration};--walk-out:${walkOut}">
-                <span class="next-trip-stop" style="left:${((walkIn / total) * 100).toFixed(1)}%">${safe(placeName(trip.from))} ${ride.time}</span>
-                <span class="next-trip-stop is-end" style="right:${((walkOut / total) * 100).toFixed(1)}%">${safe(ride.stop)} ${ride.alight}</span>
-                <span class="next-trip-track"><i class="is-you"></i><b class="is-walk"></b><i class="is-board"></i><b class="is-ride"><span>${safe(best.line)}</span></b><i class="is-board"></i><b class="is-walk is-out"></b><i class="is-there"></i></span>
-                <span class="next-trip-end">You · ${best.depart}</span><span class="next-trip-end is-there">There ${best.arrive}</span>
-            </div>
-            <p class="next-trip-labels tl-chips">${spareLabel(spare(best), trip.kind === 'official' ? 10 : 5)}${walkIn ? L.chip('calm', 'walk', `${walkIn} min`, { hidden: 'walk' }) : ''}${weather ? L.chip('calm', weather.wet ? 'cloud' : 'sun', `${weather.degrees}° · sample`, { hidden: weather.sky }) : ''}</p>
-        </div>
-        <div class="next-trip-side">
-            <button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${best.id}">${icon('play')}I’m on my way</button>
-            <button type="button" class="quiet-button next-trip-day" data-view="day">My day</button>
-            <small class="next-trip-hint">Your phone takes the trip from here, one step at a time.</small>
-            <button type="button" class="text-action next-trip-toggle" data-action="trip-others" aria-expanded="${state.tripOthers}" aria-controls="next-trip-others">Other ways${icon('down')}</button>
-            <div id="next-trip-others" class="next-trip-others" ${state.tripOthers ? '' : 'hidden'}><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div>
-            ${later.length ? `<div class="next-trip-later"><h3>Later today</h3><ul>${later.map(({ event, weather: w }) => `<li><button type="button" data-action="plan-way" data-place="${safe(event.venue || event.title)}" aria-label="Plan the way to ${safe(event.title)}, ${event.start}"><time>${event.start}</time><span><strong>${safe(event.title)}</strong><small>${safe(event.venue || '')}</small>${w?.wet ? L.chip('attention', 'cloud', `${w.sky} likely · sample`, { size: 'sm' }) : ''}</span>${icon('arrow')}</button></li>`).join('')}</ul></div>` : ''}
-        </div>`;
-}
-// Before anything is planned, desktops show My day with a way to plan each
-// place (owner-approved canvas, Nearby on desktop; renamed from "Your day",
-// owner, 10 Oct 2026, to match the phones' My day).
-function renderYourDay() {
-    const box = $('#your-day');
-    if (!box) return;
-    const places = dayPlaces();
-    box.hidden =
-        !desktopPlanner.matches ||
-        state.scenario !== 'unplanned' ||
-        !places.length;
-    box.innerHTML = box.hidden
-        ? ''
-        : `<div class="your-day-head"><h2 id="your-day-title">My day</h2><span>Pick one to plan the way</span></div><ol>${places
-              .map(
-                  (place) =>
-                      `<li><time>${place.time}</time><strong>${safe(place.title)}</strong><small>${safe(place.detail || place.place)}</small><button type="button" class="text-action" data-action="plan-way" data-place="${safe(place.place)}" aria-label="Plan the way to ${safe(place.title)}, ${place.time}">Plan the way${icon('arrow')}</button></li>`,
-              )
-              .join('')}</ol>`;
+    panel.className = `trip-line is-${now.tone}`;
+    panel.setAttribute('aria-labelledby', 'nearby-trip-title');
+    panel.innerHTML = tripLine('nearby', trip);
 }
 // Opens the appointment trip as Today hands it over, without a page load.
 function openNextTrip() {
@@ -1733,14 +1748,8 @@ function renderDay() {
     }
     const appointment = window.ExpaduSampleDay?.appointment;
     const events = window.ExpaduSampleDay?.events || [];
-    const { best: usual, planned, spare } = nextTripChoice(trip);
-    const sc = state.scenario;
-    const broken = ['cancelled', 'missed'].includes(sc) && !state.recovered;
-    const route = ['cancelled', 'missed'].includes(sc) ? planned : usual;
-    const ride = route.legs.find((leg) => leg.mode === 'transit');
-    const walkIn = route.legs[0].mode === 'walk' ? route.legs[0].duration : 0;
-    const walkOut =
-        route.legs.at(-1).mode === 'walk' ? route.legs.at(-1).duration : 0;
+    const next = tripNow(trip);
+    const route = next?.route || nextTripChoice(trip).best;
     const look = window.NearbyModel?.look(route.line, 'tram') || {};
     const hour = (h) =>
         sampleWeather(trip.date, `${String(h).padStart(2, '0')}:00`);
@@ -1769,19 +1778,14 @@ function renderDay() {
               time: going.start,
           })[0]
         : null;
-    const steps = J.tripSteps(route)
-        .map(
-            (step) =>
-                `<li><time>${step.time}</time><span class="day-step-dot is-${step.mode}"></span><span><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small></span></li>`,
-        )
-        .join('');
-    const tripBlock = broken
-        ? `<section class="day-broken" aria-labelledby="day-broken-title"><p class="day-broken-cause">${sc === 'cancelled' ? L.chip('conflict', 'cancel', 'Cancelled') : L.chip('attention', 'clock', 'Missed')}${sc === 'cancelled' ? 'Tram 4 at 13:14 (sample)' : 'Tram 4 left at 13:14 (sample)'}</p><strong id="day-broken-title">Your 13:14 way ${sc === 'cancelled' ? 'is cancelled' : 'has gone'}</strong><div class="day-switch">${L.line(planned.line, look)}<span><strong>Leave ${planned.depart} · there ${planned.arrive}</strong><small>The next tram ${safe(planned.line)}</small>${spareLabel(spare(planned), trip.kind === 'official' ? 10 : 5)}</span><button type="button" class="primary" data-action="trip-recover">Switch</button></div><p class="day-note">Other ways’ times aren’t in the sample.</p></section>`
-        : `<section class="day-trip" aria-label="Journey to the appointment" style="--line:${look.colour};--ink:${look.ink};--tint:${look.tint}">${state.recovered ? `<p class="day-switched">Switched to the 13:24, because the 13:14 ${sc === 'cancelled' ? 'is cancelled' : 'left without you'} (sample).</p>` : ''}<button type="button" class="day-trip-head" data-action="day-trip" aria-expanded="${state.dayTripOpen}"><span class="day-trip-times"><strong>Leave ${route.depart} → there ${route.arrive}</strong>${icon('down')}</span><span class="day-ribbon"><span>${icon('walk')}${walkIn}</span><i></i><b>${safe(route.line)} · ${ride.duration} min</b><i></i><span>${icon('walk')}${walkOut}</span></span><span class="day-chips tl-chips">${spareLabel(spare(route), trip.kind === 'official' ? 10 : 5)}${L.chip('unsure', 'info', 'Sample day')}</span></button>${state.dayTripOpen ? `<div class="day-trip-detail"><ol class="day-steps">${steps}</ol><button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}Start this trip</button></div>` : ''}</section>`;
+    // The trip: the same line as Nearby's.
+    const tripBlock = next
+        ? `<section class="trip-line is-${next.tone}" aria-labelledby="day-trip-title">${tripLine('day', trip)}</section>`
+        : '';
     panel.innerHTML = `<div class="day-head"><span><strong>Today</strong><small>${boardDateLabel(trip.date)} · sample day</small></span>${now ? `<span class="day-now-weather">${icon('sun')}${now.degrees}° · ${now.sky.toLowerCase()} until about 15:00 <small>sample weather</small></span>` : ''}</div>
         <ol class="day-river">
             <li class="is-now"><time>${trip.time}</time><span class="day-rail"><i class="day-dot is-now"></i></span><div><strong>Now, near ${safe(placeName(trip.from))}</strong><small>Your location is a sample</small></div></li>
-            <li class="is-trip" style="--trip-line:${look.colour}"><time>${route.depart}</time><span class="day-rail is-ride"></span><div>${tripBlock}</div></li>
+            <li class="is-trip" style="--trip-line:${look.colour}"><time>${next?.route ? next.route.depart : ''}</time><span class="day-rail is-ride"></span><div>${tripBlock}</div></li>
             <li><time>${trip.start}</time><span class="day-rail"><i class="day-dot is-plan"></i></span><div><section class="day-plan"><strong>${safe(trip.place)}</strong><span>${safe(trip.to)} · ${safe(trip.alightStop || '')}${appointment?.end ? ` · until ${appointment.end}` : ''}</span><a class="day-paper" href="../bureaucracy-next/">${icon('document')}What to bring</a></section></div></li>
             ${
                 appointment?.end && first
@@ -1864,7 +1868,6 @@ function nearbyScenario() {
 function setScenario(id) {
     if (!scenarios[id]) return;
     state.scenario = id;
-    state.recovered = false;
     state.tripOthers = false;
     try {
         const url = new URL(location.href);
@@ -2128,16 +2131,12 @@ function action(name, button) {
         setView('journey');
         openNextTrip();
     } else if (name === 'trip-start') simulate(button.dataset.tripRoute);
-    else if (name === 'trip-recover') {
-        state.recovered = true;
-        state.tripOthers = false;
-        renderNextTrip();
-        if (state.view === 'day') renderDay();
-        $('[data-action="trip-start"]')?.focus({ preventScroll: true });
-    } else if (name === 'trip-others') {
+    else if (name === 'trip-others') {
         state.tripOthers = !state.tripOthers;
         renderNextTrip();
-        $('[data-action="trip-others"]')?.focus({ preventScroll: true });
+        $('#next-trip [data-action="trip-others"]')?.focus({
+            preventScroll: true,
+        });
     } else if (name === 'plan-way') {
         // A later plan: start a request to it from the sample day's stop.
         if ((atYourLocation() ? '' : from.value.trim()) || to.value.trim())
@@ -2209,10 +2208,6 @@ function action(name, button) {
         state.planSaved = null;
         setView('stop');
         $('[data-view="stop"]')?.focus({ preventScroll: true });
-    } else if (name === 'day-trip') {
-        state.dayTripOpen = !state.dayTripOpen;
-        renderDay();
-        $('[data-action="day-trip"]')?.focus({ preventScroll: true });
     } else if (name === 'day-pick') {
         state.dayPick =
             state.dayPick === button.dataset.pick ? '' : button.dataset.pick;
@@ -2588,7 +2583,6 @@ sheet.addEventListener('click', (event) => {
 });
 desktopPlanner.addEventListener?.('change', () => {
     setView(state.view);
-    renderYourDay();
     if (state.view === 'stop') renderDepartures();
     if (state.results) renderPlanner();
 });
