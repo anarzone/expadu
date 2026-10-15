@@ -49,8 +49,14 @@ opened as an inner screen with back or ✕).
   style, you on it, the part you're on full strength. Any trip draws: a change
   (tram 18 then bus 133) keeps one capsule for the station, a bike ride is one
   dotted line. Stops without a close-up show the way from the start. A way
-  you're only looking at (before "I'm on my way") keeps its street map, and so
-  does Plan a trip; both wait for a design in this style.
+  you're only looking at (before "I'm on my way") keeps its street map for
+  now (canvas row 21).
+- Plan a trip's options have no map (owner chose B on canvas row 21): the
+  steps already say the way, phones never had one, and Show the way opens the
+  trip. The tram's step says its platform ("Gleis 2 · underground"); a tap
+  opens where to stand in place, and again closes it (`app.js`
+  `platformOnStep()`, `plan.css`). The buttons now sit under the steps at
+  every panel size.
 - Removed with the old maps: `station-map.js` and `station-map.css` (and their
   test), the trip's small map under the step, the route map's boarding
   points, the area panel and its rows, and their styles.

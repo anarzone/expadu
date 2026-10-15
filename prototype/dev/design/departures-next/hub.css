@@ -544,10 +544,6 @@ body.travel-palette .nearby-area .nearby-cards {
     body.travel-palette #departures {
         container-type: inline-size;
     }
-    /* A narrow panel stacks a way's steps over its map. */
-    body.travel-palette:not(.plan-big) .plan-option-way {
-        grid-template-columns: minmax(0, 1fr);
-    }
     /* Options show as soon as a place is picked, and update as you change
        when or what matters, so the panel needs no Plan it button then. */
     body.travel-palette[data-plan-stage='picked'] .find-routes {

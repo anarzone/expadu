@@ -1183,12 +1183,29 @@ function pickRoute(id) {
     renderResults();
     $(`[data-pick-route="${id}"]`)?.focus({ preventScroll: true });
 }
+// Where a tram leaves from, when its stop has the OpenStreetMap close-up
+// (transit-map.js): the platform on its step, where to stand a tap away, in
+// place (owner chose B on the Travel directions canvas, row 21, 15 Oct 2026).
+function platformOnStep(route, step) {
+    const M = window.TravelMap;
+    if (!M?.hasCloseUp(step.boardStop)) return '';
+    const line = String(step.line || route.line || '');
+    const towards = (step.detail || '')
+        .replace(/^Towards /, '')
+        .split(' · ')[0]
+        .replace(/^Köln\s+/, '');
+    const lit = M.platformFor(step.boardStop, line, towards);
+    if (!lit.length) return '';
+    const id = `stand-${route.id}-${step.time.replace(':', '')}`;
+    const colour = window.NearbyModel?.look(line, 'tram')?.colour || '#211d15';
+    return `<button type="button" class="step-platform" data-action="stand" aria-expanded="false" aria-controls="${id}" aria-label="Where to stand: ${safe(M.note(step.boardStop, lit))}">${icon('pin')}<span>${safe(M.note(step.boardStop, lit))}</span>${icon('down')}</button><div class="step-stand" id="${id}" hidden>${M.closeUp(step.boardStop, lit, colour)}${M.legend(step.boardStop, lit)}</div>`;
+}
 function stepsMarkup(route) {
     const trip = tripOf(route);
     return `<ol class="route-steps">${J.tripSteps(route)
         .map(
             (step) =>
-                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time, trip)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small>${step.mode === 'alight' && nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time) ? `<a class="step-nearby" href="${nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time)}">${icon('pin')}Places nearby${icon('arrow')}</a>` : ''}${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
+                `<li class="route-step ${step.mode}"><time>${step.time}${overnight(step.time, trip)}</time><span class="step-node">${icon(step.mode === 'arrive' ? 'pin' : step.mode === 'transit' ? 'train' : step.mode === 'alight' ? 'train' : step.mode === 'ride' ? 'route' : step.mode)}</span><div><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small>${step.mode === 'transit' ? platformOnStep(route, step) : ''}${step.mode === 'alight' && nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time) ? `<a class="step-nearby" href="${nearbyLink(step.title.replace(/^Get off at /, ''), trip.date, step.time)}">${icon('pin')}Places nearby${icon('arrow')}</a>` : ''}${step.boardStop ? `<button class="boarding-stop-link" data-board-stop="${step.boardStop}" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-time="${step.time}" aria-label="Timetable at ${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}">${safe(T.stops.find((stop) => stop.id === step.boardStop).name)}${icon('chevron')}</button>` : ''}</div></li>`,
         )
         .join('')}</ol>`;
 }
@@ -1437,23 +1454,8 @@ function planOption(route, list, trip, best) {
                 .join('')}</span></span>
         </button>
         <button class="details-toggle" data-route-details="${route.id}" aria-expanded="${expanded}" aria-controls="route-disclosure-${route.id}">Journey details ${icon('down')}</button>
-        <div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="plan-option-way">${stepsMarkup(route)}<div class="plan-option-side"><div class="plan-option-map" role="img" aria-label="Map of this way"><div class="plan-map-canvas" data-route-map="${route.id}"></div><div class="nav-map-fallback"><strong>Loading the map</strong></div><small class="plan-map-credit">OpenFreeMap © OpenMapTiles © OpenStreetMap</small></div><button type="button" class="primary plan-go" data-route="${route.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-keep" data-action="save-plan" data-route-id="${route.id}">${saved.includes(route.id) ? 'In your plan · see it' : 'Add to plan'}</button><p class="route-note">${sourceNote(route)}${route.mode === 'transit' ? '' : ' · Street directions weren’t captured.'}</p></div></div>${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}</div></div>
+        <div id="route-disclosure-${route.id}" class="route-disclosure" aria-hidden="${!expanded}" ${expanded ? '' : 'inert'}><div class="route-disclosure-inner"><div class="plan-option-way">${stepsMarkup(route)}<div class="plan-option-side"><button type="button" class="primary plan-go" data-route="${route.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-keep" data-action="save-plan" data-route-id="${route.id}">${saved.includes(route.id) ? 'In your plan · see it' : 'Add to plan'}</button><p class="route-note">${sourceNote(route)}${route.mode === 'transit' ? '' : ' · Street directions weren’t captured.'}</p></div></div>${route.delayed ? '<p class="route-notice">Delay flagged in this capture. Current status is unknown.</p>' : ''}</div></div>
     </article>`;
-}
-let planMap = null;
-// The open option's map on desktop, beside its steps.
-function mountPlanMap() {
-    planMap?.destroy?.();
-    planMap = null;
-    if (!desktopPlanner.matches || !window.JourneyRouteMap) return;
-    const box = document.querySelector(
-        `#results .route-disclosure[aria-hidden="false"] [data-route-map]`,
-    );
-    const route = box && currentRoute(box.dataset.routeMap);
-    if (!route) return;
-    planMap = JourneyRouteMap.mount(box, route, {
-        padding: () => ({ top: 28, right: 28, bottom: 28, left: 28 }),
-    });
 }
 // Districts whose journeys couldn't load: their request shows as not in
 // the preview.
@@ -1602,7 +1604,6 @@ function renderResults() {
     $('#results').innerHTML = restore + header + contents + captureNote;
     syncComposerHelper();
     syncPlanStage();
-    mountPlanMap();
 }
 function selectedRoute(id, boardingOrigin = undefined) {
     const route =
@@ -2035,6 +2036,13 @@ function compose() {
     handoff();
 }
 function action(name, button) {
+    // Where to stand opens and closes in place, under the tram's step.
+    if (name === 'stand') {
+        const open = button.getAttribute('aria-expanded') !== 'true';
+        button.setAttribute('aria-expanded', String(open));
+        document.getElementById(button.getAttribute('aria-controls')).hidden = !open;
+        return;
+    }
     if (name === 'plan-big') {
         state.planBig = !state.planBig;
         syncPanel();
