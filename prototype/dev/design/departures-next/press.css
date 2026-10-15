@@ -29,8 +29,7 @@ body.travel-palette
 }
 
 /* Every tap target at least 44 px (native-feel check, 11 Oct 2026). */
-body.travel-palette .results-heading .icon-button,
-#journey-navigation .nav-view-switch button {
+body.travel-palette .results-heading .icon-button {
     min-width: var(--touch-target);
     min-height: var(--touch-target);
 }

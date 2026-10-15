@@ -186,9 +186,6 @@ body.today-palette
         .journey-timeband small,
         .route-step time,
         .departure-stop-route small,
-        .nav-eyebrow,
-        .nav-map-caption,
-        .nav-map-fallback,
         .sample-note,
         .studio-welcome > p,
         .empty-day p,
@@ -206,12 +203,7 @@ body.today-palette
         .line-badge svg,
         .paper-process-link > svg:first-child,
         .document-symbol.confirmed,
-        .welcome-symbol,
-        .nav-step-symbol,
-        .nav-step[aria-current='step'] .nav-step-symbol,
-        .nav-board-link,
-        .nav-composer-link,
-        .nav-topbar [data-nav='composer']
+        .welcome-symbol
     ) {
     color: var(--teal);
 }
@@ -252,13 +244,11 @@ body.today-palette
         .detail-footer .save-route,
         .paperwork-select select,
         .state-badge.not_started,
-        .nav-topbar .nav-icon-button,
-        .nav-composer-link
+        .nav-topbar .nav-icon-button
     ) {
     background-color: var(--surface-quiet);
 }
 body.today-palette .field:focus-within,
-body.today-palette .nav-step.is-inspected,
 body.today-palette .nav-options button[aria-pressed='true'] {
     background-color: var(--blue);
 }

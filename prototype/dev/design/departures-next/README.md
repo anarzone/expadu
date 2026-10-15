@@ -11,6 +11,31 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## One trip page — 15 October 2026
+
+Owner-agreed on the Travel directions canvas, row 22 ("make it the same
+page").
+
+- Before and after "I'm on my way" are one page (`navigation-ui.js`). Before
+  you start it is the trip at its first moment: the top bar says when to
+  leave ("Leave 13:10 · there 13:48 · 12 min spare") and has no progress yet,
+  "I'm on my way" and Add to plan sit where "Not right?" will be, and nothing
+  is marked "You're here". Tap it and the same page runs: the bar and "1 of
+  4" come in, the button gives way to how the page knows.
+- Plan a trip's Show the way opens it; Nearby's "I'm on my way" starts it
+  straight away. Starting another trip while one runs asks "Replace the trip
+  you're on?".
+- Phones and tablets: one scroll (the step, the map card, your way); a
+  confirmation stays at the bottom of the screen. Before, the map card left
+  your way a sliver on phones and nothing on tablets.
+- Removed: the old preview (its city street map, Steps | Map, the sheet over
+  the map and its drag handle, the facts row, the timeline with Stop
+  timetable), `route-map.js`, and their styles in `navigation.css`,
+  `trip.css`, `press.css` and `connected/today-palette.css`. The 29 Sept
+  "Map and journey preview" and 4 Oct "Map / Steps" notes below describe
+  what was there. With it, Travel has no street map left but the stop
+  close-ups.
+
 ## One map — 15 October 2026
 
 Owner-agreed on the Travel directions canvas, row 20 ("single map design with
@@ -48,9 +73,8 @@ opened as an inner screen with back or ✕).
   ("Gleis 2 · underground"); then your way as a line of stations in the same
   style, you on it, the part you're on full strength. Any trip draws: a change
   (tram 18 then bus 133) keeps one capsule for the station, a bike ride is one
-  dotted line. Stops without a close-up show the way from the start. A way
-  you're only looking at (before "I'm on my way") keeps its street map for
-  now (canvas row 21).
+  dotted line. Stops without a close-up show the way from the start. Before
+  "I'm on my way" it is the same page (see One trip page).
 - Plan a trip's options have no map (owner chose B on canvas row 21): the
   steps already say the way, phones never had one, and Show the way opens the
   trip. The tram's step says its platform ("Gleis 2 · underground"); a tap
@@ -94,7 +118,8 @@ click buttons to confirm something and why that many times?").
   itself asks to be pressed (owner, same day: the dashed clock bar that
   stood there first was the confirm buttons again). The moments come from
   each trip's own steps, so the evening's tram 18 then bus 133 works too.
-- A way you're only looking at (before "I'm on my way") keeps its overview.
+- Before "I'm on my way" it's the same page at its first moment (see One
+  trip page).
 - One steady frame at every moment (owner, same day: "why three different
   uis when changing clocks?"): the ring with the instruction, one "what to
   look for" row the same size (the next tram · what's on its front · what

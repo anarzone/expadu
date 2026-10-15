@@ -1921,18 +1921,17 @@ function showStop(id) {
     nearbyView?.setStop(id);
     nearbyView?.focus();
 }
-function openBoardingStop(button, restorePreview = null) {
+function openBoardingStop(button) {
     const routeId = button.dataset.boardRoute;
     const returnContext = {
         request: composerRequestKey(),
         trigger: button,
         scroll: { left: window.scrollX || 0, top: window.scrollY || 0 },
         restore:
-            restorePreview ||
-            (sheet.open && sheet.dataset.kind === 'route'
+            sheet.open && sheet.dataset.kind === 'route'
                 ? () =>
                       selectedRoute(routeId, button.dataset.boardOrigin || null)
-                : null),
+                : null,
     };
     closeSheet(() => {
         boardingReturn = returnContext;
