@@ -318,7 +318,7 @@
     }
 }
 @media (min-width: 1000px) {
-    body.trip-open :is(#departures, #journey-view, #day-view) {
+    body.trip-open :is(#departures, #journey-view, #day-view, .journey-resume) {
         display: none !important;
     }
     #journey-navigation:not(:modal)[open] {

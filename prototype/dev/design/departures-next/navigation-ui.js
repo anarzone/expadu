@@ -39,8 +39,6 @@
     // screens give it the whole screen (owner-approved workspace layout).
     const wide = () => matchMedia('(min-width: 1000px)').matches;
     const showMap = () => journeyView === 'map' || wide();
-    // A trip started from Nearby's band has had its "Get ready" moment.
-    const ready = () => (trip().id === 'day' ? 1 : 0);
     const reduced = () =>
         matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isActive = () =>
@@ -499,13 +497,11 @@
                 : walking
                   ? `${icon('walk')}<strong>${walking}</strong> min walk`
                   : '';
-        // "Get ready" (Nearby's band) counts as the first moment.
-        const done = ready();
+        // The bar and the count follow the steps the whole journey lists
+        // (owner, 15 Oct 2026: "3 of 6" beside five steps didn't add up).
         const segments = running
-            ? `<div class="nav-segments" style="${lineStyle()}" role="progressbar" aria-label="Trip steps done" aria-valuemin="0" aria-valuemax="${p.total + done - 1}" aria-valuenow="${p.index + done}">${[
-                  ...Array(done).fill(-1),
-                  ...N.steps(route).map((_, index) => index),
-              ]
+            ? `<div class="nav-segments" style="${lineStyle()}" role="progressbar" aria-label="Trip steps done" aria-valuemin="0" aria-valuemax="${p.total - 1}" aria-valuenow="${p.index}">${N.steps(route)
+                  .map((_, index) => index)
                   .map(
                       (index) =>
                           `<span class="${index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></span>`,
@@ -513,7 +509,7 @@
                   .join('')}</div>`
             : '';
         content.innerHTML = `${conditionMarkup()}<div class="nav-summary${running ? ' is-moment' : ''}">
-            ${segments}<div class="nav-eyebrow">${running ? `${L ? `<span class="nav-stage tl-chip is-select">${icon(modeIcon(p.step.mode))}<span>${momentLabel(p)}</span></span>` : `<strong class="nav-stage">${momentLabel(p)}</strong>`}<span class="nav-count">${p.index + done + 1} of ${p.total + done} · ${trip().id === 'day' || trip().evening ? 'sample day' : 'captured times'}</span>` : `<span>${icon(route.mode === 'transit' ? 'train' : route.mode)}${route.line ? (route.changes ? `Line ${route.legs.filter((leg) => leg.mode === 'transit').map((leg) => leg.line || route.line).join(', then ')} · ${route.changes} change${route.changes > 1 ? 's' : ''}` : `Line ${route.line} · Direct`) : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span>`}<button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
+            ${segments}<div class="nav-eyebrow">${running ? `${L ? `<span class="nav-stage tl-chip is-select">${icon(modeIcon(p.step.mode))}<span>${momentLabel(p)}</span></span>` : `<strong class="nav-stage">${momentLabel(p)}</strong>`}<span class="nav-count">${p.index + 1} of ${p.total} · ${trip().id === 'day' || trip().evening ? 'sample day' : 'captured times'}</span>` : `<span>${icon(route.mode === 'transit' ? 'train' : route.mode)}${route.line ? (route.changes ? `Line ${route.legs.filter((leg) => leg.mode === 'transit').map((leg) => leg.line || route.line).join(', then ')} · ${route.changes} change${route.changes > 1 ? 's' : ''}` : `Line ${route.line} · Direct`) : route.mode === 'bike' ? 'Cycling' : 'Walking'}</span>`}<button data-nav="expand" aria-label="${expanded ? 'Collapse' : 'Expand'} itinerary" aria-expanded="${expanded}" aria-controls="nav-expanded">${expanded ? 'Less' : 'Itinerary'}${icon('down')}</button></div>
             ${
                 running
                     ? `<div class="nav-moment" style="${lineStyle()}">${moment(p)}</div>`

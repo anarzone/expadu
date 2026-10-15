@@ -35,6 +35,11 @@ Owner-agreed on the Travel directions canvas: option B (rows 17–18), after
 - Station notices (a long wait, a lift out, paused times) use the same
   look: the icon in a ring, the colour on the edge.
 - "Later today" left the card; it's in My day and Today's places.
+- The trip page (after "I'm on my way"), fixed the same day: on desktop it
+  spans the whole frame again (it had stayed in Nearby's column beside an
+  empty strip), the "Journey preview" link back to it hides while it's
+  open, and its count and bar follow the five steps the whole journey lists
+  ("1 of 5", not "2 of 6" with a hidden "Get ready").
 
 ## Plan a trip's panel beside Nearby — 14 October 2026
 

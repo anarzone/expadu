@@ -452,7 +452,8 @@ body.travel-palette .nearby-area .nearby-cards {
     body.travel-palette.departures-page #main > :not(#journey-view) {
         grid-column: 2;
     }
-    body.travel-palette.departures-page #main > :is(#active-trip, #day-view) {
+    body.travel-palette.departures-page #main > :is(#active-trip, #day-view),
+    body.travel-palette.departures-page.trip-open #main > :not(#journey-view) {
         grid-column: 1 / -1;
     }
     body.travel-palette #journey-view {
