@@ -823,11 +823,24 @@
             )
             .join('')}</ol>`;
     }
-    // For reviewing only: the sample clock stands in for time and your location.
-    function sampleClock(p) {
-        const list = moments();
-        const cur = currentMoment(p, list);
-        return `<div class="nav-clock" role="group" aria-label="Sample clock: it stands in for time and your location"><span>Sample clock${mobile() ? '' : '<small> · stands in for time and your location</small>'}</span><div>${list.map((item, index) => `<button data-nav="clock" data-clock="${index}" aria-pressed="${item === cur}">${item.clock}</button>`).join('')}</div>${mobile() ? '' : `<button class="nav-clock-next" data-nav="clock-next" aria-label="Move the clock on">${icon('chevron')}</button>`}</div>`;
+    // A moment's name in the ⋯ menu, where reviewing picks it (the page
+    // itself moves on by itself; owner, 15 Oct 2026).
+    function momentName(item) {
+        const list = N.steps(route);
+        const step = list[item.step];
+        if (step.mode === 'walk' && item.step === 0)
+            return `Walking to ${stopName(step.title.replace(/^Walk to /, ''))}`;
+        if (step.mode === 'transit') return `At ${place(step)}`;
+        if (step.mode === 'alight' && item.nudge) return `Next stop: ${offAt(step)}`;
+        if (step.mode === 'alight' || step.mode === 'ride') {
+            const board = list
+                .slice(0, item.step + 1)
+                .reverse()
+                .find((entry) => entry.mode === 'transit');
+            return `On ${word(board)} ${lineOf(board)}`;
+        }
+        if (step.mode === 'arrive') return 'Arrived';
+        return step.title.replace(/Köln\s+/g, '');
     }
     function timeline() {
         return `<ol class="nav-timeline">${N.steps(route)
@@ -855,7 +868,7 @@
             : '';
         const now = running ? momentNow(p) : null;
         if (running)
-            content.innerHTML = `${conditionMarkup()}<div class="nav-summary">${stepCard(now)}${showMap() ? '' : momentMap(now)}</div><div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p)}</div></div><footer class="nav-footer">${confirm || sampleClock(p)}</footer>`;
+            content.innerHTML = `${conditionMarkup()}<div class="nav-summary">${stepCard(now)}${showMap() ? '' : momentMap(now)}</div><div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p)}</div></div>${confirm ? `<footer class="nav-footer">${confirm}</footer>` : ''}`;
         else {
             const nextDay = route.arrive < route.depart ? ' · next day' : '';
             const movement = route.walking
@@ -917,7 +930,7 @@
         const condition = dialog.querySelector('.nav-condition');
         const height =
             summary.offsetHeight +
-            footer.offsetHeight +
+            (footer?.offsetHeight || 0) +
             dialog.querySelector('.nav-handle').offsetHeight +
             (condition ? condition.offsetHeight + 10 : 0) +
             4;
@@ -1004,20 +1017,31 @@
         dialog
             .querySelector('[data-nav="options"]')
             .setAttribute('aria-expanded', String(settings));
-        if (!settings) return;
-        box.innerHTML = `<strong>Preview conditions</strong><p>Try how guidance responds.</p>${[
+        if (settings) fillOptions();
+    }
+    // Review-only switches: which moment of the trip it is (it stands in for
+    // time and your location), and how guidance copes when things go wrong.
+    function fillOptions() {
+        const running = isActive();
+        const list = moments();
+        const cur = running ? currentMoment(N.progress(route, active.step), list) : null;
+        const condition = active?.condition || 'normal';
+        dialog.querySelector('#nav-options').innerHTML = `<strong>Trip moment</strong><p>Stands in for the time and your location.</p>${list
+            .map(
+                (item, index) =>
+                    `<button data-nav="moment" data-moment="${index}" ${running ? '' : 'disabled'} aria-pressed="${item === cur}"><time>${item.clock}</time>${safe(momentName(item))}${item === cur ? icon('check') : ''}</button>`,
+            )
+            .join('')}<strong>Preview conditions</strong><p>Try how guidance responds.</p>${[
             ['normal', 'route', 'Normal journey'],
             ['location', 'locate', 'Location unavailable'],
             ['offline', 'offline', 'Connection lost'],
             ['changed', 'info', 'Route changed'],
         ]
             .map(
-                ([condition, symbol, label]) =>
-                    `<button data-nav-condition="${condition}" ${!isActive() ? 'disabled' : ''} aria-pressed="${(active?.condition || 'normal') === condition}">${icon(symbol)}${label}${(active?.condition || 'normal') === condition ? icon('check') : ''}</button>`,
+                ([key, symbol, label]) =>
+                    `<button data-nav-condition="${key}" ${running ? '' : 'disabled'} aria-pressed="${condition === key}">${icon(symbol)}${label}${condition === key ? icon('check') : ''}</button>`,
             )
-            .join(
-                '',
-            )}${!isActive() ? '<small>Start the preview to try these states.</small>' : ''}`;
+            .join('')}${running ? '' : '<small>Start the trip to try these.</small>'}`;
     }
     dialog.addEventListener('click', (event) => {
         if (suppressClick) {
@@ -1064,14 +1088,8 @@
             return;
         }
         const action = button.dataset.nav;
-        if (action === 'clock' || action === 'clock-next') {
-            const list = moments();
-            const from = list.indexOf(currentMoment(N.progress(route, active.step), list));
-            const index =
-                action === 'clock'
-                    ? Number(button.dataset.clock)
-                    : Math.min(list.length - 1, from + 1);
-            const item = list[index];
+        if (action === 'moment') {
+            const item = moments()[Number(button.dataset.moment)];
             active.step = item.step;
             nudge = item.nudge;
             inspected = item.step;
@@ -1081,8 +1099,9 @@
             persist();
             render();
             updateMap();
+            fillOptions();
             dialog
-                .querySelector('[data-nav="clock"][aria-pressed="true"]')
+                .querySelector('[data-nav="moment"][aria-pressed="true"]')
                 ?.focus({ preventScroll: true });
             announce(`${item.clock}. ${momentNow(N.progress(route, active.step)).title}`);
             return;
@@ -1191,6 +1210,11 @@
                 }),
             );
         }
+    });
+    // On desktop the trip is part of the page, so a tap outside the ⋯ menu
+    // can land beyond the trip; that closes it too.
+    document.addEventListener('click', (event) => {
+        if (settings && dialog.open && !dialog.contains(event.target)) options();
     });
     dialog.addEventListener('cancel', (event) => {
         event.preventDefault();

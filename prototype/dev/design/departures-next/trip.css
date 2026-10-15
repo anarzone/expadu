@@ -595,63 +595,6 @@
     font-style: normal;
     font-weight: var(--weight-bold);
 }
-/* For reviewing only: the sample clock, dashed so it never reads as the page. */
-#journey-navigation .nav-footer > .nav-clock {
-    flex: 1 1 100%;
-}
-#journey-navigation .nav-clock {
-    display: flex;
-    align-items: center;
-    gap: var(--space-10);
-    padding: 8px 12px;
-    border: 1.5px dashed
-        color-mix(in srgb, var(--color-border-strong) 55%, var(--color-bg-surface));
-    border-radius: 16px;
-    background: var(--color-bg-surface);
-}
-#journey-navigation .nav-clock > span {
-    flex: none;
-    color: var(--color-text-soft);
-    font-size: 11.5px;
-    font-weight: var(--weight-semibold);
-    line-height: 1.2;
-}
-#journey-navigation .nav-clock > div {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    justify-content: flex-end;
-    gap: 2px;
-}
-#journey-navigation .nav-clock [data-nav='clock'] {
-    flex: none;
-    height: 34px;
-    padding: 0 12px;
-    border-radius: 10px;
-    color: var(--color-text);
-    font-size: 13px;
-    font-weight: var(--weight-semibold);
-    font-variant-numeric: tabular-nums;
-    transition: background-color 200ms var(--ease-standard);
-}
-#journey-navigation .nav-clock [data-nav='clock'][aria-pressed='true'] {
-    background: var(--color-text);
-    color: var(--color-bg-surface);
-}
-#journey-navigation .nav-clock-next {
-    flex: none;
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid var(--color-border);
-    border-radius: 10px;
-    background: var(--color-bg-surface);
-}
-#journey-navigation .nav-clock-next svg {
-    width: 16px;
-    height: 16px;
-}
 /* The map's caption follows the step. */
 #journey-navigation .nav-map-note {
     position: absolute;
@@ -705,21 +648,9 @@
     #journey-navigation.is-running:not(:modal) .nav-detail-scroll {
         padding-top: 4px;
     }
-    #journey-navigation.is-running:not(:modal)[open] {
-        padding-bottom: 96px;
-    }
     #journey-navigation.is-running:not(:modal) .nav-footer {
-        position: fixed;
-        left: 50%;
-        bottom: 20px;
-        z-index: 30;
-        width: min(860px, calc(100vw - 64px));
-        padding: 0;
-        transform: translateX(-50%);
-        background: transparent;
-    }
-    #journey-navigation.is-running:not(:modal) .nav-clock {
-        box-shadow: 0 14px 30px -22px #211d1580;
+        grid-area: 3 / 1;
+        padding: var(--space-16) 0 0;
     }
     #journey-navigation.is-running:not(:modal) .nav-map-area {
         grid-area: 2 / 2;
@@ -739,6 +670,9 @@
     #journey-navigation.is-running:not(:modal) .nav-expanded {
         grid-area: 3 / 1;
         margin-top: var(--space-24);
+    }
+    #journey-navigation.is-running:not(:modal) .nav-footer {
+        grid-area: 4 / 1;
     }
     #journey-navigation.is-running:not(:modal) .nav-map-area {
         margin-top: 0;
@@ -802,20 +736,6 @@
     }
     #journey-navigation .nav-way li.is-ride::before {
         left: 62px;
-    }
-    #journey-navigation .nav-clock {
-        gap: 6px;
-        padding: 8px 10px;
-    }
-    #journey-navigation .nav-clock > span {
-        width: 44px;
-    }
-    #journey-navigation .nav-clock > div {
-        justify-content: space-between;
-        gap: 0;
-    }
-    #journey-navigation .nav-clock [data-nav='clock'] {
-        padding: 0 5px;
     }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -965,4 +885,21 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* The ⋯ menu's review switches: the trip's moments (they stand in for the
+   time and your location), then the preview conditions. */
+#journey-navigation .nav-options {
+    max-height: min(560px, calc(100dvh - 140px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+#journey-navigation .nav-options > strong ~ strong {
+    margin-top: var(--space-10);
+}
+#journey-navigation .nav-options button time {
+    flex: none;
+    width: 40px;
+    color: var(--color-text-soft);
+    font-variant-numeric: tabular-nums;
 }
