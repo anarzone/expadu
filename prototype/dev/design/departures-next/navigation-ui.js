@@ -127,8 +127,8 @@
         confirmation = '';
         dialog.classList.remove('is-expanded', 'is-closing');
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div><div class="nav-trip-progress" hidden></div><div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
-            <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><span class="nav-map-note" hidden></span><div class="nav-stand" hidden></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
+            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small>Journey preview · ${localDate()}</small></div><div class="nav-view-switch" role="group" aria-label="Journey view"><button data-nav-view="steps" aria-pressed="false">${icon('route')}<span>Steps</span></button><button data-nav-view="map" aria-pressed="false">${icon('map')}<span>Map</span></button></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            <section class="nav-map-area" aria-label="Journey map"><div class="nav-map-canvas"></div><div class="nav-map-fallback"><span>${icon('map')}</span><strong>Loading the map</strong><small>Your itinerary is available below.</small></div>
                 <div class="nav-map-controls">${iconButton('locate', 'Recenter on preview step', 'recenter', 'disabled')}${iconButton('route', 'Show whole route', 'overview', 'disabled')}<div class="nav-zoom">${iconButton('plus', 'Zoom in', 'zoom-in', 'disabled')}${iconButton('minus', 'Zoom out', 'zoom-out', 'disabled')}</div></div>
                 <p class="nav-map-caption">${route.shaped ? 'The way from the VRS timetable · scheduled, not live' : 'Illustrative connections · not street directions'} · © OpenStreetMap · OpenFreeMap · OpenMapTiles</p>
             </section>
@@ -243,7 +243,7 @@
         const finish = () => {
             map?.destroy();
             map = null;
-            dropWalkMap();
+            dropStepMap();
             panelObserver?.disconnect();
             dialog.close();
             document.body.classList?.remove('trip-open');
@@ -323,46 +323,45 @@
                 (point.lines || []).map(String).includes(String(route.line)),
         );
     }
-    let walkMap = null,
-        walkBox = null,
-        walkTimer = 0;
-    // The walk's map: built once, after the step has painted, and carried
-    // across redraws of the same step (native-feel check, 11 Oct 2026).
+    let stepMap = null,
+        stepBox = null,
+        stepTimer = 0;
+    // The small map under the step (steps view): built once the step has
+    // painted, carried across redraws of the same moment, rebuilt when the
+    // moment changes (native-feel check, 11 Oct 2026).
     const later = (fn, ms) =>
         typeof setTimeout === 'function' ? setTimeout(fn, ms) : fn();
     const cancelLater = (id) =>
         typeof clearTimeout === 'function' && clearTimeout(id);
-    let walkKey = '';
-    function dropWalkMap() {
-        cancelLater(walkTimer);
-        walkMap?.remove();
-        walkMap = null;
-        walkBox = null;
-        walkKey = '';
+    let stepKey = '';
+    function dropStepMap() {
+        cancelLater(stepTimer);
+        stepMap?.remove();
+        stepMap = null;
+        stepBox = null;
+        stepKey = '';
     }
-    function mountWalkMap(spec) {
+    function mountStepMap(spec) {
         const slot = dialog.querySelector('.moment-map-canvas');
-        if (!slot || !spec) return dropWalkMap();
-        if (walkBox && walkKey === spec.key) {
-            if (slot !== walkBox) slot.replaceWith?.(walkBox);
-            walkMap?.resize();
+        if (!slot || !spec) return dropStepMap();
+        if (stepBox && stepKey === spec.key) {
+            if (slot !== stepBox) slot.replaceWith?.(stepBox);
+            stepMap?.resize();
             return;
         }
-        dropWalkMap();
-        walkBox = slot;
-        walkKey = spec.key;
-        walkTimer = later(() => buildWalkMap(slot, spec), 60);
+        dropStepMap();
+        stepBox = slot;
+        stepKey = spec.key;
+        stepTimer = later(() => buildStepMap(slot, spec), 60);
     }
-    function buildWalkMap(box, spec) {
+    function buildStepMap(box, spec) {
         const load = root.StationMap?.load;
         const points = box.isConnected ? spec.points : [];
-        if (!points.length) return;
-        const fail = () =>
-            box.closest('.moment-map')?.classList.add('is-unavailable');
-        if (!load) return fail();
+        // Without points or the map library the quiet background stays.
+        if (!points.length || !load) return;
         load()
             .then(() => {
-                if (!box.isConnected || walkBox !== box) return;
+                if (!box.isConnected || stepBox !== box) return;
                 const lng = points.map((point) => point[0]),
                     lat = points.map((point) => point[1]);
                 const map = new maplibregl.Map({
@@ -380,7 +379,7 @@
                     interactive: false,
                     attributionControl: false,
                 });
-                walkMap = map;
+                stepMap = map;
                 const look = root.NearbyModel?.look(String(spec.line || route.line), 'tram');
                 points.forEach((point) => {
                     const dot = document.createElement('span');
@@ -390,20 +389,8 @@
                         .setLngLat(point)
                         .addTo(map);
                 });
-                map.on('error', () => {
-                    if (!map.loaded()) fail();
-                });
             })
-            .catch(fail);
-    }
-    function lineStyle() {
-        const look = root.NearbyModel?.look(
-            route.line,
-            vehicle() === 'Bus' ? 'bus' : 'tram',
-        );
-        return look
-            ? `--line:${look.colour};--ink:${look.ink};--tint:${look.tint}`
-            : '';
+            .catch(() => {});
     }
     /* ---------- The trip follows you (owner, 15 Oct 2026; Travel
        directions canvas row 19) ----------
@@ -840,14 +827,14 @@
     function sampleClock(p) {
         const list = moments();
         const cur = currentMoment(p, list);
-        return `<div class="nav-clock" role="group" aria-label="Sample clock: it stands in for time and your location"><span>Sample clock<small> · stands in for time and your location</small></span><div>${list.map((item, index) => `<button data-nav="clock" data-clock="${index}" aria-pressed="${item === cur}">${item.clock}</button>`).join('')}</div><button class="nav-clock-next" data-nav="clock-next" aria-label="Move the clock on">${icon('chevron')}</button></div>`;
+        return `<div class="nav-clock" role="group" aria-label="Sample clock: it stands in for time and your location"><span>Sample clock${mobile() ? '' : '<small> · stands in for time and your location</small>'}</span><div>${list.map((item, index) => `<button data-nav="clock" data-clock="${index}" aria-pressed="${item === cur}">${item.clock}</button>`).join('')}</div>${mobile() ? '' : `<button class="nav-clock-next" data-nav="clock-next" aria-label="Move the clock on">${icon('chevron')}</button>`}</div>`;
     }
     function timeline() {
         return `<ol class="nav-timeline">${N.steps(route)
             .map(
                 (step, index) => `<li>
-            <button class="nav-step ${inspected === index ? 'is-inspected' : ''}" data-nav-step="${index}" aria-pressed="${inspected === index}" ${isActive() && active.step === index ? 'aria-current="step"' : ''}>
-                <time>${step.time}${step.time < route.depart ? '<small>+1 day</small>' : ''}</time><span class="nav-step-symbol">${icon(modeIcon(step.mode))}</span><span><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small>${isActive() && active.step === index ? '<em>Current preview step</em>' : ''}</span>
+            <button class="nav-step ${inspected === index ? 'is-inspected' : ''}" data-nav-step="${index}" aria-pressed="${inspected === index}">
+                <time>${step.time}${step.time < route.depart ? '<small>+1 day</small>' : ''}</time><span class="nav-step-symbol">${icon(modeIcon(step.mode))}</span><span><strong>${safe(step.title)}</strong><small>${safe(step.detail)}</small></span>
             </button>${step.boardStop ? `<button class="nav-board-link" data-nav="board" data-board-route="${route.id}" data-board-origin="${route.boardingStop || ''}" data-board-stop="${step.boardStop}" data-board-time="${step.time}">${icon('clock')}Stop timetable${icon('chevron')}</button>` : ''}
         </li>`,
             )
@@ -868,7 +855,7 @@
             : '';
         const now = running ? momentNow(p) : null;
         if (running)
-            content.innerHTML = `${conditionMarkup()}<div class="nav-summary is-moment">${stepCard(now)}${wide() ? '' : momentMap(now)}</div><div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p)}</div></div><footer class="nav-footer">${confirm || sampleClock(p)}</footer>`;
+            content.innerHTML = `${conditionMarkup()}<div class="nav-summary">${stepCard(now)}${showMap() ? '' : momentMap(now)}</div><div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p)}</div></div><footer class="nav-footer">${confirm || sampleClock(p)}</footer>`;
         else {
             const nextDay = route.arrive < route.depart ? ' · next day' : '';
             const movement = route.walking
@@ -882,36 +869,29 @@
         </div></div>
         <footer class="nav-footer">${confirm || `<button class="nav-primary" data-nav="start">${icon('play')}I’m on my way</button><div class="nav-footer-more"><span></span><button class="nav-text-button" data-save="${route.id}">${icon('bookmark')}Save to Saved journeys</button></div>`}</footer>`;
         }
-        // The top bar: where you are in the trip, and that it's a sample.
-        const progress = dialog.querySelector('.nav-trip-progress');
-        if (progress) {
-            progress.hidden = !running;
-            if (running) {
-                const parts = N.steps(route).filter((step) => step.mode !== 'arrive').length;
-                const arrived = p.step.mode === 'arrive';
-                progress.innerHTML = `<span class="nav-bars" role="progressbar" aria-label="Trip progress" aria-valuemin="0" aria-valuemax="${parts}" aria-valuenow="${arrived ? parts : p.index}">${Array.from({ length: parts }, (_, index) => `<i class="${arrived || index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></i>`).join('')}</span><span class="nav-count">${arrived ? 'Arrived' : `${p.index + 1} of ${parts}`}</span><span class="nav-sample">Sample · not live</span>`;
-            }
-        }
-        const note = dialog.querySelector('.nav-map-note');
-        if (note) {
-            note.hidden = !running;
-            note.textContent = running ? now.map : '';
-        }
-        const spec = running ? mapSpec(p, now) : null;
-        const stand = dialog.querySelector('.nav-stand');
-        if (stand) {
-            const show = !!(wide() && spec?.stand);
-            stand.hidden = !show;
-            if (show && !stand.querySelector('.moment-map')) stand.innerHTML = momentMap(now);
-            else if (!show) stand.innerHTML = '';
-            stand.querySelector('.moment-map-label')?.replaceChildren(now?.map || '');
+        // The top bar: where you are in the trip, and (on desktop) that it's a
+        // sample. The map's caption follows the step. Both exist only while
+        // a trip runs.
+        dialog.querySelector('.nav-trip-progress')?.remove();
+        dialog.querySelector('.nav-map-note')?.remove();
+        if (running) {
+            const parts = N.steps(route).filter((step) => step.mode !== 'arrive').length;
+            const arrived = p.step.mode === 'arrive';
+            dialog.querySelector('.nav-topbar > div').insertAdjacentHTML(
+                'afterend',
+                `<div class="nav-trip-progress"><span class="nav-bars" role="progressbar" aria-label="Trip progress" aria-valuemin="0" aria-valuemax="${parts}" aria-valuenow="${arrived ? parts : p.index}">${Array.from({ length: parts }, (_, index) => `<i class="${arrived || index < p.index ? 'is-done' : index === p.index ? 'is-now' : ''}"></i>`).join('')}</span><span class="nav-count">${arrived ? 'Arrived' : `${p.index + 1} of ${parts}`}</span>${wide() ? '<span class="nav-sample">Sample · not live</span>' : ''}</div>`,
+            );
+            if (showMap())
+                dialog
+                    .querySelector('.nav-map-area')
+                    .insertAdjacentHTML('afterbegin', `<span class="nav-map-note">${safe(now.map)}</span>`);
         }
         content.querySelector('.nav-detail-scroll').scrollTop = scrollTop;
         if (focus)
             (
                 content.querySelector(`[data-nav="${focus}"]`) ||
                 content.querySelector(
-                    '[data-nav="next"], [data-nav="finish"], [data-nav="cancel-confirm"], [data-nav="confirm"]',
+                    '[data-nav="start"], [data-nav="cancel-confirm"], [data-nav="confirm"]',
                 )
             )?.focus({ preventScroll: true });
         const top = dialog.querySelector('.nav-topbar small');
@@ -927,7 +907,7 @@
         }
         if (typeof savedCount === 'function') savedCount();
         if (expanded) dialog.classList.add('is-expanded');
-        mountWalkMap(wide() && !spec?.stand ? null : spec);
+        mountStepMap(running && !showMap() ? mapSpec(p, now) : null);
         measure();
     }
     function measure() {
@@ -949,6 +929,14 @@
             isActive() ? active.step : 0,
             isActive() && active.condition !== 'location',
         );
+        // While you walk to the stop and wait, the map shows where to stand.
+        if (isActive() && mapView === 'step') {
+            const p = N.progress(route, active.step);
+            const spec = mapSpec(p, momentNow(p));
+            if (spec?.stand && map.stand(spec.points, lookOf(N.steps(route).find((step) => step.mode === 'transit')).colour, animate))
+                return;
+        }
+        map.stand(null);
         if (mapView === 'step') map.focus(inspected, animate);
         else map.overview(animate);
     }
@@ -1149,20 +1137,7 @@
         else if (action === 'expand') setExpanded(!expanded);
         else if (action === 'options') options();
         else if (action === 'start') startCurrent();
-        else if (action === 'next' || action === 'previous') {
-            active.step = N.progress(
-                route,
-                active.step + (action === 'next' ? 1 : -1),
-            ).index;
-            inspected = active.step;
-            mapView = 'step';
-            persist();
-            render();
-            updateMap();
-            announce(
-                `Step ${active.step + 1}. ${N.progress(route, active.step).step.title}`,
-            );
-        } else if (action === 'end') {
+        else if (action === 'end') {
             menuOpen = false;
             confirmation = 'end';
             render();
@@ -1171,7 +1146,7 @@
             render();
         } else if (action === 'confirm' && confirmation === 'switch')
             startCurrent(true);
-        else if (action === 'confirm' || action === 'finish') {
+        else if (action === 'confirm') {
             active = null;
             S.write(null);
             close();

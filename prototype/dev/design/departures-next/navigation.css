@@ -253,11 +253,6 @@
     margin: 0;
     color: var(--muted);
 }
-.nav-guidance-note {
-    margin: 10px 0 0;
-    font-size: var(--text-micro);
-    color: var(--muted);
-}
 .nav-facts {
     display: flex;
     flex-wrap: wrap;
@@ -376,18 +371,8 @@
     font-size: var(--text-micro);
     margin-top: 4px;
 }
-.nav-step em {
-    display: inline-block;
-    font-style: normal;
-    font-size: var(--text-micro);
-    color: #285e70;
-    padding-top: 5px;
-}
 .nav-step.is-inspected {
     background: #e2f4f8;
-}
-.nav-step[aria-current='step'] .nav-step-symbol {
-    color: #0588a4;
 }
 .nav-board-link {
     margin-left: 81px;

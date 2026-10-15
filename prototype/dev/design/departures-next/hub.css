@@ -582,26 +582,6 @@ body.travel-palette .nearby-area .nearby-cards {
     }
 }
 
-/* The next-trip card (desktop): side by side while there's room; then its
-   actions become a full-width row under the trip, never a narrow column
-   beside empty space. */
-@container (min-width: 720px) {
-    body.travel-palette .next-trip {
-        flex-wrap: nowrap;
-    }
-    body.travel-palette .next-trip-main {
-        flex: 1 1 0;
-    }
-    body.travel-palette .next-trip-side {
-        flex: 0 0 300px;
-    }
-}
-@container (max-width: 719px) {
-    body.travel-palette .next-trip-side {
-        flex: 1 1 100%;
-    }
-}
-
 @media (prefers-reduced-motion: reduce) {
     body.travel-palette.departures-page #main,
     body.travel-palette .journey-fields > .from-field,

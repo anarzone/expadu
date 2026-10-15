@@ -236,9 +236,7 @@
     }
 }
 /* Long labels wrap rather than push the page sideways. */
-.nearby-stop .tl-chip,
-.day-switch .tl-chip,
-.next-trip-ways .tl-chip {
+.nearby-stop .tl-chip {
     max-width: 100%;
     white-space: normal;
 }

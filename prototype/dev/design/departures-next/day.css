@@ -216,178 +216,6 @@
     border: 2px solid var(--color-border-strong);
     background: var(--color-bg-canvas);
 }
-.day-trip {
-    border: 1px solid color-mix(in srgb, var(--line) 22%, transparent);
-    border-radius: var(--radius-lg);
-    background: var(--tint);
-    overflow: hidden;
-}
-.day-switched {
-    margin: 0;
-    padding: var(--space-8) var(--space-12);
-    background: var(--color-attention-bg);
-    color: var(--color-attention-text);
-    font-size: var(--text-small);
-}
-.day-trip-head {
-    display: block;
-    width: 100%;
-    padding: var(--space-12);
-    border: 0;
-    background: none;
-    color: var(--color-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-.day-trip-times {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-8);
-    font-variant-numeric: tabular-nums;
-}
-.day-trip-head[aria-expanded='true'] .day-trip-times svg {
-    transform: rotate(180deg);
-}
-.day-ribbon {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: var(--space-8);
-}
-.day-ribbon > span {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    height: 24px;
-    padding: 0 7px;
-    border-radius: 7px;
-    background: var(--color-bg-surface);
-    color: var(--color-text-soft);
-    font-size: var(--text-caption);
-}
-.day-ribbon svg {
-    width: 12px;
-    height: 12px;
-}
-.day-ribbon i {
-    flex: 1;
-    height: 2px;
-    background: var(--line);
-    opacity: 0.4;
-}
-.day-ribbon b {
-    padding: 2px 8px;
-    border-radius: 7px;
-    background: var(--line);
-    color: var(--ink);
-    font-size: var(--text-small);
-}
-.day-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-6);
-    margin-top: var(--space-8);
-}
-.day-chips:not(.tl-chips) span {
-    padding: 2px var(--space-8);
-    border-radius: var(--radius-pill);
-    background: var(--color-bg-surface);
-    color: var(--color-text-soft);
-    font-size: var(--text-caption);
-}
-.day-chips:not(.tl-chips) span:first-child {
-    color: var(--color-text);
-    font-weight: var(--weight-semibold);
-}
-.day-chips .is-tight {
-    background: var(--color-attention-bg);
-    color: var(--color-attention-text) !important;
-}
-.day-trip-detail {
-    padding: 0 var(--space-12) var(--space-12);
-}
-.day-steps {
-    margin: 0 0 var(--space-10);
-    padding: 0;
-    list-style: none;
-}
-.day-steps li {
-    display: grid;
-    grid-template-columns: 40px 14px minmax(0, 1fr);
-    gap: var(--space-8);
-    padding: var(--space-6) 0;
-    border-top: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
-}
-.day-steps li > span:last-child {
-    display: flex;
-    flex-direction: column;
-}
-.day-steps time {
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-    font-variant-numeric: tabular-nums;
-}
-.day-step-dot {
-    width: 12px;
-    height: 12px;
-    margin-top: 2px;
-    box-sizing: border-box;
-    border: 3px solid var(--line);
-    border-radius: var(--radius-round);
-    background: var(--color-bg-surface);
-}
-.day-step-dot.is-walk {
-    border-color: var(--color-border-strong);
-}
-.day-step-dot.is-arrive {
-    border-radius: 3px;
-    border-color: var(--color-action);
-    background: var(--color-action);
-}
-.day-trip-detail .next-trip-go {
-    width: 100%;
-}
-.day-broken {
-    padding: var(--space-12);
-    border: 1px solid var(--color-attention-border);
-    border-radius: var(--radius-lg);
-    background: var(--color-attention-bg);
-}
-.day-broken-cause {
-    display: flex;
-    align-items: center;
-    gap: var(--space-6);
-    margin: 0;
-    color: var(--color-conflict-text);
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-}
-.day-broken > strong {
-    display: block;
-    margin-top: 2px;
-    font-size: var(--text-section);
-}
-.day-switch {
-    display: flex;
-    align-items: center;
-    gap: var(--space-10);
-    margin-top: var(--space-10);
-    padding: var(--space-10);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
-}
-.day-switch > span:nth-child(2) {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-}
-.day-switch .primary {
-    min-height: var(--touch-target);
-    padding: 0 var(--space-14);
-}
 .day-badge {
     display: grid;
     place-items: center;
@@ -399,11 +227,6 @@
     background: var(--line);
     color: var(--ink);
     font-weight: var(--weight-bold);
-}
-.day-note {
-    margin: var(--space-8) 0 0;
-    color: var(--color-attention-text);
-    font-size: var(--text-small);
 }
 .day-plan,
 .day-event,
@@ -539,9 +362,6 @@
 .day-event .tl-chip {
     align-self: flex-start;
     margin-top: 4px;
-}
-.day-switch > span:nth-child(2) .tl-chip {
-    margin-top: 3px;
 }
 .day-overlap strong .tl-chip {
     margin-right: 4px;
