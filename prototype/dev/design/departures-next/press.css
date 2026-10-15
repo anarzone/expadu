@@ -12,7 +12,6 @@ body.travel-palette
 }
 body.travel-palette
     :is(
-        .nearby-card,
         .plan-option-pick,
         .plan-checks-toggle,
         .day-places button,
