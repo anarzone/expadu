@@ -41,6 +41,14 @@ click buttons to confirm something and why that many times?").
   stands in for time and location while reviewing; it's built from each
   trip's own steps, so the evening's tram 18 then bus 133 works too.
 - A way you're only looking at (before "I'm on my way") keeps its overview.
+- One steady frame at every moment (owner, same day: "why three different
+  uis when changing clocks?"): the ring with the instruction, one "what to
+  look for" row the same size (the next tram · what's on its front · what
+  you'll hear, „Nächster Halt“ · „Ausgang“, not after a bus · what to
+  bring), then how the page knows. One map in one place: on desktop the
+  boarding points cover the route map while you walk there and wait, on
+  phones the map sits under the step. The sample clock is pinned to the
+  bottom of the screen.
 
 ## Your next thing as one line — 15 October 2026
 

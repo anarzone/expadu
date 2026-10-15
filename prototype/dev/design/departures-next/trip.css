@@ -659,41 +659,6 @@
     stroke: currentColor;
     stroke-width: 2.4;
 }
-/* What's on the front of the tram, and the other lines here. */
-#journey-navigation .nav-front {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-10);
-    padding: 14px 16px;
-    border: 1px solid var(--color-border);
-    border-radius: 18px;
-}
-#journey-navigation .nav-front small {
-    color: var(--color-text-soft);
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-}
-#journey-navigation .nav-front p {
-    margin: 0;
-    font-size: 14px;
-}
-#journey-navigation .nav-front .nav-board-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    min-height: 36px;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--action);
-    font-weight: var(--weight-semibold);
-}
-#journey-navigation .nav-front .nav-board-link svg {
-    width: 14px;
-    height: 14px;
-}
 /* How the page knows, and the way to correct it. */
 #journey-navigation .nav-follow {
     display: flex;
@@ -1023,9 +988,21 @@
     #journey-navigation.is-running:not(:modal) .nav-detail-scroll {
         padding-top: 4px;
     }
+    #journey-navigation.is-running:not(:modal)[open] {
+        padding-bottom: 96px;
+    }
     #journey-navigation.is-running:not(:modal) .nav-footer {
-        grid-area: 3 / 1 / 4 / -1;
-        padding: var(--space-24) 0 0;
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        z-index: 30;
+        width: min(860px, calc(100vw - 64px));
+        padding: 0;
+        transform: translateX(-50%);
+        background: transparent;
+    }
+    #journey-navigation.is-running:not(:modal) .nav-clock {
+        box-shadow: 0 14px 30px -22px #211d1580;
     }
     #journey-navigation.is-running:not(:modal) .nav-map-area {
         grid-area: 2 / 2;
@@ -1045,9 +1022,6 @@
     #journey-navigation.is-running:not(:modal) .nav-expanded {
         grid-area: 3 / 1;
         margin-top: var(--space-24);
-    }
-    #journey-navigation.is-running:not(:modal) .nav-footer {
-        grid-area: 4 / 1;
     }
     #journey-navigation.is-running:not(:modal) .nav-map-area {
         margin-top: 0;
@@ -1144,4 +1118,169 @@
     #journey-navigation :is(.nav-ring circle + circle, .nav-bars i, .nav-step-card) {
         transition: none;
     }
+}
+
+/* One steady frame at every moment (owner, 15 Oct 2026: "why three
+   different uis when changing clocks?"): the ring with the instruction,
+   one "what to look for" row the same size, how the page knows. */
+#journey-navigation .nav-step-lead {
+    min-height: 92px;
+}
+#journey-navigation .nav-look {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 72px;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    text-decoration: none;
+    animation: nav-step-in 320ms var(--ease-standard) both;
+}
+#journey-navigation a.nav-look:hover {
+    background: var(--color-bg-quiet);
+}
+#journey-navigation .nav-look > svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+#journey-navigation .nav-look-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+#journey-navigation .nav-look-text strong {
+    font-size: 14.5px;
+}
+#journey-navigation .nav-look-text small {
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.35;
+}
+#journey-navigation .nav-look-tile {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    min-width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+#journey-navigation .nav-look-tile svg {
+    width: 20px;
+    height: 20px;
+}
+#journey-navigation .nav-look-tile.is-badge {
+    background: var(--line);
+    color: #fff;
+    font-size: 17px;
+    font-weight: var(--weight-bold);
+}
+/* What's on the tram's front: the line and where it's going. */
+#journey-navigation .nav-look-tile.is-sign {
+    display: inline-flex;
+    gap: 8px;
+    padding: 0 12px 0 6px;
+    background: #1f1c17;
+    color: #ffb547;
+    font-size: 16px;
+    font-weight: var(--weight-bold);
+    white-space: nowrap;
+}
+#journey-navigation .nav-look-tile.is-sign > span {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--line);
+    color: #fff;
+    font-size: 14px;
+}
+#journey-navigation .nav-look-tile.is-quote {
+    font-size: 24px;
+    font-weight: var(--weight-bold);
+    line-height: 1;
+}
+#journey-navigation .nav-look-tile.is-exit {
+    padding: 0 10px;
+    background: #1f6b3a;
+    color: #fff;
+    font-size: 13px;
+    font-weight: var(--weight-bold);
+}
+/* One map, one place. Desktop: the boarding points cover the route map
+   while you need them. Phones: the map sits under the step. */
+#journey-navigation .nav-stand {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+}
+#journey-navigation .nav-stand[hidden] {
+    display: none;
+}
+#journey-navigation .nav-stand .moment-map {
+    height: 100%;
+    border: 0;
+    border-radius: inherit;
+}
+#journey-navigation .nav-stand .moment-map-label {
+    top: 12px;
+    bottom: auto;
+    left: 12px;
+}
+#journey-navigation .nav-summary > .moment-map {
+    height: 190px;
+    margin-top: var(--space-16);
+    border-radius: 20px;
+}
+#journey-navigation .moment-map.is-unavailable .moment-map-canvas {
+    display: none;
+}
+.nav-place-dot {
+    width: 16px;
+    height: 16px;
+    box-sizing: border-box;
+    border: 3px solid var(--color-bg-surface);
+    border-radius: 50%;
+    background: var(--color-select-text);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-select-text) 22%, transparent);
+}
+@media (max-width: 700px) {
+    #journey-navigation .nav-step-lead {
+        min-height: 64px;
+    }
+    #journey-navigation .nav-look {
+        gap: 12px;
+        padding: 10px 12px;
+    }
+    #journey-navigation .nav-look-tile.is-sign {
+        font-size: 14px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    #journey-navigation .nav-look {
+        animation: none;
+    }
+}
+#journey-navigation .nav-stand .moment-map-credit {
+    top: auto;
+    bottom: 6px;
+}
+/* A long destination ends in "…" so the row keeps its size. */
+#journey-navigation .nav-look-tile.is-sign {
+    max-width: 55%;
+}
+#journey-navigation .nav-look-tile.is-sign > b {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
