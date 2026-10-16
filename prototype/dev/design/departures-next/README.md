@@ -29,6 +29,9 @@ outdated"). Shared by Today, Events, Paperwork, Travel and Services:
 - Removed: yesterday's "Composer steps aside while you scroll" on Travel
   (`app.js`, `slide.css`) and the Events-only spot beside the hour rings
   (`events-next/wall.js`); the menu replaces both.
+- The way's drawings label where you set off "Start", not "You" (owner,
+  same day): on the trip page the teal dot is you, so "You" at the start
+  named two places once you were on the tram. Nearby's strip says it too.
 
 ## The whole page, reviewed — 15 October 2026
 

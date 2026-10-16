@@ -769,7 +769,7 @@
        way drawn as a line of stations with you on it. */
     function wayDrawing(p, running) {
         const list = N.steps(route);
-        const nodes = [{ name: 'You' }];
+        const nodes = [{ name: 'Start' }];
         const legs = [];
         const atStep = [];
         let ride = null;

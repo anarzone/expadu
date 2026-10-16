@@ -212,7 +212,7 @@
     }
 
     /* ---------- Your way, in the same style ----------
-       nodes: [{ name }] from you to there; legs[i] joins nodes i and i+1:
+       nodes: [{ name }] from the start to there; legs[i] joins nodes i and i+1:
        { mode: 'walk' | 'bike' | 'ride', line, tint, note: [time, stops], stops }.
        at: { leg, t } is where you are (null in a preview): along a walk, or
        on a ride's level stretch (t 0 is its stop); the part you're on is
@@ -309,7 +309,7 @@
             .map((node, index) => {
                 const [nx, ny] = nodeAt[index];
                 if (index === 0)
-                    return `<circle cx="${nx}" cy="${ny}" r="9" fill="#211d15"/>${text('You', nx, ny, 'middle', false)}`;
+                    return `<circle cx="${nx}" cy="${ny}" r="9" fill="#211d15"/>${text(node.name, nx, ny, 'middle', false)}`;
                 if (index === nodes.length - 1)
                     return `<rect x="${Math.round(nx - 13)}" y="${Math.round(ny - 13)}" width="26" height="26" rx="7" fill="#211d15"/>${text(node.name, Math.min(nx + 13, W - 8), ny, 'end', ny >= (LOW + HIGH) / 2)}`;
                 // A change at one station is one capsule, long enough for both.

@@ -1076,7 +1076,7 @@ function tripRing(now) {
 function wayStrip(route, trip) {
     const node = (kind, name, time, look) =>
         `<span class="way-node is-${kind}"${look ? ` style="--line:${look.colour}"` : ''}><i></i><span>${safe(name)}<small>${time}</small></span></span>`;
-    const parts = [node('you', 'You', route.depart)];
+    const parts = [node('start', 'Start', route.depart)];
     let before = null;
     for (const leg of route.legs) {
         if (leg.mode === 'walk') {
