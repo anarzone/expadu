@@ -1,8 +1,11 @@
 // Run with: node prototype/dev/design/departures-next/tests/bar-browser.cjs
 // (needs `python3 prototype/serve.py`; PREVIEW_BASE overrides the address).
-// Phones: the five sections sit in a bar at the bottom of every page;
-// Travel's Plan a trip slides in, Back and a swipe from the left edge slide
-// it away, and tapping Travel again returns to Nearby, then to its top.
+// Phones: the sections float in one capsule at the bottom of every page,
+// Composer's round button beside it (canvas row 23); scrolling down shrinks
+// the capsule to the section you're in. Travel's Plan a trip unfolds from
+// Where to?, Back folds it, a swipe from the left edge takes it away, and
+// tapping Travel again returns to Nearby, then to its top. Desktops:
+// Composer is in the header.
 const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
@@ -17,7 +20,16 @@ const pages = [
 const box = (page, selector) =>
     page.evaluate((s) => {
         const r = document.querySelector(s)?.getBoundingClientRect();
-        return r && { top: r.top, bottom: r.bottom, height: r.height };
+        return (
+            r && {
+                top: r.top,
+                bottom: r.bottom,
+                left: r.left,
+                right: r.right,
+                width: r.width,
+                height: r.height,
+            }
+        );
     }, selector);
 // The names of the slide's animations while it runs.
 const slideNames = (page) =>
@@ -58,34 +70,53 @@ async function swipe(page, cdp, from, to, steps = 8) {
 (async () => {
     const browser = await chromium.launch();
     try {
-        // Every page: the bar at the bottom, the header in one short row.
+        // Every page: the menu floats at the bottom, the header is one short
+        // row, the edges are even.
         for (const path of pages) {
+            // A phone: its scrollbar overlays the page.
             const page = await browser.newPage({
                 viewport: { width: 390, height: 844 },
+                isMobile: true,
+                hasTouch: true,
             });
             const errors = [];
             page.on('pageerror', (e) => errors.push(e.message));
             await page.goto(base + path, { waitUntil: 'networkidle' });
             const nav = await box(page, '#shell .service-nav');
-            assert.equal(
-                Math.round(nav.bottom),
-                844,
-                `${path}: bar at the bottom`,
-            );
-            assert.ok(nav.height <= 64, `${path}: bar height ${nav.height}`);
+            assert.equal(Math.round(nav.bottom), 828, `${path}: menu floats`);
+            assert.equal(Math.round(nav.left), 14, `${path}: menu inset`);
+            assert.equal(Math.round(nav.height), 62, `${path}: menu height`);
             const header = await box(page, '#shell .app-header');
             assert.ok(header.height <= 56, `${path}: header ${header.height}`);
             const tabs = await page.$$eval('#shell .service-nav > a', (links) =>
                 links.map((a) => a.getBoundingClientRect().height),
             );
-            assert.equal(tabs.length, 5);
+            assert.equal(tabs.length, 4);
             assert.ok(
                 tabs.every((h) => h >= 44),
                 `${path}: tab heights`,
             );
+            // Composer's button beside it, as tall, the same inset; on
+            // Composer's own page the menu takes the width.
+            const width = await page.evaluate(
+                () => document.documentElement.clientWidth,
+            );
             const tray = await box(page, '#composer-tray');
-            if (tray)
-                assert.ok(tray.bottom <= nav.top, `${path}: Composer above`);
+            if (tray) {
+                assert.equal(Math.round(tray.top), Math.round(nav.top));
+                assert.equal(Math.round(tray.height), 62);
+                assert.equal(
+                    Math.round(width - tray.right),
+                    14,
+                    `${path}: even`,
+                );
+                assert.ok(nav.right <= tray.left - 8, `${path}: apart`);
+            } else
+                assert.equal(
+                    Math.round(width - nav.right),
+                    14,
+                    `${path}: even`,
+                );
             const input = await box(page, '.studio-input-wrap');
             if (input)
                 assert.ok(input.bottom <= nav.top + 2, `${path}: box above`);
@@ -95,16 +126,32 @@ async function swipe(page, cdp, from, to, steps = 8) {
                 ),
                 `${path}: no sideways scroll`,
             );
-            // Scrolled: the header has gone, the bar stays.
-            await page.evaluate(() => scrollTo(0, 600));
-            await page.waitForTimeout(100);
-            const still = await box(page, '#shell .service-nav');
-            assert.equal(Math.round(still.bottom), 844);
+            // Scrolling down shrinks the menu to the section you're in;
+            // scrolling up brings it back.
+            const height = await page.evaluate(
+                () => document.documentElement.scrollHeight - innerHeight,
+            );
+            if (height > 200) {
+                for (const y of [100, 200])
+                    await page.evaluate((y) => scrollTo(0, y), y);
+                await page.waitForTimeout(500);
+                const mini = await box(page, '#shell .service-nav');
+                assert.equal(Math.round(mini.width), 62, `${path}: shrunk`);
+                assert.equal(Math.round(mini.bottom), 828);
+                await page.evaluate(() => scrollTo(0, 0));
+                await page.waitForTimeout(500);
+                assert.equal(
+                    Math.round((await box(page, '#shell .service-nav')).width),
+                    Math.round(nav.width),
+                    `${path}: back`,
+                );
+            }
             assert.deepEqual(errors, [], path);
             await page.close();
         }
 
-        // Desktop keeps the sections in the header.
+        // Desktop keeps the sections in the header, and Composer joins them
+        // there; ⌘K or Ctrl K opens it.
         const desk = await browser.newPage({
             viewport: { width: 1440, height: 900 },
         });
@@ -112,6 +159,14 @@ async function swipe(page, cdp, from, to, steps = 8) {
             waitUntil: 'networkidle',
         });
         assert.ok((await box(desk, '#shell .service-nav')).top < 100);
+        assert.ok((await box(desk, '#shell .composer-header')).top < 100);
+        assert.equal((await box(desk, '#composer-tray')).width, 0);
+        await desk.keyboard.press('ControlOrMeta+k');
+        await desk.waitForTimeout(400);
+        assert.equal(
+            await desk.evaluate(() => document.activeElement?.id),
+            'request',
+        );
         await desk.close();
 
         for (const reduce of [false, true]) {
@@ -129,14 +184,14 @@ async function swipe(page, cdp, from, to, steps = 8) {
             });
             const view = () => page.evaluate(() => document.body.dataset.view);
 
-            // Where to? slides Plan a trip in; the bar stays below it.
+            // Where to? unfolds Plan a trip down from it; the menu stays below.
             const sliding = slideNames(page);
             await page.locator('.where-to').click();
             assert.deepEqual(
                 await sliding,
                 reduce
                     ? ['travel-fade-in', 'travel-fade-out']
-                    : ['travel-drift-left', 'travel-slide-in'],
+                    : ['travel-unfold'],
             );
             await page.waitForTimeout(300);
             assert.equal(await view(), 'journey');
@@ -154,14 +209,14 @@ async function swipe(page, cdp, from, to, steps = 8) {
             );
             await page.locator('#to').blur();
 
-            // Back slides it away.
+            // Back folds it up into Where to? again.
             const leaving = slideNames(page);
             await page.evaluate(() => history.back());
             assert.deepEqual(
                 await leaving,
                 reduce
                     ? ['travel-fade-in', 'travel-fade-out']
-                    : ['travel-drift-back', 'travel-slide-out'],
+                    : ['travel-fold'],
             );
             await page.waitForTimeout(300);
             assert.equal(await view(), 'stop');

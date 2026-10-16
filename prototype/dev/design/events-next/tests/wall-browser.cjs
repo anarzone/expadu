@@ -575,9 +575,9 @@ const inside = (box, viewport) =>
         assert.match(await culture.getAttribute('aria-label'), /already over/);
         assert.match(await film.getAttribute('class'), /is-now/);
         await phone.close();
-        // On phones and tablets what the filters show (icon buttons, labels,
-        // typed text) stops short of Composer's button, so it covers none of
-        // it at any height.
+        // Composer's button is beside the menu at the bottom of a phone, as
+        // tall as it; tablets have Composer in the header and no corner
+        // button (the shared menu, Travel canvas row 23).
         for (const viewport of [
             { width: 360, height: 720 },
             { width: 390, height: 753 },
@@ -586,29 +586,22 @@ const inside = (box, viewport) =>
         ]) {
             const tablet = await browser.newPage({ viewport, hasTouch: true });
             await tablet.goto(`${base}?date=2026-09-30`, { waitUntil: 'networkidle' });
-            const fit = await tablet.evaluate(() => {
+            const where = await tablet.evaluate(() => {
                 const at = (s) => document.querySelector(s).getBoundingClientRect();
                 return {
-                    filters: Math.max(
-                        ...[...document.querySelectorAll('.event-discovery :is(button, input)')]
-                            // Shown only: the closed calendar is laid out but hidden.
-                            .filter((el) => el.offsetParent && getComputedStyle(el).visibility !== 'hidden')
-                            .flatMap((el) =>
-                                el.tagName === 'INPUT' || el.getBoundingClientRect().width <= 64
-                                    ? [el]
-                                    : [...el.querySelectorAll('svg, span')].filter(
-                                          (x) => x.tagName === 'svg' || x.textContent.trim(),
-                                      ),
-                            )
-                            .map((el) => el.getBoundingClientRect().right),
-                    ),
-                    composer: at('.composer-launcher').left,
+                    phone: innerWidth <= 700,
+                    menu: Math.round(at('#shell .service-nav').top),
+                    composer: Math.round(at('#composer-tray').top),
+                    corner: Math.round(at('#composer-tray').width),
+                    header: Math.round(at('#shell .composer-header').width),
                 };
             });
-            assert.ok(
-                fit.filters <= fit.composer,
-                `a filter reaches under Composer's button at ${viewport.width}px: ${fit.filters} > ${fit.composer}`,
-            );
+            if (where.phone)
+                assert.equal(where.composer, where.menu, `Composer beside the menu at ${viewport.width}px`);
+            else {
+                assert.equal(where.corner, 0, `no corner button at ${viewport.width}px`);
+                assert.ok(where.header > 0, `Composer in the header at ${viewport.width}px`);
+            }
             await tablet.close();
         }
         // On phones and tablets each picker is a bottom sheet over a scrim,

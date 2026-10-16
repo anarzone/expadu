@@ -37,10 +37,18 @@ const latestInView = (page) =>
     });
 const noOverflow = (page) =>
     page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+// Composer opens from its round button on a phone and from "Ask Composer"
+// in the header on wider screens (the shared menu, Travel canvas row 23).
+const openComposer = async (page) => {
+    const header = page.locator('#shell .composer-header');
+    await (
+        (await header.isVisible()) ? header : page.locator('.composer-launcher')
+    ).click();
+};
 // Today's Composer dock keeps My Plans, Saved and History in its menu.
 // (#included-ideas also opens plans, for selections waiting for review.)
 const openPanel = async (page, panel) => {
-    await page.locator('.composer-launcher').click();
+    await openComposer(page);
     await page
         .locator(
             `#composer-tray [data-composer-panel="${panel}"]:not(#included-ideas)`,
@@ -111,7 +119,7 @@ const openPanel = async (page, panel) => {
             // doesn't send it again.
             const request = 'Is there a café near my appointment?';
             await page.goto(today, { waitUntil: 'networkidle' });
-            await page.locator('.composer-launcher').click();
+            await openComposer(page);
             await page.locator('#request').fill(request);
             await page
                 .locator('#compose-form')
