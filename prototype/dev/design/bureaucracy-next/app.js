@@ -244,6 +244,7 @@
             'history',
             'previewExit',
             'previewPersona',
+            'senderBack',
             'taskFilter',
             'docTask',
             'docState',
@@ -280,6 +281,7 @@
         render();
     }
     function go(view, process, stepId) {
+        moved = true;
         closeEditor();
         state.step = stepId || null;
         state.view = view;
@@ -498,8 +500,29 @@
                 : 'smooth',
         });
     }
+    // A task another section opened (Today, Composer, Travel, Events)
+    // leads back there until you move around in Paperwork.
+    let moved = false;
+    const sender = (() => {
+        try {
+            const from = new URL(document.referrer);
+            if (from.origin !== location.origin) return '';
+            return (
+                [
+                    ['/today-next/', 'Today'],
+                    ['/composer-studio/', 'Composer'],
+                    ['/departures-next/', 'Travel'],
+                    ['/events-next/', 'Events'],
+                ].find(([path]) => from.pathname.includes(path))?.[1] || ''
+            );
+        } catch {
+            return '';
+        }
+    })();
     function back() {
-        return `<button class="view-back" data-view="overview">${I('back')}Your overview</button>`;
+        return sender && !moved
+            ? `<button class="view-back" data-sender-back>${I('back')}${E(sender)}</button>`
+            : `<button class="view-back" data-view="overview">${I('back')}Your overview</button>`;
     }
     // Search and filters (owner request, 10 Oct 2026): one search over the
     // plan's tasks, dates, documents and guidance, and filters that work in
@@ -1432,6 +1455,10 @@
                     ? 'This preview keeps your answers in this tab, so it doesn’t use Composer.'
                     : 'This is a read-only preview. Go back to your plan to make changes.',
             );
+            return;
+        }
+        if ('senderBack' in b.dataset) {
+            history.back();
             return;
         }
         if ('clearSearch' in b.dataset) {
