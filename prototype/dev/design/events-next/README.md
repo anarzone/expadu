@@ -5,6 +5,15 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## Posters paste once a tab — 16 October 2026
+
+Owner's choice. Posters paste onto the wall the first time you see them in
+a tab; come back (from another section, Back or a refresh) and the ones
+you've seen are already up, so the wall is whole in its first frame and the
+section fade is the only motion. A poster you haven't seen still pastes. A
+poster counts as seen once its paste has played; the tab remembers them in
+`sessionStorage` (`expadu-wall-pasted`, `wall.js`; `.is-up` in `wall.css`).
+
 ## Composer's button beside the menu — 16 October 2026
 
 The 13 October placement (Composer's button at the end of the hour rings,

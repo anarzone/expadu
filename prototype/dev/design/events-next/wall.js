@@ -2025,6 +2025,27 @@
                 'Poster set by Expadu from the listing, not an official poster';
     }).observe(document.documentElement, { childList: true, subtree: true });
 
+    // Posters paste onto the wall once a tab (owner, 16 Oct 2026): come back
+    // and the ones you've seen are already up, so the wall is whole in its
+    // first frame; new ones still paste. A poster counts as seen once its
+    // paste has played.
+    const pasted = new Set();
+    try {
+        for (const id of JSON.parse(sessionStorage.getItem('expadu-wall-pasted') || '[]'))
+            pasted.add(id);
+    } catch {}
+    new MutationObserver(() => {
+        for (const poster of document.querySelectorAll('.wall-day > .pp[data-poster]:not(.is-up)'))
+            if (pasted.has(poster.dataset.poster)) poster.classList.add('is-up');
+    }).observe(document.documentElement, { childList: true, subtree: true });
+    document.addEventListener('animationend', (event) => {
+        if (event.animationName !== 'pp-paste') return;
+        pasted.add(event.target.dataset.poster);
+        try {
+            sessionStorage.setItem('expadu-wall-pasted', JSON.stringify([...pasted]));
+        } catch {}
+    });
+
     window.ExpaduEventFestival = { ...base, image, feature, render, bind };
     window.ExpaduEventWall = { mount, laterListings, hasPicture, stage, skyPlace };
     // After app.js has built the page, before its own DOMContentLoaded work.

@@ -153,6 +153,10 @@ main[data-view='skyline'] .wall-view--wall {
         animation-delay: calc(var(--i, 0) * 70ms);
     }
 }
+/* Already up: pasted earlier in this tab (wall.js). */
+.wall-day > .pp.is-up {
+    animation: none;
+}
 @keyframes pp-paste {
     from {
         opacity: 0;
