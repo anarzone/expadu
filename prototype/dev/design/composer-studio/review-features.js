@@ -242,6 +242,22 @@
                         `<div class="detail-actions"><a class="plain-button" href="${E(map)}" target="_blank" rel="noopener">${I('pin')}Map</a><a class="plain-button" href="${E(route.href)}">${I('route')}Directions</a></div>`,
                     );
                 }
+                // An event opens in Events, on its own details.
+                if (item.type === 'event') {
+                    const events = new URL(
+                        ExpaduStore.routes.events,
+                        document.baseURI,
+                    );
+                    if (item.date) events.searchParams.set('date', item.date);
+                    events.searchParams.set(
+                        'event',
+                        String(item.id).replace(/^event:/, ''),
+                    );
+                    body.insertAdjacentHTML(
+                        'beforeend',
+                        `<div class="detail-actions"><a class="plain-button" href="${E(events.href)}">${I('calendar')}Open in Events</a></div>`,
+                    );
+                }
                 body.querySelector('[data-full-details]').addEventListener(
                     'click',
                     () => {
