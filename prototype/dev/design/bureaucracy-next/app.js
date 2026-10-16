@@ -33,9 +33,9 @@
     const names = Object.fromEntries(H.roster.map((p) => [p.id, p.name]));
     // The contract's readiness values; there is no "unknown".
     const ready = {
-        missing: 'Not ready yet',
-        reported_available: 'You have it · check for this task',
-        confirmed_for_use: 'Ready for this task',
+        missing: 'Still to get',
+        reported_available: 'You have it · not checked yet',
+        confirmed_for_use: 'Checked and ready',
         needs_reconfirmation: 'Check again',
     };
     // The backend's workflow (plan.processes[].state.workflow).
@@ -556,7 +556,7 @@
               : 'have';
     const docGroups = [
         ['all', 'Any status'],
-        ['missing', 'Not ready'],
+        ['missing', 'Still to get'],
         ['have', 'You have it'],
         ['ready', 'Ready'],
     ];
@@ -1248,7 +1248,7 @@
                     docs
                         .map((d) => {
                             const token = `${key}:${d.index}`;
-                            return `<details class="document-row" data-paper-row="${E(token)}"><summary><span class="document-symbol ${d.readiness === 'confirmed_for_use' ? 'confirmed' : ''}">${I(d.readiness === 'confirmed_for_use' ? 'check' : 'document')}</span><span><strong>${E(d.label)}</strong>${termLine(d.terms)}<small>${E(ready[d.readiness])}${d.conditional ? ' · May be needed' : ''}</small></span>${I('down')}</summary><div class="document-actions"><p>${d.conditional ? 'Whether you need this depends on your situation. ' : ''}You are updating your checklist for ${E(name)}. This is not an official document check.</p>${producedLine(plan, d.produced_by)}${p.id === null ? `<button class="button secondary" data-start-paper="${E(key)}">${I('plus')}Start tracking this task</button>` : `${d.readiness === 'missing' ? `<button class="button secondary" data-doc-action="${E(token)}|have">${I('document')}I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.readiness) && !d.conditional ? `<button class="button primary" data-doc-action="${E(token)}|confirm">${I('check')}Ready for this task</button>` : d.readiness === 'confirmed_for_use' ? `<span class="document-confirmed">${I('check')}Marked ready by you</span>` : ''}<button class="plain-button" data-doc-action="${E(token)}|missing">Not ready yet</button>`}<button class="document-info" data-source-for="${E(key)}">${I('info')}Check official source</button></div></details>`;
+                            return `<details class="document-row" data-paper-row="${E(token)}"><summary><span class="document-symbol ${d.readiness === 'confirmed_for_use' ? 'confirmed' : ''}">${I(d.readiness === 'confirmed_for_use' ? 'check' : 'document')}</span><span><strong>${E(d.label)}</strong>${termLine(d.terms)}<small>${E(ready[d.readiness])}${d.conditional ? ' · May be needed' : ''}</small></span>${I('down')}</summary><div class="document-actions"><p>${d.conditional ? 'Whether you need this depends on your situation. ' : ''}You are updating your checklist for ${E(name)}. This is not an official document check.</p>${producedLine(plan, d.produced_by)}${p.id === null ? `<button class="button secondary" data-start-paper="${E(key)}">${I('plus')}Start tracking this task</button>` : `${d.readiness === 'missing' ? `<button class="button secondary" data-doc-action="${E(token)}|have">${I('document')}I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.readiness) && !d.conditional ? `<button class="button primary" data-doc-action="${E(token)}|confirm">${I('check')}Mark as ready</button>` : d.readiness === 'confirmed_for_use' ? `<span class="document-confirmed">${I('check')}Marked ready by you</span>` : ''}<button class="plain-button" data-doc-action="${E(token)}|missing">I don’t have it</button>`}<button class="document-info" data-source-for="${E(key)}">${I('info')}Check official source</button></div></details>`;
                         })
                         .join('') ||
                     '<p class="muted">This task lists no documents.</p>'
@@ -1366,7 +1366,7 @@
         state.process = id;
         U.open(
             'Review this document',
-            `${scope(p)}<h3>${E(d.label)}</h3><p>${E(ready[d.readiness])}${d.conditional ? ' · Conditional in source' : ''}</p>${!p.started ? `<p>Start this process before confirming a document.</p>${button('Start this process', 'start', 'primary')}` : `<div class="actions">${d.readiness === 'missing' ? `<button class="button primary" data-doc-action="${E(token)}|have">I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.readiness) && !d.conditional ? `<button class="button primary" data-doc-action="${E(token)}|confirm">Ready for this task</button>` : ''}<button class="button secondary" data-doc-action="${E(token)}|missing">I don’t have it ready</button></div>`}`,
+            `${scope(p)}<h3>${E(d.label)}</h3><p>${E(ready[d.readiness])}${d.conditional ? ' · Conditional in source' : ''}</p>${!p.started ? `<p>Start this process before confirming a document.</p>${button('Start this process', 'start', 'primary')}` : `<div class="actions">${d.readiness === 'missing' ? `<button class="button primary" data-doc-action="${E(token)}|have">I have this</button>` : ['reported_available', 'needs_reconfirmation'].includes(d.readiness) && !d.conditional ? `<button class="button primary" data-doc-action="${E(token)}|confirm">Mark as ready</button>` : ''}<button class="button secondary" data-doc-action="${E(token)}|missing">I don’t have it ready</button></div>`}`,
         );
     }
     // Only the changes the backend accepts from here (P.choices). "Blocked"
