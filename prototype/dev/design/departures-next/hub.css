@@ -980,14 +980,6 @@ body.travel-palette {
     .way-ride {
         flex-grow: 2.6;
     }
-    .trip-line-row {
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-areas: 'head more' 'body body' 'go go';
-        gap: var(--space-12);
-    }
-    .trip-line-row > .next-trip-go {
-        width: 100%;
-    }
     .trip-ring {
         width: 46px;
         height: 46px;
@@ -1001,6 +993,20 @@ body.travel-palette {
     }
     .trip-title strong {
         font-size: 17px;
+    }
+}
+/* The card keeps one row only where the facts have room beside the
+   title and the buttons (desktop's Nearby); below that, stacked: title,
+   facts, then the button (tablets, phones, My day, Nearby beside a big
+   planner). */
+@container (max-width: 820px) {
+    .trip-line-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: 'head more' 'body body' 'go go';
+        gap: var(--space-12);
+    }
+    .trip-line-row > .next-trip-go {
+        width: 100%;
     }
 }
 /* Narrower still (My day's rail, the smallest phones): the badge alone
