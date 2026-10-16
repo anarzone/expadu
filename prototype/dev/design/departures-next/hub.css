@@ -956,11 +956,6 @@ body.travel-palette {
     width: 13px;
     height: 13px;
 }
-@media (min-width: 1000px) {
-    body.travel-palette #next-trip.trip-line {
-        margin-bottom: var(--space-24);
-    }
-}
 /* Narrow (phones, My day, desktop's Nearby beside a big planner): the
    ring, the words and the arrow on one row; the button under. */
 .trip-line {

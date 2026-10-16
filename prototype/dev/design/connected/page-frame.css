@@ -11,6 +11,28 @@
     --page-max: 1440px;
     --page-gutter: 32px;
 }
+/* One spacing for every page (owner chose "16 everywhere", 16 Oct 2026,
+   Travel canvas row 27): 16px under the header and between a page's
+   sections on every screen, and a phone's sides are the header's 16px
+   (12px on the smallest phones). A page that scrolls ends 48px under its
+   last section on a laptop; on a phone it ends 16px above the floating
+   menu, whose room the body keeps (section-bar.css), so the page keeps
+   none of its own. */
+:root body main#main {
+    padding-top: 16px;
+    padding-bottom: 48px;
+}
+@media (max-width: 700px) {
+    :root body main#main {
+        padding-inline: 16px;
+        padding-bottom: 0;
+    }
+}
+@media (max-width: 359px) {
+    :root body main#main {
+        padding-inline: 12px;
+    }
+}
 @media (min-width: 701px) {
     :root body main#main {
         box-sizing: border-box;

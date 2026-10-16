@@ -3395,28 +3395,15 @@ main[data-view='wall'] #event-featured {
     position: relative;
     margin-inline: auto;
 }
-/* One spacing for the page (owner chose A, 16 Oct 2026): the street is
-   22px under the filters on a laptop, as they are under the header and the
-   street above the screen's bottom; 16px on a phone. A past day's note sits
-   between them at the same distance. */
+/* One spacing (owner chose "16 everywhere", 16 Oct 2026): the street is
+   16px under the filters, as they are under the header (page-frame.css)
+   and a laptop's street above the screen's bottom (street.js). A past
+   day's note sits between them at the same distance. */
 main[data-view='wall'] .st-board {
-    margin-top: 22px;
+    margin-top: 16px;
 }
 main[data-view='wall'] .st-board .event-past-note {
-    margin: 0 0 22px;
-}
-@media (max-width: 700px) {
-    /* The floating menu's room is the body's (section-bar.css), so the
-       street can end above the menu on one screen. */
-    #main[data-view='wall'] {
-        padding-bottom: 0;
-    }
-    main[data-view='wall'] .st-board {
-        margin-top: 16px;
-    }
-    main[data-view='wall'] .st-board .event-past-note {
-        margin-bottom: 16px;
-    }
+    margin: 0 0 16px;
 }
 /* A phone: the hour rings float in the street's sky, 12px in from its
    corner and level with the weather, and scroll sideways up to it
@@ -3460,10 +3447,10 @@ main[data-view='wall'] .st-board .event-past-note {
 }
 /* A poster's slot on the street: placed by the street, not laid out as
    the old wall's row. */
-/* On a desktop the street ends 22px above the screen's bottom, and the
+/* On a desktop the street ends 16px above the screen's bottom, and the
    page does too: one screen, no scroll. */
 #main[data-view='wall']:has(.st-root[data-layout='desktop']) {
-    padding-bottom: 22px;
+    padding-bottom: 16px;
 }
 /* The street's posters (the column's and the wall's) carry no Add to plan
    (owner, 13 Oct 2026); a tap opens the details, which has it. */

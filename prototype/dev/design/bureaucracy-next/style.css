@@ -1,8 +1,5 @@
 @import url('../connected/tokens.css');
 /* Bureaucracy workspace: compact process context, shared Expadu controls. */
-body[data-page='bureaucracy'] #main {
-    padding-top: 22px;
-}
 .case-top,
 .case-navigation,
 .case-section-head,
@@ -28,9 +25,6 @@ body[data-page='bureaucracy'] #main {
 }
 /* Without a visible title the views lead the row; whose plan and Your
    situation sit at its end. */
-.case-top.is-untitled {
-    margin-bottom: 18px;
-}
 .case-top.is-untitled .person-picker {
     margin-left: auto;
 }
@@ -422,7 +416,7 @@ body[data-page='bureaucracy'] #main {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-top: 22px;
+    margin-top: 16px;
     color: var(--muted);
     font-size: var(--text-control);
 }
@@ -2542,7 +2536,7 @@ body[data-page='bureaucracy'] .sr-only {
    cards), grouped by topic. A quiet list; each opens to the card's own
    checked text and its official pages. */
 .good-to-know {
-    margin-top: 28px;
+    margin-top: 16px;
 }
 .context-list {
     display: grid;
@@ -2996,7 +2990,7 @@ body[data-page='bureaucracy'] .coming-row {
 body[data-page='bureaucracy'] .question-card {
     gap: 12px;
     padding: 16px 18px;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
 }
 body[data-page='bureaucracy'] .question-card .actions {
     display: flex;

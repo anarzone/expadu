@@ -20,7 +20,7 @@ body[data-page='services'] .page-title p {
 body[data-page='services'] .services-layout {
     display: grid;
     grid-template-columns: 200px minmax(0, 1fr);
-    gap: 24px;
+    gap: 16px;
     align-items: start;
 }
 body[data-page='services'] .service-choices {

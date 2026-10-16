@@ -11,6 +11,34 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## One spacing for every page: 16 — 16 October 2026
+
+The owner chose "16 everywhere" on the Travel canvas, row 27 (24 on laptops
+was drawn first; it cost Today and Paperwork about 24px of their first
+screen). Shared by every page (Today, Events, Paperwork, Travel, Services,
+and Places, which loads the same frame):
+
+- 16px under the header and between a page's sections on every screen;
+  a phone's sides are the header's 16px (12px under 360px). One rule in
+  `connected/page-frame.css`; the pages' own top paddings went (Paperwork
+  22, Travel 22/18, Events 22/16, Services 36/0, Today 10).
+- Sections at their source: Today's deadline strip (14/12), Paperwork's
+  title row (18), question (18), Good to know (28) and coverage (22), Travel's
+  phone bar (12), Leave now on a laptop (24) and its footnote (32), Services'
+  rail (24), Events' street and past-day note (22): all 16.
+- A page's end: 48px under its last section on a laptop; on a phone 16px
+  above the floating menu, its room kept once, by the body (`--section-bar`
+  is the menu, its gap and 16). The page's own 90px went. Today scrolls in
+  its own panel, which now keeps that room too: its footer used to run under
+  the menu at the end.
+- Even sides on a laptop: no scrollbar strip kept on the right only (61px
+  left, 76 right before); the page centres in the window you see, 68 / 68 at
+  1512 (`connected/shell-review.css`, `today-next/style.css`).
+- Events on a laptop: 16 under the header, between the filters and the
+  street, and under the street (`street.js` GAP), so the street is 18px
+  taller at 1512×860.
+- Not in this pass: the spacing inside cards, the street's insets included.
+
 ## Pages open whole, sections fade across — 16 October 2026
 
 Owner: "I want it to load as a app page". A refresh showed the page being

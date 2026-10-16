@@ -830,9 +830,6 @@ body[data-page='events'] #main button:focus:not(:focus-visible) {
         min-width: 0;
     }
     @media (max-width: 359px) {
-        html body[data-page='events'] #main {
-            padding-inline: 12px;
-        }
         /* No room for the place: the chip's dot, spoken name and tooltip. */
         html body .event-control-scroller > .event-travel-control[data-has-origin='true'] {
             flex: 0 0 44px;

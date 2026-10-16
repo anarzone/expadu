@@ -16,7 +16,7 @@
         --menu-height: 62px;
         /* The room a page keeps at its end, so its last part clears the
            menu. */
-        --section-bar: calc(var(--menu-height) + var(--menu-gap) + 12px);
+        --section-bar: calc(var(--menu-height) + var(--menu-gap) + 16px);
     }
     html body:has(#shell .service-nav) {
         padding-bottom: var(--section-bar);

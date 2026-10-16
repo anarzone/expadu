@@ -33,9 +33,22 @@ body.today-next {
 .today-next #page-scroll {
     height: calc(100dvh - var(--composer-space));
     overflow: auto;
-    scrollbar-gutter: stable;
     overscroll-behavior-y: contain;
     scroll-padding: 90px 18px 88px;
+    padding-bottom: 32px;
+}
+/* Today scrolls in its own panel, so it keeps the page's end itself (one
+   spacing, owner chose "16 everywhere", 16 Oct 2026): its footer sits 16px
+   under the day, and the page ends 48px under the footer's words on a
+   laptop (its own 16 and the panel's 32), 16px above the floating menu on
+   a phone. */
+:root body.today-next main#main {
+    padding-bottom: 16px;
+}
+@media (max-width: 700px) {
+    .today-next #page-scroll {
+        padding-bottom: calc(var(--menu-height) + var(--menu-gap));
+    }
 }
 .today-next .sr-only {
     position: absolute;

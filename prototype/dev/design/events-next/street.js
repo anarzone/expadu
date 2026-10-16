@@ -591,13 +591,14 @@
         // room for two hours' posters side by side), so it grows into the
         // height instead of shrinking to the width.
         const MIN_W = 1100;
-        // One spacing (owner chose A, 16 Oct 2026): a laptop's street ends
-        // 22px above the screen's bottom, as the filters sit under the header;
-        // the hour rings and the weather sit INSET in from the street's top
-        // corners, on screen at any scale. A phone's street ends 16px above
-        // the floating menu: up to 48px of its pavement gives way, and with
-        // more (a small phone) it runs on under the menu and the page scrolls.
-        const GAP = 22;
+        // One spacing (owner chose A, then "16 everywhere", 16 Oct 2026): a
+        // laptop's street ends 16px above the screen's bottom, as the filters
+        // sit under the header; the hour rings and the weather sit INSET in
+        // from the street's top corners, on screen at any scale. A phone's
+        // street ends 16px above the floating menu: up to 48px of its
+        // pavement gives way, and with more (a small phone) it runs on under
+        // the menu and the page scrolls.
+        const GAP = 16;
         const INSET = { desktop: 20, phone: 12 };
         function fit() {
             if (!street) return;

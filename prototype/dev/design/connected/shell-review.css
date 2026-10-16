@@ -303,10 +303,9 @@
     }
 }
 
-/* Header geometry is shared by every approved department, including Today. */
-html {
-    scrollbar-gutter: stable;
-}
+/* Header geometry is shared by every approved department, including Today.
+   No scrollbar strip is kept on one side (owner, 16 Oct 2026, Travel canvas
+   row 27): the page centres in the window you see, with even sides. */
 .shell-review .app-header .brand,
 .shell-review #shell .brand {
     display: flex;
