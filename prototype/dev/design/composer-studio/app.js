@@ -888,7 +888,23 @@
         if (x.type === 'place') {
             return `<article class="discovery-card place-idea"><div class="place-idea-heading"><span>${I(x.icon || 'pin')}${E(x.label)}</span><button class="studio-bookmark" data-save="${E(x.id)}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button></div><div class="place-idea-content">${x.image ? `<img class="place-idea-photo" src="${E(x.image)}" alt="" loading="lazy">` : ''}<h3>${E(x.title)}</h3><p class="place-idea-area">${I('pin')}${E(x.area)}</p>${x.facts?.length ? `<p class="place-idea-fact">${E(x.facts[0])}</p>` : ''}<p class="place-idea-check">${E(x.unknown || 'Hours and access aren’t in the listing')}</p></div><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Details ${I('arrow')}</button><button class="studio-button light ${added ? 'is-added' : ''}" data-add="${E(x.id)}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></article>`;
         }
-        return `<article class="discovery-card"><div class="discovery-photo">${x.image ? `<img src="${E(x.image)}" alt="${E(x.title)}" loading="eager">` : ''}<span class="photo-fallback" aria-hidden="true">${I('leaf')}</span><span class="place-category">${E(x.label)}</span><button class="studio-bookmark" data-save="${x.id}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button><div class="photo-copy"><span>${E(x.area)}</span><h3>${E(x.title)}</h3></div></div><div class="discovery-card-body"><p>${E(x.label)} from your city’s captured listings.</p><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Preview</button><button class="studio-button light ${added ? 'is-added' : ''}" ${x.type === 'event' ? 'data-add-event' : 'data-add'}="${x.id}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></div></article>`;
+        // An event says when it is, with a calendar rather than a leaf.
+        const event = x.type === 'event' || x.label === 'Event';
+        const when =
+            event && x.date
+                ? [
+                      new Date(x.date + 'T12:00:00').toLocaleDateString('en-GB', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                      }),
+                      x.start,
+                      x.area || x.venue,
+                  ]
+                      .filter(Boolean)
+                      .join(' · ')
+                : x.area;
+        return `<article class="discovery-card"><div class="discovery-photo">${x.image ? `<img src="${E(x.image)}" alt="${E(x.title)}" loading="eager">` : ''}<span class="photo-fallback" aria-hidden="true">${I(event ? 'calendar' : 'leaf')}</span><span class="place-category">${E(x.label)}</span><button class="studio-bookmark" data-save="${x.id}" aria-label="${kept ? 'Unsave' : 'Save'} ${E(x.title)}" aria-pressed="${kept}">${I('bookmark')}</button><div class="photo-copy"><span>${E(when || '')}</span><h3>${E(x.title)}</h3></div></div><div class="discovery-card-body"><p>${E(x.label)} from your city’s captured listings.</p><div class="card-actions"><button class="plain-button" data-preview="${E(x.id)}">Preview</button><button class="studio-button light ${added ? 'is-added' : ''}" ${x.type === 'event' ? 'data-add-event' : 'data-add'}="${x.id}" aria-disabled="${added}">${added ? `Added ${I('check')}` : `Add to plan ${I('plus')}`}</button></div></div></article>`;
     }
     document.addEventListener(
         'error',
