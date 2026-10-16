@@ -940,7 +940,7 @@ body.travel-palette .plan-option > .details-toggle {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: 34px;
+    min-height: 44px;
     margin-top: var(--space-6);
     padding: 0 var(--space-12);
     border: 1px solid var(--color-border);
