@@ -756,6 +756,12 @@
 /* Phones and tablets: the map is its own screen; it slides in from the
    right and Back slides it away. */
 @media (max-width: 999px) {
+    /* While Nearby slides in from My day it holds the parked map, which
+       would widen the page for that moment; nothing shows past the screen's
+       edge. */
+    body.travel-palette #main {
+        overflow-x: clip;
+    }
     .nearby-mapview {
         position: fixed;
         inset: 0;

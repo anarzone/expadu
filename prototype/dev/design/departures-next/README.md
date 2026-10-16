@@ -42,6 +42,8 @@ After the owner's critical review of all of Travel ("fix them all"):
   here to 1 · 7 · 9: Gleis 3 · 4"); a line says "Later departures aren't in
   the recording" once, not under each direction; the station's name under
   each strip's dot is gone (it's the heading).
+- Phones: Nearby no longer widens the page while it slides back in from My
+  day (the map screen parked beside it counted for that moment).
 - Removed: the old line card's styles in `nearby.css` and `press.css`
   (`.nearby-card`, its direction rows, `.nearby-when` and the watermark),
   unused since Nearby became line strips.
