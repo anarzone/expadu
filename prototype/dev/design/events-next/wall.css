@@ -4818,3 +4818,11 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
         padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     }
 }
+
+/* On phones the date's calendar spans the page, with even edges. */
+@media (max-width: 700px) {
+    .event-search-row #event-calendar-panel {
+        right: auto;
+        width: calc(100vw - 32px);
+    }
+}
