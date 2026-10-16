@@ -362,9 +362,12 @@ MOCK_LOGIC = r'''
 def logic():
     L = GA.logic('this.__cfg', real=True)
     L = L.replace("this.__cfg", "this.__cfg", 1)
-    # The column holds while something is open over the street.
-    L = L.replace("if (s.hold || s.sel || s.lift) return;", "if (s.hold || this.mxBusy()) return;")
-    L = L.replace("if (s.hold || s.sel || s.story) return;", "if (s.hold || this.mxBusy()) return;")
+    # The column holds while something is open over the street: a story, a
+    # lifted poster or a details sheet (mxBusy). A turn behind an open story
+    # redrew it and every poster's flags (owner, 16 Oct 2026: pause it).
+    old = "if (s.hold || s.sel || s.lift || s.story || (this._d"
+    assert old in L
+    L = L.replace(old, "if (s.hold || s.sel || s.lift || this.mxBusy() || (this._d")
     # A story waits while its poster is turned over or its details are open.
     old = "storyTurned() { return !!((this.state || {}).turned || {})['story:0']; }"
     assert old in L

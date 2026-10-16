@@ -274,13 +274,15 @@ const inside = (box, viewport) =>
             assert.equal(await street.getAttribute('data-layout'), viewport.width <= 700 ? 'phone' : 'desktop');
             assert.ok((await street.locator('#wall svg').count()) > 2, 'the street isn’t drawn');
             assert.match(await street.locator('#wall').innerText(), /Sample weather/);
-            // An hour's story: its posters in turn, the bar gliding (not
-            // redrawn frame by frame), no buttons under the poster. Its poster opens its details over
+            // An hour's story: its posters in turn, the bar gliding (no redraws:
+            // the column holds while a story is open), no buttons under the
+            // poster. Its poster opens its details over
             // the story, which waits underneath.
             const rings = street.locator('.st-rings button');
             assert.equal(await rings.count(), 2);
             await rings.last().click();
-            await page.waitForTimeout(700);
+            // A turn of the column already under way (1.1s) finishes first.
+            await page.waitForTimeout(1200);
             const story = street.locator('.st-story [role="dialog"]');
             assert.match(await story.innerText(), /Cinema under the stars/i);
             assert.equal(await story.locator('.pp[data-poster="today-review-cinema"]').count(), 1);
@@ -289,17 +291,14 @@ const inside = (box, viewport) =>
                 0,
                 'no buttons under the story poster',
             );
-            // A transition runs the bar. The street sets it again only when it
-            // redraws (a turn of the column behind the story does, with the
-            // time left), never frame by frame.
             const glide = await page.evaluate(() => new Promise((done) => {
                 const bar = document.querySelector('.st-story [role="dialog"] i');
-                let sets = 0;
-                new MutationObserver((l) => (sets += l.length)).observe(bar, { attributes: true, attributeFilter: ['style'] });
+                let redraws = 0;
+                new MutationObserver((l) => (redraws += l.length)).observe(document.querySelector('.st-story'), { subtree: true, attributes: true, childList: true });
                 const a = bar.getBoundingClientRect().width;
-                setTimeout(() => done({ grew: bar.getBoundingClientRect().width - a, sets }), 400);
+                setTimeout(() => done({ grew: bar.getBoundingClientRect().width - a, redraws }), 400);
             }));
-            assert.ok(glide.grew > 0 && glide.sets <= 1, `the story bar should glide: ${JSON.stringify(glide)}`);
+            assert.ok(glide.grew > 0 && glide.redraws === 0, `the story bar should glide: ${JSON.stringify(glide)}`);
             // Its pause button holds it; Play goes on.
             const barWidth = () => story.locator('i').first().evaluate((i) => i.getBoundingClientRect().width);
             await story.getByRole('button', { name: 'Pause story' }).click();

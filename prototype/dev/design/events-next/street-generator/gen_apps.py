@@ -318,7 +318,9 @@ def logic(cfg_json, real=False):
     L = L.replace("componentWillUnmount() { clearInterval(this._timer); clearTimeout(this._snap); }",
                   "componentWillUnmount() { clearInterval(this._timer); clearInterval(this._story); clearTimeout(this._snap); clearTimeout(this._flyT); }")
     # The column holds while a story or a card is moving.
-    L = L.replace("if (s.hold || s.sel) return;", "if (s.hold || s.sel || s.story) return;")
+    old = "if (s.hold || s.sel || s.lift || (this._d && this._d.col) || this._spin) return;"
+    assert old in L
+    L = L.replace(old, "if (s.hold || s.sel || s.lift || s.story || (this._d && this._d.col) || this._spin) return;")
     end = L.rstrip().rfind('}')
     L = L[:end] + EXTRA + SU.LOGIC + (SR.LOGIC + MX.logic() + MX_DRESS if real else '') + '}\n'
     return (L.replace('__CFG__', cfg_json).replace('__AMAP__', json.dumps(AMAP))

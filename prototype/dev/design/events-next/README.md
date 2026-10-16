@@ -5,6 +5,16 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## The column holds while a story is open — 16 October 2026
+
+Owner's choice. The column's six-second turn waits while a story, a lifted
+poster or a details sheet is open over the street; a turn already under
+way finishes first. Each turn behind an open story redrew the story and
+every poster's flags. The generators meant this all along (`mxBusy`), but
+their replacements had stopped matching the turn's line on 13 October and
+did nothing; they now stop the generator when they don't match
+(`street-generator/gen_apps.py`, `port_street.py`).
+
 ## Posters paste once a tab — 16 October 2026
 
 Owner's choice. Posters paste onto the wall the first time you see them in

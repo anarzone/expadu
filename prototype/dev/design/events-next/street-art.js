@@ -297,7 +297,7 @@
   componentWillUnmount() { clearInterval(this._timer); clearInterval(this._story); clearTimeout(this._snap); clearTimeout(this._flyT); }
   tick() {
     const s = this.state || {};
-    if (s.hold || s.sel || s.lift || (this._d && this._d.col) || this._spin) return;
+    if (s.hold || s.sel || s.lift || this.mxBusy() || (this._d && this._d.col) || this._spin) return;
     if (Object.keys(s.turned || {}).some((k) => s.turned[k] && k.indexOf('column:') === 0)) return;
     this.roll(1, { snap: false });
   }
