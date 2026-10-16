@@ -38,15 +38,21 @@ const inside = (box, viewport) =>
             await page.reload({ waitUntil: 'networkidle' });
             assert.equal(await page.locator('#main').getAttribute('data-view'), 'wall');
 
-            // The first wall poster and its Add to plan, and the filters, are
-            // on the first screen of a phone. Composer's button covers none
-            // of the filters (icon buttons, labels, typed text).
+            // The first wall poster and the filters are on the first screen
+            // of a phone; the street's posters carry no Add to plan (owner,
+            // 13 Oct 2026), a tap opens the details. Composer's button covers
+            // none of the filters (icon buttons, labels, typed text).
             if (viewport.width < 700) {
-                const plan = await page
-                    .locator('.st-root .wall-day > .pp .pp-plan')
+                const poster = await page
+                    .locator('.st-root .wall-day > .pp .pp-open')
                     .first()
                     .boundingBox();
-                assert.ok(inside(plan, viewport), 'first poster action is off screen');
+                assert.ok(inside(poster, viewport), 'first poster is off screen');
+                assert.equal(
+                    await page.locator('.st-root .pp-plan:visible').count(),
+                    0,
+                    'a street poster shows Add to plan',
+                );
                 for (const selector of ['#event-search', '[data-event-picker="sort"]'])
                     assert.ok(
                         inside(await page.locator(selector).boundingBox(), viewport),
@@ -199,7 +205,14 @@ const inside = (box, viewport) =>
             assert.equal(await way.locator('a[href^="http"]').count(), 0, 'no link out of the app');
             assert.equal(await way.locator('.event-way-map').count(), 1, 'a map of the venue on the page');
             assert.equal(await way.locator('.place-sheet-footer').innerText(), 'Open in Travel');
-            assert.deepEqual(await way.locator('fieldset label').allInnerTexts(), ['Transit', 'Walk', 'Bike']);
+            // Each way's chip shows its minutes; its name is read out with
+            // them (small filters, 14 Oct 2026).
+            assert.deepEqual(
+                await way.locator('fieldset input[name="mode"]').evaluateAll((radios) => radios.map((r) => r.getAttribute('aria-label').split(',')[0])),
+                ['Transit', 'Walk', 'Bike'],
+            );
+            for (const chip of await way.locator('fieldset label').allInnerTexts())
+                assert.match(chip, /^(\d+ min|\d+ h( \d+)?|2 h\+)$/);
             assert.match(await way.locator('.event-route-preview header').innerText(), /^Routes in Travel/);
             await page.locator('#shared-dialog .event-back').click();
             await page.waitForTimeout(400);
@@ -261,8 +274,8 @@ const inside = (box, viewport) =>
             assert.equal(await street.getAttribute('data-layout'), viewport.width <= 700 ? 'phone' : 'desktop');
             assert.ok((await street.locator('#wall svg').count()) > 2, 'the street isn’t drawn');
             assert.match(await street.locator('#wall').innerText(), /Sample weather/);
-            // An hour's story: its posters in turn, the bar gliding (no redraws),
-            // no buttons under the poster. Its poster opens its details over
+            // An hour's story: its posters in turn, the bar gliding (not
+            // redrawn frame by frame), no buttons under the poster. Its poster opens its details over
             // the story, which waits underneath.
             const rings = street.locator('.st-rings button');
             assert.equal(await rings.count(), 2);
@@ -276,14 +289,17 @@ const inside = (box, viewport) =>
                 0,
                 'no buttons under the story poster',
             );
+            // A transition runs the bar. The street sets it again only when it
+            // redraws (a turn of the column behind the story does, with the
+            // time left), never frame by frame.
             const glide = await page.evaluate(() => new Promise((done) => {
                 const bar = document.querySelector('.st-story [role="dialog"] i');
-                let redraws = 0;
-                new MutationObserver((l) => (redraws += l.length)).observe(document.querySelector('.st-story'), { subtree: true, attributes: true, childList: true });
+                let sets = 0;
+                new MutationObserver((l) => (sets += l.length)).observe(bar, { attributes: true, attributeFilter: ['style'] });
                 const a = bar.getBoundingClientRect().width;
-                setTimeout(() => done({ grew: bar.getBoundingClientRect().width - a, redraws }), 400);
+                setTimeout(() => done({ grew: bar.getBoundingClientRect().width - a, sets }), 400);
             }));
-            assert.ok(glide.grew > 0 && glide.redraws === 0, `the story bar should glide: ${JSON.stringify(glide)}`);
+            assert.ok(glide.grew > 0 && glide.sets <= 1, `the story bar should glide: ${JSON.stringify(glide)}`);
             // Its pause button holds it; Play goes on.
             const barWidth = () => story.locator('i').first().evaluate((i) => i.getBoundingClientRect().width);
             await story.getByRole('button', { name: 'Pause story' }).click();
@@ -454,18 +470,31 @@ const inside = (box, viewport) =>
             assert.match(await page.locator('#event-list').innerText(), /Already happened/);
             assert.match(await page.locator('.st-root #wall').innerText(), /Weather not recorded/);
             assert.equal(await page.locator('.st-rings button').count(), 5);
-            // A desktop walks the day an hour at a time; a phone pages its
-            // posters up and down.
-            const where = () =>
-                page.evaluate(() =>
-                    [...document.querySelectorAll('.st-card div')]
-                        .map((d) => d.style.transform)
-                        .filter((t) => /translate[XY]\(-?\d/.test(t))
-                        .join(' '),
+            // A desktop shows the whole day on one wall, without arrows
+            // (owner, 13 Oct 2026); a phone pages its posters up and down.
+            if (viewport.width > 700) {
+                assert.equal(await page.locator('.st-root').getByRole('button', { name: /^(Earlier|Later)$/ }).count(), 0, 'arrows on the wall');
+                assert.deepEqual(
+                    await page.evaluate(() =>
+                        [...document.querySelectorAll('.st-root .wall-day > .pp')]
+                            .filter((p) => {
+                                const r = p.getBoundingClientRect();
+                                return r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight;
+                            })
+                            .map((p) => p.dataset.poster),
+                    ),
+                    [],
+                    'a poster of the day is off the wall',
                 );
-            const before = await where();
-            if (viewport.width > 700) await page.getByRole('button', { name: 'Later' }).click();
-            else {
+            } else {
+                const where = () =>
+                    page.evaluate(() =>
+                        [...document.querySelectorAll('.st-card div')]
+                            .map((d) => d.style.transform)
+                            .filter((t) => /translate[XY]\(-?\d/.test(t))
+                            .join(' '),
+                    );
+                const before = await where();
                 await page.locator('.st-card [data-on-wheel]').evaluate((el) => el.scrollIntoView({ block: 'center' }));
                 const zone = await page.locator('.st-card [data-on-wheel]').boundingBox();
                 await page.mouse.move(zone.x + zone.width / 2, zone.y + zone.height / 2 + 60);
@@ -473,9 +502,9 @@ const inside = (box, viewport) =>
                 for (let i = 1; i <= 10; i++)
                     await page.mouse.move(zone.x + zone.width / 2, zone.y + zone.height / 2 + 60 - i * 16);
                 await page.mouse.up();
+                await page.waitForTimeout(700);
+                assert.notEqual(await where(), before, 'the wall doesn’t move on');
             }
-            await page.waitForTimeout(700);
-            assert.notEqual(await where(), before, 'the wall doesn’t move on');
 
             // The same day on the skyline: its lights are out, and labels
             // never overlap each other or another light.
