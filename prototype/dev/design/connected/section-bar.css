@@ -207,3 +207,67 @@
         transition: none;
     }
 }
+/* Tablets: one header row, the sections as a capsule in its middle, as iPad
+   apps put their tabs at the top (owner chose 6B, canvas row 25, 16 Oct
+   2026; it was a second row under the header). Composer shows its mark and
+   the city its pin (composer-entry.css; the city keeps its name as its
+   label). */
+@media (min-width: 701px) and (max-width: 999px) {
+    html body #shell .app-header {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+    }
+    html body #shell .app-header .header-utilities {
+        grid-column: 3;
+        grid-row: 1;
+        gap: 4px;
+    }
+    html body #shell .app-header .service-nav {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: center;
+        display: flex;
+        gap: 2px;
+        width: auto;
+        margin: 0;
+        padding: 4px;
+        border: 1px solid var(--color-border, #e6ddcb);
+        border-radius: 999px;
+        background: var(--color-bg-surface, #fffdf8);
+    }
+    html body #shell .app-header .service-nav > a {
+        flex: none;
+        min-height: 42px;
+        padding: 0 11px;
+        gap: 6px;
+        border-radius: 999px;
+        font-size: 13.5px;
+    }
+    html body #shell .app-header .service-nav > a::before {
+        display: block;
+        inset: 0;
+        border-radius: inherit;
+    }
+    html body #shell .app-header .service-nav > a::after {
+        display: none;
+    }
+    html body #shell .app-header .service-nav > a > svg {
+        width: 18px;
+        height: 18px;
+    }
+    html body #shell .header-context .city > :not(svg:first-of-type) {
+        display: none;
+    }
+    html body #shell .header-context .city {
+        justify-content: center;
+        min-width: 44px;
+        padding: 0;
+    }
+}
+/* Narrow tablets: the logo's mark alone makes the room. */
+@media (min-width: 701px) and (max-width: 779px) {
+    html body #shell .app-header .brand {
+        gap: 0;
+        font-size: 0;
+    }
+}

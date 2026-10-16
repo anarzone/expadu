@@ -1029,6 +1029,47 @@ body.travel-palette .plan-option-side button.plan-keep {
     width: 18px;
     height: 18px;
 }
+/* Phones and tablets: Show the way and Add to plan stay in reach, pinned
+   at the bottom (just above the floating menu on phones) on the menu's
+   glass; the options scroll under them (owner chose 1A, canvas row 25,
+   16 Oct 2026). */
+@media (max-width: 999px) {
+    .plan-actions {
+        position: sticky;
+        bottom: max(
+            calc(12px + env(safe-area-inset-bottom, 0px)),
+            calc(var(--section-bar, 0px) - 2px)
+        );
+        z-index: 40;
+        flex-direction: row;
+        padding: 8px;
+        border: 1px solid
+            color-mix(in srgb, var(--color-border, #e6ddcb) 85%, transparent);
+        border-radius: 22px;
+        background: color-mix(
+            in srgb,
+            var(--color-bg-surface, #fffdf8) 93%,
+            transparent
+        );
+        -webkit-backdrop-filter: blur(20px) saturate(1.6);
+        backdrop-filter: blur(20px) saturate(1.6);
+        box-shadow: 0 14px 34px -16px #211d156b;
+    }
+    .plan-actions .plan-go {
+        flex: 1.5 1 0;
+        min-height: 50px;
+    }
+    body.travel-palette .plan-actions button.plan-save {
+        flex: 1 1 0;
+        min-height: 50px;
+    }
+}
+/* On phones it lines up with the menu's edges. */
+@media (max-width: 700px) {
+    .plan-actions {
+        margin-inline: -2px;
+    }
+}
 @media (min-width: 1000px) {
     .plan-actions {
         display: none;

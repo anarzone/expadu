@@ -11,6 +11,20 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Plan a trip's buttons in reach, tablets in one header row — 16 October 2026
+
+The owner chose 1A and 6B on the canvas, row 25.
+
+- Phones and tablets, Plan a trip's options: "Show the way" and "Add to
+  plan" are pinned at the bottom on the menu's glass (just above the
+  floating menu on phones, edge to edge with it); the options scroll under
+  them (`plan.css`). The menu used to sit over "Show the way".
+- Tablets (701–999px): the sections are a capsule in the middle of the
+  header's one row, as iPad apps put their tabs at the top; Composer shows
+  its mark and the city its pin (`connected/section-bar.css`,
+  `composer-entry.css`). Below 780px the logo shows its mark alone. It was
+  three bars stacked before any content (header, sections, Travel's own).
+
 ## The whole page, reviewed again — 16 October 2026
 
 - The "Leave now" card is three facts, not sentences (owner chose B on the

@@ -75,9 +75,10 @@
         display: none;
     }
 }
-/* Laptops narrower than 1280px: the sections share the header's one row,
-   so Composer keeps just its mark there (its name is its label). */
-@media (min-width: 1000px) and (max-width: 1279px) {
+/* Tablets and laptops narrower than 1280px: the sections share the
+   header's one row, so Composer keeps just its mark there (its name is its
+   label). */
+@media (min-width: 701px) and (max-width: 1279px) {
     #shell .header-utilities > .composer-header {
         justify-content: center;
         width: 44px;
