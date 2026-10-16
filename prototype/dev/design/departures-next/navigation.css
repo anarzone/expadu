@@ -220,6 +220,10 @@ html:has(#journey-navigation:modal) {
     top: 68px;
     width: 264px;
     max-width: calc(100% - 24px);
+    /* Its last item stays reachable on a short screen. */
+    max-height: calc(100dvh - 84px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 14px;
     border-radius: var(--radius-xl);
     background: #fffffff7;

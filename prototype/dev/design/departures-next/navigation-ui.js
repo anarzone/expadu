@@ -1025,10 +1025,12 @@
             menuOpen = false;
             notice = '';
             persist();
+            // The menu closes, as it does for a condition, so the moment
+            // you picked is in view.
+            options();
             render();
-            fillOptions();
             dialog
-                .querySelector('[data-nav="moment"][aria-pressed="true"]')
+                .querySelector('[data-nav="options"]')
                 ?.focus({ preventScroll: true });
             announce(
                 `${item.clock}. ${momentNow(N.progress(route, active.step)).title}`,
