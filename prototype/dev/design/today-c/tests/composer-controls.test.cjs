@@ -180,13 +180,14 @@ test('reduced motion opens and closes immediately without animation', () => {
     assert.equal(animations.length, 0);
 });
 
-test('the floating launcher resumes a conversation after browsing a department', () => {
+test('the launcher opens the box even with a conversation to go back to', () => {
+    // Going back is a line inside the box (connected/composer-entry.js).
     const visits = [];
     const { tray } = setup(true, {
         isComposerMinimized: () => false,
         canReturnToComposer: () => true,
         go: (page, params) => visits.push([page, params.resume]),
     });
-    assert.deepEqual(visits, [['composer', '1']]);
-    assert.equal(tray.expanded, false);
+    assert.deepEqual(visits, []);
+    assert.equal(tray.expanded, true);
 });

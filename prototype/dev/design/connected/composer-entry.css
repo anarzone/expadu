@@ -146,6 +146,40 @@
 .department-composer #included-ideas[hidden] {
     display: none;
 }
+/* A conversation to go back to: one line at the top of the open box. */
+.department-composer #composer-resume {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin: 0 0 8px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet, #f1ebdf);
+    color: var(--color-text, #211d15);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-align: left;
+}
+.department-composer #composer-resume > span:nth-child(2) {
+    flex: 1;
+}
+.department-composer #composer-resume svg {
+    width: 16px;
+    height: 16px;
+}
+.department-composer #composer-resume[hidden],
+.department-composer #composer-tray:not(.is-active) #composer-resume {
+    display: none;
+}
+/* Under the header the ✕ sits inside the box: the line leaves room for it. */
+@media (min-width: 701px) {
+    .department-composer #composer-resume {
+        width: calc(100% - 52px);
+    }
+}
 .department-composer main {
     padding-bottom: 90px;
 }

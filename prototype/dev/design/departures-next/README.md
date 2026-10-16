@@ -11,6 +11,15 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Composer's button always opens the box — 16 October 2026
+
+Owner: "it opens as a whole page". Once a tab had talked to Composer
+(minimized it, or opened a page from it), every Composer button jumped to
+Composer's own page instead of opening the box (`today-c/composer-controls.js`).
+Now the buttons always open the box, on every page and size, and a
+conversation to go back to is the first line inside it, "Back to your
+conversation" (`connected/composer-entry`).
+
 ## The desktop menu, by the same standards — 16 October 2026
 
 The owner chose A on the canvas, row 26. Shared by every page with the

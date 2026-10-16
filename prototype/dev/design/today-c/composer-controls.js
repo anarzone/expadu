@@ -67,11 +67,10 @@
     tray.addEventListener('focusin', (event) => {
         if (event.target !== launcher) setExpanded(true);
     });
+    // The button always opens the box; a conversation to go back to is a
+    // line inside it (composer-entry), not a jump to Composer's page (owner,
+    // 16 Oct 2026: "it opens as a whole page").
     launcher.addEventListener('click', () => {
-        if (S.isComposerMinimized?.() || S.canReturnToComposer?.()) {
-            S.go('composer', { resume: '1' });
-            return;
-        }
         setExpanded(true);
         field.focus({ preventScroll: true });
     });
