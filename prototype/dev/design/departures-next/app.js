@@ -1107,7 +1107,7 @@ function tripLine(key, trip = J.day) {
     // facts; the plan's tram is in Other ways.
     const overPlan =
         now.kind === 'trip' && planned !== best
-            ? `<p class="trip-plan">${icon('info')}<span>Your ${rideOf(planned).time} has only ${spare(planned)}\u00a0min spare${onDay ? '' : ' · in Other ways'}</span></p>`
+            ? `<p class="trip-plan">${icon('info')}<span>Your ${rideOf(planned).time} has only ${spare(planned)}\u00a0min spare${onDay ? '' : ' · listed under Other ways'}</span></p>`
             : '';
     const note =
         now.kind === 'missed'

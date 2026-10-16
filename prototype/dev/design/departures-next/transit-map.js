@@ -133,23 +133,29 @@
     }
     const under = (stop, lit) => lit.some(([sign]) => close(stop)?.platforms[sign]?.under);
     // The words for a line's platforms, the same wherever they're shown.
+    // The sentence says once that a Gleis is a platform (the signs say
+    // Gleis); the short labels and the map keep the sign's word.
     function where(stop, pick) {
-        if (pick === 'A') return 'Underground · Gleis 1 north, Gleis 2 south';
-        if (pick === 'B') return 'At street level · Gleis 3 east, Gleis 4 west';
+        if (pick === 'A') return 'Underground · Gleis (platform) 1 north, Gleis 2 south';
+        if (pick === 'B') return 'At street level · Gleis (platform) 3 east, Gleis 4 west';
         if (pick === 'BUS') return 'Both buses leave from stop A';
         const lit = platformsOf(stop, pick);
         if (!lit.length) return '';
-        if (lit.length === 1) return `Leaves from ${sign(lit[0][0])}`;
+        if (lit.length === 1)
+            return /^\d+$/.test(lit[0][0])
+                ? `Leaves from Gleis (platform) ${lit[0][0]}`
+                : `Leaves from ${sign(lit[0][0])}`;
         const signs = lit.map(([s]) => s).sort();
-        return `${under(stop, lit) ? 'Underground' : 'At street level'} · Gleis ${signs[0]} or ${signs[1]}, by direction`;
+        return `${under(stop, lit) ? 'Underground' : 'At street level'} · Gleis (platform) ${signs[0]} or ${signs[1]}, by direction`;
     }
-    // The same, short enough for a label: "Gleis 1 · 2 · underground".
+    // The same, short enough for a label: "Gleis 1 · 2 (platforms) ·
+    // underground" — the sign's word, said once in English too.
     function short(stop, pick) {
         const lit = platformsOf(stop, pick);
         if (!lit.length) return '';
         const signs = lit.map(([s]) => s).sort();
         return /^\d+$/.test(signs[0])
-            ? `Gleis ${signs.join(' · ')}${under(stop, lit) ? ' · underground' : ''}`
+            ? `Gleis ${signs.join(' · ')} (${signs.length > 1 ? 'platforms' : 'platform'})${under(stop, lit) ? ' · underground' : ''}`
             : `Stop ${signs.join(' · ')}`;
     }
     const sign = (s) => (/^\d+$/.test(s) ? `Gleis ${s}` : `stop ${s}`);
@@ -157,8 +163,8 @@
     function note(stop, lit) {
         if (!lit.length) return '';
         if (lit.length === 1)
-            return `${capital(sign(lit[0][0]))}${close(stop).platforms[lit[0][0]].under ? ' · underground' : ''}`;
-        return `Gleis ${lit.map(([s]) => s).sort().join(' or ')} · by direction`;
+            return `${capital(sign(lit[0][0]))}${/^\d+$/.test(lit[0][0]) ? ' (platform)' : ''}${close(stop).platforms[lit[0][0]].under ? ' · underground' : ''}`;
+        return `Gleis ${lit.map(([s]) => s).sort().join(' or ')} (platform) · by direction`;
     }
     const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
     function closeUp(stop, lit, tint) {
