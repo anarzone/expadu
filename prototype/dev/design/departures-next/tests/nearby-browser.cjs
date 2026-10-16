@@ -36,20 +36,34 @@ const status = (page) =>
                 'All 16 departures · soonest first',
             );
             assert.equal(await page.locator('.nearby-area').count(), 3);
-            // The first line is on the first screen.
-            const first = await page
+            // The first departure's soonest time is on the first screen,
+            // clear of Composer's button. (Since the trip card became three
+            // facts, 16 Oct 2026, the line's second time can sit behind it
+            // on a phone until you scroll.)
+            const soonest = await page
                 .locator('.nearby-strip')
                 .first()
-                .boundingBox();
-            assert.ok(first.y + first.height < (wide ? 900 : 844));
+                .evaluate((strip) => {
+                    const times = [...strip.querySelectorAll('.nearby-time')]
+                        .map((t) => t.getBoundingClientRect())
+                        .sort((a, b) => a.top - b.top);
+                    const r = times[0];
+                    return {
+                        x: r.left,
+                        y: r.top,
+                        width: r.width,
+                        height: r.height,
+                    };
+                });
+            assert.ok(soonest.y + soonest.height < (wide ? 900 : 844));
             const composer = await page
                 .locator('.composer-launcher')
                 .boundingBox();
             clearOfComposer.push([
                 width,
                 !composer ||
-                    first.y + first.height < composer.y ||
-                    first.x + first.width < composer.x,
+                    soonest.y + soonest.height < composer.y ||
+                    soonest.x + soonest.width < composer.x,
             ]);
             if (shots)
                 await page.screenshot({ path: `${shots}/nearby-${width}.png` });
@@ -239,7 +253,7 @@ const status = (page) =>
         for (const [width, clear] of clearOfComposer)
             assert.ok(
                 clear,
-                `${width}px: the first line is clear of Composer's button`,
+                `${width}px: the first departure is clear of Composer's button`,
             );
         console.log('nearby-browser: ok');
     } finally {

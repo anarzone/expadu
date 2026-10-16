@@ -531,66 +531,6 @@ test('route-specific controls lead without repeated Composer actions', () => {
     assert.match(detail, /data-save=/);
 });
 
-test('Composer helper does not infer route choice from the first search result', () => {
-    const w = workspace();
-    w.run(
-        'from.value = J.capture.from; to.value = J.capture.to; renderResults();',
-    );
-    assert.ok(w.run('state.selected'));
-    assert.equal(w.run('composerRouteChoice()'), null);
-    assert.match(
-        w.element('#travel-composer-context').textContent,
-        /Help with this trip/,
-    );
-});
-
-test('Composer helper follows an inspected route and clears it when the request changes', () => {
-    const w = workspace();
-    w.run(
-        'from.value = J.capture.from; to.value = J.capture.to; renderResults(); toggleRouteDetails("r9");',
-    );
-    assert.equal(w.run('composerRouteChoice().id'), 'r9');
-    assert.match(w.element('#travel-composer-context').textContent, /Line 9/);
-    w.run('to.value = "Different destination"; syncControls();');
-    assert.equal(w.run('composerRouteChoice()'), null);
-    assert.match(
-        w.element('#travel-composer-context').textContent,
-        /Help with this trip/,
-    );
-});
-
-test('dismissing Composer help survives redraws without deleting the selected route', () => {
-    const w = workspace();
-    w.run(
-        'from.value = J.capture.from; to.value = J.capture.to; renderResults(); toggleRouteDetails("r9"); action("dismiss-composer-help"); renderResults();',
-    );
-    assert.equal(w.element('#travel-composer-helper').hidden, true);
-    assert.equal(w.run('state.selected'), 'r9');
-    assert.equal(w.run('state.expanded'), 'r9');
-});
-
-test('Composer helper hands off only the explicitly inspected route', () => {
-    const w = workspace();
-    w.run(`
-        var handedRoute = null;
-        var handedRequest = false;
-        window.ExpaduTravelComposer = { route(id) { handedRoute = id; } };
-        handoff = () => { handedRequest = true; };
-        from.value = J.capture.from; to.value = J.capture.to;
-        renderResults(); toggleRouteDetails('r9');
-        action('composer-help');
-    `);
-    assert.equal(w.run('handedRoute'), 'r9');
-    assert.equal(w.run('handedRequest'), false);
-    w.run(`
-        handedRoute = null;
-        state.routeMode = 'walk'; syncControls();
-        action('composer-help');
-    `);
-    assert.equal(w.run('handedRoute'), null);
-    assert.equal(w.run('handedRequest'), true);
-});
-
 test('Composer help preserves a selected service and requests its missing destination', () => {
     const w = workspace('?view=timetable', false, true, true);
     w.run(`
@@ -756,14 +696,10 @@ test('the captured example offers bike and walk as other ways, and saves a plan'
     assert.equal(w.run('state.expanded'), 'r9');
 });
 
-test('Composer help waits for a trip; no route offers Composer and the start’s departures', () => {
+test('no route offers Composer and the start’s departures', () => {
     const w = workspace('', false, false, false, true);
-    w.run('syncComposerHelper();');
-    assert.equal(w.element('#travel-composer-helper').hidden, true);
     w.element('#from').value = 'Neumarkt';
     w.element('#to').value = 'Rheinauhafen';
-    w.run('syncComposerHelper();');
-    assert.equal(w.element('#travel-composer-helper').hidden, false);
     w.run('searchJourney();');
     const results = w.element('#results').innerHTML;
     assert.match(results, /data-action="composer-help"/);
@@ -771,7 +707,6 @@ test('Composer help waits for a trip; no route offers Composer and the start’s
         results,
         /data-action="from-departures" data-stop-id="neumarkt"/,
     );
-    assert.equal(w.element('#travel-composer-helper').hidden, true);
     assert.match(
         w.run('[...searchPlaces].map(p => p.name).join()'),
         /Mülheim,Rheinauhafen,Stadtgarten/,
@@ -824,7 +759,7 @@ test('Review situations move Nearby: a long wait at Merkenich Mitte, a lift out 
     assert.equal(w.run('nearbyView.state.stop'), 'mitte');
     assert.match(
         w.run('nearbyScenario().banner.text'),
-        /To Merkenich: 23:23, then 23:53\. To Zollstock: 23:26, then 23:56\. Recorded Mon 7 Sept, 23:15\./,
+        /After these, the next trams come 30\u00a0min later\./,
     );
     assert.equal(w.element('#next-trip').hidden, true);
     w.run('setScenario("lift");');

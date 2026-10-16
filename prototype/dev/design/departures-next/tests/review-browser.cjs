@@ -46,9 +46,14 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             await choose('Your tram is cancelled');
             assert.match(
                 await band.innerText(),
-                /Take the 13:24[\s\S]*13:14 cancelled[\s\S]*only 2 min spare/,
+                /Take the 13:24[\s\S]*13:14 cancelled[\s\S]*13:24[\s\S]*13:58/,
             );
             assert.match(await tone(), /is-conflict/);
+            // Two minutes spare is a fact to watch: its tile is amber.
+            assert.match(
+                await band.locator('.trip-fact.is-attention').innerText(),
+                /Spare[\s\S]*2\s*min/i,
+            );
             assert.match(page.url(), /scenario=cancelled/);
 
             await choose('You didn’t set off in time');
@@ -82,7 +87,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             );
             assert.match(
                 await band.innerText(),
-                /No step-free way to tram 4[\s\S]*Gleis 2, underground/,
+                /No step-free way to tram\s4[\s\S]*Gleis 2 · underground[\s\S]*Step-free[\s\S]*No/i,
             );
             assert.match(await tone(), /is-conflict/);
             assert.equal(
