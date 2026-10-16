@@ -26,6 +26,25 @@
         savedView = location.hash === '#saved',
         timer,
         undo;
+    // Saved ideas opened from another section's bookmark lead back there
+    // (Today, Events, Paperwork, Travel), not to Composer's home.
+    const savedFrom = (() => {
+        if (location.hash !== '#saved') return '';
+        try {
+            const from = new URL(document.referrer);
+            if (from.origin !== location.origin) return '';
+            return (
+                [
+                    ['/today-next/', 'Today'],
+                    ['/events-next/', 'Events'],
+                    ['/bureaucracy-next/', 'Paperwork'],
+                    ['/departures-next/', 'Travel'],
+                ].find(([path]) => from.pathname.includes(path))?.[1] || ''
+            );
+        } catch {
+            return '';
+        }
+    })();
     try {
         lastStoredWorkspace = localStorage.getItem(KEY);
         const s = JSON.parse(lastStoredWorkspace);
@@ -450,7 +469,8 @@
               : active?.id === 'plan-date'
                 ? '#plan-date'
                 : '[data-action="close-panel"]';
-        drawer.innerHTML = `<header class="panel-top"><button data-action="close-panel" aria-label="Back to Composer">${I('back')}<span>Composer</span></button><h2>${panel === 'saved' ? 'Saved ideas' : 'My Plans'}</h2></header><div class="panel-selection" data-planning-context>${savedView ? planningContext() : ''}</div><div class="panel-body">${plansPage()}</div>`;
+        const backTo = panel === 'saved' && savedFrom ? savedFrom : 'Composer';
+        drawer.innerHTML = `<header class="panel-top"><button data-action="close-panel" aria-label="Back to ${backTo}">${I('back')}<span>${backTo}</span></button><h2>${panel === 'saved' ? 'Saved ideas' : 'My Plans'}</h2></header><div class="panel-selection" data-planning-context>${savedView ? planningContext() : ''}</div><div class="panel-body">${plansPage()}</div>`;
         drawer.querySelector('.panel-body').scrollTop = scroll;
         if (active)
             drawer.querySelector(focusSelector)?.focus({ preventScroll: true });
@@ -1087,7 +1107,7 @@
     }
     function plansPage() {
         if (savedView)
-            return `<div class="plans-heading"><div><h1>Keep it for later.</h1><p>Saved ideas stay unscheduled until you add them to a plan.</p></div><span class="collection-total">${state.saved.length} ${state.saved.length === 1 ? 'idea' : 'ideas'}</span></div>${state.saved.length ? `<div class="discovery-grid saved-grid">${state.saved.map(place).filter(Boolean).map(card).join('')}</div>` : `<div class="saved-empty">${I('bookmark')}<h2>Keep something that catches your eye.</h2><p>Use the bookmark on a place. It stays here until you decide to plan it.</p><button class="studio-button light" data-action="discover">Discover places ${I('arrow')}</button></div>`}`;
+            return `<div class="plans-heading"><div><h1>Keep it for later.</h1><p>Saved ideas stay unscheduled until you add them to a plan.</p></div><span class="collection-total">${state.saved.length} ${state.saved.length === 1 ? 'idea' : 'ideas'}</span></div>${state.saved.length ? `<div class="discovery-grid saved-grid">${state.saved.map(place).filter(Boolean).map(card).join('')}</div>` : `<div class="saved-empty">${I('bookmark')}<h2>Keep something that catches your eye.</h2><p>Use the bookmark on an event. It stays here until you decide to plan it.</p><a class="studio-button light" href="${E(ExpaduStore.routes.events)}">See what’s on ${I('arrow')}</a></div>`}`;
         const selected = state.date,
             p = planFor(selected);
         const d = new Date(selected + 'T12:00:00');
@@ -2467,7 +2487,8 @@
             return;
         }
         if (el.dataset.action === 'close-panel') {
-            closePanel();
+            if (panel === 'saved' && savedFrom) history.back();
+            else closePanel();
             return;
         }
         if (el.dataset.nav) {
@@ -2959,7 +2980,10 @@
     )
         revealLatest();
     if (incomingPrompt) submit(incomingPrompt);
-    if (initialPanel) {
+    // Opened from another section's bookmark, the list keeps its address
+    // and Back is that section.
+    if (initialPanel === 'saved' && savedFrom) openPanel(initialPanel, false);
+    else if (initialPanel) {
         history.replaceState({}, '', StudioNavigation.panelUrl(location.href));
         openPanel(initialPanel);
     }
