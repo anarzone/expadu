@@ -768,13 +768,16 @@ function syncPlanStage() {
         !results || !!saved || !$('#results [data-pick-route]');
     $('#plan-bar-sub').textContent = `${planSummary()} · from ${fromLabel()}`;
     const back = $('[data-action="plan-back"]');
+    const returnTo = results && !saved && !H()?.depth() ? sender() : '';
     back.setAttribute(
         'aria-label',
         saved
             ? 'Back to your options'
-            : results
-              ? 'Back to where and when'
-              : 'Fold Plan a trip away',
+            : returnTo
+              ? `Back to ${returnTo}`
+              : results
+                ? 'Back to where and when'
+                : 'Fold Plan a trip away',
     );
     // Back to Nearby folds the planner up; deeper steps go back.
     back.innerHTML = icon(saved || results ? 'back' : 'up');
@@ -2278,8 +2281,9 @@ function action(name, button) {
         to.focus();
     } else if (name === 'plan-back') {
         // Saved → the options → where and when → Nearby, like the phone's
-        // own Back.
+        // own Back. Options another section opened go back to that section.
         if (H()?.depth()) history.back();
+        else if (sender() && state.results && !state.planSaved) history.back();
         else if (state.results && state.planSaved)
             action('change-plan', button);
         else if (state.results && !desktopPlanner.matches) {
@@ -2671,6 +2675,27 @@ window.TravelFavourites?.onChange(() => {
 // opens Plan a trip; Today's stop shortcut (?view=timetable&stop=) and
 // ?view=nearby open Nearby on that stop.
 const todayEntry = new URLSearchParams(location.search);
+// The section that handed this trip over (Today's Leave now, an event's
+// Get there, Composer): its options lead back there, not to an empty form.
+function sender() {
+    const entry = new URLSearchParams(location.search);
+    if (!['from', 'to', 'route', 'service'].some((key) => entry.has(key)))
+        return '';
+    try {
+        const from = new URL(document.referrer);
+        if (from.origin !== location.origin) return '';
+        return (
+            [
+                ['/today-next/', 'Today'],
+                ['/events-next/', 'Events'],
+                ['/bureaucracy-next/', 'Paperwork'],
+                ['/composer-studio/', 'Composer'],
+            ].find(([path]) => from.pathname.includes(path))?.[1] || ''
+        );
+    } catch {
+        return '';
+    }
+}
 if (['from', 'to', 'route', 'service'].some((key) => todayEntry.has(key)))
     setView('journey');
 else if (scenarios[todayEntry.get('scenario')])
