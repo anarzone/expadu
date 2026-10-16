@@ -1125,10 +1125,15 @@ function tripLine(key, trip = J.day) {
             : '<li><span><strong>Taxi</strong><small>Time and price aren’t in the sample</small></span></li>',
     ].join('');
     const open = state.tripOthers;
+    // A trip you've started is one tap away, not started again.
+    const going = window.JourneySession?.read()?.routeId === route.id;
+    document.body.classList.toggle('trip-in-card', going);
     const go =
         now.kind === 'lift'
             ? `<button type="button" class="primary next-trip-go" data-action="next-trip">${icon('route')}Plan another way</button>`
-            : `<button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}I’m on my way</button>`;
+            : going
+              ? `<button type="button" class="primary next-trip-go" data-action="trip-resume">${icon('route')}Back to your trip</button>`
+              : `<button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}I’m on my way</button>`;
     const body = `<div class="trip-body">${flag ? `<div class="trip-flags">${flag}</div>` : ''}<div class="trip-facts" style="--facts:${facts.length}">${facts.join('')}</div>${overPlan}</div>`;
     return `<div class="trip-line-row">${head(title, onDay ? '' : `${safe(trip.place)} · ${trip.start}`)}${body}${go}${onDay ? '</div>' : `<button type="button" class="trip-line-more" data-action="trip-others" aria-expanded="${open}" aria-controls="${id}-way" aria-label="${open ? 'Hide the way' : 'Show the way'}">${icon('down')}</button></div><div id="${id}-way" class="trip-line-way"${open ? '' : ' hidden'}>${wayStrip(route, trip)}${note ? `<p class="trip-line-note">${icon('info')}<span>${safe(note)}</span></p>` : ''}<div class="trip-line-others"><h3>Other ways</h3><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div></div>`}`;
 }
@@ -2184,6 +2189,7 @@ function action(name, button) {
         setView('journey');
         openNextTrip();
     } else if (name === 'trip-start') simulate(button.dataset.tripRoute);
+    else if (name === 'trip-resume') window.JourneyNavigation?.resume();
     else if (name === 'trip-others') {
         state.tripOthers = !state.tripOthers;
         renderNextTrip();
@@ -2667,6 +2673,13 @@ syncPanel();
 if (J.day && $('.plan-panel-sample'))
     $('.plan-panel-sample').textContent =
         `Sample day · ${boardDateLabel(J.day.date)}, ${J.day.time}`;
+// Starting or ending a trip changes what the next-trip card offers. The
+// trip's record loads after this script, so a trip already under way is
+// checked again once every script has run.
+window.addEventListener('expadu:journey-preview', () => renderNextTrip());
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.JourneySession?.read()) renderNextTrip();
+});
 window.TravelFavourites?.onChange(() => {
     renderFavourites();
     nearbyView?.render();

@@ -103,9 +103,9 @@
         bar.href = url.href;
         bar.setAttribute(
             'aria-label',
-            `Resume journey preview to ${record.title}, step ${record.step + 1}`,
+            `Back to your trip to ${record.title}, step ${record.step + 1}`,
         );
-        bar.innerHTML = `${root.ExpaduIcon?.(record.mode === 'transit' ? 'train' : record.mode) || ''}<span><strong>${escape(record.title)}</strong><small>Journey preview · ${escape(record.instruction)}</small></span>${root.ExpaduIcon?.('arrow') || '›'}`;
+        bar.innerHTML = `${root.ExpaduIcon?.(record.mode === 'transit' ? 'train' : record.mode) || ''}<span><strong>${escape(record.title)}</strong><small>On your way · ${escape(record.instruction)}</small></span>${root.ExpaduIcon?.('arrow') || '›'}`;
     }
     bar.addEventListener('click', (event) => {
         if (root.JourneyNavigation) {

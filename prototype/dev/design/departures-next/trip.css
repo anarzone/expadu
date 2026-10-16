@@ -822,3 +822,8 @@
     color: var(--color-text-soft);
     font-variant-numeric: tabular-nums;
 }
+
+/* The next-trip card already leads back to a trip you've started. */
+body.trip-in-card .journey-resume {
+    display: none;
+}
