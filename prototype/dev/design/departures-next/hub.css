@@ -181,7 +181,7 @@ body.travel-palette[data-plan-stage='rest'] .to-field input {
 }
 /* At rest the panel is "Where to?" with favourites and today's places. */
 body.travel-palette[data-plan-stage='rest']
-    :is(.plan-controls, .find-routes, #plan-hint, .travel-composer-helper) {
+    :is(.plan-controls, .find-routes, #plan-hint) {
     display: none;
 }
 
@@ -587,11 +587,132 @@ body.travel-palette {
     --trip-tone: var(--color-conflict-text);
     border-color: var(--color-conflict-border);
 }
+/* Wide (desktop's Nearby): what to do, the facts, the buttons in one row.
+   Narrow (below): stacked. */
 .trip-line-row {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(200px, 300px) minmax(0, 1fr) auto auto;
+    grid-template-areas: 'head body go more';
     align-items: center;
-    gap: var(--space-12) 18px;
+    gap: var(--space-12) 20px;
+}
+.trip-head {
+    grid-area: head;
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    min-width: 0;
+}
+.trip-title {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    line-height: 1.25;
+}
+.trip-title strong {
+    font-size: 19px;
+    font-weight: var(--weight-bold);
+}
+.trip-title span {
+    color: var(--color-text);
+    font-size: 14.5px;
+    font-weight: var(--weight-medium);
+}
+.trip-body {
+    grid-area: body;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+.trip-flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+/* The facts: one big value each, a small label over it, a line under. */
+.trip-facts {
+    display: grid;
+    grid-template-columns: repeat(var(--facts, 3), minmax(0, 1fr));
+    gap: var(--space-8);
+}
+.trip-fact {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 7px 10px 7px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-bg-canvas);
+}
+.trip-fact-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    min-height: 22px;
+    color: var(--color-text-soft);
+    font-size: 11px;
+    font-weight: var(--weight-bold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.trip-fact-label .tl-line {
+    letter-spacing: 0;
+    text-transform: none;
+}
+.trip-fact strong {
+    font-size: 22px;
+    font-weight: var(--weight-bold);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.trip-fact strong span {
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+}
+.trip-fact small {
+    font-size: 12.5px;
+    line-height: 1.3;
+}
+.trip-fact.is-attention {
+    border-color: var(--color-attention-border);
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+.trip-fact.is-conflict {
+    border-color: var(--color-conflict-border);
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+}
+.trip-fact:is(.is-attention, .is-conflict) .trip-fact-label {
+    color: inherit;
+}
+/* Why this tram and not your plan's: quiet, under the facts. */
+.trip-plan {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.4;
+}
+.trip-plan svg {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+}
+.trip-line-row > .next-trip-go {
+    grid-area: go;
+}
+.trip-line-row > .trip-line-more {
+    grid-area: more;
 }
 /* The ring: what's left of the last half hour, full when it's time. */
 .trip-ring {
@@ -650,43 +771,6 @@ body.travel-palette {
     transform: none;
     stroke: currentColor;
     stroke-width: 2;
-}
-.trip-line-text {
-    min-width: 0;
-    margin: 0;
-}
-.trip-line-text > strong {
-    font-size: 18px;
-    font-weight: var(--weight-bold);
-}
-.trip-line-for {
-    color: var(--color-text-soft);
-    font-size: 18px;
-    font-weight: var(--weight-medium);
-}
-.trip-line-for::before {
-    content: ' · ';
-}
-.trip-line-sub {
-    display: block;
-    margin-top: 3px;
-    color: var(--trip-ink);
-    font-size: 14px;
-}
-.trip-line-why {
-    font-weight: var(--weight-bold);
-}
-.trip-line.is-attention .trip-line-why,
-.trip-line-why.is-attention {
-    color: var(--color-attention-text);
-}
-.trip-line.is-conflict .trip-line-why {
-    color: var(--color-conflict-text);
-}
-/* A reason that isn't urgent (why not your plan's tram) stays quiet even
-   on an amber line. */
-.trip-line .trip-line-why.is-quiet {
-    color: var(--color-text-soft);
 }
 .trip-line .next-trip-go {
     min-height: 44px;
@@ -897,12 +981,11 @@ body.travel-palette {
         flex-grow: 2.6;
     }
     .trip-line-row {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: 'head more' 'body body' 'go go';
         gap: var(--space-12);
     }
     .trip-line-row > .next-trip-go {
-        grid-column: 1 / -1;
-        grid-row: 2;
         width: 100%;
     }
     .trip-ring {
@@ -916,24 +999,15 @@ body.travel-palette {
         width: 19px;
         height: 19px;
     }
-    .trip-line-text > strong {
-        display: block;
-        font-size: 16px;
+    .trip-title strong {
+        font-size: 17px;
     }
-    .trip-line-for,
-    .trip-line-sub {
-        display: inline;
-        margin: 0;
-        color: var(--color-text-soft);
-        font-size: 12.5px;
-        font-weight: var(--weight-regular, 400);
-        line-height: 1.35;
-    }
-    .trip-line-for::before {
-        content: none;
-    }
-    .trip-line-for::after {
-        content: ' · ';
+}
+/* Narrower still (My day's rail, the smallest phones): the badge alone
+   names the tram, its word goes. */
+@container (max-width: 340px) {
+    .trip-fact-label > [aria-hidden='true'] {
+        display: none;
     }
 }
 /* In My day the line sits on the day's rail. */
@@ -1065,5 +1139,21 @@ body.travel-palette .nearby-banner.is-labelled .tl-banner.is-unsure .tl-tile {
     }
     body.travel-palette[data-plan-stage='picked'] .plan-controls:not(.is-open) {
         display: none;
+    }
+    /* The To field above names the place and the When line says when, so
+       the options start at once; sort stays at their right (review, 16 Oct
+       2026). The heading stays for screen readers. */
+    body.travel-palette #results .results-top {
+        justify-content: flex-end;
+    }
+    body.travel-palette
+        #results
+        :is(.results-top h2, .results-heading > span) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
     }
 }

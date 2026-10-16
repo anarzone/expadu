@@ -33,8 +33,20 @@
                     ?.value.trim() || '';
             const from = value('from'),
                 to = value('to');
+            // The way picked in Plan a trip goes with it (it had its own
+            // Composer card until 16 Oct 2026).
+            const way =
+                document
+                    .querySelector('#results .plan-option.is-on')
+                    ?.getAttribute('aria-label') || '';
             return from && to
-                ? { page: 'travel', label: `Your journey · ${from} → ${to}`, from, to }
+                ? {
+                      page: 'travel',
+                      label: `Your journey · ${from} → ${to}${way ? ` · ${way}` : ''}`,
+                      from,
+                      to,
+                      ...(way ? { way } : {}),
+                  }
                 : { page: 'travel', label: 'Travel' };
         },
         bureaucracy() {

@@ -76,12 +76,11 @@
                 <div class="mapview-head"></div>
                 <div class="mapview-chips" role="group" aria-label="Lines"></div>
                 <div class="mapview-body">
-                    <div class="mapview-frame"><div class="mapview-canvas"></div></div>
+                    <div class="mapview-window"><div class="mapview-frame"><div class="mapview-canvas"></div></div></div>
                     <p class="mapview-drag">Drag the map to see where the lines go</p>
                     <div class="mapview-side"></div>
                 </div>
-            </section>
-            <p class="nearby-footnote"></p>`;
+            </section>`;
         const part = (name) => container.querySelector(`.nearby-${name}`);
         const mapPart = (name) => container.querySelector(`.mapview-${name}`);
         const hasMap = (stop) => !!M?.has(stop.id);
@@ -101,8 +100,9 @@
         // wait shows the next one after; otherwise a recorded delay.
         const when = (dir) =>
             scene().stale ? { big: dir.clock, unit: '' } : N.when(dir);
-        // Labels by strength: not live is unsure, a delay is attention.
-        // Cards say "+2 min"; the line panel and rows say "+2 min late".
+        // Labels by strength: not live is unsure, a delay is attention. A
+        // delay reads "2 min late" everywhere; beside "Now" it says the tram
+        // is running late, not that you wait (review, 16 Oct 2026).
         const tagOf = (dir, long = false) => {
             const now = scene();
             // Paused times: the banner and the station's label say it once.
@@ -118,15 +118,9 @@
                     : `<span class="nearby-tag is-late">then ${dir.later[0]}</span>`;
             if (now.laterTags) return '';
             if (!dir.delay) return '';
-            if (!L)
-                return `<span class="nearby-tag is-late">+${dir.delay} min late</span>`;
-            return long
-                ? L.chip('attention', 'clock', `+${dir.delay} min late`, {
-                      size: 'sm',
-                  })
-                : L.chip('attention', 'clock', `${dir.delay} min late`, {
-                      size: 'sm',
-                  });
+            const late = `${when(dir).big === 'now' ? 'Running ' : ''}${dir.delay}\u00a0min late`;
+            if (!L) return `<span class="nearby-tag is-late">${late}</span>`;
+            return L.chip('attention', 'clock', late, { size: 'sm' });
         };
         const time = (dir, look) => {
             const t = when(dir);
@@ -196,7 +190,7 @@
             const first = l.dirs[0].dest;
             const noLater = l.dirs.some((d) => !d.later.length);
             return `<section class="nearby-line is-inline" aria-label="${modeName(l)} ${safe(l.line)}" style="--line:${l.look.colour};--ink:${l.look.ink};--tint:${l.look.tint}">
-                <div class="nearby-line-head">${L ? L.line(l.line, { colour: '#fff', ink: l.look.colour }, { kind: l.mode, size: 'big' }) : `<span class="nearby-line-number">${safe(l.line)}</span>`}<span><strong>${modeName(l)} ${safe(l.line)}</strong><small>${safe(others(stop, l.line))}</small></span><button type="button" class="nearby-line-close" data-n="close-line" data-key="close-line" aria-label="Close line ${safe(l.line)}">${icon('close')}</button></div>
+                <div class="nearby-line-head">${L ? L.line(l.line, l.look, { kind: l.mode, size: 'big' }) : `<span class="nearby-line-number">${safe(l.line)}</span>`}<span><strong>${modeName(l)} ${safe(l.line)}</strong><small>${safe(others(stop, l.line))}</small></span><button type="button" class="nearby-line-close" data-n="close-line" data-key="close-line" aria-label="Close line ${safe(l.line)}">${icon('close')}</button></div>
                 ${dirs}${noLater ? '<p class="nearby-later">Later departures aren’t in the recording.</p>' : ''}
                 <p class="nearby-front"><small>${l.mode === 'bus' ? 'On the front of the bus' : 'On the front of the tram'}</small><strong>${safe(l.line)} ${safe(first)}</strong> · <span lang="de">Richtung</span> ${safe(first)} means “towards ${safe(first)}”.</p>
                 <div class="nearby-line-actions"><button type="button" class="nearby-pin" data-n="pin" data-v="${safe(l.line)}" data-key="pin-${safe(l.line)}" aria-pressed="${pinned}">${icon('star')}${pinned ? 'Pinned' : `Pin line ${safe(l.line)}`}</button>${hasMap(stop) ? `<button type="button" class="quiet-button" data-n="boards" data-v="${safe(l.line)}" data-key="boards-${safe(l.line)}">${icon('pin')}Where it boards</button>` : ''}</div>
@@ -331,14 +325,14 @@
             container.dataset.view = state.view;
             const places = placesOf(stop);
             const meta = stop.map
-                ? `Closest station · ${stop.areas.length} areas · ${places} boarding points · ${stop.note.replace('Recorded', 'recorded')}`
+                ? `Closest station · ${stop.areas.length} boarding areas · ${places} boarding points · ${stop.note.replace('Recorded', 'recorded')}`
                 : `${stop.kind} · boarding points weren’t recorded`;
             // The station's facts as labels: what it is, and that its times
             // aren't live: recorded on another day than the sample's, said
             // with the day (review, 15 Oct 2026), or the last ones we had.
             const clock = (stop.note.match(/\d{1,2}:\d{2}/) || [''])[0];
             const metaLabels = L
-                ? `<span class="tl-chips">${L.chip('calm', 'pin', stop.map ? `Closest · ${stop.areas.length} areas` : stop.kind.split(' · ')[0])}${L.chip('unsure', 'offline', now.stale ? `Not live · last times ${clock}` : stop.note)}</span>`
+                ? `<span class="tl-chips">${L.chip('calm', 'pin', stop.map ? `Closest · ${stop.areas.length} boarding areas` : stop.kind.split(' · ')[0])}${L.chip('unsure', 'offline', now.stale ? `Not live · last times ${clock}` : stop.note)}</span>`
                 : `<small>${safe(meta)}</small>`;
             // ☆ beside the stop's name stars it: it then sits with
             // Favourites beside "Where to?" (owner, 14 Oct 2026).
@@ -404,9 +398,6 @@
                       )
                       .join('')
                 : `<div class="nearby-empty"><strong>Nothing matches these filters</strong><span>These are recorded departures, so a missing line may still run.</span><button type="button" class="quiet-button" data-n="clear" data-key="clear-empty">Clear filters</button></div>`;
-            part('footnote').textContent = now.stale
-                ? 'The last times received, not live.'
-                : 'Rounded minutes, not live.';
             if (hasMap(stop)) renderMap(stop);
             if (focusKey) {
                 container

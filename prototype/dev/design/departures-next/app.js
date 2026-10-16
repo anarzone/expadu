@@ -8,8 +8,6 @@ const state = {
     // Travel opens on Nearby, the closest station (owner, 9 Oct 2026).
     view: 'stop',
     servicePreference: null,
-    composerRoute: null,
-    composerHelpDismissed: false,
     // A journey's boarding stop opened in Nearby, with a way back.
     boardRoute: null,
     boardingStop: null,
@@ -130,12 +128,6 @@ function routeList(tripId = requestTrip(), mode = state.routeMode) {
                 a.index - b.index,
         )
         .map(({ route }) => route);
-}
-try {
-    state.composerHelpDismissed =
-        sessionStorage.getItem('expadu.travel.composer-help-dismissed') === '1';
-} catch {
-    /* Help can still be dismissed for this page if storage is unavailable. */
 }
 const currentRoute = (id) =>
     window.JourneyNavigation?.currentRoute?.(id) ||
@@ -390,7 +382,6 @@ function scheduleLabel() {
 }
 function syncControls() {
     syncServicePreference();
-    syncComposerHelper();
     document
         .querySelectorAll('[data-schedule-mode]')
         .forEach((button) =>
@@ -426,41 +417,6 @@ function syncControls() {
 function composerRequestKey() {
     const { sort, ...request } = captureRequest();
     return JSON.stringify(request);
-}
-function composerRouteChoice() {
-    const choice = state.composerRoute;
-    if (!choice) return null;
-    const available =
-        state.results && routeList().some((route) => route.id === choice.id);
-    if (choice.request !== composerRequestKey() || !available) {
-        state.composerRoute = null;
-        return null;
-    }
-    return currentRoute(choice.id);
-}
-function syncComposerHelper() {
-    const helper = $('#travel-composer-helper');
-    if (!helper) return;
-    const route = composerRouteChoice();
-    // Help appears once there's a trip to help with; a request with no route
-    // offers it in its own empty state.
-    helper.hidden =
-        state.composerHelpDismissed ||
-        (!to.value.trim() && !state.servicePreference && !route) ||
-        (state.results && !routeList().length);
-    $('#travel-composer-context').textContent = route
-        ? `${routeName(route)} · ${route.depart}–${route.arrive}`
-        : 'Help with this trip';
-    $('#travel-composer-action').setAttribute(
-        'aria-label',
-        route
-            ? `Ask Composer about ${routeName(route)} at ${route.depart}`
-            : 'Ask Composer about this trip',
-    );
-}
-function rememberComposerRoute(id) {
-    state.composerRoute = { id, request: composerRequestKey() };
-    syncComposerHelper();
 }
 function syncServicePreference() {
     if (!window.ServiceContext) return;
@@ -770,7 +726,6 @@ function goToFavourite(place) {
     state.planPlace = null;
     hideSuggestions();
     syncServicePreference();
-    syncComposerHelper();
     renderSampleRoutes();
     syncPlanStage();
     if (desktopPlanner.matches) searchJourney();
@@ -798,9 +753,7 @@ function syncPlanStage() {
     find.setAttribute('aria-disabled', String(!hasDest));
     $('#plan-hint').textContent = !hasDest
         ? 'Pick a place from My day, or type one.'
-        : state.results && desktopPlanner.matches
-          ? 'Your options update as you change these.'
-          : '';
+        : '';
     const saved = state.results && state.planSaved;
     const results = state.results && !desktopPlanner.matches;
     const title =
@@ -825,19 +778,7 @@ function syncPlanStage() {
     );
     // Back to Nearby folds the planner up; deeper steps go back.
     back.innerHTML = icon(saved || results ? 'back' : 'up');
-    placeComposerHelper();
     syncPanel();
-}
-// Composer's trip help sits under the options.
-function placeComposerHelper() {
-    const helper = $('#travel-composer-helper');
-    if (!helper) return;
-    // Under the options once there are some, so they come first.
-    if (state.results) {
-        if (helper.previousElementSibling !== $('#results'))
-            $('#results').after(helper);
-    } else if (helper.parentElement !== $('.journey-desk'))
-        $('.journey-desk').append(helper);
 }
 function plannerControl(selector) {
     return $(
@@ -1103,9 +1044,16 @@ function tripLine(key, trip = J.day) {
     const now = trip && tripNow(trip);
     if (!now) return '';
     const id = `${key}-trip`;
+    // What to do and where you're going, then the facts as tiles you can read
+    // at a glance, then the one button (owner chose B, canvas row 24, 16 Oct
+    // 2026: "separate information into readable and highlighted chunks").
+    const head = (title, place) =>
+        `<div class="trip-head">${tripRing(now)}<p class="trip-title"><strong id="${id}-title">${title}</strong>${place ? `<span>${place}</span>` : ''}</p></div>`;
+    const fact = (label, value, sub, tone = '') =>
+        `<div class="trip-fact${tone ? ` is-${tone}` : ''}"><span class="trip-fact-label">${label}</span><strong>${value}</strong><small>${sub}</small></div>`;
     if (now.kind === 'unplanned') {
         const { place } = now;
-        return `<div class="trip-line-row">${tripRing(now)}<p class="trip-line-text"><strong id="${id}-title">${safe(place.title)}</strong><span class="trip-line-for">${place.time}</span><span class="trip-line-sub"><b class="trip-line-why is-quiet">No way picked yet · </b>${safe(place.detail || place.place)}</span></p><button type="button" class="primary next-trip-go" data-action="plan-way" data-place="${safe(place.place)}">${icon('route')}Plan the way</button></div>`;
+        return `<div class="trip-line-row">${head(safe(place.title), `${place.time} · ${safe(place.detail || place.place)}`)}<div class="trip-body"><div class="trip-flags">${L.chip('unsure', 'calendar', 'No way picked yet')}</div></div><button type="button" class="primary next-trip-go" data-action="plan-way" data-place="${safe(place.place)}">${icon('route')}Plan the way</button></div>`;
     }
     const { route, planned, best, spare } = now;
     const ride = rideOf(route);
@@ -1115,34 +1063,49 @@ function tripLine(key, trip = J.day) {
     const gone = J.dayRoutes.find((r) => !r.inPlan);
     const goneTime = gone ? rideOf(gone).time : '';
     const weather = sampleWeather(trip.date, trip.start);
-    // Why this tram and not your plan's, when they differ (review, 15 Oct).
-    const overPlan =
-        now.kind === 'trip' && planned !== best
-            ? `Your ${rideOf(planned).time} leaves only ${spare(planned)} min spare · `
-            : '';
-    const why =
-        now.kind === 'cancelled'
-            ? `${goneTime} cancelled · `
-            : now.kind === 'missed'
-              ? `Missed the ${goneTime} · `
-              : now.kind === 'lift'
-                ? 'Lift out of order · '
-                : weather?.wet
-                  ? `${weather.sky} likely at ${trip.start} · sample · `
-                  : overPlan;
     const vehicle = L.vehicle(look.bus ? 'bus' : 'tram');
     const title =
         now.kind === 'lift'
-            ? `No step-free way to ${vehicle.toLowerCase()} ${route.line}`
+            ? `No step-free way to ${vehicle.toLowerCase()}\u00a0${safe(route.line)}`
             : now.kind !== 'trip'
               ? `Take the ${ride.time}`
               : now.leaveIn <= 0
                 ? 'Leave now'
                 : `Leave at ${route.depart}`;
-    const sub =
+    // What changed, as a label over the facts.
+    const flag =
+        now.kind === 'cancelled'
+            ? L.chip('conflict', 'alert', `${goneTime} cancelled`)
+            : now.kind === 'missed'
+              ? L.chip('attention', 'clock', `Missed the ${goneTime}`)
+              : now.kind === 'lift'
+                ? L.chip('conflict', 'lift', 'Lift out of order')
+                : weather?.wet
+                  ? L.chip('attention', 'cloud', `${weather.sky} likely at ${trip.start} · sample`)
+                  : '';
+    const badge = L.line(route.line, look, { kind: look.bus ? 'bus' : 'tram' });
+    const facts =
         now.kind === 'lift'
-            ? `It leaves from ${platformOfRoute(route).note.replace(' · ', ', ')} at ${safe(placeName(trip.from))}, ${ride.time} (sample)`
-            : `${vehicle} ${safe(route.line)} from ${safe(placeName(trip.from))} at ${ride.time} · there ${route.arrive} · ${left < margin ? `only ${left} min spare` : `${left} min spare`}${now.kind === 'trip' ? '' : ' (sample)'}`;
+            ? [
+                  fact(`<span aria-hidden="true">${vehicle}</span>${badge}`, ride.time, safe(platformOfRoute(route).note)),
+                  fact('Step-free', 'No', 'Lift out of order (sample)', 'conflict'),
+              ]
+            : [
+                  fact(`<span aria-hidden="true">${vehicle}</span>${badge}`, ride.time, safe(placeName(trip.from))),
+                  fact('There', route.arrive, safe(placeName(trip.to))),
+                  fact(
+                      'Spare',
+                      `${left}<span>\u00a0min</span>`,
+                      `before\u00a0${trip.start}`,
+                      left < margin ? 'attention' : '',
+                  ),
+              ];
+    // Why this tram and not your plan's, when they differ: quiet, under the
+    // facts; the plan's tram is in Other ways.
+    const overPlan =
+        now.kind === 'trip' && planned !== best
+            ? `<p class="trip-plan">${icon('info')}<span>Your ${rideOf(planned).time} has only ${spare(planned)}\u00a0min spare${onDay ? '' : ' · in Other ways'}</span></p>`
+            : '';
     const note =
         now.kind === 'missed'
             ? `We noticed because your location didn’t change after ${trip.time} (sample). Indoors this can be wrong.`
@@ -1159,7 +1122,12 @@ function tripLine(key, trip = J.day) {
             : '<li><span><strong>Taxi</strong><small>Time and price aren’t in the sample</small></span></li>',
     ].join('');
     const open = state.tripOthers;
-    return `<div class="trip-line-row">${tripRing(now)}<p class="trip-line-text"><strong id="${id}-title">${title}</strong>${onDay ? '' : `<span class="trip-line-for">${safe(trip.place)}, ${trip.start}</span>`}<span class="trip-line-sub">${why ? `<b class="trip-line-why${weather?.wet && now.kind === 'trip' ? ' is-attention' : why === overPlan ? ' is-quiet' : ''}">${safe(why)}</b>` : ''}${sub}</span></p>${now.kind === 'lift' ? `<button type="button" class="primary next-trip-go" data-action="next-trip">${icon('route')}Plan another way</button>` : `<button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}I’m on my way</button>`}${onDay ? '</div>' : `<button type="button" class="trip-line-more" data-action="trip-others" aria-expanded="${open}" aria-controls="${id}-way" aria-label="${open ? 'Hide the way' : 'Show the way'}">${icon('down')}</button></div><div id="${id}-way" class="trip-line-way"${open ? '' : ' hidden'}>${wayStrip(route, trip)}${note ? `<p class="trip-line-note">${icon('info')}<span>${safe(note)}</span></p>` : ''}<div class="trip-line-others"><h3>Other ways</h3><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div></div>`}`;
+    const go =
+        now.kind === 'lift'
+            ? `<button type="button" class="primary next-trip-go" data-action="next-trip">${icon('route')}Plan another way</button>`
+            : `<button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}I’m on my way</button>`;
+    const body = `<div class="trip-body">${flag ? `<div class="trip-flags">${flag}</div>` : ''}<div class="trip-facts" style="--facts:${facts.length}">${facts.join('')}</div>${overPlan}</div>`;
+    return `<div class="trip-line-row">${head(title, onDay ? '' : `${safe(trip.place)} · ${trip.start}`)}${body}${go}${onDay ? '</div>' : `<button type="button" class="trip-line-more" data-action="trip-others" aria-expanded="${open}" aria-controls="${id}-way" aria-label="${open ? 'Hide the way' : 'Show the way'}">${icon('down')}</button></div><div id="${id}-way" class="trip-line-way"${open ? '' : ' hidden'}>${wayStrip(route, trip)}${note ? `<p class="trip-line-note">${icon('info')}<span>${safe(note)}</span></p>` : ''}<div class="trip-line-others"><h3>Other ways</h3><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div></div>`}`;
 }
 function renderNextTrip() {
     const panel = $('#next-trip');
@@ -1210,7 +1178,6 @@ function toggleRouteDetails(id) {
     state.detailsTouched = true;
     state.expanded = state.expanded === id ? null : id;
     if (state.expanded) state.selected = id;
-    if (state.expanded) rememberComposerRoute(id);
     // The option cards show which one is chosen, so draw them again.
     if (state.results && $('#results [data-pick-route]')) {
         renderResults();
@@ -1233,7 +1200,6 @@ function pickRoute(id) {
         : state.expanded === id
           ? id
           : null;
-    rememberComposerRoute(id);
     renderResults();
     $(`[data-pick-route="${id}"]`)?.focus({ preventScroll: true });
 }
@@ -1510,7 +1476,9 @@ function planOption(route, list, trip, best) {
                   })
                   .join(`<span class="plan-then">${icon('arrow')}</span>`)
             : `<span class="tl-line is-mode">${icon(route.mode)}<span>${route.mode === 'bike' ? 'By bike' : 'On foot'}</span></span>`;
-    const title = `<span class="plan-option-title">${badges}</span>`;
+    // The first tram's time names the option, as the trip line does ("your
+    // 13:24"; review, 16 Oct).
+    const title = `<span class="plan-option-title">${badges}${transit[0]?.time ? `<span class="plan-option-at">at ${transit[0].time}</span>` : ''}</span>`;
     const after = trip.back
         ? minutesOf(route.depart) - minutesOf(trip.after) + (route.depart < '12:00' ? 1440 : 0)
         : null;
@@ -1594,7 +1562,6 @@ function renderResults() {
         tripOf(plan).id === (J.trips?.[tripId] || J.capture).id
     ) {
         $('#results').innerHTML = restore + savedPlan(plan);
-        syncComposerHelper();
         syncPlanStage();
         return;
     }
@@ -1681,11 +1648,7 @@ function renderResults() {
     const contents = list.length
         ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="plan-options" role="radiogroup" aria-label="Your options">${shown.map((route, index) => planOption(route, list, trip, index === 0 && shown.length > 1)).join('')}</div>${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}${others}${chosen ? `<div class="plan-actions"><button type="button" class="primary plan-go" data-route="${chosen.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-save" data-action="save-plan" data-route-id="${chosen.id}">${saved.includes(chosen.id) ? 'In your plan · see it' : 'Add to plan'}</button></div>` : ''}</div>`
         : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.near ? `<button class="quiet-button" data-action="favourite-go" data-stop="${safe(hereStop())}">${icon('train')}See its departures</button>` : empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : `${empty.composer ? `<button class="quiet-button" data-action="composer-help">${icon('spark')}Ask Composer</button>` : ''}${empty.composer && fromStop ? `<button class="quiet-button" data-action="from-departures" data-stop-id="${safe(fromStop.id)}">${icon('train')}Departures from ${safe(placeName(fromStop.name))}</button>` : ''}<button class="quiet-button" data-action="example">Explore sample routes</button>`}</div></div>`;
-    const captureNote = list.length
-        ? `<p class="sample-footnote">${icon('info')}<span>${sourceNote(list[0])} · No live travel status.</span></p>`
-        : '';
-    $('#results').innerHTML = restore + header + contents + captureNote;
-    syncComposerHelper();
+    $('#results').innerHTML = restore + header + contents;
     syncPlanStage();
 }
 function selectedRoute(id, boardingOrigin = undefined) {
@@ -1697,7 +1660,6 @@ function selectedRoute(id, boardingOrigin = undefined) {
     boardingReturn = null;
     state.boardRoute = null;
     state.selected = id;
-    rememberComposerRoute(id);
     if (window.JourneyNavigation) JourneyNavigation.open(route);
     else
         openSheet(
@@ -1934,19 +1896,22 @@ function nearbyScenario() {
             'mitte',
         );
         const dirs = mitte ? mitte.lines.flatMap((line) => line.dirs) : [];
+        // The departures below give the times; the notice says how long the
+        // wait after them is (review, 16 Oct 2026).
+        const gaps = dirs
+            .filter((dir) => dir.later.length)
+            .map((dir) => minutesOf(dir.later[0]) - minutesOf(dir.clock));
+        const low = Math.min(...gaps),
+            high = Math.max(...gaps);
         return {
             laterTags: true,
             banner: {
                 tone: 'attention',
                 icon: 'moon',
                 title: 'Last trams for a while',
-                text:
-                    dirs
-                        .map(
-                            (dir) =>
-                                `To ${dir.dest}: ${dir.clock}, then ${dir.later[0]}`,
-                        )
-                        .join('. ') + '. Recorded Mon 7 Sept, 23:15.',
+                text: gaps.length
+                    ? `After these, the next trams come ${low === high ? low : `${low}–${high}`}\u00a0min later.`
+                    : 'Later trams weren’t in the recording.',
             },
         };
     }
@@ -2179,26 +2144,8 @@ function action(name, button) {
         );
         return;
     }
-    if (name === 'dismiss-composer-help') {
-        state.composerHelpDismissed = true;
-        try {
-            sessionStorage.setItem(
-                'expadu.travel.composer-help-dismissed',
-                '1',
-            );
-        } catch {
-            /* Keep the current page dismissal. */
-        }
-        syncComposerHelper();
-        ($('#journey-form').hidden
-            ? $('#journey-summary')
-            : $('.find-routes')
-        )?.focus({ preventScroll: true });
-    } else if (name === 'composer-help') {
-        const route = composerRouteChoice();
-        if (route && window.ExpaduTravelComposer)
-            ExpaduTravelComposer.route(route.id);
-        else if (to.value.trim()) handoff();
+    if (name === 'composer-help') {
+        if (to.value.trim()) handoff();
         else if (state.servicePreference) {
             state.editing = true;
             renderPlanner();
@@ -2286,7 +2233,6 @@ function action(name, button) {
         const id = button.dataset.routeId;
         if (!saved.includes(id)) saveRoute(id);
         state.planSaved = id;
-        rememberComposerRoute(id);
         H()?.open('saved', () => {
             const was = state.planSaved;
             state.planSaved = null;
@@ -2434,7 +2380,6 @@ document.addEventListener('click', (event) => {
         searchField.value = button.dataset.place;
         if (searchField === to) keepSettingPlace();
         syncServicePreference();
-        syncComposerHelper();
         hideSuggestions();
         syncPlanStage();
         if (desktopPlanner.matches && from.value.trim() && to.value.trim())
@@ -2590,7 +2535,6 @@ document.addEventListener('input', (event) => {
         } else state.planPlace = null;
         syncPlanStage();
         syncServicePreference();
-        syncComposerHelper();
         suggestions(event.target);
         $('#form-error').hidden = true;
         if (state.results) {

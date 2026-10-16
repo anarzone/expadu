@@ -465,12 +465,16 @@
         if (step.mode === 'walk' && p.index === 0) {
             const to = stopName(step.title.replace(/^Walk to /, ''));
             const at = platformOf(board);
+            const wait = left(board ? board.time : route.arrive);
+            // The ring already says the minutes when they're the walk's own
+            // (review, 16 Oct 2026); Your way keeps the walk's length.
+            const walk = Number(step.detail.match(/^(\d+) min/)?.[1]);
             return {
                 ...base,
                 ...warning,
-                ring: ring(left(board ? board.time : route.arrive)),
+                ring: ring(wait),
                 title: `Walk to ${to}`,
-                sub: `${step.detail}${extra}`,
+                sub: `${walk === wait ? 'On foot' : step.detail}${extra}`,
                 how: board
                     ? 'We’ll see when you reach the stop'
                     : 'We’ll see when you arrive',

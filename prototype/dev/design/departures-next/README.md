@@ -11,6 +11,41 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The whole page, reviewed again — 16 October 2026
+
+- The "Leave now" card is three facts, not sentences (owner chose B on the
+  canvas, row 24: "separate information into readable and highlighted
+  chunks"). Under what to do and where you're going ("Leave now ·
+  Blue Card appointment · 14:00") sit three small tiles, one big value each:
+  Tram (with its badge) 13:14 · Neumarkt, There 13:48 · Mülheim, Spare
+  12 min · before 14:00. What changed is a label over them ("13:14
+  cancelled", "Missed the 13:14", "Lift out of order", rain likely); a tight
+  spare turns its tile amber; a lift out of order turns the second tile into
+  "Step-free: No". Why this tram and not your plan's stays quiet under the
+  tiles. Desktop puts the same chunks in one row beside the buttons; in a
+  narrow card (My day, small phones) the badge alone names the tram. The
+  card is taller than the old one, so on a phone the first departure's
+  second time sits behind Composer's button until you scroll.
+- Plan a trip's options name their tram by its time ("Tram 4 at 13:14"), as
+  the card does; the strip under the card ends at "There", as its tile does.
+- A delay beside "Now" reads "Running 2 min late"; every other one "2 min
+  late" (no "+").
+- "Closest · 3 boarding areas"; an opened line is the selected card (ink
+  edge, neutral header), its colour only on the badge.
+- One "not live" note per screen: Nearby's "Rounded minutes, not live" and
+  Plan a trip's "No live travel status" went (the station's "Recorded …"
+  label and the footer say it). The late-night notice says the wait
+  ("After these, the next trams come 30 min later"), not the times again.
+- Plan a trip: the Composer help card went; Composer's own "About" now
+  carries the picked way (`connected/page-context.js`). On desktop the
+  heading that repeated the To field and "Your options update as you
+  change these" went too.
+- The desktop map takes the card's width (names ~14px, not ~10px), with
+  what boards where below it; the phone map's sides fade where names run
+  off.
+- The trip page's first step says "On foot" when the ring already shows
+  the walk's minutes.
+
 ## The menu floats — 16 October 2026
 
 The owner chose A on the Travel directions canvas, row 23 ("current one is

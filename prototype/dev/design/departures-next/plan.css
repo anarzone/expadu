@@ -662,6 +662,11 @@ body.travel-palette .find-routes[aria-disabled='true'] {
     font-size: var(--text-section);
     font-weight: var(--weight-semibold);
 }
+.plan-option-at {
+    margin-left: 2px;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
 .plan-line {
     display: inline-grid;
     place-items: center;

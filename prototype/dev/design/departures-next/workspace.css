@@ -169,67 +169,6 @@ body.travel-palette .find-routes {
     justify-content: center;
     border-radius: var(--radius-md);
 }
-body.travel-palette .travel-composer-helper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 4px;
-    margin-top: 12px;
-    padding: 0 4px 0 8px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    background: var(--surface);
-    color: var(--muted);
-    font-size: var(--text-small);
-}
-body.travel-palette .travel-composer-helper[hidden] {
-    display: none;
-}
-body.travel-palette .travel-composer-helper > button:first-child {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 44px;
-    min-width: 0;
-    padding: 6px 2px;
-    text-align: left;
-    flex: 1;
-}
-body.travel-palette
-    .travel-composer-helper
-    > button:first-child
-    > span:last-child {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    column-gap: 8px;
-    row-gap: 2px;
-    line-height: 1.4;
-}
-body.travel-palette .travel-composer-helper strong {
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-    color: var(--teal);
-}
-body.travel-palette .travel-composer-helper svg {
-    width: 18px;
-    height: 18px;
-    flex: none;
-}
-body.travel-palette .travel-composer-helper .icon-button {
-    width: 44px;
-    min-height: 44px;
-    flex: none;
-    color: var(--muted);
-}
-body.travel-palette .travel-composer-helper button:focus-visible {
-    outline: 2px solid var(--teal);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
-}
-body.travel-palette .travel-composer-helper button:active {
-    color: var(--teal);
-}
 body.travel-palette .journey-results {
     min-width: 0;
     border-top: 1px solid var(--line);
@@ -250,10 +189,6 @@ body.travel-palette .sample-endpoints {
     color: var(--muted);
     font-size: var(--text-small);
     line-height: 1.5;
-}
-body.travel-palette .sample-footnote {
-    margin: 12px 0 0;
-    font-size: var(--text-caption);
 }
 body.travel-palette .journey-summary {
     background: var(--surface-quiet);

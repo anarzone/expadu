@@ -8,7 +8,7 @@
         />
         <meta name="color-scheme" content="light" />
         <title>Expadu — Travel</title>
-        <link rel="stylesheet" href="./style.css?v=7f2e741807ca" />
+        <link rel="stylesheet" href="./style.css?v=74e05e9f680a" />
         <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
         <script defer src="../connected/section-bar.js?v=b14d4f93b12c"></script>
         <script defer src="./departure-data.js?v=05fcba8c8280"></script>
@@ -49,8 +49,8 @@
         <script defer src="./service-context.js?v=bbb3393e63ce"></script>
         <script defer src="./nearby.js?v=011793fa8825"></script>
         <script defer src="./favourites.js?v=f85e0385d4c1"></script>
-        <script defer src="./nearby-ui.js?v=1598059b2056"></script>
-        <script defer src="./app.js?v=4913706c5461"></script>
+        <script defer src="./nearby-ui.js?v=a9bded65ef6f"></script>
+        <script defer src="./app.js?v=796ea2a69bc9"></script>
         <script defer src="../connected/model.js?v=b727e359c259"></script>
         <script defer src="../connected/store.js?v=17618b25abbe"></script>
         <script defer src="../connected/bridge.js?v=4e0208eb36ca"></script>
@@ -93,7 +93,7 @@
             defer
             src="../connected/composer-entry.js?v=239b17465d88"
         ></script>
-        <script defer src="../connected/page-context.js?v=ae95f5b6e093"></script>
+        <script defer src="../connected/page-context.js?v=0c4b4360c747"></script>
         <script
             defer
             src="../today-c/composer-controls.js?v=738cd87b9222"
@@ -110,7 +110,7 @@
         <link rel="stylesheet" href="./navigation.css?v=1e69f8a31cdb" />
         <link rel="stylesheet" href="./trip.css?v=baf6cfa909a1" />
         <script defer src="./navigation-model.js?v=e7661730149c"></script>
-        <script defer src="./navigation-ui.js?v=6f49a019cefa"></script>
+        <script defer src="./navigation-ui.js?v=c45d89f52841"></script>
         <link
             rel="stylesheet"
             href="../connected/today-palette.css?v=a12f6afe0787"
@@ -120,14 +120,14 @@
             href="../connected/today-header.css?v=ace0f63ef40b"
         />
         <link rel="stylesheet" href="./soft-palette.css?v=80891a54ed58" />
-        <link rel="stylesheet" href="./workspace.css?v=970cd8f55a4a" />
+        <link rel="stylesheet" href="./workspace.css?v=7e3ee9bab998" />
         <link rel="stylesheet" href="./station-context.css?v=1347d89c30fa" />
-        <link rel="stylesheet" href="./nearby.css?v=a46785859c02" />
-        <link rel="stylesheet" href="./plan.css?v=65f40c8462f4" />
+        <link rel="stylesheet" href="./nearby.css?v=bf14e6813692" />
+        <link rel="stylesheet" href="./plan.css?v=5b3b9d46bfbd" />
         <link rel="stylesheet" href="./day.css?v=541ef0685b1a" />
         <link rel="stylesheet" href="./labels.css?v=55fa39dc5c91" />
         <link rel="stylesheet" href="./press.css?v=820ae6620ca3" />
-        <link rel="stylesheet" href="./hub.css?v=ba5afa023f25" />
+        <link rel="stylesheet" href="./hub.css?v=1e483c25641e" />
         <link rel="stylesheet" href="./slide.css?v=aee158c3f5ce" />
         <link rel="stylesheet" href="../connected/page-frame.css?v=b10bf58c94f1" />
     </head>
@@ -641,35 +641,6 @@
                             </button>
                             <p class="plan-hint" id="plan-hint"></p>
                         </form>
-                        <aside
-                            id="travel-composer-helper"
-                            hidden
-                            class="travel-composer-helper"
-                            aria-label="Optional Composer help"
-                        >
-                            <button
-                                type="button"
-                                id="travel-composer-action"
-                                data-action="composer-help"
-                                aria-label="Ask Composer about this trip"
-                            >
-                                <span data-icon="spark"></span
-                                ><span
-                                    ><strong>Composer</strong
-                                    ><span id="travel-composer-context"
-                                        >Help with this trip</span
-                                    ></span
-                                >
-                            </button>
-                            <button
-                                type="button"
-                                class="icon-button"
-                                data-action="dismiss-composer-help"
-                                aria-label="Dismiss Composer help"
-                            >
-                                <span data-icon="close"></span>
-                            </button>
-                        </aside>
                     </section>
                     <div class="journey-results">
                         <section
