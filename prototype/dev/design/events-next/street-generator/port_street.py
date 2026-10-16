@@ -259,6 +259,16 @@ def parts(phone):
     card = GS.card(base)
     # The page sets the card's place; the board's margin goes.
     card = card.replace(f'margin:{"0 19px" if phone else "0 0 0 32px"};', 'margin:0;', 1)
+    # The weather sits as far in from the street's corner as the hour rings
+    # (owner chose A, 16 Oct 2026): street.js sets the inset.
+    chip = f'<div style="position:absolute;right:{base["chipR"]}px;top:{base["chipT"]}px;display:flex;'
+    assert card.count(chip) == 1
+    card = card.replace(chip, f'<div class="st-weather" style="position:absolute;right:var(--chip-inset, {base["chipR"]}px);top:var(--chip-inset, {base["chipT"]}px);display:flex;')
+    if not phone:
+        # The hour's tag moves with a poster that fills its hour.
+        tag = f'<span style="position:absolute;left:12px;top:{base["labelY"]}px;'
+        assert card.count(tag) == 1
+        card = card.replace(tag, f'<span style="position:absolute;left:{{{{b.labelX}}}}px;top:{base["labelY"]}px;')
     rings = GA.rings(phone).replace('class="mx mx-art"', 'class="st-art"')
     rings = rings.replace("padding:14px 32px 10px", "padding:14px 0 10px").replace("padding:10px 14px 8px", "padding:10px 0 8px")
     real = GA.MX.poster_markup
@@ -289,6 +299,7 @@ def parts(phone):
     # A phone's drum bends its posters in fewer slices and keeps the faces
     # behind it hidden until it turns (gen_scene).
     jc['col'].update(drum=True, win=264, slices=3, reach=1, depth=1600 if phone else 1400)
+    jc['wallBase'] = base['BASE']
     jc['mxSizes'] = ({'wallW': 142, 'wallH': 270, 'colW': 264, 'colH': 515} if phone
                      else {'wallZoom': round(190 / 300, 4), 'colW': 220, 'colH': 514, 'storyZoom': round(380 / 300, 4)})
     jc['model'] = 'stories'
@@ -347,7 +358,23 @@ MOCK_LOGIC = r'''
     };
     let k = 0;
     if (v.grid) v.grid = v.grid.map((p) => wall(p, c.phone ? 0 : k++));
-    if (v.bays) v.bays = v.bays.map((b) => Object.assign({}, b, { posters: (b.posters || []).map((p) => wall(p, k++)) }));
+    if (v.bays) v.bays = v.bays.map((b) => Object.assign({}, b, { labelX: 12, posters: (b.posters || []).map((p) => wall(p, k++)) }));
+    // A lone poster fills its hour (owner chose A, 16 Oct 2026): an hour
+    // with one event shows it larger, down towards the pavement, as far as
+    // the hours beside it leave room; its tag moves with it.
+    if (v.bays && c.oneWall) {
+      const xs = v.bays.map((b) => b.x);
+      v.bays = v.bays.map((b, i) => {
+        if (b.posters.length !== 1 || b.hasMore) return b;
+        const p = b.posters[0];
+        const near = Math.min(Infinity, ...xs.filter((x, j) => j !== i).map((x) => Math.abs(x - b.x)));
+        const g = Math.max(1, Math.min(1.95, (c.wallBase - 36 - p.y) / c.ph, (near - 28) / c.pw));
+        if (g === 1) return b;
+        const x = Math.round((b.w - c.pw * g) / 2);
+        const style = p.mxStyle.replace(/zoom:([\d.]+)/, (m, zm) => 'zoom:' + (zm * g).toFixed(4));
+        return Object.assign({}, b, { labelX: x - 24, posters: [Object.assign({}, p, { x, mxStyle: style })] });
+      });
+    }
     if (v.strip) v.strip = v.strip.map((q, i) => Object.assign({}, q, { mxKey: 'column:' + i + ':' + q.id, mxStyle: z.colW ? 'width:' + z.colW + 'px;height:' + z.colH + 'px' : 'width:364px;height:560px;zoom:' + z.colZoom }));
     if (v.st && v.st.p && v.storyOpen) {
       v.st.id = v.st.p.id;

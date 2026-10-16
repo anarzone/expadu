@@ -84,20 +84,29 @@ const inside = (box, viewport) =>
                         .map((el) => el.outerHTML.slice(0, 60));
                 }, launcher);
                 assert.deepEqual(covered, [], 'a filter sits under Composer');
-                // The filters lead, then the hours' stories, then the street:
-                // the column at the left of the wall and the day's posters
-                // paging up and down beside it.
+                // The filters lead, then the street, 16px under them, with the
+                // hours' stories in its sky, 12px in from its corner and level
+                // with the weather (owner chose A, 16 Oct 2026): the column at
+                // the left of the wall and the day's posters paging up and
+                // down beside it. The street ends 16px above the menu.
                 const order = await page.evaluate(() => {
                     const at = (s) => document.querySelector(s).getBoundingClientRect();
+                    const fit = at('.st-fit'), ring = at('.st-rings button > span:first-child');
                     return {
-                        filtersFirst: at('.event-controls').bottom <= at('.st-rings').top,
-                        ringsThenStreet: at('.st-rings').bottom <= at('.st-fit').top + 1,
+                        filtersFirst: at('.event-controls').bottom <= fit.top,
+                        gap: Math.round(fit.top - at('.event-controls').bottom),
+                        ringInset: [Math.round(ring.left - fit.left), Math.round(ring.top - fit.top)],
+                        weatherInset: [Math.round(fit.right - at('.st-weather').right), Math.round(at('.st-weather').top - fit.top)],
+                        aboveMenu: Math.round(at('#shell .service-nav').top - fit.bottom),
                         street: document.querySelector('.st-root').dataset.layout,
                         width: at('.st-fit').width / innerWidth,
                     };
                 });
                 assert.ok(order.filtersFirst, 'the filters should lead the page');
-                assert.ok(order.ringsThenStreet, 'the stories should sit above the street');
+                assert.equal(order.gap, 16, 'the street sits 16px under the filters');
+                assert.deepEqual(order.ringInset, [12, 12], 'the stories sit in the sky');
+                assert.deepEqual(order.weatherInset, [12, 12], 'the weather sits level with them');
+                assert.equal(order.aboveMenu, 16, 'the street ends above the menu');
                 assert.equal(order.street, 'phone');
                 assert.ok(order.width > 0.85, `the street should fill a phone's width: ${order.width}`);
                 assert.equal(await page.locator('.event-search-row > .wall-heading:first-child + .event-search').count(), 1);

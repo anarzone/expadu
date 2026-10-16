@@ -830,8 +830,20 @@ body[data-page='events'] #main button:focus:not(:focus-visible) {
         min-width: 0;
     }
     @media (max-width: 359px) {
-        body[data-page='events'] #main {
+        html body[data-page='events'] #main {
             padding-inline: 12px;
+        }
+        /* No room for the place: the chip's dot, spoken name and tooltip. */
+        html body .event-control-scroller > .event-travel-control[data-has-origin='true'] {
+            flex: 0 0 44px;
+            width: 44px;
+            padding: 0;
+        }
+        html body .event-controls .event-travel-control[data-has-origin='true'] [data-travel-place] {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            clip-path: inset(50%);
         }
         .event-controls {
             grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 44px 44px;
@@ -914,6 +926,39 @@ body[data-page='events'] {
         padding: 0;
     }
 }
+/* A starting point shows on its chip (owner chose A, 16 Oct 2026). */
+.event-controls .event-travel-control[data-has-origin='true'] {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 220px;
+    padding-inline: 12px 14px;
+}
+.event-controls .event-travel-control[data-has-origin='true'] [data-travel-label] {
+    position: static;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    clip-path: none;
+}
+/* Narrower than 1366px the place alone, so the filters keep one row; the
+   chip's spoken name and tooltip still say "From". */
+@media (max-width: 1365px) {
+    .event-controls .event-travel-control[data-has-origin='true'] [data-travel-label] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        clip-path: inset(50%);
+    }
+    .event-controls .event-travel-control[data-has-origin='true'] [data-travel-place] {
+        position: static;
+        width: auto;
+        height: auto;
+        min-width: 0;
+        overflow: hidden;
+        clip-path: none;
+        text-overflow: ellipsis;
+    }
+}
 /* A chosen value uses the cyan selection colour, like Free and Saved; an
    open control is only pressed (neutral), on every screen. */
 .event-controls [data-event-picker][data-selected='true'] {
@@ -931,18 +976,17 @@ body[data-page='events'] {
         .event-control-icon {
         display: none;
     }
-    /* Composer's button floats over the right edge: Sort and the starting
-       point lead their rows, and the search, Category and Area stretch to
-       the edge with their text stopping short of it, so the button only
-       ever covers an empty end. Menus open under their buttons. */
+    /* Sort and the starting point lead their rows; the search, Category
+       and Area stretch to the edge. Menus open under their buttons. */
     .event-gallery-head {
         position: relative;
     }
-    .event-search {
-        padding-right: 60px;
-    }
     .event-control-scroller > .event-travel-control {
         margin-left: 0;
+    }
+    .event-control-scroller > .event-travel-control[data-has-origin='true'] {
+        max-width: 40%;
+        padding-inline: 10px 12px;
     }
     .event-control-scroller > .event-category-trigger {
         flex: none;
@@ -953,7 +997,6 @@ body[data-page='events'] {
     }
     .event-filter-group > [data-event-picker='area'] {
         width: 100%;
-        padding-right: 52px;
     }
     #events-sort,
     #events-travel {

@@ -92,7 +92,7 @@
         </aside></div><section class="event-discovery" aria-label="Find events">
         <div class="event-gallery-head"><span id="event-day-title" class="visually-hidden"></span><div class="event-search-row"><label class="event-search">${I('search')}<input id="event-search" aria-label="Search events" placeholder="Search events" value="${E(filters.query)}"><button id="clear-event-search" type="button" aria-label="Clear search" hidden>${I('close')}</button></label><button id="free-only" aria-label="Free events only" title="Free events only" aria-pressed="false">${controlIcon('price')}<span>Free</span></button><button id="saved-events" aria-label="Saved events only" title="Saved events only" aria-pressed="false">${I('bookmark')}<span class="event-control-label">Saved</span></button></div></div>
         <div class="event-categories" aria-label="Event categories">${categories.map((c) => `<button data-event-category="${c}" aria-pressed="false">${controlIcon(categoryIcon(c))}<span>${c === 'All' ? 'All events' : c}</span></button>`).join('')}</div>
-        <div class="event-controls"><div class="event-control-scroller"><button class="event-category-trigger" data-event-picker="category" aria-controls="events-category" aria-expanded="false"><span data-category-icon>${controlIcon('grid')}</span><span data-category-label>Category</span>${chevron}</button><div class="event-filter-group"><button data-event-picker="area" aria-controls="events-area" aria-expanded="false">${controlIcon('area')}<span data-area-label>Area</span>${chevron}</button></div><button class="event-travel-control" data-event-picker="travel" aria-controls="events-travel" aria-expanded="false">${controlIcon('route')}<span data-travel-label class="event-control-label">Travel</span></button><button class="event-sort-control" data-event-picker="sort" aria-controls="events-sort" aria-expanded="false">${controlIcon('sort')}<span data-sort-label class="event-control-label">Soonest</span></button></div>
+        <div class="event-controls"><div class="event-control-scroller"><button class="event-category-trigger" data-event-picker="category" aria-controls="events-category" aria-expanded="false"><span data-category-icon>${controlIcon('grid')}</span><span data-category-label>Category</span>${chevron}</button><div class="event-filter-group"><button data-event-picker="area" aria-controls="events-area" aria-expanded="false">${controlIcon('area')}<span data-area-label>Area</span>${chevron}</button></div><button class="event-travel-control" data-event-picker="travel" aria-controls="events-travel" aria-expanded="false">${controlIcon('route')}<span data-travel-label class="event-control-label">Travel</span><span data-travel-place class="event-control-label"></span></button><button class="event-sort-control" data-event-picker="sort" aria-controls="events-sort" aria-expanded="false">${controlIcon('sort')}<span data-sort-label class="event-control-label">Soonest</span></button></div>
         ${picker('category', 'Event category', `<div class="events-options">${categories.map((c) => `<button data-event-category="${c}" aria-pressed="false">${controlIcon(categoryIcon(c))}<span>${c === 'All' ? 'All events' : c}</span></button>`).join('')}</div><div class="events-only" role="group" aria-labelledby="events-only-label" hidden><p id="events-only-label">Show only</p><div class="events-options"></div></div><button id="reset-event-filters-mobile" hidden>${controlIcon('reset')}<span>Reset all filters</span></button>`)}
         ${picker('area', 'Search area', `<div class="events-options"><button data-event-area="" aria-pressed="false">All areas</button>${areas.map((x) => `<button data-event-area="${E(x)}" aria-pressed="false">${E(x)}</button>`).join('')}</div>`)}
         ${picker(
@@ -320,17 +320,22 @@
             ] || 'transit';
         const trigger = main.querySelector('[data-event-picker="travel"]');
         trigger.setAttribute('data-has-origin', String(!!from));
+        // With a starting point the chip names it, so no line under the
+        // filters has to (owner chose A, 16 Oct 2026): "From Neumarkt", or
+        // the place alone where room is short (events.css).
         main.querySelector('[data-travel-label]').textContent = from
             ? `From ${from}`
             : 'Travel';
+        const place = main.querySelector('[data-travel-place]');
+        if (place) place.textContent = from;
         trigger.setAttribute(
             'aria-label',
             from
-                ? `Travel from ${from} by ${mode}`
+                ? `Travel from ${from} by ${mode}; distances in a straight line`
                 : 'Choose starting point and travel mode',
         );
         trigger.title = from
-            ? `From ${from} · ${mode}`
+            ? `From ${from} · ${mode} · distances in a straight line`
             : 'Starting point and travel mode';
     }
     function changePeriod(direction) {
@@ -398,11 +403,9 @@
             : 0;
         main.querySelector('#event-count-note').textContent = [
             shownAbove && !pastDay ? `${shownAbove} featured above` : '',
-            place
-                ? `Distances from ${place.name}, in a straight line`
-                : from
-                  ? `No distances for “${from}” in this preview`
-                  : '',
+            // The From chip names a known starting point; one the preview
+            // has no distances for still says so.
+            !place && from ? `No distances for “${from}” in this preview` : '',
         ]
             .filter(Boolean)
             .join(' · ');

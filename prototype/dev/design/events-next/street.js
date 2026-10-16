@@ -565,6 +565,12 @@
                 window.removeEventListener('storage', onChange);
             };
             s.savedMap = saved;
+            // The weather's words change with the hour, and its width with them.
+            const draw = s.draw.bind(s);
+            s.draw = () => {
+                draw();
+                sky();
+            };
             street = s;
             fit();
             if (data) feed(data, true);
@@ -585,6 +591,14 @@
         // room for two hours' posters side by side), so it grows into the
         // height instead of shrinking to the width.
         const MIN_W = 1100;
+        // One spacing (owner chose A, 16 Oct 2026): a laptop's street ends
+        // 22px above the screen's bottom, as the filters sit under the header;
+        // the hour rings and the weather sit INSET in from the street's top
+        // corners, on screen at any scale. A phone's street ends 16px above
+        // the floating menu: up to 48px of its pavement gives way, and with
+        // more (a small phone) it runs on under the menu and the page scrolls.
+        const GAP = 22;
+        const INSET = { desktop: 20, phone: 12 };
         function fit() {
             if (!street) return;
             const art = ART[layoutName];
@@ -595,7 +609,7 @@
             if (layoutName === 'desktop') {
                 const top = box.getBoundingClientRect().top + scrollY;
                 const narrow = Math.min(w0, MIN_W);
-                zoom = Math.max(0.45, Math.min(host.clientWidth / narrow, (innerHeight - top - 20) / h));
+                zoom = Math.max(0.45, Math.min(host.clientWidth / narrow, (innerHeight - top - GAP) / h));
                 w = Math.min(art.maxW || w0, Math.max(narrow, Math.floor(host.clientWidth / zoom)));
             }
             if (street.__cfg.W !== w) {
@@ -605,16 +619,42 @@
             }
             street.zoom = zoom;
             box.style.setProperty('--st-w', `${w}px`);
+            box.style.setProperty('--chip-inset', `${(INSET[layoutName] / zoom).toFixed(2)}px`);
             box.style.width = `${w}px`;
-            box.style.height = `${h}px`;
             box.style.zoom = zoom.toFixed(4);
+            let end = h;
+            if (layoutName === 'phone') {
+                const menu = document.querySelector('#shell .service-nav')?.getBoundingClientRect();
+                const bottom = box.getBoundingClientRect().top + scrollY + h * zoom;
+                const over = menu ? bottom - (menu.top - 16) : 0;
+                if (over > 0 && over <= 48) end = h - over / zoom;
+            }
+            box.style.height = `${end}px`;
             if (layoutName === 'desktop') {
                 const left = (host.clientWidth - w * zoom) / 2;
                 host.style.setProperty('--rings-x', `${Math.round(left + w0 * zoom * 0.3)}px`);
-                host.style.setProperty('--rings-y', `${Math.round(box.offsetTop + 14)}px`);
+                // The rings' own 4px of padding: their circles start level
+                // with the weather.
+                host.style.setProperty('--rings-y', `${Math.round(box.offsetTop + INSET.desktop - 4)}px`);
                 host.closest('main')?.style.setProperty('--street-w', `${Math.round(w * zoom)}px`);
             } else host.closest('main')?.style.removeProperty('--street-w');
+            sky();
         }
+        // A phone's hour rings scroll sideways up to the weather, stopping
+        // 12px short of it.
+        function sky() {
+            if (layoutName !== 'phone') return host.style.removeProperty('--rings-r');
+            const chip = host.querySelector('.st-weather')?.getBoundingClientRect();
+            if (chip?.width)
+                host.style.setProperty('--rings-r', `${Math.round(host.getBoundingClientRect().right - chip.left + INSET.phone)}px`);
+            more();
+        }
+        // The rings' row fades at its cut end while more rings follow.
+        function more() {
+            const row = host.querySelector('.st-rings > div');
+            if (row) row.toggleAttribute('data-more', row.scrollLeft + row.clientWidth < row.scrollWidth - 1);
+        }
+        host.addEventListener('scroll', (event) => event.target.matches?.('.st-rings > div') && more(), true);
         // What sits above the street (the filters, the distance note) can
         // change its height, and with it the room the street has.
         const above = new ResizeObserver(() => fit());

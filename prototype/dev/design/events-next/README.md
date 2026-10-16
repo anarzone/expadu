@@ -5,6 +5,40 @@ preview's sample day, Wednesday 30 September 2026; the captured programme is at
 `?date=2026-09-08` and is shown as past. Other dates can legitimately have no
 sample events; this is not a live catalogue.
 
+## More street, a fuller wall, one spacing — 16 October 2026
+
+The owner chose A on the "Events reimagined" canvas (row "Events on a
+14-inch laptop"): on a 1512×860 laptop the header, the filters and the
+distances line took 188px before the street, the wall's lower half was
+bare and the art looked small; on a phone the street ran past the screen
+and the floating menu covered the first poster's facts.
+
+- A lone poster fills its hour: an hour with one event shows it larger,
+  down towards the pavement, as far as the hours beside it leave room
+  (up to 1.95×; its tag moves with it). Hours with two keep their pair.
+  Generated: `street-generator/port_street.py` (`mxDress`).
+- The From chip names the place, so the "Distances from …, in a straight
+  line" row is gone: "From Neumarkt" from 1366px, the place alone below,
+  the chip's dot alone under 360px; its spoken name and tooltip keep "From"
+  and "distances in a straight line" (`app.js`, `events.css`). A place the
+  preview has no distances for still gets its line.
+- One spacing. Laptops: 22px between the header, the filters, the street
+  and the screen's bottom (as on the other pages under the header); the
+  rings and the weather 20px inside the street, level. Phones: the header's
+  16px sides, 16px between the header, the filters and the street, 8px
+  between the two filter rows, the rings and the weather 12px inside the
+  street. A past day's note sits at the same distance (`wall.css`,
+  `festival.css`, `spotlight.css`, `street.js`).
+- Phones: the hour rings float in the street's sky as on a laptop,
+  scrolling sideways up to the weather and fading where cut. The street
+  ends 16px above the floating menu (up to 48px of pavement gives way), so
+  a 390×844 phone shows it all on one screen; on a smaller phone it runs on
+  under the menu and the page scrolls. The swipe hint is a pill on the
+  pavement. The page's own 90px under the content went: the menu's room is
+  the body's (other pages still keep both, for a later pass).
+- Removed: the 52–60px kept empty at the right of the phone's search and
+  Area for Composer's old corner button.
+
 ## The column holds while a story is open — 16 October 2026
 
 Owner's choice. The column's six-second turn waits while a story, a lifted

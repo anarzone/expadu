@@ -55,7 +55,7 @@ body[data-page='events'] #main {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px 16px;
+    gap: 8px 16px;
 }
 .event-gallery-head {
     flex: 1 0 100%;

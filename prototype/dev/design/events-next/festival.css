@@ -536,8 +536,10 @@ body[data-page='events'] #main .festival-plan:focus-visible {
     }
 }
 @media (max-width: 700px) {
+    /* The header's 16px sides (owner chose A, 16 Oct 2026). */
     body[data-page='events'] #main {
         padding-top: 16px;
+        padding-inline: 16px;
     }
     .events-page-heading {
         margin-bottom: 14px;

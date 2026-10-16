@@ -3395,18 +3395,75 @@ main[data-view='wall'] #event-featured {
     position: relative;
     margin-inline: auto;
 }
+/* One spacing for the page (owner chose A, 16 Oct 2026): the street is
+   22px under the filters on a laptop, as they are under the header and the
+   street above the screen's bottom; 16px on a phone. A past day's note sits
+   between them at the same distance. */
+main[data-view='wall'] .st-board {
+    margin-top: 22px;
+}
+main[data-view='wall'] .st-board .event-past-note {
+    margin: 0 0 22px;
+}
+@media (max-width: 700px) {
+    /* The floating menu's room is the body's (section-bar.css), so the
+       street can end above the menu on one screen. */
+    #main[data-view='wall'] {
+        padding-bottom: 0;
+    }
+    main[data-view='wall'] .st-board {
+        margin-top: 16px;
+    }
+    main[data-view='wall'] .st-board .event-past-note {
+        margin-bottom: 16px;
+    }
+}
+/* A phone: the hour rings float in the street's sky, 12px in from its
+   corner and level with the weather, and scroll sideways up to it
+   (street.js sets --rings-r). The street ends with rounded corners where
+   street.js ends it above the menu, and the swipe hint sits on its
+   pavement. */
+.st-root[data-layout='phone'] {
+    position: relative;
+}
+.st-root[data-layout='phone'] > .st-rings {
+    position: absolute;
+    z-index: 4;
+    top: 12px;
+    left: 12px;
+    right: var(--rings-r, 12px);
+}
+.st-root[data-layout='phone'] > .st-rings > div {
+    padding: 0 !important;
+}
+/* More rings than room: the row fades where it's cut (street.js). */
+.st-root[data-layout='phone'] > .st-rings > div[data-more] {
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.st-root[data-layout='phone'] > .st-fit {
+    overflow: hidden;
+    border-radius: 28px;
+}
 .st-hint {
-    margin: 8px 16px 0;
-    color: var(--color-text-soft);
+    position: absolute;
+    z-index: 4;
+    bottom: 12px;
+    left: 50%;
+    translate: -50% 0;
+    margin: 0;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--color-bg-surface, #fffdf8) 88%, transparent);
+    color: var(--color-text, #211d15);
     font-size: 12px;
-    text-align: center;
+    white-space: nowrap;
 }
 /* A poster's slot on the street: placed by the street, not laid out as
    the old wall's row. */
-/* On a desktop the street ends 20px above the screen's bottom, and the
+/* On a desktop the street ends 22px above the screen's bottom, and the
    page does too: one screen, no scroll. */
 #main[data-view='wall']:has(.st-root[data-layout='desktop']) {
-    padding-bottom: 20px;
+    padding-bottom: 22px;
 }
 /* The street's posters (the column's and the wall's) carry no Add to plan
    (owner, 13 Oct 2026); a tap opens the details, which has it. */
@@ -3475,14 +3532,15 @@ main[data-view='wall'] #event-featured {
     width: 62px !important;
     height: 62px !important;
 }
-.st-root[data-layout='desktop'] > .st-rings button > span:last-child {
+.st-root > .st-rings button > span:last-child {
     padding: 1px 9px;
     border-radius: 999px;
     background: #fffdf8;
     box-shadow: 0 2px 6px #211d1526;
 }
-/* The distance note: no leading dot (the count before it is hidden), a
-   slim line above the street's right edge on a desktop or tablet. */
+/* The note under the filters (a starting point the preview has no
+   distances for): no leading dot (the count before it is hidden), a slim
+   line above the street's right edge on a desktop or tablet. */
 main[data-view='wall'] #event-count-note::before {
     content: none;
 }

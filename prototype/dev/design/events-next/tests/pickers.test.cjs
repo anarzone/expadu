@@ -241,7 +241,7 @@ test('Travel summary follows shared preferences and survives filter reset', () =
     assert.equal(h.get('[data-travel-label]').textContent, 'From Neumarkt');
     assert.equal(
         h.get('[data-event-picker="travel"]').attrs['aria-label'],
-        'Travel from Neumarkt by walking',
+        'Travel from Neumarkt by walking; distances in a straight line',
     );
     h.press('free-only');
     h.press('reset-event-filters');
