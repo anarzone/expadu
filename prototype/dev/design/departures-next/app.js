@@ -1099,7 +1099,7 @@ function tripLine(key, trip = J.day) {
                   fact(
                       'Spare',
                       `${left}<span>\u00a0min</span>`,
-                      `before\u00a0${trip.start}`,
+                      `before ${trip.start}`,
                       left < margin ? 'attention' : '',
                   ),
               ];

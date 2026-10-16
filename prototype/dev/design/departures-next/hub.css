@@ -1015,6 +1015,20 @@ body.travel-palette {
     .trip-fact-label > [aria-hidden='true'] {
         display: none;
     }
+    /* The big figures and a stop's name stay inside their tiles. */
+    .trip-facts {
+        grid-template-columns: repeat(var(--facts, 3), minmax(min-content, 1fr));
+        gap: 6px;
+    }
+    .trip-fact {
+        padding-inline: 8px;
+    }
+    .trip-fact strong {
+        font-size: 18px;
+    }
+    .trip-fact strong span {
+        font-size: 12px;
+    }
 }
 /* In My day the line sits on the day's rail. */
 .day-river .trip-line {
