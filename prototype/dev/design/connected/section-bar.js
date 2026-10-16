@@ -12,6 +12,12 @@
         if (!link || !phone.matches || event.defaultPrevented) return;
         if (event.metaKey || event.ctrlKey || event.shiftKey) return;
         event.preventDefault();
+        // The shrunk menu opens again first; it doesn't send you back to
+        // the section's first screen (a plan in progress stays).
+        if (document.body.classList.contains('menu-mini')) {
+            document.body.classList.remove('menu-mini');
+            return;
+        }
         const again = new CustomEvent('expadu:section-again', {
             cancelable: true,
         });
