@@ -207,21 +207,11 @@
         transition: none;
     }
 }
-/* Tablets: one header row, the sections as a capsule in its middle, as iPad
-   apps put their tabs at the top (owner chose 6B, canvas row 25, 16 Oct
-   2026; it was a second row under the header). Composer shows its mark and
-   the city its pin (composer-entry.css; the city keeps its name as its
-   label). */
-@media (min-width: 701px) and (max-width: 999px) {
-    html body #shell .app-header {
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
-    }
-    html body #shell .app-header .header-utilities {
-        grid-column: 3;
-        grid-row: 1;
-        gap: 4px;
-    }
+/* Tablets and desktops: one header row, the sections as a capsule in its
+   middle, as iPad apps put their tabs at the top (owner chose 6B for
+   tablets, canvas row 25, and A for desktops, row 26, 16 Oct 2026; tablets
+   had a second row under the header, desktops loose tabs). */
+@media (min-width: 701px) {
     html body #shell .app-header .service-nav {
         grid-column: 2;
         grid-row: 1;
@@ -238,10 +228,7 @@
     html body #shell .app-header .service-nav > a {
         flex: none;
         min-height: 42px;
-        padding: 0 11px;
-        gap: 6px;
         border-radius: 999px;
-        font-size: 13.5px;
     }
     html body #shell .app-header .service-nav > a::before {
         display: block;
@@ -250,6 +237,24 @@
     }
     html body #shell .app-header .service-nav > a::after {
         display: none;
+    }
+}
+/* Tablets: compact sections; Composer shows its mark and the city its pin
+   (composer-entry.css; the city keeps its name as its label). */
+@media (min-width: 701px) and (max-width: 999px) {
+    html:root body #shell .app-header {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+    }
+    html body #shell .app-header .header-utilities {
+        grid-column: 3;
+        grid-row: 1;
+        gap: 4px;
+    }
+    html body #shell .app-header .service-nav > a {
+        padding: 0 11px;
+        gap: 6px;
+        font-size: 13.5px;
     }
     html body #shell .app-header .service-nav > a > svg {
         width: 18px;
@@ -262,6 +267,26 @@
         justify-content: center;
         min-width: 44px;
         padding: 0;
+    }
+}
+/* Desktops: the header on the page's own column, so the logo starts and
+   the account ends where the content does; the capsule in its centre. */
+@media (min-width: 1000px) {
+    html:root body #shell {
+        padding-inline: max(32px, calc((100% - 1440px) / 2 + 32px));
+    }
+    html:root body #shell .app-header {
+        grid-template-columns: 1fr auto 1fr;
+        gap: 16px;
+    }
+    html body #shell .app-header .header-utilities {
+        grid-column: 3;
+        justify-self: end;
+    }
+    html body #shell .app-header .service-nav > a {
+        padding: 0 16px;
+        gap: 8px;
+        font-size: 15px;
     }
 }
 /* Narrow tablets: the logo's mark alone makes the room. */

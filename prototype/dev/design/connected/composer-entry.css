@@ -75,6 +75,34 @@
         display: none;
     }
 }
+/* Opened from the header, Composer sits just under it, centred, the page
+   dimmed behind it: near the button that opened it, not at the bottom of
+   the screen (owner chose A, canvas row 26, 16 Oct 2026). ⌘K and Esc as
+   before (composer-entry.js). */
+@media (min-width: 701px) {
+    :root
+        body:is(.today-c, .department-composer):has(#shell .composer-header)
+        #composer-tray.is-active {
+        top: 84px;
+        bottom: auto;
+        left: 0;
+        right: 0;
+        width: min(680px, calc(100% - 48px));
+        margin-inline: auto;
+        transform-origin: top center;
+        box-shadow:
+            0 24px 60px -24px #211d1599,
+            0 0 0 100vmax rgb(33 29 21 / 0.12);
+    }
+    :root
+        body:is(.today-c, .department-composer):has(#shell .composer-header)
+        #composer-tray.is-active
+        .composer-dismiss {
+        top: 10px;
+        right: 10px;
+        bottom: auto;
+    }
+}
 /* Tablets and laptops narrower than 1280px: the sections share the
    header's one row, so Composer keeps just its mark there (its name is its
    label). */

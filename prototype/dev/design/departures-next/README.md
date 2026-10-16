@@ -11,6 +11,21 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The desktop menu, by the same standards — 16 October 2026
+
+The owner chose A on the canvas, row 26. Shared by every page with the
+header (`connected/section-bar.css`, `composer-entry.css`):
+
+- The sections are the tablet's capsule, centred in the header (it was
+  four loose tabs, about 200px each, off-centre).
+- The header sits on the page's own column: the logo starts and the
+  account ends where the content does (32px in at 1440, the 1440px column
+  centred at 1920; it was 8px and 68px off).
+- Composer opens just under the header, centred, the page dimmed behind it,
+  near the button that opened it (it opened at the bottom of the screen,
+  about 650px away). ⌘K or Ctrl K opens it, Esc returns to the button. The
+  same on tablets.
+
 ## Plan a trip's buttons in reach, tablets in one header row — 16 October 2026
 
 The owner chose 1A and 6B on the canvas, row 25.
