@@ -452,11 +452,13 @@
     font-size: var(--text-small);
     margin: 0 0 18px;
 }
+/* A label, not a selection: Paperwork's lavender. */
 .situation-progress span:last-child {
     border-radius: var(--radius-sm);
-    background: var(--color-select-bg, #e5f5f8);
+    background: var(--color-paper-bg);
     padding: 5px 9px;
-    color: var(--ink);
+    color: var(--color-paper-text);
+    font-weight: var(--weight-semibold);
 }
 .situation-change-grid {
     display: grid;

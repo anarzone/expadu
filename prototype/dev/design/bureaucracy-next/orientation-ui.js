@@ -271,8 +271,19 @@
                                     String(el === b),
                                 ),
                         );
-                        host.querySelector('[data-detail="review"]').disabled =
-                            false;
+                        const next = host.querySelector('[data-detail="review"]');
+                        next.disabled = false;
+                        // One tap: a first answer to a choice (or "I'm not
+                        // sure" under a date) moves on once it shows as chosen.
+                        const typed = host.querySelector('[data-detail-date], [data-detail-number]');
+                        const unsure = ['"unknown"', '"declined"', '"not_applicable"'].includes(b.dataset.detailValue);
+                        if (next.textContent.trim() === 'Continue' && (!typed || unsure)) {
+                            const pick = b.dataset.detailValue;
+                            setTimeout(() => {
+                                if (next.isConnected && !next.disabled && b.getAttribute('aria-pressed') === 'true' && b.dataset.detailValue === pick)
+                                    next.click();
+                            }, 240);
+                        }
                         const dateInput =
                             host.querySelector('[data-detail-date]');
                         if (dateInput) {
