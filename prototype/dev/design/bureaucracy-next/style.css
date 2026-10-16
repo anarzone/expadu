@@ -2520,7 +2520,7 @@ body[data-page='bureaucracy'] .sr-only {
 }
 /* The smallest phones keep both words; the Situation icon makes room. */
 @media (max-width: 380px) {
-    .case-top .case-details svg {
+    .case-top:not(.is-untitled) .case-details svg {
         display: none;
     }
 }
@@ -3101,10 +3101,15 @@ body[data-page='bureaucracy'] .paperwork-group {
         flex-wrap: wrap;
         row-gap: 10px;
     }
+    /* Without room beside the views, Your situation joins the search's
+       row instead of a row of its own. */
     .case-top.is-searchable .case-search {
         order: 10;
-        flex: 1 1 100%;
+        flex: 1 1 220px;
         max-width: none;
+    }
+    .case-top.is-searchable .case-details {
+        order: 9;
     }
     .case-top.is-searchable .case-tabs {
         width: auto;

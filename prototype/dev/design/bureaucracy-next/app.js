@@ -570,7 +570,7 @@
             : '';
     };
     function searchField() {
-        return `<label class="case-search">${I('search')}<span class="sr-only">Search your paperwork</span><input type="search" id="case-search" placeholder="Search tasks, dates, documents" autocomplete="off" enterkeyhint="search" value="${E(query)}"><button type="button" class="case-search-clear" data-clear-search aria-label="Clear search" ${query ? '' : 'hidden'}>${I('close')}</button></label>`;
+        return `<label class="case-search">${I('search')}<span class="sr-only">Search your paperwork</span><input type="search" id="case-search" placeholder="Search your paperwork" autocomplete="off" enterkeyhint="search" value="${E(query)}"><button type="button" class="case-search-clear" data-clear-search aria-label="Clear search" ${query ? '' : 'hidden'}>${I('close')}</button></label>`;
     }
     const searchLine = (count) =>
         query.trim()
