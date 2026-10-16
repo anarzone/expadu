@@ -1,15 +1,22 @@
-/* Phones: the five sections sit in a bar at the bottom, where the thumb
-   rests (owner-approved, canvas row 12, 11 Oct 2026). The header keeps the
-   logo, the city, Saved and the account in one row and scrolls away; the
-   bar stays. Desktops and tablets keep the sections in the header.
-   Loaded by today-header.css, and by Today directly. */
+/* Phones: the sections float in one capsule above the page, where the thumb
+   rests, with Composer's round button beside it (owner chose A, canvas row
+   23, 16 Oct 2026; it was a bar docked along the bottom, row 12).
+   Scrolling down shrinks the capsule to the section you're in and scrolling
+   up brings it back (section-bar.js). The header keeps the logo, the city,
+   Saved and the account in one row and scrolls away. Desktops and tablets
+   keep the sections in the header, where Composer joins them
+   (composer-entry). Loaded by today-header.css, and by Today directly. */
 :root {
     --section-bar: 0px;
 }
 @media (max-width: 700px) {
     :root {
-        /* 48px tabs + 6px above and below; the home indicator adds its own. */
-        --section-bar: calc(60px + env(safe-area-inset-bottom, 0px));
+        /* The menu floats above the home indicator, 62px tall. */
+        --menu-gap: max(16px, env(safe-area-inset-bottom, 0px));
+        --menu-height: 62px;
+        /* The room a page keeps at its end, so its last part clears the
+           menu. */
+        --section-bar: calc(var(--menu-height) + var(--menu-gap) + 12px);
     }
     html body:has(#shell .service-nav) {
         padding-bottom: var(--section-bar);
@@ -21,62 +28,111 @@
     }
     html body #shell .app-header .service-nav {
         position: fixed;
-        inset: auto 0 0;
+        left: 14px;
+        right: 14px;
+        bottom: var(--menu-gap);
         z-index: 45;
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 0;
+        display: flex;
+        width: auto;
+        gap: 2px;
         margin: 0;
-        padding: 6px 6px max(6px, env(safe-area-inset-bottom, 0px));
-        border-top: 1px solid var(--color-border, #e6ddcb);
+        padding: 4px;
+        /* Not a scroller (the older bar scrolled sideways and snapped). */
+        overflow: clip;
+        scroll-snap-type: none;
+        border: 1px solid
+            color-mix(in srgb, var(--color-border, #e6ddcb) 85%, transparent);
+        border-radius: 999px;
         background: color-mix(
             in srgb,
-            var(--color-bg-header, #fffdf8) 96%,
+            var(--color-bg-header, #fffdf8) 93%,
             transparent
         );
-        -webkit-backdrop-filter: blur(8px);
-        backdrop-filter: blur(8px);
-        transition: translate var(--duration-base, 180ms) ease;
+        -webkit-backdrop-filter: blur(20px) saturate(1.6);
+        backdrop-filter: blur(20px) saturate(1.6);
+        box-shadow: 0 14px 34px -16px #211d156b;
+        transition:
+            right 380ms var(--ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
+            translate var(--duration-base, 180ms) ease;
         /* Stays put while a page slides between screens. */
         view-transition-name: section-bar;
     }
+    /* Composer's round button sits beside it. */
+    html body:has(.composer-tray) #shell .app-header .service-nav {
+        right: calc(14px + var(--menu-height) + 10px);
+    }
     html body #shell .app-header .service-nav > a {
+        flex: 1 1 0;
         flex-direction: column;
         justify-content: center;
-        gap: 3px;
+        gap: 2px;
         min-width: 0;
-        min-height: 48px;
+        min-height: 52px;
         padding: 0;
-        border-radius: 14px;
+        border-radius: 999px;
         background: transparent;
         color: var(--color-text, #211d15);
         font-size: 11.5px;
         font-weight: 500;
         line-height: 1.1;
+        white-space: nowrap;
+        transition:
+            flex-grow 380ms var(--ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
+            opacity 200ms ease 140ms,
+            visibility 0s;
     }
     html body #shell .app-header .service-nav > a:is(:hover, :active) {
         background: transparent;
     }
-    /* The icon sits in a pill; the current section fills it. */
     html body #shell .app-header .service-nav > a > svg {
-        box-sizing: border-box;
-        width: 52px;
-        height: 30px;
-        padding: 5px 15px;
-        border-radius: 15px;
-        color: currentColor;
-        transition: background-color var(--duration-fast, 120ms) ease;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border-radius: 0;
+        background: none;
     }
-    html body #shell .app-header .service-nav > a:active > svg {
-        background: var(--color-select-bg-hover, #cceef3);
+    /* The section you're in sits on a pill in its own tint
+       (menu-colors.css); a tap tints the one pressed. */
+    html body #shell .app-header .service-nav > a::before {
+        display: block;
+        inset: 0;
+        border-radius: inherit;
+    }
+    html body #shell .app-header .service-nav > a::after {
+        display: none;
     }
     html body #shell .app-header .service-nav > a[aria-current] {
-        color: #00566a;
-        font-weight: 700;
         background: transparent;
+        font-weight: 700;
     }
-    html body #shell .app-header .service-nav > a[aria-current] > svg {
-        background: var(--color-select-bg, #def5f8);
+    /* Scrolling down: only the section you're in, as a round button; it
+       opens again when you scroll up or move into it with the keyboard. */
+    html body.menu-mini #shell .app-header .service-nav:not(:focus-within) {
+        right: calc(100% - 14px - var(--menu-height));
+        gap: 0;
+    }
+    html
+        body.menu-mini
+        #shell
+        .app-header
+        .service-nav:not(:focus-within)
+        > a:not([aria-current]) {
+        flex-grow: 0;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            flex-grow 380ms var(--ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
+            opacity 140ms ease,
+            visibility 0s linear 140ms;
+    }
+    html
+        body.menu-mini
+        #shell
+        .app-header
+        .service-nav:not(:focus-within)
+        > a[aria-current]
+        > span {
+        display: none;
     }
     /* Out of the way while you type, so the keyboard has the room. */
     body:has(
@@ -89,13 +145,30 @@
         )
         #shell
         .service-nav {
-        translate: 0 100%;
+        translate: 0 calc(100% + var(--menu-gap) + 8px);
     }
-    /* Composer's button sits above the bar, and drops back while you type
-       (the bar has stepped aside). */
+    /* Composer's round button: beside the menu, as tall as it. Opened,
+       Composer sits above the menu; while you type it drops to the bottom
+       (the menu has stepped aside). */
     :root body:is(.today-c, .department-composer) #composer-tray {
-        bottom: calc(var(--section-bar) + 12px);
+        bottom: calc(var(--menu-gap) + var(--menu-height) + 10px);
         transition: bottom var(--duration-base, 180ms) ease;
+    }
+    :root
+        body:is(.today-c, .department-composer)
+        #composer-tray:not(.is-active) {
+        right: 14px;
+        bottom: var(--menu-gap);
+        width: var(--menu-height);
+        height: var(--menu-height);
+    }
+    :root
+        body:is(.today-c, .department-composer)
+        #composer-tray
+        .composer-launcher {
+        width: var(--menu-height);
+        height: var(--menu-height);
+        min-height: var(--menu-height);
     }
     :root
         body:is(.today-c, .department-composer):has(#shell .service-nav):has(
@@ -109,7 +182,7 @@
         #composer-tray {
         bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     }
-    /* Composer's own page keeps its text box above the bar; short notes
+    /* Composer's own page keeps its text box above the menu; short notes
        (toasts) rise by the same amount. */
     :root body:has(#shell .service-nav) :is(.studio-input-wrap, #shared-toast) {
         margin-bottom: var(--section-bar);
@@ -129,7 +202,7 @@
 }
 @media (max-width: 700px) and (prefers-reduced-motion: reduce) {
     html body #shell .app-header .service-nav,
-    html body #shell .app-header .service-nav > a > svg,
+    html body #shell .app-header .service-nav > a,
     :root body #composer-tray {
         transition: none;
     }

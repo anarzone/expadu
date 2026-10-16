@@ -299,25 +299,6 @@ function closePopover(restoreFocus = false) {
 }
 // Back walks back through Travel (history.js); absent in unit tests.
 const H = () => window.TravelHistory;
-// Phones and tablets: Composer's round button steps aside while you scroll
-// down the departures and comes back when you scroll up, so it never sits on
-// the minutes (review, 15 Oct 2026).
-{
-    let lastY = window.scrollY || 0;
-    addEventListener(
-        'scroll',
-        () => {
-            const y = window.scrollY || 0;
-            const tray = document.querySelector('#composer-tray');
-            if (Math.abs(y - lastY) < 6) return;
-            const tuck =
-                y > lastY && y > 80 && !tray?.classList.contains('is-active');
-            document.body.classList.toggle('composer-tucked', tuck);
-            lastY = y;
-        },
-        { passive: true },
-    );
-}
 // Phones and tablets: a deeper screen slides in from the right and Back
 // slides it away (owner-approved, canvas row 12). Only taps and Back slide;
 // code that switches views and carries on straight after stays instant.

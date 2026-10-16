@@ -18,4 +18,23 @@
         if (!dispatchEvent(again)) return;
         scrollTo({ top: 0, behavior: still.matches ? 'instant' : 'smooth' });
     });
+    // Scrolling down shrinks the menu to the section you're in; scrolling
+    // up, or reaching the top, brings it back (canvas row 23).
+    let lastY = scrollY;
+    addEventListener(
+        'scroll',
+        () => {
+            const y = Math.max(0, scrollY);
+            if (Math.abs(y - lastY) < 8) return;
+            document.body.classList.toggle(
+                'menu-mini',
+                phone.matches && y > lastY && y > 80,
+            );
+            lastY = y;
+        },
+        { passive: true },
+    );
+    phone.addEventListener('change', () =>
+        document.body.classList.remove('menu-mini'),
+    );
 })();

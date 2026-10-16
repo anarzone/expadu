@@ -11,6 +11,25 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The menu floats — 16 October 2026
+
+The owner chose A on the Travel directions canvas, row 23 ("current one is
+outdated"). Shared by Today, Events, Paperwork, Travel and Services:
+
+- Phones: the sections float in one capsule above the page, inset 14px, and
+  Composer is the round button beside it, as tall (62px). Scrolling down
+  shrinks the capsule to the section you're in; scrolling up, or the top of
+  the page, brings it back (`connected/section-bar.css`, `section-bar.js`).
+  Typing still moves it out of the way. The page runs under it and keeps room
+  at its end. Opened, Composer sits above the menu.
+- Tablets and desktops: the sections stay in the header and Composer joins
+  them as "Ask Composer" before the city (just its mark at 1000–1279px);
+  ⌘K or Ctrl K opens it on any page (`connected/composer-entry`). The corner
+  button is gone there.
+- Removed: yesterday's "Composer steps aside while you scroll" on Travel
+  (`app.js`, `slide.css`) and the Events-only spot beside the hour rings
+  (`events-next/wall.js`); the menu replaces both.
+
 ## The whole page, reviewed — 15 October 2026
 
 After the owner's critical review of all of Travel ("fix them all"):
@@ -27,7 +46,8 @@ After the owner's critical review of all of Travel ("fix them all"):
 - When the line suggests an earlier tram than your plan's, it says why, in a
   quiet grey: "Your 13:24 leaves only 2 min spare".
 - Phones: names and vias wrap instead of ending in "…"; Composer's round
-  button steps aside while you scroll down and comes back when you scroll up;
+  button stepped aside while you scrolled down (replaced the next day by the
+  floating menu);
   Plan a trip's options sort from the bar's sort button (the hidden heading
   keeps none).
 - Desktop: once a place is picked, When and What matters fold into one line
