@@ -375,7 +375,7 @@
         const ready = Number.isInteger(record.prepared)
             ? `${record.prepared} of ${record.total} documents ready`
             : 'Open your checklist';
-        return `<a class="agenda-paperwork" href="${processURL(record.id)}" aria-label="What to bring for ${E(record.title)}: ${ready}">${I('document')}<span><small>What to bring · ${E(record.title)}</small><strong>${ready}</strong></span>${I('arrow')}</a>`;
+        return `<a class="agenda-paperwork" href="${processURL(record.id).replace('view=detail', 'view=paperwork')}" aria-label="What to bring for ${E(record.title)}: ${ready}">${I('document')}<span><small>What to bring · ${E(record.title)}</small><strong>${ready}</strong></span>${I('arrow')}</a>`;
     }
     function planLink(link) {
         const query = new URLSearchParams({

@@ -318,6 +318,9 @@
             ? q.get('view')
             : 'overview';
         if (q.get('process')) state.process = q.get('process');
+        // A link to one task's documents (Today's "What to bring").
+        if (state.view === 'paperwork' && q.get('process'))
+            state.paperFilter = q.get('process');
         state.step = q.get('step');
         if (previousPerson !== state.person) save();
     }
@@ -1208,7 +1211,12 @@
         );
         if (query.trim() && !hits)
             return `<h2 class="sr-only" id="view-heading" tabindex="-1">Your documents</h2>${searchLine(0)}`;
-        return `<h2 class="sr-only" id="view-heading" tabindex="-1">Your documents</h2>${searchLine(hits)}<div class="paperwork-filters">${listed.length > 1 ? taskChips : ''}${stateChips}</div>${ps.length ? '' : `<div class="honest-empty"><h3>No documents with this status</h3><button type="button" class="plain-button" data-doc-state="all">Show all documents</button></div>`}<div class="paperwork-groups">${ps
+        // One task's documents lead back to that task.
+        const parent =
+            task !== 'all'
+                ? `<button class="view-back" data-process="${E(task)}">${I('back')}${E(nameOf(task))}</button>`
+                : '';
+        return `${parent}<h2 class="sr-only" id="view-heading" tabindex="-1">Your documents</h2>${searchLine(hits)}<div class="paperwork-filters">${listed.length > 1 ? taskChips : ''}${stateChips}</div>${ps.length ? '' : `<div class="honest-empty"><h3>No documents with this status</h3><button type="button" class="plain-button" data-doc-state="all">Show all documents</button></div>`}<div class="paperwork-groups">${ps
             .map((p) => {
                 const key = p.occurrence_key,
                     name = nameOf(key),
