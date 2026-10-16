@@ -62,6 +62,7 @@ function setup(reducedMotion = true, store = {}) {
         toggle(_, on) {
             tray.expanded = on;
         },
+        add() {},
     };
     tray.animate = (frames, options) => {
         let finish, reject;

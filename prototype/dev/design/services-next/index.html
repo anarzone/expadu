@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="is-booting">
     <head>
         <meta charset="utf-8" />
         <meta
@@ -8,6 +8,34 @@
         />
         <meta name="color-scheme" content="light" />
         <title>Expadu — A little help goes a long way</title>
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-400.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-500.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-600.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-700.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
         <link rel="stylesheet" href="../connected/style.css?v=d2bdd34ed41c" />
         <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
         <script defer src="../connected/section-bar.js?v=b14d4f93b12c"></script>
@@ -45,7 +73,7 @@
         />
         <link
             rel="stylesheet"
-            href="../today-c/composer-controls.css?v=954326e161a8"
+            href="../today-c/composer-controls.css?v=0867b62e9da0"
         />
         <link
             rel="stylesheet"
@@ -58,7 +86,7 @@
         <script defer src="../connected/page-context.js?v=0c4b4360c747"></script>
         <script
             defer
-            src="../today-c/composer-controls.js?v=f03273bc0ae8"
+            src="../today-c/composer-controls.js?v=5bbffa3cf26f"
         ></script>
         <script defer src="../connected/planning-ui.js?v=4b0a7b379d2f"></script>
         <link
@@ -118,6 +146,11 @@
             href="../connected/today-header.css?v=ace0f63ef40b"
         />
         <link rel="stylesheet" href="../connected/page-frame.css?v=b10bf58c94f1" />
+        <script
+            defer
+            blocking="render"
+            src="../connected/page-ready.js?v=4bd8708cfec9"
+        ></script>
     </head>
     <body class="shell-review today-palette today-header" data-page="services">
         <!-- shared-header:start -->

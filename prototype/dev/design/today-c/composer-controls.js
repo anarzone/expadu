@@ -30,7 +30,12 @@
             if (!expanded && restoreFocus)
                 launcher.focus({ preventScroll: true });
         };
-        if (expanded) tray.classList.toggle('is-active', true);
+        if (expanded) {
+            tray.classList.toggle('is-active', true);
+            // The button's return motion is for closing the box, not for
+            // every page's first frame (composer-controls.css).
+            tray.classList.add('was-open');
+        }
         if (
             previous === null ||
             matchMedia('(prefers-reduced-motion: reduce)').matches

@@ -11,6 +11,33 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Pages open whole, sections fade across — 16 October 2026
+
+Owner: "I want it to load as a app page". A refresh showed the page being
+built: words missing while the font arrived, the header over an empty page,
+then the content, and on phones the menu sliding narrower for Composer's
+button. Shared by every page (Today, Events, Paperwork, Travel, Services):
+
+- The browser paints a page once its scripts have built it:
+  `connected/page-ready.js` is the head's last script, `blocking="render"`.
+  Chrome and Edge hold the paint; the four Geist weights (and Events'
+  Bricolage) are preloaded so words arrive with the page.
+- The menu and Composer's button start in their places: the shell's
+  transitions wait while `<html>` has `.is-booting` (`section-bar.css`), and
+  the button's return motion plays only after the box was open
+  (`today-c/composer-controls`).
+- Changing section, the header, the menu and Composer's button stay still and
+  the page fades across in 150ms (owner chose the quick fade; cross-document
+  view transitions in `section-bar.css`). Travel's own slides keep their
+  motion. Browsers without page transitions load the page as before.
+- The local server still re-checks every file: answering from a cache saved
+  about 10ms of transfer and no paint time (the scripts are the wait), and
+  the re-check is what keeps an edited file from showing stale.
+- Events' posters still paste themselves onto the wall when it opens; that is
+  the Wall's own entrance.
+- For the app port: render the shell on the server and keep it mounted
+  between pages (a persistent layout), so only the page area changes.
+
 ## Composer's button always opens the box — 16 October 2026
 
 Owner: "it opens as a whole page". Once a tab had talked to Composer

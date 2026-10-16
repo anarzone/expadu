@@ -352,7 +352,7 @@
     display: none;
 }
 :is(.today-c, .department-composer)
-    #composer-tray:not(.is-active)
+    #composer-tray.was-open:not(.is-active)
     .composer-launcher {
     animation: today-launcher-return 240ms cubic-bezier(0.16, 1, 0.3, 1);
 }

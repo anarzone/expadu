@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="is-booting">
     <head>
         <base href="../" />
         <meta charset="utf-8" />
@@ -9,6 +9,34 @@
         />
         <meta name="color-scheme" content="light" />
         <title>Expadu — Today preview</title>
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-400.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-500.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-600.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="../assets/fonts/geist-700.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
         <link rel="stylesheet" href="../connected/style.css?v=d2bdd34ed41c" />
         <link
             rel="stylesheet"
@@ -38,7 +66,7 @@
         <link rel="stylesheet" href="../connected/motion.css?v=2a54464bcba6" />
         <link
             rel="stylesheet"
-            href="../today-c/composer-controls.css?v=954326e161a8"
+            href="../today-c/composer-controls.css?v=0867b62e9da0"
         />
         <link
             rel="stylesheet"
@@ -53,7 +81,7 @@
         <link rel="stylesheet" href="../connected/day-components.css" />
         <link rel="stylesheet" href="./brief/hierarchy.css?v=2150d42c370c" />
         <link rel="stylesheet" href="./brief/sheets.css?v=c0ffe1365180" />
-        <link rel="stylesheet" href="../connected/section-bar.css?v=530ded2dc91e" />
+        <link rel="stylesheet" href="../connected/section-bar.css?v=bce21eae3481" />
         <link rel="stylesheet" href="../connected/page-frame.css?v=b10bf58c94f1" />
         <script defer src="../connected/motion.js?v=e2d6f71e3ec9"></script>
         <script defer src="../connected/section-bar.js?v=b14d4f93b12c"></script>
@@ -121,7 +149,7 @@
         ></script>
         <script
             defer
-            src="../today-c/composer-controls.js?v=f03273bc0ae8"
+            src="../today-c/composer-controls.js?v=5bbffa3cf26f"
         ></script>
         <script defer src="./icons.js?v=b1a07d3a4600"></script>
         <script defer src="../connected/sample-places.js?v=e426f4729b9a"></script>
@@ -131,6 +159,11 @@
         <script defer src="./brief/content.js?v=connected2"></script>
         <script defer src="./brief/enhancements.js?v=roles1"></script>
         <script defer src="./app.js?v=36dd813537fb"></script>
+        <script
+            defer
+            blocking="render"
+            src="../connected/page-ready.js?v=4bd8708cfec9"
+        ></script>
     </head>
     <body
         class="today-next today-reference today-flow"

@@ -296,3 +296,36 @@
         font-size: 0;
     }
 }
+
+/* Loading like an app (owner, 16 Oct 2026: "I want it to load as a app
+   page"). A page paints once it is whole (page-ready.js); until then the
+   menu and Composer's button take their places without sliding there. */
+:root.is-booting :is(#shell, #composer-tray),
+:root.is-booting :is(#shell, #composer-tray) *,
+:root.is-booting :is(#shell, #composer-tray) *::before,
+:root.is-booting :is(#shell, #composer-tray) *::after {
+    transition: none !important;
+}
+/* Moving between sections, the header, the menu and Composer's button stay
+   still while the page fades across in 150ms (owner chose the quick fade,
+   16 Oct 2026). Travel's own slides set data-slide and keep their motion
+   (departures-next/slide.css). */
+@view-transition {
+    navigation: auto;
+}
+:root:not([data-slide]) #shell .app-header {
+    view-transition-name: app-header;
+}
+:root:not([data-slide]) #composer-tray {
+    view-transition-name: composer-tray;
+}
+:root:not([data-slide])::view-transition-group(*),
+:root:not([data-slide])::view-transition-old(*),
+:root:not([data-slide])::view-transition-new(*) {
+    animation-duration: 150ms;
+}
+@media (prefers-reduced-motion: reduce) {
+    :root:not([data-slide])::view-transition-group(*) {
+        animation: none;
+    }
+}
