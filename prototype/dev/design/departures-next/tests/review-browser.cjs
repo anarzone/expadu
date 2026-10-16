@@ -24,56 +24,39 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                     .click();
             };
             const band = page.locator('#next-trip');
+            const tone = () => band.getAttribute('class');
 
-            // Before anything is planned: no band; desktops show the day.
+            // Before a way is picked, the line offers to plan it.
             await choose('Nothing planned yet');
-            assert.equal(await band.isVisible(), false);
-            const day = page.locator('#your-day');
-            assert.equal(await day.isVisible(), width >= 1000);
-            if (width >= 1000) {
-                assert.match(
-                    await day.innerText(),
-                    /My day[\s\S]*14:00[\s\S]*Blue Card appointment[\s\S]*18:30[\s\S]*20:00/,
-                );
-                await day
-                    .getByRole('button', { name: /Plan the way to Blue Card/ })
-                    .click();
-                assert.match(
-                    await page.locator('#results').innerText(),
-                    /Best for you[\s\S]*Tram 4[\s\S]*No change/,
-                );
-            }
-            // On phones and desktops alike, the map column isn't empty.
-            if (width >= 1000) {
-                await choose('A normal day');
-                assert.match(
-                    await page.locator('.nearby-area-panel').innerText(),
-                    /2 boarding points[\s\S]*Buchheim/,
-                );
-            }
+            assert.match(
+                await band.innerText(),
+                /Blue Card appointment[\s\S]*No way picked yet/,
+            );
+            await band.getByRole('button', { name: 'Plan the way' }).click();
+            await page.locator('#results').waitFor();
+            assert.match(
+                await page.locator('#results').innerText(),
+                /Best for you[\s\S]*Tram 4[\s\S]*No change/,
+            );
+            await page.goto(base + 'departures-next/', {
+                waitUntil: 'networkidle',
+            });
 
+            // Cancelled is coral, missed amber; both offer the 13:24.
             await choose('Your tram is cancelled');
             assert.match(
                 await band.innerText(),
-                /Your 13:14 is cancelled[\s\S]*only 2 min early/,
+                /Take the 13:24[\s\S]*13:14 cancelled[\s\S]*only 2 min spare/,
             );
+            assert.match(await tone(), /is-conflict/);
             assert.match(page.url(), /scenario=cancelled/);
-            await band.getByRole('button', { name: /Take the 13:24/ }).click();
-            assert.match(
-                await band.innerText(),
-                /Switched to the 13:24 tram 4[\s\S]*Leave at 13:20/,
-            );
 
             await choose('You didn’t set off in time');
             assert.match(
                 await band.innerText(),
-                /Tram 4 left at 13:14[\s\S]*Next tram 4 at 13:24/,
+                /Take the 13:24[\s\S]*Missed the 13:14/,
             );
-            await band.getByRole('button', { name: 'Take it' }).click();
-            assert.match(
-                await band.innerText(),
-                /because the 13:14 left without you/,
-            );
+            assert.match(await tone(), /is-attention/);
 
             await choose('Late at night: a long wait');
             assert.equal(await band.isVisible(), false);
@@ -86,14 +69,27 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
                 /Last trams for a while/,
             );
             assert.match(
-                await page.locator('.nearby-card').first().innerText(),
+                await page.locator('.nearby-strip').first().innerText(),
                 /Then 23:53/,
             );
 
+            // A lift out of order keeps the trip, says why it won't work
+            // step-free, and Step-free leads the filters.
             await choose('A lift is out of order');
             assert.match(
                 await page.locator('.nearby-banner').innerText(),
                 /A lift at Neumarkt is out of order · sample/,
+            );
+            assert.match(
+                await band.innerText(),
+                /No step-free way to tram 4[\s\S]*Gleis 2, underground/,
+            );
+            assert.match(await tone(), /is-conflict/);
+            assert.equal(
+                await band
+                    .getByRole('button', { name: 'Plan another way' })
+                    .isVisible(),
+                true,
             );
             assert.equal(
                 await page.locator('.nearby-chip').first().innerText(),
@@ -111,7 +107,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
             );
             // Paused times show their clock; the station says not live.
             assert.match(
-                await page.locator('.nearby-card').first().innerText(),
+                await page.locator('.nearby-strip').first().innerText(),
                 /22:19/,
             );
             assert.match(
@@ -133,4 +129,7 @@ const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
     } finally {
         await browser.close();
     }
-})();
+})().catch((error) => {
+    console.error(error);
+    process.exit(1);
+});

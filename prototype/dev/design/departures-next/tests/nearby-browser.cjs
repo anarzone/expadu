@@ -1,7 +1,7 @@
 // Run with: node prototype/dev/design/departures-next/tests/nearby-browser.cjs
 // (needs `python3 prototype/serve.py`; PREVIEW_BASE overrides the address).
-// Nearby opens on the closest station by area; phones switch List | Map and
-// open a line in place, desktops keep the map and the line beside the list.
+// Nearby opens on the closest station by area, with your next trip on top;
+// a line opens in place and the map opens in the list's place.
 const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const base = process.env.PREVIEW_BASE || 'http://127.0.0.1:8765/dev/design/';
@@ -9,14 +9,10 @@ const shots = process.env.SHOTS || '';
 const status = (page) =>
     page.locator('.nearby-count [role="status"]').innerText();
 (async () => {
-    // MapLibre needs WebGL; headless Chromium gets it from SwiftShader.
-    const browser = await chromium.launch({
-        args: [
-            '--use-gl=angle',
-            '--use-angle=swiftshader',
-            '--enable-unsafe-swiftshader',
-        ],
-    });
+    const browser = await chromium.launch();
+    // Whether the first departures sit clear of Composer's button, checked
+    // after every other part has run.
+    const clearOfComposer = [];
     try {
         for (const width of [390, 1440]) {
             const page = await browser.newPage({
@@ -31,90 +27,81 @@ const status = (page) =>
 
             // Opens on Nearby at Neumarkt, every captured departure by area.
             assert.equal(await page.locator('#departures').isVisible(), true);
-            assert.equal(
-                await page.locator('#journey-view').isVisible(),
-                false,
-            );
             assert.match(
                 await page.locator('.nearby-stop').innerText(),
-                /Neumarkt/,
+                /Neumarkt[\s\S]*Recorded Sun 4 Oct, 22:19/,
             );
             assert.equal(
                 await status(page),
                 'All 16 departures · soonest first',
             );
             assert.equal(await page.locator('.nearby-area').count(), 3);
-            // The first useful item and its action are on the first screen,
-            // clear of the Composer button.
+            // The first line is on the first screen.
             const first = await page
-                .locator('.nearby-card')
+                .locator('.nearby-strip')
                 .first()
                 .boundingBox();
             assert.ok(first.y + first.height < (wide ? 900 : 844));
             const composer = await page
                 .locator('.composer-launcher')
                 .boundingBox();
-            if (composer && !wide)
-                assert.ok(
+            clearOfComposer.push([
+                width,
+                !composer ||
                     first.y + first.height < composer.y ||
-                        first.x + first.width < composer.x,
-                    'the first card is clear of Composer',
-                );
+                    first.x + first.width < composer.x,
+            ]);
             if (shots)
                 await page.screenshot({ path: `${shots}/nearby-${width}.png` });
 
-            // The appointment trip leads: other ways open in place, and
-            // "I'm on my way" starts the trip's step-by-step preview.
-            await page.getByRole('button', { name: 'Other ways' }).click();
+            // Your next trip leads: the way and the other ways open in
+            // place, and "I'm on my way" starts it.
+            await page.getByRole('button', { name: 'Show the way' }).click();
             assert.match(
-                await page.locator('#next-trip-others').innerText(),
-                /The 13:24 tram 4[\s\S]*Only 2 min spare[\s\S]*Bike or walk/,
+                await page.locator('.trip-line-way').innerText(),
+                /Neumarkt[\s\S]*Wiener Platz[\s\S]*The 13:24 tram 4[\s\S]*2 min spare[\s\S]*Bike or walk/,
             );
-            await page.getByRole('button', { name: 'Other ways' }).click();
+            await page.getByRole('button', { name: 'Hide the way' }).click();
             await page.getByRole('button', { name: 'I’m on my way' }).click();
             const trip = page.locator('#journey-navigation');
             await trip.waitFor();
-            // It opens on its steps, "Get ready" already done; desktops keep
-            // it in the page beside the map, phones give it the screen.
-            assert.match(
-                await trip.locator('.nav-eyebrow').innerText(),
-                /Walk to the stop[\s\S]*2 of 6 · sample day/,
-            );
+            // Phones give the trip the screen; desktops keep the header.
             assert.equal(
                 await trip.evaluate((d) => d.matches(':modal')),
-                width < 1000,
+                !wide,
             );
-            // One moment at a time, each with its own next action.
+            assert.match(
+                await trip.locator('.nav-count').innerText(),
+                /1 of 4/,
+            );
+            const card = () => trip.locator('.nav-step-card').innerText();
+            assert.match(
+                await card(),
+                /Walk to Neumarkt[\s\S]*Gleis 2, underground[\s\S]*Not right\?/,
+            );
+            // It moves on by itself: no buttons to confirm a step, so the
+            // sample's moments stand in for the time and your location.
             const moments = [
-                [
-                    /Walk to Neumarkt[\s\S]*Board at one of these two points[\s\S]*Either of 2 boarding points · not confirmed/,
-                    'I’m at the stop',
-                ],
-                [/Leaves\s*13:14[\s\S]*Tram 4 to Schlebusch/, 'I’m on board'],
-                [
-                    /Get off at Wiener Platz[\s\S]*Nächster Halt: Wiener Platz/,
-                    'We’re at Wiener Platz',
-                ],
-                [
-                    /Walk 6 min to Blue Card appointment[\s\S]*Ausgang/,
-                    'I’ve arrived',
-                ],
-                [/You’re 12 min early[\s\S]*What to bring/, 'End trip'],
+                [1, /Take tram 4 to Schlebusch[\s\S]*take the 4/, '2 of 4'],
+                [2, /Ride to Wiener Platz[\s\S]*Nächster Halt/, '3 of 4'],
+                [4, /Walk to your appointment[\s\S]*Ausgang/, '4 of 4'],
+                [5, /You’re 12 min early[\s\S]*What to bring/, 'Arrived'],
             ];
-            // The small choices say what they do.
-            assert.equal(
-                await trip
-                    .getByRole('button', { name: 'Stop the trip' })
-                    .isVisible(),
-                true,
-            );
-            for (const [text, next] of moments) {
-                assert.match(
-                    await trip.locator('.nav-moment').innerText(),
-                    text,
+            for (const [index, text, count] of moments) {
+                const options = trip.getByRole('button', {
+                    name: 'Preview options',
+                });
+                await options.click();
+                await trip.locator('[data-nav="moment"]').nth(index).click();
+                if ((await options.getAttribute('aria-expanded')) === 'true')
+                    await options.click();
+                assert.match(await card(), text);
+                assert.equal(
+                    await trip.locator('.nav-count').innerText(),
+                    count,
                 );
-                await trip.getByRole('button', { name: next }).click();
             }
+            await trip.getByRole('button', { name: 'Close the trip' }).click();
             await trip.waitFor({ state: 'hidden' });
 
             // Filters open in place and combine.
@@ -140,13 +127,13 @@ const status = (page) =>
                 .getByRole('button', { name: 'Delayed', exact: true })
                 .click();
 
-            // A line opens in place (phone) or beside the list (desktop).
+            // A line opens in place at every size.
             await page.getByRole('button', { name: /^Tram 18:/ }).click();
             const line = page.locator('section.nearby-line');
             await line.waitFor();
             assert.equal(
                 await line.evaluate((el) => el.classList.contains('is-inline')),
-                !wide,
+                true,
             );
             assert.match(
                 await line.innerText(),
@@ -158,35 +145,29 @@ const status = (page) =>
                 1,
             );
             await page.getByRole('button', { name: 'Close line 18' }).click();
-            await page.getByRole('button', { name: 'Pinned' }).count();
 
-            // The map, with an area label per boarding area.
-            if (!wide)
-                await page
-                    .getByRole('button', { name: 'Map', exact: true })
-                    .click();
-            await page
-                .locator('.nearby-pill')
-                .first()
-                .waitFor({ timeout: 15000 });
-            assert.equal(await page.locator('.nearby-pill').count(), 3);
-            await page
-                .getByRole('button', { name: 'Area for lines 136, 146' })
-                .click();
+            // The map opens in the list's place: lines and where each
+            // group boards; it closes back to the list.
+            await page.locator('#nearby [data-key="view-map"]').click();
+            await page.locator('#nearby-map-title').waitFor();
+            assert.equal(
+                await page.locator('.nearby').getAttribute('data-view'),
+                'map',
+            );
             assert.match(
-                await page.locator('.nearby-area-panel').innerText(),
-                /Daimlerstr\.[\s\S]*Deckstein/,
+                await page.locator('.mapview-side').innerText(),
+                /Underground · Gleis 1 north, Gleis 2 south[\s\S]*Both buses leave from stop A/,
             );
             if (shots)
                 await page.screenshot({
                     path: `${shots}/nearby-map-${width}.png`,
                 });
+            await page.locator('#nearby .mapview-close').click();
+            assert.equal(
+                await page.locator('.nearby').getAttribute('data-view'),
+                'list',
+            );
 
-            // The stop picker reaches the Merkenich captures.
-            if (!wide)
-                await page
-                    .getByRole('button', { name: 'List', exact: true })
-                    .click();
             // The stop picker opens over the page: the filters don't move.
             const chipsAt = () =>
                 page
@@ -201,7 +182,7 @@ const status = (page) =>
                 'All 2 departures · soonest first',
             );
             assert.match(
-                await page.locator('.nearby-footnote').innerText(),
+                await page.locator('.nearby-stop').innerText(),
                 /Recorded Mon 7 Sept, 23:15/,
             );
 
@@ -214,7 +195,7 @@ const status = (page) =>
                 const day = page.locator('#day-view');
                 assert.match(
                     await day.innerText(),
-                    /Now, near Neumarkt[\s\S]*Leave 13:10 → there 13:48[\s\S]*Blue Card appointment[\s\S]*4 hours free[\s\S]*Street culture night/,
+                    /Now, near Neumarkt[\s\S]*Leave now[\s\S]*Blue Card appointment[\s\S]*4 hours free[\s\S]*Street culture night/,
                 );
                 await day.getByRole('button', { name: 'Cinema' }).click();
                 assert.match(
@@ -237,37 +218,15 @@ const status = (page) =>
                 ),
                 true,
             );
-            // A later plan is one tap from its way there.
-            if (wide) {
-                await page.locator('.nearby-stop').click();
-                await page.getByRole('option', { name: /Neumarkt/ }).click();
-                await page
-                    .getByRole('button', {
-                        name: /Plan the way to Cinema under the stars/,
-                    })
-                    .click();
-                assert.equal(
-                    await page.locator('#journey-view').isVisible(),
-                    true,
-                );
-                assert.equal(
-                    await page.locator('#to').inputValue(),
-                    'Stadtgarten',
-                );
-                await page
-                    .getByRole('button', { name: 'Nearby' })
-                    .first()
-                    .click();
-            }
-            // Plan a trip is one tab away; a trip hand-off opens it directly.
-            // Phones open Plan a trip from “Where to?”; desktops from its tab.
-            await (
-                width < 1000
-                    ? page.locator('.where-to')
-                    : page.getByRole('button', { name: 'Plan a trip' }).first()
-            ).click();
-            // On phones Plan a trip slides in, so it lands a frame later.
-            await page.locator('#journey-view').waitFor({ timeout: 1000 });
+            // A later place is one tap from its way there: desktops have
+            // Plan a trip open beside Nearby, phones open it from "Where to?".
+            if (!wide) await page.locator('.where-to').click();
+            await page.locator('[data-day-place="Stadtgarten"]').click();
+            if (!wide)
+                await page.getByRole('button', { name: 'Plan it' }).click();
+            assert.equal(await page.locator('#to').inputValue(), 'Stadtgarten');
+            await page.locator('#results').waitFor();
+            // A trip hand-off opens Plan a trip directly.
             await page.goto(
                 base +
                     'departures-next/?from=Neumarkt&to=M%C3%BClheim&date=2026-09-30&arrive=14:00',
@@ -277,8 +236,16 @@ const status = (page) =>
             assert.deepEqual(errors, []);
             await page.close();
         }
+        for (const [width, clear] of clearOfComposer)
+            assert.ok(
+                clear,
+                `${width}px: the first line is clear of Composer's button`,
+            );
         console.log('nearby-browser: ok');
     } finally {
         await browser.close();
     }
-})();
+})().catch((error) => {
+    console.error(error);
+    process.exit(1);
+});
