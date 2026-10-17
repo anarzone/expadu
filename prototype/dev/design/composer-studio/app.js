@@ -1900,11 +1900,18 @@
                     best !== planned
                         ? ` I skipped the ${planned.depart} in your plan: it leaves only ${spare(planned)}, and ${appointment.kind === 'official' ? 'official appointments need' : 'plans need'} ${margin}.`
                         : '';
+                // Asked without naming it, the answer says which trip; asked
+                // whether it's on time, it says there are no live times.
+                const which = `your ${appointment.title} at ${appointment.start}`;
                 reply(
-                    `You’ll be there at ${hhmm(best.there)} with ${spare(best)} minutes to spare.${skipped}`,
+                    r.status
+                        ? `This preview has no live times, so I can’t tell if it’s running on time. It’s the tram for ${which}.`
+                        : `${r.unnamed ? `That’s for ${which}. ` : ''}You’ll be there at ${hhmm(best.there)} with ${spare(best)} minutes to spare.${skipped}`,
                     {
                         kind: 'trip',
-                        title: leaveText,
+                        title: r.status
+                            ? `Tram ${j.line} at ${best.depart} from ${from}.`
+                            : leaveText,
                         journey: { from, to, arriveBy },
                         trip: {
                             steps: [
@@ -1931,10 +1938,12 @@
                 );
             else
                 reply(
-                    to
-                        ? `Where are you starting from? Then I’ll show the way to ${to}.`
-                        : 'Where are you heading? Your plan stays as it is.',
-                    { kind: 'journey', journeyDraft: { from, to } },
+                    r.event
+                        ? `${r.event} starts at ${arriveBy} at ${to}. Where will you leave from? Then I’ll show the way.`
+                        : to
+                          ? `Where are you starting from? Then I’ll show the way to ${to}.`
+                          : 'Where are you heading? Your plan stays as it is.',
+                    { kind: 'journey', journeyDraft: { from, to, arriveBy } },
                 );
             return;
         }

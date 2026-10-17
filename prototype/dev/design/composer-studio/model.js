@@ -476,15 +476,38 @@
     // The sample day's appointment trip, when a question names it by time or
     // as the appointment: "When should I leave for my 14:00?".
     function leaveFor(t) {
-        if (!/\bwhen (should|do|must) i (leave|set off|go)\b|\bleave for my\b/.test(t))
+        if (
+            !/\bwhen (should|do|must) i (leave|set off|go)\b|\bleave for my\b|\bhow (do|can|should) i get to\b|\b(directions|way|route) to\b/.test(
+                t,
+            )
+        )
             return null;
         const a = root.ExpaduSampleDay?.appointment;
         const j = a?.journey;
         if (!j) return null;
         const time = t.match(/\b(\d{1,2}:\d{2})\b/)?.[1];
-        if (time ? normalizeTime(time) !== a.start : !/appointment|blue card/.test(t))
+        // "When should I leave?" with nothing after it is about the day's
+        // appointment too; the answer says which (unnamed).
+        const bare = !time && !/\b(to|for)\b/.test(t);
+        if (time ? normalizeTime(time) !== a.start : !bare && !/appointment|blue card/.test(t))
             return null;
-        return { from: j.from, to: j.to, arriveBy: a.start, appointmentId: a.id };
+        return { from: j.from, to: j.to, arriveBy: a.start, appointmentId: a.id, unnamed: bare };
+    }
+    // "When should I leave for the cinema?": today's event named by its
+    // title or venue, to arrive by its start.
+    function eventTrip(t) {
+        if (!/\bwhen (should|do|must) i (leave|set off|go)\b|\bhow (do|can|should) i get to\b/.test(t))
+            return null;
+        const named = t.match(/\b(?:for|to)\s+(?:the\s+|my\s+)?(.+?)[?.!\s]*$/)?.[1];
+        if (!named) return null;
+        const x = (root.ExpaduSampleDay?.events || []).find(
+            (e) =>
+                e.date === today() &&
+                (e.title.toLowerCase().includes(named) ||
+                    e.venue.toLowerCase().includes(named) ||
+                    named.includes(e.venue.toLowerCase())),
+        );
+        return x ? { to: x.venue, arriveBy: x.start, event: x.title } : null;
     }
     // "From Neumarkt to Mülheim by 14:00" is the appointment's own trip too.
     function appointmentTrip(places) {
@@ -607,6 +630,26 @@
         // "When should I leave for my 14:00?" is about the appointment's trip.
         const leaving = leaveFor(t);
         if (leaving) return { kind: 'journey', date, ...leaving };
+        const going = eventTrip(t);
+        if (going) return { kind: 'journey', date: today(), ...going };
+        // "Is my tram on time?": the appointment's tram, said plainly that
+        // this preview has no live times.
+        const trip = root.ExpaduSampleDay?.appointment;
+        if (
+            trip?.journey &&
+            /\b(trams?|trains?|bus(es)?|line \d+|s-?bahn|u-?bahn|connection|ride)\b.*\b(on time|late|delay(s|ed)?|running|cancell?ed)\b|\b(any|are there) delays?\b/.test(
+                t,
+            )
+        )
+            return {
+                kind: 'journey',
+                date,
+                from: trip.journey.from,
+                to: trip.journey.to,
+                arriveBy: trip.start,
+                appointmentId: trip.id,
+                status: true,
+            };
         // Getting somewhere, or planning a day, comes before paperwork words:
         // "How do I get to my Blue Card appointment?" is a journey question.
         if (
