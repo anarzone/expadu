@@ -1086,11 +1086,17 @@
 }
 .source-links {
     display: flex;
-    gap: 18px;
+    flex-wrap: wrap;
+    gap: 0 18px;
     font-size: var(--text-body);
     margin-top: 10px;
 }
+/* 44px to tap, as in Good to know's cards. */
 .source-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block: -10px;
     text-decoration: underline;
 }
 /* In-process Composer preview. The action edge fades into the workspace. */
@@ -2632,12 +2638,18 @@ body[data-page='bureaucracy'] .sr-only {
     font-size: var(--text-caption);
     font-weight: var(--weight-semibold);
 }
+/* Each link is 44px tall to tap; the row keeps its place, the extra
+   height reaching above and below the words. */
 .context-links {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 18px;
+    gap: 0 18px;
+    margin-block: -11px;
 }
 .context-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     color: var(--color-text);
     font-weight: var(--weight-semibold);
     text-decoration: underline;
