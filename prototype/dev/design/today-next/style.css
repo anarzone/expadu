@@ -32,7 +32,9 @@ body.today-next {
 }
 .today-next #page-scroll {
     height: calc(100dvh - var(--composer-space));
-    overflow: auto;
+    /* Its scrollbar always shows, as on every other page (shell-review.css). */
+    overflow-x: auto;
+    overflow-y: scroll;
     overscroll-behavior-y: contain;
     scroll-padding: 90px 18px 88px;
     padding-bottom: 32px;

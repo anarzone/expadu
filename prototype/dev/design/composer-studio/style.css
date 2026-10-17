@@ -1703,7 +1703,9 @@
     }
 }
 @media (max-width: 999px) {
-    body.has-panel {
+    /* The panel has the whole screen: the page behind stays still and gives
+       up its scrollbar (shell-review.css), so the panel's edges are even. */
+    html:has(body.has-panel) {
         overflow: hidden;
     }
     #workspace-panel {

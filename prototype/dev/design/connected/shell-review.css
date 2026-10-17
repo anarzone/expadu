@@ -304,8 +304,17 @@
 }
 
 /* Header geometry is shared by every approved department, including Today.
-   No scrollbar strip is kept on one side (owner, 16 Oct 2026, Travel canvas
-   row 27): the page centres in the window you see, with even sides. */
+   Every page keeps its scrollbar, whether it scrolls or not (owner, 17 Oct
+   2026: the menu moved between Today and Events, where only Today had one).
+   On a screen that always shows scrollbars the page and its header sit in
+   the same place on every page, centred beside the scrollbar; a page that
+   doesn't scroll shows an empty track, not a bare strip. Today scrolls in
+   its own panel, which keeps its own (today-next/style.css). A layer that
+   holds the page still sets overflow on html, not body: body's no longer
+   reaches the window once html sets its own. */
+html {
+    overflow-y: scroll;
+}
 .shell-review .app-header .brand,
 .shell-review #shell .brand {
     display: flex;

@@ -234,7 +234,7 @@ document.addEventListener('input', (event) => {
 function openComposer() {
     if (!composer.open) {
         composer.showModal();
-        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
     }
 }
 function cancelWork() {
@@ -252,7 +252,7 @@ function closeComposer() {
 }
 composer.addEventListener('close', () => {
     cancelWork();
-    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
 });
 composer.addEventListener('cancel', cancelWork);
 sheet.addEventListener('close', () => {

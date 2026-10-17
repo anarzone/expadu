@@ -13,7 +13,6 @@
     let route,
         active = N.restore(S.read());
     let returnFocus,
-        previousOverflow,
         closing = false,
         settings = false,
         confirmation = '';
@@ -60,10 +59,7 @@
         closePopover();
         hideSuggestions();
         active = N.restore(S.read());
-        if (!dialog.open) {
-            returnFocus = document.activeElement;
-            previousOverflow = document.body.style.overflow;
-        }
+        if (!dialog.open) returnFocus = document.activeElement;
         route = found;
         settings = false;
         confirmation = '';
@@ -88,7 +84,6 @@
             }
         }
         render();
-        if (!wide()) document.body.style.overflow = 'hidden';
         closing = false;
         if (!reduced())
             dialog.animate(
@@ -110,7 +105,6 @@
         const finish = () => {
             dialog.close();
             document.body.classList?.remove('trip-open');
-            document.body.style.overflow = previousOverflow || '';
             closing = false;
             returnFocus?.isConnected &&
                 returnFocus.focus({ preventScroll: true });

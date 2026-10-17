@@ -16,11 +16,10 @@
     color: var(--ink);
     background: var(--paper);
 }
-/* While the trip has the whole screen, the page behind keeps no scrollbar
-   space (shell-review.css reserves it with scrollbar-gutter: stable), so
-   the trip's edges are even. */
+/* While the trip has the whole screen the page behind stays still and gives
+   up its scrollbar (shell-review.css), so the trip's edges are even. */
 html:has(#journey-navigation:modal) {
-    scrollbar-gutter: auto;
+    overflow: hidden;
 }
 #journey-navigation button {
     touch-action: manipulation;

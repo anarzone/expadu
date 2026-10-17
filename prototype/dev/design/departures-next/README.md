@@ -11,6 +11,26 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The menu stays put — 17 October 2026
+
+Owner: the menu sat in a different place on Today and Events. On a screen
+that always shows scrollbars (a mouse, or macOS set to "Always"), Today is
+long and showed one; Events fits the window and didn't, so its header was
+15px wider: the menu moved 7px and the right-hand buttons 15px. The 16
+October pass had dropped the strip that kept the room (`scrollbar-gutter`).
+
+- Every page keeps its scrollbar, whether it scrolls or not (`html {
+  overflow-y: scroll }` in `connected/shell-review.css`; Today's own panel
+  in `today-next/style.css`). A page that fits shows an empty track. Logo,
+  menu, Ask Composer and account sit at the same pixels on all five pages at
+  1512, 1440 and 1280. Phones and overlay scrollbars: no change.
+- A layer that holds the page still sets `overflow` on `html`, not `body`
+  (body's no longer reaches the window): Travel's sheet, its trip and its
+  map on phones and tablets, Composer's panel below 1000px.
+- Travel's sheet on a laptop turns the scrollbar's width into padding while
+  it is open, so nothing behind it moves and the dim reaches both edges. The
+  whole-screen layers (trip, map, Composer's panel) just drop it.
+
 ## Spacing inside cards — 17 October 2026
 
 The owner chose B on the Travel canvas, row 28 (A gave every row 12 above
@@ -64,7 +84,7 @@ and Places, which loads the same frame):
   the menu at the end.
 - Even sides on a laptop: no scrollbar strip kept on the right only (61px
   left, 76 right before); the page centres in the window you see, 68 / 68 at
-  1512 (`connected/shell-review.css`, `today-next/style.css`).
+  1512. Changed the next day: every page keeps its scrollbar (below).
 - Events on a laptop: 16 under the header, between the filters and the
   street, and under the street (`street.js` GAP), so the street is 18px
   taller at 1512×860.
