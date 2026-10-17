@@ -179,14 +179,15 @@ function toast(message, undo) {
     $('.toast').classList.add('show');
     toastTimer = setTimeout(() => $('.toast').classList.remove('show'), 7000);
 }
-// The sheet holds the page still. Its scrollbar's width becomes padding, so
-// nothing behind the sheet moves and the dim reaches both edges.
+// The sheet holds the page still. The room kept for the scrollbar becomes
+// padding, so nothing behind the sheet moves and the dim reaches both edges.
 function scrollLock() {
     const root = document.documentElement;
     if (sheet.open === (root.style.overflow === 'hidden')) return;
     root.style.paddingRight = sheet.open
         ? `${innerWidth - root.clientWidth}px`
         : '';
+    root.style.scrollbarGutter = sheet.open ? 'auto' : '';
     root.style.overflow = sheet.open ? 'hidden' : '';
 }
 function openSheet(

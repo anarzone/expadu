@@ -304,16 +304,18 @@
 }
 
 /* Header geometry is shared by every approved department, including Today.
-   Every page keeps its scrollbar, whether it scrolls or not (owner, 17 Oct
-   2026: the menu moved between Today and Events, where only Today had one).
-   On a screen that always shows scrollbars the page and its header sit in
-   the same place on every page, centred beside the scrollbar; a page that
-   doesn't scroll shows an empty track, not a bare strip. Today scrolls in
-   its own panel, which keeps its own (today-next/style.css). A layer that
-   holds the page still sets overflow on html, not body: body's no longer
-   reaches the window once html sets its own. */
+   Every page keeps room for a scrollbar, whether it scrolls or not (owner,
+   17 Oct 2026: the menu moved between Today and Events, where only Today
+   had one; then "hide the empty scrollbar track on pages that don't
+   scroll"). On a screen that always shows scrollbars the page and its
+   header sit in the same place on every page; a page that doesn't scroll
+   leaves the room empty, in the page's colour, with no track (browsers fill
+   it with a flat colour, so the header's band stops 15px short). A layer with
+   the whole screen gives the room up (scrollbar-gutter: auto) so its edges
+   are even. Today scrolls in its own panel, which keeps its own
+   (today-next/style.css). */
 html {
-    overflow-y: scroll;
+    scrollbar-gutter: stable;
 }
 .shell-review .app-header .brand,
 .shell-review #shell .brand {

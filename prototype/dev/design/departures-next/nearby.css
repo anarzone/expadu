@@ -769,9 +769,10 @@
             visibility 0s linear 420ms;
     }
     /* While the map has the whole screen the page behind stays still and
-       gives up its scrollbar, so the map's edges are even. */
+       gives up the room kept for its scrollbar, so the map's edges are even. */
     html:has(.nearby[data-view='map']) {
         overflow: hidden;
+        scrollbar-gutter: auto;
     }
     .nearby[data-view='map'] .nearby-mapview {
         transform: none;

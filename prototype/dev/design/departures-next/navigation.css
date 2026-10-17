@@ -17,9 +17,11 @@
     background: var(--paper);
 }
 /* While the trip has the whole screen the page behind stays still and gives
-   up its scrollbar (shell-review.css), so the trip's edges are even. */
+   up the room kept for its scrollbar (shell-review.css), so the trip's
+   edges are even. */
 html:has(#journey-navigation:modal) {
     overflow: hidden;
+    scrollbar-gutter: auto;
 }
 #journey-navigation button {
     touch-action: manipulation;

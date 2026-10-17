@@ -19,17 +19,20 @@ long and showed one; Events fits the window and didn't, so its header was
 15px wider: the menu moved 7px and the right-hand buttons 15px. The 16
 October pass had dropped the strip that kept the room (`scrollbar-gutter`).
 
-- Every page keeps its scrollbar, whether it scrolls or not (`html {
-  overflow-y: scroll }` in `connected/shell-review.css`; Today's own panel
-  in `today-next/style.css`). A page that fits shows an empty track. Logo,
-  menu, Ask Composer and account sit at the same pixels on all five pages at
-  1512, 1440 and 1280. Phones and overlay scrollbars: no change.
-- A layer that holds the page still sets `overflow` on `html`, not `body`
-  (body's no longer reaches the window): Travel's sheet, its trip and its
-  map on phones and tablets, Composer's panel below 1000px.
-- Travel's sheet on a laptop turns the scrollbar's width into padding while
-  it is open, so nothing behind it moves and the dim reaches both edges. The
-  whole-screen layers (trip, map, Composer's panel) just drop it.
+- Every page keeps room for a scrollbar, whether it scrolls or not (`html {
+  scrollbar-gutter: stable }` in `connected/shell-review.css`; Today's own
+  panel in `today-next/style.css`). Logo, menu, Ask Composer and account
+  sit at the same pixels on all five pages at 1512, 1440 and 1280. Phones
+  and overlay scrollbars: no change.
+- A page that fits the window shows no track (owner, same day: "hide the
+  empty scrollbar track on pages that don't scroll"; it showed one for an
+  hour). The room stays, in the page's cream: browsers fill it with a flat
+  colour, so on those pages the header's band stops 15px short of the edge.
+- Travel's sheet on a laptop turns that room into padding while it is open,
+  so nothing behind it moves and the dim reaches both edges. The
+  whole-screen layers (Travel's trip, its map on phones and tablets,
+  Composer's panel below 1000px) just drop it. The layers that hold the page
+  still set `overflow` on `html`.
 
 ## Spacing inside cards — 17 October 2026
 
