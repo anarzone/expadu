@@ -1234,11 +1234,15 @@
         );
         if (query.trim() && !hits)
             return `<h2 class="sr-only" id="view-heading" tabindex="-1">Your documents</h2>${searchLine(0)}`;
-        // One task's documents lead back to that task.
+        // Opened from another section ("What to bring" on Today or in
+        // Composer), they lead back there until you move around in
+        // Paperwork; otherwise one task's documents lead back to that task.
         const parent =
-            task !== 'all'
-                ? `<button class="view-back" data-process="${E(task)}">${I('back')}${E(nameOf(task))}</button>`
-                : '';
+            sender && !moved
+                ? `<button class="view-back" data-sender-back>${I('back')}${E(sender)}</button>`
+                : task !== 'all'
+                  ? `<button class="view-back" data-process="${E(task)}">${I('back')}${E(nameOf(task))}</button>`
+                  : '';
         return `${parent}<h2 class="sr-only" id="view-heading" tabindex="-1">Your documents</h2>${searchLine(hits)}<div class="paperwork-filters">${listed.length > 1 ? taskChips : ''}${stateChips}</div>${ps.length ? '' : `<div class="honest-empty"><h3>No documents with this status</h3><button type="button" class="plain-button" data-doc-state="all">Show all documents</button></div>`}<div class="paperwork-groups">${ps
             .map((p) => {
                 const key = p.occurrence_key,
