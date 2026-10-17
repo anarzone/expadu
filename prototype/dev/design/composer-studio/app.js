@@ -1165,7 +1165,7 @@
                 );
                 const after = JSON.stringify(updated);
                 const scroll = panel ? returnScroll : window.scrollY;
-                changed('Replaced with ' + place(selectedId).title);
+                changed(`Replaced ${original.title} with ${place(selectedId).title}`);
                 store();
                 closePanel(false);
                 render();
@@ -1479,24 +1479,26 @@
     function note(text) {
         return C.append(state, 'assistant', text);
     }
+    // After a change: applied to the plan straight away (small edits for
+    // me), or waiting on the plan's own button, named as it reads.
+    function nextStep(applied) {
+        if (applied) return ' It’s in your plan now. You can undo it under the plan.';
+        const p = state.proposal;
+        if (!p) return '';
+        return ` Review it, then ${!p.items.length && p.baseId ? 'Cancel this day' : p.baseId ? 'Apply changes' : 'Confirm plan'}.`;
+    }
     function changed(label, silent = false) {
         const applied = A.changed(state, label);
-        if (!silent)
-            note(
-                label +
-                    '.' +
-                    (applied
-                        ? ' Applied to your plan. Undo is available.'
-                        : ' Ready for your review.'),
-            );
+        if (!silent) note(`${label}.${nextStep(applied)}`);
         store();
         render();
+        return applied;
     }
     function commitPlan() {
         const saved = A.commit(state);
         if (saved)
             note(
-                'Your plan is saved. You can keep editing here, or open it in My Plans.',
+                'Your plan is saved. Ask me for a change, or open it in My Plans.',
             );
         state.response = { kind: 'confirmed' };
         store();
@@ -2244,6 +2246,7 @@
                 return;
             }
             const x = A.editTarget(current, text);
+            const was = { start: x.start, end: x.end };
             if (/swap|replace/i.test(text)) {
                 const options = A.replacementOptions(state, x.id, catalogue);
                 reply(
@@ -2254,7 +2257,8 @@
                 );
                 return;
             }
-            if (!state.proposal) M.propose(state, [], date, current.id);
+            const created = !state.proposal;
+            if (created) M.propose(state, [], date, current.id);
             if (/remove|delete/i.test(text))
                 state.proposal.items = state.proposal.items.filter(
                     (i) => i.id !== x.id,
@@ -2286,10 +2290,19 @@
                     return;
                 }
             }
-            const applied = A.changed(state, 'Updated ' + x.title);
-            reply(
-                `${x.title} updated in your plan.${applied ? ' Applied automatically. Undo is available.' : ' Review the change, then Apply.'}`,
-            );
+            // What changed, in words: removed, or its new time; a time it
+            // already has changes nothing.
+            const now = state.proposal.items.find((i) => i.id === x.id);
+            if (now && now.start === was.start && now.end === was.end) {
+                if (created) state.proposal = null;
+                reply(`${x.title} is already at ${was.start}–${was.end}.`);
+                return;
+            }
+            const label = now
+                ? `Moved ${x.title} to ${now.start}–${now.end}`
+                : `Removed ${x.title}`;
+            const applied = A.changed(state, label);
+            reply(`${label}.${nextStep(applied)}`);
             return;
         }
         state.response = { ...r, request: text };
@@ -2564,13 +2577,12 @@
                 }
                 closeTimeOptions();
                 e.target.closest('details').open = false;
-                changed('Updated time for ' + x.title);
+                changed(`Moved ${x.title} to ${start}–${end}`);
                 document
                     .querySelector(`[data-time-form="${x.id}"]`)
                     ?.closest('details')
                     .querySelector('summary')
                     .focus({ preventScroll: true });
-                notify('Suggested time updated');
             }
             return;
         }
@@ -2593,7 +2605,7 @@
                 });
             state.proposal.date = nextDate;
             state.date = state.proposal.date;
-            changed('Changed plan date');
+            changed(`Moved the plan to ${longDate(nextDate)}`);
         }
     });
     document.addEventListener('change', (e) => {
@@ -2779,11 +2791,13 @@
                         /* Keep the free slot propose found. */
                     }
                 }
-                changed(
+                const applied = changed(
                     `${place(id).title} added at ${added.start}–${added.end}`,
                 );
                 notify(
-                    'Added to your plan. Keep choosing places or review below.',
+                    applied
+                        ? 'Added to your plan. Keep choosing places.'
+                        : 'Added to the proposal. Keep choosing places, or review it below.',
                 );
             } catch (error) {
                 notify(error.message);
@@ -2808,9 +2822,10 @@
             state.proposal.items = state.proposal.items.filter(
                 (x) => x.id !== id,
             );
-            changed('Activity removed');
+            const removed = old.items.find((x) => x.id === id);
+            changed(removed ? `Removed ${removed.title}` : 'Activity removed');
             const afterRemoval = JSON.stringify(state.proposal);
-            notify('Activity removed', () => {
+            notify(removed ? `Removed ${removed.title}` : 'Activity removed', () => {
                 if (JSON.stringify(state.proposal) !== afterRemoval) {
                     notify(
                         'The draft has changed since. Review it before restoring this activity.',
@@ -2822,7 +2837,7 @@
                     return;
                 }
                 state.proposal = old;
-                changed('Restored removed activity');
+                changed(removed ? `Restored ${removed.title}` : 'Restored removed activity');
             });
             return;
         }

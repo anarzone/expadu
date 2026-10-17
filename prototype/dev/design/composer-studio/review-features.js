@@ -436,10 +436,10 @@
                     .map((x) => {
                         const id = 'event:' + x.id;
                         const past = x.date < today();
+                        const draft =
+                            current.proposal?.date === x.date ? current.proposal : null;
                         const added = (
-                            current.proposal?.date === x.date
-                                ? current.proposal
-                                : current.plans.find((p) => p.date === x.date)
+                            draft || current.plans.find((p) => p.date === x.date)
                         )?.items.some((item) => item.id === id);
                         const source = /sample/i.test(x.captured || '')
                             ? 'Sample event'
@@ -453,7 +453,7 @@
                         const when = `${x.date === today() ? 'Today' : day} ${x.start}`;
                         const saved = current.saved.includes(id);
                         const meta = `${x.start}${x.end ? `–${x.end}` : ''} · ${x.venue}`;
-                        return `<article class="event-poster${past ? ' is-past' : ''}"><img src="../events-next/photos/${E(art)}.webp" alt="" loading="lazy" onerror="this.remove()"><span class="poster-label">AI illustration · sample</span><button type="button" class="event-poster-save" data-save="${E(id)}" aria-pressed="${saved}" aria-label="${saved ? 'Unsave' : 'Save'} ${E(x.title)}">${I('bookmark')}</button><button type="button" class="event-poster-open" data-preview="${E(id)}" aria-label="${E(`${x.title}, ${when}, ${x.venue}. ${source}${past ? ', past' : ''}. Quick look`)}"><span class="poster-stamp">${E(past ? `Past · ${day}` : when)}</span><span class="event-poster-title">${E(x.title)}</span><span class="event-poster-meta">${E(meta)}</span></button>${past ? '' : `<button type="button" class="event-poster-plan${added ? ' is-added' : ''}" data-add-event="${E(id)}" ${added ? 'aria-disabled="true"' : ''} aria-label="${added ? `${E(x.title)} is in your plan` : `Add ${E(x.title)} to your plan`}">${I(added ? 'check' : 'calendar-plus')}</button>`}</article>`;
+                        return `<article class="event-poster${past ? ' is-past' : ''}"><img src="../events-next/photos/${E(art)}.webp" alt="" loading="lazy" onerror="this.remove()"><span class="poster-label">AI illustration · sample</span><button type="button" class="event-poster-save" data-save="${E(id)}" aria-pressed="${saved}" aria-label="${saved ? 'Unsave' : 'Save'} ${E(x.title)}">${I('bookmark')}</button><button type="button" class="event-poster-open" data-preview="${E(id)}" aria-label="${E(`${x.title}, ${when}, ${x.venue}. ${source}${past ? ', past' : ''}. Quick look`)}"><span class="poster-stamp">${E(past ? `Past · ${day}` : when)}</span><span class="event-poster-title">${E(x.title)}</span><span class="event-poster-meta">${E(meta)}</span></button>${past ? '' : `<button type="button" class="event-poster-plan${added ? ' is-added' : ''}" data-add-event="${E(id)}" ${added ? 'aria-disabled="true"' : ''} aria-label="${added ? `${E(x.title)} is in your ${draft ? 'proposal' : 'plan'}` : `Add ${E(x.title)} to your plan`}">${I(added ? 'check' : 'calendar-plus')}</button>`}</article>`;
                     })
                     .join('');
                 const anyOpen = ids.map(eventFor).some((x) => x && x.date >= today());
@@ -524,8 +524,7 @@
                         { ...x, id: el.dataset.addEvent, fixed: true },
                         x.date,
                     );
-                    changed('Added captured event');
-                    notify(`Added to your plan for ${eventDate(x.date)}.`);
+                    changed(`Added ${x.title}, ${x.start}–${x.end}, on ${eventDate(x.date)}`);
                 } catch (error) {
                     notify(error.message);
                 }
