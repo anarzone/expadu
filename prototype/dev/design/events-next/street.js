@@ -235,8 +235,10 @@
             const r = rects.get(b);
             const kx = r.width / b.offsetWidth,
                 ky = r.height / b.offsetHeight;
-            // A column face turned to the side keeps its own size.
-            if (!kx || !ky || Math.abs(kx / ky - 1) > 0.15 || (r.width >= 46 && r.height >= 46)) {
+            // A column face turned to the side keeps its own size; the
+            // front poster's Save is on the face beside the middle one,
+            // turned a little (about 0.84 as wide as tall), so it counts.
+            if (!kx || !ky || Math.abs(kx / ky - 1) > 0.25 || (r.width >= 46 && r.height >= 46)) {
                 for (const v of ['--hit-w', '--hit-h', '--hit-x', '--hit-y']) b.style.removeProperty(v);
                 continue;
             }
@@ -253,15 +255,20 @@
             }
             w = Math.max(r.width, w);
             h = Math.max(r.height, h);
-            // On a poster, the area stays on the poster (its edge clips it).
+            // On a poster, the area stays on the poster (its edge clips it);
+            // on the column, on the poster's strip. A strip narrower than
+            // the area has it centred on it.
             let dx = 0,
                 dy = 0;
             const pp = b.closest('.pp')?.getBoundingClientRect();
-            if (pp && pp.width >= w && pp.height >= h) {
-                const cx = r.left + r.width / 2,
-                    cy = r.top + r.height / 2;
-                dx = Math.max(pp.left - (cx - w / 2), Math.min(0, pp.right - (cx + w / 2)));
-                dy = Math.max(pp.top - (cy - h / 2), Math.min(0, pp.bottom - (cy + h / 2)));
+            if (pp) {
+                const face = b.closest('.st-face')?.getBoundingClientRect() || pp;
+                const fit = (lo, hi, c, size) =>
+                    hi - lo >= size
+                        ? Math.max(lo - (c - size / 2), Math.min(0, hi - (c + size / 2)))
+                        : (lo + hi) / 2 - c;
+                dx = fit(Math.max(pp.left, face.left), Math.min(pp.right, face.right), r.left + r.width / 2, w);
+                dy = fit(Math.max(pp.top, face.top), Math.min(pp.bottom, face.bottom), r.top + r.height / 2, h);
             }
             if (getComputedStyle(b).position === 'static') b.style.position = 'relative';
             b.style.setProperty('--hit-w', `${(w / kx).toFixed(1)}px`);
