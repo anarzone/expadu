@@ -2710,11 +2710,6 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
         margin: 4px calc(var(--street-bleed) * -1) 18px;
         padding: 44px var(--street-bleed) 0;
     }
-    /* Composer's button floats over the content's right edge; the filters
-       stop short of it, so it never covers one at any height. */
-    .event-discovery > :is(.event-gallery-head, .event-controls) {
-        padding-right: 40px;
-    }
     .wall-scene::before {
         content: '';
         position: absolute;
@@ -2857,9 +2852,6 @@ body[data-page='events'] .event-sheet .place-sheet-tabs button[aria-pressed='tru
     }
     .wall-scene {
         padding-top: 30px;
-    }
-    .event-discovery > :is(.event-gallery-head, .event-controls) {
-        padding-right: 0;
     }
     .wall-scene-rain {
         opacity: calc(var(--rain, 0) * 0.4);
