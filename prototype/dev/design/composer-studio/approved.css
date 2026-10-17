@@ -81,6 +81,22 @@ body.studio {
         width: 340px;
         gap: 18px;
     }
+    /* On your way (connected/journey-session.js): the trip's bar heads the
+       conversation, as wide as it (800px at most, centred in its column)
+       and level with Your day, not across it. */
+    body.has-composer-day:not(.has-panel) .journey-resume:not([hidden]) {
+        max-width: none;
+        width: min(800px, calc(100% - var(--composer-day-edge) - 24px));
+        margin: 32px 0 0
+            calc(
+                var(--composer-day-edge) +
+                    max(0px, (100% - var(--composer-day-edge) - 24px - 800px) / 2)
+            );
+    }
+    body.has-composer-day:not(.has-panel):has(.journey-resume:not([hidden]))
+        #main {
+        padding-top: 16px;
+    }
     .composer-day h2 {
         margin-bottom: -12px;
         font-family: var(--composer-display);
