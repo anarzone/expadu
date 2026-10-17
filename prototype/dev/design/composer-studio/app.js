@@ -741,18 +741,134 @@
             : date === M.addDays(today, 1)
               ? 'Tomorrow'
               : new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    // The trip you're on, as Travel keeps it once you tap "I'm on my way"
+    // (connected/journey-session.js): its steps, where you are in them, the
+    // ride and where you get off. Its step is the next thing to do: "Get off
+    // at Wiener Platz" while you're on the tram.
+    function onTheWay() {
+        const s = window.JourneySession?.read();
+        if (!s) return null;
+        const steps = s.steps || [];
+        const at = Math.min(s.step, Math.max(0, steps.length - 1));
+        const board = steps.findIndex((x) => x.mode === 'transit');
+        const off = steps.findIndex((x, i) => i > board && x.mode === 'alight');
+        const vehicle = s.vehicle && s.vehicle !== 'line' ? s.vehicle : 'line';
+        const now = steps[at] || null;
+        return {
+            ...s,
+            steps,
+            at,
+            now,
+            board: board >= 0 ? steps[board] : null,
+            off: off >= 0 ? steps[off] : null,
+            // Going to the stop, on the ride, past it, or there.
+            stage: !now
+                ? 'unknown'
+                : now.mode === 'arrive'
+                  ? 'arrived'
+                  : board < 0 || at <= board
+                    ? 'before'
+                    : off < 0 || at <= off
+                      ? 'riding'
+                      : 'after',
+            vehicle,
+            ride: `${vehicle} ${s.line || steps[board]?.title.match(/\bline\s+(\S+)/i)?.[1] || ''}`.trim(),
+            href: `${ExpaduStore.routes.departures}?journey=resume`,
+        };
+    }
+    // Answers about it: what was asked first, then where you are, the steps
+    // left and the way back to the trip. Times are the trip's own,
+    // scheduled; nothing here is live.
+    function tripAnswer(w, ask) {
+        const a = window.ExpaduSampleDay?.appointment;
+        const toAppointment = !!a && w.title === a.title;
+        const Ride = w.ride.charAt(0).toUpperCase() + w.ride.slice(1);
+        const towards = w.board?.detail ? ` ${w.board.detail.replace(/^Towards\b/, 'towards')}` : '';
+        const spare =
+            toAppointment && w.arrive && clockMins(a.start) > clockMins(w.arrive)
+                ? `, ${clockMins(a.start) - clockMins(w.arrive)} minutes before ${a.start}`
+                : '';
+        const there = w.arrive && w.stage !== 'arrived' ? `You’ll be there at ${w.arrive}${spare}.` : '';
+        const offPlace = w.off ? w.off.place || w.off.title.replace(/^Get off at /, '') : '';
+        const offAt = w.off ? `Get off at ${offPlace} at ${w.off.time}.` : '';
+        const where = {
+            before:
+                w.board && w.now === w.board
+                    ? `Your ${w.ride} leaves${w.board.place ? ` ${w.board.place}` : ''} at ${w.board?.time}.`
+                    : `${w.now?.title}: your ${w.ride} leaves at ${w.board?.time}.`,
+            riding: offAt,
+            after: `${w.now?.title}.`,
+            arrived: w.now?.detail ? `${w.now.detail}.` : '',
+            unknown: `${w.instruction}.`,
+        }[w.stage];
+        const noLive = 'This preview has no live times, so I can’t tell if it’s running on time.';
+        const condition = {
+            location: ' Your location isn’t available, so the trip follows the timetable.',
+            offline: ' You’re offline, so the trip’s times won’t update.',
+            changed: ' The trip has a route change to review: it can plan again from where you are.',
+        }[w.condition] || '';
+        const join = (...parts) => parts.filter(Boolean).join(' ');
+        let title, text;
+        if (ask === 'status' && w.board) {
+            title =
+                w.stage === 'before'
+                    ? `${Ride} at ${w.board.time}${w.board.place ? ` from ${w.board.place}` : ''}.`
+                    : w.stage === 'riding'
+                      ? `You’re on ${w.ride}${towards}.`
+                      : `You’re off the ${w.vehicle}.`;
+            text = ['before', 'riding'].includes(w.stage) ? join(noLive, w.stage === 'riding' && offAt) : join(where, there);
+        } else if (ask === 'stop' && w.off) {
+            title = ['before', 'riding'].includes(w.stage) ? offAt : `You got off at ${offPlace}.`;
+            text = join(w.stage === 'before' && `Your ${w.ride} leaves at ${w.board.time}.`, w.stage === 'after' && where, there);
+        } else if (ask === 'arrive' && w.arrive) {
+            title = w.stage === 'arrived' ? `You’re there: ${w.title}.` : there;
+            text = where;
+        } else {
+            // "When should I leave?" or "What's next?": you're already going.
+            title = {
+                before: 'You’re on your way.',
+                riding: `You’re on ${w.ride}${towards}.`,
+                after: 'You’re nearly there.',
+                arrived: `You’re there: ${w.title}.`,
+                unknown: 'You’re on your way.',
+            }[w.stage];
+            text = join(where, there);
+        }
+        return {
+            text: text + condition,
+            entry: {
+                kind: 'trip',
+                title,
+                trip: {
+                    steps: w.steps.slice(w.at).map((x) => ({
+                        mode: x.mode === 'walk' || x.mode === 'arrive' ? x.mode : 'transit',
+                        ...(x.mode === 'transit' && w.line ? { line: w.line } : {}),
+                        label: x.title,
+                        value: x.time,
+                    })),
+                    href: w.href,
+                    label: 'Back to your trip',
+                },
+            },
+        };
+    }
     function welcome() {
         // Starters from what Expadu knows about your day, each in the colour
         // of the section it leads to. Only what the day actually has.
         const x = todayContext();
         const a = x.appointment;
+        // On your way to it, the Travel starter asks about the trip.
+        const way = onTheWay();
+        const going = way && way.title === a?.title;
         const cards = [
             a?.journey && {
                 kind: 'travel',
                 tag: 'Travel',
                 icon: 'route',
-                label: `When should I leave for my ${a.start}?`,
-                detail: `${a.journey.from} → ${a.location} · line ${a.journey.line}`,
+                label: going ? 'How’s my trip going?' : `When should I leave for my ${a.start}?`,
+                detail: going
+                    ? `${way.arrive ? `There at ${way.arrive} · ` : ''}${way.ride}`
+                    : `${a.journey.from} → ${a.location} · line ${a.journey.line}`,
             },
             x.record?.total && {
                 kind: 'paperwork',
@@ -808,7 +924,10 @@
     function dayFacts(x) {
         const a = x.appointment;
         const facts = [];
-        if (a && x.trip)
+        // On your way to it, "leave for" is gone: the trip shows above the
+        // page (connected/journey-session.js) and the starter asks about it.
+        const way = onTheWay();
+        if (a && x.trip && !(way && way.title === a.title))
             facts.push({
                 prompt: `When should I leave for my ${a.start}?`,
                 tile: 'is-travel',
@@ -1210,7 +1329,12 @@
         main.querySelector('.chat-bar').hidden = !chapter.entries.length;
         const empty = feed.querySelector('.studio-welcome');
         if (!chapter.entries.length) {
-            if (!empty) feed.innerHTML = welcome();
+            // Drawn again only when it changes (a trip started or ended).
+            const welcomeHtml = welcome();
+            if (!empty || dayMarkup.get(feed) !== welcomeHtml) {
+                feed.innerHTML = welcomeHtml;
+                dayMarkup.set(feed, welcomeHtml);
+            }
         } else {
             empty?.remove();
             for (const entry of chapter.entries) {
@@ -1873,6 +1997,24 @@
                 );
             return;
         }
+        // On your way: the trip you're on answers "Where do I get off?", "Is
+        // my tram on time?" and, when it's to the appointment, "When should
+        // I leave?", with the way back to it.
+        const way = onTheWay();
+        if (
+            way &&
+            (r.kind === 'onway' ||
+                (r.kind === 'journey' &&
+                    (r.status ||
+                        (r.appointmentId &&
+                            way.title === window.ExpaduSampleDay?.appointment?.title))))
+        ) {
+            state.conversation.activeDate = null;
+            const { text, entry } = tripAnswer(way, r.kind === 'onway' ? r.ask : r.status ? 'status' : 'leave');
+            reply(text, entry);
+            return;
+        }
+        if (r.kind === 'onway') r = { ...r, kind: 'clarify' };
         if (r.kind === 'journey') {
             state.conversation.activeDate = null;
             const travel = page?.page === 'travel' ? page : null;
@@ -2932,6 +3074,8 @@
                     ?.getAnimations()
                     .forEach((animation) => animation.cancel());
         }
+        // Back from Travel, the trip may have started, moved on or ended.
+        if (event.persisted) render();
         positionComposerHeader();
     });
     const features = StudioReviewFeatures.create({
@@ -3046,6 +3190,16 @@
     });
     render();
     store();
+    // The trip session loads after this script; once it has, a trip you're
+    // on shows in Your day and the starters.
+    if (!window.JourneySession)
+        addEventListener(
+            'DOMContentLoaded',
+            () => {
+                if (window.JourneySession?.read()) render();
+            },
+            { once: true },
+        );
     if (
         incoming &&
         !incomingPrompt &&

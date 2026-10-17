@@ -27,9 +27,9 @@
             body += `<div class="answer-block answer-trip"><ol>${entry.trip.steps
                 .map(
                     (x) =>
-                        `<li>${x.line ? `<span class="answer-line" aria-label="Line ${E(x.line)}">${E(x.line)}</span>` : I(x.mode === 'walk' ? 'walk' : 'train')}<span>${E(x.label)}</span><b>${E(x.value)}</b></li>`,
+                        `<li>${x.line ? `<span class="answer-line" aria-label="Line ${E(x.line)}">${E(x.line)}</span>` : I(x.mode === 'walk' ? 'walk' : x.mode === 'arrive' ? 'pin' : 'train')}<span>${E(x.label)}</span><b>${E(x.value)}</b></li>`,
                 )
-                .join('')}</ol></div>${paragraph}${entry.trip.note ? `<p class="answer-note">${E(entry.trip.note)}</p>` : ''}<div class="answer-actions">${entry.trip.href ? `<a class="answer-button" href="${E(entry.trip.href)}">Open in Travel${I('arrow')}</a>` : ''}<span>Scheduled sample times, not live.</span></div>`;
+                .join('')}</ol></div>${paragraph}${entry.trip.note ? `<p class="answer-note">${E(entry.trip.note)}</p>` : ''}<div class="answer-actions">${entry.trip.href ? `<a class="answer-button" href="${E(entry.trip.href)}">${E(entry.trip.label || 'Open in Travel')}${I('arrow')}</a>` : ''}<span>Scheduled sample times, not live.</span></div>`;
         // Your own checklist's progress, linked to Paperwork. Not guidance.
         if (entry.kind === 'checklist' && entry.record) {
             const r = entry.record;

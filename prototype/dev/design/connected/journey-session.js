@@ -3,6 +3,30 @@
     const key = 'expadu.journey-preview.v1';
     let memory = null;
     let memoryOnly = false;
+    const clock = (value) =>
+        typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+    // The trip's own steps and arrival, so Composer can answer about the
+    // trip you're on without Travel's timetable (composer-studio/app.js).
+    function stepsOf(list) {
+        if (!Array.isArray(list) || !list.length || list.length > 32)
+            return null;
+        const steps = list.map((step) =>
+            step &&
+            clock(step.time) &&
+            ['walk', 'transit', 'ride', 'alight', 'arrive', 'bike'].includes(
+                step.mode,
+            )
+                ? {
+                      time: step.time,
+                      mode: step.mode,
+                      title: String(step.title || '').slice(0, 120),
+                      detail: String(step.detail || '').slice(0, 120),
+                      place: String(step.place || '').slice(0, 80),
+                  }
+                : null,
+        );
+        return steps.every(Boolean) ? steps : null;
+    }
     function normalize(record) {
         if (
             !record ||
@@ -40,6 +64,14 @@
             )
                 ? record.condition
                 : 'normal',
+            ...(clock(record.arrive) ? { arrive: record.arrive } : {}),
+            ...(['tram', 'bus', 'train', 'line'].includes(record.vehicle)
+                ? { vehicle: record.vehicle }
+                : {}),
+            ...(typeof record.line === 'string' && /^[\w-]{1,8}$/.test(record.line)
+                ? { line: record.line }
+                : {}),
+            ...(stepsOf(record.steps) ? { steps: stepsOf(record.steps) } : {}),
         };
     }
     function read() {

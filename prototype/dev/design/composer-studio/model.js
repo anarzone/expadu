@@ -632,6 +632,24 @@
         if (leaving) return { kind: 'journey', date, ...leaving };
         const going = eventTrip(t);
         if (going) return { kind: 'journey', date: today(), ...going };
+        // On your way (Travel's "I'm on my way"): where to get off, when
+        // you'll be there, what's next.
+        if (root.JourneySession?.read()) {
+            if (/\bwhere (do|should|must) i get (off|out)\b|\bwhich stop\b|\bmy stop\b/.test(t))
+                return { kind: 'onway', date, ask: 'stop' };
+            if (
+                /\bwhen (will|do|shall) i (get there|arrive|be there)\b|\bhow long (until|till|left|to go|is left)\b|\bwill i (make it|be on time|be late)\b|\bam i (on time|late)\b/.test(
+                    t,
+                )
+            )
+                return { kind: 'onway', date, ask: 'arrive' };
+            if (
+                /\bwhat('s| is) next\b|\bnext step\b|\bwhere am i\b|\bhow('s| is) (my|the) trip\b|\b(my|the) trip\b/.test(
+                    t,
+                )
+            )
+                return { kind: 'onway', date, ask: 'next' };
+        }
         // "Is my tram on time?": the appointment's tram, said plainly that
         // this preview has no live times.
         const trip = root.ExpaduSampleDay?.appointment;

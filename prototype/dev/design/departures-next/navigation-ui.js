@@ -40,6 +40,22 @@
             title: trip().place,
             instruction: progress.step.title,
             mode: route.mode,
+            // The steps, arrival and vehicle go with it, so Composer can
+            // answer about the trip you're on (connected/journey-session.js).
+            arrive: route.arrive,
+            vehicle: vehicle().toLowerCase(),
+            line: String(
+                route.line ||
+                    route.legs?.find((leg) => leg.mode === 'transit')?.line ||
+                    '',
+            ),
+            steps: N.steps(route).map((step) => ({
+                time: step.time,
+                mode: step.mode,
+                title: step.title,
+                detail: step.detail,
+                place: step.placeName,
+            })),
         };
         const persisted = S.write(active);
         dialog
