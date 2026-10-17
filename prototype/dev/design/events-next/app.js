@@ -706,10 +706,14 @@
     // stretch to the edge (their text stops short of it). Free and Saved
     // move into the Category menu under "Show only". Wider screens keep the
     // usual order. Moving the controls keeps their order for keyboards and
-    // screen readers.
+    // screen readers. Tablets, whose Category is a menu too, keep Free and
+    // Saved there as well: in the search row, Saved stood under the
+    // header's Saved ideas with the same icon.
     const phoneFilters = window.matchMedia?.('(max-width: 700px)');
+    const menuFilters = window.matchMedia?.('(max-width: 999px)');
     function placeFilters() {
         const phone = !!phoneFilters?.matches;
+        const inMenu = !!menuFilters?.matches;
         const row = main.querySelector('.event-search-row');
         const only = main.querySelector('.events-only');
         const sort = main.querySelector('[data-event-picker="sort"]');
@@ -723,14 +727,13 @@
             // The date leads the search row (no page title, owner decision
             // 9 Oct 2026), so Sort joins the starting point's row.
             scroller.prepend(sort, travel);
-            main.querySelector('.event-controls').append(sortPanel);
-            only.querySelector('.events-options').append(...toggles);
         } else {
             scroller.append(travel, sort);
-            main.querySelector('.event-controls').append(sortPanel);
-            row.append(...toggles);
         }
-        only.hidden = !phone;
+        main.querySelector('.event-controls').append(sortPanel);
+        if (inMenu) only.querySelector('.events-options').append(...toggles);
+        else row.append(...toggles);
+        only.hidden = !inMenu;
         // Beside the date on a phone the box is short; its label still
         // says "Search events".
         main.querySelector('#event-search')?.setAttribute(
@@ -739,10 +742,11 @@
         );
     }
     placeFilters();
-    phoneFilters?.addEventListener('change', () => {
-        closePicker();
-        placeFilters();
-    });
+    for (const query of [phoneFilters, menuFilters])
+        query?.addEventListener('change', () => {
+            closePicker();
+            placeFilters();
+        });
     main.addEventListener('keydown', (e) => {
         const date = e.target?.dataset?.eventDate;
         if (

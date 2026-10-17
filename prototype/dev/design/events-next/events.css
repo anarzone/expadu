@@ -1016,8 +1016,10 @@ body[data-page='events'] {
         clip-path: inset(50%);
         white-space: nowrap;
     }
-    /* Free and Saved are in the Category menu, under "Show only"; a dot on
-       Category says one is on. */
+}
+/* Free and Saved are in the Category menu, under "Show only", on phones
+   and tablets (app.js); a dot on Category says one is on. */
+@media (max-width: 999px) {
     .events-only {
         margin-top: 10px;
         padding-top: 8px;
