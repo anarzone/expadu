@@ -367,6 +367,18 @@
     if (!document.querySelector('#shell [data-static-header]'))
         document.querySelector('#shell').innerHTML =
             `<header class="app-header"><a href="../today-c/" class="brand" aria-label="Expadu home">${logo}Expadu</a><div class="header-context"><button class="city">${I('pin')}Cologne${I('down')}</button><span class="header-weather" role="img" aria-label="Sample weather, 21 degrees">${I('sun')}<strong>21°</strong></span></div><a class="my-day" href="#saved" data-nav="saved" aria-label="Open saved ideas">${I('bookmark')}<span>Saved</span><b class="header-saved-count" hidden></b></a></header><nav class="service-nav" aria-label="Main navigation">${nav.map(([path, icon, label]) => `<a data-page="${path.replace(/-(next|c)$/, '')}" href="../${path}/">${I(icon)}<span>${label}</span></a>`).join('')}</nav>`;
+    // Phones: Composer's round button sits beside the menu here too, marked
+    // as where you are, so the menu has the same width and place on every
+    // page; a tap goes to the text box (style.css, section-bar.css).
+    document.body.insertAdjacentHTML(
+        'beforeend',
+        `<button type="button" class="composer-here" aria-current="page" aria-label="Composer, where you are. Write your request" title="Composer">${I('spark')}</button>`,
+    );
+    document
+        .querySelector('.composer-here')
+        .addEventListener('click', () =>
+            document.querySelector('#studio-request')?.focus(),
+        );
     // One compact row under the app header: what this is and which day, and
     // the way back to the page Composer was opened from (minimizing: your
     // conversation stays here). It stays in view, so leaving is one tap.

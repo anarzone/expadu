@@ -52,8 +52,13 @@
         /* Stays put while a page slides between screens. */
         view-transition-name: section-bar;
     }
-    /* Composer's round button sits beside it. */
-    html body:has(.composer-tray) #shell .app-header .service-nav {
+    /* Composer's round button sits beside it (on Composer's own page too,
+       composer-studio). */
+    html
+        body:has(:is(.composer-tray, .composer-here))
+        #shell
+        .app-header
+        .service-nav {
         right: calc(14px + var(--menu-height) + 10px);
     }
     html body #shell .app-header .service-nav > a {

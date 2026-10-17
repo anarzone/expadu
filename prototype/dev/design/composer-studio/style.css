@@ -2723,3 +2723,52 @@
         transition: none;
     }
 }
+
+/* Phones: Composer's round button beside the menu, as on every page, in
+   the selected tint because you are here; a tap goes to the text box
+   (app.js). It steps aside while you type, like the menu. */
+.composer-here {
+    display: none;
+}
+@media (max-width: 700px) {
+    .composer-here {
+        position: fixed;
+        right: 14px;
+        bottom: var(--menu-gap);
+        z-index: 45;
+        display: grid;
+        place-items: center;
+        width: var(--menu-height);
+        height: var(--menu-height);
+        padding: 0;
+        border: 1px solid
+            color-mix(in srgb, var(--color-border, #e6ddcb) 85%, transparent);
+        border-radius: var(--radius-round);
+        background: var(--color-select-bg);
+        color: var(--color-select-text);
+        box-shadow: 0 14px 34px -16px #211d156b;
+        cursor: pointer;
+        transition: translate var(--duration-base, 180ms) ease;
+        view-transition-name: composer-tray;
+    }
+    .composer-here svg {
+        width: 24px;
+        height: 24px;
+    }
+    body:has(
+            :is(
+                input:not([type='checkbox'], [type='radio'], [type='range']),
+                textarea,
+                select,
+                [contenteditable='true']
+            ):focus
+        )
+        .composer-here {
+        translate: 0 calc(100% + var(--menu-gap) + 8px);
+    }
+}
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+    .composer-here {
+        transition: none;
+    }
+}
