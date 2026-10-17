@@ -97,6 +97,18 @@ body.studio {
         #main {
         padding-top: 16px;
     }
+    /* The request field's band (fixed along the bottom) covers the
+       conversation's column only: Your day's My Plans, Saved and History
+       beside it stay clear and can be clicked. */
+    body.has-composer-day:not(.has-panel) .studio-input-wrap {
+        pointer-events: none;
+        background-position: right bottom;
+        background-size: calc(100% - var(--composer-day-edge)) 100%;
+        background-repeat: no-repeat;
+    }
+    body.has-composer-day:not(.has-panel) .studio-input-wrap > * {
+        pointer-events: auto;
+    }
     .composer-day h2 {
         margin-bottom: -12px;
         font-family: var(--composer-display);
