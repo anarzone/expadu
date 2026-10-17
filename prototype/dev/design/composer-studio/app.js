@@ -2609,6 +2609,25 @@
         }
     });
     document.addEventListener('change', (e) => {
+        // Moving an activity's start takes its end along, so it keeps its
+        // length (until the day's end); the end can still be set on its own.
+        if (e.target.matches('[data-time-form] input[name="start"]')) {
+            const start = e.target,
+                end = e.target.form.elements.end;
+            const time = (value) =>
+                /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '')
+                    ? clockMins(value)
+                    : null;
+            const before = time(start.dataset.was || start.defaultValue),
+                after = time(M.normalizeTime(start.value) || start.value),
+                until = time(end.value);
+            if (before !== null && after !== null && until !== null && until > before) {
+                const moved = after + until - before;
+                if (moved < 1440) end.value = clockText(moved);
+            }
+            if (after !== null) start.dataset.was = clockText(after);
+            return;
+        }
         if (e.target.id === 'plan-date' && e.target.value) {
             state.date = e.target.value;
             store();
