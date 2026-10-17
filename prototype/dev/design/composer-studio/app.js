@@ -1955,8 +1955,16 @@
                 records().find((x) => x.id === appointment?.process) || records()[0];
             if (record?.total) {
                 state.conversation.activeDate = null;
+                // Each document in Paperwork's own words for its state
+                // (bureaucracy-next/app.js), and the card opens its
+                // documents, as Today's "What to bring" does.
+                const states = {
+                    missing: 'Still to get',
+                    reported_available: 'You have it · not checked yet',
+                    confirmed_for_use: 'Checked and ready',
+                };
                 reply(
-                    'That’s from your own checklist. I can’t give verified guidance on what the office requires; the checklist and its official sources are in Paperwork.',
+                    `That’s from your own checklist. I can’t give verified guidance on what the office requires; the checklist and its official sources are in Paperwork.${record.optional ? ` It also lists ${record.optional} more that only apply in some cases.` : ''}`,
                     {
                         kind: 'checklist',
                         title: `${record.prepared} of ${record.total} documents marked ready.`,
@@ -1965,7 +1973,15 @@
                             title: record.title,
                             prepared: record.prepared,
                             total: record.total,
-                            href: paperworkHref(record.id),
+                            documents: (record.documents || []).map((d) => ({
+                                label: d.label,
+                                ready: d.readiness === 'confirmed_for_use',
+                                state: states[d.readiness] || states.missing,
+                            })),
+                            href: paperworkHref(record.id).replace(
+                                'view=detail',
+                                'view=paperwork',
+                            ),
                         },
                     },
                 );

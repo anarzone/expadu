@@ -34,7 +34,14 @@
         if (entry.kind === 'checklist' && entry.record) {
             const r = entry.record;
             const share = r.total ? Math.round((r.prepared / r.total) * 100) : 0;
-            body += `<a class="answer-block answer-checklist" href="${E(r.href || '#')}"><span class="answer-tile">${I('document')}</span><span><small>Your ${E(r.title)} checklist · your records</small><strong>${E(`${r.prepared} of ${r.total} ready`)}</strong><span class="answer-progress" aria-hidden="true"><i style="width:${share}%"></i></span></span>${I('arrow')}</a>${paragraph}`;
+            // Then each document and how you've marked it.
+            const docs = (r.documents || [])
+                .map(
+                    (d) =>
+                        `<li${d.ready ? ' class="is-ready"' : ''}><span>${E(d.label)}</span><small>${E(d.state)}</small></li>`,
+                )
+                .join('');
+            body += `<a class="answer-block answer-checklist" href="${E(r.href || '#')}"><span class="answer-tile">${I('document')}</span><span><small>Your ${E(r.title)} checklist · your records</small><strong>${E(`${r.prepared} of ${r.total} ready`)}</strong><span class="answer-progress" aria-hidden="true"><i style="width:${share}%"></i></span></span>${I('arrow')}</a>${docs ? `<ul class="answer-block answer-docs">${docs}</ul>` : ''}${paragraph}`;
         }
         // What a listing does and doesn't say.
         if (entry.kind === 'facts' && entry.facts?.length)

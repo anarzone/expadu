@@ -664,7 +664,7 @@
             return { kind: 'access', date, about: t };
         // What to bring: your own checklist's progress, not guidance.
         if (
-            /\bwhat (do|should) i (need to )?bring\b|\bwhat to bring\b|\bbring to my\b|\bdocuments? (do i need|are ready|ready)\b/.test(
+            /\bwhat (do|should) i (need to )?bring\b|\bwhat to bring\b|\bbring to my\b|\bdocuments? (do i need|are ready|ready)\b|\bdocuments?\b.*\b(missing|still need|left|to get)\b|\bmissing\b.*\bdocuments?\b|\bwhat am i missing\b/.test(
                 t,
             )
         )

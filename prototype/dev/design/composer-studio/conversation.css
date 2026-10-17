@@ -1016,6 +1016,33 @@
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
+/* The checklist's documents, each with how you've marked it, as wide as
+   the checklist above them. */
+.studio .answer-docs {
+    margin: 8px 0 0;
+    padding: 4px 16px;
+    list-style: none;
+    background: var(--color-paper-bg-quiet);
+}
+.studio .answer-docs li {
+    display: grid;
+    gap: 2px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e4d8fb;
+    font-size: var(--text-body);
+    line-height: 1.35;
+}
+.studio .answer-docs li:last-child {
+    border-bottom: 0;
+}
+.studio .answer-docs small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.studio .answer-docs .is-ready small {
+    color: var(--color-paper-text);
+    font-weight: var(--weight-semibold);
+}
 .studio .answer-tile {
     display: grid;
     place-items: center;

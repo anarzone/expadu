@@ -1168,6 +1168,26 @@
                     submitted: rows.some(
                         (t) => t.kind === 'submission_recorded',
                     ),
+                    // The documents counted above, each as you've marked
+                    // it, and how many more apply only in some cases, for
+                    // Composer's "What do I need to bring?".
+                    documents: (p.paperwork?.requirements || [])
+                        .filter(
+                            (r) =>
+                                r.occurrence_key === record.id &&
+                                r.applicability === 'required' &&
+                                c.steps.some(
+                                    (x) => x.guidance_id === r.source_rule_id,
+                                ),
+                        )
+                        .map((r) => ({
+                            label: r.label,
+                            readiness: r.readiness,
+                        })),
+                    optional: c.steps.reduce(
+                        (n, x) => n + (x.requirements?.optional || 0),
+                        0,
+                    ),
                 };
             })
             .filter(Boolean);
