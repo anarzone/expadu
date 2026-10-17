@@ -29,7 +29,7 @@
     display: block;
     background: var(--blue);
     border-radius: var(--radius-lg);
-    padding: 14px 16px;
+    padding: 12px;
     min-width: 0;
 }
 .route-summary:hover {
@@ -41,7 +41,7 @@
     flex-wrap: wrap;
     gap: 6px;
     font-size: var(--text-small);
-    margin-bottom: 9px;
+    margin-bottom: 8px;
 }
 .route-caption strong {
     font-size: var(--text-small);
@@ -115,7 +115,7 @@
     gap: 6px;
     align-items: center;
     flex-wrap: wrap;
-    margin-top: 10px;
+    margin-top: 8px;
     font-size: var(--text-caption);
     color: var(--muted);
 }

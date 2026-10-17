@@ -12,7 +12,7 @@
     gap: 12px;
     min-height: 60px;
     margin: 0 0 16px;
-    padding: 10px 14px 10px 11px;
+    padding: 8px 16px;
     border-radius: var(--radius-lg);
     background: var(--color-attention-bg);
     border: 1px solid var(--color-attention-border);
@@ -40,7 +40,7 @@
 }
 .today-reference .deadline-copy {
     display: grid;
-    gap: 2px;
+    gap: 4px;
     min-width: 0;
 }
 .today-reference .deadline-copy strong {
@@ -122,7 +122,7 @@
 }
 .today-reference .route-advice {
     margin: 8px 0 0;
-    padding: 10px 12px;
+    padding: 8px 12px;
     border-radius: var(--radius-md);
     background: var(--color-attention-bg);
     color: var(--ink-soft);

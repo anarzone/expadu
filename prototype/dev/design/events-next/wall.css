@@ -3758,8 +3758,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
    blocks, 20 above the bottom bar; rows are 44 tall at least. */
 #shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
     gap: 12px;
-    padding-top: 16px;
-    padding-bottom: 20px;
+    padding: 16px;
 }
 #shared-dialog .event-sheet [data-panel='about'] .event-source {
     margin-top: 0;
@@ -3768,8 +3767,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     margin-top: 0;
 }
 #shared-dialog .event-sheet:has(.event-hero) .place-sheet-scroll {
-    padding-top: 16px;
-    padding-bottom: 20px;
+    padding: 16px;
 }
 #shared-dialog .event-sheet:has(.event-hero) .place-sheet-scroll > :last-child,
 #shared-dialog .event-sheet[data-section='plan'] .selection-hint {
@@ -3794,7 +3792,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     left: 0;
     z-index: 5;
     justify-content: flex-end;
-    padding: 14px 14px 0;
+    padding: 16px 16px 0;
     border: 0;
     background: none;
 }
@@ -3941,7 +3939,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     z-index: 4;
     display: flex;
     gap: 10px;
-    padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid #e6ddcb;
     background: var(--color-bg, #faf6ee);
 }
@@ -4645,7 +4643,7 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
     height: auto;
     min-height: 200px;
     margin: 0;
-    padding: 64px 24px 18px;
+    padding: 64px 16px 18px;
     overflow: hidden;
     border-radius: 0;
     container-type: inline-size;
@@ -4734,8 +4732,8 @@ main[data-view='wall']:has(.st-root[data-layout='desktop']) .event-results-head.
    the rows a little tighter. Nothing is left out. */
 @media (max-width: 700px) and (max-height: 860px) {
     #shared-dialog .event-sheet [data-panel='about'] .place-sheet-scroll {
-        gap: 10px;
-        padding-bottom: 10px;
+        gap: 12px;
+        padding-bottom: 16px;
     }
 }
 @media (max-width: 700px) and (max-height: 760px) {

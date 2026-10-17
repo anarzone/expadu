@@ -1,7 +1,6 @@
 /* Content density within the approved two-column reference. */
 .today-reference .practical-surface {
     grid-template-columns: minmax(0, 1fr) minmax(250px, 1fr);
-    gap: 20px;
 }
 .today-reference .practical-personal {
     min-width: 0;

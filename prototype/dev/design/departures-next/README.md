@@ -11,6 +11,37 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Spacing inside cards — 17 October 2026
+
+The owner chose B on the Travel canvas, row 28 (A gave every row 12 above
+and below, which cost Paperwork's first screen 22px on a phone). Every
+card, panel, row and sheet on the five pages:
+
+- 16px from a card's edge to its words and controls, on every side and
+  every screen: Paperwork's question, Travel's Leave now and Plan a trip,
+  Services' Find a doctor, Today's panels, Events' details sheet (its
+  picture, body and buttons used 24, 16 and 24). Sections inside a panel
+  sit 16 apart (Today's agenda was 26, its two halves 20).
+- 12px between groups inside a card, and around a card inside a card
+  (Today's Leave now and Around here, Services' "Already have an
+  appointment?", which now lines up with the form on 16); an icon and its
+  words.
+- 8px above and below a row in a list (Today and Tomorrow, tasks, dates,
+  Good to know, departures, Today's events and plans; they used 7 to 16),
+  with the card's 16 to their sides; items in a group; a heading and its
+  list.
+- 4px between a title and its line (they used 2 to 5).
+- The values sit in the rule that styles each card; the phone and laptop
+  copies that only restated a padding went (`today-next/style.css`,
+  `brief/cohesion.css`, `brief/priorities.css`, `bureaucracy-next/style.css`,
+  `departures-next/hub.css`, `services-next/services.css`,
+  `events-next/wall.css`, `connected/core-components.css`,
+  `connected/day-components.css`).
+- First screen: on a phone within 7px of before (Today 11px more); on a
+  laptop the same or more, up to 17px on Today.
+- Not in this pass: the cards' corners (16, 20, 22, 24 and 28px) and the
+  chips and buttons inside cards.
+
 ## One spacing for every page: 16 — 16 October 2026
 
 The owner chose "16 everywhere" on the Travel canvas, row 27 (24 on laptops

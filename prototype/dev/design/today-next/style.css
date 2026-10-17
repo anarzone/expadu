@@ -329,8 +329,8 @@ body.today-next {
 .practical-surface {
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(210px, 0.9fr);
-    gap: 22px;
-    padding: 20px 22px;
+    gap: 16px;
+    padding: 16px;
     background: transparent;
 }
 .practical-surface > * {
@@ -344,21 +344,21 @@ body.today-next {
 }
 .day-panel {
     background: transparent;
-    padding: 20px 22px 12px;
+    padding: 16px;
 }
 .day-heading {
     display: flex;
     gap: 12px;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
 }
 .day-heading small {
     font-size: var(--text-small);
 }
 .agenda {
     display: grid;
-    gap: 26px;
+    gap: 16px;
 }
 .agenda-item {
     position: relative;
@@ -683,7 +683,7 @@ body.today-next {
     text-align: left;
     min-width: 0;
     min-height: 60px;
-    padding: 7px 0;
+    padding: 8px 0;
     border-radius: var(--radius-md);
 }
 .upcoming-plan:hover {
@@ -1823,9 +1823,6 @@ body.today-next {
     }
 }
 @media (min-width: 701px) and (max-width: 999px) {
-    .route-summary {
-        padding: 12px;
-    }
     .route-times {
         grid-template-columns: 20px auto minmax(32px, 1fr) auto;
         gap: 8px;
@@ -1947,13 +1944,6 @@ body.today-next {
     }
     .practical-surface {
         display: block;
-        padding: 18px 16px;
-    }
-    .day-panel {
-        padding: 18px 16px 10px;
-    }
-    .day-heading {
-        margin-bottom: 16px;
     }
     .agenda-item {
         padding-left: 21px;
@@ -1971,9 +1961,6 @@ body.today-next {
     }
     .status-pill {
         font-size: var(--text-micro);
-    }
-    .route-summary {
-        padding: 12px;
     }
     .route-times {
         grid-template-columns: 20px auto minmax(16px, 1fr) auto;

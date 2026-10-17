@@ -176,7 +176,6 @@
         min-width: 0;
     }
     .today-reference.today-flow .practical-surface {
-        padding: 12px 16px;
         background: linear-gradient(150deg, #dff3f855, #f4f0f955 85%);
     }
     .today-reference.today-flow .practical-surface:first-of-type {
@@ -294,9 +293,6 @@
     .today-reference.today-flow .practical-service-links a {
         min-height: 44px;
     }
-    .today-reference.today-flow .day-panel {
-        padding-block: 16px 10px;
-    }
     .today-reference.today-flow .has-no-plans {
         padding-block: 14px 6px;
     }
@@ -305,12 +301,6 @@
     }
     .today-reference.today-flow .quiet-layout .day-panel {
         min-height: 0;
-    }
-    .today-reference.today-flow .discovery {
-        padding-top: 16px;
-    }
-    .today-reference.today-flow .around-plan {
-        padding-block: 10px 8px;
     }
     .today-reference.today-flow .around-plan:empty,
     .today-reference.today-flow #around-plan-slot:empty {
