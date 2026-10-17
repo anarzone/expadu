@@ -2327,6 +2327,9 @@ body[data-page='bureaucracy'] .sr-only {
     gap: 8px;
     min-width: 240px;
     padding: 12px;
+    /* Scrolls inside the room above Review (app.js). */
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border-radius: var(--radius-lg);
     background: var(--color-bg-surface);
     box-shadow: 0 12px 36px #211d151a;
@@ -2352,6 +2355,31 @@ body[data-page='bureaucracy'] .sr-only {
     background: var(--color-select-bg);
     color: var(--color-select-text);
     font-weight: var(--weight-semibold);
+}
+/* Phones: the Review menu rises from the bottom as a sheet over a light
+   scrim, as Events' pickers do, so its top never runs off the screen; a
+   tap on the scrim or Esc closes it (app.js). */
+@media (max-width: 700px) {
+    .review-tools[open]::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: #0005;
+    }
+    .review-tools-panel {
+        position: fixed;
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 81;
+        min-width: 0;
+        max-height: calc(100dvh - 40px);
+        padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        box-shadow: var(--shadow-sheet);
+    }
 }
 /* A read-only persona preview says so above the page. */
 .persona-preview {

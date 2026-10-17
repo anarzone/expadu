@@ -1437,6 +1437,48 @@
             U.toast('Sample access state changed');
         }
     });
+    // The Review menu closes on a tap outside it, or Esc, like the other
+    // menus (on phones it is a sheet over the page, style.css).
+    const openReview = () => document.querySelector('.review-tools[open]');
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.review-tools > summary, .review-tools-panel'))
+            openReview()?.removeAttribute('open');
+    });
+    document.addEventListener('keydown', (e) => {
+        const review = e.key === 'Escape' && openReview();
+        if (!review) return;
+        review.removeAttribute('open');
+        review.querySelector('summary').focus();
+    });
+    // Wider screens: it opens above Review and scrolls inside the room
+    // there, so its top stays on the screen.
+    document.addEventListener(
+        'toggle',
+        (e) => {
+            if (!e.target.matches?.('.review-tools[open]')) return;
+            const summary = e.target.querySelector('summary'),
+                panel = e.target.querySelector('.review-tools-panel');
+            panel.style.maxHeight = '';
+            if (matchMedia('(max-width: 700px)').matches) return;
+            // Below the header, which stays on top.
+            const space = () =>
+                summary.getBoundingClientRect().top -
+                Math.max(
+                    0,
+                    document
+                        .querySelector('#shell .app-header')
+                        ?.getBoundingClientRect().bottom || 0,
+                ) -
+                22;
+            let room = space();
+            if (room < 320) {
+                summary.scrollIntoView({ block: 'end' });
+                room = space();
+            }
+            panel.style.maxHeight = `${Math.max(room, 240)}px`;
+        },
+        true,
+    );
     document.addEventListener('click', (e) => {
         const b = e.target.closest('button');
         if (!b || b.closest('[data-orientation-root]')) return;
