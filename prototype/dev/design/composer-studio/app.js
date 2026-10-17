@@ -367,18 +367,39 @@
     if (!document.querySelector('#shell [data-static-header]'))
         document.querySelector('#shell').innerHTML =
             `<header class="app-header"><a href="../today-c/" class="brand" aria-label="Expadu home">${logo}Expadu</a><div class="header-context"><button class="city">${I('pin')}Cologne${I('down')}</button><span class="header-weather" role="img" aria-label="Sample weather, 21 degrees">${I('sun')}<strong>21°</strong></span></div><a class="my-day" href="#saved" data-nav="saved" aria-label="Open saved ideas">${I('bookmark')}<span>Saved</span><b class="header-saved-count" hidden></b></a></header><nav class="service-nav" aria-label="Main navigation">${nav.map(([path, icon, label]) => `<a data-page="${path.replace(/-(next|c)$/, '')}" href="../${path}/">${I(icon)}<span>${label}</span></a>`).join('')}</nav>`;
-    // Phones: Composer's round button sits beside the menu here too, marked
-    // as where you are, so the menu has the same width and place on every
-    // page; a tap goes to the text box (style.css, section-bar.css).
+    // Composer's button is here too, marked as where you are, so the menu
+    // has the same width and place on every page: on phones the round one
+    // beside the menu, on tablets and desktops the one in the header
+    // (style.css, section-bar.css, connected/composer-entry.css). A tap,
+    // or ⌘K, goes to the text box.
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+    const shortcut = mac ? '⌘K' : 'Ctrl K';
     document.body.insertAdjacentHTML(
         'beforeend',
         `<button type="button" class="composer-here" aria-current="page" aria-label="Composer, where you are. Write your request" title="Composer">${I('spark')}</button>`,
     );
     document
-        .querySelector('.composer-here')
-        .addEventListener('click', () =>
-            document.querySelector('#studio-request')?.focus(),
+        .querySelector('#shell .header-utilities')
+        ?.insertAdjacentHTML(
+            'afterbegin',
+            `<button type="button" class="composer-header" aria-current="page" aria-label="Composer, where you are. Write your request" aria-keyshortcuts="${mac ? 'Meta+K' : 'Control+K'}" title="Composer (${shortcut})"><span class="composer-header-mark">${I('spark')}</span><span class="composer-header-text">Ask Composer</span><kbd>${shortcut}</kbd></button>`,
         );
+    const toTextBox = () => document.querySelector('#studio-request')?.focus();
+    for (const button of document.querySelectorAll(
+        '.composer-here, #shell .composer-header',
+    ))
+        button.addEventListener('click', toTextBox);
+    document.addEventListener('keydown', (event) => {
+        if (
+            !(event.metaKey || event.ctrlKey) ||
+            event.altKey ||
+            event.shiftKey ||
+            event.key.toLowerCase() !== 'k'
+        )
+            return;
+        event.preventDefault();
+        toTextBox();
+    });
     // One compact row under the app header: what this is and which day, and
     // the way back to the page Composer was opened from (minimizing: your
     // conversation stays here). It stays in view, so leaving is one tap.

@@ -2772,3 +2772,9 @@
         transition: none;
     }
 }
+/* Tablets and desktops: Composer's button in the header, where it is on
+   every page, in the selected tint because you are here. */
+#shell .header-utilities > .composer-header[aria-current] {
+    border-color: transparent;
+    background: var(--color-select-bg);
+}
