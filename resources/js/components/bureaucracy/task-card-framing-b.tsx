@@ -23,9 +23,26 @@ export type DocEntry =
           from?: string | null;
           /** Resolved title of the producing task (server-side). */
           from_title?: string | null;
+          /**
+           * Which branch of a multi-branch task needs this document. A task
+           * like the driving licence has three routes with different
+           * paperwork, and one flat list made the translation requirement look
+           * universal when Branch A needs nothing at all. Absent = every branch.
+           */
+          branch?: string | null;
       };
 
 export type TaskOffice = { name: string; address: string };
+
+/**
+ * Why a task is done, when the app decided rather than the user. Declaring
+ * "I'm settled" completes every arrival basic at once, which read as the app
+ * knowing things it had never been told.
+ */
+const COMPLETED_SOURCE_COPY: Record<string, string> = {
+    settled_declaration:
+        'Marked done when you told us you are settled — reopen it if that is wrong.',
+};
 
 export function docLabel(doc: DocEntry): string {
     return typeof doc === 'string' ? doc : doc.label;
@@ -43,6 +60,8 @@ export type FramingBTask = {
     status: 'not_started' | 'in_progress' | 'submitted' | 'done';
     status_label: string;
     status_tone: 'neutral' | 'info' | 'warn' | 'success';
+    /** Set when the app completed this instead of the user. */
+    completed_source?: string | null;
     deadline: string | null;
     days_remaining: number | null;
     deadline_tier:
@@ -54,6 +73,7 @@ export type FramingBTask = {
         | 'on_track'
         | 'no_deadline'
         | 'paused'
+        | 'needs_answer'
         | 'none';
     deadline_note: string | null;
     deadline_action: 'moved_in' | 'visa_expiry' | null;
@@ -94,6 +114,8 @@ const TIER_LABELS: Record<FramingBTask['deadline_tier'], string> = {
     on_track: 'On track',
     no_deadline: 'No deadline',
     paused: '⏸ Deadline paused',
+    // Not "no deadline": there IS one, we just do not know when it started.
+    needs_answer: 'Deadline needs a date',
     none: '',
 };
 
@@ -108,6 +130,8 @@ const TIER_CLASSES: Record<FramingBTask['deadline_tier'], string> = {
         'bg-primary-soft text-primary dark:bg-primary/20 dark:text-primary',
     on_track:
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
+    needs_answer:
+        'bg-[#FDF0D4] text-[#C47D0E] dark:bg-[#C47D0E]/20 dark:text-[#E8A958]',
     no_deadline:
         'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
     paused: 'bg-[#EFEDE7] text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]',
@@ -351,6 +375,14 @@ export function TaskCardFramingB({
                     >
                         {task.title}
                     </h3>
+                    {task.completed_source !== null &&
+                        task.completed_source !== undefined &&
+                        COMPLETED_SOURCE_COPY[task.completed_source] !==
+                            undefined && (
+                            <p className="mt-1 text-[11px] leading-snug text-[#6B6860] dark:text-[#AAA89F]">
+                                {COMPLETED_SOURCE_COPY[task.completed_source]}
+                            </p>
+                        )}
                     {deadlineLabel && (
                         <div className="mt-1 flex items-center gap-1 text-xs text-[#6B6860] dark:text-[#AAA89F]">
                             <IconCalendar size={12} stroke={ICON_STROKE} />
@@ -372,7 +404,8 @@ export function TaskCardFramingB({
                     {task.deadline_note && (
                         <div className="flex flex-wrap items-center gap-3 rounded-[9px] bg-[#EFEDE7] p-3 text-[13px] leading-relaxed text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
                             <span className="min-w-0 flex-1">
-                                {task.deadline_tier === 'paused'
+                                {task.deadline_tier === 'paused' ||
+                                task.deadline_tier === 'needs_answer'
                                     ? '🏠 '
                                     : '⏰ '}
                                 {task.deadline_note}
@@ -539,6 +572,10 @@ export function TaskCardFramingB({
                                     const isWarn =
                                         typeof doc !== 'string' &&
                                         doc.tone === 'warn';
+                                    const branch =
+                                        typeof doc === 'string'
+                                            ? null
+                                            : (doc.branch ?? null);
                                     const isChecked =
                                         checkedDocs.includes(label);
 
@@ -565,6 +602,11 @@ export function TaskCardFramingB({
                                                 >
                                                     {label}
                                                 </span>
+                                                {branch && (
+                                                    <span className="mt-1 mr-1 inline-block rounded-md bg-[#EFEDE7] px-2 py-0.5 text-[11px] font-semibold text-[#6B6860] dark:bg-[#2A2920] dark:text-[#AAA89F]">
+                                                        Only for: {branch}
+                                                    </span>
+                                                )}
                                                 {note &&
                                                     (isWarn ? (
                                                         <span className="mt-1 inline-block rounded-md bg-[#FDE8E6] px-2 py-0.5 text-[11.5px] leading-snug font-semibold text-[#C4271A] dark:bg-[#C4271A]/20 dark:text-[#FF7D70]">

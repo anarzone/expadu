@@ -1,0 +1,169 @@
+{
+    "summary": {
+        "baseline_sha256": "2356f373dedbf7aeb0e0c3a33609a4efaaff0dd85110ce7147675ad6a607362d",
+        "package_records_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+        "staging_changed": false,
+        "production_changed": false,
+        "scope": "separate 11-pair proposal verified on frozen local baseline; live reconciliation required",
+        "selected_operations": 11,
+        "categories": {
+            "coworking": 8,
+            "dog_park": 2,
+            "bbq": 1
+        },
+        "promotion_allowed": false,
+        "rehearsal_checks": {
+            "old_links_resolve": true,
+            "saved_references_resolve": true,
+            "no_ids_deleted": true,
+            "user_and_media_data_unchanged": true,
+            "replay_exact": true,
+            "rollback_exact": true
+        }
+    },
+    "operations": [
+        {
+            "alias_id": 1425,
+            "canonical_id": 8519,
+            "name": "WeWork",
+            "category": "coworking",
+            "current_source_name": "WeWork",
+            "source_id": "node/11511162101",
+            "source_url": "https://www.openstreetmap.org/node/11511162101",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1426,
+            "canonical_id": 8520,
+            "name": "Veedel Office",
+            "category": "coworking",
+            "current_source_name": "Veedel Office",
+            "source_id": "node/13287090933",
+            "source_url": "https://www.openstreetmap.org/node/13287090933",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1416,
+            "canonical_id": 8510,
+            "name": "56 Quadrat Multispace",
+            "category": "coworking",
+            "current_source_name": "56 Quadrat Multispace",
+            "source_id": "node/305167114",
+            "source_url": "https://www.openstreetmap.org/node/305167114",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1418,
+            "canonical_id": 8512,
+            "name": "Design Offices",
+            "category": "coworking",
+            "current_source_name": "Design Offices",
+            "source_id": "node/5022696146",
+            "source_url": "https://www.openstreetmap.org/node/5022696146",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1421,
+            "canonical_id": 8515,
+            "name": "Headquarter[s]",
+            "category": "coworking",
+            "current_source_name": "Headquarter[s]",
+            "source_id": "node/6218855785",
+            "source_url": "https://www.openstreetmap.org/node/6218855785",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1423,
+            "canonical_id": 8517,
+            "name": "Design Offices",
+            "category": "coworking",
+            "current_source_name": "Design Offices",
+            "source_id": "node/7230180824",
+            "source_url": "https://www.openstreetmap.org/node/7230180824",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1424,
+            "canonical_id": 8518,
+            "name": "Design Offices",
+            "category": "coworking",
+            "current_source_name": "Design Offices",
+            "source_id": "node/7230226414",
+            "source_url": "https://www.openstreetmap.org/node/7230226414",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1417,
+            "canonical_id": 8511,
+            "name": "offspace",
+            "category": "coworking",
+            "current_source_name": "offspace",
+            "source_id": "node/751978797",
+            "source_url": "https://www.openstreetmap.org/node/751978797",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1497,
+            "canonical_id": 8018,
+            "name": "G\u00e4nsewiese",
+            "category": "dog_park",
+            "current_source_name": "G\u00e4nsewiese",
+            "source_id": "relation/2303617",
+            "source_url": "https://www.openstreetmap.org/relation/2303617",
+            "distance_m": 1,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1049,
+            "canonical_id": 8618,
+            "name": "Grillstation",
+            "category": "bbq",
+            "current_source_name": "Grillstation",
+            "source_id": "way/364929558",
+            "source_url": "https://www.openstreetmap.org/way/364929558",
+            "distance_m": 0,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        },
+        {
+            "alias_id": 1481,
+            "canonical_id": 8003,
+            "name": "Hundefreilauffl\u00e4che Stadtwald Lindenthal",
+            "category": "dog_park",
+            "current_source_name": "Hundefreilauffl\u00e4che Stadtwald Lindenthal",
+            "source_id": "way/931873865",
+            "source_url": "https://www.openstreetmap.org/way/931873865",
+            "distance_m": 0.4,
+            "legacy_recommendable": true,
+            "canonical_recommendable": true,
+            "evidence": "Unique retained legacy/OSM pair with matching current-source and baseline names, category and practical tags; coordinates within one metre. Native identity, eligibility and live reconciliation checks are still required."
+        }
+    ]
+}

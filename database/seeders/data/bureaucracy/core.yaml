@@ -6,7 +6,16 @@ tasks:
   - title: Register your address (Anmeldung)
     key: core.anmeldung
     depends_on: []
-    verified_at: 2026-06-11
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-22.1
+    source_verification: dual_source
+    verified_at: '2026-08-22'
+    legal_sources:
+      - {kind: primary, label: '§17 BMG — Anmeldung, Abmeldung', url: 'https://www.gesetze-im-internet.de/bmg/__17.html'}
+      - {kind: primary, label: '§54 BMG — Bußgeldvorschriften', url: 'https://www.gesetze-im-internet.de/bmg/__54.html'}
+      - {kind: implementation, label: 'Stadt Köln · Anmeldung Ihres Wohnsitzes', url: 'https://www.stadt-koeln.de/service/produkte/00415/index.html'}
     description: |
       Every resident in Germany must register their address within 2 weeks of
       moving in (§17 BMG). The Meldebescheinigung is the document everything
@@ -41,6 +50,19 @@ tasks:
     key: core.steuer_id
     type: wait
     depends_on: [core.anmeldung]
+    # single_source_approved: §139b AO is unambiguous, but no allow-listed
+    # implementation host covers the tax ID. The BZSt is authoritative and is
+    # linked under `links`, yet bzst.de is not on the implementation allowlist,
+    # and the only Cologne page mentioning the ID is really about ELStAM.
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-22.1
+    source_verification: single_source_approved
+    single_source_approved: true
+    verified_at: '2026-08-22'
+    legal_sources:
+      - {kind: primary, label: '§139b AO — Identifikationsnummer', url: 'https://www.gesetze-im-internet.de/ao_1977/__139b.html'}
     description: |
       The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post
       within 2–4 weeks of Anmeldung — no application needed. You'll need it for any paid
@@ -62,6 +84,15 @@ tasks:
   - title: Sort out health insurance
     key: core.health_insurance
     depends_on: [core.anmeldung]
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-22.1
+    source_verification: dual_source
+    verified_at: '2026-08-22'
+    legal_sources:
+      - {kind: primary, label: '§5 SGB V — Versicherungspflicht', url: 'https://www.gesetze-im-internet.de/sgb_5/__5.html'}
+      - {kind: implementation, label: 'Make it in Germany · Health insurance', url: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/health-insurance'}
     description: |
       Health insurance is mandatory for everyone living in Germany. Which system you end
       up in — statutory (gesetzlich) or private (privat) — depends on your work and
@@ -87,6 +118,15 @@ tasks:
   - title: Open a German bank account
     key: core.bank_account
     depends_on: [core.anmeldung]
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: expadu_content_owner
+    content_version: 2026-08-22.1
+    source_verification: dual_source
+    verified_at: '2026-08-22'
+    legal_sources:
+      - {kind: primary, label: '§31 ZKG — Anspruch auf Abschluss eines Basiskontovertrags', url: 'https://www.gesetze-im-internet.de/zkg/__31.html'}
+      - {kind: implementation, label: 'Make it in Germany · Bank account', url: 'https://www.make-it-in-germany.com/en/living-in-germany/money-insurance/bank-account'}
     description: |
       You'll need a Girokonto (current account) with a SEPA IBAN for rent, salary or
       invoices, insurance and the dozens of direct debits German life runs on.
@@ -115,10 +155,18 @@ tasks:
   - title: Settle your Rundfunkbeitrag (broadcasting fee)
     key: core.rundfunkbeitrag
     depends_on: [core.anmeldung]
+    # Stays `legacy` on purpose, and cannot be approved as the allowlist stands.
+    # The obligation comes from the Rundfunkbeitragsstaatsvertrag — a treaty
+    # between the Länder, not federal law — so it appears on neither
+    # gesetze-im-internet.de nor recht.bund.de. Approving it would mean adding a
+    # Landesrecht host (recht.nrw.de) to config/bureaucracy_sources.php, which is
+    # a publication-policy decision, not a content one. It keeps its checkbox
+    # because the obligation is real; it just carries no legal-grade approval.
     description: |
-      Every household in Germany pays €18.36/month for public broadcasting — one fee per
-      dwelling, no matter how many people live there or whether anyone owns a TV. The
-      Beitragsservice is notified of your Anmeldung automatically and will write to you.
+      Every household in Germany pays {{figure:rundfunkbeitrag_monthly}} for public
+      broadcasting — one fee per dwelling, no matter how many people live there or
+      whether anyone owns a TV. The Beitragsservice is notified of your Anmeldung
+      automatically and will write to you.
     phase: settling
     urgency: medium
     deadline_type: days_since_arrival
@@ -137,7 +185,13 @@ tasks:
 
   - title: Get private liability insurance (Haftpflichtversicherung)
     key: core.liability_insurance
+    type: info
     depends_on: [core.bank_account]
+    # Demoted from a task to an info card. Privathaftpflicht is voluntary —
+    # there is no statute behind it, and the only source we had was a price
+    # comparison site. As an info card it keeps its advice but loses the
+    # checkbox and its weight in the completion count, so "8 of 12 done" stops
+    # counting something nobody is actually required to do.
     description: |
       Not legally required, but culturally near-universal (~85% of Germans have it) and
       landlords increasingly expect it — it covers damage you accidentally cause to other

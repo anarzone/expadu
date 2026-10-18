@@ -14,11 +14,11 @@ const tags = [
     'built in Cologne',
 ];
 
-// title: plain text with *one accented phrase* in asterisks.
+// title: plain text with *one accented phrase* in asterisks; \n breaks the line.
 export const cards = [
     {
         file: 'og-landing.png',
-        title: 'Tell it your day. *It plans the rest.*',
+        title: 'Your new city,\n*joined up.*',
         tags,
     },
     {
@@ -87,10 +87,9 @@ for (const card of cards) {
                 /[&<>]/g,
                 (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[ch],
             );
-        document.getElementById('title').innerHTML = escape(c.title).replace(
-            /\*(.+?)\*/,
-            '<em>$1</em>',
-        );
+        document.getElementById('title').innerHTML = escape(c.title)
+            .replace(/\*(.+?)\*/, '<em>$1</em>')
+            .replace('\n', '<br>');
         document
             .getElementById('title')
             .style.setProperty('--size', `${c.size ?? 76}px`);

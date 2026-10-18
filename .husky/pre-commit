@@ -47,11 +47,19 @@ else
     echo ""
 fi
 
-# PHP: Run Pint on dirty files
-run_check "PHP Code Style (Pint)" "vendor/bin/pint --dirty"
-
-# JS/TS: Run lint-staged (Prettier on staged files)
-run_check "Frontend Format (staged)" "npx lint-staged"
+# Formatting runs through lint-staged for BOTH languages, which is the only
+# part of this that re-stages what it rewrites.
+#
+# Pint used to run separately as `pint --dirty`, and that was wrong twice over:
+# it never `git add`-ed its own fixes, so the UNFORMATTED version was what got
+# committed while the fix sat in the working tree (caught five times in one
+# day, each needing a --amend); and `--dirty` means "every file with
+# uncommitted changes", so it also rewrote unrelated work-in-progress the
+# author had deliberately left unstaged.
+#
+# lint-staged stashes unstaged changes, passes only the staged paths, and
+# re-stages the result — including for a file that is only partially staged.
+run_check "Format staged files (Pint + Prettier)" "npx lint-staged"
 
 # PHP Tests: Run only if PHP files were changed — exclude slow integration tests
 STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.php$' || true)

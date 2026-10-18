@@ -1,0 +1,17 @@
+{
+  "recorded_at": "2026-09-29T11:55:54.288101+00:00",
+  "reviewer": "staging_data_review",
+  "scope": "Static review before remote execution",
+  "findings": "No material findings",
+  "candidate_copies_match_declared_transformations": true,
+  "controller_binding_asserted_per_request": true,
+  "cache_isolated_before_boot": true,
+  "jit_configuration_changed": false,
+  "rollback_and_statistics_cleanup_retained": true,
+  "result_pending": false,
+  "running_app_file_hash_checks_configured": "Eight deployed files checked before and after; both matched reviewed release",
+  "result": "staging-candidate-performance.json",
+  "runtime_receipt": "staging-candidate-runtime.json",
+  "harness_passed": true,
+  "p95_gate_passed": false
+}

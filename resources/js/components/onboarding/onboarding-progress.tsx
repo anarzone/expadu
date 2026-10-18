@@ -10,7 +10,12 @@ export function OnboardingProgress({
     total: number;
     onBack: () => void;
 }) {
-    const progress = (step / total) * 100;
+    // The welcome screen is a cover, not a question, so it is excluded from
+    // the count. Showing "1 of 5" there made the flow look a fifth longer than
+    // it was and contradicted the promise in the copy right below it.
+    const asked = step - 1;
+    const askedTotal = total - 1;
+    const progress = (asked / askedTotal) * 100;
 
     return (
         <div className="sticky top-0 z-10 bg-background px-6 pt-5">
@@ -34,7 +39,9 @@ export function OnboardingProgress({
                     />
                 </div>
                 <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">
-                    {step} of {total}
+                    {asked < 1
+                        ? `${askedTotal} questions`
+                        : `${asked} of ${askedTotal}`}
                 </span>
             </div>
         </div>

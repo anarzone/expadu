@@ -1,0 +1,54 @@
+{
+  "status": "success",
+  "run_id": 36784986627,
+  "head": "d0a35992eb265cb55684b396f1787fb0a1622eb9",
+  "jobs": [
+    {
+      "name": "Test",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Browser Tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Lint",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Detect path changes",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Build & Push Image",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Build & Push pgsql Image",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Deploy to Production",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Deploy to Staging",
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ],
+  "security_check": {
+    "name": "GitGuardian Security Checks",
+    "status": "completed",
+    "conclusion": "success",
+    "completed_at": "2026-09-30T22:20:25Z"
+  },
+  "runtime_sha256": "b7bbb275a67111744a9cc785005f89b06a5757d272628a05bbfd0050fa71fb0c"
+}

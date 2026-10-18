@@ -5,6 +5,7 @@ namespace App\Bureaucracy\QA;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
+use App\Models\BureaucracyFactConflict;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -137,6 +138,18 @@ final class ScenarioFactSynchronizer
 
     private function supersede(BureaucracyCaseFact $fact): void
     {
+        // Same rule as CaseFactStore: a retired fact must not leave a conflict
+        // behind arguing about it. A persona replacing its own seed used to
+        // strand exactly that on the Bureaucracy page.
+        BureaucracyFactConflict::query()
+            ->where('case_id', $fact->case_id)
+            ->where('status', 'unresolved')
+            ->where(function ($query) use ($fact): void {
+                $query->where('existing_fact_id', $fact->getKey())
+                    ->orWhere('candidate_fact_id', $fact->getKey());
+            })
+            ->update(['status' => 'obsolete', 'resolved_at' => now()]);
+
         $fact->update([
             'state' => 'superseded',
             'superseded_at' => now(),

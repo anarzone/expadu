@@ -1,0 +1,173 @@
+{
+  "status": "passed",
+  "scope": "local_source_research_not_production_composer",
+  "queries": [
+    {
+      "origin": "central",
+      "query": {
+        "category": "cafe"
+      },
+      "radius_km": 3,
+      "matched_source_records": 870,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 870,
+      "descriptive_labels_in_displayed_results": 2
+    },
+    {
+      "origin": "central",
+      "query": {
+        "category": "restaurant"
+      },
+      "radius_km": 3,
+      "matched_source_records": 2530,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 2530,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "central",
+      "query": {
+        "activity": "soccer"
+      },
+      "radius_km": 3,
+      "matched_source_records": 1,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 1,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "central",
+      "query": {
+        "activity": "basketball"
+      },
+      "radius_km": 3,
+      "matched_source_records": 0,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 0,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "central",
+      "query": {
+        "activity": "tennis"
+      },
+      "radius_km": 3,
+      "matched_source_records": 2,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 2,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "north",
+      "query": {
+        "category": "cafe"
+      },
+      "radius_km": 3,
+      "matched_source_records": 12,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 12,
+      "descriptive_labels_in_displayed_results": 1
+    },
+    {
+      "origin": "north",
+      "query": {
+        "category": "restaurant"
+      },
+      "radius_km": 3,
+      "matched_source_records": 50,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 50,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "north",
+      "query": {
+        "activity": "soccer"
+      },
+      "radius_km": 3,
+      "matched_source_records": 1,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 1,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "north",
+      "query": {
+        "activity": "basketball"
+      },
+      "radius_km": 3,
+      "matched_source_records": 0,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 0,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "north",
+      "query": {
+        "activity": "tennis"
+      },
+      "radius_km": 3,
+      "matched_source_records": 0,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 0,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "east",
+      "query": {
+        "category": "cafe"
+      },
+      "radius_km": 3,
+      "matched_source_records": 38,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 38,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "east",
+      "query": {
+        "category": "restaurant"
+      },
+      "radius_km": 3,
+      "matched_source_records": 154,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 154,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "east",
+      "query": {
+        "activity": "soccer"
+      },
+      "radius_km": 3,
+      "matched_source_records": 5,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 5,
+      "descriptive_labels_in_displayed_results": 2
+    },
+    {
+      "origin": "east",
+      "query": {
+        "activity": "basketball"
+      },
+      "radius_km": 3,
+      "matched_source_records": 0,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 0,
+      "descriptive_labels_in_displayed_results": 0
+    },
+    {
+      "origin": "east",
+      "query": {
+        "activity": "tennis"
+      },
+      "radius_km": 3,
+      "matched_source_records": 5,
+      "confirmed_free_public_source_evidence": 0,
+      "needs_checking": 5,
+      "descriptive_labels_in_displayed_results": 1
+    }
+  ],
+  "unique_destinations_established": false,
+  "remote_changed": false
+}

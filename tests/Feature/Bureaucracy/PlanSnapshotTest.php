@@ -105,8 +105,10 @@ test('identical reads reuse one active snapshot with stable approved sections', 
             'next',
             'coming_up',
             'options',
+            'good_to_know',
             'waiting',
             'information_needed',
+            'opens_when',
             'not_covered',
         ])
         ->and($sectionItems)->each(function ($item): void {

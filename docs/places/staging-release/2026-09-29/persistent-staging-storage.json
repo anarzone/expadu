@@ -1,0 +1,128 @@
+{
+  "persistent_private_host_directory": "/data/staging/places-research/staging-release-20260929",
+  "container_directory_is_ephemeral": true,
+  "frozen_package_hashes_verified": {
+    "records.jsonl": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+    "manifest.json": "fb9a648002cc6130d38b9f658da6558cff609caa5b511bdcdf996a58566e1ce9",
+    "apply-pack.php": "cd2fc73545d2255d64a6ac80f590df5fb54c9db458022bfc36444af47e8b5a66",
+    "fingerprints.json": "e63adc8463317a11a74b46653e1e1d63513fd79eb38e089ac02713edb8e89f2f",
+    "checksums.json": "a42ff377221067ed572493c1066e386d4c724cc41a4a01bb0699d73f6fee3f5b",
+    "column-snapshot.php": "3223707108604f5ad98b8e070f3af9e932dcd4fbfff64a4ea673e77a78d01c8c",
+    "column-restore.php": "9ea0c66b2832064fc09fe7c004fadcd95d36de32524907a412824a5de373d1d9"
+  },
+  "fresh_snapshot": {
+    "captured_at": "2026-09-29T13:53:36+00:00",
+    "environment": "staging",
+    "read_only": true,
+    "row_format": "postgresql_column_text_array",
+    "raw_data_retained_on_server": true,
+    "existing_user_accounts_or_plans_loaded": false,
+    "tables": {
+      "spots": {
+        "rows": 9928,
+        "columns": 38,
+        "row_text_sha256": "f511d2fead564fb82eb5b354e04fba19a3ea5dae8bfceba6c0637738f4b1186f"
+      },
+      "veedels": {
+        "rows": 86,
+        "columns": 8,
+        "row_text_sha256": "d12fa9043da837a4cf6d3c6ce30f505dac043e90dae5b803538b6f4875769732"
+      },
+      "place_fact_observations": {
+        "rows": 4085,
+        "columns": 15,
+        "row_text_sha256": "cc6243abc4925497f01b062b6f19bf6d2fc35e3686a85d54878a2bb94e8c5739"
+      },
+      "place_fact_corrections": {
+        "rows": 0,
+        "columns": 12,
+        "row_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "place_fact_revisions": {
+        "rows": 1,
+        "columns": 3,
+        "row_text_sha256": "ddd8cf1c6b40abec83cb008c0e13912e959406207eb435e2c102410a2fdc748d"
+      },
+      "place_destination_reviews": {
+        "rows": 12,
+        "columns": 7,
+        "row_text_sha256": "eb4b40a2b78a8f67a3bc26a0e651ad85574148195832697b7605594e47df45b5"
+      },
+      "place_reconciliations": {
+        "rows": 798,
+        "columns": 7,
+        "row_text_sha256": "394b8da5464ff1d6c8a655a34e5444dc59ecb226bc57dd2038fe6fdae9a85913"
+      },
+      "media_assets": {
+        "rows": 588,
+        "columns": 29,
+        "row_text_sha256": "22b6605ce77e0333e6c18b898d27d1e2f933ea6faa39458ac76d5685ac106330"
+      },
+      "media_attachments": {
+        "rows": 1680,
+        "columns": 14,
+        "row_text_sha256": "b76a9114a536dcfc4cc25a05f934b0a1e60439c9ad0c8a27fa42f06eefddbf29"
+      }
+    },
+    "snapshot_sha256": "de66bd52dccd1a3036570983ace1ff4e6586db82b794f55fec4cf8f99e0c348f",
+    "native_column_text_preserved": true,
+    "full_database_restore_tested": false
+  },
+  "fresh_temporary_restore": {
+    "checked_at": "2026-09-29T13:53:41+00:00",
+    "environment": "staging",
+    "mode": "temporary_table_column_text_restore",
+    "snapshot_sha256": "de66bd52dccd1a3036570983ace1ff4e6586db82b794f55fec4cf8f99e0c348f",
+    "verification_code_sha256": "854c340edf557d4bbfff5d138b40238b25299ef84d5253d717a83fe6e2ba1d16",
+    "raw_records_exported": false,
+    "private_users_or_plans_loaded": false,
+    "persistent_catalogue_writes": false,
+    "tables": {
+      "spots": {
+        "restored_rows": 9928,
+        "exact_postgresql_column_text_match": true
+      },
+      "veedels": {
+        "restored_rows": 86,
+        "exact_postgresql_column_text_match": true
+      },
+      "place_fact_observations": {
+        "restored_rows": 4085,
+        "exact_postgresql_column_text_match": true
+      },
+      "place_fact_corrections": {
+        "restored_rows": 0,
+        "exact_postgresql_column_text_match": true
+      },
+      "place_fact_revisions": {
+        "restored_rows": 1,
+        "exact_postgresql_column_text_match": true
+      },
+      "place_destination_reviews": {
+        "restored_rows": 12,
+        "exact_postgresql_column_text_match": true
+      },
+      "place_reconciliations": {
+        "restored_rows": 798,
+        "exact_postgresql_column_text_match": true
+      },
+      "media_assets": {
+        "restored_rows": 588,
+        "exact_postgresql_column_text_match": true
+      },
+      "media_attachments": {
+        "restored_rows": 1680,
+        "exact_postgresql_column_text_match": true
+      }
+    },
+    "limitations": [
+      "Validates typed column values, generated columns, check/not-null/unique constraints and indexes against current schema",
+      "LIKE does not copy foreign keys or application triggers; external relationships and full-database disaster recovery are not exercised",
+      "Shared media may change independently; this test never overwrites live tables"
+    ],
+    "status": "passed",
+    "temporary_tables_removed": true,
+    "full_database_restore_tested": false
+  },
+  "raw_rows_exported_to_client": false
+}

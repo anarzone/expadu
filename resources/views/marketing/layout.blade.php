@@ -50,6 +50,8 @@
 </head>
 <body class="@yield('body_class')">
 
+{{-- Pages that draw their own header and footer (the landing) set "own_chrome". --}}
+@sectionMissing('own_chrome')
 <nav class="site">
     <div class="nav-inner">
         <a class="logo" href="{{ route('home') }}" aria-label="Expadu home">
@@ -88,9 +90,11 @@
         </div>
     </div>
 </nav>
+@endif
 
 @yield('content')
 
+@sectionMissing('own_chrome')
 <footer class="site">
     <div class="wrap">
         <div class="foot-grid">
@@ -149,6 +153,7 @@
         </div>
     </div>
 </footer>
+@endif
 
 @stack('scripts')
 </body>

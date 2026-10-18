@@ -29,12 +29,12 @@ Schedule::command('events:send-occurrence-reminders')->everyFiveMinutes()->witho
 
 // Places: official boundaries are authoritative; refresh them before the OSM
 // catalogue so outside-city rows can never be assigned to a nearby Veedel.
-Schedule::command('veedels:import')->monthlyOn(1, '02:00')->withoutOverlapping()->onOneServer();
-Schedule::command('spots:assign-veedel --force')->monthlyOn(1, '02:30')->withoutOverlapping()->onOneServer();
+Schedule::command('veedels:import')->monthlyOn(1, '02:00')->withoutOverlapping()->onOneServer()->when(fn (): bool => (bool) config('places.automation_enabled'));
+Schedule::command('spots:assign-veedel --force')->monthlyOn(1, '02:30')->withoutOverlapping()->onOneServer()->when(fn (): bool => (bool) config('places.automation_enabled'));
 // Keep source import, geometry containment, and readable facility names in
 // one ordered run. Separate schedules can overlap and leak micro-facilities
 // back into Places before their parent destination is assigned.
-Schedule::command('app:refresh-places-catalogue')->weeklyOn(1, '03:30')->withoutOverlapping()->onOneServer();
+Schedule::command('app:refresh-places-catalogue')->weeklyOn(1, '03:30')->withoutOverlapping()->onOneServer()->when(fn (): bool => (bool) config('places.automation_enabled'));
 
 // Transit delay alerts — check every 15 min, only notify for >10 min delays
 Schedule::command('transit:check-delays')->everyFifteenMinutes()->withoutOverlapping();
@@ -60,11 +60,20 @@ Schedule::command('notification:health-check')->hourly()->withoutOverlapping();
 
 // Resolve and license-check media after Monday's authoritative OSM refresh so
 // new and updated place references are enriched in the same ingestion cycle.
-Schedule::command('spots:fetch-photos')->weeklyOn(1, '05:30')->withoutOverlapping()->onOneServer();
+Schedule::command('spots:fetch-photos')->weeklyOn(1, '05:30')->withoutOverlapping()->onOneServer()->when(fn (): bool => (bool) config('places.automation_enabled'));
 
 // Venue photos ride the same weekly cycle, after the events scrapers have
 // created any new venues — events inherit these via the media cascade.
-Schedule::command('venues:fetch-photos')->weeklyOn(1, '06:00')->withoutOverlapping()->onOneServer();
+Schedule::command('venues:fetch-photos')->weeklyOn(1, '06:00')->withoutOverlapping()->onOneServer()->when(fn (): bool => (bool) config('places.automation_enabled'));
+
+// Street-level fallback runs LAST, so Commons always gets first refusal and
+// Mapillary only fills places no deliberate photograph exists for.
+Schedule::command('photos:fetch-mapillary --limit=400')->weeklyOn(1, '06:30')->withoutOverlapping()->onOneServer()->when(fn (): bool => (bool) config('places.automation_enabled'));
+Schedule::command('photos:fetch-mapillary --venues --limit=100')->weeklyOn(1, '07:00')->withoutOverlapping()->onOneServer()->when(fn (): bool => (bool) config('places.automation_enabled'));
+
+// Independently re-check attached media so expiring URLs and removed files are
+// withdrawn even when their acquisition source is not rediscovered that week.
+Schedule::command('media:revalidate --limit=200')->hourly()->withoutOverlapping()->onOneServer()->when(fn (): bool => (bool) config('places.automation_enabled'));
 
 // External API health monitoring — every 5 minutes
 Schedule::command('api:health')->everyFiveMinutes()->withoutOverlapping()->onOneServer();

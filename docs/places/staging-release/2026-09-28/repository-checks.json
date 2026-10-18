@@ -1,0 +1,35 @@
+{
+  "recorded_at": "2026-09-28T21:00:28.712261+00:00",
+  "native_rehearsal": "passed; all 4643 records and exact rollback",
+  "secret_scan": "passed",
+  "formatting": "passed",
+  "full_repository_tests": {
+    "passed": 1677,
+    "skipped": 2,
+    "assertions": 7009,
+    "duration_seconds": 244.11,
+    "parallel_processes": 10,
+    "skip_explanation": "Existing WeatherServiceTest skips at Europe/Berlin hour >=22 and >14; this run was after 23:00."
+  },
+  "first_overlapping_run": {
+    "status": "failed",
+    "cause": "PostgreSQL shared-memory/lock capacity during parallel test setup while long local rehearsal was active",
+    "application_regression_claimed": false
+  },
+  "publication": "Committed successfully with normal hooks and validated conventional commit message.",
+  "hooks_bypassed": false,
+  "staging_access": "not attempted after renewed automatic approval rejection",
+  "previous_standalone_test_run": {
+    "passed": 1677,
+    "skipped": 2,
+    "assertions": 7009,
+    "duration_seconds": 553.08,
+    "parallel_processes": 10
+  },
+  "verified_code_commit": "e67adc85cb8763dd2548cf2c97f4024dd1279e9e",
+  "frozen_checksums": {
+    "records.jsonl": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+    "cologne-places-2026-09-28.zip": "2d8c45ad4868ab75bc75225f5d5f3ee597e3b38b7956caaaf17df1fc9ece00eb",
+    "places-only.json": "2356f373dedbf7aeb0e0c3a33609a4efaaff0dd85110ce7147675ad6a607362d"
+  }
+}

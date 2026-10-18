@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "scope": "complete fast Pest suite, slow group excluded",
+  "passed": 1754,
+  "skipped": 2,
+  "assertions": 7349,
+  "duration_seconds": 250.63,
+  "parallel_processes": 10,
+  "php_version": "8.4.23",
+  "node_version": "22.23.1",
+  "dedicated_local_test_database": "exp69_staging_readiness_tests_20260930",
+  "application_data_changed": false,
+  "production_changed": false,
+  "staging_changed": false,
+  "focused_verification": {
+    "held_details": {
+      "passed": 53,
+      "assertions": 267
+    },
+    "facts_facilities_withdrawal_recovery": {
+      "passed": 153,
+      "assertions": 790
+    },
+    "startup_schedule_and_media_revalidation": {
+      "passed": 13,
+      "assertions": 84
+    },
+    "final_legacy_upgrade_and_related": {
+      "passed": 160,
+      "assertions": 805,
+      "duration_seconds": 59.4
+    }
+  },
+  "observed_regression_red": {
+    "held_details_failed_before_fix": 6,
+    "facility_access_failed_before_fix": 11,
+    "startup_schedule_failed_before_fix": 2,
+    "legacy_access_binding_failed_before_fix": 7
+  },
+  "verification_method": "normal fix-commit hooks, secret scan, formatting and complete fast suite",
+  "code_commit": "540416f3720b84d6ebc172bde6a3ad0ede46aefd"
+}

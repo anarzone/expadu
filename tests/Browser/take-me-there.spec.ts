@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { placeFacts } from './helpers/place-facts';
 
 // A deterministic multi-modal journey response (transit + bike + walk) so the
 // sheet's mode selector can be driven without a live MOTIS.
@@ -92,6 +93,8 @@ const LISTING = {
             park: null,
             lat: 50.9403,
             lng: 6.9602,
+            routing_lat: 50.9403,
+            routing_lng: 6.9602,
             photo_url: null,
             photo_attribution: null,
             distance_min: 12,
@@ -105,6 +108,7 @@ const LISTING = {
             activities: [],
             transit_hint: null,
             facts: [],
+            place_facts: placeFacts(50.9403, 6.9602),
             feedback_state: null,
             feedback_rating: null,
         },

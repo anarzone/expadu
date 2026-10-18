@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DeadlineType;
 use App\Enums\Urgency;
+use App\Profile\Applicability;
 use App\Profile\ProfileEngine;
 use Carbon\Carbon;
 use Database\Factories\TaskFactory;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['key', 'type', 'title', 'description', 'situation', 'eu_filter', 'applies_if', 'decision_options', 'trigger_event', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published', 'jurisdiction', 'legal_sources', 'review_status', 'source_verification', 'reviewed_by', 'content_version', 'effective_from', 'effective_to', 'review_due_at', 'conflicts_with', 'coverage_scope', 'deadline_fact_key'])]
+#[Fillable(['key', 'type', 'title', 'description', 'description_variants', 'situation', 'eu_filter', 'applies_if', 'decision_options', 'trigger_event', 'phase', 'depends_on', 'deadline_type', 'deadline_days', 'urgency', 'links', 'documents_required', 'recurrence_months', 'how_to_steps', 'booking_service_key', 'verified_at', 'outdated_reports', 'is_published', 'jurisdiction', 'legal_sources', 'review_status', 'source_verification', 'reviewed_by', 'content_version', 'effective_from', 'effective_to', 'review_due_at', 'conflicts_with', 'coverage_scope', 'deadline_fact_key'])]
 class Task extends Model
 {
     /** @use HasFactory<TaskFactory> */
@@ -31,6 +32,7 @@ class Task extends Model
             'decision_options' => 'array',
             'depends_on' => 'array',
             'links' => 'array',
+            'description_variants' => 'array',
             'documents_required' => 'array',
             'how_to_steps' => 'array',
             'legal_sources' => 'array',
@@ -43,6 +45,40 @@ class Task extends Model
             'review_due_at' => 'date',
             'is_published' => 'boolean',
         ];
+    }
+
+    /**
+     * The description as this person should read it: the shared paragraph,
+     * followed by any variant addressed to them.
+     *
+     * Variants are additive rather than replacements — the universal statement
+     * (§17 BMG, fourteen days) must reach everyone, and a branch paragraph
+     * qualifies it rather than standing in for it. More than one can match: a
+     * non-EU parent is both.
+     *
+     * Only a definite No drops a paragraph, matching how documents behave. An
+     * unanswered question leaves it in, because the failure we are avoiding is
+     * someone never being told about the birth certificates.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function descriptionFor(array $attributes): ?string
+    {
+        $variants = collect($this->description_variants ?? [])
+            ->filter(fn (mixed $variant): bool => is_array($variant) && filled($variant['body'] ?? null))
+            ->filter(fn (array $variant): bool => Applicability::evaluate(
+                is_array($variant['applies_if'] ?? null) ? $variant['applies_if'] : null,
+                $attributes,
+            ) !== Applicability::No)
+            ->map(fn (array $variant): string => trim((string) $variant['body']));
+
+        if ($variants->isEmpty()) {
+            return $this->description;
+        }
+
+        return collect([trim((string) $this->description), ...$variants])
+            ->filter()
+            ->implode("\n\n");
     }
 
     /**

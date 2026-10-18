@@ -25,8 +25,10 @@ final class CasePlanPresenter
         'next',
         'coming_up',
         'options',
+        'good_to_know',
         'waiting',
         'information_needed',
+        'opens_when',
         'not_covered',
     ];
 
@@ -45,18 +47,7 @@ final class CasePlanPresenter
         ?BureaucracyCaseQuestion $question,
     ): array {
         $rawSections = is_array($snapshot->sections) ? $snapshot->sections : [];
-        $taskStates = $this->taskStates($case, $rawSections);
-        $sections = [];
-
-        foreach (self::SectionKeys as $sectionKey) {
-            $items = $rawSections[$sectionKey] ?? [];
-            $sections[$sectionKey] = collect(is_array($items) ? $items : [])
-                ->map(fn (mixed $item): mixed => is_array($item)
-                    ? $this->withTaskState($item, $taskStates)
-                    : $item)
-                ->values()
-                ->all();
-        }
+        $sections = $this->mapSections($case, $rawSections);
 
         return [
             'coverage_state' => $snapshot->coverage_state,
@@ -66,6 +57,38 @@ final class CasePlanPresenter
             'active_conflict' => $this->activeConflict($case),
             'next_question' => $this->question($question),
             'ai' => $this->ai($case),
+        ];
+    }
+
+    /**
+     * The same payload for a case that was never stored — the read-only demo,
+     * which renders a persona from an unsaved case so no row is written.
+     *
+     * Everything interactive is absent by construction rather than by omission:
+     * there is no question to answer, no conflict to resolve and no AI quota to
+     * spend on a person who does not exist. The section mapping is shared with
+     * present(), so a demo can never show a differently-shaped card than the
+     * live page.
+     *
+     * @param  array<string, list<mixed>>  $composed
+     * @return array<string, mixed>
+     */
+    public function preview(BureaucracyCase $case, array $composed, string $coverageState): array
+    {
+        return [
+            'coverage_state' => $coverageState,
+            'generated_at' => null,
+            'reassessment_at' => null,
+            'sections' => $this->mapSections($case, $composed),
+            'active_conflict' => null,
+            'next_question' => null,
+            'ai' => [
+                'available' => false,
+                'consented' => false,
+                'processor_name' => null,
+                'processor_privacy_url' => null,
+                'remaining_quota' => 0,
+            ],
         ];
     }
 
@@ -89,6 +112,31 @@ final class CasePlanPresenter
      * @param  array<string, mixed>  $sections
      * @return Collection<string, UserTask>
      */
+    /**
+     * Every section key, in order, with each card carrying the viewer's own
+     * progress on it.
+     *
+     * @param  array<string, mixed>  $rawSections
+     * @return array<string, list<mixed>>
+     */
+    private function mapSections(BureaucracyCase $case, array $rawSections): array
+    {
+        $taskStates = $this->taskStates($case, $rawSections);
+        $sections = [];
+
+        foreach (self::SectionKeys as $sectionKey) {
+            $items = $rawSections[$sectionKey] ?? [];
+            $sections[$sectionKey] = collect(is_array($items) ? $items : [])
+                ->map(fn (mixed $item): mixed => is_array($item)
+                    ? $this->withTaskState($item, $taskStates)
+                    : $item)
+                ->values()
+                ->all();
+        }
+
+        return $sections;
+    }
+
     private function taskStates(BureaucracyCase $case, array $sections): Collection
     {
         $keys = collect($sections)
@@ -179,7 +227,7 @@ final class CasePlanPresenter
     {
         $conflict = BureaucracyFactConflict::query()
             ->where('case_id', $case->getKey())
-            ->where('status', 'unresolved')
+            ->actionable()
             ->with(['existingFact', 'candidateFact'])
             ->oldest('created_at')
             ->oldest('id')
@@ -231,7 +279,8 @@ final class CasePlanPresenter
             'standard_work_permit' => 'Standard work permit',
             'blue_card', 'blue_card_pending' => 'EU Blue Card'.($value === 'blue_card_pending' ? ' pending' : ''),
             'family_reunification' => 'Family reunification permit',
-            'settlement_permit_18c' => 'Settlement permit (§18c)',
+            'settlement_permit_9' => 'Permanent residence (§9)',
+            'settlement_permit_18c' => 'Permanent residence (§18c)',
             'family_reunification_permit' => 'Family reunification permit',
             'renew_current_title' => 'Renew my current title',
             'settlement_permit' => 'Apply for a settlement permit',

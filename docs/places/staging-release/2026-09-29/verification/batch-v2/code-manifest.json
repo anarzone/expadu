@@ -1,0 +1,20 @@
+{
+  "PerformanceDestinationGrouping.php": {
+    "source_path": "app/Places/DestinationGrouping.php",
+    "source_sha256": "b7b4f543f5d7092b608517c342f7527b81d95a58ec7b4f8038f0a0048f631f5b",
+    "executed_sha256": "bbafa756d0091cecf26e8960816d36a049fcb9ecdb891a18100065dea8c11262",
+    "transformation": "Rename diagnostic class; controller imports diagnostic grouping alias. No other source edits."
+  },
+  "PerformancePlacesController.php": {
+    "source_path": "app/Http/Controllers/Api/PlacesController.php",
+    "source_sha256": "c49a235039265a0aa6067ea5732a8bf2658dad09d66140ff7f3ea98c79659b90",
+    "executed_sha256": "c2c15943c451d241dc39b160dcd7c92335ded26890c952b261b0779cf3d04539",
+    "transformation": "Rename diagnostic class; controller imports diagnostic grouping alias. No other source edits."
+  },
+  "PerformancePlaceFactsV2.php": {
+    "source_path": "app/Places/PlaceFacts.php",
+    "source_sha256": "0aac4a26a8160219056d42216b6d2df30cc30d79be9aac8161c0c29262091c2c",
+    "executed_sha256": "2498da3e8f4e1fccab3c490905f9b3abfaf74df31f102c597834caf7ac382a8a",
+    "transformation": "Rename to PerformancePlaceFactsV2 and extend PlaceFacts for dependency-injection compatibility; all method bodies identical to source."
+  }
+}

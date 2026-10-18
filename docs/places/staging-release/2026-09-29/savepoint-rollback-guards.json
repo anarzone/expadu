@@ -1,0 +1,17 @@
+{
+    "scope": "local synthetic temporary table; both caller rollback boundaries",
+    "cases": {
+        "successful_children": {
+            "caller_savepoint_restored": true,
+            "released_children": 10,
+            "remaining_rows": 1
+        },
+        "child_failure": {
+            "caller_savepoint_restored": true,
+            "released_children": 4,
+            "remaining_rows": 1
+        }
+    },
+    "outer_rollback_exact": true,
+    "status": "passed"
+}

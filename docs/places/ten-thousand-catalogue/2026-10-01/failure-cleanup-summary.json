@@ -1,0 +1,8 @@
+{
+    "status": "passed",
+    "forced_failure_after_new_additions": 10,
+    "exact_baseline_restored": true,
+    "sequences_restored": true,
+    "private_partial_output_removed": true,
+    "remote_changed": false
+}

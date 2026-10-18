@@ -1,0 +1,807 @@
+{
+    "schema_version": 1,
+    "manifest_sha256": "badef6eb0727c6af779934742acba976b483fd98bdd9f1dfffcddae70ee33cf3",
+    "origin": "Reviewed local public baseline; frozen expectations for staging comparison",
+    "entries": {
+        "osm:node\/10594951408": {
+            "display_name": "Sayang",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/11113764693": {
+            "display_name": "Picknickplatz",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:node\/11158148309": {
+            "display_name": "Picknickplatz",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:node\/11225614193": {
+            "display_name": "What a D\u00f6ner",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/11866955764": {
+            "display_name": "Mangal D\u00f6ner",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/11962929956": {
+            "display_name": "Saloniki",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/12126214031": {
+            "display_name": "People People Coffee",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/12326810007": {
+            "display_name": "Ludari",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/12686489761": {
+            "display_name": "Picknickplatz",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:node\/13161944557": {
+            "display_name": "La Picknick Due",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/13192499997": {
+            "display_name": "Golden",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/13650691986": {
+            "display_name": "Caf\u00e9 Antares",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/14075096970": {
+            "display_name": "Point",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/14110607429": {
+            "display_name": "Table tennis",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:node\/14120378125": {
+            "display_name": "Picnic spot",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:node\/14129626721": {
+            "display_name": "SuperCandy Popup Museum",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/1431926135": {
+            "display_name": "Humanwiss. Abteilung der USB",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/1442632673": {
+            "display_name": "Bushido",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/1478239387": {
+            "display_name": "L'Assaggio",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/1614233344": {
+            "display_name": "Eiscafe Bistro Marano",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/1701309490": {
+            "display_name": "Stammhaus",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/2079251169": {
+            "display_name": "Caf\u00e9",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/2248763797": {
+            "display_name": "Galerie Gisela Capitain",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/2301210583": {
+            "display_name": "Spotting Point",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/2346950515": {
+            "display_name": "Subway",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/2419064962": {
+            "display_name": "Frittenwerk",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/2460737331": {
+            "display_name": "Domino's Pizza",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/2465163535": {
+            "display_name": "Picknickplatz",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:node\/2979064645": {
+            "display_name": "hopla Cocktail Bar",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/322797145": {
+            "display_name": "Furchtbar",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/3376526780": {
+            "display_name": "Humboldt1 Lounge Bar",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/343471444": {
+            "display_name": "Kamps",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/377684620": {
+            "display_name": "Mangal D\u00f6ner",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/4163331989": {
+            "display_name": "Dunya Imbiss",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/4264453712": {
+            "display_name": "Sportsbar21",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/438042767": {
+            "display_name": "Mai'ster K\u00fcche",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/4422075991": {
+            "display_name": "Wolff's Backstube",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/4440733100": {
+            "display_name": "Tante Astrid",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/448400559": {
+            "display_name": "Caf\u00e9 de Paris",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/4511247604": {
+            "display_name": "Mayer",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/455959386": {
+            "display_name": "La Piazza",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/533914801": {
+            "display_name": "Merzenich",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/5357065860": {
+            "display_name": "Toddy Tapper",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/5492264456": {
+            "display_name": "Drei",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/571787802": {
+            "display_name": "Casa di Modica",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/593246947": {
+            "display_name": "Flor y canela",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/5995290795": {
+            "display_name": "Art Invest X Cologne Artists",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/603316689": {
+            "display_name": "Mangal D\u00f6ner Lukas Podolski 10",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/603582311": {
+            "display_name": "K\u00f6lner Festungsmuseum",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6116180289": {
+            "display_name": "Series-A Campus",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/612111745": {
+            "display_name": "King of D\u00f6ner",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/617197898": {
+            "display_name": "Orienthof",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6240480851": {
+            "display_name": "Geomuseum",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/633181805": {
+            "display_name": "Brauhaus zum Prinzen",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6385427387": {
+            "display_name": "Kamps",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6407729258": {
+            "display_name": "El Allioli",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6408759486": {
+            "display_name": "Caf\u00e9 Buur",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6528394385": {
+            "display_name": "Br\u00fccken",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6539940547": {
+            "display_name": "Palanta",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/659459591": {
+            "display_name": "Hatay Gourmet",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/661055164": {
+            "display_name": "Pizzeria Pinnochio",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6749736316": {
+            "display_name": "akkuraum",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/6772145993": {
+            "display_name": "Sweet Sushi",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/7008951486": {
+            "display_name": "Chuchus Grill & Burger",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/7254954241": {
+            "display_name": "Ox Royal",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/7463520385": {
+            "display_name": "Yoko Sushi",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/7658912425": {
+            "display_name": "Legs Eleven",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/823682874": {
+            "display_name": "Hanoi 36",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/8514900867": {
+            "display_name": "Neppeser Gaffelstube",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/9055557116": {
+            "display_name": "Petek",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/9251404277": {
+            "display_name": "\u00f6ffentliche B\u00fccherei St. Katharina",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/9452155471": {
+            "display_name": "Aura",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:node\/992860605": {
+            "display_name": "Ruff's Burger",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/103595738": {
+            "display_name": "Hundefreilauffl\u00e4che Wahn",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/118107690": {
+            "display_name": "Z\u00fcndorfbad",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/124893551": {
+            "display_name": "Pitch",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:way\/1353386633": {
+            "display_name": "Boules",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:way\/141252994": {
+            "display_name": "Stadtgarten Kalk",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/1544655789": {
+            "display_name": "Playground",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:way\/1544655790": {
+            "display_name": "Basketball court",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:way\/160130857": {
+            "display_name": "Spielplatz Hartenfelsweg",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/193160837": {
+            "display_name": "McDonald's",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/22789243": {
+            "display_name": "Von-Sandt-Platz",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/24464463": {
+            "display_name": "Vorgebirgspark",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/248729479": {
+            "display_name": "Decksteiner Tennis Club",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/262911472": {
+            "display_name": "Greifvogelschutzstation K\u00f6ln",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/265788724": {
+            "display_name": "K\u00e4ulchensweg",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/29034626": {
+            "display_name": "Banteng Rind",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/29211512": {
+            "display_name": "Spielplatz",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:way\/31026200": {
+            "display_name": "Burger King",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/327590883": {
+            "display_name": "Kwattapark",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/365201197": {
+            "display_name": "Streichelzoo",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/37000682": {
+            "display_name": "Hermann-Josef-Hieronymi-Park",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/457542236": {
+            "display_name": "Sportplatz Schulzentrum Wahn",
+            "before_general": true,
+            "before_activity": true,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/5235304": {
+            "display_name": "Wasserspielplatz",
+            "before_general": false,
+            "before_activity": true,
+            "after_general": false,
+            "after_activity": true,
+            "composer": true
+        },
+        "osm:way\/870584334": {
+            "display_name": "Spielplatz",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "osm:way\/991631118": {
+            "display_name": "Spielplatz",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": false,
+            "after_activity": false,
+            "composer": false
+        },
+        "overture:4fb55d73-51ce-4d40-af50-2672b7baf2f9": {
+            "display_name": "Bey D\u00f6ner",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "overture:7e855167-e9fb-4267-8682-440864716c5f": {
+            "display_name": "Fu Da China K\u00fcche",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        },
+        "overture:b392d0fe-f904-4762-bcb8-7de7b1abcb4a": {
+            "display_name": "Red Chicken D\u00f6ner Drivein",
+            "before_general": false,
+            "before_activity": false,
+            "after_general": true,
+            "after_activity": true,
+            "composer": true
+        }
+    }
+}

@@ -80,6 +80,9 @@ final class PlanSnapshotStore
     private function signature(BureaucracyCase $case, CaseMatchResult $result): string
     {
         return hash('sha256', json_encode([
+            // Presentation is part of what a snapshot stores, so it has to be
+            // part of what invalidates one.
+            'layout_version' => CasePlanComposer::LayoutVersion,
             'rule_versions' => $result->ruleVersions,
             'task_state' => $this->taskState($case, $result),
             'date_boundary' => today()->toDateString(),

@@ -1,0 +1,21 @@
+{
+  "before_matches_reviewed_release": true,
+  "after_matches_reviewed_release": true,
+  "expected_file_sha256": {
+    "app/Places/PlaceFacts.php": "d29e68805eab1d5402d9f6bbc43396c4f77c8ca2d65ff7f260952dca28a4b93e",
+    "app/Places/PlaceCapabilities.php": "93d9af8395efb653fefc1edeb4f889bd130dc7f60e1f471b9c81a571ec0e69c1",
+    "app/Composer/FeasibilityFilter.php": "c32e1bb5174040beb27e489af6eef2f45e82f40ce1cea2e8f0b5e26e91f121b4",
+    "app/Composer/CandidateRepository.php": "12863a896800e959cf3375593432eea413e8b5b70787a5c2844ba488fb73bcdb",
+    "app/Composer/PlaceSearchHints.php": "a0376653f43b0fda2c6e8dfd84ebe72e1e0ede44979b797e430b8aa4aa5292f2",
+    "app/Http/Controllers/ComposerController.php": "8bf86d5181dc85442ea57cef660c79b213e9e767a2680fa696a10cafe85ce410",
+    "app/Http/Controllers/Api/PlacesController.php": "ffd371181ad0cea0cabb64b9cf8376e9262a27d8975afa9b4d362a6d5fda6f55",
+    "app/Places/DestinationGrouping.php": "b5b790d990eec2034870df9be18d9a5bfd2998018e1a81a4b68355411f501792"
+  },
+  "uploaded_sha256": {
+    "batch-v3-candidate-performance.php": "0a880b9f7a1254f15dfb78291aa1d05216f7ed5f48a4c09198dcc127182ae3d8",
+    "PerformanceDestinationGrouping.php": "bbafa756d0091cecf26e8960816d36a049fcb9ecdb891a18100065dea8c11262",
+    "PerformancePlacesController.php": "c2c15943c451d241dc39b160dcd7c92335ded26890c952b261b0779cf3d04539",
+    "PerformancePlaceFactsV2.php": "2498da3e8f4e1fccab3c490905f9b3abfaf74df31f102c597834caf7ac382a8a",
+    "performance-cleanup.php": "07a11abbfa9a48ebed6aa69ce17d02573bd7da262c85e88752fde1a660b1cc2d"
+  }
+}

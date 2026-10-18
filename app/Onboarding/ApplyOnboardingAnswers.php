@@ -84,6 +84,17 @@ final class ApplyOnboardingAnswers
                 $entryMode === 'd_visa' ? ($validated['visa_expires_at'] ?? null) : null,
             );
             $this->storeProfileAttribute($lockedUser, 'moved_in_at', $movedInAt);
+            // Saying "I hold a settlement permit" IS declaring yourself settled.
+            // These were two unconnected notions — current_residence_title is a
+            // case fact, settled_at a profile attribute — so someone who told
+            // onboarding they already hold permanent residency was still being
+            // offered it as something to apply for. Cleared when the answer
+            // changes, so re-onboarding cannot leave a stale claim behind.
+            $this->storeProfileAttribute(
+                $lockedUser,
+                'settled_at',
+                $this->settledAt($lockedUser, $currentResidenceTitle),
+            );
             $this->storeProfileAttribute(
                 $lockedUser,
                 'address_registration_status',
@@ -165,6 +176,23 @@ final class ApplyOnboardingAnswers
             Situation::DigitalNomad => 'digital_nomad',
             Situation::Other => 'other',
         };
+    }
+
+    /**
+     * Any settlement permit means the user already holds permanent residency.
+     * Matched by prefix so a future §9 / §18c split needs no change here.
+     * Keeps an existing date if one was already recorded — the day they told
+     * us is a worse answer than the day they actually settled.
+     */
+    private function settledAt(User $user, ?string $currentResidenceTitle): ?string
+    {
+        if ($currentResidenceTitle === null || ! str_starts_with($currentResidenceTitle, 'settlement_permit')) {
+            return null;
+        }
+
+        $existing = data_get($user->profile_attributes, 'settled_at');
+
+        return is_string($existing) && $existing !== '' ? $existing : now()->toDateString();
     }
 
     private function permitTrack(?string $currentResidenceTitle, ?string $caseGoal): ?string

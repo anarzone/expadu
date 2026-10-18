@@ -1,0 +1,26 @@
+{
+  "reviewer": "staging_data_review",
+  "scope": "Local static review; no remote execution",
+  "initial_findings": [
+    "Rate limiter cache must be isolated before provider boot",
+    "ANALYZE planner/statistics side effects need baseline cleanup",
+    "Cleanup helper must not label a local run as staging"
+  ],
+  "resolutions": [
+    "Pre-provider cache.default and cache.limiter set to array; retained stores asserted",
+    "Finally refreshes baseline statistics after rollback; independent bounded cleanup follows main process including timeout",
+    "Cleanup helper now only accepts --staging; --local rejection executed and passed"
+  ],
+  "remaining_known_limitations": [
+    "In-process HTTP kernel, not external network latency",
+    "30 sequential samples each for food/drink page 1 and 2",
+    "Harness pass does not imply default p95 release gate passed",
+    "Sequence allocations and cumulative analyze counters can change",
+    "Raw records remain server-only"
+  ],
+  "files": {
+    "exp69-staging-performance.php": "68826ae0b649780fe381de466b464a55017250c0f3ca38851cc21eede337aedf",
+    "exp69-staging-performance-cleanup.php": "07a11abbfa9a48ebed6aa69ce17d02573bd7da262c85e88752fde1a660b1cc2d"
+  },
+  "recorded_at": "2026-09-29T11:19:43.091525+00:00"
+}

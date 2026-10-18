@@ -131,7 +131,7 @@ tasks:
     applies_if:
       current_residence_title: national_d_visa
       case_goal: family_reunification_permit
-      sponsor_current_title: {in: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_18c, other]}
+      sponsor_current_title: {in: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_9, settlement_permit_18c, other]}
       entry_mode: d_visa
     links:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__30.html

@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "assessment": "accepted_for_at_least_10000_local_places_composer_catalogue_records",
+  "checked_at": "2026-10-01T19:39:10.220862+00:00",
+  "reviewer": "ten_thousand_final_review",
+  "one_fresh_context_review": true,
+  "code_commit": "ca7b9ddac3ef667ba50d9ba1784fa4a62c75529e",
+  "runtime_manifest_sha256": "d07cc4be3be195a2023576111754384a84d5f859c73d5093c349174334d722a3",
+  "candidate_export_sha256": "cfee38362754548fc2b5fe1c970e624962ff6f36a47729efbd6d8d47d3e33909",
+  "combined_candidates": 12292,
+  "general_destinations": 11591,
+  "activity_facility_or_component_candidates": 701,
+  "critical_findings": 0,
+  "important_findings_outstanding": 0,
+  "minor_findings": 0,
+  "compound_phrase_finding_resolved": true,
+  "numeric_source_text_fix_confirmed": true,
+  "independent_whole_export_audit_rerun_read_only": true,
+  "source_runtime_hashes_and_permissions_independently_checked": true,
+  "baseline_tables_restored": 10,
+  "sequence_states_restored": 9,
+  "declined_scope": [
+    "live_deployment_and_production_performance",
+    "new_photo_supply_and_live_image_health",
+    "physical_on_site_inspection",
+    "second_successful_outer_run_equivalence_claim"
+  ],
+  "fast_php_suite_excludes_slow_group": true,
+  "slow_browser_ci_completion_claimed": false,
+  "push_merge_deploy_or_live_apply_authorized_by_verdict": false
+}

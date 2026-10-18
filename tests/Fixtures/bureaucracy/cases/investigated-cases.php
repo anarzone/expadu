@@ -15,9 +15,12 @@ return [
                 'case.bc.first_application.submit',
             ],
         ],
+        // The persona's visa expiry is now relative (two months out) rather
+        // than a literal, so it cannot quietly fall into the past. The suite
+        // freezes the clock at 2026-08-03, which makes it exactly this date.
         'deadlines' => [
-            'case.bc.first_application.prepare' => '2026-10-01',
-            'case.bc.first_application.submit' => '2026-10-01',
+            'case.bc.first_application.prepare' => '2026-10-03',
+            'case.bc.first_application.submit' => '2026-10-03',
         ],
     ],
     'joining spouse while the sponsor Blue Card is pending' => [
@@ -39,8 +42,9 @@ return [
             'question' => 'Is your household livelihood currently secured without Bürgergeld or Sozialhilfe?',
             'why' => 'Residence and settlement routes can depend on secured livelihood.',
         ]],
+        // Relative visa expiry, resolved against the suite's frozen clock.
         'deadlines' => [
-            'case.family.first_permit.prepare' => '2026-10-01',
+            'case.family.first_permit.prepare' => '2026-10-03',
         ],
         'forbidden_phrases' => ['will be issued', 'is guaranteed', 'automatically qualifies'],
     ],
@@ -78,8 +82,9 @@ return [
             'coming_up' => ['case.family.settlement.general_coming_up'],
             'options' => ['case.family.settlement.spouse_18c_option'],
         ],
+        // Relative title expiry (one month out), against the frozen clock.
         'deadlines' => [
-            'case.family.renew.continuing_household' => '2026-09-01',
+            'case.family.renew.continuing_household' => '2026-09-03',
         ],
         'absent' => ['case.family.independent_after_separation'],
     ],

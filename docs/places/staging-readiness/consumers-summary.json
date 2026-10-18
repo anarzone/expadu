@@ -1,0 +1,54 @@
+{
+  "status": "passed",
+  "phase": "after",
+  "runtime": "staging_port_candidate",
+  "runtime_sha256": "b7bbb275a67111744a9cc785005f89b06a5757d272628a05bbfd0050fa71fb0c",
+  "checked_at": "2026-09-30T21:58:43+00:00",
+  "environment_data": "staging",
+  "application_boot_database": "exp69_prod_rehearsal_20260930",
+  "eligible_rows": 4235,
+  "general_destinations": 4224,
+  "unknown_origin_eligible_rows": 0,
+  "api_list_first_page_items": 20,
+  "api_list_total": 4139,
+  "existing_source_null_aliases": 798,
+  "eligible_alias_api_checks": 791,
+  "eligible_alias_composer_checks": 791,
+  "shared_contract_records_checked": 4235,
+  "held_unlinked_composer_exclusion_checks": 3558,
+  "held_unlinked_detail_api_checks": 12,
+  "held_detail_missing_availability_field": 0,
+  "fact_counts": {
+    "source": {
+      "osm": 4067,
+      "overture": 168
+    },
+    "name_kind": {
+      "source": 4235
+    },
+    "access": {
+      "unknown": 4112,
+      "public": 123
+    },
+    "fee": {
+      "unknown": 4149,
+      "free": 49,
+      "paid": 37
+    }
+  },
+  "general_destinations_with_policy_publishable_hero": 119,
+  "policy_photo_coverage_percent": 2.817,
+  "photo_urls_freshly_revalidated": false,
+  "every_source_freshly_reverified": false,
+  "readonly_guard_refusals_verified": 6,
+  "catalogue_select_queries": 20485,
+  "staging_transaction_read_only": true,
+  "query_logging_disabled": true,
+  "synthetic_user_persisted": false,
+  "real_user_rows_read": false,
+  "external_authenticated_http_verified": false,
+  "deployed_source_code_verified": false,
+  "raw_rows_exported": false,
+  "staging_changed": false,
+  "production_changed": false
+}

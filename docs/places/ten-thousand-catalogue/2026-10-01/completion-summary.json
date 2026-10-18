@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "combined_candidates": 12292,
+  "general_destinations": 11591,
+  "activity_facility_or_component_candidates": 701,
+  "new_named_destinations": 7365,
+  "previous_candidates_preserved": 4927,
+  "policy_publishable_hero_associations": 119,
+  "photo_coverage_percent": 0.968,
+  "native_contracts_verified": true,
+  "independent_whole_export_audit_passed": true,
+  "forced_failure_cleanup_passed": true,
+  "final_fresh_context_review_accepted": true,
+  "live_deployed": false,
+  "remote_data_changed": false,
+  "candidate_export_sha256": "cfee38362754548fc2b5fe1c970e624962ff6f36a47729efbd6d8d47d3e33909",
+  "runtime_manifest_sha256": "d07cc4be3be195a2023576111754384a84d5f859c73d5093c349174334d722a3",
+  "report_sha256": "ff76c9bc7850c9f5a100137d4e8cdf0e70f29f001aa52b54eb0d3d753af1a7b1",
+  "project_records_saved_and_read_back_verified": true,
+  "all_local_plan_tasks_complete": true
+}

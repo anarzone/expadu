@@ -1,0 +1,22 @@
+{
+  "commit": "dddf8aa147c95eabc6ab7fddc4caff3bd32e2ef5",
+  "pull_request": "https://github.com/anarzone/expadu/pull/58",
+  "read_only_staging_comparison": "passed",
+  "existing_matches": 2769,
+  "absent_new_identities": 1874,
+  "conflicts": 0,
+  "raw_records_exported": false,
+  "upload_snapshot_rehearsal": "not executed; separate approval pending after automatic review rejection",
+  "ci_run": "https://github.com/anarzone/expadu/actions/runs/36551042470",
+  "ci_status_at_publication": "in_progress",
+  "primary_documents_mirrored": [
+    "docs/places/production-readiness.md",
+    "docs/places/staging-release/2026-09-28/PLAN.md",
+    "docs/places/staging-release/2026-09-29/REPORT.md"
+  ],
+  "primary_documents_preserved_due_to_differences": [],
+  "normal_commit_hooks": "passed",
+  "independent_review": "no material findings",
+  "staging_data_changed": false,
+  "production_changed": false
+}

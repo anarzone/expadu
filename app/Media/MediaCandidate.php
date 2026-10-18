@@ -27,5 +27,8 @@ final readonly class MediaCandidate
         public ?array $metadata = null,
         public bool $shouldValidate = true,
         public bool $authoritativeEvidence = false,
+        public string $matchStatus = 'pending',
+        public ?string $matchMethod = null,
+        public ?array $matchEvidence = null,
     ) {}
 }

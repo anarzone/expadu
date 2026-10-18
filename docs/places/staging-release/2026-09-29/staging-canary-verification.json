@@ -1,0 +1,50 @@
+{
+  "started_at": "2026-09-29T14:18:10+00:00",
+  "scope": "Exact reviewed 100-record staging canary",
+  "mode": "--rehearse",
+  "operation_id": "6f1e5fe0-0b54-4d7b-81eb-29d000001001",
+  "context": {
+    "schema_version": 1,
+    "database": "expadu_staging",
+    "package_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+    "manifest_sha256": "badef6eb0727c6af779934742acba976b483fd98bdd9f1dfffcddae70ee33cf3",
+    "acceptance_sha256": "f5278ac5e7833c9e6b7adcd3d8fbca25b1edcaf18287cef220bb1009a0e269e6",
+    "application_sha256": "704f1bbc23281852e2b779d7a70cb37010d702c9075c44a1b6ad103795e9bca7",
+    "importer_sha256": "cd2fc73545d2255d64a6ac80f590df5fb54c9db458022bfc36444af47e8b5a66",
+    "recovery_sha256": "0d5da34f0df19ab02d9dee43f582064ede4ac4862b9ed149a9380b45c54aa3f9",
+    "record_set_sha256": "93dc9be0b91f5b8874880bc0bfe28182d90a20afd49b144fe3b6698176448df4"
+  },
+  "raw_rows_exported": false,
+  "catalogue_commit_attempted": false,
+  "applied_records": 100,
+  "stored_spots_inside_transaction": 9978,
+  "general_visible_canary": 86,
+  "activity_visible_canary": 87,
+  "unselected_visibility_unchanged": true,
+  "detail_api_checks": 100,
+  "composer_identities": 87,
+  "exact_composer_identity_set_passed": true,
+  "held_from_composer": 13,
+  "recovery_proof": {
+    "restored_streams": 27,
+    "withdrawn_additions": 50,
+    "retained_alias_history_changes": 0,
+    "recovery_receipt_sha256": "97bda3a8492bed7a3f9109e0a5ab6f4345c762fc076ae159c4e799b53ebb0553",
+    "caller_boundary_retained": true,
+    "applied_state_restored": true
+  },
+  "apply_replay_noop": true,
+  "private_prepared_receipt_sha256": "15e8632b8ab7fb4d8f795cb335afe229f04817fa013e6ebd7815d5797509c5cf",
+  "rollback": true,
+  "status": "passed_rolled_back",
+  "finished_at": "2026-09-29T14:18:21+00:00",
+  "uploaded_helpers_sha256": {
+    "canary-manifest-v2.json": "badef6eb0727c6af779934742acba976b483fd98bdd9f1dfffcddae70ee33cf3",
+    "canary-acceptance.json": "f5278ac5e7833c9e6b7adcd3d8fbca25b1edcaf18287cef220bb1009a0e269e6",
+    "GuardedCanary.php": "b1aa794c89975ca32a8228892616d6819dcba870a999462b1535fcc67a9eaef3",
+    "CanaryJournal.php": "b84744047209885ba994e5a151882d0dc2c7ebc127999edaab4cd4f1c39cbf13",
+    "run-canary.php": "86824697a349443012e6b4e913264f2003037b741f84eea0bd1e8ddc3d221985"
+  },
+  "receipt_persisted_on_private_host": true,
+  "container_image": "sha256:4c49c1460b6f2815eb3d9023fbf1c2f085bb63f27f39484a78c6bb88642feae4"
+}

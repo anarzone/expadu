@@ -1,0 +1,287 @@
+{
+  "status": "unresolved_source_review_queue",
+  "source_inventory_date": "2026-09-28",
+  "freshly_refetched_in_this_pass": false,
+  "records": [
+    {
+      "spot_id": 9658,
+      "source_url": "https://www.openstreetmap.org/node/1018047304",
+      "retained_name": "Der Italiener",
+      "captured_source_name": "Zino's Spritz",
+      "retained_category": "restaurant",
+      "captured_category": "bar",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Possible successor business at the same source object. Establish business continuity before changing the retained identity or activating a replacement."
+    },
+    {
+      "spot_id": 8469,
+      "source_url": "https://www.openstreetmap.org/node/10793542651",
+      "retained_name": "Café Restaurant Herrmann",
+      "captured_source_name": "Chennai Chef Grand",
+      "retained_category": "cafe",
+      "captured_category": "restaurant",
+      "holds": [
+        "existing_category_change",
+        "existing_inactive_identity"
+      ],
+      "decision": "Possible successor business at the same source object. Establish business continuity before changing the retained identity or activating a replacement."
+    },
+    {
+      "spot_id": 9794,
+      "source_url": "https://www.openstreetmap.org/node/1895932193",
+      "retained_name": "Istanbul",
+      "captured_source_name": "Pastera",
+      "retained_category": "restaurant",
+      "captured_category": "fast_food",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Possible successor business at the same source object. Establish business continuity before changing the retained identity or activating a replacement."
+    },
+    {
+      "spot_id": 8340,
+      "source_url": "https://www.openstreetmap.org/node/1911783923",
+      "retained_name": "Cafe LaLe",
+      "captured_source_name": "Sinata & Monroe's",
+      "retained_category": "cafe",
+      "captured_category": "bar",
+      "holds": [
+        "existing_category_change",
+        "existing_inactive_identity"
+      ],
+      "decision": "Possible successor business at the same source object. Establish business continuity before changing the retained identity or activating a replacement."
+    },
+    {
+      "spot_id": 8930,
+      "source_url": "https://www.openstreetmap.org/node/256542313",
+      "retained_name": "Café Eichhörnchen",
+      "captured_source_name": "Rakete",
+      "retained_category": "cafe",
+      "captured_category": "bar",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Possible successor business at the same source object. Establish business continuity before changing the retained identity or activating a replacement."
+    },
+    {
+      "spot_id": 9029,
+      "source_url": "https://www.openstreetmap.org/node/2879904817",
+      "retained_name": "Marianne Becker",
+      "captured_source_name": "Ariana",
+      "retained_category": "cafe",
+      "captured_category": "restaurant",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Possible successor business at the same source object. Establish business continuity before changing the retained identity or activating a replacement."
+    },
+    {
+      "spot_id": 10333,
+      "source_url": "https://www.openstreetmap.org/node/9961439293",
+      "retained_name": "Mirosa",
+      "captured_source_name": "IMPI",
+      "retained_category": "restaurant",
+      "captured_category": "cafe",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Possible successor business at the same source object. Establish business continuity before changing the retained identity or activating a replacement."
+    },
+    {
+      "spot_id": 4920,
+      "source_url": "https://www.openstreetmap.org/relation/14266729",
+      "retained_name": "Uniwiesen",
+      "captured_source_name": "Uniwiesen",
+      "retained_category": "park",
+      "captured_category": "park",
+      "holds": [
+        "existing_location_moved_over_100m"
+      ],
+      "decision": "Review representative geometry and usable entry evidence. Retain old point; do not infer an entrance."
+    },
+    {
+      "spot_id": 4921,
+      "source_url": "https://www.openstreetmap.org/relation/14724857",
+      "retained_name": "Äußerer Grüngürtel",
+      "captured_source_name": "Äußerer Grüngürtel",
+      "retained_category": "park",
+      "captured_category": "park",
+      "holds": [
+        "existing_location_moved_over_100m"
+      ],
+      "decision": "Review representative geometry and usable entry evidence. Retain old point; do not infer an entrance."
+    },
+    {
+      "spot_id": 4917,
+      "source_url": "https://www.openstreetmap.org/relation/8705010",
+      "retained_name": "Landschaftspark Belvedere",
+      "captured_source_name": "Landschaftspark Belvedere",
+      "retained_category": "park",
+      "captured_category": "park",
+      "holds": [
+        "existing_location_moved_over_100m"
+      ],
+      "decision": "Review representative geometry and usable entry evidence. Retain old point; do not infer an entrance."
+    },
+    {
+      "spot_id": 7174,
+      "source_url": "https://www.openstreetmap.org/way/109724935",
+      "retained_name": "Skatepark",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "skatepark",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    },
+    {
+      "spot_id": 7197,
+      "source_url": "https://www.openstreetmap.org/way/126625388",
+      "retained_name": "Basketballplatz",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "basketball",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    },
+    {
+      "spot_id": 4863,
+      "source_url": "https://www.openstreetmap.org/way/129583522",
+      "retained_name": "Jugendpark",
+      "captured_source_name": "Jugendpark",
+      "retained_category": "park",
+      "captured_category": "park",
+      "holds": [
+        "existing_location_moved_over_100m"
+      ],
+      "decision": "Review representative geometry and usable entry evidence. Retain old point; do not infer an entrance."
+    },
+    {
+      "spot_id": 7230,
+      "source_url": "https://www.openstreetmap.org/way/166299111",
+      "retained_name": "Basketballplatz",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "basketball",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    },
+    {
+      "spot_id": 7373,
+      "source_url": "https://www.openstreetmap.org/way/306580238",
+      "retained_name": "Tennisplatz",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "tennis",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    },
+    {
+      "spot_id": 7396,
+      "source_url": "https://www.openstreetmap.org/way/342561345",
+      "retained_name": "Basketballplatz · Äußerer Grüngürtel",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "basketball",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    },
+    {
+      "spot_id": 7434,
+      "source_url": "https://www.openstreetmap.org/way/503332895",
+      "retained_name": "Basketballplatz",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "basketball",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    },
+    {
+      "spot_id": 8086,
+      "source_url": "https://www.openstreetmap.org/way/52168965",
+      "retained_name": "Weinmuseum",
+      "captured_source_name": "Weinmuseum",
+      "retained_category": "museum",
+      "captured_category": "restaurant",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Preserve museum identity; source carries museum and restaurant capabilities. Review category precedence; do not overwrite with restaurant."
+    },
+    {
+      "spot_id": 7445,
+      "source_url": "https://www.openstreetmap.org/way/551201750",
+      "retained_name": "Tennisplatz",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "tennis",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    },
+    {
+      "spot_id": 4858,
+      "source_url": "https://www.openstreetmap.org/way/61750523",
+      "retained_name": "Pyramidenpark",
+      "captured_source_name": "Pyramidenpark",
+      "retained_category": "park",
+      "captured_category": "park",
+      "holds": [
+        "existing_location_moved_over_100m"
+      ],
+      "decision": "Review representative geometry and usable entry evidence. Retain old point; do not infer an entrance."
+    },
+    {
+      "spot_id": 7110,
+      "source_url": "https://www.openstreetmap.org/way/66116427",
+      "retained_name": "Basketballplatz",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "basketball",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    },
+    {
+      "spot_id": 4859,
+      "source_url": "https://www.openstreetmap.org/way/74552185",
+      "retained_name": "August-Sander-Park",
+      "captured_source_name": "August-Sander-Park",
+      "retained_category": "park",
+      "captured_category": "park",
+      "holds": [
+        "existing_location_moved_over_100m"
+      ],
+      "decision": "Review representative geometry and usable entry evidence. Retain old point; do not infer an entrance."
+    },
+    {
+      "spot_id": 7525,
+      "source_url": "https://www.openstreetmap.org/way/867839254",
+      "retained_name": "Basketballplatz",
+      "captured_source_name": "Sports pitch",
+      "retained_category": "basketball",
+      "captured_category": "pitch",
+      "holds": [
+        "existing_category_change"
+      ],
+      "decision": "Review mixed-sport category mapping while retaining every sport on one physical facility. Do not create a separate destination per sport."
+    }
+  ],
+  "count": 23,
+  "remote_changed": false
+}
