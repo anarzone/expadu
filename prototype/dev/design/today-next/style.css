@@ -1824,18 +1824,6 @@ body.today-next {
         margin-top: 3px;
     }
 }
-@media (min-width: 701px) and (max-width: 999px) {
-    .route-times {
-        grid-template-columns: 20px auto minmax(32px, 1fr) auto;
-        gap: 8px;
-    }
-    .route-times > svg {
-        width: 20px;
-    }
-    .route-time b {
-        font-size: var(--text-title-sm);
-    }
-}
 @media (max-width: 700px) {
     .review-bar {
         gap: 0;
@@ -1963,26 +1951,6 @@ body.today-next {
     }
     .status-pill {
         font-size: var(--text-micro);
-    }
-    .route-times {
-        grid-template-columns: 20px auto minmax(16px, 1fr) auto;
-        gap: 8px;
-    }
-    .route-times > svg {
-        width: 20px;
-    }
-    .route-time b {
-        font-size: var(--text-title-sm);
-    }
-    .route-time small {
-        font-size: var(--text-micro);
-    }
-    .route-foot {
-        font-size: var(--text-micro);
-        gap: 3px;
-    }
-    .route-caption strong {
-        font-size: var(--text-caption);
     }
     .saved-ideas {
         padding: 16px;
@@ -2117,15 +2085,6 @@ body.today-next {
     }
     .today-next .city svg:first-child {
         display: block;
-    }
-    .route-times {
-        gap: 6px;
-    }
-    .route-times > svg {
-        width: 18px;
-    }
-    .route-time b {
-        font-size: var(--text-title-sm);
     }
     .day-panel {
         padding-top: 14px;

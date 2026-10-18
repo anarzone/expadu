@@ -936,19 +936,6 @@
         animation: none !important;
     }
 }
-/* The next trip's button, in Nearby's line and My day. */
-.next-trip-go {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-8);
-    min-height: 48px;
-}
-.next-trip-go svg {
-    width: 14px;
-    height: 14px;
-    fill: currentColor;
-}
 
 /* ---------- A sample situation: banner, paused times ---------- */
 .nearby-banner {

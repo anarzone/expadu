@@ -1007,23 +1007,6 @@ function platformOfRoute(route) {
 }
 // The sample's lift is the one down to Neumarkt's underground platforms.
 const stepFreeBlocked = (route) => !!platformOfRoute(route)?.under;
-function tripRing(now) {
-    if (now.kind === 'unplanned')
-        return `<span class="trip-ring is-icon" aria-hidden="true">${icon('calendar')}</span>`;
-    const left = Math.max(0, now.leaveIn);
-    const go = now.kind !== 'trip' || left === 0;
-    // The arc is what's left of the last half hour; it's full when it's time.
-    const arc = go ? 100 : Math.max(8, Math.round((Math.min(left, 30) / 30) * 100));
-    const text =
-        now.kind !== 'trip'
-            ? '!'
-            : go
-              ? 'now'
-              : left >= 60
-                ? `${Math.floor(left / 60)} h`
-                : left;
-    return `<span class="trip-ring" aria-hidden="true"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" pathLength="100"></circle><circle cx="18" cy="18" r="15.9" pathLength="100" stroke-dasharray="${arc} 100"></circle></svg><span><strong>${text}</strong>${go || left >= 60 ? '' : '<small>min</small>'}</span></span>`;
-}
 // The way as one strip of stations, each name and time under its dot.
 function wayStrip(route, trip) {
     const node = (kind, name, time, look) =>
@@ -1058,10 +1041,10 @@ function tripLine(key, trip = J.day) {
     // What to do and where you're going, then the facts as tiles you can read
     // at a glance, then the one button (owner chose B, canvas row 24, 16 Oct
     // 2026: "separate information into readable and highlighted chunks").
-    const head = (title, place) =>
-        `<div class="trip-head">${tripRing(now)}<p class="trip-title"><strong id="${id}-title">${title}</strong>${place ? `<span>${place}</span>` : ''}</p></div>`;
-    const fact = (label, value, sub, tone = '') =>
-        `<div class="trip-fact${tone ? ` is-${tone}` : ''}"><span class="trip-fact-label">${label}</span><strong>${value}</strong><small>${sub}</small></div>`;
+    // The card is shared with Today (trip-card.js).
+    const C = window.TravelTripCard;
+    const head = (title, place) => C.head(id, now, title, place);
+    const fact = C.fact;
     if (now.kind === 'unplanned') {
         const { place } = now;
         return `<div class="trip-line-row">${head(safe(place.title), `${place.time} · ${safe(place.detail || place.place)}`)}<div class="trip-body"><div class="trip-flags">${L.chip('unsure', 'calendar', 'No way picked yet')}</div></div><button type="button" class="primary next-trip-go" data-action="plan-way" data-place="${safe(place.place)}">${icon('route')}Plan the way</button></div>`;
@@ -1142,7 +1125,7 @@ function tripLine(key, trip = J.day) {
             : going
               ? `<button type="button" class="primary next-trip-go" data-action="trip-resume">${icon('route')}Back to your trip</button>`
               : `<button type="button" class="primary next-trip-go" data-action="trip-start" data-trip-route="${route.id}">${icon('play')}I’m on my way</button>`;
-    const body = `<div class="trip-body">${flag ? `<div class="trip-flags">${flag}</div>` : ''}<div class="trip-facts" style="--facts:${facts.length}">${facts.join('')}</div>${overPlan}</div>`;
+    const body = C.body(flag, facts, overPlan);
     return `<div class="trip-line-row">${head(title, onDay ? '' : `${safe(trip.place)} · ${trip.start}`)}${body}${go}${onDay ? '</div>' : `<button type="button" class="trip-line-more" data-action="trip-others" aria-expanded="${open}" aria-controls="${id}-way" aria-label="${open ? 'Hide the way' : 'Show the way'}">${icon('down')}</button></div><div id="${id}-way" class="trip-line-way"${open ? '' : ' hidden'}>${wayStrip(route, trip)}${note ? `<p class="trip-line-note">${icon('info')}<span>${safe(note)}</span></p>` : ''}<div class="trip-line-others"><h3>Other ways</h3><ul>${others}</ul><button type="button" class="text-action" data-action="next-trip">Compare them in Plan a trip${icon('arrow')}</button></div></div>`}`;
 }
 function renderNextTrip() {
@@ -2738,7 +2721,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!from || todayEntry.has('compare') || !id) return;
     if (!window.JourneyNavigation) return;
     state.selected = id;
-    JourneyNavigation.open(currentRoute(id), false, from);
+    // ?go: "I'm on my way" was tapped there (Today's trip card), so the
+    // trip starts as it opens.
+    JourneyNavigation.open(currentRoute(id), todayEntry.has('go'), from);
 });
 if (window.ServiceContext && todayEntry.has('service')) {
     const entry = T.entries.find(

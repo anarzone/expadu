@@ -11,6 +11,28 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Trips look like Travel everywhere — 18 October 2026
+
+The owner: "use exactly the same design of the travel page… in everywhere,
+regardless, like in Composer as well". Today and Composer drew trips their
+own way (cyan blocks, line 4 in a teal square); Travel shows tram 4 in its
+KVB magenta. Composer review canvas, board 11. Travel's pieces are now
+shared, each in one place, and the other pages load them:
+
+- The line badge and the KVB colours: `labels.js` (`TravelLabels.line`,
+  `TravelLabels.look`), with its own tram and bus symbol. Nearby, the trip,
+  the map and Leave now take a line's look from there. Today's departures
+  and Composer's Your day show it.
+- Your way, the line of stations: `way.js` and `way.css` (moved out of the
+  trip page's styles). Travel's trip and Composer's answer about a trip draw
+  it, from the same sample day.
+- The Leave now card: `trip-card.js` and `trip-card.css` (moved out of
+  `hub.css` and `nearby.css`). Travel's Nearby and My day, and Today's plan
+  for a trip. Today's separate "13:24 leaves only 2 min" note is the card's
+  own line now. Its I'm on my way opens Travel's trip already started
+  (`?go`), with Back to Today.
+- Events' Get there already used Travel's route card.
+
 ## The menu steps away while you scroll — 18 October 2026
 
 Testers found Composer's round button and the shrunk menu sitting over

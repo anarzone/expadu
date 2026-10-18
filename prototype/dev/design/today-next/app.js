@@ -296,23 +296,6 @@
     }
     const inMinutes = (value) =>
         value <= 0 ? 'now' : value < 60 ? `in ${value} min` : '';
-    // The tram to take leads (leaveBy's take): the earlier one when the
-    // planned one is too tight, as Travel and Composer lead.
-    function leaveLine(item) {
-        const plan = window.TodayContent?.leaveBy(item, M.minutes(day.time));
-        if (!plan) return { caption: '', advice: '', spare: '', take: null };
-        const take = plan.take;
-        const when = inMinutes(take.leaveIn);
-        const caption = `<span class="route-leave">${I('walk')}<strong>${take.leaveIn <= 0 ? 'Leave now' : `Leave by ${take.leave}`}</strong>${when && take.leaveIn > 0 ? `<small>${when}</small>` : ''}</span>`;
-        const spare =
-            take.spare !== null && take.spare >= 0
-                ? ` · ${take.spare} min to spare`
-                : '';
-        const advice = plan.tight
-            ? `<p class="route-advice" role="note">${plan.earlier ? `The ${E(M.travel(item).departure)} in your plan leaves only ${plan.spare} min to spare.` : `<strong>Only ${plan.spare} min to spare.</strong> Allow about ${plan.margin} min for finding the room${item.kind === 'official' ? ' and security checks' : ''}.`}</p>`
-            : '';
-        return { caption, advice, spare, take: plan.earlier ? take : null };
-    }
     function alternativesList(item) {
         const j = item.journey,
             options = j.alternatives || [];
@@ -338,35 +321,70 @@
                 '',
             )}</ul><p class="alternative-note">Sample alternatives · not live. Open one to check it in Travel.</p>`;
     }
+    // The plan's trip as Travel's card (departures-next/trip-card.js): the
+    // ring with the minutes until you leave, what to do, the facts as tiles,
+    // one button; the tram to take leads, as Travel and Composer lead (owner,
+    // 18 Oct 2026: trips look like Travel everywhere, Composer review canvas
+    // board 11).
     function route(item) {
         const j = item.journey;
         if (!j) return '';
         const travel = M.travel(item),
             id = E(item.id);
-        const delayed = !travel.stale && j.delay > 0;
+        const C = window.TravelTripCard,
+            L = window.TravelLabels;
+        const cardId = `today-${id}-trip`;
+        if (travel.stale)
+            return `<section class="trip-line is-calm" aria-labelledby="${cardId}-title"><div class="trip-line-row">${C.head(cardId, { kind: 'unplanned' }, 'Check this journey', `${E(j.from)} → ${E(item.location)}`)}${C.body(L.chip('unsure', 'calendar', 'Recheck it for your current plan'), [])}<button type="button" class="primary next-trip-go" data-today-travel="${id}">Find a route</button></div></section>`;
+        const delayed = j.delay > 0;
         // When the planned service makes you late, the choices lead instead.
-        const recover = delayed && travel.lateMinutes > 0;
-        const leave =
-            travel.stale || recover
-                ? { caption: '', advice: '', spare: '', take: null }
-                : leaveLine(item);
-        const departs = leave.take?.depart || travel.departure,
-            atStop = leave.take?.arrive || travel.stationArrival,
-            atAppointment =
-                leave.take?.atAppointment || travel.destinationArrival;
-        const times = travel.stale
-            ? `<div class="route-unknown">${I('train')}<span><strong>Check this journey</strong><small>Recheck for your current plan</small></span></div>`
-            : `<div class="route-times">${I('train')}<span class="route-time"><small>Departs</small>${delayed ? `<del>${j.depart}</del>` : ''}<b>${E(departs || '—')}</b></span><span class="route-connector" aria-hidden="true"><i></i></span><span class="route-time"><small>At stop</small>${delayed ? `<del>${j.arrive}</del>` : ''}<b>${E(atStop || '—')}</b></span></div>`;
-        return `<button class="route-summary" data-today-route="${id}" aria-label="Journey to ${E(item.title)}: ${travel.stale ? 'status unavailable' : `departs ${departs}, arrives at stop ${atStop}`}" aria-haspopup="dialog">
-            ${leave.caption}<span class="route-caption">${delayed ? swatch(`${j.delay} min delay`, 'warning') + swatch('Simulated', 'sample') : ''}<strong>${travel.stale ? `Journey to ${E(item.location)}` : `Line ${E(j.line)} · ${E(j.from)} → ${E(alightStop(j))}`}</strong></span>
-            ${times}<span class="route-foot">${travel.destinationArrival ? `${j.walkMinutes} min walk · <strong>${delayed ? 'Est. ' : ''}at appointment ${atAppointment}</strong>${leave.spare}` : 'Arrival at appointment needs checking'}</span>
-            ${!delayed && !travel.stale ? '<span class="route-foot">Scheduled · no live status</span>' : ''}
-        </button>${leave.advice}${
-            travel.stale
-                ? `<div class="recovery-row"><button class="outline-action" data-today-travel="${id}">Find a route</button></div>`
-                : delayed
-                  ? `<div class="recovery-row"><button class="outline-action" data-today-alternatives="${id}" aria-expanded="${recover}" aria-controls="alternatives-${id}">Alternatives${I('down')}</button></div><div class="inline-alternatives" id="alternatives-${id}" ${recover ? '' : 'hidden'}>${recover ? `<p class="alternative-lead">You may arrive ${travel.lateMinutes} min late. These could get you there on time:</p>` : ''}${alternativesList(item)}</div>`
-                  : ''
+        const late = delayed && travel.lateMinutes > 0;
+        const plan = late
+            ? null
+            : window.TodayContent?.leaveBy(item, M.minutes(day.time));
+        const take = plan?.take;
+        const now = late
+            ? { kind: 'late', leaveIn: 0 }
+            : { kind: 'trip', leaveIn: take ? take.leaveIn : 0 };
+        const tone = late || now.leaveIn <= 0 ? 'attention' : 'calm';
+        const title = late
+            ? `About ${travel.lateMinutes} min late`
+            : now.leaveIn <= 0
+              ? 'Leave now'
+              : `Leave at ${E(take.leave)}`;
+        const badge = L.line(j.line, L.look(j.line, 'tram'), { kind: 'tram' });
+        const margin = plan?.margin ?? (item.kind === 'official' ? 10 : 5);
+        const spare = take?.spare;
+        const facts = [
+            C.fact(`<span aria-hidden="true">Tram</span>${badge}`, E(take?.depart || travel.departure), E(j.from)),
+            C.fact('There', E(take?.atAppointment || travel.destinationArrival || '—'), E(item.location)),
+            late
+                ? C.fact('Late', `${travel.lateMinutes}<span>\u00a0min</span>`, `after ${item.start}`, 'attention')
+                : C.fact('Spare', `${spare ?? '—'}<span>\u00a0min</span>`, `before ${item.start}`, spare != null && spare < margin ? 'attention' : ''),
+        ];
+        const flag = delayed
+            ? L.chip('attention', 'clock', `${j.delay} min delay · simulated`)
+            : '';
+        // Why this tram and not your plan's, quiet under the facts.
+        const note = plan?.tight
+            ? `<p class="trip-plan">${C.icon('info')}<span>${plan.earlier ? `Your ${E(travel.departure)} has only ${plan.spare}\u00a0min spare` : `Only ${plan.spare}\u00a0min spare. Allow about ${plan.margin}\u00a0min for finding the room${item.kind === 'official' ? ' and security checks' : ''}`}</span></p>`
+            : '';
+        // One tap starts the trip on Travel's trip page (?go), which comes
+        // back here.
+        const query = new URLSearchParams({
+            from: j.from,
+            to: item.location,
+            date: day.date,
+            arrive: item.start,
+            activity: item.id,
+            planDate: day.date,
+            go: '1',
+        });
+        const go = `<a class="primary next-trip-go" href="${S.routes.departures}?${query}">${C.icon('play')}I’m on my way</a>`;
+        return `<section class="trip-line is-${tone}" aria-labelledby="${cardId}-title"><div class="trip-line-row">${C.head(cardId, now, title, '')}${C.body(flag, facts, note)}${go}</div></section>${
+            delayed
+                ? `<div class="recovery-row"><button class="outline-action" data-today-alternatives="${id}" aria-expanded="${late}" aria-controls="alternatives-${id}">Alternatives${I('down')}</button></div><div class="inline-alternatives" id="alternatives-${id}" ${late ? '' : 'hidden'}>${late ? `<p class="alternative-lead">You may arrive ${travel.lateMinutes} min late. These could get you there on time:</p>` : ''}${alternativesList(item)}</div>`
+                : ''
         }`;
     }
     function paperworkLink(item) {

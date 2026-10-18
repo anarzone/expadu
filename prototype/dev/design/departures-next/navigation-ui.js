@@ -123,7 +123,7 @@
         (handedFrom ? dialog : dialog.querySelector('[data-nav="close"]')).focus(
             { preventScroll: true },
         );
-        if (autoStart && !isActive()) startCurrent();
+        if (autoStart && !isActive()) startCurrent(false, !handedFrom);
     }
     function close(after) {
         if (!dialog.open || closing) return;
@@ -942,7 +942,7 @@
             );
         youWas = you?.style.transform || '';
     }
-    function startCurrent(replace = false) {
+    function startCurrent(replace = false, moveFocus = true) {
         if (active && !isActive() && !replace) {
             confirmation = 'switch';
             render();
@@ -961,10 +961,13 @@
         notice = '';
         persist();
         // The same page now runs: the button gives way to how it knows.
+        // Started as the page opens (another section's "I'm on my way"),
+        // the trip keeps the focus it took.
         render();
-        dialog
-            .querySelector('[data-nav="not-right"]')
-            ?.focus({ preventScroll: true });
+        if (moveFocus)
+            dialog
+                .querySelector('[data-nav="not-right"]')
+                ?.focus({ preventScroll: true });
         announce('Trip started. It moves on by itself.');
     }
     function announce(text) {

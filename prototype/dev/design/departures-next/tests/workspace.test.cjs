@@ -102,6 +102,7 @@ function workspace(
         'icons.js',
         'labels.js',
         ...(station ? ['nearby.js', 'nearby-ui.js', 'service-context.js'] : []),
+        'trip-card.js',
         'app.js',
     ]) {
         let source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
