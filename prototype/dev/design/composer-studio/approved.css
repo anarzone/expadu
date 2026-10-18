@@ -61,6 +61,57 @@ body.studio {
     margin: -12px -8px -12px 0;
 }
 
+/* ── Phones: one line, + · your words · send (Composer review canvas,
+   board 1, 18 Oct 2026). A plan adds one slim row above it, with Ask
+   first, which only matters for a plan's changes. ─────────────────────── */
+@media (max-width: 700px) {
+    .studio #studio-form {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            'note note note'
+            'context context approval'
+            'plus field send';
+        align-items: center;
+        column-gap: 2px;
+        padding: 4px;
+        border-radius: 26px;
+    }
+    .studio #studio-form > .handoff-note {
+        grid-area: note;
+    }
+    .studio #studio-form > [data-planning-context] {
+        grid-area: context;
+        min-width: 0;
+    }
+    .studio #studio-form .studio-field {
+        grid-area: field;
+        padding: 0 4px;
+    }
+    .studio #studio-form .composer-tools {
+        display: contents;
+    }
+    .studio #studio-form .composer-actions {
+        grid-area: plus;
+    }
+    .studio #studio-form .approval-control {
+        grid-area: approval;
+    }
+    .studio #studio-form .send {
+        grid-area: send;
+    }
+    .studio #studio-form:not(:has(.input-context)) .approval-control {
+        display: none;
+    }
+    .studio #studio-form .input-context {
+        margin: 0 0 0 4px;
+    }
+    .studio #studio-request {
+        min-height: 44px;
+        padding: 10px 0;
+    }
+}
+
 /* ── Desktop: Your day beside an 800px conversation ──────────────────── */
 /* Composer's workspace hangs on the header's edges (Composer review canvas,
    board 6, 18 Oct 2026): Your day starts under the logo, and the

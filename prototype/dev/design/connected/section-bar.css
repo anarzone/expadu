@@ -164,16 +164,20 @@
         #composer-tray {
         bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     }
-    /* Composer's own page keeps its text box above the menu; short notes
-       (toasts) rise by the same amount. */
-    :root body:has(#shell .service-nav) :is(.studio-input-wrap, #shared-toast) {
-        margin-bottom: var(--section-bar);
+    /* Composer's own page keeps its text box 8px above the menu, its band
+       running down behind the menu so nothing shows between them (Composer
+       review canvas, board 1, 18 Oct 2026); short notes (toasts) rise above
+       the menu. */
+    :root body:has(#shell .service-nav) .studio-input-wrap {
+        padding-bottom: calc(var(--menu-gap) + var(--menu-height) + 8px);
         transition: translate var(--duration-base, 180ms) ease;
     }
-    /* With the menu away, Composer's text box drops to where it was, so no
-       gap opens under the box. */
+    :root body:has(#shell .service-nav) #shared-toast {
+        margin-bottom: var(--section-bar);
+    }
+    /* With the menu away, the box drops to where the menu was. */
     :root body.menu-away:has(#shell .service-nav) .studio-input-wrap {
-        translate: 0 var(--section-bar);
+        translate: 0 calc(var(--menu-height) + 8px);
     }
     :root
         body:has(#shell .service-nav):has(
@@ -185,7 +189,8 @@
             ):focus
         )
         .studio-input-wrap {
-        margin-bottom: 0;
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+        translate: none;
     }
 }
 @media (max-width: 700px) and (prefers-reduced-motion: reduce) {

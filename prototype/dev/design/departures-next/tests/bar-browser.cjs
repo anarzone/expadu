@@ -119,9 +119,11 @@ async function swipe(page, cdp, from, to, steps = 8) {
                     14,
                     `${path}: even`,
                 );
-            const input = await box(page, '.studio-input-wrap');
+            // Composer's text box sits above the menu (its band runs on
+            // behind the menu, so nothing shows between them).
+            const input = await box(page, '#studio-form');
             if (input)
-                assert.ok(input.bottom <= nav.top + 2, `${path}: box above`);
+                assert.ok(input.bottom <= nav.top - 6, `${path}: box above`);
             assert.ok(
                 await page.evaluate(
                     () => document.documentElement.scrollWidth <= innerWidth,

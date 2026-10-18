@@ -4,6 +4,25 @@ Connected to the approved Today C design, 18 September 2026. Start at `/dev/desi
 
 Open `/dev/design/composer-studio/` directly, or enter from Today. Today’s header bookmark opens Saved; the plus menu beside the Composer input contains My Plans, Saved and History. Both are panels in the same workspace; the older `/dev/design/my-plans/` links now open the corresponding panel in Composer.
 
+## Composer review — 18 October 2026
+
+Built from the Composer review canvas at the owner's word (boards there by
+number):
+
+- **1 · Phones: the text box on the menu, one line.** + · your words · send,
+  8px above the menu; its band runs down behind the menu, so nothing shows
+  between them, and it drops to the bottom while the menu steps away or you
+  type (`approved.css`, `connected/section-bar.css`). A plan adds one slim
+  row above it: the plan's day and View plan, with Ask first, which only
+  matters for a plan's changes. 56px without a plan, 100px with one (it was
+  116 and 166, with a gap under it).
+- **6 · Laptops on the header's edges.** Your day starts under the logo;
+  the conversation, its trip bar and its text box share one column, 800px
+  at most, ending where the header does (`approved.css`).
+- **11 · Trips as Travel shows them.** Your way in a trip answer is Travel's
+  list (`departures-next/way.js`), Your day's trip and the On your way bar
+  carry Travel's line badge (`labels.js`).
+
 ## Rich answers, coloured starters and Your day — 7 October
 
 Owner request, after the App in colour redesign concept: build its Composer
