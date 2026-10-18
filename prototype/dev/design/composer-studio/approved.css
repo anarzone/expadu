@@ -62,13 +62,31 @@ body.studio {
 }
 
 /* ── Desktop: Your day beside an 800px conversation ──────────────────── */
+/* Composer's workspace hangs on the header's edges (Composer review canvas,
+   board 6, 18 Oct 2026): Your day starts under the logo, and the
+   conversation, its trip bar and its text box share one column that ends
+   where the header does. */
 @media (min-width: 1000px) {
     body.has-composer-day:not(.has-panel) {
-        --composer-day-left: max(24px, calc((100% - 1560px) / 2 + 24px));
+        --composer-day-left: max(32px, calc((100% - 1376px) / 2));
         --composer-day-edge: calc(var(--composer-day-left) + 340px + 64px);
+        --composer-column: min(
+            800px,
+            calc(100% - var(--composer-day-edge) - var(--composer-day-left))
+        );
+        --composer-column-left: calc(
+            var(--composer-day-edge) +
+                max(
+                    0px,
+                    (
+                            100% - var(--composer-day-edge) -
+                                var(--composer-day-left) - 800px
+                        ) / 2
+                )
+        );
     }
     body.has-composer-day:not(.has-panel) #main {
-        width: calc(100% - var(--composer-day-edge) - 24px);
+        width: calc(100% - var(--composer-day-edge) - var(--composer-day-left));
         margin-left: var(--composer-day-edge);
         padding-top: 32px;
     }
@@ -80,18 +98,18 @@ body.studio {
         left: var(--composer-day-left);
         width: 340px;
         gap: 18px;
+        /* Back to Today reaches 8px past the edge to line its words up with
+           the cards; Your day scrolls down, never sideways (a scrollbar
+           showed under it). */
+        overflow-x: hidden;
     }
     /* On your way (connected/journey-session.js): the trip's bar heads the
        conversation, as wide as it (800px at most, centred in its column)
        and level with Your day, not across it. */
     body.has-composer-day:not(.has-panel) .journey-resume:not([hidden]) {
         max-width: none;
-        width: min(800px, calc(100% - var(--composer-day-edge) - 24px));
-        margin: 32px 0 0
-            calc(
-                var(--composer-day-edge) +
-                    max(0px, (100% - var(--composer-day-edge) - 24px - 800px) / 2)
-            );
+        width: var(--composer-column);
+        margin: 32px 0 0 var(--composer-column-left);
     }
     body.has-composer-day:not(.has-panel):has(.journey-resume:not([hidden]))
         #main {
@@ -101,10 +119,17 @@ body.studio {
        conversation's column only: Your day's My Plans, Saved and History
        beside it stay clear and can be clicked. */
     body.has-composer-day:not(.has-panel) .studio-input-wrap {
+        padding-inline: 0;
         pointer-events: none;
         background-position: right bottom;
         background-size: calc(100% - var(--composer-day-edge)) 100%;
         background-repeat: no-repeat;
+    }
+    /* The text box takes the conversation's edges, not the window's. */
+    body.has-composer-day:not(.has-panel) #studio-form {
+        width: var(--composer-column);
+        max-width: none;
+        margin: 0 0 0 var(--composer-column-left);
     }
     body.has-composer-day:not(.has-panel) .studio-input-wrap > * {
         pointer-events: auto;

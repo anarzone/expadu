@@ -2523,14 +2523,6 @@
         margin-left: var(--composer-day-edge);
         margin-right: auto;
     }
-    /* The request field centres on the conversation column. */
-    body.has-composer-day:not(.has-panel) .studio-input-wrap {
-        padding-left: var(--composer-day-edge);
-        padding-right: max(
-            24px,
-            calc(100% - var(--composer-day-edge) - 1080px)
-        );
-    }
     body:not(.has-panel) .composer-day:not([hidden]) {
         position: fixed;
         z-index: 20;
