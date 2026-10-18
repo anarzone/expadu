@@ -16,11 +16,15 @@ use Illuminate\Support\Facades\Log;
  * pipeline is wired but events stop landing in the bus (queue worker
  * died, listener deregistered, evaluator returns null on every user, …).
  *
- * Picks a random onboarded user with a saved place, fires a synthetic
- * TransitDisruptionDetected with a line that actually serves a stop near
- * that place, polls pending_actions:{id} for up to 10 sec, asserts an
- * action appeared, then ZREMs the synthetic entry so it doesn't pollute
- * the user's real dashboard.
+ * Fires a synthetic TransitDisruptionDetected aimed at one dedicated canary
+ * user, polls pending_actions:{id} for up to 10 sec, asserts an action
+ * appeared, then ZREMs the synthetic entry.
+ *
+ * The canary user is never onboarded, so no real evaluator or stat counts
+ * it, and the event is tagged synthetic so it reaches that user alone and
+ * writes no Alert. It used to target a random real user with a broadcast
+ * 'major' event, which wrote a fake disruption alert for every onboarded
+ * user every 30 minutes.
  *
  * Failure throws — Sentry catches it and pages on-call.
  */
@@ -30,18 +34,20 @@ class SyntheticDisruption extends Command
 {
     private const SYNTHETIC_ID = 999_999_999;
 
+    public const CANARY_EMAIL = 'synthetic-canary@expadu.com';
+
     public function handle(ActionBus $bus, UserTransitLinesService $transitLines): int
     {
-        $user = $this->pickUser();
+        $user = $this->canaryUser();
         if (! $user) {
-            $this->warn('No onboarded user with a saved place yet — skipping (this is OK pre-launch).');
+            $this->error("No user with id {$this->option('user')}.");
 
-            return self::SUCCESS;
+            return self::FAILURE;
         }
 
-        // Use a line that actually serves the user's places so the
-        // line-match path fires; fall back to the major-severity broadcast
-        // path when the user has no resolvable lines (still end-to-end).
+        // Use a line that serves the user's places when it has any so the
+        // line-match path fires; the canary user has none, so it takes the
+        // major-severity broadcast path (still end-to-end).
         $lines = $transitLines->getRelevantLines($user)['lines'];
         $line = (string) ($lines->first() ?? 'SYNTHETIC');
 
@@ -61,6 +67,7 @@ class SyntheticDisruption extends Command
             severity: 'major',
             bbox: null,
             expiresAt: now()->addMinutes(15),
+            syntheticUserId: $user->id,
         ));
 
         $timeout = (int) $this->option('timeout');
@@ -109,18 +116,17 @@ class SyntheticDisruption extends Command
         return self::SUCCESS;
     }
 
-    private function pickUser(): ?User
+    private function canaryUser(): ?User
     {
         if ($id = $this->option('user')) {
             return User::find((int) $id);
         }
 
-        return User::query()
-            ->whereNotNull('onboarded_at')
-            ->whereHas('places', function ($q) {
-                $q->whereNotNull('lat')->whereNotNull('lng');
-            })
-            ->inRandomOrder()
-            ->first();
+        // Never onboarded: every evaluator and onboarding stat filters on
+        // onboarded_at, so this user only ever sees the canary's own event.
+        return User::query()->firstOrCreate(
+            ['email' => self::CANARY_EMAIL],
+            ['name' => 'Synthetic canary', 'password' => bcrypt(str()->random(40))],
+        );
     }
 }
