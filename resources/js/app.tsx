@@ -112,6 +112,41 @@ createInertiaApp({
 // This will set light / dark mode on load...
 initializeTheme();
 
+// After a deploy the hashed chunk files an open tab points at are gone, so the
+// next lazy import (a page, the map) 404s. Reload once to pick up the new build.
+// The timestamp keeps a chunk that is genuinely broken from reloading forever:
+// within the window (or without usable storage) the original error is thrown
+// as usual instead.
+const CHUNK_RELOAD_KEY = 'expadu:chunk-reload-at';
+const CHUNK_RELOAD_WINDOW_MS = 30_000;
+
+function reloadOnceForStaleChunk(): boolean {
+    try {
+        const now = Date.now();
+        const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY));
+
+        if (last > 0 && now - last < CHUNK_RELOAD_WINDOW_MS) {
+            return false;
+        }
+
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, String(now));
+    } catch {
+        return false;
+    }
+
+    window.location.reload();
+
+    return true;
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('vite:preloadError', (event) => {
+        if (reloadOnceForStaleChunk()) {
+            event.preventDefault();
+        }
+    });
+}
+
 // Never let a request fail silently. Validation errors already render inline,
 // but an ad blocker / extension can hide an element or garble a response — so
 // also surface them through an independent toast channel.
