@@ -56,9 +56,13 @@
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf6ee">
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#18170f">
 
-        {{-- Preload critical font weights for fastest text rendering --}}
+        {{-- Preload only the faces painted above the fold on every app page:
+             Geist 400 (body), 600 (nav, and 550 resolves up to it), 700 (page
+             h1/h2, and 650 resolves up to it) and Fraunces 500 (wordmark). --}}
         <link rel="preload" href="/fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin>
         <link rel="preload" href="/fonts/geist-600.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="/fonts/geist-700.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="/fonts/fraunces-500.woff2" as="font" type="font/woff2" crossorigin>
 
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
