@@ -482,8 +482,10 @@
         column-gap: var(--space-32);
         align-items: start;
     }
+    /* The notice spans the workspace on its edges, 16px above the trip. */
     #journey-navigation:not(:modal) .nav-condition {
         grid-column: 1 / -1;
+        margin: 0 0 16px;
     }
     #journey-navigation:not(:modal) .nav-summary {
         grid-area: 2 / 1;
