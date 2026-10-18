@@ -62,7 +62,7 @@
     z-index: -1;
     pointer-events: none;
     border-radius: var(--radius-md);
-    background: var(--menu-tint, var(--shell-selected));
+    background: var(--shell-selected);
     opacity: 0;
     transition: opacity 180ms ease;
 }

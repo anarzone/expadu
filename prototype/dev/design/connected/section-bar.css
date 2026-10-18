@@ -93,8 +93,9 @@
         border-radius: 0;
         background: none;
     }
-    /* The section you're in sits on a pill in its own tint
-       (menu-colors.css); a tap tints the one pressed. */
+    /* The section you're in sits on the one "selected" pill, on every
+       page (Today's too: it has no .shell-review); a tap tints the one
+       pressed. */
     html body #shell .app-header .service-nav > a::before {
         display: block;
         inset: 0;
@@ -104,7 +105,7 @@
         display: none;
     }
     html body #shell .app-header .service-nav > a[aria-current] {
-        background: transparent;
+        background: var(--color-select-bg, #def5f8);
         font-weight: 700;
     }
     /* Scrolling down: the menu and Composer's round button step away;

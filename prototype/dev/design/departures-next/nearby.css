@@ -72,8 +72,8 @@
     background-clip: padding-box;
 }
 .nearby-views button[aria-pressed='true'] {
-    background-color: var(--color-text);
-    color: var(--color-text-on-action);
+    background-color: var(--color-select-bg);
+    color: var(--color-text);
 }
 .nearby-views svg {
     width: 18px;

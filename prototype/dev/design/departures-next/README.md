@@ -11,6 +11,19 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## One look for "selected" — 18 October 2026
+
+"Selected" looked different on every page: the menu's pill was lavender on
+Events, peach on Paperwork, light blue on Travel and missing on Today's phone
+menu; Composer's round button was a darker teal on Events and Paperwork;
+Travel's Nearby / My day switch and its list / map toggle were black (Composer
+review canvas, board 14; owner: build it). Now the section you're in, Travel's
+switches and Paperwork's tabs share the app's one selected colour
+(`--color-select-bg`), each menu icon keeps its section colour
+(`connected/menu-colors.css`), and the round button is the app's teal
+(`--color-select-text`) on every page, set once in
+`today-c/composer-controls.css`. Colour stays for what's urgent.
+
 ## The trip's Sample chip — 18 October 2026
 
 The trip page's ⋯ held only the sample's tools ("Trip moment · Stands in for

@@ -37,12 +37,6 @@ body.travel-palette .segmented [aria-pressed='true'] {
 body.travel-palette #shell .services a[aria-current='page'] {
     background-color: var(--blue);
 }
-body.travel-palette .composer-launcher {
-    background-color: var(--teal);
-}
-body.travel-palette .composer-launcher:is(:hover, :focus-visible, :active) {
-    background-color: #005f70;
-}
 
 /* Preserve immediate feedback without adding permanent nested surfaces. */
 @media (hover: hover) {

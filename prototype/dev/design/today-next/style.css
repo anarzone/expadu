@@ -1666,12 +1666,7 @@ body.today-next {
         0 0 0 1px #ad9c89,
         0 4px 20px #3e352b14;
 }
-.today-next.department-composer #composer-tray:not(.is-active),
-.today-next.department-composer .composer-launcher {
-    background: var(--teal);
-}
 .today-next.department-composer .composer-launcher:is(:hover, :focus-visible) {
-    background: #005d70;
     outline-color: var(--focus);
 }
 .today-next.department-composer
@@ -1683,7 +1678,6 @@ body.today-next {
     background: conic-gradient(#ff591f, #ffb66b, var(--cyan), #ff591f);
 }
 .today-next.department-composer .composer-launcher:active {
-    background: #005d70;
     box-shadow:
         -5px 0 16px #ff591f44,
         5px 0 16px #05badd44;

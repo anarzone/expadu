@@ -80,9 +80,11 @@
     font-weight: var(--weight-medium);
     cursor: pointer;
 }
+/* The app's one "selected" look, as Paperwork's tabs (owner, 18 Oct 2026,
+   Composer review canvas board 14). */
 .travel-switch button[aria-pressed='true'] {
-    background-color: var(--color-text);
-    color: var(--color-text-on-action);
+    background-color: var(--color-select-bg);
+    color: var(--color-text);
     font-weight: var(--weight-semibold);
 }
 

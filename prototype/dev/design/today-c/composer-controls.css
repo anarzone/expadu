@@ -248,7 +248,7 @@
     padding: 0;
     border: 0;
     border-radius: var(--radius-round);
-    background: #326b7b;
+    background: var(--color-select-text, #00768b);
     box-shadow: 0 4px 14px #183f4426;
 }
 :is(.today-c, .department-composer)
@@ -270,7 +270,7 @@
     padding: 12px;
     border-radius: var(--radius-round);
     color: #fff;
-    background: #326b7b;
+    background: var(--color-select-text, #00768b);
     transition:
         background-color 220ms ease,
         box-shadow 180ms ease,
@@ -298,7 +298,7 @@
 }
 :is(.today-c, .department-composer)
     .composer-launcher:is(:hover, :focus-visible) {
-    background: #24798a;
+    background: #005d70;
 }
 :is(.today-c, .department-composer)
     .composer-launcher:is(:hover, :focus-visible)
@@ -308,7 +308,7 @@
 }
 :is(.today-c, .department-composer) .composer-launcher:active {
     transform: scale(0.94);
-    background: #245e70;
+    background: #005d70;
     box-shadow:
         -5px 0 16px #ff591f66,
         5px 0 16px #05bbd573;
