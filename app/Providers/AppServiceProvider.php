@@ -24,7 +24,6 @@ use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\WeatherChanged;
 use App\Jobs\ValidateMediaAssetJob;
-use App\Listeners\CreateAlertFromNotification;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Transit\Contracts\RouteService;
@@ -32,7 +31,6 @@ use App\Transit\FailoverRouteService;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -115,8 +113,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureRateLimiting();
-
-        Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
         Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);
