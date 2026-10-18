@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Artisan;
  * Production-safe, idempotent seeder.
  * Only creates essential system records.
  * All content comes through APIs, scrapers, or admin panel.
+ *
+ * Run it once on a new environment (`php artisan db:seed --force`). It no
+ * longer runs on container boot or deploy: SpotSeeder geocodes externally and
+ * could resurrect pruned places, and the deploy job runs the catalogue import
+ * on its own.
  */
 class DatabaseSeeder extends Seeder
 {
