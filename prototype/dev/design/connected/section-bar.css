@@ -115,17 +115,10 @@
     :root body.menu-away .composer-here:not(:focus) {
         translate: 0 calc(100% + var(--menu-gap) + 8px);
     }
-    /* Out of the way while you type, so the keyboard has the room. */
-    body:has(
-            :is(
-                input:not([type='checkbox'], [type='radio'], [type='range']),
-                textarea,
-                select,
-                [contenteditable='true']
-            ):focus
-        )
-        #shell
-        .service-nav {
+    /* Out of the way while the keyboard is open, so it has the room; back
+       as it closes, even with the cursor still in a field (Composer review
+       canvas, board 4, 18 Oct 2026; section-bar.js sets .keyboard-open). */
+    :root.keyboard-open body #shell .service-nav {
         translate: 0 calc(100% + var(--menu-gap) + 8px);
     }
     /* Composer's round button: beside the menu, as tall as it. Opened,
@@ -153,15 +146,8 @@
         height: var(--menu-height);
         min-height: var(--menu-height);
     }
-    :root
-        body:is(.today-c, .department-composer):has(#shell .service-nav):has(
-            :is(
-                input:not([type='checkbox'], [type='radio'], [type='range']),
-                textarea,
-                select,
-                [contenteditable='true']
-            ):focus
-        )
+    :root.keyboard-open
+        body:is(.today-c, .department-composer):has(#shell .service-nav)
         #composer-tray {
         bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     }
@@ -191,16 +177,7 @@
     :root body.menu-away:has(#shell .service-nav) .studio-input-wrap {
         translate: 0 calc(var(--menu-height) + 8px);
     }
-    :root
-        body:has(#shell .service-nav):has(
-            :is(
-                input:not([type='checkbox'], [type='radio'], [type='range']),
-                textarea,
-                select,
-                [contenteditable='true']
-            ):focus
-        )
-        .studio-input-wrap {
+    :root.keyboard-open body:has(#shell .service-nav) .studio-input-wrap {
         padding-bottom: max(10px, env(safe-area-inset-bottom));
         translate: none;
     }

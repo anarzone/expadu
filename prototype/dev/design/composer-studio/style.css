@@ -2739,7 +2739,8 @@
 
 /* Phones: Composer's round button beside the menu, as on every page, in
    the selected tint because you are here; a tap goes to the text box
-   (app.js). It steps aside while you type, like the menu. */
+   (app.js). It steps aside while the keyboard is open, like the menu
+   (connected/section-bar.js). */
 .composer-here {
     display: none;
 }
@@ -2768,15 +2769,7 @@
         width: 24px;
         height: 24px;
     }
-    body:has(
-            :is(
-                input:not([type='checkbox'], [type='radio'], [type='range']),
-                textarea,
-                select,
-                [contenteditable='true']
-            ):focus
-        )
-        .composer-here {
+    :root.keyboard-open .composer-here {
         translate: 0 calc(100% + var(--menu-gap) + 8px);
     }
 }

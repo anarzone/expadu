@@ -49,4 +49,27 @@
     phone.addEventListener('change', () =>
         document.body.classList.remove('menu-away'),
     );
+    // The menu waits for the keyboard (Composer review canvas, board 4, 18
+    // Oct 2026): it steps aside while the keyboard is open, not whenever a
+    // field has the cursor, so it comes back when the keyboard closes (as
+    // Android's Back does) with the cursor still there. A keyboard is the
+    // visual viewport shrinking under a focused field.
+    const viewport = window.visualViewport;
+    const typing = () =>
+        document.activeElement?.matches?.(
+            "input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select, [contenteditable='true']",
+        );
+    function keyboard() {
+        const open =
+            phone.matches &&
+            !!viewport &&
+            viewport.scale === 1 &&
+            typing() &&
+            innerHeight - viewport.height - viewport.offsetTop > 120;
+        document.documentElement.classList.toggle('keyboard-open', open);
+    }
+    viewport?.addEventListener('resize', keyboard);
+    viewport?.addEventListener('scroll', keyboard);
+    document.addEventListener('focusin', keyboard);
+    document.addEventListener('focusout', () => setTimeout(keyboard));
 })();

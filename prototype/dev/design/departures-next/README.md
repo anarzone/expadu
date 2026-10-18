@@ -11,6 +11,16 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The menu waits for the keyboard — 18 October 2026
+
+The menu and Composer's round button stepped aside whenever a field had the
+cursor, so closing the keyboard with the cursor still there (Android's Back)
+left no menu at all (Composer review canvas, board 4; owner: build it). Now
+`connected/section-bar.js` marks `html.keyboard-open` while a focused field
+has the visual viewport shrunk by a keyboard, and only then do they step
+aside; Composer's box rides on the keyboard as before. The menu test uses a
+stand-in keyboard (a visual viewport it shrinks) to check both.
+
 ## Line strips, shared — 18 October 2026
 
 Nearby's line strips (a line through the stop, where it goes each way, via

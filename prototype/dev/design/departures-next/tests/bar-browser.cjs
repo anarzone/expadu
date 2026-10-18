@@ -179,6 +179,27 @@ async function swipe(page, cdp, from, to, steps = 8) {
                 reducedMotion: reduce ? 'reduce' : 'no-preference',
             });
             const page = await context.newPage();
+            // A stand-in keyboard: the visual viewport shrinks by `px`, as a
+            // phone's does while its keyboard is open.
+            await page.addInitScript(() => {
+                const fake = new EventTarget();
+                let shrink = 0;
+                Object.defineProperties(fake, {
+                    height: { get: () => innerHeight - shrink },
+                    width: { get: () => innerWidth },
+                    offsetTop: { get: () => 0 },
+                    offsetLeft: { get: () => 0 },
+                    scale: { get: () => 1 },
+                });
+                window.keyboard = (px) => {
+                    shrink = px;
+                    fake.dispatchEvent(new Event('resize'));
+                };
+                Object.defineProperty(window, 'visualViewport', {
+                    value: fake,
+                    configurable: true,
+                });
+            });
             const cdp = await context.newCDPSession(page);
             const errors = [];
             page.on('pageerror', (e) => errors.push(e.message));
@@ -203,12 +224,26 @@ async function swipe(page, cdp, from, to, steps = 8) {
                 true,
                 'the bar stays on Plan a trip',
             );
-            // Typing: the bar steps aside for the keyboard.
+            // Typing: the bar steps aside while the keyboard is open, and
+            // comes back when it closes with the cursor still in the field
+            // (Composer review canvas, board 4).
             await page.locator('#to').focus();
             await page.waitForTimeout(250);
             assert.ok(
+                (await box(page, '#shell .service-nav')).top < 843,
+                'stays with the cursor but no keyboard',
+            );
+            await page.evaluate(() => window.keyboard(320));
+            await page.waitForTimeout(250);
+            assert.ok(
                 (await box(page, '#shell .service-nav')).top >= 843,
-                'hidden while typing',
+                'hidden while the keyboard is open',
+            );
+            await page.evaluate(() => window.keyboard(0));
+            await page.waitForTimeout(250);
+            assert.ok(
+                (await box(page, '#shell .service-nav')).top < 843,
+                'back when the keyboard closes',
             );
             await page.locator('#to').blur();
 
