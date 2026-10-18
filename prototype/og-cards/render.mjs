@@ -1,10 +1,10 @@
 // Renders the per-page Open Graph cards into public/marketing/og/.
 // Run from the repo root: node prototype/og-cards/render.mjs
 // Re-run (and commit the PNGs) whenever a page title below changes.
-import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { chromium } from 'playwright';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, '../../public/marketing');
