@@ -25,7 +25,7 @@ class CanonicalRedirects
             return $next($request);
         }
 
-        if ($target = $this->appHostTarget($request)) {
+        if ($target = $this->appHostTarget($request) ?? $this->slashlessTarget($request)) {
             return new RedirectResponse($target, 301);
         }
 
@@ -48,5 +48,24 @@ class CanonicalRedirects
         $query = $request->getQueryString();
 
         return $request->getScheme().'://'.$appDomain.'/'.$request->path().($query !== null ? '?'.$query : '');
+    }
+
+    /**
+     * The router ignores a trailing slash, so /blog/ answered 200 as a copy of
+     * /blog. Send it to the slashless form on the same host.
+     */
+    private function slashlessTarget(Request $request): ?string
+    {
+        $path = $request->getPathInfo();
+
+        if ($path === '/' || ! str_ends_with($path, '/')) {
+            return null;
+        }
+
+        $query = $request->getQueryString();
+
+        // Exactly one leading slash: "//evil.example/" must not turn into a
+        // protocol-relative redirect to another host.
+        return '/'.trim($path, '/').($query !== null ? '?'.$query : '');
     }
 }

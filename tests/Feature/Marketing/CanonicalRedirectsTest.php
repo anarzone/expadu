@@ -19,3 +19,16 @@ test('auth form posts on the marketing host are never redirected', function () {
 
     expect($response->getStatusCode())->not->toBe(301);
 });
+
+test('a trailing slash moves permanently to the slashless address on the same host', function () {
+    $this->get('http://expadu.com/blog/?page=2')
+        ->assertStatus(301)
+        ->assertHeader('Location', '/blog?page=2');
+});
+
+test('the slash redirect never points at another host', function (string $path) {
+    // The query keeps the test client from trimming the trailing slash itself.
+    $this->get('http://expadu.com'.$path.'?a=1')
+        ->assertStatus(301)
+        ->assertHeader('Location', '/evil.example?a=1');
+})->with(['//evil.example/', '///evil.example//']);
