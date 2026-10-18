@@ -89,7 +89,7 @@
         settings = false;
         confirmation = '';
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${handedFrom ? iconButton('back', `Back to ${handedFrom}`, 'close') : iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small></small></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            <header class="nav-topbar">${handedFrom ? iconButton('back', `Back to ${handedFrom}`, 'close') : iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small></small></div><button class="nav-sample" data-nav="options" aria-expanded="false" aria-controls="nav-options"><span>Sample</span><span class="nav-sample-more"> · not live</span>${icon('down')}</button></header>
             <section class="nav-panel" aria-label="Your trip"><div class="nav-panel-content"></div></section>
             <div id="nav-options" class="nav-options" hidden></div>
             <p class="nav-session-note" role="status" hidden>Progress is kept for this page only.</p>
@@ -892,17 +892,10 @@
         const now = momentNow(p, running);
         content.innerHTML = `${conditionMarkup()}<div class="nav-summary">${stepCard(now, running)}</div>${mapCard(p, now, running)}<div id="nav-expanded" class="nav-expanded"><div class="nav-detail-scroll"><h3 class="nav-way-title">Your way</h3>${wayRows(p, running)}</div></div>${confirm ? `<footer class="nav-footer">${confirm}</footer>` : ''}`;
         // The top bar: the day, when to leave before you start, where you are
-        // in the trip once it runs; always that it's a sample (desktop: the
-        // dashed label; phones: the line under the title).
+        // in the trip once it runs; always that it's a sample: the dashed
+        // Sample chip, which also opens the sample's own tools (owner, 18 Oct
+        // 2026, Composer review canvas board 13).
         dialog.querySelector('.nav-trip-progress')?.remove();
-        dialog.querySelector('.nav-topbar > .nav-sample')?.remove();
-        if (wide())
-            dialog
-                .querySelector('.nav-topbar [data-nav="options"]')
-                .insertAdjacentHTML(
-                    'beforebegin',
-                    '<span class="nav-sample">Sample · not live</span>',
-                );
         if (running) {
             const parts = N.steps(route).filter(
                 (step) => step.mode !== 'arrive',
@@ -931,7 +924,7 @@
             { weekday: 'short', day: 'numeric', month: 'short' },
         );
         dialog.querySelector('.nav-topbar small').textContent =
-            `${wide() ? '' : 'Sample · '}${day} · ${running ? `there ${route.arrive}` : `leave ${route.depart} · there ${route.arrive}`}${spare}`;
+            `${day} · ${running ? `there ${route.arrive}` : `leave ${route.depart} · there ${route.arrive}`}${spare}`;
         if (typeof savedCount === 'function') savedCount();
         // You move along your way rather than jump.
         const you = content.querySelector('.tmap-you');
@@ -995,15 +988,15 @@
             : null;
         const condition = active?.condition || 'normal';
         dialog.querySelector('#nav-options').innerHTML =
-            `<strong>Trip moment</strong><p>Stands in for the time and your location.</p>${list
+            `<strong>Where you are</strong><p>This trip is a sample. See it at another moment.</p>${list
                 .map(
                     (item, index) =>
                         `<button data-nav="moment" data-moment="${index}" ${running ? '' : 'disabled'} aria-pressed="${item === cur}"><time>${item.clock}</time>${safe(momentName(item))}${item === cur ? icon('check') : ''}</button>`,
                 )
                 .join(
                     '',
-                )}<strong>Preview conditions</strong><p>Try how guidance responds.</p>${[
-                ['normal', 'route', 'Normal journey'],
+                )}<strong>If something goes wrong</strong><p>See what the trip says when it does.</p>${[
+                ['normal', 'route', 'Nothing goes wrong'],
                 ['location', 'locate', 'Location unavailable'],
                 ['offline', 'offline', 'Connection lost'],
                 ['changed', 'info', 'Route changed'],

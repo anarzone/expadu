@@ -406,17 +406,49 @@
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
 }
+/* The sample's own control: a dashed chip in place of a ⋯ menu, so the
+   trip's preview tools read as the sample's, not the trip's (owner, 18 Oct
+   2026, Composer review canvas board 13). */
 #journey-navigation .nav-sample {
     display: inline-flex;
+    flex: none;
     align-items: center;
-    height: 28px;
-    padding: 0 10px;
-    border: 1px dashed var(--color-border-strong);
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 1.5px dashed var(--color-border-strong);
     border-radius: 999px;
+    background: transparent;
     color: var(--color-text-soft);
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: var(--weight-semibold);
     white-space: nowrap;
+}
+#journey-navigation .nav-sample svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    transition: rotate var(--duration-base, 180ms) ease;
+}
+#journey-navigation .nav-sample[aria-expanded='true'] svg {
+    rotate: 180deg;
+}
+#journey-navigation .nav-sample:hover {
+    border-color: var(--color-text-soft);
+    color: var(--color-text);
+}
+/* Phones show "Sample"; the rest is read out. */
+@media (max-width: 999px) {
+    #journey-navigation .nav-sample-more {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
 }
 /* The map card (owner, 15 Oct 2026; canvas row 20): where to stand while
    you walk to the stop and wait, then your way with you on it. Its caption

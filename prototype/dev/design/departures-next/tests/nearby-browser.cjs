@@ -103,7 +103,7 @@ const status = (page) =>
             ];
             for (const [index, text, count] of moments) {
                 const options = trip.getByRole('button', {
-                    name: 'Preview options',
+                    name: 'Sample · not live',
                 });
                 await options.click();
                 await trip.locator('[data-nav="moment"]').nth(index).click();

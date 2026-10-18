@@ -11,6 +11,17 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The trip's Sample chip — 18 October 2026
+
+The trip page's ⋯ held only the sample's tools ("Trip moment · Stands in for
+the time and your location", "Preview conditions · Try how guidance
+responds"): a test tool where a traveller looks for real actions (Composer
+review canvas, board 13; owner: build it). The ⋯ is gone. A dashed chip,
+"Sample · not live" ("Sample" on phones, the rest read out), says what the
+trip is and opens the same tools in plain words: Where you are, If something
+goes wrong, Nothing goes wrong. On laptops it replaces the separate dashed
+label, and the phone's line under the title no longer starts with "Sample ·".
+
 ## Trips look like Travel everywhere — 18 October 2026
 
 The owner: "use exactly the same design of the travel page… in everywhere,
