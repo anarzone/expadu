@@ -15,57 +15,63 @@ const fresh = () => {
     C.ensure(s);
     return s;
 };
-test('default approval keeps a manual or chat edit separate from confirmed plans', () => {
+const plain = (value) => JSON.parse(JSON.stringify(value));
+// Every change goes straight into the plan, each with its Undo (Composer
+// review canvas, board 3).
+test('every change goes straight into the plan, each with its Undo, newest first', () => {
     const s = fresh();
     M.propose(s, ['walk']);
-    A.changed(s, 'Added place');
-    assert.equal(s.plans.length, 0);
-    assert.ok(s.proposal);
-    A.commit(s);
+    assert.deepEqual(plain(A.changed(s, 'Planned')), {
+        applied: true,
+        problem: null,
+    });
     assert.equal(s.plans.length, 1);
     assert.equal(s.proposal, null);
     M.propose(s, [], s.date);
     M.setTime(s, 'walk', '14:00', '15:00');
-    A.changed(s, 'Time edited');
-    assert.equal(s.plans[0].items[0].start, '13:00');
-});
-test('routine opt-in applies validated changes and undo restores confirmed revision', () => {
-    const s = fresh();
-    M.propose(s, ['walk']);
-    A.commit(s);
-    C.setApproval(s, 'routine');
-    M.propose(s, [], s.date);
-    M.setTime(s, 'walk', '14:00', '15:00');
-    assert.equal(A.changed(s, 'Moved'), true);
+    assert.equal(A.changed(s, 'Moved').applied, true);
     assert.equal(s.plans[0].items[0].start, '14:00');
-    A.undo(s);
+    assert.equal(s.conversation.applied.length, 2);
+    assert.equal(A.undo(s).label, 'Moved');
     assert.equal(s.plans[0].items[0].start, '13:00');
-    assert.equal(s.plans[0].revision, 3);
+    assert.equal(s.conversation.lastApplied.label, 'Planned');
+    A.undo(s);
+    assert.equal(s.plans.length, 0);
+    assert.equal(s.proposal, null);
 });
-test('undo of first confirmation restores the draft and preserves saved ideas', () => {
+test('undoing a new plan removes it and keeps saved ideas', () => {
     const s = fresh();
     s.saved = ['walk'];
     M.propose(s, ['walk']);
-    A.commit(s);
+    A.changed(s, 'Planned');
     A.undo(s);
     assert.equal(s.plans.length, 0);
-    assert.equal(s.proposal.items.length, 1);
-    assert.deepEqual(s.saved, ['walk']);
+    assert.equal(s.proposal, null);
+    assert.deepEqual(plain(s.saved), ['walk']);
 });
-test('stale undo and overlapping routine edits cannot overwrite confirmed state', () => {
+test('a change that clashes changes nothing and says why; a stale undo is refused', () => {
     const s = fresh();
     M.propose(s, ['walk', 'appointment']);
-    A.commit(s);
-    s.plans[0].revision++;
-    assert.throws(() => A.undo(s), /changed since/);
-    C.setApproval(s, 'routine');
+    A.changed(s, 'Planned');
     M.propose(s, [], s.date);
-    assert.throws(
-        () => M.setTime(s, 'walk', '14:30', '15:30'),
-        /overlap|appointment/i,
-    );
-    assert.equal(s.plans[0].items[0].start, '13:00');
+    const walk = s.proposal.items.find((x) => x.id === 'walk');
+    const appointment = s.proposal.items.find((x) => x.id === 'appointment');
+    walk.start = appointment.start;
+    walk.end = appointment.end;
+    const result = A.changed(s, 'Moved');
+    assert.equal(result.applied, false);
+    assert.match(result.problem, /overlap|appointment/i);
+    assert.equal(s.proposal, null);
+    assert.equal(s.plans[0].items.find((x) => x.id === 'walk').start, '13:00');
+    s.plans[0].items[0].start = '12:30';
     assert.throws(() => A.undo(s), /changed since/);
+});
+test('a new day emptied of everything is not kept', () => {
+    const s = fresh();
+    M.propose(s, []);
+    assert.equal(A.changed(s, 'Planned').applied, false);
+    assert.equal(s.proposal, null);
+    assert.equal(s.plans.length, 0);
 });
 test('chat edits cannot select fixed, ambiguous or unrecognized activities', () => {
     const s = fresh();
@@ -107,7 +113,6 @@ test('browsing replacements keeps a confirmed plan confirmed and offers more tha
     const s = fresh();
     M.propose(s, ['walk']);
     A.commit(s);
-    C.setApproval(s, 'routine');
     const before = JSON.stringify(s);
     const catalogue = [
         'walk',
@@ -124,14 +129,14 @@ test('browsing replacements keeps a confirmed plan confirmed and offers more tha
     const draft = A.selectReplacement(s, request, 'greenbelt');
     assert.equal(draft.items[0].id, 'greenbelt');
     assert.equal(draft.items[0].start, '13:00');
-    assert.equal(A.changed(s, 'Swapped'), true);
+    assert.equal(A.changed(s, 'Swapped').applied, true);
     assert.equal(s.proposal, null);
     const after = JSON.stringify(s);
     A.replacementOptions(s, 'greenbelt', catalogue);
     assert.equal(JSON.stringify(s), after);
 });
 
-test('selecting a replacement requires current context and keeps ask-first changes unconfirmed', () => {
+test('selecting a replacement requires current context and goes straight in', () => {
     const s = fresh();
     M.propose(s, ['walk']);
     A.commit(s);
@@ -144,9 +149,9 @@ test('selecting a replacement requires current context and keeps ask-first chang
     assert.equal(s.proposal, null);
     s.conversation.activeDate = s.date;
     A.selectReplacement(s, request, 'greenbelt');
-    assert.equal(A.changed(s, 'Swapped'), false);
-    assert.equal(s.plans[0].items[0].id, 'walk');
-    assert.equal(s.proposal.items[0].id, 'greenbelt');
+    assert.equal(A.changed(s, 'Swapped').applied, true);
+    assert.equal(s.plans[0].items[0].id, 'greenbelt');
+    assert.equal(s.proposal, null);
     assert.throws(() => A.selectReplacement(s, request, 'walk'), /changed/);
 });
 
@@ -161,16 +166,13 @@ test('action requests preserve a composed message while a typed send consumes it
     assert.equal(A.requestText(s, '  Hello  ', true), 'Hello');
     assert.equal(s.prompt, '');
 });
-test('removing the last activity cancels a confirmed day only after approval and can be undone', () => {
+test('removing the last activity cancels the day straight away, with its Undo', () => {
     const s = fresh();
     M.propose(s, ['walk']);
     A.commit(s);
     M.propose(s, [], s.date);
     s.proposal.items = [];
-    C.setApproval(s, 'routine');
-    assert.equal(A.changed(s, 'Cancelled day'), false);
-    assert.equal(s.plans.length, 1);
-    A.commit(s);
+    assert.equal(A.changed(s, 'Cancelled day').applied, true);
     assert.equal(s.plans.length, 0);
     assert.equal(s.proposal, null);
     A.undo(s);

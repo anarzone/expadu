@@ -31,13 +31,17 @@ function context() {
         icon: () => '',
         card: () => '',
         timeline: (_p, editable) => (editable ? 'EDITABLE' : 'READONLY'),
-        proposal: () => '<button>Apply</button>',
         dateLabel: String,
         place: (id) => ({ id, title: 'Park', label: 'Park', area: 'Cologne' }),
     };
 }
-test('earlier plan references expose read-only snapshots instead of stale apply actions', () => {
+// A plan goes straight in (Composer review canvas, board 3): the day is
+// changed in place, so an earlier card names the day and opens it, no
+// snapshot, nothing to apply.
+test('an earlier plan card names the day and opens it, with no snapshot', () => {
     const ctx = context();
+    ctx.state.plans = [ctx.state.proposal];
+    ctx.state.proposal = null;
     ctx.state.conversation.activeDate = null;
     const html = render(
         {
@@ -49,10 +53,28 @@ test('earlier plan references expose read-only snapshots instead of stale apply 
         },
         ctx,
     );
-    assert.match(html, /READONLY/);
-    assert.doesNotMatch(html, /<button>Apply/);
-    assert.match(html, /Open current plan/);
+    assert.match(html, /Plan for 2026-09-19/);
+    assert.match(html, /data-open-plan="2026-09-19"/);
+    assert.doesNotMatch(html, /READONLY|EDITABLE|snapshot|Apply/i);
 });
+test('the day you are on is in your plans and changes in place', () => {
+    const ctx = context();
+    ctx.state.plans = [ctx.state.proposal];
+    ctx.state.proposal = null;
+    const html = render(
+        {
+            id: 'p1',
+            role: 'assistant',
+            kind: 'plan',
+            planDate: '2026-09-19',
+        },
+        ctx,
+    );
+    assert.match(html, /In your plans/);
+    assert.match(html, /EDITABLE/);
+    assert.doesNotMatch(html, /Confirm|Version history|Edit plan/);
+});
+
 test('replacement choices are inactive after changing the draft or clearing context', () => {
     const ctx = context();
     const entry = {
@@ -73,6 +95,8 @@ test('replacement choices are inactive after changing the draft or clearing cont
 
 test('historical plan cards never become live when the same day is active', () => {
     const ctx = context();
+    ctx.state.plans = [ctx.state.proposal];
+    ctx.state.proposal = null;
     const html = render(
         {
             id: 'old',
@@ -83,38 +107,24 @@ test('historical plan cards never become live when the same day is active', () =
         },
         ctx,
     );
-    assert.match(html, /READONLY/);
-    assert.match(html, /Earlier plan/);
-    assert.match(html, /Open current plan/);
-    assert.doesNotMatch(html, /Active plan|<button>Apply/);
+    assert.match(html, /Plan for 2026-09-19/);
+    assert.match(html, /data-open-plan/);
+    assert.doesNotMatch(html, /EDITABLE|In your plans/);
 });
 
-test('legacy answer snapshots offer a clear path to the current plan', () => {
+test('legacy answers with a plan offer the plan itself, not a snapshot', () => {
     const ctx = context();
-    const html = render(
-        {
-            id: 'old-answer',
-            role: 'assistant',
-            kind: 'answer',
-            plan: ctx.state.proposal,
-        },
-        ctx,
-    );
-    assert.match(html, /Earlier plan snapshot/);
-    assert.match(html, /Open current plan/);
+    ctx.state.plans = [ctx.state.proposal];
+    const entry = {
+        id: 'old-answer',
+        role: 'assistant',
+        kind: 'answer',
+        plan: ctx.state.proposal,
+    };
+    assert.doesNotMatch(render(entry, ctx), /snapshot/i);
+    assert.match(render(entry, ctx), /Open the plan/);
     ctx.historical = true;
-    assert.doesNotMatch(
-        render(
-            {
-                id: 'old-answer',
-                role: 'assistant',
-                kind: 'answer',
-                plan: ctx.state.proposal,
-            },
-            ctx,
-        ),
-        /data-open-plan/,
-    );
+    assert.doesNotMatch(render(entry, ctx), /data-open-plan/);
 });
 
 test('confirmed plans offer scrollable replacements without a draft and stale choices collapse', () => {
@@ -143,10 +153,11 @@ test('confirmed plans offer scrollable replacements without a draft and stale ch
     assert.doesNotMatch(render(entry, ctx), /Browse more places/);
 });
 
-test('cancelled day exposes undo only for the latest cancellation', () => {
+test('a change and a cancelled day carry their Undo only while they are the latest', () => {
     const ctx = context();
     ctx.state.proposal = null;
     ctx.state.conversation.lastApplied = {
+        id: 'c2',
         date: '2026-09-19',
         after: null,
         cancellationEntryId: 'cancel',
@@ -157,12 +168,16 @@ test('cancelled day exposes undo only for the latest cancellation', () => {
         kind: 'plan-cancelled',
         planDate: '2026-09-19',
     };
-    assert.match(render(e, ctx), /Undo cancellation/);
+    assert.match(render(e, ctx), /data-action="undo-plan"/);
     ctx.state.conversation.lastApplied.cancellationEntryId = 'newer';
-    assert.doesNotMatch(render(e, ctx), /Undo cancellation/);
+    assert.doesNotMatch(render(e, ctx), /undo-plan/);
+    const moved = { id: 'm', role: 'assistant', text: 'Moved', changeId: 'c2' };
+    assert.match(render(moved, ctx), /data-action="undo-plan"/);
     ctx.state.conversation.lastApplied = null;
-    assert.doesNotMatch(render(e, ctx), /Undo cancellation/);
+    assert.doesNotMatch(render(e, ctx), /undo-plan/);
+    assert.doesNotMatch(render(moved, ctx), /undo-plan/);
 });
+
 test('service responses render their card inside the conversation', () => {
     const ctx = context();
     ctx.serviceCard = (e) => '<section>Service ' + e.kind + '</section>';

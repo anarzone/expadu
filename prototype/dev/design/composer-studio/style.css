@@ -268,29 +268,6 @@
     width: 16px;
     height: 16px;
 }
-.response-heading {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    margin: 0 0 27px;
-}
-.response-heading p {
-    margin-top: 10px;
-    color: var(--color-text-soft);
-    font-size: var(--text-section);
-}
-.response-mark {
-    display: inline-grid;
-    place-items: center;
-    width: 28px;
-    height: 38px;
-    color: var(--color-select-text);
-    flex-shrink: 0;
-}
-.response-mark svg {
-    width: 27px;
-    height: 27px;
-}
 .discovery-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -446,12 +423,6 @@
 .suggested-followups button:hover {
     background: var(--color-bg-quiet);
 }
-.proposal-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 240px;
-    gap: 40px;
-    align-items: start;
-}
 .timeline-paper {
     background: var(--color-bg-surface);
     border: 1px solid var(--color-border);
@@ -466,59 +437,8 @@
     gap: 15px;
     border-bottom: 1px solid var(--color-border);
 }
-.proposal-label {
-    display: block;
-    color: var(--color-text-soft);
-    font-size: var(--text-caption);
-    margin-bottom: 6px;
-}
 .paper-heading h2 {
     font-size: var(--text-title-sm);
-}
-.date-picker {
-    position: relative;
-    flex-shrink: 0;
-}
-.date-picker summary {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-    font-size: var(--text-caption);
-    color: var(--color-text);
-}
-.date-picker svg {
-    width: 17px;
-    height: 17px;
-}
-.date-picker form {
-    position: absolute;
-    right: 0;
-    top: 100%;
-    z-index: 5;
-    width: 215px;
-    padding: 16px;
-    background: white;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 8px 28px #3e352b18;
-}
-.date-picker label {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: var(--text-caption);
-}
-.date-picker input {
-    width: 100%;
-    padding: 7px 0;
-    border: 0;
-    font-size: var(--text-control);
-}
-.date-picker button {
-    margin-top: 9px;
-    width: 100%;
 }
 .plan-timeline {
     list-style: none;
@@ -712,104 +632,9 @@
 .travel-note span {
     font-size: var(--text-micro);
 }
-.proposal-footer {
-    display: flex;
-    gap: 18px;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 18px 26px;
-    background: var(--color-bg-quiet);
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-}
-.proposal-footer .plain-button {
-    color: var(--color-text-soft);
-    font-size: var(--text-caption);
-}
-.conflict-note:empty {
-    display: none;
-}
-.conflict-note {
-    padding: 15px 26px;
-    background: var(--color-attention-bg);
-    color: var(--color-attention-text);
-    font-size: var(--text-small);
-}
-.empty-inline,
-.removed-note {
-    padding: 12px 26px;
-    font-size: var(--text-small);
-    color: var(--color-text-soft);
-}
-.plan-companion {
-    padding-top: 20px;
-}
-.plan-companion h2 {
-    font-size: var(--text-title-sm);
-    margin-bottom: 13px;
-}
-.plan-companion > p {
-    color: var(--color-text-soft);
-    font-size: var(--text-control);
-}
-.companion-art {
-    height: 136px;
-    position: relative;
-    margin: 12px 0;
-}
-.companion-art > svg:first-child {
-    position: absolute;
-    top: 24px;
-    left: 20px;
-    width: 51px;
-    height: 51px;
-    color: #b58b25;
-    stroke-width: 1.3;
-}
-.companion-art > svg:last-child {
-    position: absolute;
-    top: 54px;
-    left: 130px;
-    width: 48px;
-    height: 48px;
-    color: #33836b;
-    stroke-width: 1.3;
-    transform: rotate(15deg);
-}
-.companion-art span {
-    position: absolute;
-    border-bottom: 2px dotted #9fbfb9;
-    width: 84px;
-    height: 50px;
-    border-radius: var(--radius-round);
-    left: 55px;
-    top: 50px;
-    transform: rotate(20deg);
-}
-.companion-note {
-    display: flex;
-    gap: 11px;
-    border-top: 1px solid var(--color-border);
-    padding: 20px 0 14px;
-    font-size: var(--text-small);
-}
-.companion-note svg {
-    width: 19px;
-    color: var(--color-text-soft);
-}
-.companion-note strong {
-    font-weight: var(--weight-medium);
-}
-.companion-note p {
-    font-size: var(--text-caption);
-    color: var(--color-text-soft);
-    margin-top: 5px;
-}
 .simple-answer {
     max-width: 730px;
     margin: 0 auto;
-}
-.simple-answer > .response-mark {
-    margin-bottom: 15px;
 }
 .simple-answer > p {
     font-size: var(--text-section);
@@ -1041,28 +866,6 @@
     justify-content: center;
     margin-top: 10px;
 }
-.resume-proposal {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    text-align: left;
-    color: var(--color-text);
-    padding: 15px 0;
-    min-height: 48px;
-    margin-top: 20px;
-    font-size: var(--text-small);
-}
-.resume-proposal svg {
-    width: 18px;
-    height: 18px;
-}
-.resume-proposal svg:last-child {
-    margin-left: auto;
-}
-.studio-welcome .resume-proposal {
-    margin: 20px auto 0;
-    max-width: 520px;
-}
 #studio-toast {
     position: fixed;
     left: 50%;
@@ -1186,25 +989,6 @@
         width: 20px;
         height: 20px;
     }
-    .response-heading {
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    .response-heading h1 {
-        font-size: var(--text-title-lg);
-    }
-    .response-heading p {
-        font-size: var(--text-small);
-        margin-top: 9px;
-    }
-    .response-mark {
-        width: 22px;
-        height: 31px;
-    }
-    .response-mark svg {
-        width: 23px;
-        height: 23px;
-    }
     .discovery-grid {
         grid-template-columns: 1fr;
         gap: 20px;
@@ -1217,10 +1001,6 @@
     }
     .discovery-card-body {
         padding: 15px 20px;
-    }
-    .proposal-layout {
-        grid-template-columns: 1fr;
-        gap: 17px;
     }
     .paper-heading {
         padding: 19px 17px;
@@ -1262,24 +1042,8 @@
         gap: 2px 12px;
     }
     .travel-note,
-    .proposal-footer,
-    .plan-reminders {
+.plan-reminders {
         padding: 16px 17px;
-    }
-    .proposal-footer {
-        gap: 10px 15px;
-    }
-    .plan-companion {
-        padding: 14px 8px;
-    }
-    .plan-companion > h2,
-    .plan-companion > p,
-    .companion-art {
-        display: none;
-    }
-    .companion-note {
-        border: 0;
-        padding: 0 0 5px;
     }
     .simple-answer > p {
         font-size: var(--text-body);
@@ -1698,9 +1462,6 @@
     .has-panel .discovery-grid {
         grid-template-columns: 1fr;
     }
-    .has-panel .proposal-layout {
-        grid-template-columns: 1fr;
-    }
 }
 @media (max-width: 999px) {
     /* The panel has the whole screen: the page behind stays still and gives
@@ -1770,30 +1531,6 @@
 .studio-button.expadu-loading-button {
     gap: 9px;
 }
-/* The date and its control occupy one row; the proposal label sits above both. */
-.studio .proposal-heading {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0 12px;
-    padding: 16px 22px;
-}
-.proposal-heading > div {
-    display: contents;
-}
-.proposal-heading .proposal-label {
-    grid-column: 1/-1;
-    margin-bottom: 2px;
-}
-.proposal-heading h2 {
-    grid-column: 1;
-    grid-row: 2;
-    line-height: 1.3;
-}
-.proposal-heading .date-picker {
-    grid-column: 2;
-    grid-row: 2;
-}
 .studio .timeline-actions .plain-button,
 .studio .time-editor summary {
     min-height: 40px;
@@ -1807,24 +1544,6 @@
     flex-shrink: 0;
 }
 @media (max-width: 700px) {
-    .studio .proposal-heading {
-        padding: 13px 16px;
-        gap: 0 8px;
-    }
-    .studio .proposal-heading h2 {
-        font-size: var(--text-section);
-    }
-    .proposal-heading .date-picker summary {
-        width: 44px;
-        justify-content: center;
-    }
-    .proposal-heading .date-picker summary span {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-    }
     .studio .plan-timeline {
         padding: 16px 16px 0;
     }
@@ -2419,9 +2138,6 @@
 }
 .starter-chip:active {
     transform: scale(0.97);
-}
-.studio-welcome .resume-proposal {
-    margin-top: 16px;
 }
 
 /* Phones: your day's facts in one scrolling row above the starters. */

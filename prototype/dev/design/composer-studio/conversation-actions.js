@@ -5,23 +5,39 @@
             if (request && consumeDraft) s.prompt = '';
             return request;
         }
-        function commit(s, label = 'Plan confirmed') {
-            if (!s.proposal) throw Error('There is no proposal to apply.');
+        // A plan as it's compared for Undo: its revision number moves on
+        // with every save, so it doesn't count.
+        const same = (a, b) =>
+            JSON.stringify(a ? { ...a, revision: 0 } : null) ===
+            JSON.stringify(b ? { ...b, revision: 0 } : null);
+        // A cancelled day is said in the reply asking for it (`entryId`), or
+        // in its own message.
+        function commit(s, label = 'Plan saved', entryId = null) {
+            if (!s.proposal) throw Error('There is no plan change to save.');
             const before = s.plans.find((p) => p.id === s.proposal.baseId);
             const draft = M.clone(s.proposal);
-            C.recordPlan(s, 'Before confirmation');
+            C.recordPlan(s, 'Before the change');
             M.confirm(s);
             const after = s.plans.find((p) => p.date === draft.date);
-            s.conversation.lastApplied = {
+            const conversation = s.conversation;
+            conversation.applied ||= [];
+            const change = {
+                id: `change-${conversation.applied.length + 1}-${Date.now()}`,
                 date: draft.date,
+                label,
                 before: before ? M.clone(before) : null,
                 after: after ? M.clone(after) : null,
                 draft,
             };
-            s.conversation.activeDate = draft.date;
+            conversation.applied.push(change);
+            // The latest twenty changes can be undone, newest first.
+            conversation.applied = conversation.applied.slice(-20);
+            conversation.lastApplied = change;
+            conversation.activeDate = draft.date;
             if (after) C.recordPlan(s, label);
+            else if (entryId) change.cancellationEntryId = entryId;
             else
-                s.conversation.lastApplied.cancellationEntryId = C.append(
+                change.cancellationEntryId = C.append(
                     s,
                     'assistant',
                     'This day has been cancelled. Your saved ideas are still available.',
@@ -33,25 +49,31 @@
                 ).id;
             return after;
         }
-        function changed(s, label) {
-            C.recordPlan(s, label);
-            if (
-                s.conversation.approval === 'routine' &&
-                s.proposal?.items.length &&
-                !M.conflicts(s.proposal).length
-            ) {
-                commit(s, label + ' · applied');
-                return true;
+        // Every change goes straight into the plan, with its Undo (owner, 18
+        // Oct 2026, Composer review canvas board 3). One that can't go in
+        // (a clash, a time outside listed hours) changes nothing, and says
+        // why; a new day emptied of everything isn't kept.
+        function changed(s, label, entryId = null) {
+            if (!s.proposal) return { applied: false, problem: null };
+            const problem = M.conflicts(s.proposal)[0];
+            if (problem) {
+                s.proposal = null;
+                return { applied: false, problem };
             }
-            return false;
+            if (!s.proposal.items.length && !s.proposal.baseId) {
+                s.proposal = null;
+                return { applied: false, problem: null };
+            }
+            C.recordPlan(s, label);
+            commit(s, label, entryId);
+            return { applied: true, problem: null };
         }
         function undo(s) {
             const change = s.conversation.lastApplied;
-            if (!change) throw Error('There is no applied change to undo.');
+            if (!change) throw Error('There is no change to undo.');
             const current = s.plans.find((p) => p.date === change.date);
             if (
-                JSON.stringify(current || null) !==
-                    JSON.stringify(change.after) ||
+                !same(current, change.after) ||
                 s.proposal ||
                 (change.before &&
                     s.plans.some(
@@ -60,9 +82,7 @@
                             p.id !== change.after?.id,
                     ))
             )
-                throw Error(
-                    'The plan has changed since. Finish the current proposal before undoing.',
-                );
+                throw Error('The plan has changed since.');
             if (change.before) {
                 const restored = M.clone(change.before);
                 restored.revision =
@@ -70,13 +90,15 @@
                 s.plans = s.plans
                     .filter((p) => p.date !== change.date)
                     .concat(restored);
-            } else {
-                s.plans = s.plans.filter((p) => p.date !== change.date);
-                s.proposal = M.clone(change.draft);
-            }
+            } else s.plans = s.plans.filter((p) => p.date !== change.date);
             s.conversation.activeDate = change.before?.date || change.date;
-            C.recordPlan(s, 'Undid last applied change');
-            s.conversation.lastApplied = null;
+            C.recordPlan(s, 'Undid the change');
+            // The change before it can be undone next.
+            s.conversation.applied = (s.conversation.applied || []).filter(
+                (x) => x.id !== change.id,
+            );
+            s.conversation.lastApplied = s.conversation.applied.at(-1) || null;
+            return change;
         }
         function replacementPlan(s, request) {
             const date = request.planDate || s.conversation.activeDate;

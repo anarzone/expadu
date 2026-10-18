@@ -104,7 +104,7 @@
                         'assistant',
                         'Attached the captured journey to ' +
                             target.title +
-                            '. Review its date and times before applying. This is not live route verification.',
+                            '. Its times are a capture, not a live route check.',
                     );
                     continue;
                 }
@@ -135,7 +135,7 @@
                                 .some((p) =>
                                     p.items.some((x) => x.sourceId === item.id),
                                 )
-                            ? 'Review the shared appointment details before updating your plan. Your confirmed plan has not changed.'
+                            ? `${item.title} is already in your plan; nothing changed.`
                             : trip
                               ? `Here’s your trip to ${item.to}. I’ve kept its details; your plan stays as it is.`
                               : `Brought into Composer: ${item.title}.`,
@@ -166,7 +166,7 @@
             C.append(
                 state,
                 'assistant',
-                `Added ${imported.join(', ')} to your proposal. Review the times before confirming.`,
+                `Added ${imported.join(', ')} to your plan for ${dayLabel(state.proposal?.date)}.`,
             );
         }
         state.handoffs = remaining;

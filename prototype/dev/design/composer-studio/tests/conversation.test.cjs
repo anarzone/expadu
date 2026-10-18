@@ -26,7 +26,8 @@ test('migration preserves original messages and domain state and runs only once'
     s.proposal = plan();
     const before = plain(s);
     const conversation = C.ensure(s);
-    assert.equal(conversation.approval, 'ask');
+    assert.equal(conversation.approval, undefined);
+    assert.deepEqual(plain(conversation.applied), []);
     assert.equal(conversation.activeDate, null);
     assert.equal(conversation.chapters.length, 1);
     assert.equal(conversation.versions.length, 0);
@@ -113,17 +114,20 @@ test('Start fresh archives deterministic context without changing drafts, plans,
     assert.equal(chapter.summary, summary);
 });
 
-test('approval only accepts ask or routine and invalid persisted choices fall back to ask', () => {
+// Changes go straight into the plan (Composer review canvas, board 3): a
+// saved approval setting is dropped, and an older single Undo becomes the
+// start of the list.
+test('there is no approval setting; an older Undo becomes the first in the list', () => {
     const s = fresh();
-    assert.equal(C.setApproval(s, 'routine'), 'routine');
-    for (const value of ['always', '', null, undefined]) {
-        assert.throws(() => C.setApproval(s, value), /approval/i);
-        assert.equal(s.conversation.approval, 'routine');
-    }
-    assert.equal(C.setApproval(s, 'ask'), 'ask');
-    s.conversation.approval = 'always';
+    s.conversation = {
+        approval: 'ask',
+        lastApplied: { date: s.date, before: null, after: null },
+    };
     C.ensure(s);
-    assert.equal(s.conversation.approval, 'ask');
+    assert.equal(s.conversation.approval, undefined);
+    assert.equal(s.conversation.applied.length, 1);
+    assert.equal(s.conversation.applied[0], s.conversation.lastApplied);
+    assert.equal(C.setApproval, undefined);
 });
 
 test('plan references reuse dates only within their section and use the active confirmed date', () => {

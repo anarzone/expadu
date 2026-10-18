@@ -6,7 +6,6 @@
             icon: I,
             card,
             timeline,
-            proposal,
             dateLabel,
         } = ctx;
         const c = s.conversation;
@@ -145,20 +144,20 @@
         if (entry.kind === 'appointment-form')
             body +=
                 '<button class="studio-button light" data-action="appointment">Add appointment</button>';
-        if (entry.kind === 'plan-cancelled' && entry.plan)
-            body += `<details class="chat-plan-reference"><summary>${I('calendar')}View cancelled day</summary>${timeline(entry.plan)}</details>`;
-        if (
-            entry.kind === 'plan-cancelled' &&
+        // A change carries its Undo while it's the latest one (owner, 18 Oct
+        // 2026, Composer review canvas board 3); a cancelled day too.
+        const undoable =
             !ctx.historical &&
-            c.lastApplied?.date === entry.planDate &&
-            c.lastApplied.after === null &&
-            c.lastApplied.cancellationEntryId === entry.id
-        )
-            body +=
-                '<button class="plain-button" data-action="undo-plan">Undo cancellation</button>';
+            !!c.lastApplied &&
+            ((entry.changeId && c.lastApplied.id === entry.changeId) ||
+                (entry.kind === 'plan-cancelled' &&
+                    c.lastApplied.after === null &&
+                    c.lastApplied.cancellationEntryId === entry.id));
+        if (undoable)
+            body += `<button class="plain-button change-undo" data-action="undo-plan">${I('back')}Undo</button>`;
         if (entry.kind === 'plan-history' && !ctx.historical) {
-            // Earlier versions stay in Version history; while the live plan
-            // for that day appears further down, the old card isn't repeated.
+            // While the plan for that day appears further down, the earlier
+            // card isn't repeated.
             const section = c.chapters?.find((x) => x.id === c.currentId);
             const entries = section?.entries || [];
             const index = entries.findIndex((x) => x.id === entry.id);
@@ -170,31 +169,18 @@
                 return '';
         }
         if (entry.kind === 'plan' || entry.kind === 'plan-history') {
-            const version = c.versions.find((v) => v.id === entry.versionId);
-            const draft =
-                s.proposal?.date === entry.planDate ? s.proposal : null;
-            const confirmed = s.plans.find((p) => p.date === entry.planDate);
+            const saved = s.plans.find((p) => p.date === entry.planDate);
             const active =
                 entry.kind === 'plan' &&
                 !ctx.historical &&
                 c.activeDate === entry.planDate &&
-                (draft || confirmed);
-            const versions = c.versions.filter(
-                (v) => v.plan.date === entry.planDate,
-            );
-            const history = `<details class="plan-versions"><summary>${I('clock')}Version history · ${versions.length}</summary>${versions
-                .slice()
-                .reverse()
-                .map(
-                    (v) =>
-                        `<details class="version-record"><summary><span>${E(v.label)}</span><small>${v.status === 'confirmed' ? 'Confirmed' : 'Proposal'}</small></summary><p class="history-readonly">Snapshot · read only</p>${timeline(v.plan)}</details>`,
-                )
-                .join('')}</details>`;
-            if (active) {
-                body = `<div class="chat-plan-label"><span>${I('calendar')}${E(dateLabel(entry.planDate))}</span><small>${draft ? 'Proposed changes' : 'Current plan'}</small></div><section id="studio-response" class="chat-live-plan" aria-label="Active plan">${draft ? proposal() : `<section class="timeline-paper"><div class="paper-heading"><span class="confirmed-label">${I('check')}Confirmed plan</span><button class="plain-button" data-revise="${E(confirmed.id)}">Edit plan</button></div>${timeline(confirmed)}<div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(confirmed.date)}">Cancel day</button></div><div class="travel-note">${I('route')}Travel and availability still need checking.</div></section>`}</section>${history}${!draft && c.lastApplied?.date === entry.planDate ? `<button class="plain-button plan-undo" data-action="undo-plan">${I('back')}${c.lastApplied.before ? 'Undo this change' : 'Undo confirmation'}</button>` : ''}`;
-            } else {
-                body = `<details class="chat-plan-reference"><summary>${I('calendar')}${entry.kind === 'plan-history' ? 'Earlier plan' : 'Plan'} for ${E(dateLabel(entry.planDate))}<span>View snapshot</span></summary>${version ? `<p class="history-readonly">${E(version.label)} · read only</p>${timeline(version.plan)}` : '<p>This draft has no activities yet.</p>'}</details>${!ctx.historical && (draft || confirmed) ? `<button class="plain-button" data-open-plan="${E(entry.planDate)}">Open current plan</button>` : ''}`;
-            }
+                saved;
+            // The day as it is now, changed in place: no proposal to
+            // confirm, versions or snapshots (board 3).
+            if (active)
+                body = `<div class="chat-plan-label"><span>${I('calendar')}${E(dateLabel(entry.planDate))}</span><small>In your plans</small></div><section id="studio-response" class="chat-live-plan" aria-label="Your plan"><section class="timeline-paper">${timeline(saved, true)}<div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(saved.date)}">Cancel day</button></div><div class="travel-note">${I('route')}Travel and availability still need checking.</div></section></section>`;
+            else
+                body = `<div class="chat-plan-reference">${I('calendar')}<span>Plan for ${E(dateLabel(entry.planDate))}</span>${!ctx.historical && saved ? `<button class="plain-button" data-open-plan="${E(entry.planDate)}">Open</button>` : ''}</div>`;
         }
         if (entry.kind === 'replacements') {
             const date = entry.planDate || c.activeDate;
@@ -225,8 +211,8 @@
                     lead +
                     `<details class="chat-plan-reference"><summary>${I('pin')}Previous alternatives · view only</summary>${body.slice(lead.length)}</details>`;
         }
-        if (entry.kind === 'answer' && entry.plan)
-            body += `<details class="chat-plan-reference"><summary>${I('calendar')}Earlier plan snapshot · ${E(dateLabel(entry.plan.date))}</summary><p class="history-readonly">Saved at the time of this reply · read only</p>${timeline(entry.plan)}</details>${!ctx.historical && (s.proposal?.date === entry.plan.date || s.plans.some((p) => p.date === entry.plan.date)) ? `<button class="plain-button" data-open-plan="${E(entry.plan.date)}">Open current plan</button>` : ''}`;
+        if (entry.kind === 'answer' && entry.plan && !ctx.historical && s.plans.some((p) => p.date === entry.plan.date))
+            body += `<button class="plain-button" data-open-plan="${E(entry.plan.date)}">Open the plan</button>`;
         // Next steps a reply offers: a request to send, a panel or another page.
         // Only the latest reply offers next steps, so they don't pile up.
         const section = c.chapters?.find((x) => x.id === c.currentId);

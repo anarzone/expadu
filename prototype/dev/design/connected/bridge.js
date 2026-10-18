@@ -67,11 +67,11 @@
             if (included) included.hidden = !ids.length;
             const label = document.querySelector('#included-label');
             if (label)
-                label.textContent = `${ids.length} ${isDraft ? 'in your proposal' : 'in your plan'}`;
+                label.textContent = `${ids.length} ${isDraft ? 'waiting for Composer' : 'in your plan'}`;
             const strip = document.querySelector('#saved-strip');
             if (strip) strip.hidden = !ids.length;
             if (strip && ids.length)
-                strip.innerHTML = `<span>${icon('bookmark')}</span><div><small>${isDraft ? 'Proposal · not confirmed' : 'Your confirmed plan'}</small><strong>${safe(items[0].title)}${ids.length > 1 ? ' + ' + (ids.length - 1) + ' more' : ''}</strong></div><button class="plain-button" data-action="plan">Review${icon('arrow')}</button>`;
+                strip.innerHTML = `<span>${icon('bookmark')}</span><div><small>${isDraft ? 'Waiting for Composer' : 'In your plan'}</small><strong>${safe(items[0].title)}${ids.length > 1 ? ' + ' + (ids.length - 1) + ' more' : ''}</strong></div><button class="plain-button" data-action="plan">Review${icon('arrow')}</button>`;
         };
         const pages = {
             events: 'events',

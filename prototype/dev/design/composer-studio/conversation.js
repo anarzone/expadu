@@ -58,8 +58,13 @@
             )
         )
             conversation.currentId = conversation.chapters.at(-1).id;
-        if (!['ask', 'routine'].includes(conversation.approval))
-            conversation.approval = 'ask';
+        // Changes go straight into the plan, each with its Undo (owner, 18
+        // Oct 2026, Composer review canvas board 3): no approval setting.
+        delete conversation.approval;
+        if (!Array.isArray(conversation.applied))
+            conversation.applied = conversation.lastApplied
+                ? [conversation.lastApplied]
+                : [];
         if (typeof conversation.activeDate !== 'string')
             conversation.activeDate = null;
         conversation.versions.forEach(freeze);
@@ -231,13 +236,6 @@
         return version;
     }
 
-    function setApproval(s, approval) {
-        if (!['ask', 'routine'].includes(approval))
-            throw Error('Choose a valid approval setting: ask or routine.');
-        ensure(s).approval = approval;
-        return approval;
-    }
-
     // A bounded context projection for a future approved-source engine. Original
     // messages and authoritative plan/approval state remain separate and intact.
     function context(s, limit = 12) {
@@ -269,7 +267,6 @@
         activatePlan,
         presentPlan,
         recordPlan,
-        setApproval,
         context,
     };
     if (typeof module !== 'undefined') module.exports = api;

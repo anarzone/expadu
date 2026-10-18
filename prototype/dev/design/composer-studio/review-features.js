@@ -349,32 +349,22 @@
                 }
             });
         }
+        // Cancel day happens straight away, with its Undo in the conversation
+        // (owner, 18 Oct 2026, Composer review canvas board 3).
         function cancelDay(anchor, date) {
             const s = getState(),
                 plan = s.plans.find((p) => p.date === date);
             if (!plan) return;
-            const body = shell('Cancel this day?', anchor);
-            body.innerHTML = `<p>This will remove the plan for ${E(ctx.shortDate(date))}. Any unconfirmed changes to this day will also be removed. Saved ideas and conversation history stay available.</p><p class="detail-caution">You can undo the cancellation until your next applied change.</p><p class="detail-error" role="alert" hidden></p><div class="detail-actions"><button class="studio-button light" data-detail-close>Keep plan</button><button class="studio-button primary" data-cancel-day-confirm>Cancel day</button></div>`;
-            body.querySelector('[data-cancel-day-confirm]').addEventListener(
-                'click',
-                () => {
-                    try {
-                        M.propose(s, [], date, plan.id);
-                        s.proposal.items = [];
-                        ctx.A.commit(s, 'Cancelled day');
-                        close();
-                        store();
-                        render();
-                        notify(
-                            'Day cancelled. Undo is available in the conversation.',
-                        );
-                    } catch (error) {
-                        const output = body.querySelector('.detail-error');
-                        output.hidden = false;
-                        output.textContent = error.message;
-                    }
-                },
-            );
+            try {
+                M.propose(s, [], date, plan.id);
+                s.proposal.items = [];
+                ctx.A.changed(s, 'Cancelled day');
+                store();
+                render();
+            } catch (error) {
+                s.proposal = null;
+                notify(error.message);
+            }
         }
         const mountedGuides = new Map();
         function mountGuides() {

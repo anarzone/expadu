@@ -20,16 +20,14 @@
     text-decoration: underline;
     text-underline-offset: 4px;
 }
-.studio .plan-management,
-.studio .plan-add-actions {
+.studio .plan-management {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 18px;
     padding: 8px 18px 14px;
 }
-.studio .plan-management button,
-.studio .plan-add-actions button {
+.studio .plan-management button {
     min-height: 44px;
 }
 .studio .chat-alternatives .alternative-row {

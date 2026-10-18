@@ -19,6 +19,17 @@ number):
 - **6 · Laptops on the header's edges.** Your day starts under the logo;
   the conversation, its trip bar and its text box share one column, 800px
   at most, ending where the header does (`approved.css`).
+- **3 · A plan goes straight in, with Undo.** "Help me plan Saturday" puts
+  the day in your plans and says so ("Saturday is in your plans" · Undo);
+  every later change, tapped or typed, or handed over from another page,
+  goes in the same way, each reply with its own Undo, newest first
+  (`conversation-actions.js`: `changed()` saves, `undo()` steps back through
+  `conversation.applied`). A change that can't go in (a clash, a time
+  outside listed hours) changes nothing and says why. The card is the day
+  as it is, "In your plans", changed in place. Ask first, Confirm plan /
+  Discard proposal, Edit plan, the plan's date form, version history,
+  snapshots and the Cancel day dialog are gone; Cancel day happens with its
+  Undo.
 - **4 · The menu waits for the keyboard.** The menu and the round button
   step aside only while the keyboard is open (`connected/section-bar.js`
   marks `html.keyboard-open`), so they come back when it closes with the

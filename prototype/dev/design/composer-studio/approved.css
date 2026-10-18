@@ -62,15 +62,15 @@ body.studio {
 }
 
 /* ── Phones: one line, + · your words · send (Composer review canvas,
-   board 1, 18 Oct 2026). A plan adds one slim row above it, with Ask
-   first, which only matters for a plan's changes. ─────────────────────── */
+   board 1, 18 Oct 2026). A plan adds one slim row above it: its day and
+   View plan. ─────────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
     .studio #studio-form {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
         grid-template-areas:
             'note note note'
-            'context context approval'
+            'context context context'
             'plus field send';
         align-items: center;
         column-gap: 2px;
@@ -94,14 +94,8 @@ body.studio {
     .studio #studio-form .composer-actions {
         grid-area: plus;
     }
-    .studio #studio-form .approval-control {
-        grid-area: approval;
-    }
     .studio #studio-form .send {
         grid-area: send;
-    }
-    .studio #studio-form:not(:has(.input-context)) .approval-control {
-        display: none;
     }
     .studio #studio-form .input-context {
         margin: 0 0 0 4px;

@@ -76,6 +76,14 @@
             catalogue.push(ExpaduModel.clone(item));
     }
     C.ensure(state);
+    // A proposal saved before changes went straight in (board 3): kept if
+    // it fits, as any change is; otherwise dropped, the plan unchanged.
+    if (state.proposal)
+        try {
+            A.changed(state, 'Saved your earlier proposal');
+        } catch {
+            state.proposal = null;
+        }
     for (const chapter of state.conversation.chapters)
         for (const entry of chapter.entries)
             if (entry.kind === 'pending') {
@@ -315,7 +323,6 @@
             if (refreshWorkspace()) return false;
             ExpaduStore.update((s) => {
                 StudioIntegration.clearCancelledHandoffs(state, s);
-                s.approvalMode = state.conversation.approval;
                 s.savedIdeas = state.saved
                     .map(place)
                     .filter(Boolean)
@@ -623,7 +630,7 @@
             (state.proposal?.date === date ? state.proposal : planFor(date)) ||
             state.proposal;
         if (!p) return '';
-        return `<div class="input-context">${I('calendar')}<span><strong>${E(shortDate(p.date))}</strong><small>${p === state.proposal ? 'Unconfirmed proposal' : 'Confirmed plan'}</small></span><button type="button" data-open-plan="${E(p.date)}">${date === p.date ? 'View plan' : 'Resume plan'}</button></div>`;
+        return `<div class="input-context">${I('calendar')}<span><strong>${E(shortDate(p.date))}</strong><small>In your plans</small></span><button type="button" data-open-plan="${E(p.date)}">${date === p.date ? 'View plan' : 'Resume plan'}</button></div>`;
     }
     function syncPlanning() {
         document.querySelectorAll('[data-add]').forEach((button) => {
@@ -666,7 +673,7 @@
                     `${state.handoffs.length} selections waiting. ${state.handoffs[0].handoffError}`;
             return;
         }
-        area.innerHTML = `<div class="studio-input-wrap"><form id="studio-form">${state.handoffs?.length ? `<div class="handoff-note" role="status"><span>${state.handoffs.length} selection${state.handoffs.length === 1 ? '' : 's'} waiting. ${E(state.handoffs[0].handoffError)}</span><button type="button" data-retry-handoff>Try adding again</button></div>` : ''}<div data-planning-context>${planningContext()}</div><div class="studio-field"><label class="sr-only" for="studio-request">${state.response ? 'Continue with Composer' : 'What can I help you with?'}</label><textarea id="studio-request" rows="1" maxlength="700" placeholder="Ask, discover, or plan…">${E(state.prompt)}</textarea></div><div class="composer-tools"><details class="composer-actions"><summary aria-label="Composer actions" title="Composer actions">${I('plus')}</summary><div class="composer-actions-menu" aria-label="Composer actions"><button type="button" data-nav="plans">${I('calendar')}My Plans</button><button type="button" data-nav="saved">${I('bookmark')}Saved</button><button type="button" data-nav="history">${I('clock')}History</button><button type="button" data-action="appointment">${I('calendar')}Add appointment</button><button type="button" data-action="examples">${I('spark')}Try Composer</button><button type="button" data-action="new">${I('plus')}Start fresh</button></div></details><div class="approval-control"><button type="button" id="approval-mode" aria-label="Plan change approval: ask me first" aria-haspopup="menu" aria-expanded="false" aria-controls="approval-menu"><span>Ask first</span>${I('down')}</button><div id="approval-menu" class="approval-menu" role="menu" aria-label="Plan change approval" hidden><p class="approval-heading">Plan changes</p><button type="button" role="menuitemradio" aria-checked="true" tabindex="-1" data-approval="ask"><span><strong>Ask me first</strong><small>I’ll show each change for you to apply.</small></span>${I('check')}</button><button type="button" role="menuitemradio" aria-checked="false" tabindex="-1" data-approval="routine"><span><strong>Make small edits for me</strong><small>Time and place edits apply straight away. You can undo them.</small></span>${I('check')}</button><p class="approval-footnote">Bookings and payments always need your OK.</p></div></div><button class="send" type="submit" aria-label="Send request" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button></div></form></div>`;
+        area.innerHTML = `<div class="studio-input-wrap"><form id="studio-form">${state.handoffs?.length ? `<div class="handoff-note" role="status"><span>${state.handoffs.length} selection${state.handoffs.length === 1 ? '' : 's'} waiting. ${E(state.handoffs[0].handoffError)}</span><button type="button" data-retry-handoff>Try adding again</button></div>` : ''}<div data-planning-context>${planningContext()}</div><div class="studio-field"><label class="sr-only" for="studio-request">${state.response ? 'Continue with Composer' : 'What can I help you with?'}</label><textarea id="studio-request" rows="1" maxlength="700" placeholder="Ask, discover, or plan…">${E(state.prompt)}</textarea></div><div class="composer-tools"><details class="composer-actions"><summary aria-label="Composer actions" title="Composer actions">${I('plus')}</summary><div class="composer-actions-menu" aria-label="Composer actions"><button type="button" data-nav="plans">${I('calendar')}My Plans</button><button type="button" data-nav="saved">${I('bookmark')}Saved</button><button type="button" data-nav="history">${I('clock')}History</button><button type="button" data-action="appointment">${I('calendar')}Add appointment</button><button type="button" data-action="examples">${I('spark')}Try Composer</button><button type="button" data-action="new">${I('plus')}Start fresh</button></div></details><button class="send" type="submit" aria-label="Send request" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7"/></svg></button></div></form></div>`;
     }
     function syncSend() {
         const field = document.querySelector('#studio-request');
@@ -681,52 +688,10 @@
         if (restoreFocus)
             actions.querySelector('summary').focus({ preventScroll: true });
     }
-    function syncApproval() {
-        const routine = state.conversation.approval === 'routine';
-        const trigger = document.querySelector('#approval-mode');
-        if (!trigger) return;
-        trigger.querySelector('span').textContent = routine
-            ? 'Edit for me'
-            : 'Ask first';
-        trigger.setAttribute(
-            'aria-label',
-            'Plan change approval: ' +
-                (routine ? 'make small edits for me' : 'ask me first'),
-        );
-        document
-            .querySelectorAll('[data-approval]')
-            .forEach((button) =>
-                button.setAttribute(
-                    'aria-checked',
-                    String(
-                        button.dataset.approval === state.conversation.approval,
-                    ),
-                ),
-            );
-    }
-    function toggleApproval(open, restoreFocus = false) {
-        const menu = document.querySelector('#approval-menu');
-        if (!menu) return;
-        menu.hidden = !open;
-        document
-            .querySelector('#approval-mode')
-            .setAttribute('aria-expanded', String(open));
-        if (open) closeComposerActions();
-        if (open)
-            menu.querySelector('[aria-checked="true"]').focus({
-                preventScroll: true,
-            });
-        else if (restoreFocus)
-            document
-                .querySelector('#approval-mode')
-                .focus({ preventScroll: true });
-    }
     document.addEventListener('pointerdown', (e) => {
-        if (!e.target.closest('.approval-control')) toggleApproval(false);
         if (!e.target.closest('.composer-actions')) closeComposerActions();
     });
     document.addEventListener('focusin', (e) => {
-        if (!e.target.closest('.approval-control')) toggleApproval(false);
         if (!e.target.closest('.composer-actions')) closeComposerActions();
     });
     const mapPicture = (place) =>
@@ -937,7 +902,7 @@
             : '';
         return `<section class="studio-welcome${cards.length ? ' has-starter-cards' : ''}">${cards.length ? '' : `<div class="welcome-symbol" aria-hidden="true">${I('spark')}</div>`}<h1>What’s on your mind?</h1><p>Ask in your own words. Composer knows your plan, uses the city’s listings and says “Not listed” instead of guessing.</p>${starterCards}<div class="starter-chips" role="group" aria-label="More to ask">${chips
             .map(([, label, prompt]) => `<button class="starter-chip" data-prompt="${E(prompt)}"><span>${E(label)}</span></button>`)
-            .join('')}</div>${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Continue your proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}</section>`;
+            .join('')}</div></section>`;
     }
     // The day's facts, in the approved design's order: the trip to take now,
     // the appointment, your record's deadline, the area after it, tonight.
@@ -1284,19 +1249,6 @@
             })
             .join('')}</ol>`;
     }
-    function proposal() {
-        const p = state.proposal;
-        if (!p)
-            return emptyAnswer(
-                'No proposal open',
-                'Choose a place or describe a day to start planning.',
-            );
-        const errors = M.conflicts(p),
-            old = state.plans.find((x) => x.id === p.baseId);
-        const removed =
-            old?.items.filter((x) => !p.items.some((y) => y.id === x.id)) || [];
-        return `<div class="response-heading"><span class="response-mark">${I('spark')}</span><div><h1>${p.baseId ? 'A change to your day.' : 'Here’s one way to spend it.'}</h1><p>${p.baseId ? 'Review the changes before updating your plan.' : 'Adjust the times until it feels right.'}</p></div></div><div class="proposal-layout"><section class="timeline-paper" aria-label="Plan proposal"><div class="paper-heading proposal-heading"><div><span class="proposal-label">${p.baseId ? 'Proposed revision' : 'Proposed plan'}</span><h2>${E(longDate(p.date))}</h2></div><details class="date-picker"><summary aria-label="Change plan date">${I('calendar')}<span>Date</span></summary><form id="proposal-date-form"><label>Plan date<input type="date" name="date" value="${E(p.date)}" required></label><button class="studio-button light">Keep date</button></form></details></div>${timeline(p, true)}<div class="plan-add-actions"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-action="discover">Explore places</button></div>${!p.items.length ? '<p class="empty-inline">No activities in this proposal. Add an activity, or confirm below to cancel an existing day.</p>' : ''}${removed.length ? `<p class="removed-note">Removed in this proposal: ${removed.map((x) => E(x.title)).join(', ')}</p>` : ''}<div class="travel-note">${I('route')}<p>Travel between activities still needs checking.<br><span>No route has been calculated in this preview.</span></p></div><div class="conflict-note" role="status">${errors.map((x) => `<p>${E(x)}</p>`).join('')}</div><div class="proposal-footer"><button class="studio-button primary" data-action="confirm" ${errors.length || (!p.items.length && !p.baseId) ? 'disabled' : ''}>${I('check')}${!p.items.length && p.baseId ? 'Cancel this day' : p.baseId ? 'Apply changes' : 'Confirm plan'}</button><button class="plain-button" data-action="discard">${p.baseId ? 'Discard changes' : 'Discard proposal'}</button></div></section><aside class="plan-companion"><h2>Your day, your pace.</h2><p>${p.items.some((x) => x.fixed) ? 'The sample appointment stays fixed. Everything around it can change.' : 'These are suggested times. You decide what becomes part of your day.'}</p><div class="companion-art" aria-hidden="true">${I('sun')}<span></span>${I('leaf')}</div><div class="companion-note">${I('bell')}<div><strong>Reminders are off</strong><p>Nothing will be sent from this preview.</p></div></div><button class="plain-button" data-action="discover">Explore more places ${I('arrow')}</button></aside></div>`;
-    }
     function plansPage() {
         if (savedView)
             return `<div class="plans-heading"><div><h1>Keep it for later.</h1><p>Saved ideas stay unscheduled until you add them to a plan.</p></div><span class="collection-total">${state.saved.length} ${state.saved.length === 1 ? 'idea' : 'ideas'}</span></div>${state.saved.length ? `<div class="discovery-grid saved-grid">${state.saved.map(place).filter(Boolean).map(card).join('')}</div>` : `<div class="saved-empty">${I('bookmark')}<h2>Keep something that catches your eye.</h2><p>Use the bookmark on an event. It stays here until you decide to plan it.</p><a class="studio-button light" href="${E(ExpaduStore.routes.events)}">See what’s on ${I('arrow')}</a></div>`}`;
@@ -1309,7 +1261,7 @@
             x.setDate(d.getDate() + i);
             return M.iso(x);
         });
-        return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}" ${date === M.today() ? 'aria-current="date" class="is-today"' : ''}><span>${date === M.today() ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${planFor(date) ? 'has-plan' : ''}" aria-label="${planFor(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}Confirmed plan</span><button class="plain-button" data-revise="${p.id}">${I('spark')}Adjust with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off</div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}${state.proposal ? `<button class="resume-proposal" data-action="show-proposal">${I('pencil')}Unconfirmed proposal for ${E(shortDate(state.proposal.date))}${I('arrow')}</button>` : ''}`;
+        return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}" ${date === M.today() ? 'aria-current="date" class="is-today"' : ''}><span>${date === M.today() ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${planFor(date) ? 'has-plan' : ''}" aria-label="${planFor(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}In your plans</span><button class="plain-button" data-open-plan="${E(p.date)}">${I('spark')}Change it with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off</div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}`;
     }
     const entryMarkup = new Map();
     const dayMarkup = new WeakMap();
@@ -1368,7 +1320,6 @@
                     icon: I,
                     card,
                     timeline,
-                    proposal,
                     dateLabel: shortDate,
                     place,
                     serviceCard: features.serviceCard,
@@ -1392,7 +1343,7 @@
                             next.querySelectorAll('details')[i].open = true;
                     });
                     existing.replaceWith(next);
-                } else {
+                } else if (html) {
                     feed.insertAdjacentHTML('beforeend', html);
                     if (!reducedMotion())
                         feed.lastElementChild.animate(
@@ -1407,7 +1358,6 @@
             }
         }
         input();
-        syncApproval();
         syncSend();
         const requestField = document.querySelector('#studio-request');
         if (requestField.value && !requestField.style.height)
@@ -1500,33 +1450,58 @@
             window.addEventListener('scrollend', settle, { once: true });
         else setTimeout(settle, 450);
     }
-    function note(text) {
-        return C.append(state, 'assistant', text);
+    function note(text, extra = {}) {
+        return C.append(state, 'assistant', text, extra);
     }
-    // After a change: applied to the plan straight away (small edits for
-    // me), or waiting on the plan's own button, named as it reads.
-    function nextStep(applied) {
-        if (applied) return ' It’s in your plan now. You can undo it under the plan.';
-        const p = state.proposal;
-        if (!p) return '';
-        return ` Review it, then ${!p.items.length && p.baseId ? 'Cancel this day' : p.baseId ? 'Apply changes' : 'Confirm plan'}.`;
+    // A change goes straight into the plan, with its Undo in the reply
+    // (owner, 18 Oct 2026, Composer review canvas board 3); one that can't
+    // go in changes nothing and says why.
+    function said(label, result) {
+        if (result.problem)
+            return [`${result.problem} Your plan hasn’t changed.`, {}];
+        return [
+            `${label}.`,
+            result.applied
+                ? { changeId: state.conversation.lastApplied?.id }
+                : {},
+        ];
     }
+    // What Undo did, in words: a day back, a day gone, or the change undone.
+    const undoneText = (change) =>
+        !change
+            ? 'Undone.'
+            : change.after === null
+              ? `${weekday(change.date)}’s plan is back.`
+              : change.before === null
+                ? `${weekday(change.date)} is no longer in your plans.`
+                : `Undone: ${change.label}.`;
     function changed(label, silent = false) {
-        const applied = A.changed(state, label);
-        if (!silent) note(`${label}.${nextStep(applied)}`);
+        const result = A.changed(state, label);
+        if (!silent) note(...said(label, result));
         store();
         render();
-        return applied;
+        return result.applied;
     }
-    function commitPlan() {
-        const saved = A.commit(state);
-        if (saved)
-            note(
-                'Your plan is saved. Ask me for a change, or open it in My Plans.',
-            );
-        state.response = { kind: 'confirmed' };
-        store();
-        render();
+    // Edits work on the plan you see: a copy of it, saved by changed().
+    function draft() {
+        if (!state.proposal)
+            M.propose(state, [], state.conversation.activeDate || state.date);
+        return state.proposal;
+    }
+    // What a page hands over goes straight into the plan too, its message
+    // carrying the Undo (board 3).
+    function receiveHandoffs(shared) {
+        const result = StudioIntegration.receive(state, shared, M, C);
+        if (!state.proposal) return result;
+        const outcome = A.changed(state, 'Added from your selection');
+        const last = C.current(state).entries.at(-1);
+        if (outcome.applied && last?.role === 'assistant')
+            C.updateEntry(state, last.id, {
+                changeId: state.conversation.lastApplied.id,
+            });
+        else if (outcome.problem)
+            note(`${outcome.problem} It wasn’t added to your plan.`);
+        return result;
     }
     function navigate(target) {
         if (target === 'composer') {
@@ -1534,15 +1509,6 @@
             return;
         }
         openPanel(target);
-    }
-    function showProposal() {
-        state.date = state.proposal?.date || state.date;
-        state.response = { kind: 'proposal', request: 'Your plan proposal' };
-        C.recordPlan(state, 'Opened proposal');
-        store();
-        closePanel(false);
-        render();
-        revealPlan();
     }
     let loadingJob = null;
     function cancelLoading(completing = false) {
@@ -1753,8 +1719,7 @@
         if (
             /^undo( (that|last change|last applied change))?[.!]?$/i.test(text)
         ) {
-            A.undo(state);
-            reply('Last applied change undone.');
+            reply(undoneText(A.undo(state)));
             return;
         }
         let r = M.respond(text, state);
@@ -2245,9 +2210,10 @@
             }
             M.propose(state, [], date, current.id);
             state.proposal.items = [];
-            C.recordPlan(state, 'Proposed day cancellation');
+            A.changed(state, 'Cancelled the day', replyId);
             reply(
-                'Review the empty day below, then choose Cancel this day. Saved ideas stay available.',
+                `${weekday(date)}’s plan is cancelled. Your saved ideas are still available.`,
+                { kind: 'plan-cancelled', planDate: date, plan: M.clone(current) },
             );
             return;
         }
@@ -2260,15 +2226,9 @@
             const current =
                 state.proposal?.date === date ? state.proposal : planFor(date);
             if (!date || !current) {
-                reply(
-                    'Which plan would you like to change? Open it from My Plans, or resume your proposal below.',
-                );
+                reply('Which plan would you like to change? Open it from My Plans first.');
                 return;
             }
-            if (state.proposal && state.proposal.date !== date)
-                throw Error(
-                    'Finish your current proposal before changing another plan.',
-                );
             if (
                 /\d{4}-\d{2}-\d{2}|\b(today|tomorrow|saturday)\b/i.test(text) &&
                 r.date !== date
@@ -2316,10 +2276,11 @@
                     M.setTime(state, x.id, start, end);
                 } else if (/later/i.test(text)) M.moveLater(state, x.id);
                 else {
+                    if (created) state.proposal = null;
+                    C.presentPlan(state, date);
                     reply(
-                        'You can edit the plan below. To change a time here, try “Move Blücherpark to 14:00”.',
+                        'You can change the plan here. To change a time, try “Move Blücherpark to 14:00”.',
                     );
-                    C.recordPlan(state, 'Opened for editing');
                     return;
                 }
             }
@@ -2334,8 +2295,7 @@
             const label = now
                 ? `Moved ${x.title} to ${now.start}–${now.end}`
                 : `Removed ${x.title}`;
-            const applied = A.changed(state, label);
-            reply(`${label}.${nextStep(applied)}`);
+            reply(...said(label, A.changed(state, label)));
             return;
         }
         state.response = { ...r, request: text };
@@ -2374,11 +2334,14 @@
                 r.appointment ? ['walk', 'appointment'] : ['walk'],
                 r.date,
             );
-            const applied = A.changed(state, 'Created proposal');
+            const result = A.changed(state, `Planned ${weekday(r.date)}`);
             reply(
-                applied
-                    ? 'Your plan is saved. Undo is available.'
-                    : `Here is a proposal for ${longDate(r.date)}.${kept.length ? ` I kept ${listWords(kept)} at ${kept.length === 1 ? 'its' : 'their'} time${kept.length === 1 ? '' : 's'}.` : ''} Edit it here or ask me for a change. Nothing is confirmed until you apply it.`,
+                result.applied
+                    ? `${weekday(r.date)} is in your plans.${kept.length ? ` I kept ${listWords(kept)} at ${kept.length === 1 ? 'its' : 'their'} time${kept.length === 1 ? '' : 's'}.` : ''}`
+                    : result.problem
+                      ? `${result.problem} Nothing was added.`
+                      : `Nothing to plan for ${longDate(r.date)} yet.`,
+                result.applied ? { changeId: state.conversation.lastApplied.id } : {},
             );
         } else if (r.kind === 'discovery') {
             state.conversation.activeDate = null;
@@ -2418,7 +2381,7 @@
                 C.presentPlan(state, p.date, replyId);
             } else
                 reply(
-                    `No confirmed plan for ${shortDate(r.date)} yet.${state.proposal?.date === r.date ? ' Your proposal is still waiting for approval.' : ' You can ask me to put one together.'}`,
+                    `Nothing planned for ${shortDate(r.date)} yet. You can ask me to put a day together.`,
                 );
         } else {
             state.conversation.activeDate = null;
@@ -2492,33 +2455,6 @@
             closeComposerActions(true);
             return;
         }
-        if (e.target.closest('.approval-control')) {
-            const menu = document.querySelector('#approval-menu');
-            const choices = [...menu.querySelectorAll('[data-approval]')];
-            if (e.key === 'Escape' && !menu.hidden) {
-                e.preventDefault();
-                toggleApproval(false, true);
-                return;
-            }
-            if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
-                e.preventDefault();
-                if (menu.hidden) toggleApproval(true);
-                else {
-                    const current = choices.indexOf(document.activeElement);
-                    const next =
-                        e.key === 'Home'
-                            ? 0
-                            : e.key === 'End'
-                              ? choices.length - 1
-                              : (current +
-                                    (e.key === 'ArrowDown' ? 1 : -1) +
-                                    choices.length) %
-                                choices.length;
-                    choices[next].focus();
-                }
-                return;
-            }
-        }
         if (e.key === 'Escape' && loadingJob) {
             e.preventDefault();
             cancelLoading();
@@ -2584,9 +2520,10 @@
         if (e.target.dataset.timeForm) {
             e.preventDefault();
             const data = new FormData(e.target),
-                x = state.proposal.items.find(
-                    (x) => x.id === e.target.dataset.timeForm,
-                );
+                x = (
+                    state.proposal ||
+                    planFor(state.conversation.activeDate || state.date)
+                )?.items.find((x) => x.id === e.target.dataset.timeForm);
             if (x && !x.fixed) {
                 const start = M.normalizeTime(data.get('start'));
                 const end = M.normalizeTime(data.get('end'));
@@ -2607,8 +2544,10 @@
                     return;
                 }
                 try {
+                    draft();
                     M.setTime(state, x.id, start, end);
                 } catch (problem) {
+                    state.proposal = null;
                     error.hidden = false;
                     error.textContent = problem.message;
                     fields.forEach((field) =>
@@ -2627,27 +2566,6 @@
                     .focus({ preventScroll: true });
             }
             return;
-        }
-        if (e.target.id === 'proposal-date-form') {
-            e.preventDefault();
-            const nextDate = new FormData(e.target).get('date');
-            if (
-                state.proposal.items.some(
-                    (x) => x.type === 'event' && x.date !== nextDate,
-                )
-            ) {
-                notify(
-                    'This event has a fixed date. Remove it before changing the day.',
-                );
-                return;
-            }
-            if (state.proposal.date !== nextDate)
-                state.proposal.items.forEach((item) => {
-                    if (item.journey) item.journey.status = 'stale';
-                });
-            state.proposal.date = nextDate;
-            state.date = state.proposal.date;
-            changed(`Moved the plan to ${longDate(nextDate)}`);
         }
     });
     document.addEventListener('change', (e) => {
@@ -2687,22 +2605,6 @@
         )
             return;
         if (el.closest('.composer-actions-menu')) closeComposerActions(true);
-        if (el.id === 'approval-mode') {
-            toggleApproval(document.querySelector('#approval-menu').hidden);
-            return;
-        }
-        if (el.dataset.approval) {
-            C.setApproval(state, el.dataset.approval);
-            store();
-            syncApproval();
-            toggleApproval(false, true);
-            notify(
-                el.dataset.approval === 'routine'
-                    ? 'Small plan edits will now apply straight away. You can undo them.'
-                    : 'I’ll ask before changing your plan.',
-            );
-            return;
-        }
         if (
             loadingJob &&
             (el.dataset.nav || el.dataset.action || !el.closest('#studio-form'))
@@ -2726,10 +2628,8 @@
         }
         if (el.dataset.openPlan) {
             const date = el.dataset.openPlan;
-            if (!planFor(date) && state.proposal?.date !== date) {
-                notify(
-                    'This proposal was discarded. Open My Plans to choose a day.',
-                );
+            if (!planFor(date)) {
+                notify('Nothing is planned for that day now. Open My Plans to choose one.');
                 return;
             }
             state.date = date;
@@ -2766,8 +2666,8 @@
         }
         if (el.dataset.action === 'undo-plan') {
             try {
-                A.undo(state);
-                note('Last applied change undone.');
+                const undone = A.undo(state);
+                note(undoneText(undone));
                 store();
                 render();
             } catch (error) {
@@ -2865,49 +2765,23 @@
             }
             return;
         }
-        if (el.dataset.revise) {
-            const p = state.plans.find((x) => x.id === el.dataset.revise);
-            if (p) {
-                try {
-                    M.propose(state, [], p.date, p.id);
-                    showProposal();
-                } catch (error) {
-                    notify(error.message);
-                }
-            }
-            return;
-        }
         if (el.dataset.remove) {
             const id = el.dataset.remove;
-            const old = M.clone(state.proposal);
-            state.proposal.items = state.proposal.items.filter(
-                (x) => x.id !== id,
-            );
-            const removed = old.items.find((x) => x.id === id);
+            const p = draft();
+            const removed = p.items.find((x) => x.id === id);
+            p.items = p.items.filter((x) => x.id !== id);
             changed(removed ? `Removed ${removed.title}` : 'Activity removed');
-            const afterRemoval = JSON.stringify(state.proposal);
-            notify(removed ? `Removed ${removed.title}` : 'Activity removed', () => {
-                if (JSON.stringify(state.proposal) !== afterRemoval) {
-                    notify(
-                        'The draft has changed since. Review it before restoring this activity.',
-                    );
-                    return;
-                }
-                if (state.conversation.approval === 'routine') {
-                    notify('Use Undo on the plan.');
-                    return;
-                }
-                state.proposal = old;
-                changed(removed ? `Restored ${removed.title}` : 'Restored removed activity');
-            });
             return;
         }
         if (el.dataset.swap) {
-            const item = state.proposal?.items.find(
+            const plan =
+                state.proposal ||
+                planFor(state.conversation.activeDate || state.date);
+            const item = plan?.items.find(
                 (item) => item.id === el.dataset.swap,
             );
             if (!item || item.fixed) return;
-            state.conversation.activeDate = state.proposal.date;
+            state.conversation.activeDate = plan.date;
             submit(`Swap ${item.title}`);
             return;
         }
@@ -3008,36 +2882,6 @@
         if (action === 'discover') submit('Find something outdoors');
         if (action === 'plan-example')
             submit(`Plan ${state.date} around my 15:00 appointment.`);
-        if (action === 'show-proposal') showProposal();
-        if (action === 'discard') {
-            const p = M.clone(state.proposal);
-            C.recordPlan(state, 'Discarded proposal');
-            state.proposal = null;
-            state.response = null;
-            note('Proposal discarded. Your confirmed plan is unchanged.');
-            store();
-            render(true);
-            notify('Proposal discarded', () => {
-                if (state.proposal) {
-                    notify(
-                        'There is another proposal in progress. Finish it before restoring this one.',
-                    );
-                    return;
-                }
-                state.proposal = p;
-                showProposal();
-            });
-        }
-        if (action === 'confirm') {
-            beginLoading(
-                'Saving this plan in your browser…',
-                'list',
-                () => {
-                    commitPlan();
-                },
-                el,
-            );
-        }
     });
     window.addEventListener('popstate', () => {
         cancelLoading();
@@ -3073,7 +2917,7 @@
         if (e.target.closest('[data-retry-handoff]')) {
             const shared = ExpaduStore.read();
             shared.draft = state.handoffs || [];
-            StudioIntegration.receive(state, shared, M, C);
+            receiveHandoffs(shared);
             shared.draft = state.handoffs;
             if (!writeShared(shared)) return;
             store();
@@ -3198,8 +3042,6 @@
     };
     const beforeHandoff = latestEntry();
     if (incoming) {
-        if (['ask', 'routine'].includes(shared.approvalMode))
-            state.conversation.approval = shared.approvalMode;
         if (handoff.action === 'new') {
             C.startFresh(state);
             state.response = null;
@@ -3233,7 +3075,7 @@
                 window.BureaucracySource || [],
                 C,
             );
-        if (!incomingStepHelp) StudioIntegration.receive(state, shared, M, C);
+        if (!incomingStepHelp) receiveHandoffs(shared);
         state.lastHandoff = handoff.id;
         if (handoff.submit) {
             incomingPrompt = shared.prompt.trim();
