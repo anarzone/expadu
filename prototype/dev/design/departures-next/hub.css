@@ -386,13 +386,22 @@ body.travel-palette .nearby-area .nearby-cards {
     .strip-via {
         grid-column: 1;
     }
+    /* The minutes keep the right; a tag ("Running 2 min late") goes under
+       the via, so the via keeps the row's width and doesn't wrap round it
+       onto three lines. */
     .strip-when,
     .strip-end.is-left .strip-when {
+        display: contents;
+    }
+    .strip-when > .nearby-time {
         grid-column: 2;
         grid-row: 1 / span 2;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 2px;
+        justify-self: end;
+    }
+    .strip-when > :not(.nearby-time) {
+        grid-column: 1;
+        justify-self: start;
+        margin-top: 2px;
     }
     .strip-dest {
         min-width: 0;
