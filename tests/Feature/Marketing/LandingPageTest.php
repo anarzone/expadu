@@ -10,9 +10,11 @@ test('the landing page tells the sample day from daylight to the next morning', 
         'Your',
         'joined up.',
         'nine open tabs.',
-        'One Wednesday in Cologne.',
+        'Your day, in order of what matters.',
+        'On your way, step by step.',
+        'Walk in prepared.',
+        'Good things to turn up for.',
         'Ask in your own words.',
-        'the good part.',
         'Built in Cologne, by an expat who had to figure it out first.',
         'Honest by design.',
         'Questions before you sleep on it.',
@@ -32,10 +34,11 @@ test('the landing page labels every product shot as sample content', function ()
 
     $response->assertOk();
     $response->assertSee('Sample day');
-    $response->assertSee('Illustration · sample event');
+    $response->assertSee('Sample programme · the street and posters from Expadu’s Events page');
+    $response->assertSee('Scheduled sample times, not live.');
     $response->assertSee('Illustrative map, not to scale · sample day');
     $response->assertSee('Sample checklist, not legal advice.');
-    $response->assertSee('event pictures and the map are illustrations');
+    $response->assertSee('the street, posters and map are illustrations');
     $response->assertSee('Place data © OpenStreetMap contributors.');
 });
 
@@ -62,8 +65,9 @@ test('the composer sample conversation renders every answer server-side', functi
         $response->assertSee('data-a="'.$index.'"', escape: false);
     }
 
-    // Only the first answer is visible before the script runs.
-    $response->assertSee('data-a="0" data-on="1"', escape: false);
+    // The starter cards show first; every answer waits in the same grid cell.
+    $response->assertSee('class="xv-cview xv-cview--home" data-on="1"', escape: false);
+    $response->assertSee('data-a="0" data-on="0"', escape: false);
     $response->assertSee('data-a="4" data-on="0"', escape: false);
 });
 
@@ -122,8 +126,6 @@ test('the landing page links its free tools and cornerstone guides through named
 
     $response->assertOk();
     $response->assertSee(route('tools.dticket'), escape: false);
-    $response->assertSee(route('tools.residency'), escape: false);
-    $response->assertSee(route('tools.citizenship'), escape: false);
     $response->assertSee(route('tools.netto'), escape: false);
     $response->assertSee(route('blog.show', 'anmeldung-in-cologne-english-guide'), escape: false);
     $response->assertSee(route('blog.show', 'first-90-days-in-cologne-in-order'), escape: false);
