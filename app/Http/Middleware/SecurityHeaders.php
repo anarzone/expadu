@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Marketing\SearchIndexing;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -41,6 +42,10 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'geolocation=(self), camera=(), microphone=(), payment=()');
+
+        if ($robotsTag = SearchIndexing::robotsTag($request)) {
+            $response->headers->set('X-Robots-Tag', $robotsTag);
+        }
 
         if ($nonce !== null) {
             // Vite assets are served from the APP_URL host (the app subdomain),
