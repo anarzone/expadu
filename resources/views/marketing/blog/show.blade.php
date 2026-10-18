@@ -25,6 +25,16 @@
         'author' => ['@type' => 'Person', 'name' => 'Anar — founder, Expadu'],
         'publisher' => ['@type' => 'Organization', 'name' => 'Expadu', 'url' => route('home')],
         'mainEntityOfPage' => route('blog.show', $post['slug']),
+        'image' => asset($ogImage),
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    {{-- Mirrors the visible breadcrumb in the article header. --}}
+    <script type="application/ld+json">{!! json_encode([
+        '@@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Guides', 'item' => route('blog.index')],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $post['title'], 'item' => route('blog.show', $post['slug'])],
+        ],
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 @endpush
 
