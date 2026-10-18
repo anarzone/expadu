@@ -13,6 +13,14 @@ use Carbon\CarbonImmutable;
  */
 interface RouteService
 {
+    /**
+     * A copy that finishes every call within $seconds of now: per-call
+     * timeouts are cut to what is left, and optional sub-calls are skipped
+     * once it is spent. One request budget is carried through every provider
+     * call this way, instead of each call taking its own full timeout.
+     */
+    public function withTimeBudget(float $seconds): static;
+
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult;
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Transit;
 
+use App\Jobs\WarmTransitInterchanges;
 use App\Services\KvbLineColors;
 use App\Support\PerfLogger;
 use App\Transit\Contracts\RouteService;
@@ -64,12 +65,17 @@ class TransitousAdapter implements RouteService
     private const RAIL_STOP_NEAR_METRES = 1300;
 
     /**
-     * Per-call HTTP timeout, in seconds, for the plan endpoint. The failover
-     * tightens this to fit its remaining wall-clock budget (see
-     * {@see FailoverRouteService}); on its own the adapter uses a generous
-     * default suited to the slower public providers.
+     * Per-call HTTP timeout cap, in seconds, for the primary plan call — a
+     * generous default suited to the slower public providers. A time budget
+     * (see {@see withTimeBudget()}) cuts it further.
      */
     protected float $planTimeout = 8.0;
+
+    /** Don't start an optional sub-call with less than this much budget left. */
+    private const MIN_SUBCALL_SECONDS = 1.0;
+
+    /** Absolute wall-clock deadline (microtime) set by withTimeBudget(); null = per-call caps only. */
+    private ?float $deadline = null;
 
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult
     {
@@ -78,18 +84,26 @@ class TransitousAdapter implements RouteService
         // prunes comparable transit and the transit option vanishes entirely.
         // Two separate calls keep both. (Verified against the live engine.)
         $timeExtra = $arriveBy ? ['arriveBy' => 'true'] : [];
-        $itineraries = $this->fetchBucket($from, $to, $departAt, $max, $timeExtra, 'itineraries', $this->planTimeout);
+        $itineraries = $this->fetchBucket(
+            $from, $to, $departAt, $max, $timeExtra, 'itineraries',
+            $this->callTimeout($this->planTimeout) ?? throw new \RuntimeException('journey time budget spent'),
+        );
 
         // "Show more options": force routes through the city's interchanges so
         // the list surfaces sensible-but-non-optimal combinations (e.g. change
         // at Ebertplatz onto a different line) that the Pareto set drops.
         if ($variety) {
             foreach ($this->corridorVias($from, $to) as $viaId) {
+                $timeout = $this->callTimeout(3.0);
+                if ($timeout === null) {
+                    break;
+                }
+
                 try {
                     $itineraries = array_merge($itineraries, $this->fetchBucket(
                         $from, $to, $departAt, 3,
                         $timeExtra + ['via' => $viaId],
-                        'itineraries', min($this->planTimeout, 3.0),
+                        'itineraries', $timeout,
                     ));
                 } catch (\Throwable) {
                     // Best effort — a via that yields nothing must not fail the plan.
@@ -106,8 +120,10 @@ class TransitousAdapter implements RouteService
         // "ride rail, walk the last bit" route surfaces, keeping only journeys
         // that actually ride rail — an addition to the full multi-modal set,
         // never a replacement. Best-effort: a failure leaves the set as-is.
+        $railTimeout = $this->callTimeout(4.0);
         if (
-            ! $this->hasCleanRail($itineraries)
+            $railTimeout !== null
+            && ! $this->hasCleanRail($itineraries)
             && $this->metresBetween($from, $to) >= self::RAIL_RESCUE_MIN_METRES
             && $this->railStationNear($from, $to)
         ) {
@@ -119,7 +135,7 @@ class TransitousAdapter implements RouteService
                         'maxPreTransitTime' => 1200,
                         'maxPostTransitTime' => 1200,
                     ],
-                    'itineraries', min($this->planTimeout, 4.0),
+                    'itineraries', $railTimeout,
                 );
 
                 foreach ($railItineraries as $journey) {
@@ -145,6 +161,11 @@ class TransitousAdapter implements RouteService
         // "arrive by" search arrives by the target instead of leaving at it.
         $directCaps = ['BIKE' => 4800, 'WALK' => 5400];
         foreach ($directCaps as $directMode => $maxDirectTime) {
+            $timeout = $this->callTimeout(5.0);
+            if ($timeout === null) {
+                break;
+            }
+
             try {
                 $direct = $this->fetchBucket(
                     $from,
@@ -153,7 +174,7 @@ class TransitousAdapter implements RouteService
                     1,
                     ['directModes' => $directMode, 'maxDirectTime' => $maxDirectTime] + $timeExtra,
                     'direct',
-                    min($this->planTimeout, 5.0),
+                    $timeout,
                 );
                 // Keep only the journey that actually used this mode — a guard
                 // against a provider answering a mode slot with a different one.
@@ -233,37 +254,68 @@ class TransitousAdapter implements RouteService
     }
 
     /**
-     * Cologne's main interchange stops, geocoded to MOTIS stop ids (cached),
+     * Cologne's main interchange stops, geocoded to this engine's stop ids,
      * used as `via` points to surface alternative line combinations.
+     *
+     * Read from the cache only: geocoding all eleven inside a journey request
+     * cost up to a minute on a cold cache. A miss queues
+     * {@see WarmTransitInterchanges} and plans without vias this time.
      *
      * @return list<array{id: string, lat: float, lng: float}>
      */
     private function interchanges(): array
     {
-        return Cache::remember('motis:interchanges', now()->addDays(30), function () {
-            $names = [
-                'Köln Ebertplatz', 'Köln Neumarkt', 'Köln Appellhofplatz',
-                'Köln Friesenplatz', 'Köln Rudolfplatz', 'Köln Barbarossaplatz',
-                'Köln Heumarkt', 'Köln Hauptbahnhof', 'Köln Zülpicher Platz',
-                'Köln Poststr.', 'Köln Deutz',
-            ];
+        $cached = Cache::get($this->interchangesKey());
+        if (is_array($cached) && $cached !== []) {
+            return $cached;
+        }
 
-            $out = [];
-            foreach ($names as $name) {
-                try {
-                    $stop = collect($this->geocode($name))
-                        ->first(fn (Place $p) => $p->stopId !== null);
-                } catch (\Throwable) {
-                    $stop = null;
-                }
+        WarmTransitInterchanges::dispatch(static::class);
 
-                if ($stop !== null && $stop->stopId !== null) {
-                    $out[] = ['id' => $stop->stopId, 'lat' => $stop->point->lat, 'lng' => $stop->point->lng];
-                }
+        return [];
+    }
+
+    /**
+     * Geocode the interchange stops and cache them for 30 days. Runs in a
+     * queued job, never on a request. A run that finds none caches nothing,
+     * so the next miss retries instead of pinning an empty list.
+     *
+     * @return int how many interchanges were cached
+     */
+    public function warmInterchanges(): int
+    {
+        $names = [
+            'Köln Ebertplatz', 'Köln Neumarkt', 'Köln Appellhofplatz',
+            'Köln Friesenplatz', 'Köln Rudolfplatz', 'Köln Barbarossaplatz',
+            'Köln Heumarkt', 'Köln Hauptbahnhof', 'Köln Zülpicher Platz',
+            'Köln Poststr.', 'Köln Deutz',
+        ];
+
+        $out = [];
+        foreach ($names as $name) {
+            try {
+                $stop = collect($this->geocode($name))
+                    ->first(fn (Place $p) => $p->stopId !== null);
+            } catch (\Throwable) {
+                $stop = null;
             }
 
-            return $out;
-        });
+            if ($stop !== null && $stop->stopId !== null) {
+                $out[] = ['id' => $stop->stopId, 'lat' => $stop->point->lat, 'lng' => $stop->point->lng];
+            }
+        }
+
+        if ($out !== []) {
+            Cache::put($this->interchangesKey(), $out, now()->addDays(30));
+        }
+
+        return count($out);
+    }
+
+    /** Stop ids belong to one engine, so each source keeps its own list. */
+    private function interchangesKey(): string
+    {
+        return "{$this->source()}:interchanges";
     }
 
     /**
@@ -394,12 +446,34 @@ class TransitousAdapter implements RouteService
      * concurrent use of it within the request — untouched. Floored so a call
      * always has a fighting chance of completing.
      */
-    public function withPlanTimeout(float $seconds): static
+    public function withTimeBudget(float $seconds): static
     {
         $clone = clone $this;
-        $clone->planTimeout = max(1.5, $seconds);
+        $clone->deadline = $this->now() + max(0.0, $seconds);
 
         return $clone;
+    }
+
+    /**
+     * The timeout for one call: its cap, cut to what is left of the budget.
+     * Null when less than {@see MIN_SUBCALL_SECONDS} is left — too little to
+     * be worth starting the call.
+     */
+    private function callTimeout(float $cap): ?float
+    {
+        if ($this->deadline === null) {
+            return $cap;
+        }
+
+        $left = $this->deadline - $this->now();
+
+        return $left >= self::MIN_SUBCALL_SECONDS ? min($cap, $left) : null;
+    }
+
+    /** Wall clock in fractional seconds; a seam for tests. */
+    protected function now(): float
+    {
+        return microtime(true);
     }
 
     /**
@@ -425,8 +499,8 @@ class TransitousAdapter implements RouteService
         }
 
         $response = PerfLogger::measure("ext:{$this->source()}.plan", fn () => Http::baseUrl($this->baseUrl())
-            ->timeout((int) ceil($timeout))
-            ->connectTimeout((int) ceil(min(3.0, $timeout)))
+            ->timeout($timeout)
+            ->connectTimeout(min(3.0, $timeout))
             ->withHeaders(['User-Agent' => 'expadu.com'])
             ->get($this->planPath(), $query)
             ->throw());
@@ -494,9 +568,11 @@ class TransitousAdapter implements RouteService
             $params['place'] = "{$bias->lat},{$bias->lng}";
         }
 
+        $timeout = $this->callTimeout(5.0) ?? throw new \RuntimeException('geocode time budget spent');
+
         $response = PerfLogger::measure("ext:{$this->source()}.geocode", fn () => Http::baseUrl($this->baseUrl())
-            ->timeout(5)
-            ->connectTimeout(3)
+            ->timeout($timeout)
+            ->connectTimeout(min(3.0, $timeout))
             ->withHeaders(['User-Agent' => 'expadu.com'])
             ->get('/api/v1/geocode', $params)
             ->throw());
@@ -546,9 +622,11 @@ class TransitousAdapter implements RouteService
 
     public function reverseGeocode(GeoPoint $point): ?Place
     {
+        $timeout = $this->callTimeout(5.0) ?? throw new \RuntimeException('reverse geocode time budget spent');
+
         $response = Http::baseUrl($this->baseUrl())
-            ->timeout(5)
-            ->connectTimeout(3)
+            ->timeout($timeout)
+            ->connectTimeout(min(3.0, $timeout))
             ->withHeaders(['User-Agent' => 'expadu.com'])
             ->get('/api/v1/reverse-geocode', [
                 'place' => "{$point->lat},{$point->lng}",

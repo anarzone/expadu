@@ -31,13 +31,16 @@ class CircuitBreaker
         }
     }
 
-    public function recordFailure(string $adapter): void
+    /**
+     * @param  int  $threshold  consecutive failures that open the circuit
+     */
+    public function recordFailure(string $adapter, int $threshold = self::FAILURE_THRESHOLD): void
     {
         try {
             $failures = (int) Redis::incr($this->failureKey($adapter));
             Redis::expire($this->failureKey($adapter), 300);
 
-            if ($failures >= self::FAILURE_THRESHOLD) {
+            if ($failures >= $threshold) {
                 Redis::setex($this->openKey($adapter), self::OPEN_SECONDS, '1');
             }
         } catch (Throwable $exception) {
