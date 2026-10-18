@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\GtfsRailStations;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -35,6 +36,7 @@ class RefreshGtfs extends Command
             // as failed when the new timetable is already live.
             try {
                 Cache::forget('gtfs_has_data');
+                Cache::forget(GtfsRailStations::CACHE_KEY);
             } catch (\Throwable $exception) {
                 Log::warning('gtfs:refresh — cache invalidation failed after successful import', [
                     'error' => $exception->getMessage(),

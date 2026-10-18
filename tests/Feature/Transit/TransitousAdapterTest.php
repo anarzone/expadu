@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\GtfsRailStations;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\TransitousAdapter;
 use Carbon\CarbonImmutable;
@@ -298,7 +299,7 @@ test('re-plans without buses to surface a competitive S-Bahn route the primary s
         : Http::response($busOnly));
 
     // A rail station sits on the destination, so the rescue is worth a call.
-    Cache::put('motis:rail-stations', [['lat' => 50.98, 'lng' => 6.95]]);
+    Cache::put(GtfsRailStations::CACHE_KEY, [['name' => 'Köln Geldernstr./Parkgürtel', 'lat' => 50.98, 'lng' => 6.95]]);
 
     // ~4.8 km apart — far enough that the rail rescue is worth a call.
     $result = (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.90), new GeoPoint(50.98, 6.95));
@@ -320,7 +321,7 @@ test('does not re-plan when a clean bus-free rail option already exists', functi
     )]];
 
     Http::fake(['api.transitous.org/*' => Http::response($cleanRail)]);
-    Cache::put('motis:rail-stations', [['lat' => 50.98, 'lng' => 6.95]]);
+    Cache::put(GtfsRailStations::CACHE_KEY, [['name' => 'Köln Geldernstr./Parkgürtel', 'lat' => 50.98, 'lng' => 6.95]]);
 
     (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.90), new GeoPoint(50.98, 6.95));
 
@@ -343,7 +344,7 @@ test('re-plans when the only rail option relies on a bus (recovers rail + walk)'
         ? Http::response($railOnly)
         : Http::response($busTailed));
 
-    Cache::put('motis:rail-stations', [['lat' => 50.98, 'lng' => 6.95]]);
+    Cache::put(GtfsRailStations::CACHE_KEY, [['name' => 'Köln Geldernstr./Parkgürtel', 'lat' => 50.98, 'lng' => 6.95]]);
 
     $result = (new TransitousAdapter)->plan(new GeoPoint(50.95, 6.90), new GeoPoint(50.98, 6.95));
 

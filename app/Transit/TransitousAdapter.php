@@ -2,6 +2,7 @@
 
 namespace App\Transit;
 
+use App\Services\GtfsRailStations;
 use App\Services\KvbLineColors;
 use App\Support\PerfLogger;
 use App\Transit\Contracts\RouteService;
@@ -12,7 +13,6 @@ use App\Transit\Dto\Leg;
 use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -351,29 +351,14 @@ class TransitousAdapter implements RouteService
 
     /**
      * Coordinates of every rail (route_type 2 — S-Bahn + regional) platform in
-     * the loaded feed. The static set is cached for a month; the proximity test
+     * the loaded feed, kept until the next GTFS import; the proximity test
      * then runs in memory, so the rescue gate costs no per-request query.
      *
-     * @return list<array{lat: float, lng: float}>
+     * @return list<array{name: string, lat: float, lng: float}>
      */
     private function railStations(): array
     {
-        return Cache::remember('motis:rail-stations', now()->addDays(30), function () {
-            return DB::table('gtfs_stops')
-                ->whereIn('stop_id', function ($query) {
-                    $query->select('st.stop_id')->distinct()
-                        ->from('gtfs_stop_times as st')
-                        ->whereIn('st.trip_id', function ($trips) {
-                            $trips->select('t.trip_id')
-                                ->from('gtfs_trips as t')
-                                ->join('gtfs_routes as r', 'r.route_id', '=', 't.route_id')
-                                ->where('r.route_type', 2);
-                        });
-                })
-                ->get(['stop_lat', 'stop_lng'])
-                ->map(fn ($stop) => ['lat' => (float) $stop->stop_lat, 'lng' => (float) $stop->stop_lng])
-                ->all();
-        });
+        return app(GtfsRailStations::class)->all();
     }
 
     /** Great-circle distance between two points, in metres (haversine). */

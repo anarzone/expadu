@@ -79,6 +79,17 @@ class GtfsDepartureService
      *
      * @return array{stop_name: string, source: string, departures: array}
      */
+    /**
+     * Fetch live departures for several stops in one parallel round trip, so
+     * the per-stop getDepartures() calls that follow read them from cache.
+     *
+     * @param  list<string>  $stopNames
+     */
+    public function prefetchDepartures(array $stopNames, int $limit = 10): void
+    {
+        $this->triasService->prefetchDepartures($stopNames, $limit);
+    }
+
     public function getDepartures(string $stopName = 'Ehrenfeld', int $limit = 10): array
     {
         $fallbackKey = "trias_last_good_v2_{$stopName}";
