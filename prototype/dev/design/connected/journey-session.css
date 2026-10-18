@@ -4,9 +4,11 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    max-width: 1176px;
     min-height: 64px;
-    margin: 12px auto;
+    /* The header's edges (connected/section-bar.css #shell): on a laptop
+       the bar starts at the logo and ends at the account, as the page's
+       content does (page-frame.css). */
+    margin: 12px max(32px, calc((100% - 1440px) / 2 + 32px));
     padding: 10px 10px 10px 14px;
     /* Travel's trip card, not a cyan block (departures-next/trip-card.css). */
     border: 1.5px solid var(--color-border, #e6ddcb);
