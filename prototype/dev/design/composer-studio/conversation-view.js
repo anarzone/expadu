@@ -233,6 +233,14 @@
         const latest = section?.entries
             .filter((x) => x.role === 'assistant')
             .at(-1);
+        // What Composer can do, as the home's cards: rows that ask (board 7).
+        if (!ctx.historical && entry.options?.length && latest?.id === entry.id)
+            body += `<div class="answer-options">${entry.options
+                .map(
+                    (x) =>
+                        `<button class="answer-option is-${E(x.kind)}" data-prompt="${E(x.label)}"><span class="answer-option-icon">${I(x.icon)}</span><span><strong>${E(x.label)}</strong><small>${E(x.tag)} · ${E(x.detail)}</small></span>${I('arrow')}</button>`,
+                )
+                .join('')}</div>`;
         if (!ctx.historical && entry.suggestions?.length && latest?.id === entry.id)
             body += `<div class="reply-suggestions">${entry.suggestions
                 .map((x) =>

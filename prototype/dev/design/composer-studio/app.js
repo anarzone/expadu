@@ -869,9 +869,10 @@
             return [];
         });
     }
-    function welcome() {
-        // Starters from what Expadu knows about your day, each in the colour
-        // of the section it leads to. Only what the day actually has.
+    // Starters from what Expadu knows about your day, each in the colour of
+    // the section it leads to. Only what the day actually has. The home's
+    // cards, and the rows of a reply Composer can't answer (board 7).
+    function starters() {
         const x = todayContext();
         const a = x.appointment;
         // On your way to it, the Travel starter asks about the trip.
@@ -911,6 +912,11 @@
                 picture: mapPicture(x.nearby),
             },
         ].filter(Boolean);
+        return cards;
+    }
+    function welcome() {
+        const x = todayContext();
+        const cards = starters();
         const chips = [
             ['spark', 'Plan my Saturday', 'Help me plan Saturday'],
             ['leaf', 'A little time outdoors', 'Find something outdoors for Saturday afternoon.'],
@@ -2442,11 +2448,20 @@
                 const previous = C.current(state)
                     .entries.filter((x) => x.role === 'assistant' && x.id !== replyId)
                     .at(-1);
+                // When it can't help (owner, 18 Oct 2026, Composer review
+                // canvas board 7): it says so, then what this preview does,
+                // the home's own cards as rows; a tap asks one.
+                const options = starters().map(({ kind, tag, icon, label, detail }) => ({ kind, tag, icon, label, detail }));
+                const asked = text.length > 40 ? `${text.slice(0, 39).trim()}…` : text;
                 reply(
                     previous?.clarify
-                        ? 'That’s outside this preview too. These are the kinds of things I can do:'
-                        : 'I can’t help with that in this preview yet. I can plan a day, find events and places, check a journey, or point you to reviewed paperwork information.',
-                    { clarify: true, suggestions: everyday },
+                        ? 'It can do these:'
+                        : `“${asked}” isn’t something this preview knows. It can do these:`,
+                    {
+                        title: previous?.clarify ? 'That’s outside this preview too.' : 'I can’t answer that here yet.',
+                        clarify: true,
+                        ...(options.length ? { options } : { suggestions: everyday }),
+                    },
                 );
             }
         }

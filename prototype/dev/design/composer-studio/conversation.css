@@ -1226,3 +1226,88 @@
         font-size: var(--text-title);
     }
 }
+/* When Composer can't help: what it can do, as the home's cards, rows that
+   ask; each icon in its section's colour (owner, 18 Oct 2026, Composer
+   review canvas board 7). */
+.answer-options {
+    display: flex;
+    flex-direction: column;
+    margin-top: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    overflow: hidden;
+}
+.answer-option {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 12px 14px;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.answer-option:first-child {
+    border-top: 0;
+}
+.answer-option:hover {
+    background: var(--color-bg-hover, var(--color-bg-quiet));
+}
+.answer-option:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+.answer-option > span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+.answer-option strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+}
+.answer-option small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.35;
+}
+.answer-option > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-soft);
+}
+.answer-option .answer-option-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+}
+.answer-option-icon svg {
+    width: 20px;
+    height: 20px;
+}
+.answer-option.is-travel .answer-option-icon {
+    background: #c9f1fa;
+    color: #005466;
+}
+.answer-option.is-paperwork .answer-option-icon {
+    background: #e4d8fb;
+    color: var(--color-paper-text);
+}
+.answer-option.is-events .answer-option-icon {
+    background: #2b1d3f;
+    color: #fffdf8;
+}
+.answer-option.is-nearby .answer-option-icon {
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-surface);
+}

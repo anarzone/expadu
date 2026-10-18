@@ -19,6 +19,13 @@ number):
 - **6 · Laptops on the header's edges.** Your day starts under the logo;
   the conversation, its trip bar and its text box share one column, 800px
   at most, ending where the header does (`approved.css`).
+- **4 · The menu waits for the keyboard.** The menu and the round button
+  step aside only while the keyboard is open (`connected/section-bar.js`
+  marks `html.keyboard-open`), so they come back when it closes with the
+  cursor still in the box.
+- **7 · When Composer can't help.** A heading that says so ("I can't
+  answer that here yet."), what was asked, then the home's own cards as
+  rows that ask (`starters()` in `app.js`, `.answer-options`).
 - **11 · Trips as Travel shows them.** Your way in a trip answer is Travel's
   list (`departures-next/way.js`), Your day's trip and the On your way bar
   carry Travel's line badge (`labels.js`).
