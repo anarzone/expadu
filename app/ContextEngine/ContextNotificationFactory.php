@@ -59,6 +59,8 @@ class ContextNotificationFactory
             deadline: (string) ($action->payload['deadline'] ?? ''),
             taskId: isset($action->payload['task_id']) ? (int) $action->payload['task_id'] : null,
             appointmentAt: isset($action->payload['appointment_at']) ? (string) $action->payload['appointment_at'] : null,
+            userTaskId: isset($action->payload['user_task_id']) ? (int) $action->payload['user_task_id'] : null,
+            pushReservation: isset($action->payload['push_reservation']) ? (string) $action->payload['push_reservation'] : null,
         );
     }
 

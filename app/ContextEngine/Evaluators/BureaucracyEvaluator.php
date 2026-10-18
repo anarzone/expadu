@@ -3,6 +3,7 @@
 namespace App\ContextEngine\Evaluators;
 
 use App\ContextEngine\ActionBus;
+use App\ContextEngine\BureaucracyPushLedger;
 use App\ContextEngine\ScoredAction;
 use App\ContextEngine\Scorer;
 use App\Enums\TaskStatus;
@@ -10,7 +11,6 @@ use App\Models\User;
 use App\Models\UserTask;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Surfaces bureaucracy tasks that are crossing into urgent / critical / overdue
@@ -18,15 +18,16 @@ use Illuminate\Support\Facades\Cache;
  * because the trigger is a daily check of deadlines, not an external signal.
  *
  * First-crossing dedup: once a task is announced as "urgent", we don't push
- * again until it enters a new tier. Stored in Redis as
- *   bureaucracy_pushed:{userTaskId}:{tier}    TTL = 30 days
- * so the user isn't spammed every morning about the same overdue task.
+ * again until it enters a new tier, so the user isn't spammed every morning
+ * about the same overdue task. BureaucracyPushLedger holds that state, and a
+ * tier is only used up once its push was actually sent.
  */
 class BureaucracyEvaluator
 {
     public function __construct(
         private ActionBus $bus,
         private Scorer $scorer,
+        private BureaucracyPushLedger $pushes,
     ) {}
 
     /**
@@ -68,7 +69,8 @@ class BureaucracyEvaluator
             ScoredAction::CHANNEL_DASHBOARD,
             ScoredAction::CHANNEL_ALERT_PAGE,
         ];
-        if ($this->shouldPushFirstCrossing($userTask->id, $tier)) {
+        $reservation = $this->pushes->reserve($userTask->id, $tier);
+        if ($reservation !== null) {
             $channels[] = ScoredAction::CHANNEL_PUSH;
         }
 
@@ -95,11 +97,17 @@ class BureaucracyEvaluator
                 'deadline' => $deadline->toDateString(),
                 'appointment_at' => $appointment?->toIso8601String(),
                 'booking_service_key' => $task->booking_service_key,
-            ],
+            ] + ($reservation !== null ? ['push_reservation' => $reservation] : []),
             createdAt: CarbonImmutable::now(),
         );
 
-        $this->bus->insert($user, $action);
+        $stored = $this->bus->insert($user, $action);
+
+        // The bus strips a throttled or unwanted push. Hand the tier back so the
+        // next run can try again — consuming it here lost the push for 30 days.
+        if ($reservation !== null && ! in_array(ScoredAction::CHANNEL_PUSH, $stored->deliverChannels, true)) {
+            $this->pushes->release($userTask->id, $tier, $reservation);
+        }
     }
 
     /**
@@ -149,16 +157,5 @@ class BureaucracyEvaluator
             'urgent', 'appointment_tomorrow' => ['major', $deadline],
             default => ['moderate', $deadline],
         };
-    }
-
-    /**
-     * Atomic first-crossing check. Returns true on the *first* time this
-     * (userTask, tier) pair lands in the dedup set, false thereafter for 30d.
-     */
-    private function shouldPushFirstCrossing(int $userTaskId, string $tier): bool
-    {
-        $key = "bureaucracy_pushed:{$userTaskId}:{$tier}";
-
-        return Cache::add($key, true, now()->addDays(30));
     }
 }

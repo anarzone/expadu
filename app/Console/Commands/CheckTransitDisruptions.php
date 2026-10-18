@@ -29,6 +29,11 @@ class CheckTransitDisruptions extends Command
         $currentIds = collect($disruptions)->pluck('id')->filter()->all();
         $seenIds = Cache::get('disruption:seen_ids', []);
 
+        // Refresh on every run, not only when something is new: a disruption
+        // that stayed live past the 6-hour TTL used to come back as "new" and
+        // re-announce (and re-push) itself.
+        Cache::put('disruption:seen_ids', $currentIds, now()->addHours(6));
+
         // Find new disruptions
         $newIds = array_diff($currentIds, $seenIds);
 
@@ -37,9 +42,6 @@ class CheckTransitDisruptions extends Command
 
             return self::SUCCESS;
         }
-
-        // Cache current IDs for next run
-        Cache::put('disruption:seen_ids', $currentIds, now()->addHours(6));
 
         // Get new disruptions with their affected lines
         $newDisruptions = collect($disruptions)
