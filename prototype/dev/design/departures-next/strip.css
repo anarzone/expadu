@@ -133,8 +133,11 @@
         align-self: start;
         padding-top: 2px;
     }
+    /* The track runs the strip's full height, so the line joins the two
+       ways with the stop's dot between them. */
     .strip-track {
         grid-area: track;
+        align-self: stretch;
         height: auto;
     }
     .strip-track i {
