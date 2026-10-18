@@ -2,6 +2,7 @@
 
 use App\Models\Event;
 use App\Services\AnthropicEventClassifier;
+use App\Services\ClassificationRefused;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
@@ -142,3 +143,38 @@ test('classifier translates descriptions beyond a single response cap in bounded
         expect(mb_strlen((string) data_get($request->data(), 'messages.0.content')))->toBeLessThan(7000);
     }
 });
+
+test('classifier sends a request haiku 5.5 accepts', function () {
+    config()->set('services.anthropic.model', 'claude-haiku-5-5');
+    config()->set('services.anthropic.effort', 'low');
+    Http::fake(['api.anthropic.com/v1/messages' => Http::response([
+        'stop_reason' => 'tool_use',
+        'content' => [
+            ['type' => 'thinking', 'thinking' => '', 'signature' => 'sig'],
+            ['type' => 'tool_use', 'input' => [
+                'relevance' => 0.7, 'confidence' => 0.9, 'category' => 'culture',
+                'language' => 'de', 'chips' => [], 'title_en' => 'Concert',
+                'summary_en' => 'A short summary.',
+            ]],
+        ],
+    ])]);
+    $event = Event::factory()->create(['description' => null]);
+
+    expect(app(AnthropicEventClassifier::class)->classify($event)['title_en'])->toBe('Concert');
+
+    Http::assertSent(fn (Request $request): bool => $request['model'] === 'claude-haiku-5-5'
+        && $request['output_config'] === ['effort' => 'low']
+        && ! array_intersect(['temperature', 'top_p', 'top_k'], array_keys($request->data()))
+        && end($request->data()['messages'])['role'] === 'user');
+});
+
+test('classifier reports a refusal apart from malformed output', function () {
+    Http::fake(['api.anthropic.com/v1/messages' => Http::response([
+        'stop_reason' => 'refusal',
+        'stop_details' => ['type' => 'refusal', 'category' => 'general_harms'],
+        'content' => [],
+    ])]);
+    $event = Event::factory()->create();
+
+    app(AnthropicEventClassifier::class)->classify($event);
+})->throws(ClassificationRefused::class, 'general_harms');
