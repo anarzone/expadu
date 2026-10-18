@@ -83,3 +83,6 @@ Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:
 Schedule::command('model:prune')->dailyAt('03:45')->withoutOverlapping();
 
 Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();
+
+// Model-ready place features, rebuilt from the effective facts each night.
+Schedule::command('places:build-features')->dailyAt('04:15')->withoutOverlapping()->onOneServer();

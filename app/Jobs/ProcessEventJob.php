@@ -4,12 +4,15 @@ namespace App\Jobs;
 
 use App\Enums\EventCategory;
 use App\Models\Event;
+use App\Places\InterestTaxonomy;
+use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Services\EventEnrichmentService;
 use App\Services\VenueResolver;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -76,6 +79,24 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
             'relevance' => $result['relevance'],
             'needs_review' => $needsReview,
             'classification_input_hash' => $inputHash,
+        ]);
+
+        // The event row keeps only the current values; keep each run's model
+        // and confidence as history so classifications can be audited and
+        // compared across models.
+        $category = (EventCategory::tryFrom($result['category']) ?? EventCategory::Other)->value;
+        DB::table('event_enrichments')->insert([
+            'event_id' => $event->id,
+            'producer' => class_basename($classifier),
+            'model' => $classifier instanceof AnthropicEventClassifier ? config('services.anthropic.model') : null,
+            'confidence' => round(max(0.0, min(1.0, (float) $result['confidence'])), 3),
+            'relevance' => round(max(0.0, min(1.0, (float) $result['relevance'])), 3),
+            'category' => $category,
+            'chips' => json_encode(array_values((array) $result['chips'])),
+            'interests' => json_encode(app(InterestTaxonomy::class)->forEventCategory($category)),
+            'needs_review' => $needsReview,
+            'input_hash' => $inputHash,
+            'created_at' => now(),
         ]);
 
         $this->resolveVenue($event);
