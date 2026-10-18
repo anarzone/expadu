@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Places\PlaceFacts;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -19,6 +20,10 @@ class RefreshPlacesCatalogue extends Command
                 return self::FAILURE;
             }
         }
+
+        // Safety net for anything an import wrote around the model events.
+        $changed = app(PlaceFacts::class)->refreshAllPublicAccess();
+        $this->info("Public-access flags recomputed ({$changed} changed).");
 
         return self::SUCCESS;
     }
