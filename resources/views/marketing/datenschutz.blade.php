@@ -34,13 +34,15 @@
         ask for your consent first.
     </p>
 
-    <h2>4. City waitlist</h2>
+    <h2>4. Launch waitlist</h2>
     <p>
-        If you leave your e-mail and city, we store both together with a timestamp, and send you a
-        single confirmation e-mail (double opt-in). Only after you confirm do we keep you on the
-        list, and we use it solely to tell you when Expadu launches in your city — legal basis:
-        consent (Art. 6(1)(a) GDPR). You can withdraw at any time via the link in any e-mail or by
-        writing to us; withdrawal deletes your entry.
+        If you join the waitlist, we store your e-mail address, the city you enter (Cologne unless
+        you change it), the page you signed up from and a timestamp, and send you a single
+        confirmation e-mail (double opt-in). Only after you confirm do we keep you on the list, and
+        we use it solely to tell you when the new Expadu app launches — legal basis: consent
+        (Art. 6(1)(a) GDPR). The page you signed up from only tells us which page brought you; it is
+        not used for tracking. You can withdraw at any time via the link in any e-mail or by writing
+        to us; withdrawal deletes your entry.
     </p>
 
     <h2>5. Transactional e-mail</h2>
@@ -77,7 +79,7 @@
     <p>
         Account data is kept while your account exists and deleted when you delete your account or
         ask us to. Waitlist entries are kept until you withdraw or until the launch notification
-        for your city has been sent. Location data expires automatically as described above. Server
+        has been sent. Location data expires automatically as described above. Server
         logs rotate on a short schedule.
     </p>
 
