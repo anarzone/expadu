@@ -18,6 +18,10 @@ return [
     'ssr' => [
         'enabled' => true,
         'url' => 'http://127.0.0.1:13714',
+        // Seconds. A page that misses this renders client-side instead of
+        // holding a PHP-FPM worker (Laravel's HTTP default is 30 s).
+        'timeout' => (float) env('INERTIA_SSR_TIMEOUT', 1.5),
+        'connect_timeout' => (float) env('INERTIA_SSR_CONNECT_TIMEOUT', 0.5),
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
     ],
