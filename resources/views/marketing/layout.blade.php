@@ -13,10 +13,12 @@
 
     <meta property="og:site_name" content="Expadu">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="@yield('og_title', 'Expadu — The AI companion for your new life in Germany')">
+    <meta property="og:title" content="@section('og_title')@yield('title', 'Expadu — Tell it your day. It plans the rest.')@show">
     <meta property="og:description" content="@yield('meta_description', 'Tell it your day — it plans the rest. Bureaucracy in English with official sources, transit that knows your ticket, and an AI day composer. Built for Cologne.')">
     <meta property="og:url" content="@yield('canonical', $canonicalFallback)">
     <meta property="og:image" content="@yield('og_image', asset('marketing/og-landing.png'))">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
 
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf6ee">

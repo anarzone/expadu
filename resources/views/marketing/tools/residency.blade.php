@@ -3,6 +3,7 @@
 @section('title', 'Permanent residency (Niederlassungserlaubnis) timeline calculator — Expadu')
 @section('meta_description', 'When can you get German permanent residency? Watch your timeline fill up — Blue Card, skilled worker, family or general track (§9/§18c/§28 AufenthG).')
 @section('canonical', route('tools.residency'))
+@section('og_image', asset('marketing/og/tools-residency.png'))
 @section('waitlist_source', 'tool-residency')
 
 @push('head')

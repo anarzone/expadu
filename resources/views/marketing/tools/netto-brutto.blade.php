@@ -3,6 +3,7 @@
 @section('title', 'Netto-Brutto calculator '.$year.' — what\'s left of your German salary? — Expadu')
 @section('meta_description', 'Gross to net salary in Germany, '.$year.' rules: all six tax classes, every Bundesland, church tax, children, statutory or private insurance — cross-checked against the official BMF calculator. Free, no signup.')
 @section('canonical', route('tools.netto'))
+@section('og_image', asset('marketing/og/tools-netto-brutto.png'))
 @section('waitlist_source', 'tool-netto')
 
 @push('head')

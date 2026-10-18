@@ -3,6 +3,7 @@
 @section('title', 'Deutschlandticket break-even calculator (Cologne, 2026) — Expadu')
 @section('meta_description', 'Is the €'.number_format($dticketEur, 0).' Deutschlandticket worth it for how you actually move? Drag your weekly trips — honest verdict with Cologne\'s current Rheinlandtarif fares. Free, no signup.')
 @section('canonical', route('tools.dticket'))
+@section('og_image', asset('marketing/og/tools-dticket.png'))
 @section('waitlist_source', 'tool-dticket')
 
 @push('head')

@@ -4,6 +4,10 @@
 @section('meta_description', $post['description'])
 @section('canonical', route('blog.show', $post['slug']))
 @section('og_title', $post['title'])
+@php
+    $ogImage = is_file(public_path("marketing/og/guide-{$post['slug']}.png")) ? "marketing/og/guide-{$post['slug']}.png" : 'marketing/og-landing.png';
+@endphp
+@section('og_image', asset($ogImage))
 @section('waitlist_source', 'blog-'.$post['slug'])
 
 @push('styles')

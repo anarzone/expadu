@@ -3,6 +3,7 @@
 @section('title', 'Guides for your life in Germany — Expadu Blog')
 @section('meta_description', 'Practical English guides for newcomers in Germany — Anmeldung, permits, insurance, transit. Every claim linked to its official source.')
 @section('canonical', route('blog.index'))
+@section('og_image', asset('marketing/og/guides.png'))
 
 @section('content')
 <section>
