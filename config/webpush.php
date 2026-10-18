@@ -35,7 +35,12 @@ return [
     /**
      * The Guzzle client options used by Minishlink\WebPush.
      */
-    'client_options' => [],
+    'client_options' => [
+        // The library default is 30 s per send. Pushes run in queue workers
+        // with a 90 s job timeout, so one slow push service must not stall them.
+        'timeout' => (int) env('WEBPUSH_TIMEOUT', 5),
+        'connect_timeout' => (int) env('WEBPUSH_CONNECT_TIMEOUT', 2),
+    ],
 
     /**
      * The automatic padding in bytes used by Minishlink\WebPush.

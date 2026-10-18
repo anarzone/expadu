@@ -33,6 +33,10 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
 
     public function __construct(public Event $event)
     {
+        // Its own queue and worker: a job can run for up to 15 minutes and
+        // must not hold weather refreshes, mail or media checks behind it.
+        $this->onQueue('llm');
+
         $translationChunks = (int) ceil(mb_strlen((string) $event->description) / 2000);
         $this->timeout = min(self::MAX_TIMEOUT_SECONDS, max(45, 30 + ($translationChunks * 35)));
     }

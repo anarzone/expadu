@@ -25,6 +25,12 @@ php /var/www/html/artisan config:cache
 php /var/www/html/artisan route:cache
 php /var/www/html/artisan view:cache
 
+# A command killed by the last deploy keeps its withoutOverlapping lock in
+# Redis (AOF-persisted), which would skip it for up to a day. Nothing scheduled
+# is running yet at this point, so every lock left is stale.
+echo "Clearing stale schedule locks..."
+php /var/www/html/artisan schedule:clear-cache || echo "Could not clear schedule locks"
+
 # After all root-run artisan commands, ensure ownership is www-data
 # again (cache files just got written as root).
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
