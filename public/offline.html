@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+        <meta name="robots" content="noindex" />
+        <meta
+            name="theme-color"
+            media="(prefers-color-scheme: light)"
+            content="#faf6ee"
+        />
+        <meta
+            name="theme-color"
+            media="(prefers-color-scheme: dark)"
+            content="#161208"
+        />
+        <title>Offline - Expadu</title>
+        <!--
+            Served by the service worker (resources/sw.ts) only when a page
+            load fails because the network is unreachable. Static and generic:
+            no account data. Colours mirror the tokens in resources/css/app.css.
+            If you change this file, bump OFFLINE_CACHE in resources/sw.ts.
+        -->
+        <style>
+            @font-face {
+                font-family: 'Geist';
+                font-weight: 400;
+                font-style: normal;
+                font-display: swap;
+                src: url('/fonts/geist-400.woff2') format('woff2');
+            }
+            @font-face {
+                font-family: 'Geist';
+                font-weight: 700;
+                font-style: normal;
+                font-display: swap;
+                src: url('/fonts/geist-700.woff2') format('woff2');
+            }
+
+            :root {
+                --background: #faf6ee;
+                --foreground: #211d15;
+                --muted: #6e6657;
+                --primary: #ff3902;
+                --primary-hover: #e02f00;
+                --primary-foreground: #ffffff;
+                --ring: #05badd;
+                color-scheme: light;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                :root:not([data-theme='light']) {
+                    --background: #161208;
+                    --foreground: #f7f3e9;
+                    --muted: #a89f8c;
+                    --primary: #ff5c33;
+                    --primary-hover: #ff7656;
+                    --ring: #3ccfee;
+                    color-scheme: dark;
+                }
+            }
+
+            :root[data-theme='dark'] {
+                --background: #161208;
+                --foreground: #f7f3e9;
+                --muted: #a89f8c;
+                --primary: #ff5c33;
+                --primary-hover: #ff7656;
+                --ring: #3ccfee;
+                color-scheme: dark;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                min-height: 100vh;
+                min-height: 100dvh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                background: var(--background);
+                color: var(--foreground);
+                font-family:
+                    'Geist',
+                    ui-sans-serif,
+                    system-ui,
+                    -apple-system,
+                    'Segoe UI',
+                    sans-serif;
+                -webkit-text-size-adjust: 100%;
+                text-align: center;
+            }
+
+            main {
+                width: 100%;
+                max-width: 360px;
+            }
+
+            h1 {
+                margin: 0 0 8px;
+                font-size: 1.5rem;
+                font-weight: 700;
+                line-height: 1.25;
+            }
+
+            p {
+                margin: 0 0 24px;
+                font-size: 1rem;
+                line-height: 1.5;
+                color: var(--muted);
+            }
+
+            button {
+                min-height: 48px;
+                padding: 0 28px;
+                border: 0;
+                border-radius: 12px;
+                background: var(--primary);
+                color: var(--primary-foreground);
+                font: inherit;
+                font-size: 1.125rem;
+                font-weight: 700;
+                cursor: pointer;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            button:active {
+                background: var(--primary-hover);
+            }
+
+            button:focus-visible {
+                outline: 2px solid var(--ring);
+                outline-offset: 3px;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>You're offline</h1>
+            <p>
+                Expadu can't reach the network right now. Check your connection
+                and try again.
+            </p>
+            <button type="button" id="retry">Try again</button>
+        </main>
+        <script>
+            (function () {
+                // Follow the appearance the app saved, if any; otherwise the
+                // system preference in the CSS above applies.
+                try {
+                    var appearance = localStorage.getItem('appearance');
+
+                    if (appearance === 'light' || appearance === 'dark') {
+                        document.documentElement.setAttribute(
+                            'data-theme',
+                            appearance,
+                        );
+                    }
+                } catch (e) {
+                    // Storage can be unavailable; the system preference applies.
+                }
+
+                // The worker answers a failed page load at the address that was
+                // requested, so reloading retries that page. Opened directly,
+                // there is nothing to retry, so go to the app instead.
+                function retry() {
+                    if (location.pathname === '/offline.html') {
+                        location.assign('/dashboard');
+                    } else {
+                        location.reload();
+                    }
+                }
+
+                document
+                    .getElementById('retry')
+                    .addEventListener('click', retry);
+                window.addEventListener('online', retry);
+            })();
+        </script>
+    </body>
+</html>
