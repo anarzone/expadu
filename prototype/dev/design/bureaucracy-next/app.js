@@ -67,6 +67,39 @@
         moved_in_at: 'your move-in date',
         visa_expires_at: 'your visa expiry',
     };
+    // "Someone you shared with": your plan as the person you invited sees
+    // it, named for you, with what their invitation allows (owner, 18 Oct
+    // 2026, Composer review canvas board 15). The plan is the sample
+    // person's (today-next/model.js).
+    const owner = 'Anar';
+    const sharedView = () => state.preview === 'shared';
+    const can = (scope) => !state.scopes || state.scopes.includes(scope);
+    const yours = (text) =>
+        sharedView() ? text.replace(/^Your\b/, `${owner}’s`).replace(/^your\b/, `${owner}’s`) : text;
+    function sharedNote() {
+        const allows = [
+            ['view_plan', 'see the plan'],
+            ['view_facts', 'see the answers'],
+            ['edit_facts', 'change the answers'],
+            ['manage_process', 'update progress'],
+            ['manage_evidence', 'mark documents'],
+        ]
+            .filter(([scope]) => state.scopes?.includes(scope))
+            .map(([, words]) => words);
+        const list =
+            allows.length > 1
+                ? `${allows.slice(0, -1).join(', ')} and ${allows.at(-1)}`
+                : allows[0] || 'see the plan';
+        const since = grants().find((g) => g.id === 'alex')?.since;
+        const on = B.validDate(since)
+            ? ` on ${new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(new Date(`${since}T12:00:00`))}`
+            : '';
+        const only =
+            can('manage_process') || can('edit_facts')
+                ? ''
+                : ` Only ${owner} changes the plan.`;
+        return `<p class="shared-note">${I('info')}<span><strong>Shared by ${owner}${on}.</strong> You can ${list}.${only}</span></p>`;
+    }
     const date = (d) =>
         B.validDate(d)
             ? new Intl.DateTimeFormat('en-GB', {
@@ -418,7 +451,7 @@
             }
         const tabs = `<div class="case-tabs" aria-label="Paperwork views"><button data-view="overview" aria-pressed="${state.view !== 'paperwork'}">${I('grid')}Overview</button><button data-view="paperwork" aria-pressed="${state.view === 'paperwork'}">${I('document')}Documents</button></div>`;
         document.querySelector('#main').innerHTML =
-            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>${sandbox() ? 'Try it: your answers stay in this tab. Your own plan isn’t changed.' : 'Read-only. Your own plan isn’t changed.'}</span><button data-preview-exit>Back to your plan</button></div>` : ''}${titled ? `<div class="case-back">${back()}</div>` : ''}<div class="case-top${titled ? '' : ' is-untitled'}${searchable ? ' is-searchable' : ''}"><h1${titled ? '' : ' class="sr-only"'}>${E(heading)}</h1>${status}${titled ? '' : tabs}${searchable ? searchField() : ''}<details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
+            `${persona ? `<div class="persona-preview" role="status">${I('info')}<span><strong>Previewing: ${E(persona[1])}</strong>${sandbox() ? 'Try it: your answers stay in this tab. Your own plan isn’t changed.' : 'Read-only. Your own plan isn’t changed.'}</span><button data-preview-exit>Back to your plan</button></div>` : ''}${titled ? `<div class="case-back">${back()}</div>` : ''}<div class="case-top${titled ? '' : ' is-untitled'}${searchable ? ' is-searchable' : ''}"><h1${titled ? '' : ' class="sr-only"'}>${E(heading)}</h1>${status}${titled ? '' : tabs}${searchable ? searchField() : ''}${sharedView() ? `<span class="person-picker is-static">${owner}’s plan</span>` : `<details class="person-picker"><summary aria-label="Whose plan: ${E(H.info(state)?.name || 'You')}"><span class="person-name">${E(H.info(state)?.name || 'You')}</span>${I('down')}</summary><div class="person-menu">${H.roster
                 .filter(
                     (p) =>
                         !p.denied &&
@@ -430,7 +463,7 @@
                 )
                 .join(
                     '',
-                )}${state.person === 'self' && allowed && !persona ? `<button data-case="sharing">${I('people')}<span>Share your plan<small>Choose who sees what</small></span></button>` : ''}</div></details>${allowed && (!state.scopes || state.scopes.includes('view_facts')) ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div><div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress and guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
+                )}${state.person === 'self' && allowed && !persona ? `<button data-case="sharing">${I('people')}<span>Share your plan<small>Choose who sees what</small></span></button>` : ''}</div></details>`}${allowed && (!state.scopes || state.scopes.includes('view_facts')) ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div>${sharedView() ? sharedNote() : ''}<div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress and guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
                 .map(
                     ([id, label]) =>
                         `<button data-preview-persona="${id}" aria-pressed="${state.preview === id}">${E(label)}</button>`,
@@ -622,7 +655,7 @@
                     urgent = t.kind !== 'appointment' && t.days_remaining <= 1;
                 const what = expiry
                     ? t.document === 'visa'
-                        ? 'Your D visa expires'
+                        ? yours('Your D visa expires')
                         : 'Document expiry'
                     : t.kind === 'appointment'
                       ? `${nameOf(key)} appointment`
@@ -680,7 +713,7 @@
         if (query.trim() && !hits) return searchLine(0);
         const tasks =
             found.length || !query.trim()
-                ? `<section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">Your tasks <span>${shown.length}</span></h2><div class="case-icon-actions"><button class="plain-button" data-filter="all">All steps ${plan.progress.total}${I('arrow')}</button><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div>${chips('Show tasks', 'data-task-filter', taskGroups, taskFilter, (id) => (id === 'all' ? found.length : found.filter((p) => taskGroup(p) === id).length))}<div class="process-grid">${
+                ? `<section class="process-overview" aria-labelledby="processes-heading"><div class="case-section-head"><h2 id="processes-heading">${yours('Your tasks')} <span>${shown.length}</span></h2><div class="case-icon-actions"><button class="plain-button" data-filter="all">All steps ${plan.progress.total}${I('arrow')}</button><button class="icon-button" data-view="history" aria-label="History ${plan.history_count}">${I('clock')}</button></div></div>${chips('Show tasks', 'data-task-filter', taskGroups, taskFilter, (id) => (id === 'all' ? found.length : found.filter((p) => taskGroup(p) === id).length))}<div class="process-grid">${
                       shown.length
                           ? shown.map((p) => processCard(p, plan)).join('')
                           : plan.open.length
@@ -890,13 +923,14 @@
                 (a.date || '9999').localeCompare(b.date || '9999'),
             );
         if (query.trim() && !rows.length) return '';
-        return `<section class="overview-dates" aria-labelledby="dates-heading"><div class="case-section-head"><h2 id="dates-heading">Dates & appointments</h2><button class="icon-button" data-case="choose-appointment" aria-label="Record an appointment">${I('plus')}</button></div><div class="date-grid">${
+        return `<section class="overview-dates" aria-labelledby="dates-heading"><div class="case-section-head"><h2 id="dates-heading">Dates & appointments</h2>${can('manage_process') ? `<button class="icon-button" data-case="choose-appointment" aria-label="Record an appointment">${I('plus')}</button>` : ''}</div><div class="date-grid">${
             rows
                 .map((t) => {
                     const key = anchoredTo(plan, t),
                         r = soon(t.date),
                         step = stepKinds.includes(t.kind);
-                    return `<button class="timeline-row" data-timeline="${E(t.kind)}" data-for="${E(key || '')}"><span class="timeline-icon">${I(t.kind === 'submission_recorded' ? 'check' : t.kind === 'document_expiry' ? 'document' : 'calendar')}</span><span><strong>${E(kindLabels[t.kind])}</strong><small>${E(nameOf(key))}</small></span><span class="timeline-date${t.kind === 'document_expiry' && r?.days <= 1 ? ' is-urgent' : ''}">${r?.label ? `<em>${E(r.label)}</em>` : ''}${t.state === 'review_required' ? 'Being reviewed' : t.state === 'date_unknown' ? `Needs ${E(factLabels[t.needed_fact] || 'more information')}` : date(t.date)}${t.kind === 'appointment' ? '<small>' + E(clock(t)) + '</small>' : ''}</span>${I(step ? 'arrow' : 'pencil')}</button>`;
+                    const editable = step || can('manage_process');
+                    return `<${editable ? 'button' : 'div'} class="timeline-row" ${editable ? `data-timeline="${E(t.kind)}" data-for="${E(key || '')}"` : ''}><span class="timeline-icon">${I(t.kind === 'submission_recorded' ? 'check' : t.kind === 'document_expiry' ? 'document' : 'calendar')}</span><span><strong>${E(kindLabels[t.kind])}</strong><small>${E(nameOf(key))}</small></span><span class="timeline-date${t.kind === 'document_expiry' && r?.days <= 1 ? ' is-urgent' : ''}">${r?.label ? `<em>${E(r.label)}</em>` : ''}${t.state === 'review_required' ? 'Being reviewed' : t.state === 'date_unknown' ? `Needs ${E(yours(factLabels[t.needed_fact] || 'more information'))}` : date(t.date)}${t.kind === 'appointment' ? '<small>' + E(clock(t)) + '</small>' : ''}</span>${editable ? I(step ? 'arrow' : 'pencil') : ''}</${editable ? 'button' : 'div'}>`;
                 })
                 .join('') ||
             '<p class="muted">Your recorded dates will appear here.</p>'

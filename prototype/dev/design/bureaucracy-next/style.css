@@ -3234,3 +3234,36 @@ body[data-page='bureaucracy'] .step-actions .plain-button:active {
         gap: 8px;
     }
 }
+/* "Someone you shared with": whose plan, as a label (it isn't a menu for
+   them), and one line on who shared it and what they can do (owner, 18 Oct
+   2026, Composer review canvas board 15). */
+.case-top .person-picker.is-static {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+.shared-note {
+    display: flex;
+    gap: 8px;
+    margin: 12px 2px 16px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+.shared-note > svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+}
+.shared-note strong {
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}

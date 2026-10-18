@@ -157,6 +157,16 @@ under Review: a persona preview or Other states.
   shows your plan without Your situation or questions, and "Documents aren't
   shared with you" without document access. Your record: download or delete
   (samples).
+- **As the person you shared with sees it** (Review → Someone you shared
+  with; owner, 18 Oct 2026, Composer review canvas board 15): the plan is
+  "Anar's plan", a label, not the person menu; one line says who shared it,
+  when, and what the invitation allows ("Shared by Anar on 12 Sept. You can
+  see the plan and mark documents. Only Anar changes the plan."); the page's
+  own words name Anar ("Anar's tasks", "Anar's D visa expires", "Needs
+  Anar's move-in date"); without progress access, dates can't be added or
+  edited. Task lines from the catalogue ("Next: Prepare the evidence for
+  your first Blue Card application") still say "your": that copy comes from
+  the backend's cards.
 - Documents say uploading, scanning, translating and letter writing aren't
   available yet.
 
