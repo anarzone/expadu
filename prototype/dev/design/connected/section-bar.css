@@ -167,8 +167,10 @@
     /* Composer's own page keeps its text box 8px above the menu, its band
        running down behind the menu so nothing shows between them (Composer
        review canvas, board 1, 18 Oct 2026); short notes (toasts) rise above
-       the menu. */
+       the menu. Its sides are the menu's 14px, so the box sits square on
+       the menu and Composer's round button. */
     :root body:has(#shell .service-nav) .studio-input-wrap {
+        padding-inline: 14px;
         padding-bottom: calc(var(--menu-gap) + var(--menu-height) + 8px);
         transition: translate var(--duration-base, 180ms) ease;
     }
