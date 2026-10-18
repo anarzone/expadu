@@ -5,6 +5,14 @@ restores the composition in the owner's screenshot, also saved at
 [`../review/continuity-desktop.png`](../review/continuity-desktop.png).
 The daily brief and its timeline-only correction were rejected.
 
+**18 October, Today knows you're on your way (owner: build it, Composer
+review canvas board 12):** after I'm on my way, Today kept offering "Leave now
+· I'm on my way" while every other page showed the On your way bar. Today now
+reads the trip you're on (`connected/journey-session.js`): while it's the
+appointment's trip, the card's button is "Back to your trip" and the bar steps
+aside, as on Travel's own card (`body.trip-in-card`, now in
+`connected/journey-session.css`). Another trip shows the bar as elsewhere.
+
 **18 October, the trip opens in Travel (owner: build it, Composer review
 canvas board 12):** in an appointment's sheet, the trip row is drawn as Travel
 draws it, its line badge on the card's surface with the card's own words

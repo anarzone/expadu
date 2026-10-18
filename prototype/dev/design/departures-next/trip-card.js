@@ -12,6 +12,7 @@
             '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 2v6m10-6v6M3 11h18m-14 4h3m4 0h3"/>',
         info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/>',
         play: '<path d="m8 5 11 7-11 7Z"/>',
+        route: '<circle cx="6" cy="5" r="2"/><circle cx="18" cy="19" r="2"/><path d="M6 7v6a3 3 0 0 0 3 3h6a3 3 0 0 0 0-6H9"/>',
     };
     const icon = (name) =>
         `<svg viewBox="0 0 24 24" aria-hidden="true">${shapes[name]}</svg>`;

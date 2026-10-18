@@ -24,6 +24,8 @@
     const todayHome = document.body.dataset.todayHome || './';
     const columnFlow = document.body.dataset.todayLayout === 'flow';
     let renderedContinuation = null;
+    // A card on this render leads back to the trip you're on (route()).
+    let tripInCard = false;
     let contentPriority = null,
         recentCompletion = null;
     const sessionKey = (name) => `${reviewKey}-${name}`;
@@ -368,7 +370,14 @@
             planDate: day.date,
             go: '1',
         });
-        const go = `<a class="primary next-trip-go" href="${S.routes.departures}?${query}">${C.icon('play')}I’m on my way</a>`;
+        // A trip you've started is one tap away, not started again, as on
+        // Travel's own card; the On your way bar steps aside for it (owner,
+        // 18 Oct 2026, Composer review canvas board 12).
+        const going = window.JourneySession?.read()?.title === item.title;
+        tripInCard ||= going;
+        const go = going
+            ? `<a class="primary next-trip-go" href="${S.routes.departures}?journey=resume">${C.icon('route')}Back to your trip</a>`
+            : `<a class="primary next-trip-go" href="${S.routes.departures}?${query}">${C.icon('play')}I’m on my way</a>`;
         return `<section class="trip-line is-${tone}" aria-labelledby="${cardId}-title"><div class="trip-line-row">${C.head(cardId, now, title, '')}${C.body(flag, facts, note)}${go}</div></section>${
             delayed
                 ? `<div class="recovery-row"><button class="outline-action" data-today-alternatives="${id}" aria-expanded="${late}" aria-controls="alternatives-${id}">Alternatives${I('down')}</button></div><div class="inline-alternatives" id="alternatives-${id}" ${late ? '' : 'hidden'}>${late ? `<p class="alternative-lead">You may arrive ${travel.lateMinutes} min late. These could get you there on time:</p>` : ''}${alternativesList(item)}</div>`
@@ -664,6 +673,7 @@
         const content = connectedContent();
         connectedSignature = JSON.stringify(content);
         contentPriority = window.TodayContent?.priority(day, content) || null;
+        tripInCard = false;
         const featured = (
             contentPriority
                 ? contentPriority.lead === 'event'
@@ -697,6 +707,7 @@
         reviewControls.hidden = false;
         enrichment?.arrange(contentPriority);
         bindRail();
+        document.body.classList.toggle('trip-in-card', tripInCard);
     }
     function syncSaves() {
         if (syncingDay) return;

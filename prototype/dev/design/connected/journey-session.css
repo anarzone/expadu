@@ -88,3 +88,8 @@
         margin-inline: 16px;
     }
 }
+/* A page's own trip card already leads back to the trip you've started
+   (Travel's next trip, Today's Leave now): the bar steps aside. */
+body.trip-in-card .journey-resume {
+    display: none;
+}
