@@ -153,8 +153,25 @@
                 (entry.kind === 'plan-cancelled' &&
                     c.lastApplied.after === null &&
                     c.lastApplied.cancellationEntryId === entry.id));
-        if (undoable)
-            body += `<button class="plain-button change-undo" data-action="undo-plan">${I('back')}Undo</button>`;
+        // The change itself, old → new, with its Undo while it's the latest
+        // (owner, 18 Oct 2026, Composer review canvas board 9).
+        const undo = `<button class="change-undo" data-action="undo-plan">Undo</button>`;
+        if (entry.change?.length)
+            body += `<div class="change-card"><div class="change-rows">${entry.change
+                .map(
+                    (x) =>
+                        `<div class="change-row"><span class="change-icon">${I(x.type === 'appointment' || x.type === 'event' ? 'calendar' : 'pin')}</span><span><strong>${E(x.title)}</strong><small>${
+                            x.kind === 'moved'
+                                ? `<span class="sr-only">from </span><s>${E(x.from)}</s> → <b>${E(x.to)}</b>`
+                                : x.kind === 'added'
+                                  ? `Added · <b>${E(x.to)}</b>`
+                                  : x.kind === 'removed'
+                                    ? `<s>${E(x.from)}</s> · removed`
+                                    : `In place of ${E(x.was)} · <b>${E(x.to)}</b>`
+                        }</small></span></div>`,
+                )
+                .join('')}</div>${undoable ? undo : ''}</div>`;
+        else if (undoable) body += undo;
         if (entry.kind === 'plan-history' && !ctx.historical) {
             // While the plan for that day appears further down, the earlier
             // card isn't repeated.

@@ -10,6 +10,32 @@
         const same = (a, b) =>
             JSON.stringify(a ? { ...a, revision: 0 } : null) ===
             JSON.stringify(b ? { ...b, revision: 0 } : null);
+        // What a change did to the day's items, for its reply and the marks
+        // on the plan (owner, 18 Oct 2026, Composer review canvas board 9):
+        // moved (old → new time), added, removed, or one in place of another.
+        function diff(before, after) {
+            if (!before || !after) return [];
+            const span = (x) => `${x.start}–${x.end}`;
+            const was = new Map(before.items.map((x) => [x.id, x]));
+            const now = new Map(after.items.map((x) => [x.id, x]));
+            const rows = [];
+            for (const x of after.items) {
+                const old = was.get(x.id);
+                if (!old)
+                    rows.push({ kind: 'added', id: x.id, title: x.title, type: x.type || '', to: span(x) });
+                else if (old.start !== x.start || old.end !== x.end)
+                    rows.push({ kind: 'moved', id: x.id, title: x.title, type: x.type || '', from: span(old), to: span(x) });
+            }
+            for (const x of before.items)
+                if (!now.has(x.id)) {
+                    const same = rows.find(
+                        (r) => r.kind === 'added' && r.to === span(x),
+                    );
+                    if (same) Object.assign(same, { kind: 'replaced', was: x.title });
+                    else rows.push({ kind: 'removed', id: x.id, title: x.title, type: x.type || '', from: span(x) });
+                }
+            return rows;
+        }
         // A cancelled day is said in the reply asking for it (`entryId`), or
         // in its own message.
         function commit(s, label = 'Plan saved', entryId = null) {
@@ -28,6 +54,7 @@
                 before: before ? M.clone(before) : null,
                 after: after ? M.clone(after) : null,
                 draft,
+                rows: diff(before, after),
             };
             conversation.applied.push(change);
             // The latest twenty changes can be undone, newest first.

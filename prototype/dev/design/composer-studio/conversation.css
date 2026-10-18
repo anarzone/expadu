@@ -1128,3 +1128,107 @@
     border: 1px solid var(--color-border);
     background: var(--color-bg-surface);
 }
+/* A change comes to you (owner, 18 Oct 2026, Composer review canvas board
+   9): the reply carries it, old → new, with its Undo; the plan marks the
+   item where it happened. */
+.change-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 12px 12px 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+}
+.change-rows {
+    display: grid;
+    flex: 1;
+    gap: 10px;
+    min-width: 0;
+}
+.change-row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+}
+.change-icon {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.change-icon svg {
+    width: 20px;
+    height: 20px;
+}
+.change-row > span:last-child {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+.change-row strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.change-row small {
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-variant-numeric: tabular-nums;
+}
+.change-row s {
+    color: var(--color-text-soft);
+}
+.change-row b {
+    font-weight: var(--weight-semibold);
+}
+.studio .change-undo {
+    flex: none;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.studio .change-undo:hover {
+    background: var(--color-bg-hover, var(--color-border));
+}
+.chat-entry > .change-undo {
+    margin-top: 10px;
+}
+.studio .plan-timeline li.is-changed {
+    margin-inline: -12px;
+    padding-inline: 12px;
+    border-radius: var(--radius-lg);
+    background: var(--color-select-bg);
+}
+.studio .plan-timeline li.is-changed .changed-label {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.studio .day-item.is-changed {
+    border-color: transparent;
+    background: var(--color-select-bg);
+}
+.studio .day-item-tile.is-changed {
+    background: var(--color-bg-surface);
+    color: var(--color-select-text);
+}
+.studio .day-switch {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}

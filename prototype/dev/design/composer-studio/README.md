@@ -30,6 +30,12 @@ number):
   Discard proposal, Edit plan, the plan's date form, version history,
   snapshots and the Cancel day dialog are gone; Cancel day happens with its
   Undo.
+- **9 · A change comes to you.** The reply says the change as it is now
+  ("Blücherpark is now 15:00–16:00.") and carries it, old → new, with its
+  Undo (`rows` on each saved change, `.change-card`); the plan marks the
+  item where it happened ("Moved from 13:00–14:00") until a newer change;
+  the box says "Ask or change Saturday…". On a laptop, Your day is the day
+  you're planning, its change marked, with Show today / Show Saturday.
 - **4 · The menu waits for the keyboard.** The menu and the round button
   step aside only while the keyboard is open (`connected/section-bar.js`
   marks `html.keyboard-open`), so they come back when it closes with the

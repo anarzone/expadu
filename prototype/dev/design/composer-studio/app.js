@@ -204,10 +204,9 @@
         const tonight = allEvents()
             .filter((x) => x.date === today && (x.start || '') >= '17:00')
             .sort((a, b) => a.start.localeCompare(b.start));
-        const plan = state.proposal?.date === today ? state.proposal : planFor(today);
+        const plan = planFor(today);
         const planned = (plan?.items || [])
             .filter((x) => x.start)
-            .map((x) => ({ ...x, proposed: plan === state.proposal }))
             .sort((a, b) => a.start.localeCompare(b.start));
         const upcoming = [
             ...state.plans
@@ -937,7 +936,7 @@
                 openPlan: x.today,
                 tile: '',
                 icon: I('calendar'),
-                small: `${item.start} · ${item.proposed ? 'proposed' : 'in your plan'}`,
+                small: `${item.start} · in your plan`,
                 strong: item.title,
             });
         for (const d of x.deadlines)
@@ -968,11 +967,12 @@
     }
     function fact(f, kind) {
         const inner = `<span class="${kind}-tile ${f.tile}">${f.icon}</span><span><small>${E(f.small)}</small><strong>${E(f.strong)}</strong></span>`;
+        const cls = `${kind}${f.className ? ` ${f.className}` : ''}`;
         return f.href
-            ? `<a class="${kind}" href="${E(f.href)}">${inner}</a>`
+            ? `<a class="${cls}" href="${E(f.href)}">${inner}</a>`
             : f.openPlan
-              ? `<button class="${kind}" data-open-plan="${E(f.openPlan)}">${inner}</button>`
-              : `<button class="${kind}" data-prompt="${E(f.prompt)}">${inner}</button>`;
+              ? `<button class="${cls}" data-open-plan="${E(f.openPlan)}">${inner}</button>`
+              : `<button class="${cls}" data-prompt="${E(f.prompt)}">${inner}</button>`;
     }
     // Phones: the day's facts in one scrolling row under Composer's mark,
     // above the starters and later above the conversation, as in the mock.
@@ -984,11 +984,43 @@
     }
     // Desktop: what Composer plans with, beside the conversation, under
     // Composer's mark and the way back to the page it was opened from.
+    // Laptops: while you plan another day, Your day is that day, its latest
+    // change marked, so the plan stays beside the conversation (owner, 18
+    // Oct 2026, Composer review canvas board 9). "Show today" goes back.
+    function planningDay(x) {
+        const p = planFor(state.conversation.activeDate);
+        return p && p.date !== x.today ? p : null;
+    }
+    const dayTools = () =>
+        `<nav class="day-tools" aria-label="Your Composer"><button data-nav="plans">${I('calendar')}My Plans</button><button data-nav="saved">${I('bookmark')}Saved${state.saved.length ? ` · ${state.saved.length}` : ''}</button><button data-nav="history">${I('clock')}History</button></nav>`;
+    function planningPanel(p) {
+        const marks = marksFor(p);
+        const rows = ordered(p).map((item) => {
+            const m = marks.get(item.id);
+            const held = item.fixed || item.type === 'appointment' || item.type === 'event';
+            const where = item.venue || item.location || place(item.id)?.area || '';
+            return fact(
+                {
+                    openPlan: p.date,
+                    className: m ? 'is-changed' : '',
+                    tile: m ? 'is-changed' : held ? 'is-paper' : '',
+                    icon: I(held ? 'calendar' : 'pin'),
+                    small: `${item.start}–${item.end} · ${m ? (m.kind === 'moved' ? `moved from ${m.from.split('–')[0]}` : m.kind === 'added' ? 'added' : `in place of ${m.was}`) : 'in your plans'}`,
+                    strong: where ? `${item.title}, ${where}` : item.title,
+                },
+                'day-item',
+            );
+        });
+        return `<div class="composer-day-head"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div><h2 id="composer-day-title">Your ${E(weekday(p.date))}</h2><p class="composer-day-note">${E(longDate(p.date))} · the day you’re planning. <button class="day-switch" data-action="day-today">Show today</button></p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${dayTools()}`;
+    }
     function dayPanel() {
         const x = todayContext();
+        const planning = planningDay(x);
+        if (planning && state.dayShown !== planning.date)
+            return planningPanel(planning);
         const rows = dayFacts(x).map((f) => fact(f, 'day-item'));
         if (!rows.length && !x.upcoming.length) return '';
-        return `<div class="composer-day-head"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div><h2 id="composer-day-title">Your ${E(weekday(x.today))}</h2><p class="composer-day-note">${E(shortDate(x.today))} · ${E(x.now)} · Sample day. Composer plans around this. Tap one to ask.</p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${x.upcoming.length ? `<div class="day-later"><p>Coming up</p>${x.upcoming.map((u) => `<button data-nav="plans"><strong>${E(dateShort(u.date))}</strong> · ${E(u.title)}, ${E(u.start)}</button>`).join('')}</div>` : ''}<nav class="day-tools" aria-label="Your Composer"><button data-nav="plans">${I('calendar')}My Plans</button><button data-nav="saved">${I('bookmark')}Saved${state.saved.length ? ` · ${state.saved.length}` : ''}</button><button data-nav="history">${I('clock')}History</button></nav>`;
+        return `<div class="composer-day-head"><p class="composer-mark">${I('spark')}Composer</p>${backButton()}</div><h2 id="composer-day-title">Your ${E(weekday(x.today))}</h2><p class="composer-day-note">${E(shortDate(x.today))} · ${E(x.now)} · Sample day. Composer plans around this. Tap one to ask.${planning ? ` <button class="day-switch" data-action="day-planning">Show ${E(weekday(planning.date))}</button>` : ''}</p>${rows.length ? `<div class="day-items">${rows.join('')}</div>` : ''}${x.upcoming.length ? `<div class="day-later"><p>Coming up</p>${x.upcoming.map((u) => `<button data-nav="plans"><strong>${E(dateShort(u.date))}</strong> · ${E(u.title)}, ${E(u.start)}</button>`).join('')}</div>` : ''}${dayTools()}`;
     }
     // Saved places and plan items use the shared photo-free card
     // (connected/places.js) with Composer's own Quick look, Save and Add.
@@ -1227,25 +1259,33 @@
             : '';
         return `<div class="activity-journey">${x.journey ? `<small>${E(status)}</small><span>${E(x.journey.from)} → ${E(x.journey.to)} · ${E(x.journey.depart)}–${E(x.journey.arrive)}</span>` : ''}<a href="../departures-next/?${E(params.toString())}">${I('route')}${x.journey ? 'Review journey' : previous ? 'Journey from previous activity' : 'Check journey'}</a></div>`;
     }
+    // The latest change is marked where it happened (owner, 18 Oct 2026,
+    // Composer review canvas board 9): "Moved from 13:00–14:00".
+    function marksFor(p) {
+        const last = state.conversation.lastApplied;
+        const plain = (x) => JSON.stringify(x ? { ...x, revision: 0 } : null);
+        return last?.date === p.date && last.after && plain(last.after) === plain(p)
+            ? new Map((last.rows || []).map((r) => [r.id, r]))
+            : new Map();
+    }
+    const markLabel = (m) =>
+        m.kind === 'moved'
+            ? `Moved from ${m.from}`
+            : m.kind === 'added'
+              ? 'Added'
+              : `In place of ${m.was}`;
     function timeline(p, editable = false) {
-        const old = p.baseId
-            ? state.plans.find((x) => x.id === p.baseId)
-            : null;
+        const marks = marksFor(p);
         return `<ol class="plan-timeline">${ordered(p)
             .map((x) => {
-                const before = old?.items.find((y) => y.id === x.id);
-                const changed =
-                    old &&
-                    (!before ||
-                        before.start !== x.start ||
-                        before.end !== x.end);
+                const mark = marks.get(x.id);
                 const processItem = x.sourceType === 'bureaucracy';
                 const previewable =
                     !processItem &&
                     (place(x.id) || x.type === 'event' || x.personal);
                 const appointment =
                     x.type === 'appointment' || x.id === 'appointment';
-                return `<li class="${x.fixed ? 'fixed-item' : ''}"><div class="timeline-time"><strong>${E(x.start)}</strong><span>${E(x.end)}</span></div><div class="timeline-node">${I(x.type === 'task' ? 'document' : x.fixed || appointment ? 'calendar' : 'pin')}</div><div class="timeline-content">${x.fixed ? `<span class="fixed-label">${x.known ? 'Already in your plans' : x.type === 'event' ? 'Fixed event · sample' : processItem ? 'Recorded appointment' : x.personal ? 'Confirmed appointment' : 'Fixed · sample appointment'}</span>` : appointment ? '<span class="fixed-label">Personal appointment</span>' : ''}${changed ? `<span class="changed-label">${before ? `Was ${before.start}–${before.end}` : 'Added to this proposal'}</span>` : ''}<h3>${previewable ? `<button class="item-preview-title" data-preview="${E(x.id)}" aria-label="Preview ${E(x.title)}">${E(x.title)}</button>` : E(x.title)}</h3><p>${E(x.venue || x.location || place(x.id)?.area || (x.type === 'task' ? 'Preparation time' : 'Location to be added'))}</p>${journeyFor(p, x)}${processItem ? `<a class="plain-button" href="${E(StudioIntegration.bureaucracyLink(x))}">${I('document')}Open process ${I('arrow')}</a>` : ''}${editable ? `<div class="timeline-actions">${!x.fixed ? timeEditor(x) : ''}${!x.fixed && !appointment && x.type !== 'event' && x.type !== 'task' ? `<button class="plain-button" data-swap="${x.id}">Swap place</button>` : ''}<button class="plain-button" data-remove="${x.id}" aria-label="Remove ${E(x.title)}">Remove</button></div>` : ''}</div></li>`;
+                return `<li class="${x.fixed ? 'fixed-item' : ''}${mark ? ' is-changed' : ''}"><div class="timeline-time"><strong>${E(x.start)}</strong><span>${E(x.end)}</span></div><div class="timeline-node">${I(x.type === 'task' ? 'document' : x.fixed || appointment ? 'calendar' : 'pin')}</div><div class="timeline-content">${x.fixed ? `<span class="fixed-label">${x.known ? 'Already in your plans' : x.type === 'event' ? 'Fixed event · sample' : processItem ? 'Recorded appointment' : x.personal ? 'Confirmed appointment' : 'Fixed · sample appointment'}</span>` : appointment ? '<span class="fixed-label">Personal appointment</span>' : ''}${mark ? `<span class="changed-label">${E(markLabel(mark))}</span>` : ''}<h3>${previewable ? `<button class="item-preview-title" data-preview="${E(x.id)}" aria-label="Preview ${E(x.title)}">${E(x.title)}</button>` : E(x.title)}</h3><p>${E(x.venue || x.location || place(x.id)?.area || (x.type === 'task' ? 'Preparation time' : 'Location to be added'))}</p>${journeyFor(p, x)}${processItem ? `<a class="plain-button" href="${E(StudioIntegration.bureaucracyLink(x))}">${I('document')}Open process ${I('arrow')}</a>` : ''}${editable ? `<div class="timeline-actions">${!x.fixed ? timeEditor(x) : ''}${!x.fixed && !appointment && x.type !== 'event' && x.type !== 'task' ? `<button class="plain-button" data-swap="${x.id}">Swap place</button>` : ''}<button class="plain-button" data-remove="${x.id}" aria-label="Remove ${E(x.title)}">Remove</button></div>` : ''}</div></li>`;
             })
             .join('')}</ol>`;
     }
@@ -1363,10 +1403,14 @@
         if (requestField.value && !requestField.style.height)
             requestField.style.height =
                 Math.min(120, requestField.scrollHeight) + 'px';
-        document.querySelector('#studio-request').placeholder = chapter.entries
+        // With a day open, the box says which (board 9).
+        const planning = planFor(state.conversation.activeDate);
+        document.querySelector('#studio-request').placeholder = !chapter.entries
             .length
-            ? 'Ask or add a detail…'
-            : 'Ask, discover, or plan…';
+            ? 'Ask, discover, or plan…'
+            : planning
+              ? `Ask or change ${weekday(planning.date)}…`
+              : 'Ask or add a detail…';
         syncPlanning();
         syncSaved();
         let live = document.querySelector('#chat-announcement');
@@ -1459,14 +1503,22 @@
     function said(label, result) {
         if (result.problem)
             return [`${result.problem} Your plan hasn’t changed.`, {}];
-        return [
-            `${label}.`,
-            result.applied
-                ? { changeId: state.conversation.lastApplied?.id }
-                : {},
-        ];
+        if (!result.applied) return [`${label}.`, {}];
+        // One item changed: said as it is now (board 9); more: the label.
+        const change = state.conversation.lastApplied;
+        const rows = change?.rows || [];
+        const one = rows.length === 1 ? rows[0] : null;
+        const text = !one
+            ? `${label}.`
+            : one.kind === 'moved'
+              ? `${one.title} is now ${one.to}.`
+              : one.kind === 'added'
+                ? `${one.title} is in your plan, ${one.to}.`
+                : one.kind === 'removed'
+                  ? `${one.title} is out of your plan.`
+                  : `${one.title} is in place of ${one.was}, ${one.to}.`;
+        return [text, { changeId: change.id, change: M.clone(rows) }];
     }
-    // What Undo did, in words: a day back, a day gone, or the change undone.
     const undoneText = (change) =>
         !change
             ? 'Undone.'
@@ -1498,6 +1550,7 @@
         if (outcome.applied && last?.role === 'assistant')
             C.updateEntry(state, last.id, {
                 changeId: state.conversation.lastApplied.id,
+                change: M.clone(state.conversation.lastApplied.rows || []),
             });
         else if (outcome.problem)
             note(`${outcome.problem} It wasn’t added to your plan.`);
@@ -2878,6 +2931,14 @@
             document
                 .querySelector('#studio-request')
                 .focus({ preventScroll: true });
+        }
+        // Your day: the day you're planning, or today (board 9).
+        if (action === 'day-today' || action === 'day-planning') {
+            state.dayShown =
+                action === 'day-today' ? state.conversation.activeDate : null;
+            store();
+            render();
+            return;
         }
         if (action === 'discover') submit('Find something outdoors');
         if (action === 'plan-example')
