@@ -24,10 +24,24 @@ class SlotFiller
      */
     private const SAME_PLACE_METERS = 250.0;
 
+    /** @var array<string, float> candidate id → the score it won its slot with, for the last fill() */
+    private array $pickedScores = [];
+
     public function __construct(
         private readonly PlanScorer $scorer,
         private readonly EstimatesTravel $travel,
     ) {}
+
+    /**
+     * The score each greedily placed candidate won its slot with in the last
+     * fill() (appointments, pins and anchors aren't scored).
+     *
+     * @return array<string, float>
+     */
+    public function pickedScores(): array
+    {
+        return $this->pickedScores;
+    }
 
     /**
      * @param  list<Candidate>  $feasible
@@ -43,6 +57,7 @@ class SlotFiller
         ?array $roles = null,
         int $sameCoarseCap = PHP_INT_MAX,
     ): Plan {
+        $this->pickedScores = [];
         $slots = [];
         $used = [];
         // Visible-name de-dup, location-aware: a name placed once blocks another
@@ -265,8 +280,9 @@ class SlotFiller
                     continue;
                 }
 
-                [$candidate, $travelMin, $start] = $best;
+                [$candidate, $travelMin, $start, $score] = $best;
                 $end = $start->addMinutes($candidate->typicalDurationMin);
+                $this->pickedScores[$candidate->id] = round($score, 3);
 
                 $slots[] = new PlanSlot($candidate, $start, $end, $travelMin);
                 $used[$candidate->id] = true;
@@ -413,7 +429,7 @@ class SlotFiller
             $score = $this->scorer->score($candidate, $slots, $cursor, $cursorLat, $cursorLng, $context);
             if ($score > $bestScore) {
                 $bestScore = $score;
-                $best = [$candidate, $travelMin, $start];
+                $best = [$candidate, $travelMin, $start, $score];
             }
         }
 
