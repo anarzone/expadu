@@ -152,7 +152,7 @@ test('boarding-stop navigation resumes the same step after leaving the page', ()
     first.click('next');
     assert.equal(
         first.context.JourneySession.read().instruction,
-        'Köln Appellhofplatz',
+        'Appellhofplatz',
     );
     const next = navigation(data);
     next.context.JourneyNavigation.resume();
@@ -183,7 +183,7 @@ test('opening the ordinary route does not reinterpret an active at-stop step', (
     assert.match(view.content(), /Replace current preview/);
     assert.equal(
         view.context.JourneySession.read().instruction,
-        'Köln Appellhofplatz',
+        'Appellhofplatz',
     );
 });
 

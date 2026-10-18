@@ -31,8 +31,10 @@
                         .join('')}</div>
                     <a class="board-full" href="${S.routes.departures}?view=timetable&stop=${encodeURIComponent(stopId)}">Full timetable</a>`;
             }
+            // Stops as Travel shows them: "Neumarkt", not "Köln Neumarkt".
+            const plain = (name = '') => name.replace(/^Köln\s+/, '');
             const stopName = (id) =>
-                T.stops.find((stop) => stop.id === id)?.name || '';
+                plain(T.stops.find((stop) => stop.id === id)?.name);
             // Custom stop menu in the app's style; the native select opened an
             // operating-system menu that did not match the page.
             function stopPicker() {
@@ -41,7 +43,7 @@
                     <ul class="stop-list" id="today-stop-list" role="listbox" aria-label="Departure stop" hidden>${T.stops
                         .map(
                             (stop) =>
-                                `<li role="option" id="today-stop-${E(stop.id)}" data-stop-option="${E(stop.id)}" aria-selected="${stop.id === stopId}" tabindex="-1"><span>${E(stop.name)}</span>${I('check')}</li>`,
+                                `<li role="option" id="today-stop-${E(stop.id)}" data-stop-option="${E(stop.id)}" aria-selected="${stop.id === stopId}" tabindex="-1"><span>${E(plain(stop.name))}</span>${I('check')}</li>`,
                         )
                         .join('')}</ul>
                 </div>`;
@@ -192,7 +194,7 @@
                 main.querySelector('#departure-board-rows').innerHTML =
                     boardRows();
                 main.querySelector('#stop-feedback').textContent =
-                    `Showing ${C.board(T, stopId).sample ? 'sample-day' : 'captured'} departures from ${C.board(T, stopId).stop.name}.`;
+                    `Showing ${C.board(T, stopId).sample ? 'sample-day' : 'captured'} departures from ${plain(C.board(T, stopId).stop.name)}.`;
             }
             function setMenu(open, focusSelected = false) {
                 const picker = main.querySelector('[data-stop-picker]');

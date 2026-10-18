@@ -35,13 +35,16 @@
         `<button class="nav-icon-button" data-nav="${action}" aria-label="${label}" title="${label}" ${extra}>${icon(name)}</button>`;
     // Each route keeps its own sample: the capture or the sample day.
     const trip = () => J.tripOf?.(route) || J.capture;
+    // Stops as this page shows them, "Neumarkt" not "Köln Neumarkt", so the
+    // On your way bar and Composer's answers name them the same way.
+    const plain = (text = '') => text.replace(/Köln\s+/g, '');
     function persist() {
         const progress = N.progress(route, active.step);
         active = {
             ...active,
             step: progress.index,
             title: trip().place,
-            instruction: progress.step.title,
+            instruction: plain(progress.step.title),
             mode: route.mode,
             // The steps, arrival and vehicle go with it, so Composer can
             // answer about the trip you're on (connected/journey-session.js).
@@ -55,9 +58,9 @@
             steps: N.steps(route).map((step) => ({
                 time: step.time,
                 mode: step.mode,
-                title: step.title,
-                detail: step.detail,
-                place: step.placeName,
+                title: plain(step.title),
+                detail: plain(step.detail),
+                place: plain(step.placeName),
             })),
         };
         const persisted = S.write(active);
