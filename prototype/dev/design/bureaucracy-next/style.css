@@ -3267,3 +3267,40 @@ body[data-page='bureaucracy'] .step-actions .plain-button:active {
     color: var(--color-text);
     font-weight: var(--weight-semibold);
 }
+/* Outside the covered city: a way on (owner, 18 Oct 2026, Composer review
+   canvas board 16). */
+.access-blank .coverage-notify {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--text-small);
+}
+.access-blank .coverage-notify svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--color-select-text);
+}
+.access-blank .coverage-composer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    margin-top: 20px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+}
+.access-blank .coverage-composer svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+}
+.access-blank .coverage-composer svg:last-child {
+    margin-left: auto;
+    color: var(--color-text-soft);
+}

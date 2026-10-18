@@ -283,9 +283,14 @@
             'docState',
             'clearSearch',
         ].some((key) => key in b.dataset) ||
-        ['close-editor', 'coverage', 'close', 'toggle-later'].includes(
-            b.dataset.case,
-        ) ||
+        [
+            'close-editor',
+            'coverage',
+            'close',
+            'toggle-later',
+            // A sample: it only says so here.
+            'notify-coverage',
+        ].includes(b.dataset.case) ||
         b.dataset.situation === 'browse';
     // A "Fresh start" preview takes answers so you can try the questions as
     // a new user, but keeps them in this tab: nothing is written to your
@@ -378,7 +383,10 @@
         if (state.entry === 'unavailable')
             return '<section class="access-blank"><h2>Your paperwork record isn’t available right now.</h2><p>Your record is paused or being removed. Contact us if you didn’t expect this.</p></section>';
         if (state.entry === 'outside')
-            return '<section class="access-blank"><h2>No reviewed guidance for your area yet.</h2><p>Paperwork covers Cologne so far. Nothing is guessed for another city: your answers stay, and tasks appear once your area is covered.</p></section>';
+            // Honest, with a way on (owner, 18 Oct 2026, Composer review
+            // canvas board 16): be told when the area is covered (a sample:
+            // nothing is sent), or say the area is Cologne after all.
+            return `<section class="access-blank"><h2>No reviewed guidance for your area yet.</h2><p>Paperwork covers Cologne so far, and doesn’t guess for other cities. Your answers stay.</p><div class="actions">${state.coverageNotify ? `<p class="coverage-notify" role="status">${I('check')}<span>We’ll tell you here when your area is covered. Sample: nothing is sent.</span></p>` : button('Tell me when it’s covered', 'notify-coverage', 'primary')}${state.preview ? '<button type="button" class="button secondary" data-preview-exit>My area is Cologne</button>' : ''}</div><a class="coverage-composer" href="${E(S.routes.composer)}">${I('spark')}<span>Ask Composer about your move</span>${I('arrow')}</a></section>`;
         if (!B.canEdit(state))
             return H.info(state)?.record !== undefined
                 ? BureaucracyFamilyUI.render(state, R)
@@ -463,7 +471,7 @@
                 )
                 .join(
                     '',
-                )}${state.person === 'self' && allowed && !persona ? `<button data-case="sharing">${I('people')}<span>Share your plan<small>Choose who sees what</small></span></button>` : ''}</div></details>`}${allowed && (!state.scopes || state.scopes.includes('view_facts')) ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div>${sharedView() ? sharedNote() : ''}<div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress and guidance</span>${allowed ? '<button data-case="coverage">Sources & coverage</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
+                )}${state.person === 'self' && allowed && !persona ? `<button data-case="sharing">${I('people')}<span>Share your plan<small>Choose who sees what</small></span></button>` : ''}</div></details>`}${allowed && (!state.scopes || state.scopes.includes('view_facts')) ? `<button class="icon-button case-details" data-case="facts" aria-label="Your situation">${I('sliders')}<span class="case-details-long">Your situation</span><span class="case-details-short">Situation</span></button>` : ''}</div>${sharedView() ? sharedNote() : ''}<div id="case-editor"></div><div class="bureaucracy-view">${viewMarkup()}</div><div class="case-footnote">${I('info')}<span>Sample progress and guidance</span>${allowed ? '<button data-case="coverage">Where this comes from</button>' : ''}<details class="review-tools"><summary>Review ${I('down')}</summary><div class="review-tools-panel"><span class="review-tools-label">Preview a persona</span>${personas
                 .map(
                     ([id, label]) =>
                         `<button data-preview-persona="${id}" aria-pressed="${state.preview === id}">${E(label)}</button>`,
@@ -729,7 +737,7 @@
                       .join(' · '),
               )}</small></span>${I('arrow')}</button>`
             : '';
-        return `${searchLine(hits)}${comingUp(plan)}${entry}${ask}${docs}${tasks || dateSection ? `<div class="case-overview-grid${tasks && dateSection ? '' : ' is-single'}">${tasks}${dateSection}</div>` : ''}${later}${good}${query.trim() ? '' : `<div class="coverage-strip"><span>${I('info')}Some guidance still needs checking</span><button data-case="coverage">View coverage${I('arrow')}</button></div>`}`;
+        return `${searchLine(hits)}${comingUp(plan)}${entry}${ask}${docs}${tasks || dateSection ? `<div class="case-overview-grid${tasks && dateSection ? '' : ' is-single'}">${tasks}${dateSection}</div>` : ''}${later}${good}${query.trim() ? '' : `<div class="coverage-strip"><span>${I('info')}We’re still checking a few steps against official sources</span><button data-case="coverage">Which ones${I('arrow')}</button></div>`}`;
     }
     // An EU citizen's plan has no residence task because none applies, not
     // because something is missing: say so.
@@ -1810,6 +1818,12 @@
         }
         if (action === 'coverage') {
             sources('all');
+            return;
+        }
+        if (action === 'notify-coverage') {
+            state.coverageNotify = true;
+            render();
+            document.querySelector('.coverage-notify')?.focus?.();
             return;
         }
         if (action === 'facts' || action === 'expiry') {
