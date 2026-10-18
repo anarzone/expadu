@@ -181,3 +181,76 @@ test('browsers without a usable permission query remain passive', () => {
     stop();
     assert.equal(currentRequests, 0);
 });
+
+function grantedPermission() {
+    const status = new EventTarget();
+    status.state = 'granted';
+    navigator.permissions = { query: async () => status };
+
+    return status;
+}
+
+function countWatches() {
+    let count = 0;
+    const original = navigator.geolocation.watchPosition;
+    navigator.geolocation.watchPosition = (...args) => {
+        count++;
+
+        return original(...args);
+    };
+
+    return () => count;
+}
+
+test('a remounting layout keeps one background watch and its ping cooldown', async () => {
+    grantedPermission();
+    const watches = countWatches();
+    const release = location.acquireBackgroundLocation();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(watches(), 1);
+    watch.success(position());
+    assert.equal(requests.length, 1);
+
+    // The layout unmounts and mounts again on the next visit.
+    release();
+    const releaseAgain = location.acquireBackgroundLocation();
+    await new Promise((resolve) => setImmediate(resolve));
+    watch.success(position());
+
+    assert.equal(watches(), 1);
+    assert.deepEqual(cleared, []);
+    assert.equal(requests.length, 1);
+
+    releaseAgain();
+    location.stopBackgroundLocation();
+    assert.deepEqual(cleared, [7]);
+});
+
+test('opting out stops the shared background watch at once, even inside the grace window', async () => {
+    grantedPermission();
+    const release = location.acquireBackgroundLocation();
+    await new Promise((resolve) => setImmediate(resolve));
+    watch.success(position());
+    release();
+
+    location.stopBackgroundLocation();
+
+    assert.deepEqual(cleared, [7]);
+    assert.equal(requests[0].options.signal.aborted, true);
+    assert.equal(timers.size, 0);
+});
+
+test('revoking permission stops the shared watch while the layout still holds it', async () => {
+    const status = grantedPermission();
+    const release = location.acquireBackgroundLocation();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(timers.size, 2);
+
+    status.state = 'denied';
+    status.dispatchEvent(new Event('change'));
+
+    assert.deepEqual(cleared, [7]);
+    assert.equal(timers.size, 0);
+    release();
+    location.stopBackgroundLocation();
+});
