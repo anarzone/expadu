@@ -12,7 +12,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'WebApplication',
         'name' => 'Deutschlandticket break-even calculator',
         'applicationCategory' => 'FinanceApplication',

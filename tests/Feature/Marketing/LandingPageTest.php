@@ -76,6 +76,8 @@ test('the landing page carries FAQPage structured data', function () {
     $response->assertOk();
     $response->assertSee('application/ld+json', escape: false);
     $response->assertSee('FAQPage', escape: false);
+    // A bare '@context' in the template compiles as Blade's @context directive.
+    $response->assertSee('{"@context":"https://schema.org"', escape: false);
 });
 
 test('the legal pages render', function (string $route) {
