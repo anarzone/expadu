@@ -386,9 +386,10 @@
             // Honest, with a way on (owner, 18 Oct 2026, Composer review
             // canvas board 16): be told when the area is covered, or say the
             // area is Cologne after all. In the app the tap puts you on the
-            // city waitlist, which mails you when your area opens (a sample
-            // here: nothing is sent).
-            return `<section class="access-blank"><h2>No reviewed guidance for your area yet.</h2><p>Paperwork covers Cologne so far, and doesn’t guess for other cities. Your answers stay.</p><div class="actions">${state.coverageNotify ? `<p class="coverage-notify" role="status">${I('check')}<span>We’ll email you when your area is covered. Sample: nothing is sent.</span></p>` : button('Tell me when it’s covered', 'notify-coverage', 'primary')}${state.preview ? '<button type="button" class="button secondary" data-preview-exit>My area is Cologne</button>' : ''}</div><a class="coverage-composer" href="${E(S.routes.composer)}">${I('spark')}<span>Ask Composer about your move</span>${I('arrow')}</a></section>`;
+            // city waitlist: you confirm by mail, as on the website, then it
+            // mails you when your area opens (a sample here: nothing is
+            // sent).
+            return `<section class="access-blank"><h2>No reviewed guidance for your area yet.</h2><p>Paperwork covers Cologne so far, and doesn’t guess for other cities. Your answers stay.</p><div class="actions">${state.coverageNotify ? `<p class="coverage-notify" role="status">${I('check')}<span>Check your inbox to confirm. Then we’ll email you when your area is covered. Sample: nothing is sent.</span></p>` : button('Tell me when it’s covered', 'notify-coverage', 'primary')}${state.preview ? '<button type="button" class="button secondary" data-preview-exit>My area is Cologne</button>' : ''}</div><a class="coverage-composer" href="${E(S.routes.composer)}">${I('spark')}<span>Ask Composer about your move</span>${I('arrow')}</a></section>`;
         if (!B.canEdit(state))
             return H.info(state)?.record !== undefined
                 ? BureaucracyFamilyUI.render(state, R)
