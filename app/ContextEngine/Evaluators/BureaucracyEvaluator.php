@@ -3,7 +3,7 @@
 namespace App\ContextEngine\Evaluators;
 
 use App\ContextEngine\ActionBus;
-use App\ContextEngine\BureaucracyPushLedger;
+use App\ContextEngine\PushLedger;
 use App\ContextEngine\ScoredAction;
 use App\ContextEngine\Scorer;
 use App\Enums\TaskStatus;
@@ -19,15 +19,18 @@ use Carbon\CarbonInterface;
  *
  * First-crossing dedup: once a task is announced as "urgent", we don't push
  * again until it enters a new tier, so the user isn't spammed every morning
- * about the same overdue task. BureaucracyPushLedger holds that state, and a
- * tier is only used up once its push was actually sent.
+ * about the same overdue task. PushLedger holds that state, and a tier is
+ * only used up once its push was actually sent.
  */
 class BureaucracyEvaluator
 {
+    /** One push per (task, tier) within this window. */
+    private const PUSHED_DAYS = 30;
+
     public function __construct(
         private ActionBus $bus,
         private Scorer $scorer,
-        private BureaucracyPushLedger $pushes,
+        private PushLedger $pushes,
     ) {}
 
     /**
@@ -69,7 +72,7 @@ class BureaucracyEvaluator
             ScoredAction::CHANNEL_DASHBOARD,
             ScoredAction::CHANNEL_ALERT_PAGE,
         ];
-        $reservation = $this->pushes->reserve($userTask->id, $tier);
+        $reservation = $this->pushes->reserve("bureaucracy_pushed:{$userTask->id}:{$tier}", self::PUSHED_DAYS);
         if ($reservation !== null) {
             $channels[] = ScoredAction::CHANNEL_PUSH;
         }
@@ -106,7 +109,7 @@ class BureaucracyEvaluator
         // The bus strips a throttled or unwanted push. Hand the tier back so the
         // next run can try again — consuming it here lost the push for 30 days.
         if ($reservation !== null && ! in_array(ScoredAction::CHANNEL_PUSH, $stored->deliverChannels, true)) {
-            $this->pushes->release($userTask->id, $tier, $reservation);
+            $this->pushes->release($reservation);
         }
     }
 

@@ -2,7 +2,8 @@
 
 namespace App\Notifications;
 
-use App\ContextEngine\BureaucracyPushLedger;
+use App\ContextEngine\ClaimsReservedPush;
+use App\ContextEngine\ReservedPush;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -10,9 +11,9 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class BureaucracyDeadlineNotification extends Notification implements ShouldQueue
+class BureaucracyDeadlineNotification extends Notification implements ReservedPush, ShouldQueue
 {
-    use Queueable;
+    use ClaimsReservedPush, Queueable;
 
     public function __construct(
         public string $taskTitle,
@@ -21,23 +22,8 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
         public string $deadline,
         public ?int $taskId = null,
         public ?string $appointmentAt = null, // ISO — set when the deadline IS a booked appointment
-        public ?int $userTaskId = null,
-        public ?string $pushReservation = null, // BureaucracyPushLedger nonce for this tier's push
+        public ?array $pushReservation = null, // PushLedger reservation for this tier's push
     ) {}
-
-    /**
-     * Runs in the queue worker right before each channel sends. A push whose
-     * tier was sent by another job meanwhile (a retry, a lapsed reservation)
-     * is dropped, so one tier never pushes twice.
-     */
-    public function shouldSend(mixed $notifiable, string $channel): bool
-    {
-        if ($channel !== WebPushChannel::class || $this->userTaskId === null || $this->pushReservation === null) {
-            return true;
-        }
-
-        return app(BureaucracyPushLedger::class)->claimForSend($this->userTaskId, $this->tier, $this->pushReservation);
-    }
 
     /**
      * Deep-link straight to the task card (the page auto-expands + scrolls).

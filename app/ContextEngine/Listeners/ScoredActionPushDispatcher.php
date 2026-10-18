@@ -55,8 +55,9 @@ class ScoredActionPushDispatcher
             'score' => $action->score,
         ];
 
-        // Bureaucracy pushes carry their own per-tier ledger (BureaucracyPushLedger),
-        // whose tiers can repeat a severity (critical, then overdue), so they skip this.
+        // Pushes reserved in the PushLedger (bureaucracy tiers, the residency
+        // milestone) are deduped there — bureaucracy tiers can even repeat a
+        // severity (critical, then overdue) — so they skip this check.
         $dedupe = ! isset($action->payload['push_reservation']);
         if ($dedupe && $this->alreadyPushed($action)) {
             RedisLogger::log("scored_action_push_dispatch:{$user->id}", $context + ['mode' => 'deduped']);

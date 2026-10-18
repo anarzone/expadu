@@ -1,9 +1,9 @@
 <?php
 
 use App\ContextEngine\ActionBus;
-use App\ContextEngine\BureaucracyPushLedger;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
 use App\ContextEngine\Listeners\ScoredActionPushDispatcher;
+use App\ContextEngine\PushLedger;
 use App\ContextEngine\ScoredAction;
 use App\Events\Context\ScoredActionInserted;
 use App\Events\Context\TransitDisruptionDetected;
@@ -119,17 +119,15 @@ test('a sent bureaucracy push consumes its tier', function () {
 
 test('a queued bureaucracy push whose tier was already sent does not send again', function () {
     $user = User::factory()->create();
-    $pushes = app(BureaucracyPushLedger::class);
-    $reservation = $pushes->reserve(41, 'overdue');
-    $pushes->delivered(41, 'overdue', $reservation);
+    $pushes = app(PushLedger::class);
+    $pushes->delivered($pushes->reserve('bureaucracy_pushed:41:overdue', 30));
 
     $late = new BureaucracyDeadlineNotification(
         taskTitle: 'Register your address',
         tier: 'overdue',
         daysRemaining: -5,
         deadline: now()->subDays(5)->toDateString(),
-        userTaskId: 41,
-        pushReservation: 'a-different-reservation',
+        pushReservation: ['key' => 'bureaucracy_pushed:41:overdue', 'nonce' => 'a-different-reservation', 'sent_days' => 30],
     );
 
     expect($late->shouldSend($user, WebPushChannel::class))->toBeFalse()
