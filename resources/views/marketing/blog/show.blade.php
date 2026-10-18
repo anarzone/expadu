@@ -11,8 +11,9 @@
 @endpush
 
 @push('structured-data')
+    {{-- Blade would read the schema.org context key as one of its own directives, so the key is escaped with a double at sign. --}}
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'Article',
         'headline' => $post['title'],
         'description' => $post['description'],
