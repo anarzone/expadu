@@ -23,13 +23,10 @@ class ErrorBoundary extends Component<
     }
 
     componentDidCatch(error: Error, info: ErrorInfo) {
-        // Forward to Sentry if it has loaded by now
-        import('@sentry/react')
-            .then((Sentry) =>
-                Sentry.captureException(error, {
-                    extra: { componentStack: info.componentStack },
-                }),
-            )
+        // Through @/lib/sentry, the same lazy chunk initSentry loads — a
+        // separate import('@sentry/react') here pulled in the whole SDK.
+        import('@/lib/sentry')
+            .then((m) => m.captureRenderError(error, info))
             .catch(() => {});
     }
 
