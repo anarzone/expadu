@@ -97,6 +97,15 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Keep one connection per PHP-FPM worker across requests instead
+            // of opening a new backend (plus auth and PostGIS warm-up) on
+            // every request and deferred partial. PDO rolls back a request's
+            // unfinished transaction, and Laravel reconnects if the backend
+            // was dropped. Off by default; turn it on per environment, staging
+            // first.
+            'options' => [
+                PDO::ATTR_PERSISTENT => (bool) env('DB_PERSISTENT', false),
+            ],
         ],
 
         'sqlsrv' => [
