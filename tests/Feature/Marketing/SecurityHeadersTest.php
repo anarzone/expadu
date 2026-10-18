@@ -85,3 +85,11 @@ test('the production marketing host is indexable and points crawlers at the site
         ->not->toContain("Disallow: /\n")
         ->toContain('Sitemap: '.route('sitemap'));
 });
+
+test('the production app host is kept out of the index', function () {
+    app()->detectEnvironment(fn () => 'production');
+    config(['app.app_domain' => 'app.expadu.com', 'app.marketing_domain' => 'expadu.com']);
+
+    $this->get('http://app.expadu.com/login')->assertHeader('X-Robots-Tag', 'noindex');
+    $this->get('http://expadu.com/')->assertHeaderMissing('X-Robots-Tag');
+});

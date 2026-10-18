@@ -16,7 +16,16 @@ class SearchIndexing
      */
     public static function robotsTag(Request $request): ?string
     {
-        return self::isHidden($request) ? 'noindex, nofollow' : null;
+        if (self::isHidden($request)) {
+            return 'noindex, nofollow';
+        }
+
+        // The app host is all auth screens and walled pages: nothing to rank.
+        if ($request->getHost() === config('app.app_domain')) {
+            return 'noindex';
+        }
+
+        return null;
     }
 
     /**
