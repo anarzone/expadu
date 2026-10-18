@@ -7,13 +7,15 @@
 
     <title>@yield('title', 'Expadu — The AI companion for your new life in Germany')</title>
     <meta name="description" content="@yield('meta_description', 'Tell it your day — it plans the rest. Bureaucracy in English with official sources, transit that knows your ticket, and an AI day composer. Built for Cologne.')">
-    <link rel="canonical" href="@yield('canonical', url()->current())">
+    {{-- Not url()->current(): in production that follows the forced app root, and the app host 404s these paths. --}}
+    @php($canonicalFallback = rtrim(config('app.marketing_domain') ? 'https://'.config('app.marketing_domain') : url('/'), '/').'/'.ltrim(request()->path(), '/'))
+    <link rel="canonical" href="@yield('canonical', $canonicalFallback)">
 
     <meta property="og:site_name" content="Expadu">
     <meta property="og:type" content="website">
     <meta property="og:title" content="@yield('og_title', 'Expadu — The AI companion for your new life in Germany')">
     <meta property="og:description" content="@yield('meta_description', 'Tell it your day — it plans the rest. Bureaucracy in English with official sources, transit that knows your ticket, and an AI day composer. Built for Cologne.')">
-    <meta property="og:url" content="@yield('canonical', url()->current())">
+    <meta property="og:url" content="@yield('canonical', $canonicalFallback)">
     <meta property="og:image" content="@yield('og_image', asset('marketing/og-landing.png'))">
     <meta name="twitter:card" content="summary_large_image">
 
