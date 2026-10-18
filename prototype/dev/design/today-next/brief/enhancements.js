@@ -11,25 +11,65 @@
             } catch {
                 /* The stop can still be changed in this visit. */
             }
+            // Each line as Travel's Nearby draws it, a strip through the stop
+            // (departures-next/strip.js): the next departure each way, in
+            // minutes from the board's time, and a tap opens the stop in
+            // Travel (owner, 18 Oct 2026, Composer review canvas board 12).
+            // Today's column shows three lines at most; the next twelve
+            // departures find them and their two ways.
             function boardRows() {
-                const board = C.board(T, stopId);
-                // Each line as Travel shows it: its badge in the KVB colour
-                // (departures-next/labels.js).
-                const L = root.TravelLabels;
-                const badge = (row) => {
-                    const mode = (row.type || board.stop.mode) === 'bus' ? 'bus' : 'tram';
-                    return L.line(row.line, L.look(row.line, mode), { kind: mode });
+                const board = C.board(T, stopId, 12);
+                const L = root.TravelLabels,
+                    St = root.TravelStrip;
+                const at = (date, time) => new Date(`${date}T${time}:00`).getTime();
+                const minutes = (row) =>
+                    Math.round(
+                        (at(row.date, row.time) - at(board.date, board.time)) /
+                            60000,
+                    );
+                const href = `${S.routes.departures}?view=timetable&stop=${encodeURIComponent(stopId)}`;
+                const lines = [];
+                for (const row of board.rows) {
+                    let line = lines.find((item) => item.line === row.line);
+                    if (!line) {
+                        if (lines.length === 3) continue;
+                        const mode =
+                            (row.type || board.stop.mode) === 'bus'
+                                ? 'bus'
+                                : 'tram';
+                        line = { line: row.line, mode, look: L.look(row.line, mode), ways: [] };
+                        lines.push(line);
+                    }
+                    if (
+                        line.ways.length < 2 &&
+                        !line.ways.some((way) => way.destination === row.destination)
+                    )
+                        line.ways.push(row);
+                }
+                const way = (row) =>
+                    row && {
+                        dest: plain(row.destination),
+                        when: `${St.time(St.when(minutes(row), row.time))}${row.delayed ? L.chip('attention', 'clock', 'Delay recorded', { size: 'sm' }) : ''}`,
+                    };
+                const name = (row) => {
+                    const t = St.when(minutes(row), row.time);
+                    return `${plain(row.destination)} ${t.big}${t.unit ? ` ${t.unit}` : ''}`;
                 };
                 return `<p class="board-capture">${board.sample ? 'Sample day' : `Captured ${E(shortDate(board.date))}`} · ${board.time}<span>Not live</span></p>
-                    <div class="departure-rows">${board.rows
-                        .map(
-                            (row) => `<details class="departure-row">
-                        <summary aria-label="Line ${E(row.line)} towards ${E(row.destination)}, ${row.time}">${badge(row)}<span class="departure-destination">${E(row.destination.replace(/^Köln\s+/, ''))}</span><time datetime="${row.date}T${row.time}">${row.time}</time></summary>
-                        <div class="departure-context"><strong>Towards ${E(row.destination)}</strong><span>${E(shortDate(row.date))} · ${row.time}${row.delayed ? ' · Delay recorded' : ''}</span><span>Captured timetable. Current service needs checking.</span></div>
-                    </details>`,
+                    <div class="departure-strips">${lines
+                        .map((line) =>
+                            St.line({
+                                tag: 'a',
+                                attrs: `href="${href}" aria-label="${E(`${line.mode === 'bus' ? 'Bus' : 'Tram'} ${line.line}: ${line.ways.map(name).join(', ')}. Open in Travel`)}"`,
+                                look: line.look,
+                                badge: L.line(line.line, line.look, { kind: line.mode }),
+                                first: way(line.ways[0]),
+                                second: way(line.ways[1]),
+                                empty: 'Other way: see Travel',
+                            }),
                         )
                         .join('')}</div>
-                    <a class="board-full" href="${S.routes.departures}?view=timetable&stop=${encodeURIComponent(stopId)}">Full timetable</a>`;
+                    <a class="board-full" href="${href}">Full timetable</a>`;
             }
             // Stops as Travel shows them: "Neumarkt", not "Köln Neumarkt".
             const plain = (name = '') => name.replace(/^Köln\s+/, '');
@@ -279,18 +319,6 @@
             document.addEventListener('pointerdown', (event) => {
                 if (!event.target.closest('[data-stop-picker]')) setMenu(false);
             });
-            main.addEventListener(
-                'toggle',
-                (event) => {
-                    if (!event.target.matches('.departure-row[open]')) return;
-                    main.querySelectorAll('.departure-row[open]').forEach(
-                        (row) => {
-                            if (row !== event.target) row.open = false;
-                        },
-                    );
-                },
-                true,
-            );
             function refresh(content) {
                 const slot = main.querySelector('#around-plan-slot');
                 if (slot) {

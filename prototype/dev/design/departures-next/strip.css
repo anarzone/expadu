@@ -1,0 +1,252 @@
+@import url('../connected/tokens.css');
+/* A line through a stop, as Travel's Nearby draws it (owner, 14 Oct 2026,
+   Travel directions canvas row 16): its badge, the stop's dot on the line's
+   track, and at each end where it goes, via which stops and when. Shared
+   with strip.js (TravelStrip) so pages outside Travel show departures the
+   same way (Today's Check departures; owner, 18 Oct 2026, Composer review
+   canvas board 12). A narrow column folds a strip into rows: give the
+   strips' parent `container-type: inline-size`. */
+.nearby-strip {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 120px minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-20);
+    width: 100%;
+    min-height: 84px;
+    padding: var(--space-8) 0;
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    border-radius: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 160ms ease;
+}
+.nearby-strip:first-child {
+    border-top: 0;
+}
+.nearby-strip:hover {
+    background: color-mix(in srgb, var(--line) 5%, transparent);
+}
+.nearby-strip.is-selected {
+    background: color-mix(in srgb, var(--line) 9%, transparent);
+}
+.nearby-strip:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: -2px;
+    border-radius: var(--radius-md);
+}
+.strip-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+.strip-end {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.strip-end.is-left {
+    align-items: flex-end;
+    text-align: right;
+}
+.strip-end.is-empty small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+.strip-dest {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    font-size: 15.5px;
+    font-weight: var(--weight-semibold);
+}
+.strip-dest svg {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: var(--color-text-soft);
+    stroke-width: 2;
+}
+/* Names and vias in full; they wrap rather than end in "…" (the approved
+   line card; review, 15 Oct 2026). */
+.strip-via {
+    max-width: 100%;
+    color: var(--color-text-soft);
+    font-size: 12.5px;
+}
+.strip-when {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+}
+.strip-end.is-left .strip-when {
+    flex-direction: row-reverse;
+}
+.strip-track {
+    position: relative;
+    height: 44px;
+}
+.strip-track i {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    height: 6px;
+    margin-top: -3px;
+    border-radius: 3px;
+    background: var(--line);
+}
+.strip-track b {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    margin: -9px 0 0 -9px;
+    box-sizing: border-box;
+    border: 4px solid var(--line);
+    border-radius: 50%;
+    background: var(--color-bg-surface);
+}
+.nearby-strip > .tl-strip {
+    grid-column: 1 / -1;
+    margin-top: var(--space-8);
+}
+@container (max-width: 620px) {
+    .nearby-strip {
+        grid-template-columns: 52px 10px minmax(0, 1fr);
+        grid-template-areas:
+            'badge track first'
+            'badge track second';
+        row-gap: var(--space-10);
+        column-gap: var(--space-12);
+        min-height: 0;
+    }
+    .strip-badge {
+        grid-area: badge;
+        align-self: start;
+        padding-top: 2px;
+    }
+    .strip-track {
+        grid-area: track;
+        height: auto;
+    }
+    .strip-track i {
+        top: 8px;
+        bottom: 8px;
+        left: 3px;
+        right: auto;
+        width: 4px;
+        height: auto;
+        margin: 0;
+    }
+    .strip-track b {
+        width: 12px;
+        height: 12px;
+        margin: -6px 0 0 -6px;
+        border-width: 3px;
+    }
+    .strip-end.is-right {
+        grid-area: first;
+    }
+    .strip-end.is-left {
+        grid-area: second;
+        align-items: stretch;
+        text-align: left;
+    }
+    .strip-end:not(.is-empty) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: var(--space-8);
+        align-items: center;
+    }
+    .strip-dest {
+        grid-column: 1;
+    }
+    .strip-via {
+        grid-column: 1;
+    }
+    /* The minutes keep the right; a tag ("Running 2 min late") goes under
+       the via, so the via keeps the row's width and doesn't wrap round it
+       onto three lines. */
+    .strip-when,
+    .strip-end.is-left .strip-when {
+        display: contents;
+    }
+    .strip-when > .nearby-time {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        justify-self: end;
+    }
+    .strip-when > :not(.nearby-time) {
+        grid-column: 1;
+        justify-self: start;
+        margin-top: 2px;
+    }
+    .strip-dest {
+        min-width: 0;
+        max-width: 100%;
+    }
+    .strip-dest > span {
+        min-width: 0;
+    }
+    .strip-end.is-left .strip-dest svg {
+        display: none;
+    }
+    .strip-end.is-left .strip-dest::before {
+        content: '→';
+        color: var(--color-text-soft);
+    }
+    .strip-end.is-right .strip-dest svg {
+        display: none;
+    }
+    .strip-end.is-right .strip-dest::before {
+        content: '→';
+        color: var(--color-text-soft);
+    }
+}
+/* When it leaves: minutes, "Now" in the line's colour, or a paused clock. */
+.nearby-time {
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.nearby-time strong {
+    font-size: 24px;
+    font-weight: var(--weight-bold);
+    letter-spacing: -0.6px;
+}
+.nearby-time small {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.nearby-time.is-paused {
+    color: var(--color-text-soft);
+}
+.nearby-time.is-now {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: auto;
+    color: color-mix(in srgb, var(--line) 78%, var(--color-text));
+}
+.nearby-time.is-now i {
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+    animation: tl-blink 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .nearby-time.is-now i {
+        animation: none;
+    }
+}

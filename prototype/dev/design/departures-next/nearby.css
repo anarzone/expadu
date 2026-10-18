@@ -269,22 +269,6 @@
     height: 28px;
     font-size: 15px;
 }
-.nearby-time {
-    display: flex;
-    align-items: baseline;
-    gap: 3px;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-}
-.nearby-time strong {
-    font-size: 24px;
-    font-weight: var(--weight-bold);
-    letter-spacing: -0.6px;
-}
-.nearby-time small {
-    font-size: var(--text-caption);
-    font-weight: var(--weight-semibold);
-}
 .nearby-time.is-large strong {
     font-size: 27px;
 }
@@ -980,9 +964,6 @@
     background: var(--color-bg-quiet);
     color: var(--color-text-soft);
 }
-.nearby-time.is-paused {
-    color: var(--color-text-soft);
-}
 /* ---------- Footer: about the samples, and Review ---------- */
 .travel-footnote {
     display: flex;
@@ -1109,34 +1090,6 @@
 .nearby-stop .tl-chips {
     margin-top: 5px;
 }
-.nearby-time.is-now {
-    align-items: center;
-    height: 32px;
-}
-.nearby-time.is-now .tl-now {
-    height: 28px;
-    padding: 0 10px 0 8px;
-    font-size: 17px;
-}
 .nearby-area-head .tl-chip.is-calm {
     font-weight: var(--weight-semibold);
-}
-.nearby-time.is-now {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    height: auto;
-    color: color-mix(in srgb, var(--line) 78%, var(--color-text));
-}
-.nearby-time.is-now i {
-    width: 7px;
-    height: 7px;
-    border-radius: var(--radius-round);
-    background: currentColor;
-    animation: tl-blink 1.6s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-    .nearby-time.is-now i {
-        animation: none;
-    }
 }

@@ -130,49 +130,17 @@
     margin-left: 5px;
     font-weight: var(--weight-semibold);
 }
-.today-reference .departure-row {
-    position: relative;
+/* The board's lines as Travel's strips (departures-next/strip.css); the
+   column is narrow, so they fold into rows. */
+.today-reference .departure-strips {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 4px;
 }
-.today-reference .departure-row + .departure-row::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 38px;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, var(--line), transparent);
-}
-.today-reference .departure-row > summary {
-    display: grid;
-    grid-template-columns: 52px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 8px;
-    min-height: 48px;
-    padding-block: 7px;
-    border-radius: var(--radius-sm);
-    list-style: none;
-    cursor: pointer;
-}
-.today-reference .departure-row > summary::-webkit-details-marker {
-    display: none;
-}
-.today-reference .departure-destination {
-    font-size: var(--text-caption);
-    line-height: 1.3;
-    overflow-wrap: anywhere;
-}
-.today-reference .departure-row time {
-    font-size: var(--text-control);
-    font-weight: var(--weight-bold);
-    font-variant-numeric: tabular-nums;
-}
-.today-reference .departure-context {
-    display: grid;
-    gap: 4px;
-    padding: 6px 0 10px 38px;
-    font-size: var(--text-micro);
-    line-height: 1.4;
-    color: var(--ink-soft);
+.today-reference .departure-strips .nearby-strip {
+    color: var(--color-text);
+    text-decoration: none;
 }
 .today-reference .board-full {
     display: flex;
@@ -456,7 +424,6 @@
 .today-reference
     :is(
         .forecast-strip,
-        .departure-row > summary,
         .practical-service-links a,
         .compact-event-open,
         .icon-button,
@@ -470,7 +437,6 @@
 .today-reference
     :is(
         .forecast-strip,
-        .departure-row > summary,
         .practical-service-links a,
         .compact-event-open,
         .icon-button,
@@ -482,7 +448,6 @@
 .today-reference
     :is(
         .forecast-strip,
-        .departure-row > summary,
         .practical-service-links a,
         .compact-event-open,
         .icon-button,
@@ -491,7 +456,7 @@
     background: var(--blue);
     transform: scale(0.985);
 }
-.today-reference :is(.departure-context, .draft-preview[open] > p) {
+.today-reference .draft-preview[open] > p {
     animation: content-arrive 150ms ease-out;
 }
 @keyframes content-arrive {
@@ -543,9 +508,6 @@
     .today-reference .practical-personal .record-label {
         max-width: none;
     }
-    .today-reference .departure-destination {
-        font-size: var(--text-small);
-    }
     .today-reference .board-capture {
         font-size: var(--text-micro);
     }
@@ -594,8 +556,7 @@
     .today-reference
         :is(
             .forecast-strip,
-            .departure-row > summary,
-            .practical-service-links a,
+                .practical-service-links a,
             .compact-event-open,
             .icon-button,
             .around-open,
@@ -603,7 +564,7 @@
         ) {
         transition: none;
     }
-    .today-reference :is(.departure-context, .draft-preview[open] > p) {
+    .today-reference .draft-preview[open] > p {
         animation: none;
     }
 }

@@ -101,7 +101,9 @@ function workspace(
         'journey-ui.js',
         'icons.js',
         'labels.js',
-        ...(station ? ['nearby.js', 'nearby-ui.js', 'service-context.js'] : []),
+        ...(station
+            ? ['nearby.js', 'strip.js', 'nearby-ui.js', 'service-context.js']
+            : []),
         'trip-card.js',
         'app.js',
     ]) {

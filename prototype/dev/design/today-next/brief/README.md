@@ -5,6 +5,15 @@ restores the composition in the owner's screenshot, also saved at
 [`../review/continuity-desktop.png`](../review/continuity-desktop.png).
 The daily brief and its timeline-only correction were rejected.
 
+**18 October, Check departures as Travel shows them (owner: build it,
+Composer review canvas board 12, option A):** the board's lines are Travel's
+line strips (`departures-next/strip.js`): the next departure each way in
+minutes from the board's time, "Now" in the line's colour, "Delay recorded"
+where the timetable records one, and a tap opens the stop in Travel. Up to
+three lines, found in the next twelve departures; a way not among them reads
+"Other way: see Travel" rather than claiming it isn't recorded. The rows
+that opened in place, their styles and their one-open handler are gone.
+
 **18 October, Today knows you're on your way (owner: build it, Composer
 review canvas board 12):** after I'm on my way, Today kept offering "Leave now
 · I'm on my way" while every other page showed the On your way bar. Today now

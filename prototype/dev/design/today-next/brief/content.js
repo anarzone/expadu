@@ -371,11 +371,16 @@
     }
     // A stop on the sample day shows its departures at the day's clock, like
     // Travel's timetable; other stops show their capture.
-    function board(timetable, id) {
+    function board(timetable, id, limit = 3) {
         const stop = timetable.stops.find((item) => item.id === id);
         if (!stop) return null;
         const now = stop.sampleDay || stop.capture;
-        const { rows, total } = timetable.departures(id, now.date, now.time, 3);
+        const { rows, total } = timetable.departures(
+            id,
+            now.date,
+            now.time,
+            limit,
+        );
         return {
             stop,
             date: now.date,

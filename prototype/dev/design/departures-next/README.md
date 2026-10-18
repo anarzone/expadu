@@ -11,6 +11,15 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Line strips, shared — 18 October 2026
+
+Nearby's line strips (a line through the stop, where it goes each way, via
+which stops and when) are built by `strip.js` (`TravelStrip`) with their
+styles in `strip.css`, moved out of `nearby-ui.js`, `hub.css` and
+`nearby.css` unchanged: Nearby is pixel-identical at 360, 390, 768 and 1512.
+Today's Check departures draws its lines with them (Composer review canvas,
+board 12; owner: build it).
+
 ## One look for "selected" — 18 October 2026
 
 "Selected" looked different on every page: the menu's pill was lavender on

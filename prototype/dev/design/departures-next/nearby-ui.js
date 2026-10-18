@@ -163,20 +163,26 @@
                 L && later.length
                     ? L.strip('attention', 'moon', `Then ${later.join(' · ')}`)
                     : '';
-            // A line as a strip through the stop (owner, 14 Oct 2026, Travel
-            // directions canvas row 16): each end is where it goes, via which
-            // stops, and when. Narrow columns fold it into two rows (CSS).
-            const end = (d, side) =>
-                d
-                    ? `<span class="strip-end is-${side}"><span class="strip-dest">${side === 'left' ? icon('back') : ''}<span>${safe(d.dest)}</span>${side === 'right' ? icon('arrow') : ''}</span>${d.via?.length ? `<small class="strip-via">via ${safe(d.via.join(' · '))}</small>` : ''}<span class="strip-when">${time(d, l.look)}${tagOf(d)}</span></span>`
-                    : `<span class="strip-end is-${side} is-empty"><small>Other way: ${l.dirs.length > 1 ? 'filtered out' : 'not recorded'}</small></span>`;
+            // A line as a strip through the stop, built by TravelStrip
+            // (strip.js), which pages outside Travel share: each end is where
+            // it goes, via which stops, and when.
+            const dir = (d) =>
+                d && {
+                    dest: d.dest,
+                    via: d.via,
+                    when: `${time(d, l.look)}${tagOf(d)}`,
+                };
             const [first, second] = l.shown;
-            return `<button type="button" class="nearby-strip${open ? ' is-selected' : ''}" data-n="line" data-v="${safe(l.line)}" data-key="line-${safe(l.line)}" aria-pressed="${open}" aria-label="${safe(label)}" style="--line:${l.look.colour};--tint:${l.look.tint}">
-                <span class="strip-badge">${L ? L.line(l.line, l.look, { kind: l.mode }) : badge(l.line, l.look, 'card')}${l.pinned ? `<span class="nearby-pinned" aria-label="Pinned">${icon('star')}</span>` : ''}</span>
-                ${end(second, 'left')}
-                <span class="strip-track" aria-hidden="true"><i></i><b></b></span>
-                ${end(first, 'right')}${strip}
-            </button>`;
+            return root.TravelStrip.line({
+                attrs: `type="button" data-n="line" data-v="${safe(l.line)}" data-key="line-${safe(l.line)}" aria-pressed="${open}" aria-label="${safe(label)}"`,
+                selected: open,
+                look: l.look,
+                badge: `${L ? L.line(l.line, l.look, { kind: l.mode }) : badge(l.line, l.look, 'card')}${l.pinned ? `<span class="nearby-pinned" aria-label="Pinned">${icon('star')}</span>` : ''}`,
+                first: dir(first),
+                second: dir(second),
+                empty: `Other way: ${l.dirs.length > 1 ? 'filtered out' : 'not recorded'}`,
+                extra: strip,
+            });
         }
 
         function detail(stop, l) {
