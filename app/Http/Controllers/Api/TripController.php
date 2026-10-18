@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TasteSignals;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StartTripRequest;
 use App\Jobs\SendTripStopReminder;
@@ -40,6 +41,12 @@ class TripController extends Controller
         );
 
         $this->scheduleGetOffReminders($trip, $request->user());
+        app(TasteSignals::class)->tripStarted(
+            $request->user(),
+            (string) $validated['destination']['name'],
+            (float) $validated['destination']['lat'],
+            (float) $validated['destination']['lng'],
+        );
 
         return response()->json(['trip' => $trip->toShared()]);
     }

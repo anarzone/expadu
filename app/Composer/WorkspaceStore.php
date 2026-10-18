@@ -173,10 +173,13 @@ class WorkspaceStore
                     }
                     break;
                 default:
-                    $this->mutate($s, $input);
+                    $displaced = $this->mutate($s, $input);
                     break;
             }
             $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+            if (isset($displaced)) {
+                app(TasteSignals::class)->swappedAway($user, $displaced);
+            }
             if ($action === 'proposal') {
                 DB::afterCommit(fn () => Cache::forget("composer:handoff:{$user->id}:{$input['token']}"));
             }
@@ -185,8 +188,12 @@ class WorkspaceStore
         });
     }
 
-    private function mutate(array &$s, array $input): void
+    /**
+     * @return array<string, mixed>|null the slot a remove or replace took out of the plan
+     */
+    private function mutate(array &$s, array $input): ?array
     {
+        $displaced = null;
         $date = in_array($input['action'], ['appointment', 'add'])
             ? ($input['date'] ?? $s['focus'] ?? $s['draft']['date'] ?? now('Europe/Berlin')->format('Y-m-d'))
             : ($s['focus'] ?? $input['date'] ?? $s['draft']['date'] ?? now('Europe/Berlin')->format('Y-m-d'));
@@ -217,6 +224,7 @@ class WorkspaceStore
                 }
                 break;
             case 'remove':
+                $displaced = $slots[$index];
                 array_splice($slots, $index, 1);
                 break;
             case 'appointment':
@@ -247,6 +255,7 @@ class WorkspaceStore
                 $this->require(app(PlanCatalogue::class)->available($candidate, Constraints::fromArray($plan['constraints']), $startAt, $endAt), 'This place or event no longer fits the plan requirements or opening hours. Choose another time or item.');
                 $slot = (new PlanSlot($candidate, $startAt, $endAt, 0))->toArray();
                 if ($input['action'] === 'replace') {
+                    $displaced = $slots[$index];
                     $slots[$index] = $slot;
                 } else {
                     $slots[] = $slot;
@@ -274,6 +283,8 @@ class WorkspaceStore
         if ($s['approval'] === 'routine' && count($slots) > 0) {
             $this->commit($s);
         }
+
+        return $displaced;
     }
 
     private function availableTime(Candidate $candidate, array $slots, CarbonImmutable $day, Constraints $constraints): string

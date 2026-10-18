@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TasteSignals;
 use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
 use App\Enums\TransportMode;
@@ -92,6 +93,7 @@ class PlacesController extends Controller
         $spot->travel_min = $travelOption['minutes'] ?? null;
         $spot->travel_mode = $travelOption['mode'] ?? $request->user()->transport_mode?->value;
         app(PlaceFacts::class)->attach(collect([$spot]));
+        app(TasteSignals::class)->spotViewed($request->user(), $spot);
 
         return new PlaceResource($spot);
     }
