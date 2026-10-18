@@ -48,8 +48,10 @@ class TimetableController extends Controller
             // Saved places (Home / Work / pins) offered as one-tap journey
             // destinations in the "Where to?" card. Unlike the Places "From"
             // picker, coordinates are sent to the client here because the journey
-            // sheet plans the route from lat/lng directly.
-            'savedPlaces' => $request->user()->places()
+            // sheet plans the route from lat/lng directly. This and recents are
+            // lazy: the board polls every 30 s with only=boards, and an eager
+            // query here ran on every poll for a prop the poll throws away.
+            'savedPlaces' => fn () => $request->user()->places()
                 ->whereNotNull('lat')
                 ->whereNotNull('lng')
                 ->orderBy('sort_order')
@@ -66,7 +68,7 @@ class TimetableController extends Controller
                 ->all(),
             // Recent destinations round out the quick-launch pills under
             // "Where to?" (saved places first, recents fill the rest).
-            'recentDestinations' => JourneyRecent::query()
+            'recentDestinations' => fn () => JourneyRecent::query()
                 ->where('user_id', $request->user()->id)
                 ->where('role', 'destination')
                 ->orderByDesc('last_used_at')
