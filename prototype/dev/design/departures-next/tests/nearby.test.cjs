@@ -2,6 +2,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 require('../departure-data.js');
 require('../station-data.js');
+// Line colours come from Travel's labels.
+require('../labels.js');
 require('../nearby.js');
 const N = globalThis.NearbyModel;
 const model = N.create({
@@ -119,13 +121,15 @@ test('the Merkenich captures keep their own clock and later times', () => {
 });
 
 test('line colours come from the KVB table, with readable ink', () => {
-    assert.deepEqual(N.look('18', 'tram'), {
+    // Travel's labels hold them, for every page (labels.js).
+    const { look } = globalThis.TravelLabels;
+    assert.deepEqual(look('18', 'tram'), {
         colour: '#0074AD',
         tint: '#e8f2f8',
         ink: '#FFFFFF',
         bus: false,
     });
-    assert.equal(N.look('12', 'tram').ink, '#1D2A05');
-    assert.equal(N.look('136', 'bus').colour, '#4A4A4A');
-    assert.equal(N.look('999', 'tram').colour, '#00768B');
+    assert.equal(look('12', 'tram').ink, '#1D2A05');
+    assert.equal(look('136', 'bus').colour, '#4A4A4A');
+    assert.equal(look('999', 'tram').colour, '#00768B');
 });

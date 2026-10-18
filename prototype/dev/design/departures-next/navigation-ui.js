@@ -335,7 +335,7 @@
         return `${many} ${names} stop here too: take the ${line}`;
     }
     const lookOf = (step) =>
-        root.NearbyModel?.look(
+        root.TravelLabels?.look(
             lineOf(step),
             word(step) === 'bus' ? 'bus' : 'tram',
         ) || {};
@@ -720,7 +720,7 @@
                 const alight = list
                     .slice(index)
                     .find((item) => item.mode === 'alight');
-                const look = root.NearbyModel?.look(
+                const look = root.TravelLabels?.look(
                     lineOf(step),
                     word(step) === 'bus' ? 'bus' : 'tram',
                 );

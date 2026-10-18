@@ -1036,7 +1036,7 @@ function wayStrip(route, trip) {
             continue;
         }
         const line = leg.line || route.line;
-        const look = window.NearbyModel?.look(line, 'tram') || {};
+        const look = window.TravelLabels?.look(line, 'tram') || {};
         parts.push(
             node('stop', before ? before.stop : placeName(trip.from), leg.time, look),
             `<span class="way-ride" style="--line:${look.colour}">${L.line(line, look)}</span>`,
@@ -1068,7 +1068,7 @@ function tripLine(key, trip = J.day) {
     }
     const { route, planned, best, spare } = now;
     const ride = rideOf(route);
-    const look = window.NearbyModel?.look(route.line, 'tram') || {};
+    const look = window.TravelLabels?.look(route.line, 'tram') || {};
     const margin = trip.kind === 'official' ? 10 : 5;
     const left = spare(route);
     const gone = J.dayRoutes.find((r) => !r.inPlan);
@@ -1233,7 +1233,7 @@ function platformOnStep(route, step) {
     const lit = M.platformFor(step.boardStop, line, towards);
     if (!lit.length) return '';
     const id = `stand-${route.id}-${step.time.replace(':', '')}`;
-    const colour = window.NearbyModel?.look(line, 'tram')?.colour || '#211d15';
+    const colour = window.TravelLabels?.look(line, 'tram')?.colour || '#211d15';
     return `<button type="button" class="step-platform" data-action="stand" aria-expanded="false" aria-controls="${id}" aria-label="Where to stand: ${safe(M.note(step.boardStop, lit))}">${icon('pin')}<span>${safe(M.note(step.boardStop, lit))}</span>${icon('down')}</button><div class="step-stand" id="${id}" hidden>${M.closeUp(step.boardStop, lit, colour)}${M.legend(step.boardStop, lit)}</div>`;
 }
 // A way's steps in the trip page's words (review, 15 Oct 2026): "Walk to
@@ -1246,7 +1246,7 @@ function stepWords(route, step, steps, index) {
     const line = step.line || route.line;
     const off = steps.slice(index).find((item) => item.mode === 'alight');
     const kind =
-        step.vehicle === 'bus' || window.NearbyModel?.look(line, 'tram')?.bus
+        step.vehicle === 'bus' || window.TravelLabels?.look(line, 'tram')?.bus
             ? 'Bus'
             : step.vehicle === 'rail'
               ? 'Train'
@@ -1374,7 +1374,7 @@ function savedPlan(route) {
     const remindAt = clockOf(minutesOf(route.depart) - 5);
     const trip = tripOf(route);
     const look = route.line
-        ? window.NearbyModel?.look(String(route.line), 'tram')
+        ? window.TravelLabels?.look(String(route.line), 'tram')
         : null;
     // Phones keep the day in My day; desktops show it as the next trip.
     const day = desktopPlanner.matches
@@ -1394,7 +1394,7 @@ function lineBadge(line) {
     const service = window.StationCapture?.services.find(
         (item) => item.line === String(line),
     );
-    const look = window.NearbyModel?.look(
+    const look = window.TravelLabels?.look(
         String(line),
         service?.type === 'bus' ? 'bus' : 'tram',
     );
@@ -1484,7 +1484,7 @@ function planOption(route, list, trip, best) {
                       const id = String(leg.line || route.line);
                       const vehicle = vehicleOf(id, leg);
                       const bus = vehicle === 'Bus';
-                      const look = window.NearbyModel?.look(id, bus ? 'bus' : 'tram');
+                      const look = window.TravelLabels?.look(id, bus ? 'bus' : 'tram');
                       return L.line(id, look, {
                           word: index === 0,
                           kind: bus ? 'bus' : vehicle === 'Train' ? 'rail' : 'tram',
@@ -1815,7 +1815,7 @@ function renderDay() {
     const events = window.ExpaduSampleDay?.events || [];
     const next = tripNow(trip);
     const route = next?.route || nextTripChoice(trip).best;
-    const look = window.NearbyModel?.look(route.line, 'tram') || {};
+    const look = window.TravelLabels?.look(route.line, 'tram') || {};
     const hour = (h) =>
         sampleWeather(trip.date, `${String(h).padStart(2, '0')}:00`);
     const now = sampleWeather(trip.date, trip.time);

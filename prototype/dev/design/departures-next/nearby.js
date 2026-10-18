@@ -4,43 +4,8 @@
    belong together. The capture doesn't say which point a departure uses, so
    a line belongs to its area, never to one point. */
 (function (root) {
-    // KVB line colours, darkened where white text needs 4.5:1 (owner-approved
-    // on the Travel directions canvas, 9 Oct 2026). Unlisted lines fall back
-    // to the travel colour; buses to grey.
-    const colours = {
-        1: '#E2001A',
-        3: '#C8027E',
-        4: '#A01E5A',
-        7: '#008540',
-        9: '#E2001A',
-        12: '#95C11F',
-        16: '#0074AD',
-        18: '#0074AD',
-    };
-    const darkInk = new Set(['12']);
-    const white = [255, 255, 255];
-    const rgb = (hex) =>
-        [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-    // A pale wash of the line colour for its card (9% on white).
-    const tintOf = (hex) =>
-        '#' +
-        rgb(hex)
-            .map((c, i) =>
-                Math.round(white[i] + (c - white[i]) * 0.09)
-                    .toString(16)
-                    .padStart(2, '0'),
-            )
-            .join('');
-    function look(line, mode) {
-        const bus = mode === 'bus';
-        const colour = colours[line] || (bus ? '#4A4A4A' : '#00768B');
-        return {
-            colour,
-            tint: tintOf(colour),
-            ink: darkInk.has(String(line)) ? '#1D2A05' : '#FFFFFF',
-            bus,
-        };
-    }
+    // Line colours come from Travel's labels (labels.js).
+    const look = (line, mode) => root.TravelLabels.look(line, mode);
     const byLine = (a, b) =>
         String(a).localeCompare(String(b), undefined, { numeric: true });
     const clockAfter = (clock, minutes) => {
@@ -308,5 +273,5 @@
               ? { big: dir.clock, unit: '' }
               : { big: String(dir.mins), unit: 'min' };
 
-    root.NearbyModel = { create, look, when, areasOf, dayLabel };
+    root.NearbyModel = { create, when, areasOf, dayLabel };
 })(globalThis);

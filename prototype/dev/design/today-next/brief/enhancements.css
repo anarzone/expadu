@@ -144,7 +144,7 @@
 }
 .today-reference .departure-row > summary {
     display: grid;
-    grid-template-columns: 30px minmax(0, 1fr) auto;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
     min-height: 48px;
@@ -155,17 +155,6 @@
 }
 .today-reference .departure-row > summary::-webkit-details-marker {
     display: none;
-}
-.today-reference .line-chip {
-    display: grid;
-    place-items: center;
-    height: 24px;
-    min-width: 28px;
-    padding: 2px 4px;
-    border-radius: var(--radius-sm);
-    background: var(--blue);
-    color: var(--teal);
-    font-size: var(--text-caption);
 }
 .today-reference .departure-destination {
     font-size: var(--text-caption);

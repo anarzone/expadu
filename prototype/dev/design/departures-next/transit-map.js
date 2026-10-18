@@ -13,7 +13,7 @@
         );
     const BUSES = ['136', '146'];
     const colour = (line) =>
-        root.NearbyModel?.look(String(line), BUSES.includes(String(line)) ? 'bus' : 'tram')
+        root.TravelLabels?.look(String(line), BUSES.includes(String(line)) ? 'bus' : 'tram')
             ?.colour || '#211d15';
     const halo = 'paint-order="stroke" stroke="#fbf6ec" stroke-linejoin="round"';
 

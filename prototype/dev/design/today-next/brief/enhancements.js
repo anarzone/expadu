@@ -13,11 +13,18 @@
             }
             function boardRows() {
                 const board = C.board(T, stopId);
+                // Each line as Travel shows it: its badge in the KVB colour
+                // (departures-next/labels.js).
+                const L = root.TravelLabels;
+                const badge = (row) => {
+                    const mode = (row.type || board.stop.mode) === 'bus' ? 'bus' : 'tram';
+                    return L.line(row.line, L.look(row.line, mode), { kind: mode });
+                };
                 return `<p class="board-capture">${board.sample ? 'Sample day' : `Captured ${E(shortDate(board.date))}`} · ${board.time}<span>Not live</span></p>
                     <div class="departure-rows">${board.rows
                         .map(
                             (row) => `<details class="departure-row">
-                        <summary aria-label="Line ${E(row.line)} towards ${E(row.destination)}, ${row.time}"><b class="line-chip">${E(row.line)}</b><span class="departure-destination">${E(row.destination.replace(/^Köln\s+/, ''))}</span><time datetime="${row.date}T${row.time}">${row.time}</time></summary>
+                        <summary aria-label="Line ${E(row.line)} towards ${E(row.destination)}, ${row.time}">${badge(row)}<span class="departure-destination">${E(row.destination.replace(/^Köln\s+/, ''))}</span><time datetime="${row.date}T${row.time}">${row.time}</time></summary>
                         <div class="departure-context"><strong>Towards ${E(row.destination)}</strong><span>${E(shortDate(row.date))} · ${row.time}${row.delayed ? ' · Delay recorded' : ''}</span><span>Captured timetable. Current service needs checking.</span></div>
                     </details>`,
                         )

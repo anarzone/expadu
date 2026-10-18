@@ -2481,9 +2481,16 @@
     background: var(--color-attention);
     color: var(--color-attention-text);
 }
-:is(.day-chip-tile, .day-item-tile).is-travel {
-    background: var(--color-select-bg);
-    color: var(--color-select-text);
+/* A trip's tile is Travel's line badge itself (labels.js). */
+:is(.day-chip-tile, .day-item-tile).is-line {
+    width: auto;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+}
+:is(.day-chip-tile, .day-item-tile).is-line .tl-line svg {
+    width: 16px;
+    height: 16px;
 }
 :is(.day-chip-tile, .day-item-tile).is-events {
     background: #2b1d3f;

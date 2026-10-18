@@ -930,10 +930,11 @@
         if (a && x.trip && !(way && way.title === a.title))
             facts.push({
                 prompt: `When should I leave for my ${a.start}?`,
-                tile: 'is-travel',
-                icon: I('train'),
+                // Travel's line badge, in the line's KVB colour (labels.js).
+                tile: 'is-line',
+                icon: window.TravelLabels.line(x.trip.journey.line, window.TravelLabels.look(x.trip.journey.line, 'tram')),
                 small: `${x.trip.leaveNow ? 'Now' : `By ${clockText(x.trip.best.leave)}`} · leave for ${a.start}`,
-                strong: `Line ${x.trip.journey.line} at ${x.trip.best.depart} from ${x.trip.journey.from}`,
+                strong: `Tram ${x.trip.journey.line} at ${x.trip.best.depart} from ${x.trip.journey.from}`,
             });
         if (a)
             facts.push({
