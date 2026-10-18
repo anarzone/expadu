@@ -5,6 +5,16 @@ restores the composition in the owner's screenshot, also saved at
 [`../review/continuity-desktop.png`](../review/continuity-desktop.png).
 The daily brief and its timeline-only correction were rejected.
 
+**18 October, the trip opens in Travel (owner: build it, Composer review
+canvas board 12):** in an appointment's sheet, the trip row is drawn as Travel
+draws it, its line badge on the card's surface with the card's own words
+("Leave now · Tram 4 at 13:14 from Neumarkt · there 13:48"), and a tap opens
+Travel's trip page with Back to Today, as Composer's Open in Travel does. A
+trip that needs checking or runs late opens Travel's options instead. Today's
+own "Your journey" sheet (a cyan block, grey steps, line 4 without its badge,
+a third copy of the trip) is gone, with its styles, and so is the sheet's
+Directions button, which did what the row now does.
+
 **8 October, place credit:** the "Open near …" list ends with "From
 OpenStreetMap contributors (ODbL), sample export of 7 Oct 2026", the credit
 the data's licence asks for where it's shown.

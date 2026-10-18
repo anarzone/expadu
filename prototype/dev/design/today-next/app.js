@@ -27,18 +27,6 @@
     let contentPriority = null,
         recentCompletion = null;
     const sessionKey = (name) => `${reviewKey}-${name}`;
-    // Where the tram leg ends. Saved copies of the sample appointment can
-    // predate its stop name, so it comes from the shared sample day then.
-    function alightStop(j) {
-        const sample = window.ExpaduSampleDay?.appointment;
-        return (
-            j.alightStop ||
-            (j.activityId && j.activityId === sample?.id
-                ? sample.journey?.alightStop
-                : '') ||
-            j.to
-        );
-    }
     function load(name) {
         const base = M.scenario(name);
         const fresh = window.TodayContent ? TodayContent.prepare(base) : base;
@@ -903,87 +891,6 @@
     // Details and short tasks open as a sheet on phones and a compact dialog on
     // larger screens (guide: Sheets & dialogs).
     const sheet = (html) => `<div class="today-sheet">${html}</div>`;
-    function journeySteps(item, plan) {
-        const j = item.journey,
-            delayed = j.delay > 0;
-        // The tram to take, when it isn't the planned one.
-        const lead = plan?.tight && plan.earlier ? plan.earlier : null;
-        const t = lead
-            ? {
-                  departure: lead.depart,
-                  stationArrival: lead.arrive,
-                  destinationArrival: lead.atAppointment,
-              }
-            : M.travel(item);
-        const step = (icon, title, detail, time) =>
-            `<li class="is-${icon}"><span class="sheet-step-icon">${I(icon)}</span><span class="sheet-step-copy"><strong>${title}</strong>${detail ? `<small>${detail}</small>` : ''}</span>${time ? `<span class="sheet-step-time">${time}</span>` : ''}</li>`;
-        return `<ol class="sheet-steps" aria-label="Journey, step by step">${[
-            j.accessWalkMinutes !== null && j.accessWalkMinutes !== undefined
-                ? step(
-                      'walk',
-                      `Walk to ${E(j.from)}`,
-                      `${j.accessWalkMinutes} min`,
-                      plan ? (lead || plan).leave : '',
-                  )
-                : '',
-            step(
-                'train',
-                `Line ${E(j.line)} from ${E(j.from)}`,
-                delayed
-                    ? `${j.delay} min late · simulated`
-                    : 'Scheduled · no live status',
-                `${delayed ? `<del>${E(j.depart)}</del> ` : ''}${E(t.departure)}`,
-            ),
-            step('pin', `Get off at ${E(alightStop(j))}`, '', E(t.stationArrival)),
-            j.walkMinutes !== null && j.walkMinutes !== undefined
-                ? step(
-                      'walk',
-                      `Walk to ${E(item.title)}`,
-                      `${j.walkMinutes} min · ${E(item.location)}`,
-                      t.destinationArrival ? `≈ ${t.destinationArrival}` : '',
-                  )
-                : '',
-        ].join('')}</ol>`;
-    }
-    function routeDetails(item) {
-        const j = item.journey,
-            t = M.travel(item),
-            id = E(item.id);
-        const plan = t.stale
-            ? null
-            : window.TodayContent?.leaveBy(item, M.minutes(day.time));
-        const delayed = !t.stale && j.delay > 0;
-        const late = delayed && t.lateMinutes > 0;
-        const take = plan?.take;
-        const timing = take
-            ? [
-                  take.leaveIn > 0 ? inMinutes(take.leaveIn) : '',
-                  take.spare !== null && take.spare >= 0
-                      ? `${take.spare} min to spare before ${item.start}`
-                      : '',
-              ]
-                  .filter(Boolean)
-                  .join(' · ')
-            : '';
-        const lead = t.stale
-            ? `<div class="sheet-lead is-unknown"><span>Journey</span><strong>Needs checking</strong><small>These sample times no longer match your plan.</small></div>`
-            : late
-              ? `<div class="sheet-lead is-late"><span>On this train</span><strong>${t.lateMinutes} min late</strong><small>Estimated at ${E(item.title)} ${t.destinationArrival} · it starts ${item.start}</small></div>`
-              : plan
-                ? `<div class="sheet-lead"><span>Leave by</span><strong>${take.leaveIn <= 0 ? 'Now' : take.leave}</strong>${timing ? `<small>${timing}</small>` : ''}${plan.tight && plan.earlier ? `<p class="sheet-lead-tip">The ${E(t.departure)} in your plan leaves only ${plan.spare} min to spare.</p>` : ''}</div>`
-                : '';
-        let fallback = '';
-        if (delayed && (j.alternatives || []).length)
-            fallback = `<section class="sheet-section"><h3>${late ? 'Get there on time' : 'Other ways to go'}</h3>${alternativesList(item)}</section>`;
-        else if (!t.stale)
-            fallback = `<section class="sheet-section"><h3>If you miss it</h3><p>Check the next Line ${E(j.line)} or another route in Travel.</p></section>`;
-        U.open(
-            'Your journey',
-            sheet(
-                `<p class="detail-intro">Line ${E(j.line)} · ${E(j.from)} → ${E(alightStop(j))} · ${E(shortDate(day.date))}</p>${lead}${t.stale ? '' : journeySteps(item, plan)}${fallback}<p class="detail-note">Sample times. Live service and the walking route have not been checked.</p><div class="detail-actions"><button class="outline-action" data-today-travel="${id}">${I('route')}Open in Travel</button><button class="text-action" data-today-context="${id}">${I('spark')}Ask Composer</button></div>`,
-            ),
-        );
-    }
     function details(item) {
         const id = E(item.id),
             onPage = day.agenda.some((entry) => entry.id === item.id),
@@ -1002,6 +909,14 @@
                 : null;
         const row = (data, icon, title, detail) =>
             `<button class="sheet-row" ${data}="${id}">${I(icon)}<span><strong>${title}</strong><small>${detail}</small></span>${I('arrow')}</button>`;
+        // The trip as Travel shows it: its line badge and the card's own
+        // words; a tap opens Travel's trip page (Back to Today), or Travel's
+        // options when the trip needs checking or runs late (owner, 18 Oct
+        // 2026, Composer review canvas board 12).
+        const L = window.TravelLabels;
+        const trip = (title, detail, compare = false) =>
+            `<button class="sheet-row is-trip" data-today-travel="${id}"${compare ? ' data-compare="1"' : ''}>${L.line(item.journey.line, L.look(item.journey.line, 'tram'), { kind: 'tram' })}<span><strong>${title}</strong><small>${detail}</small></span>${I('arrow')}</button>`;
+        const j = item.journey;
         const getting = !onPage
             ? ''
             : !t
@@ -1012,36 +927,32 @@
                     'No route in your plan yet',
                 )
               : t.stale
-                ? row(
-                      'data-today-route',
-                      'train',
+                ? trip(
                       'Journey needs checking',
-                      `${E(item.journey.from)} → ${E(item.location)}`,
+                      `${E(j.from)} → ${E(item.location)}`,
+                      true,
                   )
-                : t.lateMinutes > 0
-                  ? row(
-                        'data-today-route',
-                        'train',
+                : j.delay > 0 && t.lateMinutes > 0
+                  ? trip(
                         `About ${t.lateMinutes} min late`,
-                        `Line ${E(item.journey.line)} is delayed · see ways to get there on time`,
+                        `Tram ${E(j.line)} is delayed · see ways to get there on time`,
+                        true,
                     )
-                  : row(
-                      'data-today-route',
-                      'train',
-                      plan
-                          ? plan.take.leaveIn <= 0
-                              ? 'Leave now'
-                              : `Leave by ${plan.take.leave}`
-                          : `Line ${E(item.journey.line)}`,
-                      `Line ${E(item.journey.line)} from ${E(item.journey.from)} · ${(plan?.take.atAppointment || t.destinationArrival) ? `there ≈ ${plan?.take.atAppointment || t.destinationArrival}` : 'arrival needs checking'}`,
-                  );
+                  : trip(
+                        plan
+                            ? plan.take.leaveIn <= 0
+                                ? 'Leave now'
+                                : `Leave at ${E(plan.take.leave)}`
+                            : `Tram ${E(j.line)}`,
+                        `Tram ${E(j.line)} at ${E(plan?.take.depart || t.departure)} from ${E(j.from)} · there ${E(plan?.take.atAppointment || t.destinationArrival || '—')}`,
+                    );
         const status = ['Pending', 'Proposal'].includes(item.planStatus)
             ? 'To review'
             : M.status(item);
         U.open(
             item.title,
             sheet(
-                `<p class="detail-intro">${E(date)} · ${item.start}–${item.end} · ${E(item.location)}</p><div class="status-row">${swatch(status)}</div>${paperworkLink(item)}${getting}<dl class="detail-grid"><div><dt>Booking</dt><dd>${M.status(item) === 'Booking recorded' ? 'Recorded by you' : 'Not recorded in Expadu'}</dd></div></dl><p class="detail-note">Keeping an appointment in your plan does not book or confirm it with the organiser.</p>${onPage ? `<div class="detail-actions"><button class="outline-action" data-today-travel="${id}">${I('route')}Directions</button>${editable ? `<button class="text-action" data-today-edit="${id}">${I('pencil')}Edit</button>` : ''}<button class="text-action" data-today-reveal="${id}">${I('trash')}Remove</button></div>` : ''}`,
+                `<p class="detail-intro">${E(date)} · ${item.start}–${item.end} · ${E(item.location)}</p><div class="status-row">${swatch(status)}</div>${paperworkLink(item)}${getting}<dl class="detail-grid"><div><dt>Booking</dt><dd>${M.status(item) === 'Booking recorded' ? 'Recorded by you' : 'Not recorded in Expadu'}</dd></div></dl><p class="detail-note">Keeping an appointment in your plan does not book or confirm it with the organiser.</p>${onPage ? `<div class="detail-actions">${editable ? `<button class="text-action" data-today-edit="${id}">${I('pencil')}Edit</button>` : ''}<button class="text-action" data-today-reveal="${id}">${I('trash')}Remove</button></div>` : ''}`,
             ),
         );
     }
@@ -1211,7 +1122,6 @@
             }
         }
         const id =
-            data.todayRoute ||
             data.todayDetails ||
             data.todayEdit ||
             data.todayAlternatives ||
@@ -1247,7 +1157,6 @@
             ].find((item) => item?.id === data.saveItem);
             if (record) toggleSave(record);
         }
-        if (data.todayRoute && item) routeDetails(item);
         if (data.todayDetails && item) {
             closeMenus();
             details(item);
@@ -1293,6 +1202,7 @@
                 arrive: item.start,
                 activity: item.id,
                 planDate: day.date,
+                compare: data.compare,
             });
         }
         if (data.todayReveal) {
