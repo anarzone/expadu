@@ -12,35 +12,41 @@
         if (!link || !phone.matches || event.defaultPrevented) return;
         if (event.metaKey || event.ctrlKey || event.shiftKey) return;
         event.preventDefault();
-        // The shrunk menu opens again first; it doesn't send you back to
-        // the section's first screen (a plan in progress stays).
-        if (document.body.classList.contains('menu-mini')) {
-            document.body.classList.remove('menu-mini');
-            return;
-        }
         const again = new CustomEvent('expadu:section-again', {
             cancelable: true,
         });
         if (!dispatchEvent(again)) return;
         scrollTo({ top: 0, behavior: still.matches ? 'instant' : 'smooth' });
     });
-    // Scrolling down shrinks the menu to the section you're in; scrolling
-    // up, or reaching the top, brings it back (canvas row 23).
-    let lastY = scrollY;
-    addEventListener(
+    // Scrolling down, the menu and Composer's button step away; scrolling
+    // up, or reaching the page's top or end, brings them back (owner chose
+    // B, Composer review canvas board 5, 18 Oct 2026). The page scrolls the
+    // window, or its own panel on Today (#page-scroll).
+    let lastY = 0;
+    document.addEventListener(
         'scroll',
-        () => {
-            const y = Math.max(0, scrollY);
+        (event) => {
+            const page =
+                event.target === document
+                    ? document.scrollingElement
+                    : event.target;
+            if (
+                page !== document.scrollingElement &&
+                page.id !== 'page-scroll'
+            )
+                return;
+            const y = Math.max(0, page.scrollTop);
             if (Math.abs(y - lastY) < 8) return;
+            const end = y + page.clientHeight >= page.scrollHeight - 2;
             document.body.classList.toggle(
-                'menu-mini',
-                phone.matches && y > lastY && y > 80,
+                'menu-away',
+                phone.matches && y > lastY && y > 80 && !end,
             );
             lastY = y;
         },
-        { passive: true },
+        { passive: true, capture: true },
     );
     phone.addEventListener('change', () =>
-        document.body.classList.remove('menu-mini'),
+        document.body.classList.remove('menu-away'),
     );
 })();

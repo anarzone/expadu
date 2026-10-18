@@ -11,6 +11,22 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## The menu steps away while you scroll — 18 October 2026
+
+Testers found Composer's round button and the shrunk menu sitting over
+the ends and starts of rows (Travel's minutes, Today's times, line
+badges). The owner chose B on the Composer review canvas, board 5.
+
+- Phones: scrolling down, the capsule menu and Composer's round button
+  slide away; scrolling up, or reaching the page's top or end, brings them
+  back. It replaces the shrink to the section you're in
+  (`connected/section-bar.js`, `section-bar.css`).
+- Every page: Today scrolls its own panel and counts too; Composer's page
+  now loads the script, and its text box drops to the bottom while the
+  menu is away, so no gap opens under it. Events' wall fits the screen and
+  doesn't scroll.
+- Keyboard focus in the menu keeps it in place.
+
 ## Arriving with a trip — 18 October 2026
 
 Owner, on Composer's "Open in Travel": the page it landed on was crowded

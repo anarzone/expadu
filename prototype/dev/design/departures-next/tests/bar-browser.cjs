@@ -97,11 +97,13 @@ async function swipe(page, cdp, from, to, steps = 8) {
                 `${path}: tab heights`,
             );
             // Composer's button beside it, as tall, the same inset; on
-            // Composer's own page the menu takes the width.
+            // Composer's own page too, in the selected tint (.composer-here).
             const width = await page.evaluate(
                 () => document.documentElement.clientWidth,
             );
-            const tray = await box(page, '#composer-tray');
+            const tray =
+                (await box(page, '.composer-here')) ||
+                (await box(page, '#composer-tray'));
             if (tray) {
                 assert.equal(Math.round(tray.top), Math.round(nav.top));
                 assert.equal(Math.round(tray.height), 62);
@@ -126,23 +128,22 @@ async function swipe(page, cdp, from, to, steps = 8) {
                 ),
                 `${path}: no sideways scroll`,
             );
-            // Scrolling down shrinks the menu to the section you're in;
-            // scrolling up brings it back.
+            // Scrolling down, the menu and Composer's button step away;
+            // scrolling up brings them back.
             const height = await page.evaluate(
                 () => document.documentElement.scrollHeight - innerHeight,
             );
-            if (height > 200) {
+            if (height > 300) {
                 for (const y of [100, 200])
                     await page.evaluate((y) => scrollTo(0, y), y);
                 await page.waitForTimeout(500);
-                const mini = await box(page, '#shell .service-nav');
-                assert.equal(Math.round(mini.width), 62, `${path}: shrunk`);
-                assert.equal(Math.round(mini.bottom), 828);
+                const away = await box(page, '#shell .service-nav');
+                assert.ok(away.top >= 844, `${path}: the menu stepped away`);
                 await page.evaluate(() => scrollTo(0, 0));
                 await page.waitForTimeout(500);
                 assert.equal(
-                    Math.round((await box(page, '#shell .service-nav')).width),
-                    Math.round(nav.width),
+                    Math.round((await box(page, '#shell .service-nav')).top),
+                    Math.round(nav.top),
                     `${path}: back`,
                 );
             }

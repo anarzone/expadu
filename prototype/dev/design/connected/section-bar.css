@@ -1,8 +1,10 @@
 /* Phones: the sections float in one capsule above the page, where the thumb
    rests, with Composer's round button beside it (owner chose A, canvas row
    23, 16 Oct 2026; it was a bar docked along the bottom, row 12).
-   Scrolling down shrinks the capsule to the section you're in and scrolling
-   up brings it back (section-bar.js). The header keeps the logo, the city,
+   Scrolling down, the capsule and Composer's button step away so no row
+   ends under them; scrolling up, or the page's top or end, brings them back
+   (section-bar.js; owner chose B, Composer review canvas board 5, 18 Oct
+   2026; it shrank to the section you're in). The header keeps the logo, the city,
    Saved and the account in one row and scrolls away. Desktops and tablets
    keep the sections in the header, where Composer joins them
    (composer-entry). Loaded by today-header.css, and by Today directly. */
@@ -105,34 +107,12 @@
         background: transparent;
         font-weight: 700;
     }
-    /* Scrolling down: only the section you're in, as a round button; it
-       opens again when you scroll up or move into it with the keyboard. */
-    html body.menu-mini #shell .app-header .service-nav:not(:focus-within) {
-        right: calc(100% - 14px - var(--menu-height));
-        gap: 0;
-    }
-    html
-        body.menu-mini
-        #shell
-        .app-header
-        .service-nav:not(:focus-within)
-        > a:not([aria-current]) {
-        flex-grow: 0;
-        opacity: 0;
-        visibility: hidden;
-        transition:
-            flex-grow 380ms var(--ease-settle, cubic-bezier(0.22, 1, 0.36, 1)),
-            opacity 140ms ease,
-            visibility 0s linear 140ms;
-    }
-    html
-        body.menu-mini
-        #shell
-        .app-header
-        .service-nav:not(:focus-within)
-        > a[aria-current]
-        > span {
-        display: none;
+    /* Scrolling down: the menu and Composer's round button step away;
+       moving into the menu with the keyboard keeps it. */
+    html body.menu-away #shell .app-header .service-nav:not(:focus-within),
+    :root body.menu-away #composer-tray:not(.is-active, :focus-within),
+    :root body.menu-away .composer-here:not(:focus) {
+        translate: 0 calc(100% + var(--menu-gap) + 8px);
     }
     /* Out of the way while you type, so the keyboard has the room. */
     body:has(
@@ -152,7 +132,9 @@
        (the menu has stepped aside). */
     :root body:is(.today-c, .department-composer) #composer-tray {
         bottom: calc(var(--menu-gap) + var(--menu-height) + 10px);
-        transition: bottom var(--duration-base, 180ms) ease;
+        transition:
+            bottom var(--duration-base, 180ms) ease,
+            translate var(--duration-base, 180ms) ease;
     }
     :root
         body:is(.today-c, .department-composer)
@@ -186,6 +168,12 @@
        (toasts) rise by the same amount. */
     :root body:has(#shell .service-nav) :is(.studio-input-wrap, #shared-toast) {
         margin-bottom: var(--section-bar);
+        transition: translate var(--duration-base, 180ms) ease;
+    }
+    /* With the menu away, Composer's text box drops to where it was, so no
+       gap opens under the box. */
+    :root body.menu-away:has(#shell .service-nav) .studio-input-wrap {
+        translate: 0 var(--section-bar);
     }
     :root
         body:has(#shell .service-nav):has(
