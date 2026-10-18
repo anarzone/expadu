@@ -5,11 +5,13 @@
     align-items: center;
     gap: 12px;
     max-width: 1176px;
-    min-height: 56px;
+    min-height: 64px;
     margin: 12px auto;
-    padding: 9px 14px;
-    border-radius: var(--radius-lg);
-    background: var(--color-select-bg, #e1f4f8);
+    padding: 10px 10px 10px 14px;
+    /* Travel's trip card, not a cyan block (departures-next/trip-card.css). */
+    border: 1.5px solid var(--color-border, #e6ddcb);
+    border-radius: 22px;
+    background: var(--color-bg-surface, #fffdf8);
     color: var(--color-text, #211d15);
     text-decoration: none;
     font:
@@ -47,8 +49,36 @@
     outline: 2px solid var(--color-focus, #32697b);
     outline-offset: 2px;
 }
+.journey-resume > .tl-line {
+    flex: none;
+}
+/* Travel's button for a trip you've started; "Your trip" where the words
+   would crowd the title (narrow phones). */
+.journey-resume > .journey-resume-go {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: var(--color-action, #c23b0e);
+    color: #fff;
+    font-weight: var(--weight-semibold, 600);
+    white-space: nowrap;
+}
+.journey-resume-go > span + span {
+    display: none;
+}
+@media (max-width: 420px) {
+    .journey-resume-go > span:first-child {
+        display: none;
+    }
+    .journey-resume-go > span + span {
+        display: inline;
+    }
+}
 .journey-resume:active {
-    background: var(--color-select-bg-hover, #cbeaf1);
+    background: var(--color-bg-quiet, #f1ebdf);
 }
 @media (max-width: 999px) {
     #shell + .journey-resume,

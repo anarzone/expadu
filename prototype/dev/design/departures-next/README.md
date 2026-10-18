@@ -31,6 +31,9 @@ shared, each in one place, and the other pages load them:
   for a trip. Today's separate "13:24 leaves only 2 min" note is the card's
   own line now. Its I'm on my way opens Travel's trip already started
   (`?go`), with Back to Today.
+- The On your way bar (`connected/journey-session.js`), on every page while
+  you're on a trip: Travel's card surface, the line's badge and Travel's
+  Back to your trip ("Your trip" on narrow phones), no cyan.
 - Events' Get there already used Travel's route card.
 
 ## The menu steps away while you scroll — 18 October 2026

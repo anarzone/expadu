@@ -137,7 +137,16 @@
             'aria-label',
             `Back to your trip to ${record.title}, step ${record.step + 1}`,
         );
-        bar.innerHTML = `${root.ExpaduIcon?.(record.mode === 'transit' ? 'train' : record.mode) || ''}<span><strong>${escape(record.title)}</strong><small>On your way · ${escape(record.instruction)}</small></span>${root.ExpaduIcon?.('arrow') || '›'}`;
+        // As Travel shows a trip you've started: the line's badge in its KVB
+        // colour (departures-next/labels.js) and Back to your trip (owner,
+        // 18 Oct 2026: trips look like Travel everywhere).
+        const L = root.TravelLabels;
+        const kind = record.vehicle === 'bus' ? 'bus' : 'tram';
+        const lead =
+            record.line && L
+                ? L.line(record.line, L.look(record.line, kind), { kind })
+                : root.ExpaduIcon?.(record.mode === 'transit' ? 'train' : record.mode) || '';
+        bar.innerHTML = `${lead}<span><strong>${escape(record.title)}</strong><small>On your way · ${escape(record.instruction)}</small></span><span class="journey-resume-go"><span>Back to your trip</span><span aria-hidden="true">Your trip</span></span>`;
     }
     bar.addEventListener('click', (event) => {
         if (root.JourneyNavigation) {
