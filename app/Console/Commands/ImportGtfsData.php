@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Support\ShadowTables;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -166,25 +167,33 @@ class ImportGtfsData extends Command
         }
 
         try {
-            // PostgreSQL TRUNCATE is transactional. Keeping every table import
-            // in one transaction preserves the previous complete feed if any
-            // chunk or later file fails.
+            // The new feed loads into shadow tables while the timetable keeps
+            // serving from the live ones, then all six swap in by rename in one
+            // short step. TRUNCATE + insert used to hold an exclusive lock on
+            // every timetable table for the whole import. One transaction still
+            // means a failure anywhere leaves the previous complete feed live.
             DB::transaction(function () use ($extractDir): void {
+                $shadows = new ShadowTables(array_column($this->files, 'table'));
+                $shadows->create();
+
                 foreach ($this->files as $filename => $config) {
                     $filePath = $extractDir.'/'.$filename;
 
                     if (! file_exists($filePath)) {
-                        // Optional calendar variants still replace their table:
-                        // retaining rows from the prior feed would mix service
-                        // dates with the newly imported trips.
-                        DB::table($config['table'])->truncate();
+                        // Optional calendar variants still replace their table
+                        // (with an empty one): retaining rows from the prior
+                        // feed would mix service dates with the new trips.
                         $this->warn("  Cleared optional {$filename} table — file not found in archive");
 
                         continue;
                     }
 
-                    $this->importFile($filePath, $config['table'], $config['columns']);
+                    $this->importFile($filePath, ShadowTables::shadowOf($config['table']), $config['columns']);
                 }
+
+                $this->info('Building indexes and swapping the new timetable in...');
+                $shadows->index();
+                $shadows->swap();
             });
         } catch (\Throwable $exception) {
             $this->error('GTFS import failed; previous timetable preserved: '.$exception->getMessage());
@@ -215,9 +224,6 @@ class ImportGtfsData extends Command
         $fileSize = filesize($filePath);
         $this->newLine();
         $this->info("Importing {$table} (".number_format($fileSize / 1024 / 1024, 1).' MB)...');
-
-        // Truncate existing data
-        DB::table($table)->truncate();
 
         // Count lines for progress bar (subtract 1 for header)
         $lineCount = $this->countLines($filePath) - 1;
