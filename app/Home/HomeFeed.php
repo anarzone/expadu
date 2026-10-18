@@ -198,6 +198,7 @@ class HomeFeed
         // first. Resolved before the DTO so the intended-event lookup can reuse it.
         $tonightEvents = Event::query()
             ->visible()
+            ->withPoint()
             ->whereDate('starts_at', today())
             ->where('starts_at', '>', now())
             ->whereNotNull('location')

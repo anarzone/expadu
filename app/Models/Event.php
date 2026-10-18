@@ -22,6 +22,9 @@ class Event extends Model
 
     protected $table = 'events';
 
+    /** Coordinates selected alongside the row by withPoint(); read through lat/lng. */
+    protected $hidden = ['point_lat', 'point_lng'];
+
     protected static function booted(): void
     {
         static::deleting(function (Event $event): void {
@@ -89,11 +92,15 @@ class Event extends Model
 
         $candidates = static::query()
             ->visible()
+            ->withPoint()
             ->when($ids !== null, fn (Builder $query) => $query->whereIn('id', $ids))
             ->with([
                 'mediaAttachments.mediaAsset',
                 'venue.mediaAttachments.mediaAsset',
                 'venue.place.mediaAttachments.mediaAsset',
+                // PublishedMediaSelector falls back to a place's identity
+                // aliases; load them here instead of once per venue.
+                'venue.place.identityAliases.mediaAttachments.mediaAsset',
             ])
             ->where(fn (Builder $q) => $q
                 // one-off events inside the window…
@@ -124,6 +131,21 @@ class Event extends Model
             })
             ->sortBy('starts_at')
             ->values();
+    }
+
+    /**
+     * Select the PostGIS point's coordinates with the row, so reading lat/lng
+     * on a list of events costs no query per event.
+     *
+     * @param  Builder<Event>  $query
+     */
+    public function scopeWithPoint(Builder $query): void
+    {
+        if ($query->getQuery()->columns === null) {
+            $query->select($query->getModel()->getTable().'.*');
+        }
+
+        $query->selectRaw('ST_Y(events.location::geometry) AS point_lat, ST_X(events.location::geometry) AS point_lng');
     }
 
     /** @var array{lat: ?float, lng: ?float}|null memoized PostGIS point */
@@ -157,6 +179,14 @@ class Event extends Model
 
         if (! $this->location) {
             return $this->resolvedPoint = ['lat' => null, 'lng' => null];
+        }
+
+        // Selected with the row by withPoint().
+        if (array_key_exists('point_lat', $this->attributes)) {
+            return $this->resolvedPoint = [
+                'lat' => $this->attributes['point_lat'] !== null ? (float) $this->attributes['point_lat'] : null,
+                'lng' => $this->attributes['point_lng'] !== null ? (float) $this->attributes['point_lng'] : null,
+            ];
         }
 
         $result = \DB::selectOne(
