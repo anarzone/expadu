@@ -11,11 +11,10 @@ import {
     IconTrain,
     IconTrainFilled,
 } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
-import type { ComponentType, ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import type { ComponentProps, ComponentType, ReactNode } from 'react';
 import { DestinationSearch } from '@/components/departures/destination-search';
 import type { Suggestion } from '@/components/departures/destination-search';
-import { JourneyPlanner } from '@/components/departures/journey-planner';
 import type { SavedPlace } from '@/components/departures/journey-planner';
 import { PlaceGlyph } from '@/components/departures/place-glyph';
 import { SavedJourneys } from '@/components/departures/saved-journeys';
@@ -39,7 +38,34 @@ import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import { ICON_STROKE } from '@/constants/icons';
 import type { ActiveTrip } from '@/hooks/use-active-trip';
 import { useLocationSharingEnabled } from '@/hooks/use-geolocation';
+import { useHydrated } from '@/hooks/use-hydrated';
 import AppLayout from '@/layouts/app-layout';
+
+// The route planner is the heaviest part of this page, yet it only renders once
+// a destination is chosen, so it loads as its own chunk instead of with the
+// timetable.
+const LazyJourneyPlanner = lazy(() =>
+    import('@/components/departures/journey-planner').then((module) => ({
+        default: module.JourneyPlanner,
+    })),
+);
+
+/**
+ * A deep link (?to_lat=…) opens straight into the planner, so it can be in the
+ * first render. `renderToString` cannot render a lazy component (the whole
+ * Suspense boundary is thrown away and the browser logs a recoverable
+ * hydration error), so the server and the hydration pass render nothing here
+ * and the planner mounts right after, as soon as its chunk arrives.
+ */
+function JourneyPlanner(props: ComponentProps<typeof LazyJourneyPlanner>) {
+    const hydrated = useHydrated();
+
+    return hydrated ? (
+        <Suspense fallback={null}>
+            <LazyJourneyPlanner {...props} />
+        </Suspense>
+    ) : null;
+}
 
 /** A city/transit disruption from the shared middleware prop. */
 type DisruptionItem = {
