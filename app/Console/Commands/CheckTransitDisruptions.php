@@ -47,9 +47,11 @@ class CheckTransitDisruptions extends Command
 
         // Per-user matching, scoring, and push delivery happen in
         // TransitDisruptionEvaluator (queued listener) via the ActionBus.
+        // The id is a string ('news_123'); an (int) cast turned every one into 0,
+        // so each new disruption overwrote the last in the bus and the alerts.
         foreach ($newDisruptions as $d) {
             event(new TransitDisruptionDetected(
-                disruptionId: (int) ($d['id'] ?? 0),
+                disruptionId: (string) $d['id'],
                 lines: array_values(array_map('strval', $d['affected_lines'] ?? [])),
                 stopsAffected: array_values(array_map('strval', $d['stops_affected'] ?? [])),
                 severity: (string) ($d['severity'] ?? 'minor'),
