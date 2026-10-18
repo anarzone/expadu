@@ -172,6 +172,15 @@
         padding-bottom: calc(var(--menu-gap) + var(--menu-height) + 8px);
         transition: translate var(--duration-base, 180ms) ease;
     }
+    /* The band's height (--studio-input-height) now holds the menu's room,
+       which the body keeps already (--section-bar): the page counts it
+       once, so it ends 36px above the box, as before, and fits a phone's
+       screen without a stray scroll. */
+    :root body:has(#shell .service-nav):has(.studio-input-wrap) #main {
+        padding-bottom: calc(
+            var(--studio-input-height, 190px) - var(--section-bar) + 36px
+        );
+    }
     :root body:has(#shell .service-nav) #shared-toast {
         margin-bottom: var(--section-bar);
     }

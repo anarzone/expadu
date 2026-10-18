@@ -668,8 +668,12 @@
         window.visualViewport?.addEventListener('scroll', keyboardLayout);
         requestAnimationFrame(() => {
             inputWrap = document.querySelector('.studio-input-wrap');
+            // The whole band: on phones its padding holds the menu's room
+            // and changes while you type (connected/section-bar.css).
             if (inputWrap)
-                new ResizeObserver(keyboardLayout).observe(inputWrap);
+                new ResizeObserver(keyboardLayout).observe(inputWrap, {
+                    box: 'border-box',
+                });
             keyboardLayout();
         });
         return { serviceCard, appointment, examples, mountGuides };
