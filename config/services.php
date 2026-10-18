@@ -20,6 +20,10 @@ return [
 
     'resend' => [
         'key' => env('RESEND_API_KEY'),
+        // The Resend SDK builds its Guzzle client with no timeout, so
+        // AppServiceProvider rebinds it with these.
+        'connect_timeout' => 5,
+        'timeout' => 15,
     ],
 
     'ses' => [
@@ -39,6 +43,11 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+        // Socialite passes this to Guzzle for the token and profile calls.
+        'guzzle' => [
+            'connect_timeout' => 5,
+            'timeout' => 10,
+        ],
     ],
 
     'apple' => [
