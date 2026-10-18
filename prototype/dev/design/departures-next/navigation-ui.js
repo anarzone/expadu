@@ -173,7 +173,7 @@
             ],
         };
         const [symbol, title, text] = conditions[active.condition];
-        return `<div class="nav-condition" role="status">${icon(symbol)}<div><strong>${title} <small>Sample</small></strong><p>${text}</p>${active.condition === 'changed' ? '<button data-nav="elsewhere">Plan again</button>' : ''}</div>${iconButton('close', 'Reset preview condition', 'normal')}</div>`;
+        return `<div class="nav-condition" role="status">${icon(symbol)}<div><strong>${title} <small>Sample</small></strong><p>${text}</p>${active.condition === 'changed' ? `<button class="primary" data-nav="elsewhere">${icon('route')}Plan again</button>` : ''}</div>${iconButton('close', 'Reset preview condition', 'normal')}</div>`;
     }
     /* ---------- Moments: the approved step-by-step trip ----------
        Each step says what to do now in the trip's own words, from its

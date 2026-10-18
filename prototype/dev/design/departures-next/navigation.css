@@ -220,6 +220,11 @@ html:has(#journey-navigation:modal) {
 .nav-condition .nav-icon-button {
     align-self: center;
 }
+/* The one way on when the route changes: Travel's main button, not a
+   line of text (owner, 18 Oct 2026). */
+.nav-condition .primary {
+    margin-top: 10px;
+}
 .nav-options {
     position: absolute;
     right: 16px;
