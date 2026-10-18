@@ -183,6 +183,7 @@ function navigationView(data = new Map()) {
     for (const view of ['map', 'steps'])
         element(`[data-nav-view="${view}"]`).dataset.navView = view;
     load('labels.js');
+    load('way.js');
     load('navigation-ui.js');
     const click = (button) => {
         button.focus();

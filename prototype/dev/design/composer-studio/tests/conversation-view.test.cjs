@@ -3,10 +3,16 @@ const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
 const sandbox = {};
-vm.runInNewContext(
-    fs.readFileSync(require.resolve('../conversation-view.js'), 'utf8'),
-    sandbox,
-);
+// A trip's way is Travel's own list and line badge (departures-next).
+for (const file of [
+    '../../departures-next/labels.js',
+    '../../departures-next/way.js',
+    '../conversation-view.js',
+])
+    vm.runInNewContext(
+        fs.readFileSync(require.resolve(file), 'utf8'),
+        sandbox,
+    );
 const render = sandbox.StudioConversationView.entry;
 function context() {
     const plan = { date: '2026-09-19', items: [] };
@@ -202,13 +208,19 @@ test('answers lead with a short verdict, then their own block (the approved desi
             title: 'Leave now — it’s 13:10.',
             text: 'You’ll be there at 13:48 with 12 minutes to spare.',
             trip: {
-                steps: [
-                    { mode: 'walk', label: 'Walk to Neumarkt', value: '4 min' },
+                way: [
                     {
-                        mode: 'transit',
+                        kind: 'walk',
+                        time: '13:10',
+                        title: 'Walk to Neumarkt',
+                        sub: '4 min on foot',
+                    },
+                    {
+                        kind: 'ride',
                         line: '4',
-                        label: 'Neumarkt → Wiener Platz',
-                        value: '13:14 → 13:42',
+                        time: '13:14',
+                        title: 'Tram 4 to Wiener Platz',
+                        sub: 'From Neumarkt · get off at 13:42',
                     },
                 ],
                 href: '../departures-next/?from=Neumarkt',
@@ -216,15 +228,17 @@ test('answers lead with a short verdict, then their own block (the approved desi
         },
         ctx,
     );
-    // Verdict, the steps, then when you'll be there, then Open in Travel.
+    // Verdict, your way as Travel draws it, then when you'll be there, then
+    // Open in Travel.
     assert.match(
         trip,
-        /<h3 class="chat-answer-title">Leave now — it’s 13:10\.<\/h3><div class="answer-block answer-trip"><ol>[\s\S]*<\/ol><\/div><p>You’ll be there at 13:48/,
+        /<h3 class="chat-answer-title">Leave now — it’s 13:10\.<\/h3><section class="answer-way"[^>]*><h4 class="nav-way-title">Your way<\/h4><ol class="nav-way">[\s\S]*<\/ol><\/section><p>You’ll be there at 13:48/,
     );
     assert.ok(trip.indexOf('Open in Travel') > trip.indexOf('You’ll be there'));
+    // Tram 4 in its KVB colour, as on Travel's trip.
     assert.match(
         trip,
-        /aria-label="Line 4">4<\/span><span>Neumarkt → Wiener Platz<\/span><b>13:14 → 13:42<\/b>/,
+        /<li class="is-ride" style="--line:#A01E5A"><time>13:14<\/time>[\s\S]*class="tl-line"[\s\S]*<span>Tram 4 to Wiener Platz<\/span>/,
     );
     assert.match(trip, /Open in Travel/);
     assert.match(trip, /Scheduled sample times, not live/);

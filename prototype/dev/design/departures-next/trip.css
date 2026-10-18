@@ -418,106 +418,6 @@
     font-weight: var(--weight-semibold);
     white-space: nowrap;
 }
-/* Your way: a line of stations, the part you're on marked. */
-#journey-navigation .nav-way-title {
-    margin: 0 0 var(--space-12);
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-#journey-navigation .nav-way {
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-#journey-navigation .nav-way li {
-    position: relative;
-    display: grid;
-    grid-template-columns: 48px 16px minmax(0, 1fr);
-    column-gap: 12px;
-    padding-bottom: 20px;
-}
-#journey-navigation .nav-way li:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    top: 24px;
-    bottom: 2px;
-    left: 67px;
-    border-left: 2px dotted
-        color-mix(
-            in srgb,
-            var(--color-border-strong) 60%,
-            var(--color-bg-surface)
-        );
-}
-#journey-navigation .nav-way li.is-ride::before {
-    left: 66px;
-    border-left: 4px solid var(--line);
-}
-#journey-navigation .nav-way time {
-    padding-top: 1px;
-    font-size: 13px;
-    font-weight: var(--weight-semibold);
-    font-variant-numeric: tabular-nums;
-}
-#journey-navigation .nav-way li > i {
-    justify-self: center;
-    width: 14px;
-    height: 14px;
-    margin-top: 3px;
-    box-sizing: border-box;
-    border-radius: 50%;
-    background: var(--color-text);
-}
-#journey-navigation .nav-way li:is(.is-ride, .is-from-stop) > i {
-    border: 3px solid var(--line);
-    background: var(--color-bg-surface);
-}
-#journey-navigation .nav-way li.is-end > i {
-    border-radius: 4px;
-}
-#journey-navigation .nav-way strong {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 6px 8px;
-    font-size: 15px;
-    font-weight: var(--weight-semibold);
-}
-#journey-navigation .nav-way .tl-line {
-    height: 22px;
-    font-size: 12.5px;
-}
-#journey-navigation .nav-way .tl-line svg {
-    width: 13px;
-    height: 13px;
-}
-#journey-navigation .nav-way small {
-    display: block;
-    margin-top: 2px;
-    color: var(--color-text-soft);
-    font-size: 13px;
-}
-#journey-navigation .nav-way li.is-done :is(time, strong) {
-    color: var(--color-text-soft);
-}
-#journey-navigation .nav-way li.is-now strong {
-    font-weight: var(--weight-bold);
-}
-#journey-navigation .nav-way em {
-    display: inline-flex;
-    align-items: center;
-    height: 22px;
-    padding: 0 8px;
-    border-radius: 999px;
-    background: var(--color-select-bg);
-    color: var(--color-select-text);
-    font-size: 12px;
-    font-style: normal;
-    font-weight: var(--weight-bold);
-}
 /* The map card (owner, 15 Oct 2026; canvas row 20): where to stand while
    you walk to the stop and wait, then your way with you on it. Its caption
    follows the step. */
@@ -663,15 +563,6 @@
     }
     #journey-navigation .nav-step-card .moment-sub {
         font-size: 14px;
-    }
-    #journey-navigation .nav-way li {
-        grid-template-columns: 44px 16px minmax(0, 1fr);
-    }
-    #journey-navigation .nav-way li:not(:last-child)::before {
-        left: 63px;
-    }
-    #journey-navigation .nav-way li.is-ride::before {
-        left: 62px;
     }
 }
 @media (prefers-reduced-motion: reduce) {

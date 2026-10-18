@@ -30,7 +30,8 @@ const url = 'http://127.0.0.1:8765/dev/design/composer-studio/';
             await page.locator('.chat-answer-title').last().innerText(),
             'Leave now — it’s 13:10.',
         );
-        assert.equal(await page.locator('.answer-trip li').count(), 3);
+        // Your way as Travel's trip shows it: walk, tram, walk, arrive.
+        assert.equal(await page.locator('.answer-way .nav-way li').count(), 4);
         // The approved design: the steps, then when you'll be there.
         assert.match(
             await feed(),
@@ -45,7 +46,7 @@ const url = 'http://127.0.0.1:8765/dev/design/composer-studio/';
         );
         await page.press('#studio-request', 'Enter');
         await page.waitForTimeout(1500);
-        assert.equal(await page.locator('.answer-trip').count(), 2);
+        assert.equal(await page.locator('.answer-way').count(), 2);
         await page.fill(
             '#studio-request',
             'How do I get from Neumarkt to Ehrenfeld?',

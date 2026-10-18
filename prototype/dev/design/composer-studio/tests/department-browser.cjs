@@ -162,7 +162,7 @@ const appointmentTrip =
                         'departures-next/',
                         'When should I leave for my 14:00?',
                     ),
-                ['13:14 → 13:42', 'You’ll be there at 13:48'],
+                ['Tram 4 to Wiener Platz', 'You’ll be there at 13:48'],
             ],
             [
                 'Services request',

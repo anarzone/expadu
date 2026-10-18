@@ -762,12 +762,8 @@
             if (step.mode === 'alight') lastOff = step;
             if (running && index <= p.index) current = rows.length - 1;
         });
-        return `<ol class="nav-way">${rows
-            .map(
-                (row, index) =>
-                    `<li class="is-${row.kind}${index < current ? ' is-done' : ''}${index === current ? ' is-now' : ''}"${row.look ? ` style="--line:${row.look.colour}"` : ''}${index === current ? ' aria-current="step"' : ''}><time>${row.time}</time><i aria-hidden="true"></i><div><strong>${row.badge || ''}<span>${safe(row.title)}</span>${index === current ? '<em>You’re here</em>' : ''}</strong><small>${safe(row.sub)}</small></div></li>`,
-            )
-            .join('')}</ol>`;
+        // The list is shared with Composer's answer about a trip (way.js).
+        return root.TravelWay.list(rows, current);
     }
     // A moment's name in the ⋯ menu, where reviewing picks it (the page
     // itself moves on by itself; owner, 15 Oct 2026).

@@ -840,17 +840,34 @@
                 kind: 'trip',
                 title,
                 trip: {
-                    steps: w.steps.slice(w.at).map((x) => ({
-                        mode: x.mode === 'walk' || x.mode === 'arrive' ? x.mode : 'transit',
-                        ...(x.mode === 'transit' && w.line ? { line: w.line } : {}),
-                        label: x.title,
-                        value: x.time,
-                    })),
+                    // The rest of your way, as Travel's trip shows it.
+                    way: wayLeft(w),
                     href: w.href,
                     label: 'Back to your trip',
                 },
             },
         };
+    }
+    // The trip you're on, from where you are: Travel's rows (way.js). Boarding
+    // and getting off are one row for the ride, as on Travel's trip.
+    function wayLeft(w) {
+        const left = w.steps.slice(w.at);
+        const ride = w.vehicle ? w.vehicle[0].toUpperCase() + w.vehicle.slice(1) : 'Tram';
+        let offAt = null;
+        return left.flatMap((x, index) => {
+            if (x.mode === 'transit') {
+                const off = left.slice(index).find((y) => y.mode === 'alight');
+                return [{ kind: 'ride', line: w.line, time: x.time, title: `${ride} ${w.line} to ${off?.place || x.title}`, sub: `From ${x.place || ''}${off ? ` · get off at ${off.time}` : ''}` }];
+            }
+            if (x.mode === 'alight') {
+                offAt = x;
+                return [];
+            }
+            if (x.mode === 'walk')
+                return [{ kind: offAt ? 'walk is-from-stop' : 'walk', time: x.time, title: String(x.title).replace(/Köln\s+/g, ''), sub: offAt ? `From ${offAt.place} · ${x.detail}` : x.detail }];
+            if (x.mode === 'arrive') return [{ kind: 'end', time: x.time, title: w.title, sub: x.detail || 'There' }];
+            return [];
+        });
     }
     function welcome() {
         // Starters from what Expadu knows about your day, each in the colour
@@ -2059,14 +2076,23 @@
                             : leaveText,
                         journey: { from, to, arriveBy },
                         trip: {
-                            steps: [
+                            // Your way as Travel's trip shows it (way.js):
+                            // when each part starts, in Travel's words.
+                            way: [
                                 ...(j.accessWalkMinutes
-                                    ? [{ mode: 'walk', label: `Walk to ${from}`, value: `${j.accessWalkMinutes} min` }]
+                                    ? [{ kind: 'walk', time: hhmm(best.leave), title: `Walk to ${from}`, sub: `${j.accessWalkMinutes} min on foot` }]
                                     : []),
-                                { mode: 'transit', line: j.line, label: `${from} → ${stop}`, value: `${best.depart} → ${best.arrive}` },
+                                {
+                                    kind: 'ride',
+                                    line: j.line,
+                                    time: best.depart,
+                                    title: `Tram ${j.line} to ${stop}`,
+                                    sub: `From ${from}${j.towards ? ` · towards ${j.towards}` : ''} · get off at ${best.arrive}`,
+                                },
                                 ...(j.walkMinutes
-                                    ? [{ mode: 'walk', label: 'Walk to the appointment', value: `${j.walkMinutes} min` }]
+                                    ? [{ kind: 'walk is-from-stop', time: best.arrive, title: 'Walk to your appointment', sub: `From ${stop} · ${j.walkMinutes} min on foot` }]
                                     : []),
+                                { kind: 'end', time: hhmm(best.there), title: appointment.title, sub: `Starts at ${appointment.start} · ${appointment.location || to}` },
                             ],
                             href: `${ExpaduStore.routes.departures}?${new URLSearchParams({ from, to, date: M.today(), arrive: appointment.start })}`,
                         },

@@ -120,6 +120,7 @@ function navigation(data = new Map(), mobile = false) {
         },
     });
     load('labels.js');
+    load('way.js');
     load('navigation-ui.js');
     return {
         context,

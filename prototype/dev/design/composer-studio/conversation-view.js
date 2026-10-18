@@ -17,19 +17,22 @@
         const paragraph = entry.text ? `<p>${E(entry.text)}</p>` : '';
         // The trip and your checklist lead with their block; the
         // explanation follows it (the approved Composer design).
+        // Your way as Travel's trip draws it (departures-next/way.js), the
+        // line in its badge (labels.js). Answers saved before 18 Oct 2026
+        // kept steps as label and value.
+        const way = (entry.trip?.way || (entry.trip?.steps || []).map((x) => ({ kind: x.mode === 'walk' ? 'walk' : x.mode === 'arrive' ? 'end' : 'ride', line: x.line, time: '', title: x.label, sub: x.value }))).map((row, index, rows) => {
+            const ride = row.line ? row : row.kind.includes('is-from-stop') ? rows.slice(0, index).reverse().find((r) => r.line) : null;
+            const look = ride ? root.TravelLabels.look(ride.line, 'tram') : null;
+            return { ...row, look, badge: row.line ? root.TravelLabels.line(row.line, look) : '' };
+        });
         const blockFirst =
-            (entry.kind === 'trip' && entry.trip?.steps?.length) ||
+            (entry.kind === 'trip' && way.length) ||
             (entry.kind === 'checklist' && entry.record);
         const lead = title + (blockFirst ? '' : paragraph);
         let body = lead;
-        // The appointment's trip, step by step, in Travel's colour.
-        if (entry.kind === 'trip' && entry.trip?.steps?.length)
-            body += `<div class="answer-block answer-trip"><ol>${entry.trip.steps
-                .map(
-                    (x) =>
-                        `<li>${x.line ? `<span class="answer-line" aria-label="Line ${E(x.line)}">${E(x.line)}</span>` : I(x.mode === 'walk' ? 'walk' : x.mode === 'arrive' ? 'pin' : 'train')}<span>${E(x.label)}</span><b>${E(x.value)}</b></li>`,
-                )
-                .join('')}</ol></div>${paragraph}${entry.trip.note ? `<p class="answer-note">${E(entry.trip.note)}</p>` : ''}<div class="answer-actions">${entry.trip.href ? `<a class="answer-button" href="${E(entry.trip.href)}">${E(entry.trip.label || 'Open in Travel')}${I('arrow')}</a>` : ''}<span>Scheduled sample times, not live.</span></div>`;
+        // The trip, step by step, as Travel's trip shows it.
+        if (entry.kind === 'trip' && way.length)
+            body += `<section class="answer-way" aria-label="Your way"><h4 class="nav-way-title">Your way</h4>${root.TravelWay.list(way)}</section>${paragraph}${entry.trip.note ? `<p class="answer-note">${E(entry.trip.note)}</p>` : ''}<div class="answer-actions">${entry.trip.href ? `<a class="answer-button" href="${E(entry.trip.href)}">${E(entry.trip.label || 'Open in Travel')}${I('arrow')}</a>` : ''}<span>Scheduled sample times, not live.</span></div>`;
         // Your own checklist's progress, linked to Paperwork. Not guidance.
         if (entry.kind === 'checklist' && entry.record) {
             const r = entry.record;

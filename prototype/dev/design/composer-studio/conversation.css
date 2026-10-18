@@ -894,45 +894,10 @@
     margin-top: 14px;
     border-radius: var(--radius-xl);
 }
-.studio .answer-trip {
-    padding: 6px 18px 14px;
-    background: var(--color-select-bg);
-}
-.studio .answer-trip ol {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-.studio .answer-trip li {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-    min-height: 44px;
-    border-bottom: 1px solid #bfe3e9;
-    font-size: var(--text-body);
-}
-.studio .answer-trip li > svg {
-    justify-self: center;
-    width: 20px;
-    height: 20px;
-    color: var(--color-select-text);
-}
-.studio .answer-trip b {
-    font-weight: var(--weight-semibold);
-    font-variant-numeric: tabular-nums;
-}
-.studio .answer-line {
-    display: inline-grid;
-    place-items: center;
-    min-width: 26px;
-    height: 26px;
-    padding: 0 6px;
-    border-radius: var(--radius-sm);
-    background: var(--color-select-text);
-    color: #ffffff;
-    font-size: var(--text-small);
-    font-weight: var(--weight-bold);
+/* A trip's way is Travel's own list (departures-next/way.css). */
+.studio .answer-way {
+    max-width: 560px;
+    margin-top: 16px;
 }
 .studio .answer-note {
     margin: 12px 0 0;
@@ -951,10 +916,6 @@
     margin-top: 12px;
     color: var(--color-text-soft);
     font-size: var(--text-caption);
-}
-/* The steps end the block; what follows explains them. */
-.studio .answer-trip li:last-child {
-    border-bottom: 0;
 }
 .studio .answer-block + p {
     margin-top: 14px;
@@ -1263,16 +1224,5 @@
 @media (max-width: 700px) {
     .studio .chat-answer-title {
         font-size: var(--text-title);
-    }
-    .studio .answer-trip {
-        padding: 4px 14px 12px;
-    }
-    .studio .answer-trip li {
-        grid-template-columns: 24px minmax(0, 1fr) auto;
-        gap: 10px;
-        font-size: var(--text-control);
-    }
-    .studio .answer-trip b {
-        white-space: nowrap;
     }
 }

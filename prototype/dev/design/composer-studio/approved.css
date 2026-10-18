@@ -285,9 +285,6 @@ body.studio {
     font-size: var(--text-body);
     line-height: 1.5;
 }
-.studio .answer-trip {
-    padding: 8px 18px;
-}
 .studio .answer-checklist {
     max-width: none;
 }
@@ -403,12 +400,6 @@ body.studio {
     }
     .studio .chat-answer-title {
         font-size: 26px;
-    }
-    .studio .answer-trip {
-        padding: 8px 18px;
-    }
-    .studio .answer-trip li {
-        min-height: 34px;
     }
     .studio .answer-facts {
         grid-template-columns: minmax(0, 1fr);
