@@ -146,7 +146,9 @@ under Review: a persona preview or Other states.
 - **Entry states and coverage**: No profile yet (setup_required), Record
   unavailable, Outside Cologne (outside_coverage). Outside Cologne (owner, 18 Oct
   2026, Composer review canvas board 16) stays honest and gives a way on:
-  "Tell me when it's covered" (a sample: it says so, and nothing is sent) and
+  "Tell me when it's covered" ("We'll email you when your area is covered";
+  in the app the tap puts you on the city waitlist, here it's a sample and
+  says so, and nothing is sent) and
   "My area is Cologne" (in the preview, back to your plan), then "Ask Composer
   about your move". The board's other rows, your documents and your own
   dates, aren't offered: with no covered area the plan has no documents or
