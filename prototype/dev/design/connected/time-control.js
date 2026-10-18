@@ -320,7 +320,7 @@
         }
         if (
             e.target.matches(
-                '.time-editor input, .studio-time-input, [data-time-input]',
+                '.studio-time-input, [data-time-input]',
             )
         ) {
             if (e.detail === 2) startTimeTyping(e.target);
@@ -330,7 +330,7 @@
     document.addEventListener('dblclick', (e) => {
         if (
             e.target.matches(
-                '.time-editor input, .studio-time-input, [data-time-input]',
+                '.studio-time-input, [data-time-input]',
             )
         ) {
             e.preventDefault();
@@ -342,7 +342,7 @@
         (e) => {
             if (
                 !e.target.matches(
-                    '.time-editor input, .studio-time-input, [data-time-input]',
+                    '.studio-time-input, [data-time-input]',
                 ) ||
                 e.target.readOnly ||
                 e.target.disabled ||
@@ -373,7 +373,7 @@
     document.addEventListener('focusout', (e) => {
         if (
             e.target.matches(
-                '.time-editor input, .studio-time-input, [data-time-input]',
+                '.studio-time-input, [data-time-input]',
             )
         )
             delete e.target.dataset.typing;
@@ -430,7 +430,7 @@
             }
         } else if (
             e.target.matches(
-                '.time-editor input, .studio-time-input, [data-time-input]',
+                '.studio-time-input, [data-time-input]',
             ) &&
             ['ArrowDown', 'ArrowUp'].includes(e.key)
         ) {
@@ -448,7 +448,7 @@
     document.addEventListener('input', (event) => {
         if (
             event.target.matches(
-                '.time-editor input, .studio-time-input, [data-time-input]',
+                '.studio-time-input, [data-time-input]',
             )
         )
             closeTimeOptions();

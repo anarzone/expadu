@@ -1087,8 +1087,9 @@
         },
         true,
     );
+    // Edit time opens a sheet with two wheels (board 10; time-sheet.js).
     function timeEditor(x) {
-        return `<details class="time-editor"><summary>${I('pencil')}Edit time</summary><form data-time-form="${x.id}" novalidate><label>From<input type="text" inputmode="numeric" name="start" value="${x.start}" maxlength="5" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="time-options" aria-haspopup="dialog" aria-describedby="time-error-${x.id}" aria-label="Start time, 24-hour format">${I('down')}</label><span class="time-separator" aria-hidden="true">–</span><label>Until<input type="text" inputmode="numeric" name="end" value="${x.end}" maxlength="5" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="time-options" aria-haspopup="dialog" aria-describedby="time-error-${x.id}" aria-label="End time, 24-hour format">${I('down')}</label><button class="time-save" type="submit" aria-label="Save time" title="Save time">${I('check')}</button><p class="time-error" id="time-error-${x.id}" role="alert" hidden></p></form></details>`;
+        return `<button class="plain-button" data-edit-time="${E(x.id)}">${I('pencil')}Edit time</button>`;
     }
     function replacementFilters() {
         const categories = [...new Set(catalogue.map((x) => x.category))];
@@ -2570,77 +2571,8 @@
             if (t) submit(t, true);
             return;
         }
-        if (e.target.dataset.timeForm) {
-            e.preventDefault();
-            const data = new FormData(e.target),
-                x = (
-                    state.proposal ||
-                    planFor(state.conversation.activeDate || state.date)
-                )?.items.find((x) => x.id === e.target.dataset.timeForm);
-            if (x && !x.fixed) {
-                const start = M.normalizeTime(data.get('start'));
-                const end = M.normalizeTime(data.get('end'));
-                const error = e.target.querySelector('.time-error');
-                const fields = [...e.target.querySelectorAll('input')];
-                fields.forEach((field) =>
-                    field.removeAttribute('aria-invalid'),
-                );
-                if (!start || !end || end <= start) {
-                    error.hidden = false;
-                    error.textContent =
-                        !start || !end
-                            ? 'Use 24-hour time, e.g. 13:30 or 1330.'
-                            : 'End time must be after the start.';
-                    const field = fields[!start ? 0 : 1];
-                    field.setAttribute('aria-invalid', 'true');
-                    field.focus();
-                    return;
-                }
-                try {
-                    draft();
-                    M.setTime(state, x.id, start, end);
-                } catch (problem) {
-                    state.proposal = null;
-                    error.hidden = false;
-                    error.textContent = problem.message;
-                    fields.forEach((field) =>
-                        field.setAttribute('aria-invalid', 'true'),
-                    );
-                    fields[0].focus({ preventScroll: true });
-                    return;
-                }
-                closeTimeOptions();
-                e.target.closest('details').open = false;
-                changed(`Moved ${x.title} to ${start}–${end}`);
-                document
-                    .querySelector(`[data-time-form="${x.id}"]`)
-                    ?.closest('details')
-                    .querySelector('summary')
-                    .focus({ preventScroll: true });
-            }
-            return;
-        }
     });
     document.addEventListener('change', (e) => {
-        // Moving an activity's start takes its end along, so it keeps its
-        // length (until the day's end); the end can still be set on its own.
-        if (e.target.matches('[data-time-form] input[name="start"]')) {
-            const start = e.target,
-                end = e.target.form.elements.end;
-            const time = (value) =>
-                /^([01]\d|2[0-3]):[0-5]\d$/.test(value || '')
-                    ? clockMins(value)
-                    : null;
-            const before = time(start.dataset.was || start.defaultValue),
-                after = time(M.normalizeTime(start.value) || start.value),
-                until = time(end.value);
-            if (before !== null && after !== null && until !== null && until > before) {
-                const moved = after + until - before;
-                if (moved < 1440) end.value = clockText(moved);
-            }
-            if (after !== null) start.dataset.was = clockText(after);
-            return;
-        }
         if (e.target.id === 'plan-date' && e.target.value) {
             state.date = e.target.value;
             store();
@@ -2824,6 +2756,47 @@
             const removed = p.items.find((x) => x.id === id);
             p.items = p.items.filter((x) => x.id !== id);
             changed(removed ? `Removed ${removed.title}` : 'Activity removed');
+            return;
+        }
+        if (el.dataset.editTime) {
+            const p =
+                state.proposal ||
+                planFor(state.conversation.activeDate || state.date);
+            const x = p?.items.find((item) => item.id === el.dataset.editTime);
+            if (!x || x.fixed) return;
+            const where = x.venue || x.location || place(x.id)?.area || '';
+            StudioTimeSheet.open({
+                title: x.title,
+                note: `${longDate(p.date)}${where ? ` · ${where}` : ''}`,
+                start: x.start,
+                end: x.end,
+                escape: E,
+                // What a time would clash with, said as you turn.
+                check: (start, end) => {
+                    const trial = M.clone(state);
+                    try {
+                        if (!trial.proposal) M.propose(trial, [], p.date);
+                        M.setTime(trial, x.id, start, end);
+                        return M.conflicts(trial.proposal)[0] || '';
+                    } catch (error) {
+                        return error.message;
+                    }
+                },
+                done: (start, end) => {
+                    if (start === x.start && end === x.end) return;
+                    try {
+                        draft();
+                        M.setTime(state, x.id, start, end);
+                    } catch (error) {
+                        state.proposal = null;
+                        note(`${error.message} Your plan hasn’t changed.`);
+                        store();
+                        render();
+                        return;
+                    }
+                    changed(`Moved ${x.title} to ${start}–${end}`);
+                },
+            });
             return;
         }
         if (el.dataset.swap) {

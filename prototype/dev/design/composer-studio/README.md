@@ -13,9 +13,8 @@ number):
   8px above the menu; its band runs down behind the menu, so nothing shows
   between them, and it drops to the bottom while the menu steps away or you
   type (`approved.css`, `connected/section-bar.css`). A plan adds one slim
-  row above it: the plan's day and View plan, with Ask first, which only
-  matters for a plan's changes. 56px without a plan, 100px with one (it was
-  116 and 166, with a gap under it).
+  row above it: the plan's day, "In your plans" and View plan. 56px
+  without a plan, 100px with one (it was 116 and 166, with a gap under it).
 - **6 · Laptops on the header's edges.** Your day starts under the logo;
   the conversation, its trip bar and its text box share one column, 800px
   at most, ending where the header does (`approved.css`).
@@ -43,6 +42,13 @@ number):
 - **7 · When Composer can't help.** A heading that says so ("I can't
   answer that here yet."), what was asked, then the home's own cards as
   rows that ask (`starters()` in `app.js`, `.answer-options`).
+- **10 · Edit time in a sheet.** Edit time opens two wheels, From and
+  Until, in 15-minute steps (`time-sheet.js`, `time-sheet.css`): a sheet
+  over the bottom on phones, pulled down by its grip to close; a dialog on
+  laptops. Turning From carries Until along, so the activity keeps its
+  length; a clash shows in the sheet as you turn. Closing saves once and
+  the reply brings the change with its Undo (board 9); closing on a clash
+  changes nothing and says so. The old From/Until boxes and Save are gone.
 - **11 · Trips as Travel shows them.** Your way in a trip answer is Travel's
   list (`departures-next/way.js`), Your day's trip and the On your way bar
   carry Travel's line badge (`labels.js`).

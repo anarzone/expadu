@@ -523,99 +523,6 @@
     font-size: var(--text-caption);
     min-height: 36px;
 }
-.time-editor {
-    font-size: var(--text-caption);
-}
-
-.time-editor summary {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    min-height: 36px;
-    color: var(--color-text);
-}
-.time-editor summary svg {
-    width: 14px;
-    height: 14px;
-}
-/* Opening keeps Edit time in place; the editor takes its own row below it. */
-.time-editor[open] {
-    flex-basis: 100%;
-}
-/* A compact time range, with touch-sized fields and no native popup. */
-.time-editor form {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr) 44px;
-    align-items: center;
-    gap: 6px;
-    max-width: 280px;
-    padding: 6px;
-    background: var(--color-bg-quiet);
-    border-radius: var(--radius-md);
-}
-.time-editor label {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    gap: 0;
-    font-size: var(--text-micro);
-    line-height: 1.2;
-    color: var(--color-text-soft);
-    padding-top: 3px;
-    text-align: center;
-}
-.time-editor input {
-    width: 100%;
-    min-width: 0;
-    min-height: 44px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    padding: 0 2px;
-    font: inherit;
-    font-size: var(--text-section);
-    font-weight: var(--weight-semibold);
-    font-variant-numeric: tabular-nums;
-    color: var(--color-text);
-    text-align: center;
-}
-.time-editor input:focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: -2px;
-    background: white;
-}
-.time-separator {
-    color: var(--color-text-soft);
-}
-.time-editor .time-save {
-    width: 44px;
-    height: 44px;
-    min-height: 44px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-    border: 0;
-    border-radius: var(--radius-sm);
-    color: var(--color-text);
-    background: var(--color-select-bg);
-    cursor: pointer;
-}
-.time-editor .time-save:hover {
-    background: var(--color-select-bg-hover);
-}
-.time-editor .time-save svg {
-    width: 19px;
-    height: 19px;
-}
-.time-editor .time-error {
-    grid-column: 1 / -1;
-    color: var(--color-conflict-text);
-    font-size: var(--text-caption);
-    line-height: 1.4;
-    margin: 0;
-    padding: 0 4px 4px;
-}
 .travel-note {
     display: flex;
     gap: 10px;
@@ -1531,8 +1438,7 @@
 .studio-button.expadu-loading-button {
     gap: 9px;
 }
-.studio .timeline-actions .plain-button,
-.studio .time-editor summary {
+.studio .timeline-actions .plain-button {
     min-height: 40px;
 }
 .studio .plan-timeline li:last-child {
@@ -1557,8 +1463,7 @@
         column-gap: 12px;
         row-gap: 0;
     }
-    .studio .timeline-actions .plain-button,
-    .studio .time-editor summary {
+    .studio .timeline-actions .plain-button {
         min-height: 44px;
     }
 }
@@ -1912,22 +1817,6 @@
     .replacement-card {
         transition: none;
     }
-}
-
-/* Time suggestions float above the timeline without increasing its height. */
-.time-editor label {
-    position: relative;
-}
-.time-editor label > svg {
-    position: absolute;
-    right: 3px;
-    bottom: 16px;
-    width: 10px;
-    height: 10px;
-    pointer-events: none;
-}
-.time-editor input {
-    padding-right: 12px;
 }
 
 /* My Plans: today is marked in the week; the date picker is one calendar
