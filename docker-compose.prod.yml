@@ -16,6 +16,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # The cache gets its own bounded, evicting instance (EXP-95).
+      REDIS_CACHE_HOST: redis-cache
+      REDIS_CACHE_PORT: 6379
       REDIS_CLIENT: phpredis
       CACHE_STORE: redis
       SESSION_DRIVER: redis
@@ -37,6 +40,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      redis-cache:
+        condition: service_healthy
 
   pgsql:
     image: imresamu/postgis:16-3.4
@@ -54,11 +59,26 @@ services:
       timeout: 5s
     restart: always
 
+  # State: sessions, queues, locks, alert buses, location history. Bounded
+  # but never evicted — a write fails loudly instead of a session or queued
+  # job vanishing, and api:health reports to Sentry from 80%. Check
+  # `redis-cli INFO memory` before lowering REDIS_MAXMEMORY.
   redis:
     image: redis:alpine
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory ${REDIS_MAXMEMORY:-256mb} --maxmemory-policy noeviction
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      retries: 3
+      timeout: 5s
+    restart: always
+
+  # Cache only: bounded, least-recently-used keys evicted, nothing persisted.
+  redis-cache:
+    image: redis:alpine
+    command: redis-server --maxmemory ${REDIS_CACHE_MAXMEMORY:-128mb} --maxmemory-policy allkeys-lru --save '' --appendonly no
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
