@@ -61,6 +61,14 @@ export type JourneyLeg = {
     polyline: string | null;
     color: string | null;
     intermediate_stops: IntermediateStop[] | null;
+    /** Timetable times; depart_at/arrive_at are live-adjusted when realtime. */
+    scheduled_depart_at?: string | null;
+    scheduled_arrive_at?: string | null;
+    /** Departure delay in whole minutes (negative = early); null without live data. */
+    delay_min?: number | null;
+    realtime?: boolean;
+    cancelled?: boolean;
+    trip_id?: string | null;
 };
 
 export type Journey = {
