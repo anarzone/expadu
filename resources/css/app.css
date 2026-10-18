@@ -60,6 +60,88 @@
     src: url('/fonts/fraunces-500.woff2') format('woff2');
 }
 
+/* Metric-matched fallbacks. Until a web font arrives, text is drawn in a local
+   face scaled to the web font's width and line box, so the swap moves almost
+   nothing. size-adjust is the ratio of the web font's rendered width to the
+   local face's over the app's own interface copy (kerning included);
+   ascent/descent/line-gap-override are the web font's hhea metrics (read from
+   public/fonts/*.woff2) divided by size-adjust. unicode-range keeps each face
+   to the scripts its web font covers, so Cyrillic and other scripts still fall
+   through to the system UI font unscaled. Arial and Georgia ship with macOS,
+   iOS and Windows; where local() finds nothing the stack behaves as before. */
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 400;
+    src: local('Arial'), local('ArialMT');
+    size-adjust: 104.31%;
+    ascent-override: 88.2%;
+    descent-override: 21.09%;
+    line-gap-override: 9.59%;
+    unicode-range:
+        U+0020-007E, U+00A0-017F, U+2013-2014, U+2018-201A, U+201C-201E,
+        U+2020-2022, U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 500;
+    src: local('Arial'), local('ArialMT');
+    size-adjust: 106.73%;
+    ascent-override: 86.2%;
+    descent-override: 20.61%;
+    line-gap-override: 9.37%;
+    unicode-range:
+        U+0020-007E, U+00A0-017F, U+2013-2014, U+2018-201A, U+201C-201E,
+        U+2020-2022, U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 600;
+    src: local('Arial Bold'), local('Arial-BoldMT');
+    size-adjust: 101.21%;
+    ascent-override: 90.9%;
+    descent-override: 21.74%;
+    line-gap-override: 9.88%;
+    unicode-range:
+        U+0020-007E, U+00A0-017F, U+2013-2014, U+2018-201A, U+201C-201E,
+        U+2020-2022, U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 700;
+    src: local('Arial Bold'), local('Arial-BoldMT');
+    size-adjust: 103.45%;
+    ascent-override: 88.93%;
+    descent-override: 21.27%;
+    line-gap-override: 9.67%;
+    unicode-range:
+        U+0020-007E, U+00A0-017F, U+2013-2014, U+2018-201A, U+201C-201E,
+        U+2020-2022, U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Fraunces Fallback';
+    font-weight: 400;
+    src: local('Georgia');
+    size-adjust: 105.7%;
+    ascent-override: 92.53%;
+    descent-override: 24.13%;
+    line-gap-override: 0%;
+    unicode-range:
+        U+0020-007E, U+00A0-00FF, U+0131, U+0152-0153, U+2013-2014, U+2018-201E,
+        U+2022, U+2026, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Fraunces Fallback';
+    font-weight: 500;
+    src: local('Georgia');
+    size-adjust: 107.37%;
+    ascent-override: 91.09%;
+    descent-override: 23.75%;
+    line-gap-override: 0%;
+    unicode-range:
+        U+0020-007E, U+00A0-00FF, U+0131, U+0152-0153, U+2013-2014, U+2018-201E,
+        U+2022, U+2026, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+
 /* PWA: prevent zoom on iOS (double-tap + pinch) for native app feel */
 html {
     touch-action: manipulation; /* disables double-tap zoom */
@@ -89,9 +171,10 @@ input[type='time']::-webkit-calendar-picker-indicator {
 @theme {
     /* Typography */
     --font-sans:
-        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-display: 'Fraunces', ui-serif, Georgia, serif;
+        'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --font-display: 'Fraunces', 'Fraunces Fallback', ui-serif, Georgia, serif;
     --font-mono: 'Geist Mono', ui-monospace, monospace;
 
     /* Border radius */
