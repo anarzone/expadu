@@ -59,7 +59,7 @@
 
         <div class="tool-cta">
             <p>Expadu shows a <b>covered-by-your-ticket</b> badge on every route it plans for you.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

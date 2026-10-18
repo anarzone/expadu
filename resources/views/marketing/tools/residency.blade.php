@@ -70,7 +70,7 @@
 
         <div class="tool-cta">
             <p>Expadu <b>counts this down for you</b> — and tells you the moment you cross the bar.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

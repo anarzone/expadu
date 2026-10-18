@@ -3,6 +3,7 @@
 @section('title', 'Expadu — Tell it your day. It plans the rest.')
 @section('meta_description', 'Expadu turns your situation, deadlines, ticket, weather and location into one useful plan for life in Germany. Built for Cologne, in English.')
 @section('canonical', route('home'))
+@section('waitlist_source', 'landing')
 @section('body_class', 'landing-v2')
 
 @push('styles')
@@ -59,7 +60,7 @@
             @auth
                 <a class="btn btn-primary" href="{{ route('dashboard') }}">Open the app →</a>
             @else
-                <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+                <a class="btn btn-primary" href="#waitlist">Start free</a>
             @endauth
             <a class="btn btn-ghost" href="#demo">Play with the demo ↓</a>
         </div>
@@ -309,7 +310,7 @@
             @auth
                 <a class="btn btn-primary" href="{{ route('dashboard') }}">Open the app →</a>
             @else
-                <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+                <a class="btn btn-primary" href="#waitlist">Start free</a>
             @endauth
         </div>
     </div>

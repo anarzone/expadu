@@ -4,6 +4,7 @@
 @section('meta_description', 'Free calculators for newcomers in Germany: netto-brutto salary, Deutschlandticket break-even, permanent-residency timeline, citizenship quiz. No signup, official sources.')
 @section('canonical', route('tools.index'))
 @section('og_image', asset('marketing/og/tools.png'))
+@section('waitlist_source', 'tools')
 
 @section('content')
 <section>

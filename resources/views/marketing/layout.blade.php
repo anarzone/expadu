@@ -83,7 +83,7 @@
                 <a class="btn btn-primary btn-sm" href="{{ route('dashboard') }}">Open the app →</a>
             @else
                 <a class="login" href="{{ route('login') }}">Log in</a>
-                <a class="btn btn-primary btn-sm" href="{{ route('register') }}">Start free</a>
+                <a class="btn btn-primary btn-sm" href="#waitlist">Start free</a>
             @endauth
         </div>
     </div>
@@ -94,7 +94,7 @@
 <footer class="site">
     <div class="wrap">
         <div class="foot-grid">
-            <div class="waitlist-box">
+            <div class="waitlist-box" id="waitlist">
                 <a class="logo footer-logo" href="{{ route('home') }}" aria-label="Expadu home">
                     <svg viewBox="0 0 100 100" aria-hidden="true">
                         <g transform="translate(2.45,2.05)">
@@ -107,12 +107,12 @@
                     </svg>
                     Expadu
                 </a>
-                <h3>Not in Cologne?</h3>
-                <p>Leave your city — you’ll know the day we arrive.</p>
+                <h3>Get the new Expadu first</h3>
+                <p>The new app opens in Cologne first. Leave your e-mail and you’ll know the day it’s ready.</p>
                 <form class="waitlist" id="waitlistForm" method="POST" action="{{ route('waitlist.store') }}">
                     @csrf
-                    <input type="hidden" name="source" value="@yield('waitlist_source', 'landing-footer')">
-                    <input type="text" name="city" placeholder="Your city" aria-label="Your city" required maxlength="120">
+                    <input type="hidden" name="source" value="@yield('waitlist_source', 'footer')">
+                    <input type="text" name="city" value="Cologne" placeholder="Your city" aria-label="Your city" required maxlength="120">
                     <input type="email" name="email" placeholder="Email" aria-label="Email" required maxlength="255">
                     <button class="btn btn-ghost btn-sm" type="submit">Notify me</button>
                     <p class="waitlist-msg" role="status" aria-live="polite"></p>
@@ -133,7 +133,7 @@
                         <a href="{{ route('dashboard') }}">Open the app</a>
                     @else
                         <a href="{{ route('login') }}">Log in</a>
-                        <a href="{{ route('register') }}">Start free</a>
+                        <a href="#waitlist">Start free</a>
                     @endauth
                 </div>
                 <div>

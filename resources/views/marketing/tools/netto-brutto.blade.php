@@ -163,7 +163,7 @@
 
         <div class="tool-cta">
             <p>Salary sorted? Expadu handles <b>everything else about arriving</b> — the permits, the deadlines, the city.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

@@ -87,7 +87,7 @@
 
         <div class="tool-cta">
             <p>Expadu tracks the whole road there — permits, deadlines, paperwork, in English.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>
