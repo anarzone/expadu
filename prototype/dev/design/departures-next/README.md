@@ -11,6 +11,27 @@ queue prevents styles and scripts being dropped during parallel loads. The
 loading regression and before/after evidence are in
 `docs/reviews/2026-10-04-travel-loading/`.
 
+## Arriving with a trip — 18 October 2026
+
+Owner, on Composer's "Open in Travel": the page it landed on was crowded
+(the form, the Leave now card, the departures board and its filters, the
+trip at the bottom of the side panel); "user should only see what he
+needs". Chosen: A on the Composer review canvas, board 2.
+
+- A trip handed over by another section (Composer's Open in Travel and its
+  plan's journey links, an event's Get there, Today's routes) opens on the
+  trip page itself, the one Show the way opens, before you set off: Leave
+  now and I'm on my way, your way step by step, the map with your
+  platform. Phones and laptops alike (`app.js`, sender()).
+- Its top-left button is a back arrow, "Back to Composer" (or Today,
+  Events): it goes back the way you came, and so does the browser's Back,
+  since a trip opened with the page adds no history step. Starting the
+  trip first is fine: Composer still knows it (`navigation-ui.js`).
+- Links that compare ways keep the options: Today's other ways and its
+  "Check route" for a plan that doesn't fit, Composer's "Compare routes in
+  Travel" (`?compare=1`). A Travel link opened on its own (no section sent
+  it) keeps the options too.
+
 ## The menu stays put — 17 October 2026
 
 Owner: the menu sat in a different place on Today and Events. On a screen

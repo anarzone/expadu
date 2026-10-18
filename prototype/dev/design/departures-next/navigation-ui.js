@@ -12,7 +12,10 @@
     document.body.append(dialog);
     let route,
         active = N.restore(S.read());
+    // The section that handed this trip over (Composer, Today, Events): the
+    // trip opens on arrival and its back arrow returns there.
     let returnFocus,
+        handedFrom = '',
         closing = false,
         settings = false,
         confirmation = '';
@@ -62,7 +65,7 @@
             .querySelector('.nav-session-note')
             ?.toggleAttribute('hidden', persisted);
     }
-    function open(value, autoStart = false) {
+    function open(value, autoStart = false, from = '') {
         const found =
             typeof value === 'string'
                 ? (J.all || J.routes).find((item) => item.id === value)
@@ -75,18 +78,26 @@
         closePopover();
         hideSuggestions();
         active = N.restore(S.read());
-        if (!dialog.open) returnFocus = document.activeElement;
+        if (!dialog.open) {
+            returnFocus = document.activeElement;
+            handedFrom = from;
+        }
         route = found;
         settings = false;
         confirmation = '';
         dialog.innerHTML = `<div class="nav-workspace">
-            <header class="nav-topbar">${iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small></small></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
+            <header class="nav-topbar">${handedFrom ? iconButton('back', `Back to ${handedFrom}`, 'close') : iconButton('close', 'Close the trip', 'close')}<div><h1 id="nav-title">${safe(trip().place)}</h1><small></small></div>${iconButton('more', 'Preview options', 'options', 'aria-expanded="false" aria-controls="nav-options"')}</header>
             <section class="nav-panel" aria-label="Your trip"><div class="nav-panel-content"></div></section>
             <div id="nav-options" class="nav-options" hidden></div>
             <p class="nav-session-note" role="status" hidden>Progress is kept for this page only.</p>
             <p class="sr-only nav-announcement" aria-live="polite"></p>
         </div>`;
         if (!dialog.open) {
+            // A trip that opens with the page takes focus itself, not its
+            // back arrow, so the arrow doesn't open outlined.
+            dialog.toggleAttribute('autofocus', !!handedFrom);
+            if (handedFrom) dialog.tabIndex = -1;
+            else dialog.removeAttribute('tabindex');
             // The phone's Back closes the trip (history.js).
             root.TravelHistory?.open('trip', () => close());
             if (wide()) {
@@ -109,9 +120,9 @@
                 ],
                 { duration: 240, easing: 'cubic-bezier(.22,.7,.2,1)' },
             );
-        dialog
-            .querySelector('[data-nav="close"]')
-            .focus({ preventScroll: true });
+        (handedFrom ? dialog : dialog.querySelector('[data-nav="close"]')).focus(
+            { preventScroll: true },
+        );
         if (autoStart && !isActive()) startCurrent();
     }
     function close(after) {
@@ -120,6 +131,7 @@
         root.TravelHistory?.closed('trip');
         const finish = () => {
             dialog.close();
+            handedFrom = '';
             document.body.classList?.remove('trip-open');
             closing = false;
             returnFocus?.isConnected &&
@@ -1099,8 +1111,11 @@
             close(() => root.TravelPlanTo?.(to));
             return;
         }
-        if (action === 'close') close();
-        else if (action === 'options') options();
+        if (action === 'close') {
+            // A handed-over trip goes back to its section, the way it came.
+            if (handedFrom && history.length > 1) history.back();
+            else close();
+        } else if (action === 'options') options();
         else if (action === 'start') startCurrent();
         else if (action === 'end') {
             menuOpen = false;
@@ -1137,8 +1152,9 @@
     // Crossing the desktop width moves the trip between page and screen.
     matchMedia('(min-width: 1000px)').addEventListener('change', () => {
         if (!dialog.open) return;
-        const current = route;
-        close(() => open(current));
+        const current = route,
+            from = handedFrom;
+        close(() => open(current, false, from));
     });
     root.JourneyNavigation = {
         open,

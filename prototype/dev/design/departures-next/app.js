@@ -2726,6 +2726,20 @@ else {
     setView('stop');
     if (todayEntry.has('stop')) nearbyView?.setStop(todayEntry.get('stop'));
 }
+// A trip another section handed over (Composer's Open in Travel, Today's
+// route, an event's Get there) opens on the trip itself, the page Show the
+// way opens, before you set off; its back arrow returns to that section
+// (owner chose A, Composer review canvas board 2, 18 Oct 2026). Links that
+// compare ways (?compare) keep the options. The trip's script loads after
+// this one, and a trip opened while the page loads adds no history step.
+document.addEventListener('DOMContentLoaded', () => {
+    const from = sender();
+    const id = $('#results .plan-go')?.dataset.route;
+    if (!from || todayEntry.has('compare') || !id) return;
+    if (!window.JourneyNavigation) return;
+    state.selected = id;
+    JourneyNavigation.open(currentRoute(id), false, from);
+});
 if (window.ServiceContext && todayEntry.has('service')) {
     const entry = T.entries.find(
         (item) => item.id === todayEntry.get('service'),

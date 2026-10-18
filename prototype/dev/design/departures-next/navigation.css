@@ -23,6 +23,11 @@ html:has(#journey-navigation:modal) {
     overflow: hidden;
     scrollbar-gutter: auto;
 }
+/* A trip opened with the page holds focus itself (navigation-ui.js); the
+   page, not a control, so no outline. */
+#journey-navigation:focus {
+    outline: none;
+}
 #journey-navigation button {
     touch-action: manipulation;
 }

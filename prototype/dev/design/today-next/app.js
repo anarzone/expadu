@@ -322,6 +322,7 @@
         return `<ul class="alternative-list">${options
             .map((option) => {
                 const late = M.minutes(option.arrive) - target;
+                // Other ways are compared in Travel, not opened as one trip.
                 const query = new URLSearchParams({
                     from: j.from,
                     to: item.location,
@@ -329,6 +330,7 @@
                     arrive: item.start,
                     activity: item.id,
                     planDate: day.date,
+                    compare: '1',
                 });
                 return `<li><a class="alternative" href="${S.routes.departures}?${query}"><span class="alternative-mode">${I(option.mode)}</span><span class="alternative-copy"><strong>${E(option.label)}</strong><small>${E(option.detail)} · leave ${E(option.leave)}</small></span><span class="alternative-arrival ${late > 0 ? 'is-late' : ''}"><b>${E(option.arrive)}</b><small>${late > 0 ? `${late} min late` : `${-late} min early`}</small></span></a></li>`;
             })
@@ -385,6 +387,8 @@
             arrive: link.to.start,
             activity: link.to.id,
             planDate: day.date,
+            // A route that doesn't fit is compared, one that fits opens.
+            ...(['ok', 'tight'].includes(link.status) ? {} : { compare: '1' }),
         });
         const route = `${E(link.from.location)} → ${E(link.to.location)}${link.estimate === null ? '' : ' · sample estimate'}`;
         // Earliest workable start, rounded up to the next five minutes.
