@@ -36,14 +36,3 @@ export type EventReminderEntry = {
     occurrence_start: string;
     offset_minutes: number;
 };
-
-/** Maps an event category onto a CategoryIllustration visual key. */
-export function eventIllustrationKey(category: string): string {
-    return (
-        {
-            culture: 'event_culture',
-            sports: 'event_sports',
-            other: 'event_other',
-        }[category] ?? category
-    );
-}
