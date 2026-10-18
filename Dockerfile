@@ -85,9 +85,16 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 # ── Stage 4: Production ───────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production
 
-# Runtime libraries only — no -dev headers, no LLVM, no Python
+# Runtime libraries only — no -dev headers, no LLVM, no Python.
+# nginx-mod-http-brotli is a subpackage of Alpine's own nginx aport (the stock
+# nginx is built with --add-dynamic-module=ngx_brotli), so it always matches the
+# installed nginx. It drops ngx_http_brotli_{filter,static}_module.so into
+# /usr/lib/nginx/modules and a load_module snippet into /etc/nginx/modules/,
+# which Alpine's nginx.conf includes. docker/prod/nginx.conf relies on it for
+# `brotli_static on`; the `nginx -t` below fails the build if that stops holding.
 RUN apk add --no-cache \
     nginx \
+    nginx-mod-http-brotli \
     supervisor \
     nodejs \
     libpq \
@@ -117,6 +124,8 @@ COPY --from=node-build /app/public/sw.js ./public/sw.js
 COPY --from=node-build /app/bootstrap/ssr ./bootstrap/ssr
 
 COPY docker/prod/nginx.conf /etc/nginx/http.d/default.conf
+# Fail the image build, not the deploy, if the nginx config or its modules are bad.
+RUN nginx -t
 COPY docker/prod/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 RUN mkdir -p \
