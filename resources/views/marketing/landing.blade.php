@@ -128,11 +128,11 @@
         </div>
 
         <div class="xv-hero-stage">
-            <img class="xv-hero-poster" data-reveal="card" style="transition-delay: 1150ms" src="{{ asset('marketing/landing/poster-street.webp') }}" alt="Sample poster from Expadu Events: Street culture night, tonight 18:30 at Rheinauhafen" width="586" height="808">
+            <img class="xv-hero-poster" data-reveal="card" style="transition-delay: 1150ms" src="{{ asset('marketing/landing/poster-street.webp') }}" srcset="{{ asset('marketing/landing/poster-street-300.webp') }} 300w, {{ asset('marketing/landing/poster-street.webp') }} 586w" sizes="(min-width: 768px) 279px, 44vw" alt="Sample poster from Expadu Events: Street culture night, tonight 18:30 at Rheinauhafen" width="586" height="808">
             <figure class="xv-hero-phone" data-reveal="card" style="transition-delay: 700ms">
                 <div class="xv-dev">
                     <div class="xv-dev__screen">
-                        <img class="xv-full" src="{{ asset('marketing/landing/scr-today.webp') }}" alt="Expadu Today on a phone, sample day: D visa expires tomorrow; 14:00 Blue Card appointment in Mülheim; 1 of 5 documents ready; Leave now, tram 4 at 13:14 from Neumarkt, there 13:48, 12 minutes spare" width="780" height="1688">
+                        <img class="xv-full" src="{{ asset('marketing/landing/scr-today.webp') }}" srcset="{{ asset('marketing/landing/scr-today-480.webp') }} 480w, {{ asset('marketing/landing/scr-today-600.webp') }} 600w, {{ asset('marketing/landing/scr-today.webp') }} 780w" sizes="(min-width: 768px) 317px, 307px" fetchpriority="high" alt="Expadu Today on a phone, sample day: D visa expires tomorrow; 14:00 Blue Card appointment in Mülheim; 1 of 5 documents ready; Leave now, tram 4 at 13:14 from Neumarkt, there 13:48, 12 minutes spare" width="780" height="1688">
                         <span class="xv-tap xv-tap--hero" aria-hidden="true"></span>
                     </div>
                 </div>
@@ -259,13 +259,13 @@
             <div class="xv-devslot">
                 <div class="xv-dev xv-dev--stage xv-k">
                     <div class="xv-dev__screen">
-                        <div class="xv-scr xv-s0 xv-k"><img class="xv-full" src="{{ asset('marketing/landing/scr-today.webp') }}" alt="Expadu Today, sample day: Leave now for the 14:00 Blue Card appointment" width="780" height="1688" decoding="async"><span class="xv-tap xv-tap--go xv-k" aria-hidden="true"></span></div>
+                        <div class="xv-scr xv-s0 xv-k"><img class="xv-full" src="{{ asset('marketing/landing/scr-today.webp') }}" srcset="{{ asset('marketing/landing/scr-today-480.webp') }} 480w, {{ asset('marketing/landing/scr-today-600.webp') }} 600w, {{ asset('marketing/landing/scr-today.webp') }} 780w" sizes="(min-width: 768px) 348px, 269px" loading="lazy" alt="Expadu Today, sample day: Leave now for the 14:00 Blue Card appointment" width="780" height="1688" decoding="async"><span class="xv-tap xv-tap--go xv-k" aria-hidden="true"></span></div>
                         <div class="xv-scr xv-s1 xv-k">
-                            <div class="xv-trip-body"><img class="xv-trip-body__img xv-k" src="{{ asset('marketing/landing/trip-body.webp') }}" alt="Expadu Travel, sample trip: walk to Neumarkt, then tram 4 at 13:14 from Gleis 2 underground; your way to Wiener Platz and the appointment" width="780" height="1966" decoding="async"></div>
-                            <img class="xv-trip-head" src="{{ asset('marketing/landing/trip-head.webp') }}" alt="" width="780" height="196" decoding="async">
+                            <div class="xv-trip-body"><img class="xv-trip-body__img xv-k" src="{{ asset('marketing/landing/trip-body.webp') }}" srcset="{{ asset('marketing/landing/trip-body-480.webp') }} 480w, {{ asset('marketing/landing/trip-body-600.webp') }} 600w, {{ asset('marketing/landing/trip-body.webp') }} 780w" sizes="(min-width: 768px) 348px, 269px" loading="lazy" alt="Expadu Travel, sample trip: walk to Neumarkt, then tram 4 at 13:14 from Gleis 2 underground; your way to Wiener Platz and the appointment" width="780" height="1966" decoding="async"></div>
+                            <img class="xv-trip-head" src="{{ asset('marketing/landing/trip-head.webp') }}" srcset="{{ asset('marketing/landing/trip-head-480.webp') }} 480w, {{ asset('marketing/landing/trip-head-600.webp') }} 600w, {{ asset('marketing/landing/trip-head.webp') }} 780w" sizes="(min-width: 768px) 348px, 269px" loading="lazy" alt="" width="780" height="196" decoding="async">
                         </div>
-                        <div class="xv-scr xv-s2 xv-k"><img class="xv-full" src="{{ asset('marketing/landing/scr-paper.webp') }}" alt="Expadu Paperwork, sample records: EU Blue Card documents, 1 of 5 ready" width="780" height="1688" decoding="async"></div>
-                        <div class="xv-scr xv-s3 xv-k"><img class="xv-full" src="{{ asset('marketing/landing/scr-events.webp') }}" alt="Expadu Events, sample programme: tonight’s posters on a Cologne street" width="780" height="1688" decoding="async"></div>
+                        <div class="xv-scr xv-s2 xv-k"><img class="xv-full" src="{{ asset('marketing/landing/scr-paper.webp') }}" srcset="{{ asset('marketing/landing/scr-paper-480.webp') }} 480w, {{ asset('marketing/landing/scr-paper-600.webp') }} 600w, {{ asset('marketing/landing/scr-paper.webp') }} 780w" sizes="(min-width: 768px) 348px, 269px" loading="lazy" alt="Expadu Paperwork, sample records: EU Blue Card documents, 1 of 5 ready" width="780" height="1688" decoding="async"></div>
+                        <div class="xv-scr xv-s3 xv-k"><img class="xv-full" src="{{ asset('marketing/landing/scr-events.webp') }}" srcset="{{ asset('marketing/landing/scr-events-480.webp') }} 480w, {{ asset('marketing/landing/scr-events-600.webp') }} 600w, {{ asset('marketing/landing/scr-events.webp') }} 780w" sizes="(min-width: 768px) 369px, 286px" loading="lazy" alt="Expadu Events, sample programme: tonight’s posters on a Cologne street" width="780" height="1688" decoding="async"></div>
                         <span class="xv-fly xv-k" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="4"/><path d="M5 10h14M12 3v7M9 20l1.5-3M15 20l-1.5-3"/></svg><b>4</b></span>
                     </div>
                 </div>
@@ -275,11 +275,11 @@
         {{-- The phone's Events screen opens into the street. --}}
         <div class="xv-portal xv-k">
             <div class="xv-scene xv-k">
-                <img class="xv-scene__img" src="{{ asset('marketing/landing/street.webp') }}" alt="" width="2400" height="1251" decoding="async">
+                <img class="xv-scene__img" src="{{ asset('marketing/landing/street.webp') }}" srcset="{{ asset('marketing/landing/street-900.webp') }} 900w, {{ asset('marketing/landing/street-1400.webp') }} 1400w, {{ asset('marketing/landing/street-1800.webp') }} 1800w, {{ asset('marketing/landing/street.webp') }} 2400w" sizes="(min-width: 768px) 897px, 693px" loading="lazy" alt="" width="2400" height="1251" decoding="async">
                 <span class="xv-wtag xv-t1 xv-k" aria-hidden="true">18:00</span>
                 <span class="xv-wtag xv-t2 xv-k" aria-hidden="true">20:00</span>
-                <img class="xv-wposter xv-p1 xv-k" src="{{ asset('marketing/landing/poster-street.webp') }}" alt="Sample poster: Street culture night, tonight 30 Sept, 18:30 until 21:00, Rheinauhafen, price not listed" width="586" height="808" decoding="async">
-                <img class="xv-wposter xv-p2 xv-k" src="{{ asset('marketing/landing/poster-cinema.webp') }}" alt="Sample poster: Cinema under the stars, tonight 30 Sept, 20:00 until 22:00, Stadtgarten, rain likely (sample forecast)" width="582" height="806" decoding="async">
+                <img class="xv-wposter xv-p1 xv-k" src="{{ asset('marketing/landing/poster-street.webp') }}" srcset="{{ asset('marketing/landing/poster-street-300.webp') }} 300w, {{ asset('marketing/landing/poster-street.webp') }} 586w" sizes="(min-width: 768px) 252px, 195px" alt="Sample poster: Street culture night, tonight 30 Sept, 18:30 until 21:00, Rheinauhafen, price not listed" width="586" height="808" decoding="async">
+                <img class="xv-wposter xv-p2 xv-k" src="{{ asset('marketing/landing/poster-cinema.webp') }}" srcset="{{ asset('marketing/landing/poster-cinema-300.webp') }} 300w, {{ asset('marketing/landing/poster-cinema.webp') }} 582w" sizes="(min-width: 768px) 250px, 193px" alt="Sample poster: Cinema under the stars, tonight 30 Sept, 20:00 until 22:00, Stadtgarten, rain likely (sample forecast)" width="582" height="806" decoding="async">
             </div>
             <div class="xv-rain" aria-hidden="true"><span></span><span></span></div>
             <div class="xv-weather xv-k" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 15a4 4 0 0 1 .5-8 5.5 5.5 0 0 1 10.4 1.6A3.3 3.3 0 0 1 17.5 15z"/><path d="M8 18l-1 2M12 18l-1 2M16 18l-1 2"/></svg><span><b>17° Showers</b><small>18:30 · Sample weather</small></span></div>
@@ -363,8 +363,8 @@
                         <span class="xv-by"><svg viewBox="0 0 24 24" aria-hidden="true">{!! $spark !!}</svg>Composer</span>
                         <p class="xv-a-title">Two sample events tonight.</p>
                         <div class="xv-ev-cards">
-                            <article class="xv-ev"><img src="{{ asset('marketing/landing/poster-street.webp') }}" alt="Sample poster: Street culture night, tonight 18:30 until 21:00, Rheinauhafen" width="586" height="808" loading="lazy"><span class="xv-ev__meta"><small>18:30–21:00 · Rheinauhafen</small><span class="xv-ev__add" aria-hidden="true"><svg viewBox="0 0 24 24">{!! $calendarPlus !!}</svg></span></span></article>
-                            <article class="xv-ev"><img src="{{ asset('marketing/landing/poster-cinema.webp') }}" alt="Sample poster: Cinema under the stars, tonight 20:00 until 22:00, Stadtgarten" width="582" height="806" loading="lazy"><span class="xv-ev__meta"><small>20:00–22:00 · Stadtgarten</small><span class="xv-ev__add" aria-hidden="true"><svg viewBox="0 0 24 24">{!! $calendarPlus !!}</svg></span></span></article>
+                            <article class="xv-ev"><img src="{{ asset('marketing/landing/poster-street.webp') }}" srcset="{{ asset('marketing/landing/poster-street-300.webp') }} 300w, {{ asset('marketing/landing/poster-street.webp') }} 586w" sizes="(min-width: 600px) 241px, 40vw" alt="Sample poster: Street culture night, tonight 18:30 until 21:00, Rheinauhafen" width="586" height="808" loading="lazy"><span class="xv-ev__meta"><small>18:30–21:00 · Rheinauhafen</small><span class="xv-ev__add" aria-hidden="true"><svg viewBox="0 0 24 24">{!! $calendarPlus !!}</svg></span></span></article>
+                            <article class="xv-ev"><img src="{{ asset('marketing/landing/poster-cinema.webp') }}" srcset="{{ asset('marketing/landing/poster-cinema-300.webp') }} 300w, {{ asset('marketing/landing/poster-cinema.webp') }} 582w" sizes="(min-width: 600px) 241px, 40vw" alt="Sample poster: Cinema under the stars, tonight 20:00 until 22:00, Stadtgarten" width="582" height="806" loading="lazy"><span class="xv-ev__meta"><small>20:00–22:00 · Stadtgarten</small><span class="xv-ev__add" aria-hidden="true"><svg viewBox="0 0 24 24">{!! $calendarPlus !!}</svg></span></span></article>
                         </div>
                         <p class="xv-a-p xv-a-p--small">Sample programme. Adding one isn’t a booking; with “Ask first”, Composer asks before it changes your plan.</p>
                     </div>
