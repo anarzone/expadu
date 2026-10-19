@@ -2219,10 +2219,8 @@ html[data-xv-anim='on'] .xv [data-reveal='draw']:not([data-in]) path.r {
  * first frame and only slides into place. The phone and poster cards keep
  * their fade, so web-font swaps above them don't count as layout shifts.
  * Everything below the hero still fades in. */
-html[data-xv-anim='on']
-    .xv
-    .xv-hero
-    :is([data-reveal='up'], [data-reveal='word']):not([data-in]) {
+html[data-xv-anim='on'] .xv .xv-hero [data-reveal='up']:not([data-in]),
+html[data-xv-anim='on'] .xv .xv-hero [data-reveal='word']:not([data-in]) {
     opacity: 1;
 }
 .xv svg [data-reveal] {
