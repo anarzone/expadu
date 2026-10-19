@@ -6,7 +6,6 @@
     const launcher = tray.querySelector('.composer-launcher');
     const send = tray.querySelector('[type="submit"]');
     const actions = tray.querySelector('.today-composer-actions');
-    const approval = tray.querySelector('.today-approval');
     const tools = tray.querySelector('.today-composer-tools');
     const context = tray.querySelector('#included-ideas');
     let expandedState = null,
@@ -21,10 +20,7 @@
         tools.inert = !expanded;
         field.inert = !expanded;
         if (context) context.inert = !expanded;
-        if (!expanded) {
-            actions.open = false;
-            approval.open = false;
-        }
+        if (!expanded) actions.open = false;
         const finish = () => {
             tray.classList.toggle('is-active', expanded);
             if (!expanded && restoreFocus)
@@ -102,29 +98,10 @@
             el.querySelector('strong')?.textContent || el.textContent.trim(),
         );
     });
-    const mode = () =>
-        S.studio()?.conversation?.approval || S.read().approvalMode || 'ask';
     function sync() {
         send.disabled = !field.value.trim();
-        const current = mode();
-        approval.querySelector('[data-approval-label]').textContent =
-            current === 'routine' ? 'Edit for me' : 'Ask first';
-        approval
-            .querySelectorAll('[data-today-approval]')
-            .forEach((button) =>
-                button.setAttribute(
-                    'aria-checked',
-                    String(button.dataset.todayApproval === current),
-                ),
-            );
     }
     field.addEventListener('input', sync);
-    for (const menu of [actions, approval])
-        menu.addEventListener('toggle', () => {
-            if (menu.open)
-                for (const other of [actions, approval])
-                    if (other !== menu) other.open = false;
-        });
     tray.addEventListener('click', (event) => {
         const button = event.target.closest('button');
         if (!button) return;
@@ -137,61 +114,16 @@
                 action: button.dataset.composerAction,
             });
         }
-        if (button.dataset.todayApproval) {
-            const value = button.dataset.todayApproval;
-            const workspace = S.studio();
-            if (workspace?.conversation) {
-                workspace.conversation.approval = value;
-                try {
-                    localStorage.setItem(
-                        'expadu-composer-studio-v1',
-                        JSON.stringify(workspace),
-                    );
-                } catch {
-                    return;
-                }
-            }
-            S.update((s) => {
-                s.approvalMode = value;
-            });
-            approval.open = false;
-            approval.querySelector('summary').focus({ preventScroll: true });
-            sync();
-        }
     });
     document.addEventListener('click', (event) => {
         if (!actions.contains(event.target)) actions.open = false;
-        if (!approval.contains(event.target)) approval.open = false;
     });
     tray.addEventListener('keydown', (event) => {
-        const activeMenu = event.target.closest('.today-approval');
-        if (
-            activeMenu?.open &&
-            ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)
-        ) {
-            event.preventDefault();
-            const buttons = [
-                ...activeMenu.querySelectorAll('[data-today-approval]'),
-            ];
-            const index = buttons.indexOf(document.activeElement);
-            const next =
-                event.key === 'Home'
-                    ? 0
-                    : event.key === 'End'
-                      ? buttons.length - 1
-                      : (index +
-                            (event.key === 'ArrowDown' ? 1 : -1) +
-                            buttons.length) %
-                        buttons.length;
-            buttons[next].focus();
-            return;
-        }
         if (event.key !== 'Escape') return;
-        const menu = [actions, approval].find((x) => x.open);
-        if (menu) {
+        if (actions.open) {
             event.preventDefault();
-            menu.open = false;
-            menu.querySelector('summary').focus();
+            actions.open = false;
+            actions.querySelector('summary').focus();
         } else {
             event.preventDefault();
             document.activeElement?.blur();
@@ -202,6 +134,5 @@
     window.addEventListener('pageshow', () => {
         if (S.isComposerMinimized?.()) setExpanded(false);
     });
-    window.addEventListener('storage', sync);
     sync();
 })();

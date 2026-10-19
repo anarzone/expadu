@@ -187,14 +187,12 @@ test('Today Composer actions preserve typed text and only carry supported action
     });
     p.S.update((s) => {
         s.prompt = 'My unfinished question';
-        s.approvalMode = 'routine';
     });
     for (const action of ['appointment', 'examples', 'new']) {
         p.S.go('composer', { action, panel: undefined });
         assert.equal(new URL(p.context.location.href).hash, '');
         assert.equal(p.S.read().composerHandoff.action, action);
         assert.equal(p.S.read().prompt, 'My unfinished question');
-        assert.equal(p.S.read().approvalMode, 'routine');
     }
     p.S.go('composer', { action: 'unknown' });
     assert.equal(p.S.read().composerHandoff.action, null);

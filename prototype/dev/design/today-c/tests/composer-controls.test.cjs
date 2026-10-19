@@ -40,7 +40,6 @@ function setup(reducedMotion = true, store = {}) {
         launcher = node();
     const dismiss = node(),
         actions = node(),
-        approval = node(),
         tools = node();
     const context = node(),
         send = node(),
@@ -52,7 +51,6 @@ function setup(reducedMotion = true, store = {}) {
         '.composer-dismiss': dismiss,
         '[type="submit"]': send,
         '.today-composer-actions': actions,
-        '.today-approval': approval,
         '.today-composer-tools': tools,
         '#included-ideas': context,
     };
@@ -83,7 +81,7 @@ function setup(reducedMotion = true, store = {}) {
         animations.push(animation);
         return animation;
     };
-    approval.querySelector = () => label;
+    actions.querySelector = () => label;
     document.activeElement = document;
     vm.runInNewContext(
         fs.readFileSync(require.resolve('../composer-controls.js'), 'utf8'),
@@ -103,7 +101,6 @@ function setup(reducedMotion = true, store = {}) {
         launcher,
         dismiss,
         actions,
-        approval,
         tools,
         animations,
     };
@@ -134,15 +131,15 @@ test('outside tap and explicit close still dismiss without clearing the message'
     assert.equal(field.value, 'Plan a walk');
 });
 test('Escape closes an open menu first, then Composer', () => {
-    const { tray, approval } = setup();
-    approval.open = true;
+    const { tray, actions } = setup();
+    actions.open = true;
     const event = {
         key: 'Escape',
         target: { closest: () => null },
         preventDefault() {},
     };
     tray.fire('keydown', event);
-    assert.equal(approval.open, false);
+    assert.equal(actions.open, false);
     assert.equal(tray.expanded, true);
     tray.fire('keydown', event);
     assert.equal(tray.expanded, false);

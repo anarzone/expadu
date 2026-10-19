@@ -1692,9 +1692,6 @@ body.today-next {
     border-color: var(--line);
     box-shadow: 0 8px 32px #3e352b1f;
 }
-.today-next.department-composer .today-control-menu p {
-    color: var(--muted);
-}
 .today-next.department-composer .today-control-menu button:last-child {
     border-top-color: var(--line);
 }
@@ -1702,7 +1699,6 @@ body.today-next {
     .today-composer-tools
     summary:is(:hover, :active),
 .today-next.department-composer .today-control-menu button:hover,
-.today-next.department-composer .today-approval [aria-checked='true'],
 .today-next.department-composer
     #composer-tray.is-active
     .composer-dismiss:is(:hover, :focus-visible) {

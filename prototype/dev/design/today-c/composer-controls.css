@@ -83,10 +83,6 @@
     svg {
     transform: rotate(45deg);
 }
-:is(.today-c, .department-composer) .today-approval > summary svg {
-    width: 14px;
-    height: 14px;
-}
 :is(.today-c, .department-composer) .today-control-menu {
     position: absolute;
     bottom: calc(100% + 10px);
@@ -122,39 +118,6 @@
 :is(.today-c, .department-composer) .today-control-menu button:last-child {
     border-top: 1px solid var(--color-border, #e7eef0);
     border-radius: 0 0 var(--radius-md) var(--radius-md);
-}
-:is(.today-c, .department-composer) .today-approval .today-control-menu {
-    width: min(304px, calc(100vw - 92px));
-}
-:is(.today-c, .department-composer) .today-approval .today-control-menu button {
-    align-items: flex-start;
-}
-:is(.today-c, .department-composer) .today-control-menu strong,
-:is(.today-c, .department-composer) .today-control-menu small {
-    display: block;
-}
-:is(.today-c, .department-composer) .today-control-menu strong {
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
-}
-:is(.today-c, .department-composer) .today-control-menu small {
-    font-size: var(--text-caption);
-    font-weight: var(--weight-regular);
-    line-height: 1.5;
-    margin-top: 3px;
-}
-:is(.today-c, .department-composer) .today-approval [aria-checked='true'] {
-    background: var(--color-select-bg, #edf5f7);
-}
-:is(.today-c, .department-composer) .today-approval [aria-checked='false'] svg {
-    visibility: hidden;
-}
-:is(.today-c, .department-composer) .today-control-menu p {
-    font-size: var(--text-micro);
-    line-height: 1.5;
-    color: var(--color-text-soft, #667c84);
-    padding: 8px 12px;
-    margin: 0;
 }
 :is(.today-c, .department-composer) #compose-form .compose-button {
     margin-left: auto;
