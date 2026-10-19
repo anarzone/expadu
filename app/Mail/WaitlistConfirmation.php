@@ -12,7 +12,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\URL;
 
 /**
- * The single double-opt-in message for a city-waitlist signup. Until the
+ * The single double-opt-in message for a launch-waitlist signup. Until the
  * recipient clicks the signed confirmation link, no other mail may be sent
  * to the address (GDPR consent is only complete on confirm).
  */

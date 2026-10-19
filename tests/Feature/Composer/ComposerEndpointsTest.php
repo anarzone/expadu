@@ -1094,3 +1094,28 @@ test('compose accepts everyday category families and returns their native facets
     ['supermarket', 'shopping'], ['hairdresser', 'services'], ['pharmacy', 'health'],
     ['community_centre', 'community'], ['hotel', 'stay'], ['fitness_centre', 'fitness'],
 ]);
+
+test('a thin filter combination preserves free requirements when price evidence is missing', function () {
+    $user = composerUser();
+
+    // Missing prices cannot be treated as free just to fill a shaped day.
+    Spot::factory()->create(['name' => 'Bolzplatz Merkenich', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.039, 'lng' => 6.930]);
+    Spot::factory()->create(['name' => 'Sportplatz Fühlingen', 'category' => 'pitch', 'veedel' => 'Merkenich', 'lat' => 51.041, 'lng' => 6.932]);
+
+    $this->actingAs($user);
+    $start = now('Europe/Berlin')->addDay()->setTime(14, 0);
+    $response = $this->postJson('/composer/compose', [
+        'constraints' => [
+            'window_start' => $start->toIso8601String(),
+            'window_end' => $start->addHours(6)->toIso8601String(),
+            'areas' => ['Merkenich'],
+            'categories' => ['pitch'],
+            'budget' => 'free',
+            'archetype' => 'make_a_day',
+        ],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('plan.slots'))->toBe([]);
+    expect(collect($response->json('notices'))->pluck('text')->implode(' '))->toContain('No verified places');
+});

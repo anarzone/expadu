@@ -66,7 +66,7 @@ class EventOccurrencePresenter
      * surfaces (the Today "Tonight" rail) can never show an image the events
      * page would refuse.
      *
-     * @return array{url: string|null, attribution: string|null}
+     * @return array{url: string|null, attribution: string|null, source_url: string|null, license_url: string|null}
      */
     public function photo(Event $event): array
     {
@@ -75,6 +75,8 @@ class EventOccurrencePresenter
         return [
             'url' => $media?->remote_url,
             'attribution' => $media?->attribution,
+            'source_url' => $media?->source_page_url,
+            'license_url' => $media?->license_url,
         ];
     }
 

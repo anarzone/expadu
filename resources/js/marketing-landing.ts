@@ -1,19 +1,24 @@
 /**
- * Landing — "Cologne in colour".
+ * Landing — "Cologne in motion".
  *
  * Every section renders complete server-side; this file only enhances:
  * - reveals: elements animate in once when they reach the viewport;
- * - artwork: decorative SVGs (sun, train, lights, map route, stars) follow
- *   the scroll through an eased --p value, so wheel steps glide, not jump;
+ * - the story: one pinned phone plays the sample day. Its CSS keyframes run on
+ *   the section's scroll timeline on their own; where that isn't supported, or
+ *   motion is reduced, this file steps through the same keyframes instead;
+ * - Composer: a sample conversation plays once with a demo finger, and the card
+ *   you pick becomes your question; tapping anything takes over;
+ * - artwork: decorative SVGs (sun, map route, stars) follow the scroll through
+ *   an eased --p value, so wheel steps glide, not jump;
  * - the day clock: a pill that names the time of day you're scrolling through;
- * - anchor glide: in-page links scroll slowly and stop when the visitor scrolls;
- * - the Composer sample conversation: plays once on its own, then by tap.
+ * - anchor glide: in-page links scroll slowly and stop when the visitor scrolls.
  *
- * Nothing here moves text with the scroll, re-renders on scroll, or changes
- * the page height (all Composer answers share one grid cell).
+ * Nothing here moves text with the scroll, re-renders on scroll, or changes the
+ * page height (Composer's home and answers share one grid cell).
  */
 
 type ScrubElement = HTMLElement | SVGElement;
+type Box = { x: number; y: number; w: number; h: number };
 
 const ease = (t: number): number =>
     t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -32,8 +37,10 @@ if (root) {
     const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     setupReveals(root, motion);
+    setupHeroTram(root, motion);
     const artwork = setupArtwork(root, motion);
     const clock = setupClock(root);
+    const story = setupStory(root, motion);
     setupGlide(root, motion);
     setupComposer(root, motion);
 
@@ -47,6 +54,7 @@ if (root) {
             frame = 0;
             artwork.measure();
             clock.update();
+            story.update();
         });
     };
 
@@ -54,9 +62,14 @@ if (root) {
         passive: true,
         capture: true,
     });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', () => {
+        story.measure();
+        onScroll();
+    });
     artwork.measure(true);
     clock.update();
+    story.measure();
+    void document.fonts?.ready.then(() => story.measure());
 }
 
 /* ── Reveals ───────────────────────────────────────────────────── */
@@ -109,6 +122,32 @@ function setupReveals(root: HTMLElement, motion: boolean): void {
         waiting.set(watched, [...(waiting.get(watched) ?? []), element]);
         observer.observe(watched);
     });
+}
+
+/* ── Hero: tram 4 sets off along the route once the phone has landed ── */
+function setupHeroTram(root: HTMLElement, motion: boolean): void {
+    const tram = root.querySelector<SVGAnimationElement>(
+        '.xv-hero-tram animateMotion',
+    );
+    const phone = root.querySelector<HTMLElement>('.xv-hero-phone');
+
+    if (!tram || !phone || !motion || !('IntersectionObserver' in window)) {
+        return;
+    }
+
+    const observer = new IntersectionObserver(
+        (entries) => {
+            if (!entries.some((entry) => entry.isIntersecting)) {
+                return;
+            }
+
+            observer.disconnect();
+            window.setTimeout(() => tram.beginElement(), 1600);
+        },
+        { threshold: 0.3 },
+    );
+
+    observer.observe(phone);
 }
 
 /* ── Scroll-linked artwork ─────────────────────────────────────── */
@@ -220,7 +259,6 @@ function setupClock(root: HTMLElement): { update: () => void } {
         for (const stop of stops) {
             const rect = stop.getBoundingClientRect();
 
-            // The horizontal check picks the visible card in the phone swipe row.
             if (
                 rect.top <= middle &&
                 rect.bottom >= middle &&
@@ -254,6 +292,147 @@ function setupClock(root: HTMLElement): { update: () => void } {
     };
 
     return { update };
+}
+
+/* ── The story: one pinned phone ───────────────────────────────── */
+function setupStory(
+    root: HTMLElement,
+    motion: boolean,
+): { update: () => void; measure: () => void } {
+    const story = root.querySelector<HTMLElement>('.xv-story');
+    const pin = story?.querySelector<HTMLElement>('.xv-pin');
+    const portal = story?.querySelector<HTMLElement>('.xv-portal');
+    const slot = story?.querySelector<HTMLElement>('.xv-devslot');
+    const scene = story?.querySelector<HTMLElement>('.xv-scene');
+
+    if (!story || !pin || !portal || !slot || !scene) {
+        return { update: () => {}, measure: () => {} };
+    }
+
+    // Where one step hands over to the next (scroll progress through the
+    // pinned range), and where each step rests (percent of the keyframes).
+    const handover = [0.18, 0.4, 0.59, 0.75];
+    const rest = [6, 30, 50, 66, 97];
+    const glide =
+        motion &&
+        CSS.supports('animation-timeline: --xv-story') &&
+        CSS.supports('view-timeline-name: --xv-story');
+    let step = -1;
+    let shown = 0;
+    let tween = 0;
+
+    story.dataset.mode = glide ? 'glide' : 'step';
+
+    const animations = (): Animation[] =>
+        story
+            .getAnimations({ subtree: true })
+            .filter((animation) =>
+                (animation as CSSAnimation).animationName?.startsWith('xvk-'),
+            );
+
+    const show = (percent: number, list = animations()): void => {
+        shown = percent;
+        list.forEach((animation) => {
+            animation.currentTime = percent * 10;
+        });
+    };
+
+    const tweenTo = (percent: number): void => {
+        cancelAnimationFrame(tween);
+
+        if (!motion) {
+            show(percent);
+
+            return;
+        }
+
+        const from = shown;
+        const startedAt = performance.now();
+        const duration = Math.min(1700, 650 + Math.abs(percent - from) * 16);
+        const list = animations();
+
+        const frame = (now: number): void => {
+            const progress = Math.min(1, (now - startedAt) / duration);
+            show(from + (percent - from) * ease(progress), list);
+
+            if (progress < 1) {
+                tween = requestAnimationFrame(frame);
+            }
+        };
+
+        tween = requestAnimationFrame(frame);
+    };
+
+    const update = (): void => {
+        if (glide) {
+            return;
+        }
+
+        const rect = story.getBoundingClientRect();
+        const progress = clamp01(
+            -rect.top / Math.max(rect.height - viewportHeight(), 1),
+        );
+        const next = handover.filter((edge) => progress >= edge).length;
+
+        if (next === step) {
+            return;
+        }
+
+        const first = step === -1;
+        step = next;
+
+        if (first) {
+            show(rest[next]);
+        } else {
+            tweenTo(rest[next]);
+        }
+    };
+
+    // The street opens out of the phone's own screen: measure where that
+    // screen sits in the pinned frame, and start the street small inside it,
+    // as the Events screen shows it.
+    const measure = (): void => {
+        const frame = pin.getBoundingClientRect();
+        const box = slot.getBoundingClientRect();
+        const bezel = box.width * 0.0244;
+        const screen: Box = {
+            x: box.left + bezel - frame.left,
+            y: box.top + bezel - frame.top,
+            w: box.width - 2 * bezel,
+            h: box.height - 2 * bezel,
+        };
+        const set = (name: string, value: number, unit = 'px'): void => {
+            portal.style.setProperty(name, `${Math.round(value)}${unit}`);
+        };
+
+        set('--pt', screen.y);
+        set('--pl', screen.x);
+        set('--pr', frame.width - screen.x - screen.w);
+        set('--pb', frame.height - screen.y - screen.h);
+        set('--prad', screen.w * 0.108);
+
+        const [originX, originY] = getComputedStyle(scene)
+            .transformOrigin.split(' ')
+            .map((value) => Number.parseFloat(value));
+        const focusX = scene.offsetLeft + (originX || scene.offsetWidth * 0.35);
+        const focusY = scene.offsetTop + (originY || scene.offsetHeight * 0.58);
+
+        set('--sx', screen.x + screen.w / 2 - focusX);
+        set('--sy', screen.y + screen.h * 0.6 - focusY);
+        portal.style.setProperty(
+            '--ss',
+            Math.max(
+                0.2,
+                Math.min(
+                    1,
+                    (screen.h * 0.62) / Math.max(scene.offsetHeight, 1),
+                ),
+            ).toFixed(3),
+        );
+        update();
+    };
+
+    return { update, measure };
 }
 
 /* ── Anchor glide ──────────────────────────────────────────────── */
@@ -332,22 +511,23 @@ function setupGlide(root: HTMLElement, motion: boolean): void {
 
 /* ── Composer sample conversation ──────────────────────────────── */
 function setupComposer(root: HTMLElement, motion: boolean): void {
-    const section = root.querySelector<HTMLElement>('#composer');
-    const prompts = Array.from(
-        root.querySelectorAll<HTMLButtonElement>('.xv-prompt'),
-    );
-    const questions = Array.from(root.querySelectorAll<HTMLElement>('.xv-q'));
-    const answers = Array.from(root.querySelectorAll<HTMLElement>('.xv-ans'));
-    const typing = root.querySelector<HTMLElement>('.xv-typing');
+    const win = root.querySelector<HTMLElement>('.xv-cwin');
+    const home = win?.querySelector<HTMLElement>('.xv-cview--home');
+    const finger = win?.querySelector<HTMLElement>('.xv-finger');
+    const ghost = win?.querySelector<HTMLElement>('.xv-ghost');
 
-    if (!section || prompts.length === 0 || answers.length === 0) {
+    if (!win || !home || !finger || !ghost) {
         return;
     }
 
-    const last = prompts.length - 1;
-    let current = 0;
-    let userTookOver = false;
+    const answers = Array.from(win.querySelectorAll<HTMLElement>('.xv-ans'));
+    const order = answers.map((answer) => Number(answer.dataset.a));
     const timers: number[] = [];
+    let played = 0;
+    let run = 0;
+    let visible = false;
+    let userTookOver = false;
+    let fingerAt: string | null = null;
 
     const later = (callback: () => void, delay: number): void => {
         timers.push(window.setTimeout(callback, delay));
@@ -357,73 +537,244 @@ function setupComposer(root: HTMLElement, motion: boolean): void {
         timers.splice(0).forEach((timer) => window.clearTimeout(timer));
     };
 
-    const show = (index: number, writing: boolean): void => {
-        current = index;
-        prompts.forEach((prompt, i) =>
-            prompt.setAttribute('aria-pressed', String(i === index)),
-        );
-        questions.forEach((question, i) => {
-            question.dataset.on = i === index ? '1' : '0';
-        });
-        answers.forEach((answer, i) => {
-            answer.dataset.on = !writing && i === index ? '1' : '0';
-        });
+    const boxOf = (element: Element): Box => {
+        const frame = win.getBoundingClientRect();
+        const rect = element.getBoundingClientRect();
 
-        if (typing) {
-            typing.dataset.on = writing ? '1' : '0';
-        }
+        return {
+            x: rect.left - frame.left,
+            y: rect.top - frame.top,
+            w: rect.width,
+            h: rect.height,
+        };
     };
 
-    const answer = (index: number, delay: number): void => {
-        show(index, motion);
+    const answerFor = (index: number): HTMLElement | undefined =>
+        answers.find((answer) => answer.dataset.a === String(index));
 
-        if (motion) {
-            later(() => show(index, false), delay);
-        }
-    };
+    // The card you picked becomes your question: a coloured shape flies from
+    // the card to the question bubble while the answer fills in below it.
+    const show = (
+        index: number,
+        source: HTMLElement | null,
+        focus = false,
+    ): void => {
+        const answer = answerFor(index);
+        const bubble = answer?.querySelector<HTMLElement>('.xv-you');
 
-    const playNext = (): void => {
-        if (userTookOver || current >= last) {
+        if (!answer || !bubble) {
             return;
         }
 
-        later(() => {
-            if (userTookOver) {
-                return;
-            }
+        const from = source ? boxOf(source) : null;
+        const fill = source ? getComputedStyle(source) : null;
 
-            answer(current + 1, 1200);
-            later(playNext, 1200);
-        }, 7000);
+        home.dataset.on = '0';
+        answers.forEach((item) => {
+            item.dataset.on = item === answer ? '1' : '0';
+        });
+
+        if (motion && from && fill && typeof ghost.animate === 'function') {
+            const to = boxOf(bubble);
+            const frame = (
+                box: Box,
+                radius: string,
+                colour: string,
+                opacity: number,
+            ): Keyframe => ({
+                left: `${box.x}px`,
+                top: `${box.y}px`,
+                width: `${box.w}px`,
+                height: `${box.h}px`,
+                borderRadius: radius,
+                backgroundColor: colour,
+                opacity,
+            });
+
+            ghost.style.display = 'block';
+            bubble.style.opacity = '0';
+            ghost.animate(
+                [
+                    frame(from, fill.borderRadius, fill.backgroundColor, 1),
+                    { ...frame(to, '18px', '#def5f8', 1), offset: 0.92 },
+                    frame(to, '18px', '#def5f8', 0),
+                ],
+                { duration: 620, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+            ).onfinish = () => {
+                ghost.style.display = 'none';
+                bubble.style.opacity = '';
+            };
+        }
+
+        if (focus) {
+            answer
+                .querySelector<HTMLElement>('.xv-back')
+                ?.focus({ preventScroll: true });
+        }
     };
 
-    prompts.forEach((prompt, index) => {
-        prompt.addEventListener('click', () => {
-            userTookOver = true;
-            clearTimers();
-            answer(index, 800);
+    const backHome = (focus = false): void => {
+        answers.forEach((answer) => {
+            answer.dataset.on = '0';
         });
+        home.dataset.on = '1';
+
+        if (focus) {
+            home.querySelector<HTMLElement>('.xv-starter')?.focus({
+                preventScroll: true,
+            });
+        }
+    };
+
+    // The demo finger enters from the text box, taps, then steps out of the way.
+    const tap = (
+        target: Element | null | undefined,
+        then: () => void,
+    ): void => {
+        if (!target) {
+            then();
+
+            return;
+        }
+
+        const box = boxOf(target);
+        const frame = win.getBoundingClientRect();
+        const to = `translate(${Math.round(box.x + box.w * 0.62)}px, ${Math.round(box.y + Math.min(box.h * 0.58, box.h - 18))}px)`;
+        const from =
+            fingerAt ??
+            `translate(${Math.round(frame.width * 0.78)}px, ${Math.round(frame.height - 40)}px)`;
+
+        finger.dataset.on = '1';
+        finger.animate([{ transform: from }, { transform: to }], {
+            duration: 900,
+            easing: 'cubic-bezier(0.45, 0, 0.2, 1)',
+            fill: 'forwards',
+        });
+        fingerAt = to;
+        later(() => {
+            finger.dataset.press = '0';
+            void finger.offsetWidth;
+            finger.dataset.press = '1';
+            later(then, 260);
+            later(() => {
+                finger.dataset.on = '0';
+            }, 520);
+        }, 950);
+    };
+
+    const play = (): void => {
+        if (userTookOver || !visible || !motion || played >= order.length) {
+            return;
+        }
+
+        const current = ++run;
+        const index = order[played];
+        const alive = (): boolean => current === run;
+
+        later(
+            () => {
+                if (!alive()) {
+                    return;
+                }
+
+                const source = win.querySelector<HTMLElement>(
+                    `.xv-cview--home [data-q="${index}"]`,
+                );
+
+                tap(source, () => {
+                    if (!alive()) {
+                        return;
+                    }
+
+                    show(index, source);
+                    played++;
+                    later(() => {
+                        if (!alive()) {
+                            return;
+                        }
+
+                        tap(answerFor(index)?.querySelector('.xv-back'), () => {
+                            if (!alive()) {
+                                return;
+                            }
+
+                            backHome();
+
+                            if (played >= order.length) {
+                                fingerAt = null;
+
+                                return;
+                            }
+
+                            later(play, 700);
+                        });
+                    }, 6200);
+                });
+            },
+            played === 0 ? 1100 : 300,
+        );
+    };
+
+    const takeOver = (): void => {
+        if (userTookOver) {
+            return;
+        }
+
+        userTookOver = true;
+        run++;
+        clearTimers();
+        finger.dataset.on = '0';
+    };
+
+    win.addEventListener('pointerdown', (event) => {
+        if (event.isTrusted) {
+            takeOver();
+        }
+    });
+
+    win.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) {
+            return;
+        }
+
+        const question = event.target.closest<HTMLElement>(
+            '.xv-cview--home [data-q]',
+        );
+
+        if (question) {
+            takeOver();
+            show(Number(question.dataset.q), question, true);
+
+            return;
+        }
+
+        if (event.target.closest('.xv-back')) {
+            takeOver();
+            backHome(true);
+        }
     });
 
     if (!motion || !('IntersectionObserver' in window)) {
         return;
     }
 
-    const observer = new IntersectionObserver(
+    // Play only while the window is on screen; pick up where it left off.
+    new IntersectionObserver(
         (entries) => {
-            if (!entries.some((entry) => entry.isIntersecting)) {
-                return;
-            }
+            for (const entry of entries) {
+                const was = visible;
+                visible = entry.isIntersecting;
 
-            observer.disconnect();
-
-            if (!userTookOver) {
-                answer(current, 1200);
-                later(playNext, 1200);
+                if (visible && !was && !userTookOver) {
+                    backHome();
+                    play();
+                } else if (!visible && was) {
+                    run++;
+                    clearTimers();
+                    finger.dataset.on = '0';
+                }
             }
         },
-        { threshold: 0.35 },
-    );
-
-    observer.observe(section);
+        { threshold: 0.45 },
+    ).observe(win);
 }

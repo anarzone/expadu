@@ -32,7 +32,7 @@ class CandidateRepository
 
     private const COLOGNE_LNG = 6.9603;
 
-    private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'lake', 'dog_park', 'bbq', 'picnic', 'viewpoint', 'skatepark', 'market', 'campsite'];
+    private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'lake', 'nature', 'dog_park', 'bbq', 'picnic', 'viewpoint', 'skatepark', 'market', 'campsite'];
 
     private const GENERIC_MICRO_FACILITY_LABELS = [
         'Spielplatz', 'Bolzplatz', 'Basketballplatz', 'Tennisplatz',

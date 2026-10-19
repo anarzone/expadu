@@ -6,6 +6,7 @@ use App\ContextEngine\Evaluators\PermanentResidencyEvaluator;
 use App\Models\Alert;
 use App\Models\User;
 use App\Profile\ProfileEngine;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redis;

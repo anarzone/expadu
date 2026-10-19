@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Places\PlaceIdentity;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -46,7 +47,13 @@ class PruneSpots extends Command
             return self::SUCCESS;
         }
 
-        $deleted = DB::table('spots')->whereIn('category', $categories)->delete();
+        $query = DB::table('spots')->whereIn('category', $categories);
+        if (app(PlaceIdentity::class)->hasProtectedRecords($query)) {
+            $this->error('This selection contains retained place identities. Deactivate records instead of deleting their references.');
+
+            return self::FAILURE;
+        }
+        $deleted = $query->delete();
         $this->info("Deleted {$deleted} spot(s) in: {$list}.");
 
         return self::SUCCESS;

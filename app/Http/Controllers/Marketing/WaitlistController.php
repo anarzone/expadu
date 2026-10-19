@@ -13,7 +13,7 @@ use Illuminate\View\View;
 class WaitlistController extends Controller
 {
     /**
-     * Store a city-waitlist signup and send the double-opt-in mail.
+     * Store a launch-waitlist signup and send the double-opt-in mail.
      *
      * Idempotent per e-mail: resubmitting updates the city and re-sends the
      * confirmation while unconfirmed; a confirmed address gets a friendly

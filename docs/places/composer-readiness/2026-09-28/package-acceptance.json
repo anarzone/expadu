@@ -1,0 +1,219 @@
+{
+    "verified_at": "2026-09-28T18:06:40+00:00",
+    "environment": "isolated local transaction",
+    "staging_changed": false,
+    "production_changed": false,
+    "records_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+    "prepared_records_checked": 4643,
+    "proposed_facility_qualifications": [
+        {
+            "source": "osm",
+            "source_id": "node/12979980912",
+            "name": "Basketballplatz · Friedenspark",
+            "activities": [
+                "basketball"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/12979980912",
+            "fingerprint": "457de8525697f55907970b3852207a0cc705c697a64ad6b17dfe1b4c825db407"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/13943612316",
+            "name": "Tischtennisplatte",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/13943612316",
+            "fingerprint": "f62a6e431187cb9b84abe33315c319a7baa3894e85a733bb3932a0bc0009f738"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/13943612317",
+            "name": "Basketballplatz",
+            "activities": [
+                "basketball"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/13943612317",
+            "fingerprint": "b8b6bcc97b993c2f7f75142e21ebd540e639dfc53384e6d8433499527fc6ceec"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14022625536",
+            "name": "Tischtennisplatte",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14022625536",
+            "fingerprint": "cffce6c49d9f84cfd974e1b6caa5e80eba596f6d0771ef691a886b46685dfe77"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14030968770",
+            "name": "Tischtennisplatte",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14030968770",
+            "fingerprint": "c84050f3a2237e515efd6d3ac9951dc3c885a9cf202781866cd6d7f25b493f9f"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14030968771",
+            "name": "Basketballplatz",
+            "activities": [
+                "basketball"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14030968771",
+            "fingerprint": "edcd45beeac1822a3d790cbeeb63225a8290ca9e7a49c038c2a181b1c85f9aaa"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14030968772",
+            "name": "Bolzplatz",
+            "activities": [
+                "soccer"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14030968772",
+            "fingerprint": "2ec0387218d6e65c87de246b5e8e1eb0d7cbf63609b8d526df9041e4e3f9d769"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14097398765",
+            "name": "Table tennis",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14097398765",
+            "fingerprint": "8fff7cfaed6461901d96f4523cddf43b7c8576244e27a232db0b8f68f705a8f6"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14097398766",
+            "name": "Table tennis",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14097398766",
+            "fingerprint": "8af2ea023acf7381be5acc6a3f8ad379d45903d4b9a82c84cee169e09e1452cb"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14097398767",
+            "name": "Table tennis",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14097398767",
+            "fingerprint": "13d2d5ba94f17c57bbf2912a83615e451086d9c72df2f6bcb9dcbcf053238d74"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14099269293",
+            "name": "Table tennis",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14099269293",
+            "fingerprint": "9c2a1a8cd07a6c4f63a579886330a37b3355ac200473ee61a163197b0f520cc7"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14105099259",
+            "name": "Table tennis",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14105099259",
+            "fingerprint": "4f5363aefa144444fea8a6ea339d5e30e072658d8b6d99402ee64f2352dccd2a"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/14181074969",
+            "name": "Table tennis",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/14181074969",
+            "fingerprint": "5307346b57d29a271f87d8dd97d67847e3bac2471dbe56f4faa96e986f7daba3"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/7631916498",
+            "name": "Tischtennisplatte",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/7631916498",
+            "fingerprint": "1e3776095d31d23034bd31674fbc8d2ec8350677f3e02ee12bccb641f1634d2f"
+        },
+        {
+            "source": "osm",
+            "source_id": "node/8792115526",
+            "name": "Tischtennisplatte · Blücherpark",
+            "activities": [
+                "table_tennis"
+            ],
+            "source_url": "https://www.openstreetmap.org/node/8792115526",
+            "fingerprint": "12bfe424e6aea379e7afb503312a86a739c24f668069e0b031e09bc5dec1361b"
+        },
+        {
+            "source": "osm",
+            "source_id": "way/76906973",
+            "name": "Bolzplatz · Bürgerpark",
+            "activities": [
+                "soccer"
+            ],
+            "source_url": "https://www.openstreetmap.org/way/76906973",
+            "fingerprint": "3e0f3cbc522f09c0cbc28dbf49abd6e3e69ca632f8dac600eb3d0898139543ff"
+        }
+    ],
+    "prepared_activity_counts": {
+        "table_tennis": 74,
+        "climbing": 9,
+        "basketball": 11,
+        "boules": 3,
+        "soccer": 34,
+        "tennis": 278,
+        "skateboard": 4,
+        "badminton": 2,
+        "fitness": 3,
+        "swimming": 8,
+        "running": 1
+    },
+    "prepared_composer_identities": 4100,
+    "prepared_verified_free_public_football": 0,
+    "prepared_known_public_football_without_free_filter": 2,
+    "full_api": {
+        "Ehrenfeld": {
+            "slots": [],
+            "elapsed_ms": 6551.6,
+            "no_match_is_coverage_gap": true
+        },
+        "Innenstadt": {
+            "slots": [],
+            "elapsed_ms": 5016.5,
+            "no_match_is_coverage_gap": true
+        },
+        "Chorweiler": {
+            "slots": [],
+            "elapsed_ms": 4860.9,
+            "no_match_is_coverage_gap": true
+        }
+    },
+    "broad_retrieval": {
+        "candidates": 200,
+        "elapsed_ms": 3015.7,
+        "peak_memory_mb": 274.5
+    },
+    "rollback_verified": true,
+    "code_sha256": {
+        "app/Composer/CandidateRepository.php": "12863a896800e959cf3375593432eea413e8b5b70787a5c2844ba488fb73bcdb",
+        "app/Composer/PlaceSearchHints.php": "a0376653f43b0fda2c6e8dfd84ebe72e1e0ede44979b797e430b8aa4aa5292f2",
+        "app/Places/PlaceFacts.php": "d29e68805eab1d5402d9f6bbc43396c4f77c8ca2d65ff7f260952dca28a4b93e",
+        "app/Places/PlaceCapabilities.php": "93d9af8395efb653fefc1edeb4f889bd130dc7f60e1f471b9c81a571ec0e69c1",
+        "app/Composer/FeasibilityFilter.php": "c32e1bb5174040beb27e489af6eef2f45e82f40ce1cea2e8f0b5e26e91f121b4",
+        "app/Http/Controllers/ComposerController.php": "8bf86d5181dc85442ea57cef660c79b213e9e767a2680fa696a10cafe85ce410"
+    },
+    "memory_note": "Peak memory includes the loaded frozen package and baseline, not an isolated HTTP request.",
+    "frozen_package_unchanged": true
+}

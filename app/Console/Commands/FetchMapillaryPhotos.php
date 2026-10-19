@@ -4,11 +4,12 @@ namespace App\Console\Commands;
 
 use App\Media\CaptureMediaCandidate;
 use App\Media\MapillaryPhotoResolver;
+use App\Media\MediaAcquisitionScheduler;
 use App\Media\MediaCandidate;
+use App\Media\ScheduledMediaAcquisition;
 use App\Models\Spot;
 use App\Models\Venue;
 use Illuminate\Console\Command;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
@@ -38,29 +39,43 @@ class FetchMapillaryPhotos extends Command
         parent::__construct();
     }
 
-    public function handle(CaptureMediaCandidate $captureMediaCandidate): int
-    {
+    public function handle(
+        CaptureMediaCandidate $captureMediaCandidate,
+        MediaAcquisitionScheduler $scheduler,
+    ): int {
         if (! $this->resolver->configured()) {
             $this->warn('MAPILLARY_TOKEN is not set — nothing to do.');
 
             return self::SUCCESS;
         }
 
-        $records = $this->targets();
-        $this->info("Checking {$records->count()} place(s) for street-level photos...");
+        $scheduledRecords = $this->targets($scheduler);
+        $this->info("Checking {$scheduledRecords->count()} place(s) for street-level photos...");
 
         $saved = 0;
         $skipped = 0;
 
-        foreach ($records as $record) {
+        foreach ($scheduledRecords as $scheduled) {
+            $record = $scheduled->target;
+            $error = null;
             $resolved = $this->resolver->resolve(
                 (float) $record->lat,
                 (float) $record->lng,
-                fn (string $error) => $this->warn("  mapillary failed for #{$record->id}: {$error}"),
+                function (string $message) use ($record, &$error): void {
+                    $error = $message;
+                    $this->warn("  mapillary failed for #{$record->id}: {$message}");
+                },
             );
 
             if ($resolved === null) {
                 $skipped++;
+                $scheduler->record(
+                    $scheduled,
+                    $error === null ? 'no_result' : (str_contains($error, '429') ? 'rate_limited' : 'failed'),
+                    errorCode: $error === null ? null : 'provider_request_failed',
+                    retryAfterSeconds: $scheduler->retryAfterSeconds($error),
+                    metadata: $error === null ? null : ['message' => mb_substr($error, 0, 500)],
+                );
 
                 continue;
             }
@@ -84,35 +99,68 @@ class FetchMapillaryPhotos extends Command
                 metadata: ['mapillary_id' => $resolved['provider_asset_id']],
                 shouldValidate: true,
                 authoritativeEvidence: true,
+                matchStatus: 'pending',
+                matchMethod: 'mapillary_facing_frame',
+                matchEvidence: [
+                    'target_type' => $record->getMorphClass(),
+                    'target_id' => $record->getKey(),
+                    'target_lat' => $record->lat,
+                    'target_lng' => $record->lng,
+                    'mapillary_id' => $resolved['provider_asset_id'],
+                ],
             ));
 
             if ($attachment !== null) {
                 $saved++;
+                $scheduler->record(
+                    $scheduled,
+                    'captured',
+                    candidateCount: 1,
+                    selectedAssetIds: [$attachment->media_asset_id],
+                );
+            } else {
+                $scheduler->record($scheduled, 'failed', errorCode: 'candidate_rejected', candidateCount: 1);
             }
         }
 
         $this->info("Street-level photos captured: {$saved} (no facing frame for {$skipped}).");
         $this->line('Health checks run asynchronously — publishable counts settle once the queue drains.');
+        $this->line(json_encode(
+            ['acquisition_summary' => $scheduler->summary($scheduledRecords)],
+            JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        ));
 
         return self::SUCCESS;
     }
 
     /**
-     * @return Collection<int, Model>
+     * @return Collection<int, ScheduledMediaAcquisition>
      */
-    private function targets()
+    private function targets(MediaAcquisitionScheduler $scheduler): Collection
     {
-        $query = $this->option('venues') ? Venue::query() : Spot::query();
+        $query = $this->option('venues') ? Venue::query() : Spot::query()->canonical();
 
-        return $query
+        $query
             ->whereNotNull('lat')
             ->whereNotNull('lng')
             ->when(! $this->option('force'), fn ($builder) => $builder->whereDoesntHave(
-                'mediaAttachments.mediaAsset',
-                fn ($asset) => $asset->published(),
-            ))
-            ->orderBy('id')
-            ->limit((int) $this->option('limit'))
-            ->get();
+                'mediaAttachments',
+                fn ($attachment) => $attachment->publishable(),
+            ));
+
+        return $scheduler->select(
+            $query,
+            'mapillary',
+            'facing_frame',
+            max(1, (int) $this->option('limit')),
+            fn ($record): array => [
+                'name' => $record->name,
+                'lat' => $record->lat,
+                'lng' => $record->lng,
+                'radius_metres' => (int) config('media.mapillary.radius_metres', 30),
+                'max_bearing_offset_degrees' => (int) config('media.mapillary.max_bearing_offset_degrees', 40),
+            ],
+            (bool) $this->option('force'),
+        );
     }
 }

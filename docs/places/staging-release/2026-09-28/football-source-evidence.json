@@ -1,0 +1,1073 @@
+{
+  "scope": "research-only leads; municipal provider excluded under EXP-70 and no unrestricted public-access inference from fee/audience metadata",
+  "sources_checked": 17,
+  "native_rehearsal_proposals": 0,
+  "records": [
+    {
+      "id": 88419,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/88419",
+      "title": "Bolzplatz Ensener Weg (Weiß)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:03.120591+00:00",
+      "page_sha256": "afe847eb066b8d8605d4269f960f78b2c12333d7644e61d13633997533fc0e53",
+      "provider_map_point": [
+        50.88014508433831,
+        7.033157330981734
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/229553364",
+          "name": null,
+          "point": [
+            50.88016125,
+            7.0331417975061425
+          ],
+          "source_url": "https://www.openstreetmap.org/way/229553364",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer"
+          },
+          "distance_m": 2.1
+        },
+        {
+          "source_id": "way/24633757",
+          "name": null,
+          "point": [
+            50.8796222,
+            7.028467175138639
+          ],
+          "source_url": "https://www.openstreetmap.org/way/24633757",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "yes",
+            "sport": "soccer",
+            "surface": "clay",
+            "wheelchair": "yes"
+          },
+          "distance_m": 334.2
+        }
+      ],
+      "match_basis": "unique_source_map_point",
+      "identity_candidate_source_id": "way/229553364",
+      "existing_id": 7275,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 89938,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/89938",
+      "title": "Bolzfläche Lohmüllerstraße (Longerich)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:03.121127+00:00",
+      "page_sha256": "f173e278895041f6515c2de2800b20236e157e636cadd6858c24a62174e51b00",
+      "provider_map_point": [
+        50.99200904598198,
+        6.921361318489155
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/188350646",
+          "name": "Bolzplatz Lohmüllerstraße",
+          "point": [
+            50.99167095,
+            6.921985953810667
+          ],
+          "source_url": "https://www.openstreetmap.org/way/188350646",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "name": "Bolzplatz Lohmüllerstraße",
+            "operator": "Stadt Köln",
+            "ref": "5060206",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 57.7
+        },
+        {
+          "source_id": "way/188350645",
+          "name": null,
+          "point": [
+            50.9972566,
+            6.922921026390648
+          ],
+          "source_url": "https://www.openstreetmap.org/way/188350645",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 593.6
+        }
+      ],
+      "match_basis": "specific_name_and_locality_review",
+      "identity_candidate_source_id": "way/188350646",
+      "existing_id": 7246,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 89802,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/89802",
+      "title": "Bolzfläche Takufeld II (Ehrenfeld)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:03.370978+00:00",
+      "page_sha256": "927ffca07159a62da18d2ab2631854f512ee9ec730c09d51021aa0b0a99030b8",
+      "provider_map_point": [
+        50.95843364056117,
+        6.910027889703508
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/664697985",
+          "name": null,
+          "point": [
+            50.9584117,
+            6.91001415
+          ],
+          "source_url": "https://www.openstreetmap.org/way/664697985",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "compacted"
+          },
+          "distance_m": 2.6
+        },
+        {
+          "source_id": "way/43484108",
+          "name": null,
+          "point": [
+            50.95949215,
+            6.909923950000003
+          ],
+          "source_url": "https://www.openstreetmap.org/way/43484108",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "yes",
+            "sport": "soccer",
+            "surface": "compacted"
+          },
+          "distance_m": 117.9
+        }
+      ],
+      "match_basis": "unique_source_map_point",
+      "identity_candidate_source_id": "way/664697985",
+      "existing_id": 7488,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 89929,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/89929",
+      "title": "Bolzfläche Scheibenstraße (Niehl)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:03.370806+00:00",
+      "page_sha256": "5a432e8a19770b718f11b955e4c86252db8a222de131423193ba3522ea9425d4",
+      "provider_map_point": [
+        50.98584907828277,
+        6.954817799706971
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/818320546",
+          "name": null,
+          "point": [
+            50.9858877,
+            6.954859934559224
+          ],
+          "source_url": "https://www.openstreetmap.org/way/818320546",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 5.2
+        },
+        {
+          "source_id": "node/12345926195",
+          "name": null,
+          "point": [
+            50.9868729,
+            6.9503224
+          ],
+          "source_url": "https://www.openstreetmap.org/node/12345926195",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 334.6
+        }
+      ],
+      "match_basis": "unique_source_map_point",
+      "identity_candidate_source_id": "way/818320546",
+      "existing_id": 7506,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 89944,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/89944",
+      "title": "Bolzfläche Am Bilderstöckchen (Bilderstöckchen)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:03.640357+00:00",
+      "page_sha256": "ed680af78a83f98ac2f7ddf41629ce2e17eafdc9fc11761bf8e5bc238459c4fd",
+      "provider_map_point": [
+        50.97395536470273,
+        6.923675439886032
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/922974199",
+          "name": null,
+          "point": [
+            50.97396865,
+            6.923672062773193
+          ],
+          "source_url": "https://www.openstreetmap.org/way/922974199",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer"
+          },
+          "distance_m": 1.5
+        },
+        {
+          "source_id": "way/1453462508",
+          "name": null,
+          "point": [
+            50.97101025,
+            6.9227274
+          ],
+          "source_url": "https://www.openstreetmap.org/way/1453462508",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer"
+          },
+          "distance_m": 334.1
+        }
+      ],
+      "match_basis": "unique_source_map_point",
+      "identity_candidate_source_id": "way/922974199",
+      "existing_id": 7553,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 88404,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/88404",
+      "title": "Bolzplatz Kapellenstraße (Rondorf)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:03.656025+00:00",
+      "page_sha256": "5d5e833bcc9a94a3dad73f61a724d7f055020ca20249da0eacbc9ab40b3c6d83",
+      "provider_map_point": [
+        50.87229971139052,
+        6.951182159893799
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/799303429",
+          "name": null,
+          "point": [
+            50.872196599999995,
+            6.951162976411343
+          ],
+          "source_url": "https://www.openstreetmap.org/way/799303429",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 11.5
+        },
+        {
+          "source_id": "way/29363722",
+          "name": null,
+          "point": [
+            50.86901695,
+            6.953369
+          ],
+          "source_url": "https://www.openstreetmap.org/way/29363722",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "yes",
+            "sport": "soccer",
+            "surface": "clay"
+          },
+          "distance_m": 396.0
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 88441,
+      "url": "https://www.fruehehilfen-online.nrw.de/fhiangebot/details/id/88441",
+      "title": "Spiel – und Sportplatz Zaunhofstraße (Meschenich)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:04.038118+00:00",
+      "page_sha256": "450d698473fbd553795c44fbf1cb19676be08bad538651ec071727968a87ee81",
+      "provider_map_point": [
+        50.9495929,
+        6.9342148055373425
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/5546843",
+          "name": null,
+          "point": [
+            50.94816145,
+            6.929990242739706
+          ],
+          "source_url": "https://www.openstreetmap.org/way/5546843",
+          "tags": {
+            "created_by": "Potlatch alpha",
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "clay"
+          },
+          "distance_m": 336.0
+        },
+        {
+          "source_id": "way/5546842",
+          "name": null,
+          "point": [
+            50.94734205,
+            6.9289834500000005
+          ],
+          "source_url": "https://www.openstreetmap.org/way/5546842",
+          "tags": {
+            "created_by": "Potlatch alpha",
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "clay"
+          },
+          "distance_m": 443.8
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 88407,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/88407",
+      "title": "Bolzplatz Merlinweg (Rondorf)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:03.897203+00:00",
+      "page_sha256": "b3c1df6da2a6d8b8b44def9d37b9aed35ac8a4d5d8c426d2a45887492cd8bc81",
+      "provider_map_point": [
+        50.873443341297374,
+        6.965488334513647
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/799306671",
+          "name": null,
+          "point": [
+            50.8734288,
+            6.9654709446339265
+          ],
+          "source_url": "https://www.openstreetmap.org/way/799306671",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 2.0
+        },
+        {
+          "source_id": "way/29363722",
+          "name": null,
+          "point": [
+            50.86901695,
+            6.953369
+          ],
+          "source_url": "https://www.openstreetmap.org/way/29363722",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "yes",
+            "sport": "soccer",
+            "surface": "clay"
+          },
+          "distance_m": 982.6
+        }
+      ],
+      "match_basis": "unique_source_map_point",
+      "identity_candidate_source_id": "way/799306671",
+      "existing_id": 7499,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 88553,
+      "url": "https://www.fruehehilfen-online.nrw.de/fhiangebot/details/id/88553",
+      "title": "Bolzplatz Kronstädter Straße/Grünzug (Weiden)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:04.172222+00:00",
+      "page_sha256": "ee7190b39084ef48860d551b74c0c8081efbd612962895a3990e62a484597204",
+      "provider_map_point": [
+        50.93043010173522,
+        6.844579766382068
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/966035665",
+          "name": null,
+          "point": [
+            50.92972465,
+            6.844670054154239
+          ],
+          "source_url": "https://www.openstreetmap.org/way/966035665",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 78.7
+        },
+        {
+          "source_id": "way/97106680",
+          "name": null,
+          "point": [
+            50.9317124,
+            6.838902391359138
+          ],
+          "source_url": "https://www.openstreetmap.org/way/97106680",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "yes",
+            "source": "Bing",
+            "sport": "soccer",
+            "surface": "tartan"
+          },
+          "distance_m": 422.7
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 88509,
+      "url": "https://www.fruehehilfen-online.nrw.de/fhiangebot/details/id/88509",
+      "title": "Spiel- und Sportplatz Münstereifeler Straße/Sülzburgstraße (Sülz)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:04.363328+00:00",
+      "page_sha256": "596159d7e2a2e59a6af4912d0b71542ec38a4d8ff014caa7283fb00e72a090dd",
+      "provider_map_point": [
+        50.91688855648944,
+        6.918989420959668
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/262839513",
+          "name": null,
+          "point": [
+            50.91930455,
+            6.922442243983573
+          ],
+          "source_url": "https://www.openstreetmap.org/way/262839513",
+          "tags": {
+            "access": "yes",
+            "leisure": "pitch",
+            "lit": "yes",
+            "loc_name": "Bolz",
+            "reservation": "no",
+            "sport": "soccer",
+            "surface": "tartan"
+          },
+          "distance_m": 361.6
+        },
+        {
+          "source_id": "way/547856305",
+          "name": null,
+          "point": [
+            50.923051599999994,
+            6.927346054928461
+          ],
+          "source_url": "https://www.openstreetmap.org/way/547856305",
+          "tags": {
+            "access": "yes",
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "tartan",
+            "wheelchair": "yes"
+          },
+          "distance_m": 901.5
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 89815,
+      "url": "https://www.fruehehilfen-online.nrw.de/fhiangebot/details/id/89815",
+      "title": "Spiel- und Sportplatz Fröbelplatz (Ehrenfeld)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:04.415495+00:00",
+      "page_sha256": "e9947f3fe90653ba1c286acdfd32a9db3e05111995ba73d17c8d3558118ff238",
+      "provider_map_point": [
+        50.94607216232465,
+        6.917264391958606
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/256063144",
+          "name": null,
+          "point": [
+            50.946166149999996,
+            6.91739355025001
+          ],
+          "source_url": "https://www.openstreetmap.org/way/256063144",
+          "tags": {
+            "barrier": "fence",
+            "fence_type": "chain_link",
+            "height": "5",
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "clay"
+          },
+          "distance_m": 13.8
+        },
+        {
+          "source_id": "way/30269763",
+          "name": null,
+          "point": [
+            50.950650100000004,
+            6.920068240341504
+          ],
+          "source_url": "https://www.openstreetmap.org/way/30269763",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "source": "photography",
+            "sport": "soccer",
+            "surface": "clay"
+          },
+          "distance_m": 545.6
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 89861,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/89861",
+      "title": "Bolzfläche Rochusstraße (Hermann-Josef-Hironymi-Park) (Ossendorf)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:04.608495+00:00",
+      "page_sha256": "5200b9bc1298a01a62e86eb02ed41097b05e340114ea87541ec1556e4e8bd9f7",
+      "provider_map_point": [
+        50.96590944347262,
+        6.901122340862945
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/35826271",
+          "name": null,
+          "point": [
+            50.9658864,
+            6.901157599650822
+          ],
+          "source_url": "https://www.openstreetmap.org/way/35826271",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 3.6
+        },
+        {
+          "source_id": "way/49852650",
+          "name": null,
+          "point": [
+            50.96593745,
+            6.903541635153474
+          ],
+          "source_url": "https://www.openstreetmap.org/way/49852650",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "yes",
+            "sport": "soccer",
+            "surface": "artificial_turf"
+          },
+          "distance_m": 169.4
+        }
+      ],
+      "match_basis": "unique_source_map_point",
+      "identity_candidate_source_id": "way/35826271",
+      "existing_id": 7053,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 97683,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/97683",
+      "title": "Bolzfläche Auf dem Acker/Feldstraße (Wahn)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:04.649054+00:00",
+      "page_sha256": "8fb758a88283f79df44e1041246ed3298c44a2fdede3b4b1ad7e8cef0beb040e",
+      "provider_map_point": [
+        50.85304273277536,
+        7.084868977812901
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": false,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/159681214",
+          "name": null,
+          "point": [
+            50.86057545,
+            7.084313575571066
+          ],
+          "source_url": "https://www.openstreetmap.org/way/159681214",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer"
+          },
+          "distance_m": 838.5
+        },
+        {
+          "source_id": "way/856149488",
+          "name": null,
+          "point": [
+            50.8640192,
+            7.092157360388042
+          ],
+          "source_url": "https://www.openstreetmap.org/way/856149488",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer"
+          },
+          "distance_m": 1323.4
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 98062,
+      "url": "https://www.fruehehilfen-online.nrw.de/fhiangebot/details/id/98062",
+      "title": "Bolzfläche Wiesdorfer Straße/Am Wasserturm (Stammheim)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:04.920126+00:00",
+      "page_sha256": "76c6eb61331e5e1b64c3d8d8a1fd8ffee8fdab2fa3fe6d40b5152509f3ccd7ae",
+      "provider_map_point": [
+        50.98053303580929,
+        6.997369491029195
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": false,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/30093473",
+          "name": null,
+          "point": [
+            50.98039505,
+            6.99763784874237
+          ],
+          "source_url": "https://www.openstreetmap.org/way/30093473",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer"
+          },
+          "distance_m": 24.3
+        },
+        {
+          "source_id": "way/34719822",
+          "name": null,
+          "point": [
+            50.983190050000005,
+            7.0008286710941965
+          ],
+          "source_url": "https://www.openstreetmap.org/way/34719822",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer"
+          },
+          "distance_m": 382.0
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 97978,
+      "url": "https://www.fruehehilfen-online.nrw.de/fhiangebot/details/id/97978",
+      "title": "Spiel- und Sportplatz Georgestraße (Neubrück)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:04.920301+00:00",
+      "page_sha256": "97d6accafcd5c94579c81c44e62a3150f97c399d6db571d0656391e5d88d5206",
+      "provider_map_point": [
+        50.931775137162134,
+        7.05312182895648
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": false,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/1009147047",
+          "name": null,
+          "point": [
+            50.9256925,
+            7.050763585428503
+          ],
+          "source_url": "https://www.openstreetmap.org/way/1009147047",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 696.3
+        },
+        {
+          "source_id": "way/115613486",
+          "name": null,
+          "point": [
+            50.93712945,
+            7.0444216
+          ],
+          "source_url": "https://www.openstreetmap.org/way/115613486",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "no",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 852.2
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 88547,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/88547",
+      "title": "Bolzplatz Else-Lang-Straße (Junkersdorf)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:05.213452+00:00",
+      "page_sha256": "f936eb3b96391d241783b5ce72b4bb9abebecb7a7fd124b709f42566b63e0961",
+      "provider_map_point": [
+        50.924670881811565,
+        6.870449056322993
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": true,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": false,
+      "description_confirms_goals": false,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/25202731",
+          "name": null,
+          "point": [
+            50.923456099999996,
+            6.864547750000002
+          ],
+          "source_url": "https://www.openstreetmap.org/way/25202731",
+          "tags": {
+            "leisure": "pitch",
+            "source": "Bing;Aeroview",
+            "sport": "soccer",
+            "surface": "grass"
+          },
+          "distance_m": 435.1
+        },
+        {
+          "source_id": "way/25202675",
+          "name": null,
+          "point": [
+            50.924774549999995,
+            6.863896903409832
+          ],
+          "source_url": "https://www.openstreetmap.org/way/25202675",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer",
+            "surface": "artificial_turf"
+          },
+          "distance_m": 459.4
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    },
+    {
+      "id": 97157,
+      "url": "https://www.guterstart.nrw.de/fhiangebot/details/id/97157",
+      "title": "Bolzfläche Karl-Marx- Allee/Otto-Braun-Straße/Grünzug Seeberg (Seeberg)",
+      "provider_name": "Stadt Köln Amt für Kinder, Jugend und Familie - Kinderinteressen und Jugendförderung",
+      "provider_policy": "excluded_municipal_provider",
+      "provider_approved_for_catalogue": false,
+      "retrieved_at": "2026-09-28T19:37:05.192974+00:00",
+      "page_sha256": "23965e3090abe9c37ff4dd52e329728578d17bda075b084a50f806867b12e844",
+      "provider_map_point": [
+        51.019364621421495,
+        6.910655428493045
+      ],
+      "fee_reported_free": true,
+      "audience_all_ages": false,
+      "public_access_status": "unknown",
+      "public_access_evidence_url": null,
+      "public_access_basis": null,
+      "booking_status": "unknown",
+      "description_confirms_football": true,
+      "description_confirms_goals": true,
+      "opening_hours": null,
+      "bookable_now": null,
+      "media_requested": false,
+      "catalogue_applied": false,
+      "nearest_osm": [
+        {
+          "source_id": "way/1396073536",
+          "name": null,
+          "point": [
+            51.021619099999995,
+            6.899045967440866
+          ],
+          "source_url": "https://www.openstreetmap.org/way/1396073536",
+          "tags": {
+            "leisure": "pitch",
+            "lit": "yes",
+            "sport": "soccer",
+            "surface": "rubber"
+          },
+          "distance_m": 849.9
+        },
+        {
+          "source_id": "way/657099730",
+          "name": null,
+          "point": [
+            51.0263706,
+            6.903470407400235
+          ],
+          "source_url": "https://www.openstreetmap.org/way/657099730",
+          "tags": {
+            "leisure": "pitch",
+            "sport": "soccer",
+            "surface": "clay"
+          },
+          "distance_m": 927.1
+        }
+      ],
+      "match_basis": null,
+      "hold": "excluded_municipal_provider"
+    }
+  ]
+}

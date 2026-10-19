@@ -68,6 +68,10 @@ const VISUALS: Record<string, Visual> = {
         Icon: IconDog,
         tint: 'bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
     },
+    food_drink: {
+        Icon: IconToolsKitchen2,
+        tint: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
+    },
     culture: {
         Icon: IconBuildingMonument,
         tint: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
@@ -256,6 +260,7 @@ const CATEGORY_EMOJI: Record<string, string> = {
     cafe: '☕',
     library: '📚',
     restaurant: '🍽️',
+    food_drink: '🍽️',
     bar: '🍻',
     culture: '🏛️',
     coworking: '💻',

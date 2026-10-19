@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-09-29T10:56:48.315156+00:00",
+  "app_image": "sha256:6d15ded6d90a7fa3b587107fe7e0728444131fca7eb18292accb3c135ac339a6",
+  "matches_verified_release_image": true,
+  "deployed_files_match_reviewed_source": {
+    "app/Places/PlaceFacts.php": true,
+    "app/Places/PlaceCapabilities.php": true,
+    "app/Composer/FeasibilityFilter.php": true,
+    "app/Composer/CandidateRepository.php": true,
+    "app/Composer/PlaceSearchHints.php": true,
+    "app/Http/Controllers/ComposerController.php": true,
+    "app/Http/Controllers/Api/PlacesController.php": true,
+    "app/Places/DestinationGrouping.php": true
+  }
+}

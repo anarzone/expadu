@@ -34,6 +34,7 @@ use App\Http\Controllers\HomeFeedController;
 use App\Http\Controllers\LocalReviewController;
 use App\Http\Controllers\Marketing\BlogController;
 use App\Http\Controllers\Marketing\LandingController;
+use App\Http\Controllers\Marketing\RobotsController;
 use App\Http\Controllers\Marketing\SitemapController;
 use App\Http\Controllers\Marketing\ToolsController;
 use App\Http\Controllers\Marketing\WaitlistController;
@@ -99,6 +100,9 @@ $marketingRoutes = function () {
     Route::get('waitlist/confirm/{signup}', [WaitlistController::class, 'confirm'])
         ->middleware('signed')->name('waitlist.confirm');
 };
+
+// robots.txt answers on every host; what it allows depends on the host.
+Route::get('robots.txt', RobotsController::class)->name('robots');
 
 // ── App (app.expadu.com) ─────────────────────────────────────────────────
 // Social login — responds on all domains (same as Fortify login/register)

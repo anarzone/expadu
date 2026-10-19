@@ -9,7 +9,9 @@ use Illuminate\Support\Collection;
 /** Source-backed practical details shared by Places and Composer. */
 class PlaceCapabilities
 {
-    public const TAGS = ['sport', 'surface', 'lit', 'covered', 'indoor', 'wheelchair', 'toilets', 'drinking_water', 'hoops', 'reservation', 'booking', 'capacity', 'operator', 'barrier', 'reservation:conditional', 'booking:conditional', 'opening_hours:conditional'];
+    public const TAGS = ['sport', 'surface', 'lit', 'covered', 'indoor', 'wheelchair', 'toilets', 'drinking_water', 'hoops', 'reservation', 'booking', 'capacity', 'operator', 'barrier', 'reservation:conditional', 'booking:conditional', 'opening_hours:conditional',
+        // Venue amenities people ask about; absent tags stay unknown, never "no".
+        'internet_access', 'outdoor_seating', 'cuisine', 'dog', 'diet:vegetarian', 'diet:vegan', 'diet:halal', 'diet:kosher', 'diet:gluten_free'];
 
     public const ACTIVITIES = ['soccer', 'basketball', 'tennis', 'table_tennis', 'boules', 'skateboard', 'swimming', 'volleyball', 'beachvolleyball', 'badminton', 'running', 'fitness', 'climbing'];
 

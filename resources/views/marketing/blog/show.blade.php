@@ -1,9 +1,16 @@
 @extends('marketing.layout')
 
+@section('tone', 'lilac')
+@section('theme_color', '#dccbff')
+
 @section('title', $post['title'].' — Expadu')
 @section('meta_description', $post['description'])
 @section('canonical', route('blog.show', $post['slug']))
 @section('og_title', $post['title'])
+@php
+    $ogImage = is_file(public_path("marketing/og/guide-{$post['slug']}.png")) ? "marketing/og/guide-{$post['slug']}.png" : 'marketing/og-landing.png';
+@endphp
+@section('og_image', asset($ogImage))
 @section('waitlist_source', 'blog-'.$post['slug'])
 
 @push('styles')
@@ -12,7 +19,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'Article',
         'headline' => $post['title'],
         'description' => $post['description'],
@@ -21,6 +28,16 @@
         'author' => ['@type' => 'Person', 'name' => 'Anar — founder, Expadu'],
         'publisher' => ['@type' => 'Organization', 'name' => 'Expadu', 'url' => route('home')],
         'mainEntityOfPage' => route('blog.show', $post['slug']),
+        'image' => asset($ogImage),
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
+    {{-- Mirrors the visible breadcrumb in the article header. --}}
+    <script type="application/ld+json">{!! json_encode([
+        '@@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Guides', 'item' => route('blog.index')],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $post['title'], 'item' => route('blog.show', $post['slug'])],
+        ],
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 @endpush
 
@@ -28,8 +45,7 @@
     $readMinutes = max(1, (int) round(str_word_count(strip_tags($post['body_html'])) / 200));
 @endphp
 
-@section('content')
-<main id="main">
+@section('hero')
     <header class="article-hero">
         <div class="wrap">
             <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -43,6 +59,10 @@
             </div>
         </div>
     </header>
+@endsection
+
+@section('content')
+<main id="main">
 
     <div class="wrap article-layout">
         <nav class="toc" aria-label="On this page" id="article-toc">
@@ -54,7 +74,7 @@
 
             <div class="tool-cta" style="margin-top:36px">
                 <p>Expadu turns guides like this into <b>your personal checklist</b> — deadlines tracked, documents ticked off, offices booked.</p>
-                <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+                <a class="btn btn-primary" href="#waitlist">Start free</a>
             </div>
         </article>
     </div>

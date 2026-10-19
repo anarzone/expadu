@@ -31,6 +31,7 @@ class TodayPlanStore
         if (empty($plan['slots'])) {
             return;
         }
+        $plan = app(PlaceIdentity::class)->normalizePlan($plan);
 
         $plan = app(PlaceIdentity::class)->normalizePlan($plan);
         app(WorkspaceStore::class)->saveConfirmed($user, $plan + ['prompt' => $prompt]);
@@ -88,6 +89,7 @@ class TodayPlanStore
             return null;
         }
 
+        $data = app(PlaceIdentity::class)->normalizePlan($data);
         $data = app(PlanCatalogue::class)->project($data);
         $weekday = isset($data['window_start']) && is_string($data['window_start'])
             ? CarbonImmutable::parse($data['window_start'])->isoFormat('dddd')

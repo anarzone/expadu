@@ -33,7 +33,7 @@ use Illuminate\Support\Facades\Cache;
  */
 class DiscoveryFeed
 {
-    private const OUTDOOR = ['park', 'playground', 'pitch', 'basketball', 'lake', 'dog_park', 'bbq', 'viewpoint', 'skatepark', 'tennis', 'table_tennis', 'boules', 'swimming'];
+    private const OUTDOOR = ['park', 'playground', 'pitch', 'basketball', 'lake', 'nature', 'dog_park', 'bbq', 'viewpoint', 'skatepark', 'tennis', 'table_tennis', 'boules', 'swimming'];
 
     /** Pull the whole light catalogue so every category can compete. */
     private const POOL = 2000;
@@ -170,6 +170,8 @@ class DiscoveryFeed
                 $media = $spot !== null ? $this->mediaSelector->select($spot, 'hero') : null;
                 $card['photo_url'] = $media?->remote_url;
                 $card['photo_attribution'] = $media?->attribution;
+                $card['photo_source_url'] = $media?->source_page_url;
+                $card['photo_license_url'] = $media?->license_url;
             }
             unset($card);
         }
@@ -368,6 +370,8 @@ class DiscoveryFeed
                 'reason' => $reason,
                 'photo_url' => null,
                 'photo_attribution' => null,
+                'photo_source_url' => null,
+                'photo_license_url' => null,
             ];
         }
 
@@ -405,6 +409,8 @@ class DiscoveryFeed
                     'reason' => $e->starts_at->format('H:i'),
                     'photo_url' => $photo['url'],
                     'photo_attribution' => $photo['attribution'],
+                    'photo_source_url' => $photo['source_url'],
+                    'photo_license_url' => $photo['license_url'],
                 ];
             })->all());
     }
@@ -557,13 +563,9 @@ class DiscoveryFeed
      */
     private function hiddenSpotIds(int $userId): array
     {
-        return SpotFeedback::query()
-            ->where('user_id', $userId)
-            ->whereIn('state', array_map(
-                fn (SpotFeedbackState $state) => $state->value,
-                SpotFeedbackState::hiddenFromDiscovery(),
-            ))
-            ->pluck('spot_id')
+        return SpotFeedback::effectiveForUser($userId)
+            ->filter(fn (SpotFeedback $feedback) => in_array($feedback->state, SpotFeedbackState::hiddenFromDiscovery(), true))
+            ->keys()
             ->flip()
             ->all();
     }

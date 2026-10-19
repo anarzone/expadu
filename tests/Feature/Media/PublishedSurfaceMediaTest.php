@@ -14,7 +14,7 @@ test('event cards never publish an unmanaged legacy place photograph', function 
     $presenter = app(EventOccurrencePresenter::class);
 
     expect($presenter->present($event, CarbonImmutable::now(), null)['photo_url'])->toBeNull()
-        ->and($presenter->photo($event))->toBe(['url' => null, 'attribution' => null]);
+        ->and($presenter->photo($event))->toBe(['url' => null, 'attribution' => null, 'source_url' => null, 'license_url' => null]);
 });
 
 test('event media requires approved rights and active health', function (string $rights, string $health, bool $visible) {

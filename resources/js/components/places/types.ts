@@ -65,10 +65,10 @@ export type Place = {
     place_facts?: PlaceEvidence | null;
     recommendation_status?: 'available' | 'unavailable';
     hours_assumed?: boolean;
-    photo_source_url?: string | null;
-    photo_license_url?: string | null;
     photo_url: string | null;
     photo_attribution: string | null;
+    photo_source_url: string | null;
+    photo_license_url: string | null;
     distance_min: number | null;
     distance_mode?: 'walk' | 'bike' | 'transit' | null;
     distance_km?: number | null;

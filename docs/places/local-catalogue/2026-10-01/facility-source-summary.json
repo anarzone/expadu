@@ -1,0 +1,104 @@
+{
+  "status": "completed",
+  "checked_at": "2026-10-01T09:51:33.274105+00:00",
+  "requested": 559,
+  "outcomes": {
+    "unchanged": 486,
+    "review": 73
+  },
+  "reason_counts": {
+    "point_changed_over_one_metre": 73
+  },
+  "current_access_raw": {
+    "unknown": 469,
+    "yes": 90
+  },
+  "current_fee_raw": {
+    "unknown": 559
+  },
+  "geometry_nodes_checked": 2442,
+  "requests": [
+    {
+      "type": "way",
+      "requested": 400,
+      "status": 200,
+      "sha256": "a7baaf35cebb78fd3c5714c9cce711ca64aca5a64d3d95f7ae36e0c31c3cc293",
+      "checked_at": "2026-10-01T09:51:20.741958+00:00"
+    },
+    {
+      "type": "way",
+      "requested": 32,
+      "status": 200,
+      "sha256": "daccdb90baddfe13a3e2395bf3e3efe1fd6fcdab083c143336f474f2e6d09a1f",
+      "checked_at": "2026-10-01T09:51:21.926313+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "4a8f645a01e8c3f080de0f1c332bad1c87df8740ec67dd5f9447d71e0d205734",
+      "checked_at": "2026-10-01T09:51:23.112177+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "d4a3332262204ccb1fd6994aa2cbc78bc65aeabe61f344dca179121e89d6f17d",
+      "checked_at": "2026-10-01T09:51:24.269547+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "d854f1a2507f8a6ad0339f4ce3b3563c7c5ea650b54be3d954d772837f65b0ad",
+      "checked_at": "2026-10-01T09:51:25.489892+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "383d6f422b5dded6fa8d958581a23ce612f34155d7885181fb85e95e60874030",
+      "checked_at": "2026-10-01T09:51:26.625207+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "f5a6f9d7ef69f2ea09ec66064b04897302ebb7ce5f3689ded54a87bffa3a6733",
+      "checked_at": "2026-10-01T09:51:27.756843+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 400,
+      "status": 200,
+      "sha256": "1adba7e45e408c6248fabbdffe4ca05ad38845868ca1b9805805eb5727646c34",
+      "checked_at": "2026-10-01T09:51:28.889075+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 42,
+      "status": 200,
+      "sha256": "f613f0fc21afd8c6772702e3ccfc6c22985f9ecb321a619872d986205a257afc",
+      "checked_at": "2026-10-01T09:51:29.978637+00:00"
+    },
+    {
+      "type": "way",
+      "requested": 400,
+      "status": 200,
+      "sha256": "c8fa6bbfb47ca782766f447e6cf89c201624917ded27554969f8353f6a1c85ff",
+      "checked_at": "2026-10-01T09:51:31.158928+00:00"
+    },
+    {
+      "type": "way",
+      "requested": 32,
+      "status": 200,
+      "sha256": "2af5e32bb2632b99feaa6440177b8abc647fbfc62e90080db95eb4814393cf9b",
+      "checked_at": "2026-10-01T09:51:32.263724+00:00"
+    }
+  ],
+  "source": "https://api.openstreetmap.org/api/0.6",
+  "geometry_meaning": "source node or recomputed way bounding-box centre; no entrance verification",
+  "contributor_identity_retained": false,
+  "database_changed": false,
+  "raw_rows_exported": false
+}

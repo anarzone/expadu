@@ -1,0 +1,42 @@
+{
+  "application_base_commit": "53e3221ad195a14b5ad3868bb1044db7f07655d3",
+  "patch_sha256": "f09ac34299460ca030f710ec54d6d1d8b5e672defd71e3109cf6977ede8d192a",
+  "php_tests_passed": 67,
+  "php_assertions": 442,
+  "python_tests_passed": 15,
+  "php_tests_database": "dedicated PostgreSQL/PostGIS test database",
+  "initial_red_regression_confirmed": true,
+  "deployed": false,
+  "files": [
+    "app/Console/Commands/ImportOsmSpots.php",
+    "tests/Feature/ImportOsmSpotsTest.php",
+    "tests/Feature/Places/PlaceImportIntegrityTest.php"
+  ],
+  "scope": [
+    "Preserve valid OSM tags through refresh",
+    "Whole-city libraries/coworking across nodes ways and relations",
+    "Remove attraction response cap",
+    "Preserve international website links through source refresh",
+    "Derive source acquisition bounds from official city polygons so accepted edge locations survive refresh"
+  ],
+  "php_test_duration_seconds": 111.75,
+  "source_files_sha256": {
+    "app/Console/Commands/ImportOsmSpots.php": "95d8cd0348b8624b59625402e354d79d51b23a9e6df8f232bb21fbc65fd5118c",
+    "tests/Feature/ImportOsmSpotsTest.php": "b485a8d13d3d62d3668cacf7b4ffcc6d2f9a9ba7d32c5eece9326ed1a08cfe36",
+    "tests/Feature/Places/PlaceImportIntegrityTest.php": "6b0dc76b8cd931c615e1d62c3d9a4962ba9d9d74bb292050b5251e666f1ebbfc"
+  },
+  "secret_scan": {
+    "confirmed_secrets": 0,
+    "potential_findings": 0,
+    "passed": true,
+    "notes": "Verified controller-checksum metadata uses controller_sha256; the earlier name produced a confirmed checksum false positive."
+  },
+  "staging_comparison": {
+    "latest_successful_staging_commit": "5039a4cb1c8168434b9035b7aa87e917a7fa6f11",
+    "tested_base_commit": "53e3221ad195a14b5ad3868bb1044db7f07655d3",
+    "tree_differences": 0,
+    "staging_commits_ahead": 3,
+    "source": "GitHub compare API; application base tree is identical to latest successful staging release."
+  },
+  "expected_state_checks_passed": 5
+}

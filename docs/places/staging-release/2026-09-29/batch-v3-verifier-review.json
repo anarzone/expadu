@@ -1,0 +1,15 @@
+{
+  "reviewer": "staging_data_review",
+  "recorded_at": "2026-09-29T13:11:32.783739+00:00",
+  "verifier_sha256": "0a880b9f7a1254f15dfb78291aa1d05216f7ed5f48a4c09198dcc127182ae3d8",
+  "finding": "No execution blocker; completed children release trans3 after Laravel returns to level2, both caller rollback boundaries remain, failures propagate into rollback, flagdisabled in finally",
+  "reporting_caveats": [
+    "Local baseline is candidate code, not the deployed original",
+    "V2 versus V3 changes transaction handling; cannot isolate query improvement",
+    "Separate committed public fixture validates durable-read behavior locally, not production"
+  ],
+  "local_full_package_rollback": "passed",
+  "injected_child_failure_guard": "passed",
+  "staging_measurement": "passed_with_listing_p95_gate",
+  "staging_result": "staging-batch-v3-performance.json"
+}

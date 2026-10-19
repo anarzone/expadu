@@ -32,6 +32,12 @@ class RecordContextAlert
             return;
         }
 
+        // The synthetic canary only proves an action reaches the bus; it is
+        // never a real situation, so it must not leave an Alert behind.
+        if (($action->payload['synthetic'] ?? false) === true) {
+            return;
+        }
+
         // Reuse the push notification's formatting so the card text and the
         // push text never drift; null = type with no notification / empty payload.
         $notification = $this->notifications->build($action);

@@ -29,6 +29,11 @@ class CheckTransitDisruptions extends Command
         $currentIds = collect($disruptions)->pluck('id')->filter()->all();
         $seenIds = Cache::get('disruption:seen_ids', []);
 
+        // Refresh on every run, not only when something is new: a disruption
+        // that stayed live past the 6-hour TTL used to come back as "new" and
+        // re-announce (and re-push) itself.
+        Cache::put('disruption:seen_ids', $currentIds, now()->addHours(6));
+
         // Find new disruptions
         $newIds = array_diff($currentIds, $seenIds);
 
@@ -38,18 +43,17 @@ class CheckTransitDisruptions extends Command
             return self::SUCCESS;
         }
 
-        // Cache current IDs for next run
-        Cache::put('disruption:seen_ids', $currentIds, now()->addHours(6));
-
         // Get new disruptions with their affected lines
         $newDisruptions = collect($disruptions)
             ->filter(fn ($d) => in_array($d['id'] ?? null, $newIds));
 
         // Per-user matching, scoring, and push delivery happen in
         // TransitDisruptionEvaluator (queued listener) via the ActionBus.
+        // The id is a string ('news_123'); an (int) cast turned every one into 0,
+        // so each new disruption overwrote the last in the bus and the alerts.
         foreach ($newDisruptions as $d) {
             event(new TransitDisruptionDetected(
-                disruptionId: (int) ($d['id'] ?? 0),
+                disruptionId: (string) $d['id'],
                 lines: array_values(array_map('strval', $d['affected_lines'] ?? [])),
                 stopsAffected: array_values(array_map('strval', $d['stops_affected'] ?? [])),
                 severity: (string) ($d['severity'] ?? 'minor'),

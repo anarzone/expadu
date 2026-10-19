@@ -1,8 +1,12 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'German citizenship quiz — are you on track? (2024 rules) — Expadu')
 @section('meta_description', 'Five questions against the reformed StAG: 5-year standard track, 3-year fast track, spouse route — and dual citizenship. With sources, no signup.')
 @section('canonical', route('tools.citizenship'))
+@section('og_image', asset('marketing/og/tools-citizenship.png'))
 @section('waitlist_source', 'tool-citizenship')
 
 @push('head')
@@ -11,7 +15,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'WebApplication',
         'name' => 'German citizenship eligibility quiz',
         'applicationCategory' => 'UtilitiesApplication',
@@ -21,12 +25,17 @@
     ], JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · StAG, 2024 reform</span>
         <h1>Are you on track for a German passport?</h1>
         <p class="sub">Five questions against the current rules — since 2024 you generally keep your original citizenship.</p>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap tool-shell">
 
         <script type="application/json" id="tool-data">@json($rules)</script>
 
@@ -86,7 +95,7 @@
 
         <div class="tool-cta">
             <p>Expadu tracks the whole road there — permits, deadlines, paperwork, in English.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

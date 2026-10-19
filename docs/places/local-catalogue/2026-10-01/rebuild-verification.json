@@ -1,0 +1,7 @@
+{
+  "status": "passed",
+  "source_records": 255949,
+  "semantic_sha256": "4f58f32d73244c81d62291a380984078a7d284ed6181a149258cd7dc4a8ceef0",
+  "inputs_unchanged": true,
+  "remote_changed": false
+}

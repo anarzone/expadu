@@ -27,7 +27,7 @@ class CategoryAffinity
     /** Landmarks worth knowing when you've just arrived. */
     public const LANDMARK = ['attraction', 'viewpoint', 'museum', 'park', 'zoo'];
 
-    private const ACTIVE = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'skatepark', 'swimming', 'lake', 'dog_park', 'table_tennis', 'boules', 'bbq', 'viewpoint'];
+    private const ACTIVE = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'skatepark', 'swimming', 'lake', 'nature', 'dog_park', 'table_tennis', 'boules', 'bbq', 'viewpoint'];
 
     private const CULTURE = ['museum', 'gallery', 'attraction', 'zoo', 'library'];
 

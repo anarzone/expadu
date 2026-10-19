@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['type', 'provider', 'provider_asset_id', 'source_key', 'remote_url', 'source_page_url', 'author', 'attribution', 'license_code', 'license_url', 'mime_type', 'width', 'height', 'checksum', 'rights_status', 'health_status', 'failure_count', 'last_error', 'last_seen_at', 'last_verified_at', 'metadata'])]
+#[Fillable(['type', 'provider', 'provider_asset_id', 'source_key', 'remote_url', 'source_page_url', 'author', 'attribution', 'license_code', 'license_url', 'mime_type', 'width', 'height', 'checksum', 'rights_status', 'health_status', 'failure_count', 'last_error', 'last_seen_at', 'last_verified_at', 'metadata', 'next_validation_at', 'validation_queued_at', 'validation_queued_fingerprint', 'last_validation_outcome', 'last_validation_error_code'])]
 class MediaAsset extends Model
 {
     /** @use HasFactory<MediaAssetFactory> */
@@ -34,6 +34,8 @@ class MediaAsset extends Model
             'failure_count' => 'integer',
             'last_seen_at' => 'datetime',
             'last_verified_at' => 'datetime',
+            'next_validation_at' => 'datetime',
+            'validation_queued_at' => 'datetime',
             'metadata' => 'array',
         ];
     }
@@ -64,5 +66,11 @@ class MediaAsset extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(MediaAttachment::class);
+    }
+
+    /** @return HasMany<MediaValidationAttempt, $this> */
+    public function validationAttempts(): HasMany
+    {
+        return $this->hasMany(MediaValidationAttempt::class);
     }
 }

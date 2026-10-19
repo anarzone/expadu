@@ -104,16 +104,41 @@ class HandleInertiaRequests extends Middleware
                     'name' => $location->label,
                 ] : null;
             },
-            // Right-panel city widgets. Deferred (never block first paint) and
-            // shared so every page that shows the RightPanel — Today, Composer,
-            // Places — is fed, not just the dashboard. The v2 rewrite dropped
-            // these props but left the widgets reading them, which is why they
-            // read "unavailable" everywhere.
-            'weather' => Inertia::defer(fn () => $request->user() ? app(WeatherService::class)->getCurrentWeather() : null, 'widgets'),
-            'forecast' => Inertia::defer(fn () => $request->user() ? app(WeatherService::class)->getForecast() : null, 'widgets'),
-            'rhineLevel' => Inertia::defer(fn () => $request->user() ? app(RhineService::class)->getCurrentLevel() : null, 'widgets'),
-            'featuredEvent' => Inertia::defer(fn () => $request->user() ? app(FeaturedEvent::class)->forToday() : null, 'widgets'),
-            'activeDisruptions' => Inertia::defer(fn () => $request->user() ? $this->activeDisruptions() : [], 'widgets'),
+            ...$this->widgets($request),
+        ];
+    }
+
+    /**
+     * Right-panel city widgets. Deferred (never block first paint) and shared
+     * so every page that shows the RightPanel — Today, Composer, Places — is
+     * fed, not just the dashboard.
+     *
+     * Once-props: the client keeps them across navigations and tells the server
+     * so, which then skips the widgets request until they lapse. They used to
+     * be re-fetched — a second request re-running the page controller — on
+     * every visit. Five minutes matches the services' own fresh-cache TTL, and
+     * the data is city-wide, so it is the same for every user.
+     *
+     * Signed-in only: a guest page would otherwise hand the client nulls it
+     * keeps for five minutes, leaving the panel empty right after login.
+     *
+     * @return array<string, mixed>
+     */
+    private function widgets(Request $request): array
+    {
+        if (! $request->user()) {
+            return [];
+        }
+
+        $until = now()->addMinutes(5);
+        $widget = fn (callable $resolve) => Inertia::defer($resolve, 'widgets')->once(until: $until);
+
+        return [
+            'weather' => $widget(fn () => app(WeatherService::class)->getCurrentWeather()),
+            'forecast' => $widget(fn () => app(WeatherService::class)->getForecast()),
+            'rhineLevel' => $widget(fn () => app(RhineService::class)->getCurrentLevel()),
+            'featuredEvent' => $widget(fn () => app(FeaturedEvent::class)->forToday()),
+            'activeDisruptions' => $widget(fn () => $this->activeDisruptions()),
         ];
     }
 

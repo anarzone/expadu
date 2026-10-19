@@ -85,6 +85,9 @@ RUN --mount=type=cache,target=/root/.npm,sharing=locked \
 # ── Stage 4: Production ───────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production
 
+ARG APP_COMMIT=""
+ENV APP_COMMIT=$APP_COMMIT
+
 # Runtime libraries only — no -dev headers, no LLVM, no Python.
 # nginx-mod-http-brotli is a subpackage of Alpine's own nginx aport (the stock
 # nginx is built with --add-dynamic-module=ngx_brotli), so it always matches the
@@ -114,6 +117,14 @@ RUN docker-php-ext-enable \
 # Configure PHP for production
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY docker/prod/php.ini "$PHP_INI_DIR/conf.d/99-app.ini"
+
+# PHP-FPM pool: sized for the shared box (see docker/prod/php-fpm.conf).
+# Override per environment through the container env, no rebuild needed.
+ENV PHP_FPM_MAX_CHILDREN=8 \
+    PHP_FPM_START_SERVERS=2 \
+    PHP_FPM_MIN_SPARE_SERVERS=2 \
+    PHP_FPM_MAX_SPARE_SERVERS=4
+COPY docker/prod/php-fpm.conf /usr/local/etc/php-fpm.d/zz-app.conf
 
 WORKDIR /var/www/html
 

@@ -1,0 +1,250 @@
+{
+  "started_at": "2026-09-29T09:12:32+00:00",
+  "completed_at": "2026-09-29T09:20:17+00:00",
+  "environment": "isolated_local_public_data_copy",
+  "application_commit": "8038e77d08faa6fa477d34525d20d6fc63aa2545",
+  "package_records": 4643,
+  "package_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+  "import_ms": 415131.08,
+  "baseline_controller_samples": {
+    "food_drink": {
+      "total_ms": 1488.01,
+      "total": 1805,
+      "returned": 20
+    },
+    "pitch": {
+      "total_ms": 519.41,
+      "total": 366,
+      "returned": 20
+    },
+    "playground": {
+      "total_ms": 661.19,
+      "total": 1197,
+      "returned": 20
+    }
+  },
+  "expanded_query_variants": {
+    "original_statistics": [
+      {
+        "query": "pagination_count",
+        "execution_ms": 6200.061,
+        "planning_ms": 17.633,
+        "estimated_total_cost": 551124.36,
+        "jit": {
+          "Functions": 263,
+          "Options": {
+            "Inlining": true,
+            "Optimization": true,
+            "Expressions": true,
+            "Deforming": true
+          },
+          "Timing": {
+            "Generation": 27.937,
+            "Inlining": 126.978,
+            "Optimization": 3133.184,
+            "Emission": 2098.517,
+            "Total": 5386.616
+          }
+        },
+        "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+      },
+      {
+        "query": "first_page",
+        "execution_ms": 5800.675,
+        "planning_ms": 2.995,
+        "estimated_total_cost": 551193.74,
+        "jit": {
+          "Functions": 268,
+          "Options": {
+            "Inlining": true,
+            "Optimization": true,
+            "Expressions": true,
+            "Deforming": true
+          },
+          "Timing": {
+            "Generation": 14.388,
+            "Inlining": 22.935,
+            "Optimization": 3119.049,
+            "Emission": 2022.978,
+            "Total": 5179.349
+          }
+        },
+        "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+      }
+    ],
+    "fresh_statistics": [
+      {
+        "query": "pagination_count",
+        "execution_ms": 5328.523,
+        "planning_ms": 3.71,
+        "estimated_total_cost": 738617.86,
+        "jit": {
+          "Functions": 263,
+          "Options": {
+            "Inlining": true,
+            "Optimization": true,
+            "Expressions": true,
+            "Deforming": true
+          },
+          "Timing": {
+            "Generation": 14.243,
+            "Inlining": 24.136,
+            "Optimization": 2881.767,
+            "Emission": 1834.55,
+            "Total": 4754.696
+          }
+        },
+        "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+      },
+      {
+        "query": "first_page",
+        "execution_ms": 5464.741,
+        "planning_ms": 3.432,
+        "estimated_total_cost": 740932.74,
+        "jit": {
+          "Functions": 268,
+          "Options": {
+            "Inlining": true,
+            "Optimization": true,
+            "Expressions": true,
+            "Deforming": true
+          },
+          "Timing": {
+            "Generation": 15.705,
+            "Inlining": 24.948,
+            "Optimization": 3008.373,
+            "Emission": 1860.045,
+            "Total": 4909.071
+          }
+        },
+        "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+      }
+    ],
+    "fresh_statistics_jit_off": [
+      {
+        "query": "pagination_count",
+        "execution_ms": 571.595,
+        "planning_ms": 2.326,
+        "estimated_total_cost": 738617.86,
+        "jit": null,
+        "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43"
+      },
+      {
+        "query": "first_page",
+        "execution_ms": 558.26,
+        "planning_ms": 11.834,
+        "estimated_total_cost": 740932.74,
+        "jit": null,
+        "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec"
+      }
+    ]
+  },
+  "results_identical_across_variants": true,
+  "rollback_exact": true,
+  "before": {
+    "spots": {
+      "count": 9928,
+      "sha256": "443e38d902175eca69f44a86b041be0e8ba45b8fe1e17fe40c86869ef40840e4"
+    },
+    "veedels": {
+      "count": 86,
+      "sha256": "18e43715a76634f449795efa80e37fda3f7de39582b9b122239182886ec30caf"
+    },
+    "place_fact_observations": {
+      "count": 4085,
+      "sha256": "e68858e199e7ee371d5f7a80533ab85591f346061ed9b1059924ebdbbe1db87c"
+    },
+    "place_fact_corrections": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "place_fact_revisions": {
+      "count": 1,
+      "sha256": "e6f10061ed7146a598e27af2dbc35e5b80627a4ac6744118d4553fac9e0228f9"
+    },
+    "place_destination_reviews": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "place_reconciliations": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "media_assets": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "media_attachments": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  },
+  "after": {
+    "spots": {
+      "count": 9928,
+      "sha256": "443e38d902175eca69f44a86b041be0e8ba45b8fe1e17fe40c86869ef40840e4"
+    },
+    "veedels": {
+      "count": 86,
+      "sha256": "18e43715a76634f449795efa80e37fda3f7de39582b9b122239182886ec30caf"
+    },
+    "place_fact_observations": {
+      "count": 4085,
+      "sha256": "e68858e199e7ee371d5f7a80533ab85591f346061ed9b1059924ebdbbe1db87c"
+    },
+    "place_fact_corrections": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "place_fact_revisions": {
+      "count": 1,
+      "sha256": "e6f10061ed7146a598e27af2dbc35e5b80627a4ac6744118d4553fac9e0228f9"
+    },
+    "place_destination_reviews": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "place_reconciliations": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "media_assets": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "media_attachments": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  },
+  "live_environments_read_or_changed": false,
+  "runtime_application_changed": false,
+  "is_end_to_end_or_p95_measurement": false,
+  "query_scope": "food_drink, no origin, synthetic user, first page and total count; captured from actual controller queries",
+  "limitations": [
+    "One controlled expanded-data sample per query and variant; not 30 comparable requests",
+    "Queries run inside an uncommitted 4643-record import transaction",
+    "Local database and hardware only",
+    "No near-me/travel or Composer timing in this diagnostic",
+    "Session-local JIT disabling is a diagnostic; it has not been adopted as a staging or production fix"
+  ],
+  "raw_evidence": {
+    "exp69-expanded-query-profile.json": {
+      "local_path": "storage/app/private/places-research/performance-2026-09-29/exp69-expanded-query-profile.json",
+      "sha256": "f17120eab263492029220ba7504e90e88ba6034e2e0a5b13a1533ed086517a1d"
+    },
+    "exp69-local-query-profile.json": {
+      "local_path": "storage/app/private/places-research/performance-2026-09-29/exp69-local-query-profile.json",
+      "sha256": "548a6f2ae26057c62690f2a891ca41ea6fedaca84b43481b30ea54572b3d49f0"
+    },
+    "exp69-profile-expanded-places.php": {
+      "local_path": "storage/app/private/places-research/performance-2026-09-29/exp69-profile-expanded-places.php",
+      "sha256": "bc1d6ae23f88fa45286ecc1fc811fff46d328327494b89baab5a8fbd5cad41cb"
+    },
+    "exp69-profile-local-places.php": {
+      "local_path": "storage/app/private/places-research/performance-2026-09-29/exp69-profile-local-places.php",
+      "sha256": "e542f60c94b8da5ca3d9feaadd42294756cc7a1dc0b470b3ee83ac21afe88453"
+    }
+  },
+  "persistent_runtime_configuration_changed": false
+}

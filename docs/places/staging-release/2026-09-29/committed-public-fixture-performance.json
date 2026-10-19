@@ -1,0 +1,79 @@
+{
+  "scope": "fresh local connection after native package commit in dedicated zero-user fixture",
+  "package_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+  "source_commit": "3db018e11042eaeef85b9dc8e584bf337eb4a552",
+  "stored_spots": 11802,
+  "users": 0,
+  "database_settings": [
+    {
+      "name": "jit",
+      "setting": "on"
+    },
+    {
+      "name": "jit_above_cost",
+      "setting": "100000"
+    },
+    {
+      "name": "jit_inline_above_cost",
+      "setting": "500000"
+    },
+    {
+      "name": "jit_optimize_above_cost",
+      "setting": "500000"
+    },
+    {
+      "name": "server_version",
+      "setting": "16.13 (Debian 16.13-1.pgdg11+1)"
+    }
+  ],
+  "api": {
+    "food_first": {
+      "samples": 30,
+      "p95_ms": 325.222833,
+      "median_ms": 303.25093749999996,
+      "max_ms": 418.26275,
+      "payload_sha256": "96ddf5aeb2fece528752a5f4b1097e1afcff14ba1b2f4fc81e8c14fc6c221060"
+    },
+    "food_second": {
+      "samples": 30,
+      "p95_ms": 339.426417,
+      "median_ms": 312.4804375,
+      "max_ms": 346.0815,
+      "payload_sha256": "d41e5ed9276edb8e830ae2540689c62425c08d1a91ef4f0ee737aa193765a0c4"
+    },
+    "detail": {
+      "samples": 30,
+      "p95_ms": 22.055083,
+      "median_ms": 19.15025,
+      "max_ms": 22.238709,
+      "payload_sha256": "ca5f01bd234e6654557edb8e20c107226330f56465ab7e17466708e79c511aab"
+    }
+  },
+  "key_lookup": {
+    "samples": 30,
+    "p95_ms": 39.2975,
+    "median_ms": 37.5291875
+  },
+  "status": "passed",
+  "comparison_note": "Identical SQL/bindings and count/page identities. Separate native imports allocate different new IDs and updated_at timestamps; full SQL row hashes are not expected to match across fixtures.",
+  "completed_at": "2026-09-29T13:05:03+00:00",
+  "queries": [
+    {
+      "execution_ms": 169.286,
+      "estimated_cost": 19423.02,
+      "jit": null,
+      "result_sha256": "25e8c83e924bf376b34b9f452b998d03036f81ee291105bbeeb3bbf7e953ba43",
+      "query_sha256": "37ce86a6ac50587037809598d991e70e769b102958e22b27fe441c238ba5f0cb",
+      "count_or_page_id_parity": true
+    },
+    {
+      "execution_ms": 163.436,
+      "estimated_cost": 19501.64,
+      "jit": null,
+      "result_sha256": "ec335e3e2099491aff28a10ddbf3d23f847ef3898b4e3ee757a281c97d16d4ec",
+      "query_sha256": "3788e77b423a4f2bd213e533a778cce9f5927ebe5b435498edbb9ab1fceb630d",
+      "count_or_page_id_parity": true
+    }
+  ],
+  "full_local_plan_sha256": "0e7d3ef23f6aae532c402430a16e628965dfa01bfa7c3204e16d5a07797764b5"
+}

@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\MediaAsset;
 use App\Models\Spot;
 use App\Models\User;
+use App\Places\ReviewPlaceFacts;
 use App\Profile\CategoryAffinity;
 use App\Profile\ProfileEngine;
 use Illuminate\Support\Facades\Cache;
@@ -325,4 +326,82 @@ test('an interest never overrides a kid-safety demotion', function () {
     $map = CategoryAffinity::map(app(ProfileEngine::class)->build($user));
 
     expect(CategoryAffinity::score('bar', $map))->toBe(0.15); // family keeps bars demoted
+});
+
+test('a reviewed place fact invalidates the Home scan and updates its display name', function () {
+    $user = feedUser();
+    $spot = Spot::factory()->create([
+        'name' => 'Old source name',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.95,
+        'lng' => 6.92,
+    ]);
+    app(DiscoveryFeed::class)->for(homeContext($user));
+    expect(Cache::has('discovery:spot-scan:identity:0:grouping:0:facts:0'))->toBeTrue();
+
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($spot->id, ['name' => 'Friendly reviewed name']);
+    $review->apply($spot->id, ['name' => 'Friendly reviewed name'], $preview['fingerprint'], 'Official evidence confirms this display name.', 'reviewer@example.test');
+
+    $rails = collect(app(DiscoveryFeed::class)->for(homeContext($user)));
+    $names = $rails->flatMap(fn (array $rail) => $rail['cards'])->pluck('name');
+
+    expect(Cache::has('discovery:spot-scan:identity:0:grouping:0:facts:1'))->toBeTrue()
+        ->and($names)->toContain('Friendly reviewed name')
+        ->not->toContain('Old source name');
+});
+
+test('an unreviewed legacy spot photo never flows through to a rail card', function () {
+    $user = feedUser();
+    Spot::factory()->create([
+        'name' => 'Rheinpark',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.95,
+        'lng' => 6.92,
+        'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Test.jpg?width=800',
+        'photo_attribution' => 'Jane Doe · CC BY-SA 4.0 · Wikimedia Commons',
+    ]);
+
+    $card = collect(app(DiscoveryFeed::class)->for(homeContext($user)))
+        ->flatMap(fn ($r) => $r['cards'])
+        ->firstWhere('name', 'Rheinpark');
+
+    expect($card)->not->toBeNull()
+        ->and($card['photo_url'])->toBeNull()
+        ->and($card['photo_attribution'])->toBeNull();
+});
+
+test('a managed spot rail card carries source and license attribution links', function () {
+    $user = feedUser();
+    $spot = Spot::factory()->create([
+        'name' => 'Rheinpark',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.95,
+        'lng' => 6.92,
+    ]);
+    $asset = MediaAsset::factory()->approved()->create([
+        'remote_url' => 'https://upload.wikimedia.org/rheinpark.jpg',
+        'source_page_url' => 'https://commons.wikimedia.org/wiki/File:Rheinpark.jpg',
+        'license_url' => 'https://creativecommons.org/licenses/by-sa/4.0/',
+        'attribution' => 'Jane Doe · CC BY-SA 4.0 · Wikimedia Commons',
+    ]);
+    $spot->mediaAttachments()->create([
+        'media_asset_id' => $asset->id,
+        'role' => 'hero',
+        'match_status' => 'accepted',
+        'match_method' => 'osm_wikimedia_commons_tag',
+        'match_evidence' => ['tag' => 'File:Rheinpark.jpg'],
+        'match_reviewed_at' => now(),
+    ]);
+
+    $card = collect(app(DiscoveryFeed::class)->for(homeContext($user)))
+        ->flatMap(fn ($rail) => $rail['cards'])
+        ->firstWhere('name', 'Rheinpark');
+
+    expect($card['photo_url'])->toBe('https://upload.wikimedia.org/rheinpark.jpg')
+        ->and($card['photo_source_url'])->toBe('https://commons.wikimedia.org/wiki/File:Rheinpark.jpg')
+        ->and($card['photo_license_url'])->toBe('https://creativecommons.org/licenses/by-sa/4.0/');
 });

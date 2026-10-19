@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\ContextEngine\ClaimsReservedPush;
+use App\ContextEngine\ReservedPush;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -16,14 +18,15 @@ use NotificationChannels\WebPush\WebPushMessage;
  * surfaces, no drift. The track note carries the conditions date math cannot
  * prove, framed as "to check" rather than "you qualify".
  */
-class PermanentResidencyEligibleNotification extends Notification implements ShouldQueue
+class PermanentResidencyEligibleNotification extends Notification implements ReservedPush, ShouldQueue
 {
-    use Queueable;
+    use ClaimsReservedPush, Queueable;
 
     public function __construct(
         public int $monthsHeld,
         public int $thresholdMonths,
         public string $trackNote,
+        public ?array $pushReservation = null, // PushLedger reservation for the milestone's push
     ) {}
 
     /**

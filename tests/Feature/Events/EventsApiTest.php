@@ -396,3 +396,18 @@ test('due reminders are delivered once through the notification channel', functi
     );
     expect($reminder->refresh()->sent_at)->not->toBeNull();
 });
+
+test('an unreviewed legacy place photo never richens an event card', function () {
+    $place = Spot::factory()->create([
+        'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
+        'photo_url' => 'https://commons.wikimedia.org/wiki/Special:FilePath/Volksgarten.jpg?width=800',
+        'photo_attribution' => 'Jane Doe · CC BY-SA 4.0 · Wikimedia Commons',
+    ]);
+    $venue = makeVenue(['name' => 'Volksgarten', 'place_id' => $place->id]);
+    Event::factory()->create(['starts_at' => '2026-06-12 12:00:00', 'recurrence' => null, 'venue_id' => $venue->id]);
+
+    $data = $this->getJson('/api/events?window=today')->assertOk()->json('data');
+
+    expect($data[0]['photo_url'])->toBeNull();
+    expect($data[0]['photo_attribution'])->toBeNull();
+});

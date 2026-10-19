@@ -1,8 +1,12 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'Deutschlandticket break-even calculator (Cologne, 2026) — Expadu')
 @section('meta_description', 'Is the €'.number_format($dticketEur, 0).' Deutschlandticket worth it for how you actually move? Drag your weekly trips — honest verdict with Cologne\'s current Rheinlandtarif fares. Free, no signup.')
 @section('canonical', route('tools.dticket'))
+@section('og_image', asset('marketing/og/tools-dticket.png'))
 @section('waitlist_source', 'tool-dticket')
 
 @push('head')
@@ -11,7 +15,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'WebApplication',
         'name' => 'Deutschlandticket break-even calculator',
         'applicationCategory' => 'FinanceApplication',
@@ -21,12 +25,17 @@
     ], JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · Cologne 2026 tariff</span>
         <h1>Is the Deutschlandticket worth it for you?</h1>
         <p class="sub">€{{ number_format($dticketEur, 0) }}/month, all local transit in Germany. Drag how often you actually ride.</p>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap tool-shell">
 
         <script type="application/json" id="tool-data">@json($toolData)</script>
 
@@ -58,7 +67,7 @@
 
         <div class="tool-cta">
             <p>Expadu shows a <b>covered-by-your-ticket</b> badge on every route it plans for you.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

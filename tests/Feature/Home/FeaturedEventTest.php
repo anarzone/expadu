@@ -104,3 +104,36 @@ it('keeps an event that is currently ongoing', function () {
 
     expect(app(FeaturedEvent::class)->forToday()['id'])->toBe($ongoing->id);
 });
+
+it('prefers an event with accepted managed media over a sooner one without', function () {
+    Event::factory()->create([ // sooner, no photo
+        'title' => 'No photo', 'starts_at' => '2026-06-12 18:00:00', 'ends_at' => '2026-06-12 20:00:00', 'recurrence' => null,
+    ]);
+
+    $place = Spot::factory()->create([
+        'name' => 'Volksgarten', 'category' => 'park', 'lat' => 50.9214, 'lng' => 6.9466,
+    ]);
+    $asset = MediaAsset::factory()->approved()->create([
+        'remote_url' => 'https://upload.wikimedia.org/Volksgarten.jpg',
+        'source_page_url' => 'https://commons.wikimedia.org/wiki/File:Volksgarten.jpg',
+        'attribution' => 'Jane Doe · CC BY-SA 4.0',
+    ]);
+    $place->mediaAttachments()->create([
+        'media_asset_id' => $asset->id,
+        'role' => 'hero',
+        'match_status' => 'accepted',
+        'match_method' => 'manual_review',
+        'match_evidence' => ['review' => 'Exact park'],
+        'match_reviewed_at' => now(),
+    ]);
+    $venue = featuredVenue(['name' => 'Volksgarten', 'place_id' => $place->id]);
+    $withPhoto = Event::factory()->create([ // later, but has a photo
+        'title' => 'Has photo', 'starts_at' => '2026-06-12 20:00:00', 'ends_at' => '2026-06-12 22:00:00',
+        'recurrence' => null, 'venue_id' => $venue->id,
+    ]);
+
+    $featured = app(FeaturedEvent::class)->forToday();
+
+    expect($featured['id'])->toBe($withPhoto->id)
+        ->and($featured['photo_url'])->toContain('Volksgarten.jpg');
+});

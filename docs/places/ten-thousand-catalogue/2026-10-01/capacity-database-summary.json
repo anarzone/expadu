@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "database": "exp69_local_catalogue_20261001",
+  "endpoint": "127.0.0.1:15434",
+  "container": "exp69-local-catalogue-20261001",
+  "owner_label": "expadu.local-catalogue=2026-10-01",
+  "existing_local_image_id": "sha256:67d7722e816a8a50a4d5a31db1e236351f0139ee28597a54636f5c91a777274e",
+  "max_locks_per_transaction": 4096,
+  "max_connections": 20,
+  "private_baseline_dump_sha256": "59f091c879b8c3980ee928bff79a81ef2d226b4dcba339bad1f7adf2a217990a",
+  "baseline_dump_bytes": 2932609,
+  "ten_native_table_hashes_match": true,
+  "user_rows": 0,
+  "shared_development_database_changed": false,
+  "remote_changed": false,
+  "clean_restore_completed_without_ignored_errors": true
+}

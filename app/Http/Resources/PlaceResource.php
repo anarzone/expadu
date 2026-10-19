@@ -29,7 +29,9 @@ class PlaceResource extends JsonResource
         $mediaSelector = app(PublishedMediaSelector::class);
         $media = $mediaSelector->select($this->resource, 'hero');
         $enrichment = $this->resource->relationLoaded('englishEnrichment') ? $this->englishEnrichment : null;
-        $tip = $enrichment?->tip ?? $this->tip;
+        // Only the reviewed English enrichment carries a tip; a stored legacy
+        // tip has no evidence behind it and stays hidden.
+        $tip = $enrichment?->tip;
         $placeFacts = app(PlaceFacts::class)->resolve($this->resource);
         $mapPoint = $placeFacts['location']['map_point'];
         $entrancePoint = $placeFacts['location']['entrance_point'];

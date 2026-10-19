@@ -54,3 +54,7 @@ tests/Browser/.artifacts/
 /prototype/dev/**/*.webp
 /prototype/dev/**/*.zip
 /prototype/**/__pycache__/
+
+# Python helper bytecode
+__pycache__/
+*.py[cod]

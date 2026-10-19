@@ -1,0 +1,25 @@
+{
+  "checked_at": "2026-09-29T11:40:32+00:00",
+  "environment": "staging",
+  "baseline_statistics_refreshed": true,
+  "catalogue_rows_written": false,
+  "persistent_database_configuration_changed": false,
+  "raw_records_exported": false,
+  "relation_estimates": [
+    {
+      "relname": "place_fact_corrections",
+      "reltuples": 0,
+      "relpages": 0
+    },
+    {
+      "relname": "place_fact_observations",
+      "reltuples": 4085,
+      "relpages": 701
+    },
+    {
+      "relname": "spots",
+      "reltuples": 9928,
+      "relpages": 855
+    }
+  ]
+}

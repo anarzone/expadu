@@ -37,7 +37,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Curated work spots (real data, geocoded)
-        $this->call(SpotSeeder::class);
+        if (config('places.curated_seeding_enabled')) {
+            $this->call(SpotSeeder::class);
+        }
     }
 }

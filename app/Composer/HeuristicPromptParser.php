@@ -73,6 +73,7 @@ class HeuristicPromptParser implements ParsesPrompt
         'football' => 'pitch', 'soccer' => 'pitch', 'pitch' => 'pitch',
         'swim' => 'swimming', 'swimming' => 'swimming', 'pool' => 'swimming',
         'lake' => 'lake', 'beach' => 'lake',
+        'forest' => 'nature', 'woods' => 'nature', 'nature reserve' => 'nature',
         'playground' => 'playground',
         'skate' => 'skatepark', 'skatepark' => 'skatepark',
         'tennis' => 'tennis',
@@ -387,7 +388,7 @@ class HeuristicPromptParser implements ParsesPrompt
 
         if ($this->containsWord($remaining, ['outdoors', 'outdoor', 'outside', 'nature'])
             || str_contains($remaining, 'fresh air')) {
-            array_push($categories, 'park', 'lake', 'playground', 'pitch', 'basketball', 'dog_park', 'skatepark');
+            array_push($categories, 'park', 'lake', 'nature', 'playground', 'pitch', 'basketball', 'dog_park', 'skatepark');
         }
 
         return array_values(array_unique($categories));

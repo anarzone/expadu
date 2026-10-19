@@ -1,0 +1,12 @@
+{
+  "status": "refused_no_export",
+  "accepted_export_count": 0,
+  "last_completed_record_batch": 11600,
+  "expected_catalogue_count": 12292,
+  "refusal": "composer_numeric_text_vocabulary_was_deduplicated_loosely",
+  "affected_prepared_source_objects": 2,
+  "native_row_hashes_restored": true,
+  "snapshot_checked_at": "2026-10-01T16:47:32+00:00",
+  "private_partial_output_removed": true,
+  "remote_changed": false
+}

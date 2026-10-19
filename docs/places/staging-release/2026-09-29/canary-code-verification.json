@@ -1,0 +1,28 @@
+{
+  "focused_tests": {
+    "passed": 28,
+    "assertions": 129,
+    "duration_seconds": 18.19,
+    "files": [
+      "tests/Feature/Places/CatalogueRecoveryTest.php",
+      "tests/Feature/Bureaucracy/BureaucracyAiPrivacyTest.php"
+    ]
+  },
+  "journal_migration_rollback_guard": {
+    "red_before_fix": true,
+    "green_after_fix": true,
+    "protects_populated_journal": true
+  },
+  "operator_review": {
+    "acceptance_findings_addressed": true,
+    "local_api_verification_passed": true,
+    "staging_api_verification_passed": true,
+    "no_commit_authorized": true,
+    "final_action_bound_staging_pass": "2026-09-29T14:23:48Z"
+  },
+  "verified_helper_sha256": {
+    "GuardedCanary.php": "b1aa794c89975ca32a8228892616d6819dcba870a999462b1535fcc67a9eaef3",
+    "CanaryJournal.php": "b84744047209885ba994e5a151882d0dc2c7ebc127999edaab4cd4f1c39cbf13",
+    "run-canary.php": "9a5d94d21a7a185b05134ab824da128ab557861eae645022e5a2118ea098a712"
+  }
+}

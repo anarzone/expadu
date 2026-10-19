@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Imports mapped Cologne destination areas from OSM and stamps each contained
- * leisure facility with a stable parent spot. Parks and named sports centres
- * become one destination; their pitches/courts remain activities, never cards.
+ * leisure facility with a stable geometric parent. Reviewed destination
+ * membership is separate and remains untouched by these polygon refreshes.
  */
 class ImportParkAreas extends Command
 {
@@ -97,7 +97,10 @@ class ImportParkAreas extends Command
     {
         foreach (self::MIRRORS as $mirror) {
             try {
-                $response = Http::timeout(120)->get($mirror, ['data' => $query]);
+                $response = Http::timeout(120)
+                    ->withUserAgent(ImportOsmSpots::USER_AGENT)
+                    ->asForm()
+                    ->post($mirror, ['data' => $query]);
 
                 if ($response->successful()) {
                     return $response->json('elements', []);

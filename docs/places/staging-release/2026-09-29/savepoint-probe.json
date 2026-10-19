@@ -1,0 +1,29 @@
+{
+    "scope": "local synthetic temporary table; no catalogue changes",
+    "variants": {
+        "retained_savepoints": {
+            "rows": 3000,
+            "insert_ms": 2673.47475,
+            "scan_ms": [
+                55.451084,
+                41.5695,
+                43.620833,
+                45.694625,
+                52.994292
+            ]
+        },
+        "released_savepoints": {
+            "rows": 3000,
+            "insert_ms": 5160.716792,
+            "scan_ms": [
+                2.133,
+                1.585209,
+                1.367042,
+                4.29725,
+                1.734666
+            ]
+        }
+    },
+    "completed_at": "2026-09-29T12:57:43+00:00",
+    "temporary_tables_removed": true
+}

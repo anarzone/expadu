@@ -1,15 +1,21 @@
 <?php
 
+use App\Composer\CandidateRepository;
+use App\Composer\Constraints;
 use App\Enums\SpotCategory;
 use App\Http\Resources\PlaceResource;
 use App\Models\MediaAsset;
+use App\Models\PlaceFactCorrection;
 use App\Models\Spot;
 use App\Models\SpotEnrichment;
 use App\Models\SpotFeedback;
 use App\Models\User;
 use App\Models\UserPlace;
+use App\Places\RecordPlaceObservation;
+use App\Places\ReviewPlaceFacts;
 use App\Services\UserLocationService;
 use App\Transit\Contracts\RouteService;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Redis;
@@ -52,22 +58,24 @@ test('lists leisure places with the full contract shape', function () {
         'veedel' => 'Ehrenfeld',
         'lat' => 50.949,
         'lng' => 6.922,
+        'tip' => 'Unverified legacy advice.',
     ]);
 
     $response = $this->getJson('/api/places');
 
     $response->assertOk();
     $response->assertJsonStructure([
-        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'summary', 'tip', 'transit_hint', 'facts']],
+        'data' => [['id', 'name', 'category', 'veedel', 'lat', 'lng', 'routing_lat', 'routing_lng', 'photo_url', 'distance_min', 'distance_mode', 'distance_km', 'open_now', 'opening_hours_text', 'price_text', 'feature_chips', 'summary', 'tip', 'transit_hint', 'facts', 'place_facts']],
         'meta' => ['total'],
     ]);
     // basketball rolls up to the coarse 'court' bucket but keeps its fine identity
     $response->assertJsonPath('data.0.category', 'court');
     $response->assertJsonPath('data.0.fine_label', 'Basketball court');
     $response->assertJsonPath('data.0.emoji', '🏀');
+    // Category alone is not evidence that a place is currently open or free.
     $response->assertJsonPath('data.0.open_now', null);
     $response->assertJsonPath('data.0.price_text', null);
-    $response->assertJsonPath('data.0.opening_hours_text', null);
+    // Legacy and category-level advice without evidence remains hidden.
     $response->assertJsonPath('data.0.tip', null);
     $response->assertJsonPath('data.0.tip_is_generic', false);
 });
@@ -502,7 +510,7 @@ test('culture places are listed with the culture coarse bucket', function () {
 test('named destinations rank above generic facilities', function () {
     // The commodity facility is closer to home, the named park farther
     Spot::factory()->create(['name' => 'Tischtennisplatte', 'category' => 'table_tennis', 'lat' => 50.948, 'lng' => 6.921]);
-    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
 
     $names = collect($this->getJson('/api/places')->json('data'))->pluck('name')->all();
 
@@ -561,8 +569,9 @@ test('context prefers facilities in the same park over the 300m radius', functio
 });
 
 test('places inside a park carry the park name', function () {
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.962, 'lng' => 6.930]);
     // In-park facilities are reached via the detail (park hop), not the list
-    $pitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'veedel' => 'Neuehrenfeld', 'park_name' => 'Blücherpark', 'lat' => 50.962, 'lng' => 6.930]);
+    $pitch = Spot::factory()->create(['name' => 'Bolzplatz', 'category' => 'pitch', 'veedel' => 'Neuehrenfeld', 'park_name' => 'Blücherpark', 'parent_spot_id' => $park->id, 'destination_spot_id' => $park->id, 'destination_reviewed_parent_id' => $park->id, 'destination_reviewed_at' => now(), 'destination_grouping_evidence' => 'Reviewed component fixture',  'lat' => 50.962, 'lng' => 6.930]);
 
     $this->getJson("/api/places/{$pitch->id}")->assertJsonPath('data.park', 'Blücherpark');
 });
@@ -576,7 +585,7 @@ test('place context lists nearby places, excluding same-name siblings', function
     // Different place ~80m away → listed with a walk time
     Spot::factory()->create(['name' => 'Spielplatz', 'category' => 'playground', 'lat' => 50.9485, 'lng' => 6.9215]);
     // Too far (>300m) → excluded
-    Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.96, 'lng' => 6.95]);
+    $park = Spot::factory()->create(['name' => 'Blücherpark', 'category' => 'park', 'lat' => 50.96, 'lng' => 6.95]);
 
     $response = $this->getJson("/api/places/{$spot->id}/context");
 
@@ -775,3 +784,270 @@ test('missing place coordinates remain missing rather than becoming zero', funct
     $data = (new PlaceResource($spot))->toArray(request());
     expect($data['lat'])->toBeNull()->and($data['lng'])->toBeNull();
 });
+
+test('place cards expose reviewed names and evidence-backed practical facts', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-17 10:00:00', 'Europe/Berlin'));
+    $spot = Spot::factory()->create([
+        'name' => 'Source projection',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'source' => 'osm',
+        'source_id' => 'way/991',
+    ]);
+    app(RecordPlaceObservation::class)->record($spot, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/991',
+        'source_url' => 'https://www.openstreetmap.org/way/991',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-api-991',
+        'payload' => [
+            'name' => 'Quellenname',
+            'aliases' => ['Source Park'],
+            'location' => ['lat' => 50.949, 'lng' => 6.922, 'kind' => 'source_center', 'boundary_reference' => 'way/991'],
+            'access' => ['raw' => 'yes', 'conditional' => null],
+            'fee' => ['raw' => 'no'],
+            'hours' => ['raw' => 'Mo-Su 08:00-22:00'],
+            'contact' => ['website' => 'https://official.example.test/park', 'phone' => null, 'address' => 'Parkweg 9, Köln'],
+        ],
+    ]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = [
+        'name' => 'Friendly reviewed park',
+        'entrance_point' => ['lat' => 50.9494, 'lng' => 6.9225],
+    ];
+    $preview = $review->preview($spot->id, $changes);
+    $review->apply($spot->id, $changes, $preview['fingerprint'], 'https://official.example.test/park', 'reviewer@example.test');
+
+    $place = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $spot->id);
+
+    expect($place['name'])->toBe('Friendly reviewed park')
+        ->and($place['lat'])->toBe(50.949)
+        ->and($place['lng'])->toBe(6.922)
+        ->and($place['routing_lat'])->toBe(50.9494)
+        ->and($place['routing_lng'])->toBe(6.9225)
+        ->and($place['open_now'])->toBeTrue()
+        ->and($place['opening_hours_text'])->toBe('Mo-Su 08:00-22:00')
+        ->and($place['price_text'])->toBe('free')
+        ->and($place['place_facts']['name_kind'])->toBe('reviewed');
+
+    // List cards carry a slim evidence record; the detail has the full one.
+    $detail = $this->getJson("/api/places/{$spot->id}")->assertOk()->json('data');
+
+    expect($detail['place_facts']['aliases'])->toContain('Quellenname', 'Source Park')
+        ->and($detail['place_facts']['location']['map_point']['kind'])->toBe('source_center')
+        ->and($detail['place_facts']['contact']['website']['value'])->toBe('https://official.example.test/park')
+        ->and($detail['place_facts']['revision'])->toBeGreaterThan(0);
+});
+
+test('source entrance candidates are visible but never used for routing', function () {
+    $spot = Spot::factory()->create([
+        'name' => 'Park with candidate entrance',
+        'category' => 'park',
+        'veedel' => 'Ehrenfeld',
+        'lat' => 50.949,
+        'lng' => 6.922,
+        'source' => 'osm',
+        'source_id' => 'way/992',
+    ]);
+    app(RecordPlaceObservation::class)->record($spot, [
+        'provider' => 'osm',
+        'provider_record_id' => 'way/992',
+        'source_url' => 'https://www.openstreetmap.org/way/992',
+        'observed_at' => '2026-09-17T10:00:00+00:00',
+        'ingestion_key' => 'osm-api-992',
+        'payload' => [
+            'location' => [
+                'lat' => 50.949,
+                'lng' => 6.922,
+                'kind' => 'source_center',
+                'boundary_reference' => 'way/992',
+                'entrance_point' => ['lat' => 50.9494, 'lng' => 6.9225, 'status' => 'candidate'],
+            ],
+        ],
+    ]);
+
+    $place = collect($this->getJson('/api/places')->assertOk()->json('data'))->firstWhere('id', $spot->id);
+
+    expect($place['place_facts']['location']['entrance_point'])->toMatchArray([
+        'lat' => 50.9494,
+        'lng' => 6.9225,
+        'status' => 'candidate',
+    ])->and($place['routing_lat'])->toBe(50.949)
+        ->and($place['routing_lng'])->toBe(6.922);
+});
+
+test('food and drink places are browsable while unrelated indoor categories remain excluded', function (string $category) {
+    $food = Spot::factory()->create(['name' => 'Independent food venue', 'category' => $category, 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $library = Spot::factory()->create(['category' => 'library', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $coworking = Spot::factory()->create(['category' => 'coworking', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $park = Spot::factory()->create(['name' => 'Separate park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+
+    $places = collect($this->getJson('/api/places')->assertOk()->json('data'));
+    expect($places->pluck('id')->all())->toContain($food->id, $park->id)
+        ->not->toContain($library->id, $coworking->id);
+    expect($places->firstWhere('id', $food->id)['category'])->toBe('food_drink');
+
+    $this->getJson('/api/places?category=food_drink')->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $food->id);
+    $this->getJson('/api/places?activity='.$category)->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $food->id);
+    $this->getJson('/api/places?category=park&activity='.$category)->assertOk()
+        ->assertJsonCount(0, 'data');
+})->with(['cafe', 'restaurant', 'fast_food', 'bar', 'bakery']);
+
+test('an independent cafe geographically inside a park remains a separate place', function () {
+    $park = Spot::factory()->create(['name' => 'Test park', 'category' => 'park', 'veedel' => 'Ehrenfeld', 'lat' => 50.948, 'lng' => 6.921]);
+    $cafe = Spot::factory()->create(['name' => 'Independent park cafe', 'category' => 'cafe', 'parent_spot_id' => $park->id, 'veedel' => 'Ehrenfeld', 'lat' => 50.9481, 'lng' => 6.9211]);
+
+    $ids = collect($this->getJson('/api/places')->assertOk()->json('data'))->pluck('id')->all();
+    expect($ids)->toContain($park->id, $cafe->id);
+    $this->getJson('/api/places?category=food_drink')->assertOk()
+        ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $cafe->id);
+});
+
+test('nearby same named food venues retain their distinct identities', function () {
+    $first = Spot::factory()->create(['name' => 'Same brand', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.9481, 'lng' => 6.9211, 'tags' => ['addr:housenumber' => '1']]);
+    $second = Spot::factory()->create(['name' => 'Same brand', 'category' => 'cafe', 'veedel' => 'Ehrenfeld', 'lat' => 50.9482, 'lng' => 6.9212, 'tags' => ['addr:housenumber' => '3']]);
+    $restaurant = Spot::factory()->create(['name' => 'Same brand', 'category' => 'restaurant', 'veedel' => 'Ehrenfeld', 'lat' => 50.9483, 'lng' => 6.9213]);
+
+    $places = collect($this->getJson('/api/places?category=food_drink')->assertOk()->json('data'));
+    expect($places->pluck('id')->all())->toContain($first->id, $second->id, $restaurant->id)
+        ->and($places->pluck('cluster_size')->all())->toBe([1, 1, 1]);
+    $this->getJson('/api/places/'.$first->id)->assertOk()->assertJsonPath('data.cluster_size', 1);
+});
+
+test('retained place details state when recommendations are unavailable', function (array $attributes) {
+    $place = Spot::factory()->create(['name' => 'Retained place', 'category' => 'park', ...$attributes]);
+    $this->getJson('/api/places/'.$place->id)->assertOk()
+        ->assertJsonPath('data.id', $place->id)
+        ->assertJsonPath('data.recommendation_status', 'unavailable');
+    $this->assertModelExists($place);
+})->with([
+    'inactive legacy record' => [['is_active' => false, 'is_recommendable' => false]],
+    'recommendation hold' => [['is_active' => true, 'is_recommendable' => false]],
+    'access restriction' => [['is_active' => true, 'is_recommendable' => true, 'tags' => ['access' => 'private']]],
+]);
+
+test('eligible place details remain available without claiming verified opening hours', function () {
+    $place = Spot::factory()->create(['category' => 'park', 'tags' => []]);
+    $this->getJson('/api/places/'.$place->id)->assertOk()
+        ->assertJsonPath('data.recommendation_status', 'available')
+        ->assertJsonPath('data.open_now', null);
+});
+
+test('an unavailable detail never describes a retained schedule as currently closed', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-30 23:00:00', 'Europe/Berlin'));
+    $place = Spot::factory()->create(['category' => 'park', 'is_active' => false, 'is_recommendable' => false,
+        'tags' => ['opening_hours' => 'Mo-Su 09:00-18:00', 'fee' => 'no']]);
+    $this->getJson('/api/places/'.$place->id)->assertOk()
+        ->assertJsonPath('data.recommendation_status', 'unavailable')
+        ->assertJsonPath('data.open_now', null)
+        ->assertJsonPath('data.price_text', null);
+});
+
+test('activity-qualified facility details use the shared recommendation policy', function () {
+    $place = Spot::factory()->create(['category' => 'pitch', 'name' => 'Source pitch',
+        'source' => 'osm', 'source_id' => 'way/987654321', 'is_recommendable' => false,
+        'tags' => ['sport' => 'soccer', 'access' => 'yes', 'fee' => 'no']]);
+    $review = app(ReviewPlaceFacts::class);
+    $changes = ['activity_discovery' => true];
+    $preview = $review->preview($place->id, $changes);
+    $review->apply($place->id, $changes, $preview['fingerprint'], 'Verified public activity facility with stable source identity.', 'test-reviewer');
+    $this->getJson('/api/places/'.$place->id)->assertOk()
+        ->assertJsonPath('data.recommendation_status', 'available');
+});
+
+test('an explicit playground request includes a qualified facility and preserves unknown fees', function () {
+    $place = Spot::factory()->create(['name' => 'Playground', 'category' => 'playground',
+        'source' => 'osm', 'source_id' => 'way/98765432', 'is_recommendable' => false,
+        'lat' => 50.948, 'lng' => 6.921, 'price_range' => null, 'tags' => ['access' => 'yes']]);
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($place->id, ['activity_discovery' => true]);
+    $review->apply($place->id, ['activity_discovery' => true], $preview['fingerprint'],
+        'Current source category and public playground geometry have been checked.', 'readiness-test');
+    expect(array_column($this->getJson('/api/places')->assertOk()->json('data'), 'id'))->not->toContain($place->id);
+    $this->getJson('/api/places?activity=playground')->assertOk()
+        ->assertJsonPath('data.0.id', $place->id)
+        ->assertJsonPath('data.0.place_facts.fee.value', 'unknown')
+        ->assertJsonPath('data.0.price_text', null);
+    $place->update(['name' => 'Changed source name']);
+    expect(array_column($this->getJson('/api/places?activity=playground')->assertOk()->json('data'), 'id'))->not->toContain($place->id);
+});
+
+test('a later unknown access review removes a qualified facility from Places and available details', function () {
+    $place = Spot::factory()->create(['category' => 'playground', 'is_recommendable' => false,
+        'lat' => 50.948, 'lng' => 6.921, 'tags' => ['access' => 'yes']]);
+    $review = app(ReviewPlaceFacts::class);
+    $preview = $review->preview($place->id, ['activity_discovery' => true]);
+    $review->apply($place->id, ['activity_discovery' => true], $preview['fingerprint'], 'Verified current public source and playground geometry.', 'readiness-test');
+    $this->getJson('/api/places?activity=playground')->assertOk()->assertJsonPath('data.0.id', $place->id);
+    $preview = $review->preview($place->id, ['access' => 'unknown']);
+    $review->apply($place->id, ['access' => 'unknown'], $preview['fingerprint'], 'Later evidence cannot confirm public access to this playground.', 'other-reviewer');
+    expect(array_column($this->getJson('/api/places?activity=playground')->assertOk()->json('data'), 'id'))->not->toContain($place->id);
+    $this->getJson('/api/places/'.$place->id)->assertOk()->assertJsonPath('data.recommendation_status', 'unavailable');
+});
+
+test('legacy qualification without access history stays held across consumers', function (string $consumer) {
+    $place = Spot::factory()->create(['name' => 'Playground', 'category' => 'playground',
+        'source' => 'osm', 'source_id' => 'way/98765432', 'is_recommendable' => false,
+        'lat' => 50.948, 'lng' => 6.921, 'price_range' => null, 'tags' => []]);
+    // The base revision wrote this shape and permitted unknown access.
+    $value = app(ReviewPlaceFacts::class)->preview($place->id, ['activity_discovery' => true])['changes']['activity_discovery'];
+    unset($value['access_correction_id']);
+    PlaceFactCorrection::create(['spot_id' => $place->id, 'field' => 'activity_discovery', 'value' => $value,
+        'evidence' => 'Legacy qualification recorded before public-access binding was required.',
+        'actor' => 'legacy-reviewer', 'reviewed_at' => now()->subDay()]);
+
+    if ($consumer === 'detail') {
+        $this->getJson('/api/places/'.$place->id)->assertOk()
+            ->assertJsonPath('data.recommendation_status', 'unavailable');
+    } elseif ($consumer === 'places') {
+        expect(array_column($this->getJson('/api/places?activity=playground')->assertOk()->json('data'), 'id'))
+            ->not->toContain($place->id);
+    } elseif ($consumer === 'map') {
+        $url = '/api/spots?'.http_build_query(['sw_lat' => 50.90, 'ne_lat' => 50.97,
+            'sw_lng' => 6.90, 'ne_lng' => 7.00, 'category' => 'playground']);
+        $this->getJson($url)->assertOk()->assertJsonCount(0);
+    } elseif ($consumer === 'composer-by-id') {
+        expect(app(CandidateRepository::class)->byIds(['spot:'.$place->id], CarbonImmutable::parse('2026-09-30')))->toBe([]);
+    } else {
+        $constraints = Constraints::fromArray(['window_start' => '2026-09-30T14:00:00+02:00',
+            'window_end' => '2026-09-30T18:00:00+02:00', 'categories' => ['playground'],
+            'activities' => [], 'budget' => null, 'radius_km' => 2]);
+        expect(app(CandidateRepository::class)->candidatesFor($constraints, 50.948, 6.921))->toBe([]);
+    }
+    $this->assertModelExists($place);
+})->with(['detail', 'places', 'map', 'composer-by-id', 'composer-discovery']);
+
+test('a missing or null legacy access binding cannot count as an explicit zero binding', function (string $binding) {
+    $place = Spot::factory()->create(['category' => 'playground', 'is_recommendable' => false,
+        'tags' => ['access' => 'yes']]);
+    $value = app(ReviewPlaceFacts::class)->preview($place->id, ['activity_discovery' => true])['changes']['activity_discovery'];
+    if ($binding === 'missing') {
+        unset($value['access_correction_id']);
+    } else {
+        $value['access_correction_id'] = null;
+    }
+    PlaceFactCorrection::create(['spot_id' => $place->id, 'field' => 'activity_discovery', 'value' => $value,
+        'evidence' => 'Legacy qualification does not bind the public access history explicitly.',
+        'actor' => 'legacy-reviewer', 'reviewed_at' => now()->subDay()]);
+    expect(Spot::query()->recommendationEligible(true)->whereKey($place->id)->exists())->toBeFalse();
+})->with(['missing', 'null']);
+
+test('everyday venues keep independent nearby branches in list and detail', function (string $fine, string $coarse) {
+    $a = Spot::factory()->create(['name' => 'Same brand', 'category' => $fine, 'veedel' => 'Ehrenfeld', 'lat' => 50.94910, 'lng' => 6.92210]);
+    $b = Spot::factory()->create(['name' => 'Same brand', 'category' => $fine, 'veedel' => 'Ehrenfeld', 'lat' => 50.94915, 'lng' => 6.92215]);
+    $list = collect($this->getJson('/api/places?category='.$coarse)->assertSuccessful()->json('data'));
+    expect($list->pluck('id')->all())->toContain($a->id, $b->id);
+    expect($list->whereIn('id', [$a->id, $b->id])->pluck('cluster_size')->all())->toBe([1, 1]);
+    $this->getJson('/api/places/'.$a->id)->assertSuccessful()->assertJsonPath('data.cluster_size', 1);
+    $this->getJson('/api/places?activity='.$fine)->assertSuccessful()->assertJsonCount(2, 'data');
+    $a->update(['tags' => ['access' => 'private']]);
+    $list = collect($this->getJson('/api/places?category='.$coarse)->assertSuccessful()->json('data'));
+    expect($list->pluck('id')->all())->not->toContain($a->id);
+})->with([
+    ['supermarket', 'shopping'], ['hairdresser', 'services'], ['pharmacy', 'health'],
+    ['community_centre', 'community'], ['hotel', 'stay'], ['fitness_centre', 'fitness'], ['theatre', 'culture'],
+]);

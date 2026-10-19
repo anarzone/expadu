@@ -1,0 +1,18 @@
+[
+  {
+    "file": "identity-proposals.json",
+    "sha256": "1d5a1fdb25d2be681152a7b949adc5cbb616712365d098d2985fe315b04856fc"
+  },
+  {
+    "file": "identity-safe-operations.json",
+    "sha256": "935278ceb923d1c6ef76b64f65ee41783300242a6f8ff084923d752f5a96d8cb"
+  },
+  {
+    "file": "identity-safe-rehearsal.json",
+    "sha256": "1dbba99a2aeed87efb736828871c9ffe854ce720bcc774315ea5e6dd4841cad6"
+  },
+  {
+    "file": "football-source-evidence.json",
+    "sha256": "5a29582a1524705c2959c1a863c13799d555ced81f83e8501ddd7ff45971542e"
+  }
+]

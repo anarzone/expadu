@@ -16,11 +16,13 @@ class HomeFeedController extends Controller
 
         return Inertia::render('dashboard', [
             // Chips are cheap + above the fold, so they ship with the page.
-            // (This first read builds the shared HomeContext.)
-            'chips' => $feed->chips($user),
+            // (This first read builds the shared HomeContext.) Closures, so a
+            // partial reload — the deferred tiles/rails, the widgets, a
+            // savedPlan refresh — doesn't build HomeContext again for nothing.
+            'chips' => fn () => $feed->chips($user),
             // The plan the user pinned via the composer's "Save to Today" — a
             // cheap Redis read, reloadable on its own (router.reload).
-            'savedPlan' => $todayPlan->get($user),
+            'savedPlan' => fn () => $todayPlan->get($user),
             // Urgency tiles and discovery rails defer — they hit the DB/feed
             // and resolve from a single shared build per request. The weather
             // chip + right-panel widgets are now shared globally (see
