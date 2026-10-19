@@ -4,6 +4,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\Api\EventBookmarkController;
 use App\Http\Controllers\Api\EventReminderController;
 use App\Http\Controllers\Api\EventsController;
+use App\Http\Controllers\Api\FavouriteStopController;
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\JourneySuggestController;
 use App\Http\Controllers\Api\LocationConfirmController;
@@ -151,6 +152,10 @@ $appRoutes = function () use ($appDomain) {
         Route::post('api/saved-journeys', [SavedJourneyController::class, 'store'])->name('api.saved-journeys.store');
         Route::delete('api/saved-journeys/{savedJourney}', [SavedJourneyController::class, 'destroy'])->whereNumber('savedJourney')->name('api.saved-journeys.destroy');
         // Live trip session — persists the chosen journey across screens/closes.
+        // Travel's ★ favourite stops, per account.
+        Route::get('api/travel/favourite-stops', [FavouriteStopController::class, 'index'])->name('api.travel.favourite-stops.index');
+        Route::post('api/travel/favourite-stops', [FavouriteStopController::class, 'store'])->name('api.travel.favourite-stops.store');
+        Route::delete('api/travel/favourite-stops', [FavouriteStopController::class, 'destroy'])->name('api.travel.favourite-stops.destroy');
         Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.start');
         Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
         Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');

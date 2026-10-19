@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Models\UserPlace;
 use App\Services\TimetableService;
+use App\Transit\NearbyStation;
 use Illuminate\Support\Facades\Redis;
 
 test('the departures page renders with saved places as journey destinations', function () {
@@ -119,6 +120,9 @@ test('building the board logs a departure debug entry with the location source',
             'bus' => null,
         ]);
     });
+
+    // Nearby's station is its own deferred group, read from its own service.
+    $this->mock(NearbyStation::class, fn ($m) => $m->shouldReceive('closest')->andReturn(null));
 
     $user = User::factory()->onboarded()->create();
     Redis::del("departure_debug:{$user->id}");

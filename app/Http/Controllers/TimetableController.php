@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Api\FavouriteStopController;
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
 use App\Services\GtfsDepartureService;
+use App\Services\KvbApiService;
 use App\Services\TimetableService;
 use App\Services\UserLocationService;
+use App\Transit\NearbyStation;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,12 +21,28 @@ use Inertia\Response;
  */
 class TimetableController extends Controller
 {
-    public function __invoke(Request $request, TimetableService $timetable, UserLocationService $locations): Response
+    public function __invoke(Request $request, TimetableService $timetable, UserLocationService $locations, NearbyStation $nearby, KvbApiService $kvb): Response
     {
         $location = $locations->context($request->user(), $request);
         $userId = $request->user()->id;
+        // A picked station (`?stop=`; Today's old `?view=timetable&stop=` too).
+        $stop = trim((string) $request->query('stop', ''));
+        $stop = $stop === '' ? null : mb_substr($stop, 0, 120);
 
         return Inertia::render('timetable', [
+            // Nearby: the picked station, else the closest one. An unknown
+            // name keeps the closest and says so.
+            'station' => Inertia::defer(function () use ($nearby, $location, $stop) {
+                $picked = $stop === null ? null : $nearby->named($stop);
+                if ($picked !== null) {
+                    return $picked;
+                }
+                $closest = $location->hasOrigin() ? $nearby->closest((float) $location->lat, (float) $location->lng) : null;
+
+                return $closest === null ? null : [...$closest, 'unknown_stop' => $stop];
+            }, 'station'),
+            'stop' => $stop,
+            'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
             'boards' => Inertia::defer(function () use ($timetable, $location, $userId) {
                 if (! $location->hasOrigin()) {
                     return ['all' => null, 'tram' => null, 'bus' => null, 'rail' => null];

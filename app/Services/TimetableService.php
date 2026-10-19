@@ -18,6 +18,13 @@ class TimetableService
 {
     private const WALK_KMH = 4.5;
 
+    /**
+     * Departures fetched per board. Twenty left a busy station's quieter lines
+     * out (Neumarkt's 1, 7 and 9 behind its 3·4·16·18), and Nearby shows every
+     * line with both directions.
+     */
+    private const DEPARTURES = 40;
+
     public function __construct(
         private readonly KvbApiService $kvb,
         private readonly GtfsDepartureService $gtfs,
@@ -40,7 +47,7 @@ class TimetableService
     public function boards(float $lat, float $lng): array
     {
         $boards = Cache::flexible(
-            sprintf('timetable:v3:%.3f_%.3f', $lat, $lng),
+            sprintf('timetable:v4:%.3f_%.3f', $lat, $lng),
             [25, 180],
             fn () => $this->build($lat, $lng),
         );
@@ -60,6 +67,21 @@ class TimetableService
             'bus' => $bus,
             'rail' => $this->adjustForAge($boards['rail'] ?? null),
         ];
+    }
+
+    /**
+     * One boarding area's board: the departures at its point, age-adjusted.
+     * A station's areas are different stops in the feed (Neumarkt's 1·7·9
+     * board above ground, its 3·4·16·18 below), so Nearby reads each.
+     *
+     * @param  array{id?: int|string|null, name: string, lat: float, lng: float}  $point
+     * @return array<string, mixed>|null
+     */
+    public function pointBoard(array $point): ?array
+    {
+        $raw = $this->departuresByCoords((float) $point['lat'], (float) $point['lng']);
+
+        return $this->adjustForAge($this->board($point + ['_km' => 0], $raw, null));
     }
 
     /**
@@ -229,9 +251,9 @@ class TimetableService
     {
         try {
             return Cache::flexible(
-                'board_stop:v2:'.$name,
+                'board_stop:v3:'.$name,
                 [20, 300],
-                fn () => $this->gtfs->getDepartures($name, 20) + ['countdown_at' => now()->timestamp],
+                fn () => $this->gtfs->getDepartures($name, self::DEPARTURES) + ['countdown_at' => now()->timestamp],
             );
         } catch (\Throwable) {
             return ['departures' => [], 'source' => 'unavailable', 'fetched_at' => time()];
@@ -249,9 +271,9 @@ class TimetableService
     {
         try {
             return Cache::flexible(
-                sprintf('board_geo:v2:%.4f_%.4f', $lat, $lng),
+                sprintf('board_geo:v3:%.4f_%.4f', $lat, $lng),
                 [20, 300],
-                fn () => $this->gtfs->getDeparturesNearby($lat, $lng, 20) + ['countdown_at' => now()->timestamp],
+                fn () => $this->gtfs->getDeparturesNearby($lat, $lng, self::DEPARTURES) + ['countdown_at' => now()->timestamp],
             );
         } catch (\Throwable) {
             return ['departures' => [], 'source' => 'unavailable', 'fetched_at' => time()];
