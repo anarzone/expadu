@@ -707,7 +707,7 @@ test('identity reconciliation refuses overlapping active fact corrections', func
         ->and(PlaceFactCorrection::query()->where('spot_id', $canonical->id)->count())->toBe(1);
 });
 
-test('catalogue access eligibility scans source observations once for a batch of places', function () {
+test('catalogue access eligibility reads the stored flag without scanning source observations', function () {
     $this->travelTo(CarbonImmutable::parse('2026-09-29T12:00:00Z'));
     $spots = Spot::factory()->count(40)->create([
         'category' => 'park', 'source' => 'osm', 'tags' => null,
@@ -746,8 +746,9 @@ test('catalogue access eligibility scans source observations once for a batch of
         }
     };
     $visit($plan);
-    expect($observationScans)->not->toBeEmpty()
-        ->and(array_sum($observationScans))->toBeLessThanOrEqual(1);
+    expect($observationScans)->toBeEmpty()
+        // The stored flag agrees with a full recompute of the rule.
+        ->and(app(PlaceFacts::class)->refreshAllPublicAccess())->toBe(0);
 });
 
 test('activity qualification refuses unknown access without leaving a correction', function () {

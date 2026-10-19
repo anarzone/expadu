@@ -7,6 +7,7 @@ use App\Enums\SpotCategory;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\SpotEnrichment;
+use App\Places\PlaceFacts;
 use App\Places\ReviewPlaceFacts;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -304,6 +305,9 @@ test('a curated event survives a spot pool that overflows the candidate cap', fu
         }
     }
     Spot::query()->insert($rows);
+    // A bulk insert skips the model events that compute the stored access
+    // flag, so recompute it as bulk loaders do.
+    app(PlaceFacts::class)->refreshAllPublicAccess();
     expect(count($rows))->toBeGreaterThan(200); // the pool overflows the cap
 
     $event = Event::factory()->create([

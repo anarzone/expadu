@@ -199,6 +199,11 @@ class Spot extends Model
             if ($spot->sourceAttributesWereChanged()) {
                 SpotEnrichment::markReadyAsStaleForSpots([$spot->id]);
             }
+
+            // The access rule falls back to source tags and source identity.
+            if ($spot->wasRecentlyCreated || $spot->wasChanged(['tags', 'source', 'source_id'])) {
+                app(PlaceFacts::class)->refreshPublicAccess([$spot->id]);
+            }
         });
     }
 

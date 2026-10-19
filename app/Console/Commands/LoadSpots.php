@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Places\PlaceFacts;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -48,6 +49,8 @@ class LoadSpots extends Command
             // Rebuild the geometry from the loaded coordinates, then move the id
             // sequence past the highest explicit id we just inserted.
             DB::statement('UPDATE spots SET location = ST_SetSRID(ST_MakePoint(lng, lat), 4326) WHERE lat IS NOT NULL AND lng IS NOT NULL');
+            // A raw insert skips the model events that keep the access flag current.
+            app(PlaceFacts::class)->refreshAllPublicAccess();
             DB::statement("SELECT setval(pg_get_serial_sequence('spots', 'id'), GREATEST((SELECT max(id) FROM spots), 1))");
         });
 
