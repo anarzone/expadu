@@ -74,32 +74,41 @@
     );
     const form = document.querySelector('#compose-form');
     // What this page is showing goes with the request (connected/page-context.js),
-    // so Composer can answer "Which of these…?". You can leave it out.
-    let includeContext = true;
+    // so Composer can answer "Which of these…?". You can leave it out: its ✕
+    // leaves out that topic; a new one (another trip picked) shows again.
+    let leftOut = null;
+    const pageContext = () => {
+        const context = window.ExpaduPageContext?.();
+        return context?.label && context.label !== leftOut ? context : null;
+    };
     function showContext() {
-        document.querySelector('.composer-page-context')?.remove();
-        const context = includeContext && window.ExpaduPageContext?.();
-        if (!context?.label) return;
+        const context = pageContext();
+        const shown = document.querySelector('.composer-page-context');
+        // Focus moving inside the box, onto the ✕ too, keeps the line as it
+        // is: drawing it again took the ✕ away from under the click.
+        if (shown && shown.dataset.label === context?.label) return;
+        shown?.remove();
+        if (!context) return;
         const esc = window.ExpaduUI?.esc || ((x) => String(x));
         form.insertAdjacentHTML(
             'beforebegin',
             `<div class="composer-page-context"><span>About: ${esc(context.label)}</span><button type="button" aria-label="Don’t include ${esc(context.label)}">${window.ExpaduIcon?.('close') || '×'}</button></div>`,
         );
-        document
-            .querySelector('.composer-page-context button')
-            .addEventListener('click', (event) => {
-                event.stopPropagation();
-                includeContext = false;
-                document.querySelector('.composer-page-context')?.remove();
-                field.focus();
-            });
+        const line = document.querySelector('.composer-page-context');
+        line.dataset.label = context.label;
+        line.querySelector('button').addEventListener('click', (event) => {
+            event.stopPropagation();
+            leftOut = context.label;
+            line.remove();
+            field.focus();
+        });
     }
     document
         .querySelector('#composer-tray')
         .addEventListener('focusin', showContext);
     function submit() {
         if (!field.value.trim()) return;
-        const context = includeContext ? window.ExpaduPageContext?.() : null;
+        const context = pageContext();
         S.update((s) => {
             s.prompt = field.value.trim();
             s.pageContext = context || null;
