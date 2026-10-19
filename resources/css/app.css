@@ -60,6 +60,31 @@
     src: url('/fonts/fraunces-500.woff2') format('woff2');
 }
 
+/* Bricolage Grotesque (SIL OFL 1.1) for event posters and Composer titles: the
+   self-hosted variable font (wght 600–800), subsets as served by Google Fonts. */
+@font-face {
+    font-family: 'Bricolage Grotesque';
+    font-style: normal;
+    font-weight: 600 800;
+    font-display: swap;
+    src: url('/fonts/bricolage-grotesque-latin.woff2') format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Bricolage Grotesque';
+    font-style: normal;
+    font-weight: 600 800;
+    font-display: swap;
+    src: url('/fonts/bricolage-grotesque-latin-ext.woff2') format('woff2');
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 /* Metric-matched fallbacks. Until a web font arrives, text is drawn in a local
    face scaled to the web font's width and line box, so the swap moves almost
    nothing. size-adjust is the ratio of the web font's rendered width to the
@@ -155,7 +180,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
 }
 
 /* Prevent iOS auto-zoom on input focus (triggers when font-size < 16px) */
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 700px) {
     input,
     select,
     textarea {
@@ -166,59 +191,281 @@ input[type='time']::-webkit-calendar-picker-indicator {
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
+/* Light only at launch, as the mock is (build plan call #5). Nothing sets
+   html.dark any more; the variant stays registered only so the dark: classes
+   left in pages awaiting their rebuild never fire on a dark system setting.
+   Delete this line once `grep -r "dark:" resources/js` finds none. */
 @custom-variant dark (&:is(.dark *));
 
-@theme {
-    /* Typography */
+/* ─── Expadu design tokens ───────────────────────────────────────────────
+   A 1:1 copy of prototype/dev/design/connected/tokens.css, the mock's single
+   source for colour, type, spacing, shape, elevation and motion. Same names,
+   same values: CSS ported from the mock works unchanged, and a change to the
+   mock's tokens is a change here. Semantic names describe the job, not the
+   colour: one orange action per section; cyan means selected or travel;
+   lavender means Paperwork; amber means attention; coral means conflict.
+   Two deliberate differences: --font-sans keeps the metric-matched fallback
+   face, and the reference breakpoints are the Tailwind scale below. */
+:root {
+    /* ── Colour · surfaces ─────────────────────────────────────────────── */
+    --color-bg-canvas: #faf6ee; /* page background */
+    --color-bg-surface: #fffdf8; /* cards, sections, menus */
+    --color-bg-quiet: #f1ebdf; /* rows, inputs, hover */
+    --color-bg-inset: #f1ebdf; /* neutral pills */
+    --color-bg-hover: #e9e0cf; /* pressed neutral */
+    --color-bg-header: #fffdf8; /* app header */
+
+    /* ── Colour · lines ────────────────────────────────────────────────── */
+    --color-border: #e6ddcb; /* hairlines and separators (decorative) */
+    --color-border-strong: #8a8277; /* form controls: ≥3:1 on every surface */
+
+    /* ── Colour · text ─────────────────────────────────────────────────── */
+    --color-text: #211d15; /* titles, data, links */
+    --color-text-soft: #6e6657; /* body detail */
+    --color-text-muted: #6e6657; /* captions, labels */
+    --color-text-on-action: #ffffff;
+
+    /* ── Colour · action (one main action per section) ─────────────────── */
+    --color-action: #c23b0e;
+    --color-action-hover: #a9320b;
+    --color-action-text: #c23b0e; /* orange text actions on pale surfaces */
+    --color-action-tint: #fff4ec; /* hover behind outlined actions */
+
+    /* ── Colour · selection & travel ───────────────────────────────────── */
+    --color-select-bg: #def5f8;
+    --color-select-bg-hover: #cceef3;
+    --color-select-text: #00768b; /* teal: travel icons, line ink */
+    --color-focus: #00768b;
+
+    /* ── Colour · paperwork ────────────────────────────────────────────── */
+    --color-paper-bg: #efe7fb;
+    --color-paper-bg-quiet: #f3eefb;
+    --color-paper-text: #67409a;
+
+    /* ── Colour · attention (deadlines, tight timings, delays) ─────────── */
+    --color-attention-bg: #fff1d6;
+    --color-attention: #ffe49a;
+    --color-attention-border: #f1d79b;
+    --color-attention-text: #694207;
+
+    /* ── Colour · conflict (a plan that cannot work) ───────────────────── */
+    --color-conflict-bg: #fff0eb;
+    --color-conflict: #ffd9cc;
+    --color-conflict-border: #f2b8a8;
+    --color-conflict-text: #a2300e;
+
+    /* ── Colour · event posters (the Events Wall's inks; Today reuses them).
+       The hour picks the ink, the category the shape. ─────────────────── */
+    --poster-yellow: #ffe363;
+    --poster-purple: #4b2bb8;
+    --poster-night: #1b1840;
+    --poster-paper: #fff8e6;
+    --poster-green: #1f7a4d;
+    --poster-cream: #fff6d8;
+
+    /* ── Colour · section icons and brand ──────────────────────────────── */
+    --color-nav-teal: #00768b; /* Today, Travel */
+    --color-nav-violet: #7047ac; /* Events, Services */
+    --color-nav-rust: #b94b18; /* Paperwork */
+    --color-brand-orange: #ff3902; /* logo only */
+    --color-brand-cyan: #05badd; /* logo only */
+
+    /* ── Typography ────────────────────────────────────────────────────── */
     --font-sans:
-        'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+        Geist, 'Geist Fallback', system-ui, -apple-system, 'Segoe UI',
+        sans-serif;
+    --text-micro: 11px; /* smallest readable label */
+    --text-caption: 12px;
+    --text-small: 13px;
+    --text-control: 14px;
+    --text-body: 15px;
+    --text-section: 17px;
+    --text-title-sm: 20px;
+    --text-title: 24px;
+    --text-title-lg: 28px;
+    --text-display-sm: 32px; /* page heroes */
+    --text-display: 40px;
+    --text-display-lg: 52px; /* largest headline */
+    --text-display-fluid: clamp(36px, 4vw, 52px); /* plan times */
+
+    /* Only the weights that are loaded (Geist 400/500/600/700). */
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+
+    --leading-tight: 1.1;
+    --leading-snug: 1.25;
+    --leading-body: 1.5;
+
+    /* ── Spacing (2px base) ────────────────────────────────────────────── */
+    --space-2: 2px;
+    --space-4: 4px;
+    --space-6: 6px;
+    --space-8: 8px;
+    --space-10: 10px;
+    --space-12: 12px;
+    --space-14: 14px;
+    --space-16: 16px; /* phone page gutter */
+    --space-20: 20px;
+    --space-24: 24px; /* desktop section padding */
+    --space-32: 32px;
+    --space-40: 40px;
+
+    /* ── Shape ─────────────────────────────────────────────────────────── */
+    --radius-sm: 8px; /* badges, pills, small chips */
+    --radius-md: 12px; /* controls, rows, menu items */
+    --radius-lg: 16px; /* cards, menus, fields */
+    --radius-xl: 24px; /* sections, event cards, sheets */
+    --radius-pill: 999px; /* buttons, chips */
+    --radius-round: 50%; /* dots, avatars, icon buttons */
+    --touch-target: 44px;
+
+    /* ── Elevation ─────────────────────────────────────────────────────── */
+    --shadow-flat: 0 1px 0 #51453814;
+    --shadow-raised: 0 4px 20px #3e352b14;
+    --shadow-menu: 0 14px 32px -12px rgba(39, 36, 31, 0.28);
+    --shadow-sheet: 0 10px 30px #3e352b22;
+    --ring-focus: 0 0 0 2px var(--color-focus);
+
+    /* ── Motion ────────────────────────────────────────────────────────── */
+    --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-standard: ease;
+    --duration-fast: 120ms;
+    --duration-base: 180ms;
+    --duration-slow: 280ms;
+
+    /* ── Scrollbars (connected/scrollbars.css): thin, warm sand, no track,
+       still the browser's own bars so each person's setting holds. ────── */
+    --scrollbar-thumb: #c4b8a2;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+    color-scheme: light;
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --scrollbar-thumb: #8a8277;
+    }
+}
+
+/* ─── Tailwind theme: utilities for the tokens above ─────────────────────
+   `inline` so each utility reads the :root token, never a copy of it.
+   Breakpoints (media queries cannot use variables, so these are the values):
+   ≤359 small phone (max-sm:) · ≤700 phone (max-md:) · 701–999 tablet (md:)
+   · ≥1000 desktop (lg:) · ≥1500 caps the width (xl:). Adapt in between with
+   auto-fit grids and wrapping rows, not new breakpoints. */
+@theme inline {
+    --breakpoint-sm: 360px;
+    --breakpoint-md: 701px;
+    --breakpoint-lg: 1000px;
+    --breakpoint-xl: 1500px;
+    --breakpoint-2xl: initial;
+
+    /* Type: Geist for everything; Bricolage for posters and Composer titles. */
+    --font-sans: var(--font-sans);
+    --font-poster:
+        'Bricolage Grotesque', Geist, 'Geist Fallback', system-ui, sans-serif;
     --font-display: 'Fraunces', 'Fraunces Fallback', ui-serif, Georgia, serif;
     --font-mono: 'Geist Mono', ui-monospace, monospace;
 
-    /* Border radius */
-    --radius: 12px;
-    --radius-lg: 16px;
-    --radius-md: 12px;
-    --radius-sm: 8px;
-    --radius-xl: 20px;
+    --text-micro: var(--text-micro);
+    --text-caption: var(--text-caption);
+    --text-small: var(--text-small);
+    --text-control: var(--text-control);
+    --text-body: var(--text-body);
+    --text-section: var(--text-section);
+    --text-title-sm: var(--text-title-sm);
+    --text-title: var(--text-title);
+    --text-title-lg: var(--text-title-lg);
+    --text-display-sm: var(--text-display-sm);
+    --text-display: var(--text-display);
+    --text-display-lg: var(--text-display-lg);
+    --text-display-fluid: var(--text-display-fluid);
 
-    /* Map shadcn variables to Expadu tokens */
+    --leading-tight: var(--leading-tight);
+    --leading-snug: var(--leading-snug);
+    --leading-body: var(--leading-body);
+
+    --radius: var(--radius-md);
+    --radius-sm: var(--radius-sm);
+    --radius-md: var(--radius-md);
+    --radius-lg: var(--radius-lg);
+    --radius-xl: var(--radius-xl);
+    --radius-pill: var(--radius-pill);
+    --radius-round: var(--radius-round);
+
+    --shadow-flat: var(--shadow-flat);
+    --shadow-raised: var(--shadow-raised);
+    --shadow-menu: var(--shadow-menu);
+    --shadow-sheet: var(--shadow-sheet);
+
+    --ease-settle: var(--ease-settle);
+    --ease-standard: var(--ease-standard);
+
+    /* Token colours: bg-bg-canvas, text-text-soft, bg-action, bg-select-bg,
+       text-paper-text, bg-attention-bg, border-conflict-border, … */
+    --color-bg-canvas: var(--color-bg-canvas);
+    --color-bg-surface: var(--color-bg-surface);
+    --color-bg-quiet: var(--color-bg-quiet);
+    --color-bg-inset: var(--color-bg-inset);
+    --color-bg-hover: var(--color-bg-hover);
+    --color-bg-header: var(--color-bg-header);
+    --color-border-strong: var(--color-border-strong);
+    --color-text: var(--color-text);
+    --color-text-soft: var(--color-text-soft);
+    --color-text-muted: var(--color-text-muted);
+    --color-text-on-action: var(--color-text-on-action);
+    --color-action: var(--color-action);
+    --color-action-hover: var(--color-action-hover);
+    --color-action-text: var(--color-action-text);
+    --color-action-tint: var(--color-action-tint);
+    --color-select-bg: var(--color-select-bg);
+    --color-select-bg-hover: var(--color-select-bg-hover);
+    --color-select-text: var(--color-select-text);
+    --color-focus: var(--color-focus);
+    --color-paper-bg: var(--color-paper-bg);
+    --color-paper-bg-quiet: var(--color-paper-bg-quiet);
+    --color-paper-text: var(--color-paper-text);
+    --color-attention-bg: var(--color-attention-bg);
+    --color-attention: var(--color-attention);
+    --color-attention-border: var(--color-attention-border);
+    --color-attention-text: var(--color-attention-text);
+    --color-conflict-bg: var(--color-conflict-bg);
+    --color-conflict: var(--color-conflict);
+    --color-conflict-border: var(--color-conflict-border);
+    --color-conflict-text: var(--color-conflict-text);
+    --color-poster-yellow: var(--poster-yellow);
+    --color-poster-purple: var(--poster-purple);
+    --color-poster-night: var(--poster-night);
+    --color-poster-paper: var(--poster-paper);
+    --color-poster-green: var(--poster-green);
+    --color-poster-cream: var(--poster-cream);
+    --color-nav-teal: var(--color-nav-teal);
+    --color-nav-violet: var(--color-nav-violet);
+    --color-nav-rust: var(--color-nav-rust);
+    --color-brand-orange: var(--color-brand-orange);
+    --color-brand-cyan: var(--color-brand-cyan);
+
+    /* shadcn roles and the pre-mock names, read through the aliases below. */
     --color-background: var(--background);
     --color-foreground: var(--foreground);
-
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
-
     --color-popover: var(--popover);
     --color-popover-foreground: var(--popover-foreground);
-
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
-
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
-
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
-
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
-
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
-
-    --color-border: var(--border);
+    --color-border: var(--color-border);
     --color-input: var(--input);
     --color-ring: var(--ring);
-
-    --color-chart-1: var(--chart-1);
-    --color-chart-2: var(--chart-2);
-    --color-chart-3: var(--chart-3);
-    --color-chart-4: var(--chart-4);
-    --color-chart-5: var(--chart-5);
-
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);
@@ -227,21 +474,13 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
-
-    /* Expadu-specific tokens */
-    --color-surface-2: var(--surface-2);
-    --color-success: var(--success);
-    --color-success-soft: var(--success-soft);
-    --color-warn: var(--warn);
-    --color-warn-soft: var(--warn-soft);
-    --color-danger: var(--danger);
-    --color-danger-soft: var(--danger-soft);
-    --color-accent-soft: var(--accent-soft);
-    --color-accent-hover: var(--accent-hover);
-
-    /* v4 system — "orange acts, cyan locates" + supporting cast */
     --color-primary-soft: var(--primary-soft);
     --color-primary-hover: var(--primary-h);
+    --color-accent-soft: var(--accent-soft);
+    --color-accent-hover: var(--accent-hover);
+    --color-surface-2: var(--surface-2);
+    --color-text-2: var(--text-2);
+    --color-text-3: var(--text-3);
     --color-cyan: var(--cyan);
     --color-cyan-h: var(--cyan-h);
     --color-cyan-soft: var(--cyan-soft);
@@ -252,165 +491,73 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-amber-soft: var(--amber-soft);
     --color-navy: var(--navy);
     --color-navy-soft: var(--navy-soft);
-    --color-text-2: var(--text-2);
-    --color-text-3: var(--text-3);
-
-    /* v4 soft elevation — one shadow, theme-aware via --shadow */
+    --color-success: var(--success);
+    --color-success-soft: var(--success-soft);
+    --color-warn: var(--warn);
+    --color-warn-soft: var(--warn-soft);
+    --color-danger: var(--danger);
+    --color-danger-soft: var(--danger-soft);
     --shadow-card: var(--shadow);
 }
 
-/* ─── Light Theme (Expadu v4 — warm paper) ─── */
+/* ─── Pre-mock names ─────────────────────────────────────────────────────
+   shadcn's roles (ui/*) and the v4 names that pages awaiting their rebuild
+   still read, as Tailwind colours and as raw var(--…), each mapped to the
+   nearest token role. New UI uses the tokens; each alias goes when the last
+   page reading it is rebuilt. */
 :root {
-    /* Core surfaces — warm paper canvas */
-    --background: #faf6ee;
-    --foreground: #211d15;
-    --card: #fffdf8;
-    --card-foreground: #211d15;
-    --popover: #fffdf8;
-    --popover-foreground: #211d15;
-
-    /* Primary = Expadu hot orange — "orange acts" */
-    --primary: #ff3902;
-    --primary-foreground: #ffffff;
-    --primary-soft: #ffe3d8;
-    --primary-h: #e02f00;
-
-    /* Cyan = origin & distance — "cyan locates" */
-    --cyan: #05badd;
-    --cyan-h: #0a7f99;
-    --cyan-soft: #d8f3fb;
-    --cyan-bd: #aedfeb;
-
-    /* Secondary / muted / accent = surface-2 inset */
-    --secondary: #f1ebdf;
-    --secondary-foreground: #211d15;
-    --muted: #f1ebdf;
-    --muted-foreground: #6e6657;
-    --accent: #f1ebdf;
-    --accent-foreground: #211d15;
-
-    /* Destructive */
-    --destructive: #c4271a;
-    --destructive-foreground: #ffffff;
-
-    /* Borders & inputs */
-    --border: #e6ddcb;
-    --input: #e6ddcb;
-    --ring: #ff3902;
-
-    /* Chart colors */
-    --chart-1: #ff3902;
-    --chart-2: #0f7a4f;
-    --chart-3: #e8a200;
-    --chart-4: #2b4871;
-    --chart-5: #05badd;
-
-    /* Sidebar */
-    --sidebar: #faf6ee;
-    --sidebar-foreground: #211d15;
-    --sidebar-primary: #ff3902;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #ffe3d8;
-    --sidebar-accent-foreground: #ff3902;
-    --sidebar-border: #e6ddcb;
-    --sidebar-ring: #ff3902;
-
-    /* Expadu-specific — supporting cast */
-    --surface-2: #f1ebdf;
-    --orange: #ff8007;
-    --orange-soft: #ffe7cf;
-    --amber: #e8a200;
-    --amber-soft: #fff0cd;
+    --background: var(--color-bg-canvas);
+    --foreground: var(--color-text);
+    --card: var(--color-bg-surface);
+    --card-foreground: var(--color-text);
+    --popover: var(--color-bg-surface);
+    --popover-foreground: var(--color-text);
+    --primary: var(--color-action);
+    --primary-foreground: var(--color-text-on-action);
+    --primary-soft: var(--color-action-tint);
+    --primary-h: var(--color-action-hover);
+    --secondary: var(--color-bg-quiet);
+    --secondary-foreground: var(--color-text);
+    --muted: var(--color-bg-quiet);
+    --muted-foreground: var(--color-text-muted);
+    --accent: var(--color-bg-quiet);
+    --accent-foreground: var(--color-text);
+    --accent-soft: var(--color-action-tint);
+    --accent-hover: var(--color-action-hover);
+    --destructive: var(--color-conflict-text);
+    --destructive-foreground: var(--color-text-on-action);
+    --border: var(--color-border);
+    --input: var(--color-border-strong);
+    --ring: var(--color-focus);
+    --sidebar: var(--color-bg-canvas);
+    --sidebar-foreground: var(--color-text);
+    --sidebar-primary: var(--color-action);
+    --sidebar-primary-foreground: var(--color-text-on-action);
+    --sidebar-accent: var(--color-select-bg);
+    --sidebar-accent-foreground: var(--color-text);
+    --sidebar-border: var(--color-border);
+    --sidebar-ring: var(--color-focus);
+    --surface-2: var(--color-bg-quiet);
+    --cyan: var(--color-select-text);
+    --cyan-h: var(--color-select-text);
+    --cyan-soft: var(--color-select-bg);
+    --cyan-bd: var(--color-select-bg-hover);
+    --orange: var(--color-action);
+    --orange-soft: var(--color-action-tint);
+    --amber: var(--color-attention-text);
+    --amber-soft: var(--color-attention-bg);
+    --warn: var(--color-attention-text);
+    --warn-soft: var(--color-attention-bg);
+    --danger: var(--color-conflict-text);
+    --danger-soft: var(--color-conflict-bg);
     --navy: #2b4871;
     --navy-soft: #e1e7f1;
     --success: #0f7a4f;
     --success-soft: #e2f3ea;
-    --warn: #c47d0e;
-    --warn-soft: #faecd0;
-    --danger: #c4271a;
-    --danger-soft: #fbe2de;
-    --accent-soft: #ffe3d8; /* back-compat alias → primary-soft */
-    --accent-hover: #e02f00; /* back-compat alias → primary-h */
-
-    /* Text hierarchy */
-    --text-1: #211d15;
-    --text-2: #6e6657;
-    --text-3: #a89f8c;
-
-    /* One soft shadow for raised surfaces */
-    --shadow:
-        0 1px 2px rgba(33, 29, 21, 0.05), 0 8px 28px rgba(33, 29, 21, 0.06);
-}
-
-/* ─── Dark Theme (Expadu v4) ─── */
-.dark {
-    --background: #161208;
-    --foreground: #f7f3e9;
-    --card: #211c12;
-    --card-foreground: #f7f3e9;
-    --popover: #211c12;
-    --popover-foreground: #f7f3e9;
-
-    --primary: #ff5c33;
-    --primary-foreground: #ffffff;
-    --primary-soft: #3a1c11;
-    --primary-h: #ff7656;
-
-    --cyan: #3ccfee;
-    --cyan-h: #62d9f1;
-    --cyan-soft: #10303a;
-    --cyan-bd: #1d4350;
-
-    --secondary: #2c2618;
-    --secondary-foreground: #f7f3e9;
-    --muted: #2c2618;
-    --muted-foreground: #a89f8c;
-    --accent: #2c2618;
-    --accent-foreground: #f7f3e9;
-
-    --destructive: #ef6a4d;
-    --destructive-foreground: #ffffff;
-
-    --border: #3b3424;
-    --input: #3b3424;
-    --ring: #ff5c33;
-
-    --chart-1: #ff5c33;
-    --chart-2: #3bbd82;
-    --chart-3: #ffc94d;
-    --chart-4: #7ea4dc;
-    --chart-5: #3ccfee;
-
-    --sidebar: #211c12;
-    --sidebar-foreground: #f7f3e9;
-    --sidebar-primary: #ff5c33;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #3a1c11;
-    --sidebar-accent-foreground: #ff5c33;
-    --sidebar-border: #3b3424;
-    --sidebar-ring: #ff5c33;
-
-    --surface-2: #2c2618;
-    --orange: #ff9b3d;
-    --orange-soft: #33240f;
-    --amber: #ffc94d;
-    --amber-soft: #2e2510;
-    --navy: #7ea4dc;
-    --navy-soft: #1d2738;
-    --success: #3bbd82;
-    --success-soft: #13241c;
-    --warn: #e0a93c;
-    --warn-soft: #2a2110;
-    --danger: #ef6a4d;
-    --danger-soft: #2c1712;
-    --accent-soft: #3a1c11; /* back-compat alias → primary-soft */
-    --accent-hover: #ff7656; /* back-compat alias → primary-h */
-
-    --text-1: #f7f3e9;
-    --text-2: #a89f8c;
-    --text-3: #6e6657;
-
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.32);
+    --text-1: var(--color-text);
+    --text-2: var(--color-text-soft);
+    --text-3: var(--color-text-muted);
+    --shadow: var(--shadow-raised);
 }
 
 /* ─── Category tints (Places / Events / Today cards) ─── */
@@ -449,34 +596,6 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --cat-tint: #ffded2;
     --cat-mark: #d2461f;
 }
-.dark .cat-park {
-    --cat-tint: #26432a;
-}
-.dark .cat-swimming,
-.dark .cat-music,
-.dark .cat-meetup {
-    --cat-tint: #11313a;
-}
-.dark .cat-pitch,
-.dark .cat-court,
-.dark .cat-sport,
-.dark .cat-sports {
-    --cat-tint: #3a2a14;
-}
-.dark .cat-culture,
-.dark .cat-language {
-    --cat-tint: #212f59;
-}
-.dark .cat-playground,
-.dark .cat-stammtisch,
-.dark .cat-cafe {
-    --cat-tint: #352b15;
-}
-.dark .cat-dog_park,
-.dark .cat-event,
-.dark .cat-party {
-    --cat-tint: #3a2015;
-}
 
 @layer utilities {
     /* Standard section padding: 24px vertical, 10px horizontal on mobile, 24px on desktop */
@@ -488,6 +607,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
 @layer base {
     * {
         @apply border-border;
+        scrollbar-width: thin;
     }
 
     body {
@@ -509,6 +629,3 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .animate-fade-up {
     animation: fadeUp 0.3s ease both;
 }
-
-/* The sidebar is a fixed 248px column (Sidebar collapsible="none") on md+ and
-   hidden on mobile (MobileDock takes over) — no rail/overlay CSS needed. */

@@ -6,7 +6,6 @@ import { createRoot, hydrateRoot } from 'react-dom/client';
 import { showToast } from '@/components/flash-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import '../css/app.css';
-import { initializeTheme } from '@/hooks/use-appearance';
 
 /**
  * Lightweight error boundary that renders immediately (no Sentry dependency).
@@ -105,9 +104,6 @@ createInertiaApp({
         color: '#4B5563',
     },
 });
-
-// This will set light / dark mode on load...
-initializeTheme();
 
 // After a deploy the hashed chunk files an open tab points at are gone, so the
 // next lazy import (a page, the map) 404s. Reload once to pick up the new build.

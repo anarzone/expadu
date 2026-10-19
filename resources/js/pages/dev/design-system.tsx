@@ -315,7 +315,7 @@ export default function DesignSystem() {
                     title="Warm neutrals"
                     lead="The paper-and-ink base. Every screen is built from these before a single accent is added — which is what keeps the accents loud."
                 >
-                    <div className="grid grid-cols-2 gap-[15px] sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-[15px] md:grid-cols-4">
                         {NEUTRALS.map((s) => (
                             <Surface key={s.token} className="overflow-hidden">
                                 <div
@@ -429,7 +429,7 @@ export default function DesignSystem() {
                         {ACCENTS.map((a) => (
                             <div
                                 key={a.name}
-                                className="grid grid-cols-[170px_1fr] items-center gap-4 border-b border-border py-3.5 sm:grid-cols-[170px_1fr_80px_80px]"
+                                className="grid grid-cols-[170px_1fr] items-center gap-4 border-b border-border py-3.5 md:grid-cols-[170px_1fr_80px_80px]"
                             >
                                 <div className="flex items-center gap-2.5">
                                     <span
@@ -456,11 +456,11 @@ export default function DesignSystem() {
                                 </div>
                                 <Tag
                                     tone={a.tone}
-                                    className="hidden justify-center sm:flex"
+                                    className="hidden justify-center md:flex"
                                 >
                                     soft
                                 </Tag>
-                                <div className="hidden items-center justify-center sm:flex">
+                                <div className="hidden items-center justify-center md:flex">
                                     {a.name === 'Danger' ? (
                                         <CountBadge>5</CountBadge>
                                     ) : (
