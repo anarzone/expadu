@@ -109,6 +109,13 @@ export type TripOption = {
     status: 'fits' | 'tight' | 'late' | 'cancelled';
     mode: Journey['mode'];
     lines: string[];
+    /** The first ride: the tram the person knows it by ("Your 13:24"). */
+    ride: {
+        line: string | null;
+        mode: string;
+        time: string;
+        from: string;
+    } | null;
     /** From the legs' realtime flags: live times, or the timetable's. */
     time_basis: 'live' | 'scheduled';
 };

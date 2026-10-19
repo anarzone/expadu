@@ -204,6 +204,7 @@ class NextTrip
     {
         $tz = 'Europe/Berlin';
         $journey = $option['journey'];
+        $ride = collect($journey->legs)->first(fn (Leg $leg) => $leg->isTransit());
 
         return [
             'leave_at' => $journey->departAt->setTimezone($tz)->toIso8601String(),
@@ -219,6 +220,13 @@ class NextTrip
             },
             'mode' => $journey->mode(),
             'lines' => $journey->lines(),
+            // The tram the person knows it by ("Your 13:24"), not when they leave the door.
+            'ride' => $ride === null ? null : [
+                'line' => $ride->lineName,
+                'mode' => $ride->mode,
+                'time' => $ride->departAt->setTimezone($tz)->format('H:i'),
+                'from' => $ride->from->name,
+            ],
             'time_basis' => $option['realtime'] ? 'live' : 'scheduled',
         ];
     }

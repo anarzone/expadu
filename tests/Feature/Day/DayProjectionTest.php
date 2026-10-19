@@ -210,6 +210,8 @@ test('an official appointment takes the earlier tram when the later one leaves u
         ->assertJsonPath('next_trip.skipped.leave_time', '13:24')
         ->assertJsonPath('next_trip.skipped.spare_min', 8)
         ->assertJsonPath('next_trip.skipped.status', 'tight')
+        ->assertJsonPath('next_trip.skipped.ride.time', '13:24')
+        ->assertJsonPath('next_trip.skipped.ride.line', '4')
         ->assertJsonPath('next_trip.time_basis', 'scheduled')
         ->assertJsonPath('next_trip.from.source', 'live');
 
