@@ -448,7 +448,7 @@
                     .join('');
                 const anyOpen = ids.map(eventFor).some((x) => x && x.date >= today());
                 return posters
-                    ? `<div class="event-posters">${posters}</div>${anyOpen ? '<p class="answer-fine">Adding one isn’t a booking. Composer asks before it changes your plan.</p>' : ''}`
+                    ? `<div class="event-posters">${posters}</div>${anyOpen ? '<p class="answer-fine">Adding one isn’t a booking. It goes into your plan, and you can undo it.</p>' : ''}`
                     : '';
             }
             if (entry.kind === 'journey') {
