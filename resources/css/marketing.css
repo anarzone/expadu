@@ -99,6 +99,14 @@
     --font-display: 'Bricolage Grotesque', Geist, system-ui, sans-serif;
     --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    /* The landing's Cologne palette, for the colour cards. */
+    --yellow: #ffe363;
+    --yellow-soft: #fff6c2;
+    --cyan-soft: #c9f1fa;
+    --lilac: #dccbff;
+    --lilac-soft: #ece4ff;
+    --violet-ink: #2a0f5c;
+    --peach: #ffe0d4;
 }
 
 /* ── Base ───────────────────────────────────────────────────────── */
@@ -222,52 +230,143 @@ section {
     font-size: 14px;
 }
 
-/* ── Tools ──────────────────────────────────────────────────────── */
-.tool-grid {
+/* ── Colour cards (tools and guides) ────────────────────────────────
+ * The landing's link cards, grown up: a solid slab from the Cologne
+ * palette, no outline or shadow, a big display title and an ink pill. */
+.tool-grid,
+.post-list {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
 }
-@media (max-width: 860px) {
-    .tool-grid {
+@media (max-width: 760px) {
+    .tool-grid,
+    .post-list {
         grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
     }
 }
-.tool {
-    background: var(--card);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    padding: 22px;
-    box-shadow: var(--shadow);
+.tool,
+.post-card {
+    --tone: var(--yellow);
+    --tone-ink: var(--ink);
     display: flex;
     flex-direction: column;
-}
-.tool .free {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--good);
-    background: var(--good-soft);
-    border-radius: 999px;
-    padding: 3px 10px;
-    align-self: flex-start;
-}
-.tool h3 {
-    font-size: 1.15rem;
-    margin: 12px 0 6px;
-}
-.tool p {
-    font-size: 14px;
-    color: var(--muted);
-    margin: 0 0 16px;
-}
-.tool a {
-    margin-top: auto;
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--primary-text);
+    align-items: flex-start;
+    min-height: 300px;
+    padding: 30px 32px;
+    border-radius: 32px;
+    background: var(--tone);
+    color: var(--tone-ink);
     text-decoration: none;
+    transition: transform 0.18s ease;
+}
+.tool:hover,
+.post-card:hover {
+    transform: translateY(-3px);
+}
+.tool:focus-visible,
+.post-card:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 4px;
+}
+.tool--cyan {
+    --tone: var(--cyan-soft);
+}
+.tool--lilac {
+    --tone: var(--lilac);
+    --tone-ink: var(--violet-ink);
+}
+.tool--peach {
+    --tone: var(--peach);
+}
+.tool__ico {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 28px;
+    border-radius: 18px;
+    background: var(--ink);
+    color: var(--tone);
+}
+.tool__ico svg {
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.nobr {
+    white-space: nowrap;
+}
+.mk-kicker {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.78;
+}
+.tool h3,
+.post-card h3 {
+    margin: 8px 0 12px;
+    font-size: clamp(1.75rem, 2.6vw, 2.25rem);
+    line-height: 1.02;
+}
+.tool p,
+.post-card p {
+    max-width: 44ch;
+    margin: 0 0 28px;
+    font-size: 15.5px;
+    line-height: 1.55;
+}
+.mk-go {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    margin-top: auto;
+    padding: 0 22px;
+    border-radius: 999px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+}
+.mk-go svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.18s ease;
+}
+.tool:hover .mk-go svg,
+.post-card:hover .mk-go svg {
+    transform: translateX(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+    .tool,
+    .post-card,
+    .mk-go svg {
+        transition: none;
+    }
+    .tool:hover,
+    .post-card:hover {
+        transform: none;
+    }
+}
+@media (max-width: 560px) {
+    .tool,
+    .post-card {
+        min-height: 0;
+        padding: 26px 24px;
+        border-radius: 28px;
+    }
 }
 
 /* ── Legal / prose pages ────────────────────────────────────────── */
@@ -315,11 +414,9 @@ section {
     margin: 10px 0 8px;
 }
 .tool-form {
-    background: var(--card);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    padding: 22px 24px;
-    box-shadow: var(--shadow);
+    background: var(--surface2);
+    border-radius: 32px;
+    padding: 30px 32px;
     margin-top: 28px;
     display: flex;
     flex-direction: column;
@@ -362,10 +459,9 @@ section {
     margin-top: 5px;
 }
 .tool-result {
-    border: 1.5px solid var(--primary);
-    background: var(--primary-soft);
-    border-radius: 20px;
-    padding: 20px 24px;
+    background: var(--yellow-soft);
+    border-radius: 32px;
+    padding: 26px 32px;
     margin-top: 18px;
 }
 .tool-result:empty {
@@ -419,11 +515,10 @@ section {
     color: var(--primary-text);
 }
 .tool-cta {
-    border: 1px solid var(--border-soft);
-    background: var(--card);
-    box-shadow: var(--shadow);
-    border-radius: 20px;
-    padding: 20px 24px;
+    background: var(--lilac);
+    color: var(--violet-ink);
+    border-radius: 32px;
+    padding: 26px 32px;
     margin-top: 26px;
     display: flex;
     align-items: center;
@@ -438,44 +533,21 @@ section {
 }
 
 /* ── Blog ───────────────────────────────────────────────────────── */
-.post-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
 .post-card {
-    display: block;
-    background: var(--card);
-    border: 1px solid var(--border-soft);
-    border-radius: 20px;
-    padding: 22px 26px;
-    box-shadow: var(--shadow);
-    text-decoration: none;
-    transition: transform 0.15s ease;
+    --tone: var(--lilac-soft);
+    --tone-ink: var(--violet-ink);
 }
-.post-card:hover {
-    transform: translateY(-2px);
+.post-card:nth-child(4n + 2) {
+    --tone: var(--peach);
+    --tone-ink: var(--ink);
 }
-.post-card h3 {
-    font-size: 1.3rem;
-    margin: 6px 0 6px;
+.post-card:nth-child(4n + 3) {
+    --tone: var(--cyan-soft);
+    --tone-ink: var(--ink);
 }
-.post-card p {
-    color: var(--muted);
-    font-size: 14.5px;
-    margin: 0 0 10px;
-}
-.post-date {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-}
-.post-more {
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--primary-text);
+.post-card:nth-child(4n + 4) {
+    --tone: var(--yellow-soft);
+    --tone-ink: var(--ink);
 }
 .post h1 {
     margin-top: 8px;
@@ -570,9 +642,9 @@ section {
     background: var(--surface2);
 }
 .mpick-grid button[aria-pressed='true'] {
-    background: var(--primary-soft);
-    border-color: var(--primary);
-    color: var(--primary-text);
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
 }
 .mpick-grid button:disabled {
     opacity: 0.3;
@@ -639,14 +711,14 @@ section {
     padding: 8px 15px;
     border-radius: 999px;
     border: 1.5px solid var(--border);
-    background: transparent;
-    color: var(--muted);
+    background: #fff;
+    color: var(--ink);
     cursor: pointer;
 }
 .chips-row button[aria-pressed='true'] {
-    background: var(--primary-soft);
-    border-color: var(--primary);
-    color: var(--primary-text);
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
 }
 
 .slider-row {
@@ -772,14 +844,14 @@ details.more .inner {
     padding: 5px 11px;
     border-radius: 999px;
     border: 1.5px solid var(--border);
-    background: transparent;
-    color: var(--muted);
+    background: #fff;
+    color: var(--ink);
     cursor: pointer;
 }
 .mini-chips button[aria-pressed='true'] {
-    background: var(--primary-soft);
-    border-color: var(--primary);
-    color: var(--primary-text);
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
 }
 .emp-line {
     border-top: 1px dashed var(--border-soft);
@@ -1515,29 +1587,4 @@ details.more .inner {
     .xv .xv-btn--sm {
         padding: 0 16px;
     }
-}
-
-/* ── The working surfaces in the new design ───────────────────────
- * Cards get the landing's ink outline and offset shadow; links and
- * small labels use ink and orange instead of the old cream palette. */
-.tool,
-.post-card,
-.tool-form,
-.tool-result {
-    border: 2px solid var(--ink);
-    border-radius: 24px;
-    box-shadow: 0 10px 0 -2px var(--ink);
-}
-.tool h3,
-.post-card h2,
-.post-card h3 {
-    font-size: 1.45rem;
-    letter-spacing: -0.03em;
-}
-.tool .free {
-    font-family: var(--font-sans);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0;
-    text-transform: none;
 }
