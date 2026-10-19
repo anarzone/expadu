@@ -1,6 +1,6 @@
 @extends('marketing.layout')
 
-@section('title', 'Expadu — Your new city, joined up')
+@section('title', 'Expadu — Your new city, joined up · Cologne, in English')
 @section('meta_description', 'Expadu is the daily companion for expats, starting with Cologne: when to leave for the appointment, what to bring and something good for afterwards — in plain English, with paperwork linked to its official sources.')
 @section('canonical', route('home'))
 @section('body_class', 'xv-body')
