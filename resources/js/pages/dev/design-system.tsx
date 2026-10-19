@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import {
     Button,
@@ -204,11 +204,6 @@ const PRINCIPLES = [
         t: 'Soft tints over solid fills',
         d: 'Prefer a tinted icon or soft chip to a fully saturated card. Saturation is a budget; spend it on what matters.',
     },
-    {
-        n: '06',
-        t: 'Both themes, same roles',
-        d: 'Dark mode brightens accents for contrast but never reassigns meaning. The mapping holds in light and dark.',
-    },
 ];
 
 const CATEGORY_TINTS = [
@@ -223,27 +218,6 @@ const CATEGORY_TINTS = [
 export default function DesignSystem() {
     const [mode, setMode] = useState('walk');
     const [cat, setCat] = useState('parks');
-    // Adopt the app's current theme on first render (read, don't set-in-effect).
-    const [dark, setDark] = useState(
-        () =>
-            typeof document !== 'undefined' &&
-            document.documentElement.classList.contains('dark'),
-    );
-
-    // Restore the app's theme when leaving this page (we drive <html> below).
-    useEffect(() => {
-        const original = document.documentElement.classList.contains('dark');
-
-        return () => {
-            document.documentElement.classList.toggle('dark', original);
-        };
-    }, []);
-
-    // The --color-* token indirection resolves at :root, so dark mode must
-    // toggle on <html> — a nested wrapper class won't flip the tokens.
-    useEffect(() => {
-        document.documentElement.classList.toggle('dark', dark);
-    }, [dark]);
 
     return (
         <div className="min-h-screen bg-background pb-20 text-foreground">
@@ -251,7 +225,7 @@ export default function DesignSystem() {
 
             {/* topbar */}
             <div className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md">
-                <div className="mx-auto flex max-w-[1060px] items-center justify-between px-11 py-[15px]">
+                <div className="mx-auto flex max-w-[1060px] items-center px-11 py-[15px]">
                     <div className="flex items-center gap-2.5">
                         <div className="flex size-[34px] items-center justify-center rounded-[10px] bg-primary font-display text-[18px] font-semibold text-white">
                             E
@@ -265,13 +239,6 @@ export default function DesignSystem() {
                             </div>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => setDark((d) => !d)}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-3.5 py-[7px] text-[12.5px] font-semibold"
-                    >
-                        {dark ? 'Light' : 'Dark'} mode
-                    </button>
                 </div>
             </div>
 
