@@ -250,20 +250,9 @@
               })
             : '';
     function connectedContent() {
-        let savedJourneys = [];
-        try {
-            savedJourneys = JSON.parse(
-                localStorage.getItem('expadu-departures-next-saved'),
-            );
-        } catch {
-            /* Missing storage is an empty collection. */
-        }
         return TodayContinuity.project({
             shared: S.read(),
             workspace: S.studio(),
-            savedJourneys,
-            journeyModel: JourneyModel,
-            categories: ExpaduModel.categories,
         });
     }
     const enrichment = window.TodayEnrichment?.create({
@@ -497,7 +486,7 @@
         if (enrichment) return enrichment.cityHelp();
         return `<section class="city-help" aria-labelledby="city-help-title"><div class="section-head"><h2 id="city-help-title">City help</h2></div>
             <button class="city-forecast" data-today-weather aria-label="Open the sample Cologne forecast"><span class="forecast-place">${E(day.city)}<small>Sample forecast</small></span><span class="forecast-now">${I('sun')}<strong>21°</strong></span><span class="forecast-hours"><span>17:00 <b>20°</b></span><span>20:00 <b>18°</b></span></span></button>
-            <div class="city-services"><a href="${S.routes.services}?service=doctors">${I('health')}<span>Find a doctor</span></a><a href="${S.routes.departures}">${I('train')}<span>Plan a journey</span></a></div>
+            <div class="city-services"><a href="${S.routes.departures}">${I('train')}<span>Plan a journey</span></a></div>
         </section>`;
     }
     function savedIdeas(content = connectedContent()) {
@@ -532,80 +521,24 @@
     }
     function continuity(content = connectedContent(), columns = false) {
         const c = content.composer;
-        const todayDecision = window.TodayContent?.priority(
-            day,
-            content,
-        ).todayDecision;
-        const journey = JourneyModel.capture;
-        const starters = `<div class="next-starters"><button data-today-add>${I('plus')}Add a plan</button><a href="${S.routes.departures}">${I('train')}Plan a journey</a><a href="${S.routes.services}">${I('grid')}Find a service</a></div>`;
+        const starters = `<div class="next-starters"><button data-today-add>${I('plus')}Add a plan</button><a href="${S.routes.departures}">${I('train')}Plan a journey</a></div>`;
         if (!content.hasContinuation && !columns) return '';
         const composer = c
             ? `<article class="continue-composer"><div class="continue-head"><span class="continue-kind">${I('spark')}Composer</span><span class="continue-state">${E(c.status)}</span></div>
-            <div class="continue-summary"><h3>${E(todayDecision ? 'Finish today’s plan' : c.title)}</h3>${c.date ? `<p>${E(shortDate(c.date))}${c.items.length ? ` · ${c.items.length === 1 ? '1 activity' : `${c.items.length} activities`}` : ''}</p>` : ''}</div>
+            <div class="continue-summary"><h3>${E(c.title)}</h3></div>
             ${enrichment ? enrichment.excerpt(c) : c.excerpt ? `<p class="continue-excerpt">${E(c.excerpt)}</p>` : ''}
-            ${
-                c.items.length
-                    ? `<ol class="continue-items">${[...c.items]
-                          .sort((a, b) =>
-                              (a.start || '99:99').localeCompare(
-                                  b.start || '99:99',
-                              ),
-                          )
-                          .slice(0, 3)
-                          .map(
-                              (item) =>
-                                  `<li><span class="continue-item-dot" aria-hidden="true"></span><strong>${E(item.title)}</strong>${item.start ? `<time>${E(item.start)}</time>` : '<small>Time to choose</small>'}</li>`,
-                          )
-                          .join('')}</ol>`
-                    : ''
-            }
-            ${c.items.length > 3 || (c.pending && !enrichment) ? `<p class="continue-more">${c.items.length > 3 ? `+${c.items.length - 3} more in your plan` : ''}${c.pending && !enrichment ? ` ${c.pending} more ${c.pending === 1 ? 'selection' : 'selections'} to review` : ''}</p>` : ''}
-            ${enrichment?.decision(c) || ''}
             <div class="continue-actions"><button class="outline-action" data-today-resume>${E(c.action)}</button><button class="text-action" data-today-workspace="history">History</button>${columns ? '<button class="text-action" data-today-workspace="plans">My plans</button>' : ''}</div>
         </article>`
             : '';
-        const travel = content.journeys.length
-            ? `<section class="continue-travel" aria-labelledby="continue-travel-title"><div class="continue-head"><h3 id="continue-travel-title">Saved journeys</h3><span class="record-label">Sample routes</span></div>
-            ${content.journeys
-                .slice(0, 2)
-                .map(
-                    (route) =>
-                        `<a class="continue-route" href="${S.routes.departures}?route=${encodeURIComponent(route.id)}&date=${journey.date}&time=${journey.time}"><span class="continue-mode">${I(route.mode === 'transit' ? 'train' : route.mode)}${route.line ? `<b>${E(route.line)}</b>` : ''}</span><span><strong>${E(journey.to)}</strong><small>From ${E(journey.from)} · ${route.duration} min</small></span></a>`,
-                )
-                .join('')}
-            <div class="continue-travel-foot"><small>Captured ${E(shortDate(journey.date))} · not live</small><a href="${S.routes.departures}?view=timetable&stop=${encodeURIComponent(journey.boardingStop.id)}">Check departures</a></div>
-        </section>`
-            : '';
-        const requests = content.requests.length
-            ? `<section class="continue-services" aria-labelledby="continue-services-title"><div class="continue-head"><h3 id="continue-services-title">Your requests</h3><span class="record-label">Nothing booked</span></div>
-            ${content.requests
-                .slice(0, 2)
-                .map((request) => {
-                    const category = ExpaduModel.categories.find(
-                        (item) => item.id === request.category,
-                    );
-                    const meta = [
-                        request.requirements.area,
-                        request.requirements.language,
-                    ]
-                        .filter(Boolean)
-                        .join(' · ');
-                    return `<a class="continue-request" href="${S.routes.services}?service=${encodeURIComponent(request.category)}" aria-label="Continue request: ${E(request.title)}"><span class="request-symbol">${I(category.icon)}</span><span><strong>${E(request.title)}</strong>${meta ? `<small>${E(meta)}</small>` : ''}<small class="request-progress">Requirements saved</small></span></a>`;
-                })
-                .join('')}
-            ${content.requests.length > 2 ? `<a class="continue-all-requests" href="${S.routes.services}">All ${content.requests.length} requests</a>` : ''}
-        </section>`
-            : '';
-        const support = travel || requests ? travel + requests : '';
         if (columns) {
             return {
                 personal: c
                     ? `<section class="column-continuation" aria-label="Pick up where you left off">${composer}</section>`
                     : '',
-                support: `<div class="continue-support">${travel || requests ? travel + requests : c ? support : ''}${enrichment?.cityUpdates() || ''}</div>`,
+                support: `<div class="continue-support">${enrichment?.cityUpdates() || ''}</div>`,
             };
         }
-        return `<section class="continuity" aria-labelledby="continuity-title"><div class="continuity-heading"><h2 id="continuity-title">Pick up where you left off</h2><button class="text-action" data-today-workspace="plans">My plans</button></div><div class="continuity-grid ${c ? 'has-composer' : ''} has-support">${composer}<div class="continue-support">${support}${enrichment?.cityUpdates() || ''}</div></div>${!c ? starters : ''}</section>`;
+        return `<section class="continuity" aria-labelledby="continuity-title"><div class="continuity-heading"><h2 id="continuity-title">Pick up where you left off</h2><button class="text-action" data-today-workspace="plans">My plans</button></div><div class="continuity-grid ${c ? 'has-composer' : ''} has-support">${composer}<div class="continue-support">${enrichment?.cityUpdates() || ''}</div></div>${!c ? starters : ''}</section>`;
     }
     function welcome() {
         return day.firstVisit
@@ -698,7 +631,7 @@
         main.innerHTML = `${greeting()}${deadlineStrip()}${welcome()}
             ${featured ? `<section class="event-spotlight" aria-label="Today’s event highlight">${eventCard(featured, true)}</section>` : ''}
             <div class="today-workspace"><div class="daily-canvas"><div class="day-area">${preparation()}${agenda()}${enrichment ? `<div id="around-plan-slot">${enrichment.around(content)}</div>` : ''}${savedIdeas(content)}${comingUp()}${columnFlow ? `<div id="personal-continuity-slot">${renderedContinuation.personal}</div>` : ''}</div>
-                <div class="next-area"><div class="practical-surface">${enrichment ? `<div class="practical-personal">${paperwork()}${enrichment.services()}</div>` : paperwork()}${cityHelp()}</div>
+                <div class="next-area"><div class="practical-surface">${enrichment ? `<div class="practical-personal">${paperwork()}</div>` : paperwork()}${cityHelp()}</div>
                     <section class="discovery" aria-labelledby="discovery-title"><div class="discovery-heading">${discoveryHeading()}<a href="${S.routes.events}">All events</a></div>${discoveries.length ? `<div class="event-rail" aria-label="Sample events. Swipe to browse." tabindex="0">${discoveries.map((item) => eventCard(item)).join('')}</div>` : ''}${enrichment?.compactEvents(eligibleEvents.filter((item) => item.compact && item.id !== nearbyEventId)) || ''}${!eligibleEvents.length ? '<p class="discovery-empty">More dates and ideas in Events.</p>' : ''}</section>
                     ${columnFlow ? `<div id="support-continuity-slot">${renderedContinuation.support}</div>` : ''}
                 </div>
@@ -1311,12 +1244,8 @@
             S.go('composer', { panel: data.todayWorkspace });
         }
         if ('todayResume' in data) {
-            const composer = connectedContent().composer;
             persist();
-            S.go(
-                'composer',
-                composer?.kind === 'proposal' ? { date: composer.date } : {},
-            );
+            S.go('composer', {});
         }
         if ('todayAccount' in data)
             U.open(

@@ -176,23 +176,9 @@
                         '',
                     )}</div><p class="discovery-sample">30 Sept · Sample programme</p>`;
             }
-            function decision(composer) {
-                const next = C.decision(composer, getDay());
-                // The card's status already says it awaits review; only show a
-                // decision that asks for something specific.
-                if (
-                    !next ||
-                    ['message', 'conversation', 'review'].includes(next.kind)
-                )
-                    return '';
-                return `<div class="composer-next-decision"><span class="decision-marker" aria-hidden="true"></span><div><strong>${E(next.title)}</strong><small>${E(next.detail)}</small></div></div>`;
-            }
             function excerpt(composer) {
                 if (!composer.excerpt) return '';
                 return `<details class="draft-preview"><summary><span>${E(composer.excerpt)}</span><small>Read draft</small></summary><p>${E(composer.excerpt)}</p></details>`;
-            }
-            function services() {
-                return `<section class="practical-services" aria-labelledby="practical-services-title"><h3 id="practical-services-title">Need a hand?</h3><div class="practical-service-links"><a href="${S.routes.services}?service=doctors">${I('health')}Find a doctor</a><a href="${S.routes.services}">${I('grid')}Find a service</a></div></section>`;
             }
             function cityUpdates() {
                 const day = getDay(),
@@ -386,15 +372,6 @@
                             main.querySelector('.city-help'),
                         );
                     }
-                    if (priority.todayDecision) {
-                        const preceding =
-                            priority.lead === 'composer'
-                                ? null
-                                : blocks.preparation || blocks.agenda;
-                        preceding
-                            ? preceding.after(blocks.composer)
-                            : left.prepend(blocks.composer);
-                    }
                 }
             }
             mobile.addEventListener('change', () => {
@@ -407,9 +384,7 @@
                 cityHelp,
                 around,
                 compactEvents,
-                decision,
                 excerpt,
-                services,
                 cityUpdates,
                 refresh,
                 arrange,
