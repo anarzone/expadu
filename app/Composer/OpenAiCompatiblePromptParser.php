@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Ai\LlmCalls;
 use App\Composer\Concerns\NormalisesConstraints;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Enums\SpotCategory;
@@ -70,6 +71,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
 
     public function parse(string $text, Profile $profile, CarbonImmutable $now): ParsedPrompt
     {
+        $startedAt = hrtime(true);
         try {
             $response = Http::baseUrl((string) config('services.llm.base_url'))
                 ->withToken((string) config('services.llm.key'))
@@ -96,6 +98,7 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
                 ])
                 ->throw();
 
+            $this->recordCall($startedAt, 'success', (int) $response->json('usage.prompt_tokens', 0), (int) $response->json('usage.completion_tokens', 0));
             $args = $this->arguments($response->json());
             $explicit = $this->fallback->explicitPlaceRequirements($text);
             $intent = PromptIntent::tryFrom((string) ($args['intent'] ?? '')) ?? PromptIntent::Find;
@@ -125,9 +128,22 @@ class OpenAiCompatiblePromptParser implements ParsesPrompt
             return new ParsedPrompt($intent, query: $args['query'] ?? $text, source: 'llm');
         } catch (\Throwable $e) {
             Log::warning('llm prompt parse failed, using heuristic', ['error' => $e->getMessage()]);
+            $this->recordCall($startedAt, 'fallback:'.class_basename($e));
 
             return $this->fallback->parse($text, $profile, $now);
         }
+    }
+
+    private function recordCall(int $startedAt, string $outcome, ?int $inputTokens = null, ?int $outputTokens = null): void
+    {
+        app(LlmCalls::class)->record(
+            'prompt_parser',
+            (string) config('services.llm.model'),
+            (int) round((hrtime(true) - $startedAt) / 1_000_000),
+            $outcome,
+            $inputTokens,
+            $outputTokens,
+        );
     }
 
     /**

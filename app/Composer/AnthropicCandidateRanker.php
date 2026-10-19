@@ -2,6 +2,7 @@
 
 namespace App\Composer;
 
+use App\Ai\LlmCalls;
 use App\Composer\Contracts\RanksCandidates;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -14,10 +15,21 @@ use Throwable;
  * A grounded taste layer over the deterministic planner. The model can rank
  * only candidate ids supplied by Expadu; SlotFiller still owns scheduling,
  * travel, opening-hours, appointments, and pinned choices.
+ *
+ * The payload carries nothing that identifies the person: travel time is a
+ * coarse band (exact minutes to dozens of named places would let someone
+ * triangulate where they are), and neither companions nor affinities derived
+ * from their immigration situation or a child's age are sent.
  */
 class AnthropicCandidateRanker implements RanksCandidates
 {
     private const MAX_CANDIDATES = 40;
+
+    /** Bump when the system prompt, tool or payload shape changes. */
+    public const PROMPT_VERSION = 'rank-2026-10-18';
+
+    /** Upper bounds (minutes) of the travel bands sent instead of exact times. */
+    private const TRAVEL_BANDS = [10, 20, 30, 45];
 
     public function rank(Constraints $constraints, array $candidates, array $preferences = []): array
     {
@@ -77,6 +89,15 @@ class AnthropicCandidateRanker implements RanksCandidates
             }
 
             Cache::put($cacheKey, $weights, now()->addMinutes(10));
+            app(LlmCalls::class)->record(
+                'composer_ranker',
+                config('services.composer_llm.model'),
+                $this->latencyMs($startedAt),
+                'success',
+                (int) $response->json('usage.input_tokens', 0),
+                (int) $response->json('usage.output_tokens', 0),
+                self::PROMPT_VERSION,
+            );
             $this->logMetric('info', 'composer_llm.ranking_success', [
                 'model' => config('services.composer_llm.model'),
                 'candidate_count' => $optional->count(),
@@ -125,7 +146,6 @@ class AnthropicCandidateRanker implements RanksCandidates
             'window_end' => $constraints->windowEnd->toIso8601String(),
             'areas' => $constraints->areas,
             'categories' => $constraints->categories,
-            'companions' => $constraints->companions,
             'budget' => $constraints->budget,
             'archetype' => $constraints->archetype?->value,
             'vibe' => $constraints->vibe,
@@ -159,8 +179,24 @@ class AnthropicCandidateRanker implements RanksCandidates
             'hours_assumed' => $candidate->hoursAssumed,
             'tags' => array_slice(array_map(fn (mixed $tag): string => $this->untrustedText((string) $tag, 40), $candidate->tags), 0, 10),
             'quality_score' => $candidate->qualityScore,
-            'travel_minutes_from_origin' => $candidate->travelMinutesFromOrigin,
+            'travel_band' => $this->travelBand($candidate->travelMinutesFromOrigin),
         ];
+    }
+
+    /** "≤10", "≤20", "≤30", "≤45" or ">45" minutes; null when unknown. */
+    private function travelBand(?int $minutes): ?string
+    {
+        if ($minutes === null) {
+            return null;
+        }
+
+        foreach (self::TRAVEL_BANDS as $bound) {
+            if ($minutes <= $bound) {
+                return "≤{$bound}";
+            }
+        }
+
+        return '>'.self::TRAVEL_BANDS[array_key_last(self::TRAVEL_BANDS)];
     }
 
     /** Keep facts paired and bounded; all source text remains untrusted data. */
@@ -269,8 +305,9 @@ class AnthropicCandidateRanker implements RanksCandidates
                 ->all();
         };
 
+        // Behavioural category weights only. Affinities derived from the
+        // person's situation (immigration status, a child's age) never leave.
         return [
-            'category_affinities' => $normalise($preferences['category_affinities'] ?? []),
             'category_intent' => $normalise($preferences['category_intent'] ?? []),
             'category_dislikes' => $normalise($preferences['category_dislikes'] ?? []),
         ];
@@ -286,6 +323,13 @@ class AnthropicCandidateRanker implements RanksCandidates
     /** @return array<string, float> */
     private function fallback(string $reason, int $startedAt): array
     {
+        app(LlmCalls::class)->record(
+            'composer_ranker',
+            config('services.composer_llm.model'),
+            $this->latencyMs($startedAt),
+            'fallback:'.class_basename($reason),
+            promptVersion: self::PROMPT_VERSION,
+        );
         $this->logMetric('warning', 'composer_llm.ranking_fallback', [
             'model' => config('services.composer_llm.model'),
             'reason' => $reason,

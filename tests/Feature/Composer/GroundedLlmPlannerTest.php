@@ -167,9 +167,9 @@ test('cache varies with grounded facts and anonymous preference vector', functio
     Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:real']))]);
     $ranker = app(AnthropicCandidateRanker::class);
 
-    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'First'])], ['category_affinities' => ['park' => 0.2]]);
-    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'Changed'])], ['category_affinities' => ['park' => 0.2]]);
-    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'Changed'])], ['category_affinities' => ['park' => 0.9]]);
+    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'First'])], ['category_intent' => ['park' => 0.2]]);
+    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'Changed'])], ['category_intent' => ['park' => 0.2]]);
+    $ranker->rank(llmConstraints(), [llmCandidate('spot:real', ['description' => 'Changed'])], ['category_intent' => ['park' => 0.9]]);
 
     Http::assertSentCount(3);
 });
@@ -191,8 +191,29 @@ test('grounding includes capped descriptive quality and safe travel facts inside
 
         return str_contains($request['system'], 'UNTRUSTED DATA')
             && str_contains($content, 'untrusted_candidates')
-            && str_contains($content, 'travel_minutes_from_origin')
+            && str_contains($content, 'travel_band')
             && strlen($content) < 6000;
+    });
+});
+
+test('the ranker payload leaves out companions, situation-derived affinities and exact travel minutes', function () {
+    $candidate = llmCandidate('spot:real', ['travelMinutesFromOrigin' => 12]);
+    Http::fake(['api.anthropic.com/*' => Http::response(rankingResponse(['spot:real']))]);
+
+    app(AnthropicCandidateRanker::class)->rank(llmConstraints(), [$candidate], [
+        'category_affinities' => ['playground' => 0.9],
+        'category_intent' => ['park' => 0.5],
+    ]);
+
+    Http::assertSent(function (Request $request): bool {
+        $payload = json_decode($request['messages'][0]['content'], true);
+        $candidate = $payload['untrusted_candidates'][0];
+
+        return ! array_key_exists('companions', $payload['request'])
+            && ! array_key_exists('category_affinities', $payload['anonymous_preferences'])
+            && $payload['anonymous_preferences']['category_intent'] === ['park' => 0.5]
+            && ! array_key_exists('travel_minutes_from_origin', $candidate)
+            && $candidate['travel_band'] === '≤20';
     });
 });
 

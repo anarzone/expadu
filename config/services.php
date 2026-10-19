@@ -66,7 +66,17 @@ return [
         'key' => env('COMPOSER_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
         'model' => env('COMPOSER_LLM_MODEL', 'claude-sonnet-5'),
         'timeout' => env('COMPOSER_LLM_TIMEOUT', 8),
+        // Share of users (stable per user) whose plans the LLM ranks; the rest
+        // get the deterministic ranker, so the two can be compared.
+        'rollout_percent' => (int) env('COMPOSER_LLM_ROLLOUT_PERCENT', 100),
     ],
+
+    /*
+     * Prices per million tokens, used only to fill llm_calls.cost_usd. Leave a
+     * model out rather than guess: unpriced calls record a null cost. Example:
+     * 'claude-haiku-5-5' => ['input_per_mtok' => 0.0, 'output_per_mtok' => 0.0],
+     */
+    'llm_pricing' => [],
 
     /*
      * The composer's prompt parser. 'heuristic' (default) needs no key and

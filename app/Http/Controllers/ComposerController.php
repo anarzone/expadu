@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Ai\LlmRollout;
 use App\Composer\AppointmentRepository;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
@@ -26,6 +27,7 @@ use App\Composer\TravelEstimator;
 use App\Composer\WorkspaceStore;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
+use App\Models\ComposerRun;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
@@ -45,6 +47,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -240,9 +243,12 @@ class ComposerController extends Controller
             ->all();
         $affinity = $this->planAffinity($profile, $constraints->companions);
         $intentWeights = $intents->for($user);
-        $llmPreferences = $intents->preferenceVector($user) + [
-            'category_affinities' => $affinity,
-        ];
+        // A stable per-user bucket decides whether the LLM ranks this person's
+        // plans, so LLM on and off can be compared (default: everyone).
+        $llmBucket = app(LlmRollout::class)->allows($user, 'composer_llm');
+        $llmRankWeights = $llmBucket
+            ? $candidateRanker->rank($constraints, $rankable, $intents->preferenceVector($user))
+            : [];
         $context = new ScoringContext(
             rainExpected: $this->rainExpected(),
             preferredAreas: $constraints->areas !== []
@@ -253,7 +259,7 @@ class ComposerController extends Controller
             pinnedIds: $pins,
             affinity: $affinity,
             rotationSeed: $this->rotationSeed($user, $constraints),
-            llmRankWeights: $candidateRanker->rank($constraints, $rankable, $llmPreferences),
+            llmRankWeights: $llmRankWeights,
         );
         $pinned = collect([
             ...$candidates->byIds($pins, $constraints->windowStart, $originLat, $originLng),
@@ -277,6 +283,7 @@ class ComposerController extends Controller
         $filler = new SlotFiller(new PlanScorer($estimator), $estimator);
         $roles = $soloCategory !== null ? $this->activityRoles($soloCategory) : null;
         $plan = $filler->fill($itineraryConstraints, $pool, $context, $originLat, $originLng, $roles, self::SAME_COARSE_CAP);
+        $this->recordRun($user, $plan, $filler->pickedScores(), $llmBucket, $llmRankWeights, count($rankable));
 
         // ── Browse options (A few options) ──
         // The chosen activity, listed: several nearby pitches to pick from, no
@@ -348,6 +355,43 @@ class ComposerController extends Controller
      *
      * @return array<string, float>
      */
+    /**
+     * How this plan was ranked, for comparing LLM on and off: the ranker mode,
+     * the bucket, and each slot's type, category, score and LLM rank weight.
+     * No place or event ids are stored.
+     *
+     * @param  array<string, float>  $scores
+     * @param  array<string, float>  $llmRankWeights
+     */
+    private function recordRun(User $user, Plan $plan, array $scores, bool $llmBucket, array $llmRankWeights, int $candidateCount): void
+    {
+        $mode = match (true) {
+            ! $llmBucket => 'bucket_off',
+            ! config('services.composer_llm.enabled') || ! config('services.composer_llm.key') => 'llm_disabled',
+            $llmRankWeights === [] => 'llm_fallback',
+            default => 'llm',
+        };
+
+        try {
+            ComposerRun::query()->create([
+                'user_id' => $user->id,
+                'ranker_mode' => $mode,
+                'llm_bucket' => $llmBucket,
+                'candidate_count' => min($candidateCount, 65535),
+                'slot_count' => count($plan->slots),
+                'slots' => array_map(fn (PlanSlot $slot): array => [
+                    'type' => $slot->candidate->type,
+                    'category' => $slot->candidate->category,
+                    'score' => $scores[$slot->candidate->id] ?? null,
+                    'llm_rank' => $llmRankWeights[$slot->candidate->id] ?? null,
+                ], $plan->slots),
+            ]);
+        } catch (\Throwable $exception) {
+            // Telemetry must never break planning.
+            Log::warning('composer run could not be recorded', ['error' => $exception->getMessage()]);
+        }
+    }
+
     private function planAffinity(Profile $profile, ?string $companions): array
     {
         $map = CategoryAffinity::map($profile);
