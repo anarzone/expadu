@@ -2140,7 +2140,6 @@
         width: 296px;
         padding: 2px 4px 16px 2px;
         overflow-y: auto;
-        scrollbar-width: thin;
     }
     .composer-day h2 {
         margin: 0;

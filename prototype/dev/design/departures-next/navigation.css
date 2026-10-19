@@ -122,8 +122,6 @@ html:has(#journey-navigation:modal) {
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 14px 14px 24px;
-    scrollbar-width: thin;
-    scrollbar-color: #cddcdf transparent;
 }
 .nav-footer {
     flex-shrink: 0;

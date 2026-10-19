@@ -1224,7 +1224,6 @@ dialog#sheet::backdrop {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    scrollbar-width: thin;
     scroll-padding-block: 16px 90px;
 }
 #sheet .route-detail-content {

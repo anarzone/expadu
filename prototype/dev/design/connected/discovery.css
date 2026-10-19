@@ -46,7 +46,6 @@ body[data-page='events'] .event-filters {
     overflow: auto;
     padding: 0 0 12px;
     border-bottom: 1px solid var(--color-border, #dce7e9);
-    scrollbar-width: thin;
 }
 body[data-page='events'] .event-filters .filter {
     width: auto;
@@ -333,7 +332,6 @@ body[data-page='events'] .check-filter {
         overflow: auto;
         gap: 8px;
         margin-bottom: 18px;
-        scrollbar-width: thin;
     }
     body[data-page='services'] .service-choice {
         min-width: 98px;

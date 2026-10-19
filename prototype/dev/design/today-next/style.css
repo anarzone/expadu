@@ -992,7 +992,6 @@ body.today-next {
     grid-auto-columns: minmax(0, 1fr);
     gap: 18px;
     overflow-x: auto;
-    scrollbar-width: thin;
     scroll-snap-type: x mandatory;
     touch-action: pan-x pan-y;
     padding-bottom: 8px;

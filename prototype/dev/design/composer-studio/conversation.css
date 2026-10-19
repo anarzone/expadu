@@ -457,8 +457,6 @@
     max-height: 252px;
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-border-strong) transparent;
     scrollbar-gutter: stable;
     padding: 2px 5px 2px 2px;
     border-radius: var(--radius-lg);
