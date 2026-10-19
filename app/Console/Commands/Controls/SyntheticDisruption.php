@@ -61,7 +61,7 @@ class SyntheticDisruption extends Command
         $startedAt = microtime(true);
 
         event(new TransitDisruptionDetected(
-            disruptionId: self::SYNTHETIC_ID,
+            disruptionId: (string) self::SYNTHETIC_ID,
             lines: [$line],
             stopsAffected: [],
             severity: 'major',

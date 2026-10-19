@@ -63,7 +63,7 @@ test('disruption on a line near user places emits a scored action flagged on_use
     fakeUserLines(['12', '15']);
 
     event(new TransitDisruptionDetected(
-        disruptionId: 100,
+        disruptionId: 'news_100',
         lines: ['12'],
         stopsAffected: [],
         severity: 'moderate',
@@ -87,7 +87,7 @@ test('moderate disruption on unrelated line does not emit action', function () {
     fakeUserLines([]);
 
     event(new TransitDisruptionDetected(
-        disruptionId: 200,
+        disruptionId: 'news_200',
         lines: ['99'],
         stopsAffected: [],
         severity: 'moderate',
@@ -103,7 +103,7 @@ test('a major disruption on an unrelated line is recorded but stays off Today', 
     fakeUserLines([]);
 
     event(new TransitDisruptionDetected(
-        disruptionId: 250,
+        disruptionId: 'news_250',
         lines: ['99'],
         stopsAffected: [],
         severity: 'major',
@@ -127,7 +127,7 @@ test('a critical disruption reaches Today even on an unrelated line', function (
     fakeUserLines([]);
 
     event(new TransitDisruptionDetected(
-        disruptionId: 280,
+        disruptionId: 'news_280',
         lines: ['99'],
         stopsAffected: [],
         severity: 'critical',
@@ -150,7 +150,7 @@ test('critical disruption on matched line includes push channel', function () {
     fakeUserLines(['12']);
 
     event(new TransitDisruptionDetected(
-        disruptionId: 260,
+        disruptionId: 'news_260',
         lines: ['12'],
         stopsAffected: [],
         severity: 'critical',
@@ -176,7 +176,7 @@ test('moderate disruption with bbox covering a saved place geo-matches', functio
     fakeUserLines([]);
 
     event(new TransitDisruptionDetected(
-        disruptionId: 270,
+        disruptionId: 'news_270',
         lines: ['99'],
         stopsAffected: [],
         severity: 'moderate',
@@ -218,7 +218,7 @@ test('major disruption on a matched line scores above the broadcast tier', funct
     fakeUserLines(['12']);
 
     event(new TransitDisruptionDetected(
-        disruptionId: 400,
+        disruptionId: 'news_400',
         lines: ['12'],
         stopsAffected: [],
         severity: 'major',
