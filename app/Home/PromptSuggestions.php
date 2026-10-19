@@ -84,6 +84,8 @@ class PromptSuggestions
      */
     private function topCategory(array $weights): ?string
     {
+        // Only a category the person leans towards; negative weights are dislikes.
+        $weights = array_filter($weights, fn (float $weight): bool => $weight > 0);
         if ($weights === []) {
             return null;
         }

@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
  * Intent signals, not surveillance: aggregates the events the product
  * already generates ("take me there" taps, saves, views, swap-aways)
  * into simple weighted counts per category × Veedel. No new infra.
+ *
+ * Every signal is written server-side, from the action that earns it
+ * (TasteSignals, PlaceFeedbackController, the Composer swap) — never by
+ * the client: /api/track only accepts its own allow-list.
  */
 class IntentWeights
 {
@@ -17,8 +21,6 @@ class IntentWeights
         'event_saved' => 2.0,
         'spot_viewed' => 0.5,
         'composer_swap_away' => -1.5,
-        'post_trip_thumbs_up' => 3.0,
-        'post_trip_thumbs_down' => -3.0,
         // Place feedback (see PlaceFeedbackController). "More like this" is the
         // forward-looking signal — no visit needed; "been" carries the taste.
         'spot_more_like_this' => 2.5,
@@ -29,7 +31,7 @@ class IntentWeights
     ];
 
     /**
-     * @return array<string, float> "category|veedel" → weight in [0, 1]
+     * @return array<string, float> "category|veedel" → weight in [-1, 1]; negative where the person turned it down
      */
     public function for(User $user): array
     {
@@ -56,11 +58,12 @@ class IntentWeights
             return [];
         }
 
-        // Normalise to [0, 1] against the strongest signal.
-        $max = max(max($raw), 1.0);
+        // Normalise against the strongest signal either way, keeping the sign:
+        // a turned-down category should rank below one never seen.
+        $max = max([1.0, ...array_map('abs', $raw)]);
 
         return array_map(
-            fn (float $weight) => max(0.0, round($weight / $max, 3)),
+            fn (float $weight) => round($weight / $max, 3),
             $raw,
         );
     }
