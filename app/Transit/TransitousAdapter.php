@@ -674,13 +674,17 @@ class TransitousAdapter implements RouteService
             }
 
             $mode = self::MODE_MAP[$rawLeg['mode'] ?? 'WALK'] ?? 'walk';
+            $departAt = CarbonImmutable::parse($rawLeg['startTime'])->setTimezone('Europe/Berlin');
+            $arriveAt = CarbonImmutable::parse($rawLeg['endTime'])->setTimezone('Europe/Berlin');
+            $scheduledDepartAt = $this->scheduledTime($rawLeg['scheduledStartTime'] ?? null);
+            $realtime = ($rawLeg['realTime'] ?? false) === true;
 
             $legs[] = new Leg(
                 mode: $mode,
                 from: $this->mapPlace($from),
                 to: $this->mapPlace($to),
-                departAt: CarbonImmutable::parse($rawLeg['startTime'])->setTimezone('Europe/Berlin'),
-                arriveAt: CarbonImmutable::parse($rawLeg['endTime'])->setTimezone('Europe/Berlin'),
+                departAt: $departAt,
+                arriveAt: $arriveAt,
                 durationMin: (int) ceil(($rawLeg['duration'] ?? 0) / 60),
                 lineName: $rawLeg['routeShortName'] ?? null,
                 headsign: $rawLeg['headsign'] ?? null,
@@ -693,6 +697,16 @@ class TransitousAdapter implements RouteService
                     ? $this->mapIntermediateStops((array) $rawLeg['intermediateStops'])
                     : null,
                 lineColor: $this->mapLineColor($rawLeg, $mode),
+                scheduledDepartAt: $scheduledDepartAt,
+                scheduledArriveAt: $this->scheduledTime($rawLeg['scheduledEndTime'] ?? null),
+                // Only a live-fed leg has a real delay; for a timetable-only
+                // leg "on time" and "unknown" look identical, so say unknown.
+                delayMin: $realtime && $scheduledDepartAt !== null
+                    ? (int) round(($departAt->getTimestamp() - $scheduledDepartAt->getTimestamp()) / 60)
+                    : null,
+                realtime: $realtime,
+                cancelled: ($rawLeg['cancelled'] ?? false) === true,
+                tripId: isset($rawLeg['tripId']) ? (string) $rawLeg['tripId'] : null,
             );
         }
 
@@ -707,6 +721,13 @@ class TransitousAdapter implements RouteService
             durationMin: (int) ceil(($itinerary['duration'] ?? 0) / 60),
             transfers: (int) ($itinerary['transfers'] ?? 0),
         );
+    }
+
+    private function scheduledTime(mixed $time): ?CarbonImmutable
+    {
+        return is_string($time) && $time !== ''
+            ? CarbonImmutable::parse($time)->setTimezone('Europe/Berlin')
+            : null;
     }
 
     /**

@@ -360,4 +360,6 @@ test('MOTIS transit legs carry the ridden stations and a line colour', function 
     $leg = Leg::fromArray($transitLeg->toArray());
     expect($leg->intermediateStops)->toBe($transitLeg->intermediateStops);
     expect($leg->lineColor)->toBe($transitLeg->lineColor);
+    expect($leg->tripId)->not->toBeNull()->toBe($transitLeg->tripId);
+    expect($leg->scheduledDepartAt?->equalTo($transitLeg->scheduledDepartAt))->toBeTrue();
 });
