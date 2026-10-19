@@ -54,10 +54,11 @@ test('starting a trip persists it for the user', function () {
     expect($trip->started_at)->not->toBeNull();
 });
 
-test('starting a new trip replaces the old one (one row per user)', function () {
+test('starting a new trip replaces the old one once confirmed (one row per user)', function () {
     $this->postJson('/api/trip/start', tripPayload())->assertOk();
     $this->postJson('/api/trip/start', tripPayload([
         'destination' => ['name' => 'Rudolfplatz'],
+        'replace' => true,
     ]))->assertOk();
 
     expect(ActiveTrip::query()->where('user_id', $this->user->id)->count())->toBe(1);
