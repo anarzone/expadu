@@ -24,15 +24,14 @@ use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\WeatherChanged;
 use App\Jobs\ValidateMediaAssetJob;
-use App\Listeners\CreateAlertFromNotification;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Transit\Contracts\RouteService;
 use App\Transit\FailoverRouteService;
 use Carbon\CarbonImmutable;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -41,6 +40,13 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Resend\Client as ResendClient;
+use Resend\Contracts\Client as ResendClientContract;
+use Resend\Laravel\Exceptions\ApiKeyIsMissing;
+use Resend\Transporters\HttpTransporter;
+use Resend\ValueObjects\ApiKey as ResendApiKey;
+use Resend\ValueObjects\Transporter\BaseUri as ResendBaseUri;
+use Resend\ValueObjects\Transporter\Headers as ResendHeaders;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -83,6 +89,34 @@ class AppServiceProvider extends ServiceProvider
             ClassifiesEvents::class,
             AnthropicEventClassifier::class,
         );
+
+        $this->bindResendClient();
+    }
+
+    /**
+     * resend-laravel builds its client with a bare Guzzle instance — no connect
+     * or total timeout — so a stalled Resend call would hang the request or
+     * queue worker. Rebind it (same wiring as `Resend::client()`) with bounded
+     * timeouts; the package's `resend` alias follows the contract binding.
+     */
+    private function bindResendClient(): void
+    {
+        $this->app->singleton(ResendClientContract::class, function (): ResendClient {
+            $apiKey = config('resend.api_key') ?? config('services.resend.key');
+
+            if (! is_string($apiKey)) {
+                throw ApiKeyIsMissing::create();
+            }
+
+            return new ResendClient(new HttpTransporter(
+                new GuzzleClient([
+                    'connect_timeout' => config('services.resend.connect_timeout'),
+                    'timeout' => config('services.resend.timeout'),
+                ]),
+                ResendBaseUri::from(getenv('RESEND_BASE_URL') ?: 'api.resend.com'),
+                ResendHeaders::withAuthorization(ResendApiKey::from($apiKey)),
+            ));
+        });
     }
 
     /**
@@ -115,8 +149,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureRateLimiting();
-
-        Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
         Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);
