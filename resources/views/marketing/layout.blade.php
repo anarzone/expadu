@@ -7,14 +7,18 @@
 
     <title>@yield('title', 'Expadu — The AI companion for your new life in Germany')</title>
     <meta name="description" content="@yield('meta_description', 'Tell it your day — it plans the rest. Bureaucracy in English with official sources, transit that knows your ticket, and an AI day composer. Built for Cologne.')">
-    <link rel="canonical" href="@yield('canonical', url()->current())">
+    {{-- Not url()->current(): in production that follows the forced app root, and the app host 404s these paths. --}}
+    @php($canonicalFallback = rtrim(config('app.marketing_domain') ? 'https://'.config('app.marketing_domain') : url('/'), '/').'/'.ltrim(request()->path(), '/'))
+    <link rel="canonical" href="@yield('canonical', $canonicalFallback)">
 
     <meta property="og:site_name" content="Expadu">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="@yield('og_title', 'Expadu — The AI companion for your new life in Germany')">
+    <meta property="og:title" content="@section('og_title')@yield('title', 'Expadu — Tell it your day. It plans the rest.')@show">
     <meta property="og:description" content="@yield('meta_description', 'Tell it your day — it plans the rest. Bureaucracy in English with official sources, transit that knows your ticket, and an AI day composer. Built for Cologne.')">
-    <meta property="og:url" content="@yield('canonical', url()->current())">
+    <meta property="og:url" content="@yield('canonical', $canonicalFallback)">
     <meta property="og:image" content="@yield('og_image', asset('marketing/og-landing.png'))">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
 
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf6ee">
@@ -81,7 +85,7 @@
                 <a class="btn btn-primary btn-sm" href="{{ route('dashboard') }}">Open the app →</a>
             @else
                 <a class="login" href="{{ route('login') }}">Log in</a>
-                <a class="btn btn-primary btn-sm" href="{{ route('register') }}">Start free</a>
+                <a class="btn btn-primary btn-sm" href="#waitlist">Start free</a>
             @endauth
         </div>
     </div>
@@ -94,7 +98,7 @@
 <footer class="site">
     <div class="wrap">
         <div class="foot-grid">
-            <div class="waitlist-box">
+            <div class="waitlist-box" id="waitlist">
                 <a class="logo footer-logo" href="{{ route('home') }}" aria-label="Expadu home">
                     <svg viewBox="0 0 100 100" aria-hidden="true">
                         <g transform="translate(2.45,2.05)">
@@ -107,12 +111,12 @@
                     </svg>
                     Expadu
                 </a>
-                <h3>Not in Cologne?</h3>
-                <p>Leave your city — you’ll know the day we arrive.</p>
+                <h3>Get the new Expadu first</h3>
+                <p>The new app opens in Cologne first. Leave your e-mail and you’ll know the day it’s ready.</p>
                 <form class="waitlist" id="waitlistForm" method="POST" action="{{ route('waitlist.store') }}">
                     @csrf
-                    <input type="hidden" name="source" value="@yield('waitlist_source', 'landing-footer')">
-                    <input type="text" name="city" placeholder="Your city" aria-label="Your city" required maxlength="120">
+                    <input type="hidden" name="source" value="@yield('waitlist_source', 'footer')">
+                    <input type="text" name="city" value="Cologne" placeholder="Your city" aria-label="Your city" required maxlength="120">
                     <input type="email" name="email" placeholder="Email" aria-label="Email" required maxlength="255">
                     <button class="btn btn-ghost btn-sm" type="submit">Notify me</button>
                     <p class="waitlist-msg" role="status" aria-live="polite"></p>
@@ -133,7 +137,7 @@
                         <a href="{{ route('dashboard') }}">Open the app</a>
                     @else
                         <a href="{{ route('login') }}">Log in</a>
-                        <a href="{{ route('register') }}">Start free</a>
+                        <a href="#waitlist">Start free</a>
                     @endauth
                 </div>
                 <div>

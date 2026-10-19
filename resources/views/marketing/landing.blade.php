@@ -34,7 +34,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@graph' => [
             [
                 '@type' => 'Organization',
@@ -122,7 +122,7 @@
                 <a class="xv-btn xv-btn--ink xv-btn--sm" href="{{ route('dashboard') }}">Open the app</a>
             @else
                 <a class="xv-login" href="{{ route('login') }}">Log in</a>
-                <a class="xv-btn xv-btn--ink xv-btn--sm" href="{{ route('register') }}">Start free</a>
+                <a class="xv-btn xv-btn--ink xv-btn--sm" href="#waitlistForm">Start free</a>
             @endauth
         </div>
     </header>
@@ -141,7 +141,7 @@
                 @auth
                     <a class="xv-btn xv-btn--ink xv-btn--lift-orange" href="{{ route('dashboard') }}">Open the app<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @else
-                    <a class="xv-btn xv-btn--ink xv-btn--lift-orange" href="{{ route('register') }}">Start free<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
+                    <a class="xv-btn xv-btn--ink xv-btn--lift-orange" href="#waitlistForm">Start free<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @endauth
                 <a class="xv-btn xv-btn--outline" href="#day">Follow the day<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowDown !!}</svg></a>
             </div>
@@ -548,20 +548,20 @@
                 @auth
                     <a class="xv-btn xv-btn--ink xv-btn--lg xv-btn--lift-yellow" href="{{ route('dashboard') }}">Open the app<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @else
-                    <a class="xv-btn xv-btn--ink xv-btn--lg xv-btn--lift-yellow" href="{{ route('register') }}">Start free in Cologne<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
+                    <a class="xv-btn xv-btn--ink xv-btn--lg xv-btn--lift-yellow" href="#waitlistForm">Start free in Cologne<svg class="xv-ico" viewBox="0 0 24 24" aria-hidden="true">{!! $arrowRight !!}</svg></a>
                 @endauth
-                <span class="xv-marker xv-join__note">Free to start · in plain English</span>
+                <span class="xv-marker xv-join__note">Cologne first · in plain English</span>
             </div>
         </div>
         <form class="xv-form waitlist" id="waitlistForm" method="POST" action="{{ route('waitlist.store') }}" data-reveal="card" style="transition-delay: 500ms">
             @csrf
             <input type="hidden" name="source" value="landing-join">
             <div>
-                <h3 class="xv-disp">Not in Cologne yet?</h3>
-                <p>Tell us where you’re moving. We’ll write once when Expadu reaches your city.</p>
+                <h3 class="xv-disp">Get the new Expadu first</h3>
+                <p>The new app opens in Cologne first. Leave your e-mail and you’ll know the day it’s ready.</p>
             </div>
             <label>Email<input type="email" name="email" autocomplete="email" placeholder="you@example.com" required maxlength="255"></label>
-            <label>City<input type="text" name="city" autocomplete="address-level2" placeholder="For example, Munich" required maxlength="120"></label>
+            <label>City<input type="text" name="city" value="Cologne" autocomplete="address-level2" placeholder="Your city" required maxlength="120"></label>
             <button class="xv-btn xv-btn--cyan xv-btn--block" type="submit">Notify me</button>
             <p class="waitlist-msg" role="status" aria-live="polite"></p>
         </form>
@@ -601,7 +601,7 @@
                         <a href="{{ route('dashboard') }}">Open the app</a>
                     @else
                         <a href="{{ route('login') }}">Log in</a>
-                        <a href="{{ route('register') }}">Start free</a>
+                        <a href="#waitlistForm">Start free</a>
                     @endauth
                 </div>
                 <div>

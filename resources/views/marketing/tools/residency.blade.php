@@ -3,6 +3,7 @@
 @section('title', 'Permanent residency (Niederlassungserlaubnis) timeline calculator — Expadu')
 @section('meta_description', 'When can you get German permanent residency? Watch your timeline fill up — Blue Card, skilled worker, family or general track (§9/§18c/§28 AufenthG).')
 @section('canonical', route('tools.residency'))
+@section('og_image', asset('marketing/og/tools-residency.png'))
 @section('waitlist_source', 'tool-residency')
 
 @push('head')
@@ -11,7 +12,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'WebApplication',
         'name' => 'German permanent-residency timeline calculator',
         'applicationCategory' => 'UtilitiesApplication',
@@ -69,7 +70,7 @@
 
         <div class="tool-cta">
             <p>Expadu <b>counts this down for you</b> — and tells you the moment you cross the bar.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

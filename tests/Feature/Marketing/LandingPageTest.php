@@ -22,7 +22,9 @@ test('the landing page tells the sample day from daylight to the next morning', 
     ]);
     $response->assertSee('Start free');
     $response->assertSee('Log in');
-    $response->assertSee(route('register'), escape: false);
+    // Until the new app ships, "Start free" leads to the launch waitlist, not sign-up.
+    $response->assertSee('href="#waitlistForm"', escape: false);
+    $response->assertDontSee(route('register'), escape: false);
     $response->assertSee(route('tools.index'), escape: false);
     $response->assertSee(route('blog.index'), escape: false);
     $response->assertSee(route('impressum'));
@@ -147,6 +149,8 @@ test('the landing page carries FAQPage structured data', function () {
     $response->assertOk();
     $response->assertSee('application/ld+json', escape: false);
     $response->assertSee('FAQPage', escape: false);
+    // A bare '@context' in the template compiles as Blade's @context directive.
+    $response->assertSee('{"@context":"https://schema.org"', escape: false);
 });
 
 test('the legal pages render', function (string $route) {

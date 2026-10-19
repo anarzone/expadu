@@ -56,3 +56,40 @@ test('non-marketing hosts get no CSP header', function () {
 
     expect($response->headers->get('Content-Security-Policy'))->toBeNull();
 });
+
+test('non-production environments are kept out of search', function () {
+    $this->get('/')->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+
+    $this->get('/robots.txt')
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+        ->assertSeeText("User-agent: *\nDisallow: /", escape: false);
+});
+
+test('staging hosts are kept out of search even when they run as production', function (string $host) {
+    app()->detectEnvironment(fn () => 'production');
+
+    $this->get("http://{$host}/robots.txt")
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+        ->assertSeeText("User-agent: *\nDisallow: /", escape: false);
+})->with(['staging.expadu.com', 'app.staging.expadu.com']);
+
+test('the production marketing host is indexable and points crawlers at the sitemap', function () {
+    app()->detectEnvironment(fn () => 'production');
+
+    $response = $this->get('http://expadu.com/robots.txt');
+
+    $response->assertOk()->assertHeaderMissing('X-Robots-Tag');
+    expect($response->getContent())
+        ->toContain('Allow: /')
+        ->not->toContain("Disallow: /\n")
+        ->toContain('Sitemap: '.route('sitemap'));
+});
+
+test('the production app host is kept out of the index', function () {
+    app()->detectEnvironment(fn () => 'production');
+    config(['app.app_domain' => 'app.expadu.com', 'app.marketing_domain' => 'expadu.com']);
+
+    $this->get('http://app.expadu.com/login')->assertHeader('X-Robots-Tag', 'noindex');
+    $this->get('http://expadu.com/')->assertHeaderMissing('X-Robots-Tag');
+});

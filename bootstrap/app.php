@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CanonicalRedirects;
 use App\Http\Middleware\EnsureUserIsOnboarded;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->append(SecurityHeaders::class);
+        $middleware->append(CanonicalRedirects::class);
 
         // Flash a visible message when bouncing already-authenticated users
         // off the guest-only auth screens instead of redirecting silently.

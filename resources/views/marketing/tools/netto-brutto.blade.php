@@ -3,6 +3,7 @@
 @section('title', 'Netto-Brutto calculator '.$year.' — what\'s left of your German salary? — Expadu')
 @section('meta_description', 'Gross to net salary in Germany, '.$year.' rules: all six tax classes, every Bundesland, church tax, children, statutory or private insurance — cross-checked against the official BMF calculator. Free, no signup.')
 @section('canonical', route('tools.netto'))
+@section('og_image', asset('marketing/og/tools-netto-brutto.png'))
 @section('waitlist_source', 'tool-netto')
 
 @push('head')
@@ -11,7 +12,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'WebApplication',
         'name' => 'German netto-brutto salary calculator '.$year,
         'applicationCategory' => 'FinanceApplication',
@@ -162,7 +163,7 @@
 
         <div class="tool-cta">
             <p>Salary sorted? Expadu handles <b>everything else about arriving</b> — the permits, the deadlines, the city.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

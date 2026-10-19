@@ -159,6 +159,7 @@ section {
     max-width: 640px;
     margin-bottom: 40px;
 }
+.sec-head h1,
 .sec-head h2,
 .split h2 {
     font-size: clamp(1.7rem, 3.2vw, 2.3rem);
