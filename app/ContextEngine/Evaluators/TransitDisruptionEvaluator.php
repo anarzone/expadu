@@ -37,6 +37,16 @@ class TransitDisruptionEvaluator implements ShouldQueue
 
     public function handle(TransitDisruptionDetected $event): void
     {
+        // The canary's event is 'major', which broadcasts — left unscoped it
+        // gave every onboarded user a fake disruption alert every 30 minutes.
+        if ($event->isSynthetic()) {
+            if ($user = User::find($event->syntheticUserId)) {
+                $this->evaluateForUser($user, $event);
+            }
+
+            return;
+        }
+
         User::query()
             ->whereNotNull('onboarded_at')
             ->chunkById(100, function ($users) use ($event): void {
@@ -86,7 +96,7 @@ class TransitDisruptionEvaluator implements ShouldQueue
                 // fusion step pairs this with "a commute today" to frame it as an
                 // on-your-route need instead of a generic city notice.
                 'on_user_line' => $lineMatch,
-            ],
+            ] + ($event->isSynthetic() ? ['synthetic' => true] : []),
             createdAt: CarbonImmutable::now(),
         );
 
