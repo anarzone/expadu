@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Queue;
 
 test('translation backfill queues incomplete existing rows once in rate-aware batches', function () {
     Queue::fake();
+    config(['services.anthropic.key' => 'test-key']);
     $missingTitle = Event::factory()->create([
         'title_en' => null, 'description_en' => 'Done', 'summary_en' => 'Done',
     ]);
