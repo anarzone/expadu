@@ -1322,7 +1322,7 @@
             U.open(
                 'Your account',
                 sheet(
-                    '<p class="detail-intro">Anar · Preview profile</p><p>Account settings are available in the main app.</p>',
+                    `<p class="detail-intro">Anar · Preview profile</p><p>Account settings are available in the main app.</p><div class="detail-actions"><a class="outline-action" href="${S.routes.account}">Sign out</a></div>`,
                 ),
             );
         if ('clearTodayContext' in data) {

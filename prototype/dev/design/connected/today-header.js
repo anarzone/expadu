@@ -61,7 +61,7 @@
     profile.setAttribute('role', 'dialog');
     profile.setAttribute('aria-labelledby', 'header-account-title');
     profile.innerHTML =
-        '<h2 id="header-account-title">Your account</h2><p>Anar · Preview profile</p><p>Account settings are available in the main app.</p>';
+        `<h2 id="header-account-title">Your account</h2><p>Anar · Preview profile</p><p>Account settings are available in the main app.</p><a class="header-account-out" href="${S?.routes?.account || '../account/'}">Sign out</a>`;
     document.body.append(profile);
     const positionProfile = () => {
         if (!profile.matches(':popover-open')) return;

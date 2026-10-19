@@ -126,6 +126,7 @@
         services: '../services-next/',
         departures: '../departures-next/',
         composer: '../composer-studio/',
+        account: '../account/',
     };
     const sessionKey = 'expadu-composer-navigation-v1';
     function composerSession() {

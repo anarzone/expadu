@@ -1,0 +1,464 @@
+@import url('../connected/tokens.css');
+/* Sign in and create an account (owner chose A, "On the street", on the
+   "Sign in and create an account" canvas, 19 Oct 2026): Cologne's street
+   from Events behind, the form a cream poster taped to the wall, its label
+   in marker, its heading in the posters' purple. app.js draws each state. */
+@font-face {
+    font-family: Geist;
+    src: url('../assets/fonts/geist-400.woff2');
+}
+@font-face {
+    font-family: Geist;
+    src: url('../assets/fonts/geist-500.woff2');
+    font-weight: 500;
+}
+@font-face {
+    font-family: Geist;
+    src: url('../assets/fonts/geist-600.woff2');
+    font-weight: 600;
+}
+@font-face {
+    font-family: Geist;
+    src: url('../assets/fonts/geist-700.woff2');
+    font-weight: 700;
+}
+@font-face {
+    font-family: 'Poster Grotesque';
+    src: url('../events-next/fonts/bricolage-grotesque-latin.woff2')
+        format('woff2');
+    font-weight: 200 800;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Poster Grotesque';
+    src: url('../events-next/fonts/bricolage-grotesque-latin-ext.woff2')
+        format('woff2');
+    font-weight: 200 800;
+    font-display: swap;
+    unicode-range: U+0100-024F, U+1E00-1EFF;
+}
+@font-face {
+    font-family: 'Poster Marker';
+    src: url('../events-next/fonts/PermanentMarker-Regular.ttf')
+        format('truetype');
+    font-display: swap;
+}
+* {
+    box-sizing: border-box;
+}
+html {
+    background: #e7dbc2;
+}
+body {
+    margin: 0;
+    min-height: 100dvh;
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.45;
+}
+/* The street stays put while a long poster scrolls. */
+.account-street {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: #e7dbc2 url('./street.webp') left top / cover no-repeat;
+}
+.account-top {
+    position: absolute;
+    top: 22px;
+    left: 28px;
+    right: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.account-brand,
+.account-switch {
+    display: flex;
+    align-items: center;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--color-bg-surface);
+    box-shadow: 0 6px 18px -10px #211d1599;
+}
+.account-brand {
+    gap: 8px;
+    padding: 0 18px 0 12px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.account-brand svg {
+    width: 30px;
+    height: 25px;
+}
+.account-switch {
+    padding: 0 20px;
+    color: var(--color-text);
+    font-size: 16px;
+    text-decoration: none;
+}
+.account-switch b {
+    margin-left: 0.3em;
+}
+.account-switch:hover b {
+    color: var(--color-action);
+}
+/* The poster: taped at its corners, a little off straight. */
+.account-poster {
+    position: relative;
+    width: 520px;
+    margin: clamp(96px, 12vh, 150px) 0 64px calc(45% - 10px);
+    padding: 34px 38px 30px;
+    background: var(--poster-paper);
+    transform: rotate(-1.2deg);
+    box-shadow:
+        0 26px 50px -22px #211d15a6,
+        0 2px 0 #211d1514;
+}
+.account-poster.is-pasted {
+    animation: account-paste 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes account-paste {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) rotate(-3deg);
+    }
+}
+.account-poster::before,
+.account-poster::after {
+    content: '';
+    position: absolute;
+    top: -14px;
+    width: 96px;
+    height: 28px;
+    background: color-mix(in srgb, var(--poster-yellow) 77%, transparent);
+}
+.account-poster::before {
+    left: 46px;
+    transform: rotate(-5deg);
+}
+.account-poster::after {
+    right: 44px;
+    transform: rotate(6deg);
+}
+.account-poster form,
+.account-poster .account-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.account-back {
+    display: flex;
+    align-items: center;
+    align-self: flex-start;
+    min-height: 44px;
+    margin: -10px 0 -4px;
+    color: var(--color-text);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.account-label {
+    align-self: flex-start;
+    padding: 4px 12px;
+    background: var(--poster-yellow);
+    transform: rotate(-2deg);
+    font-family: 'Poster Marker', cursive;
+    font-size: 19px;
+    line-height: 1.3;
+}
+.account-poster h1 {
+    margin: 2px 0 0;
+    color: var(--poster-purple);
+    font-family: 'Poster Grotesque', var(--font-sans);
+    font-size: 50px;
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+.account-poster h1:focus {
+    outline: none;
+}
+.account-lead {
+    margin: 0 0 4px;
+    color: #4a4335;
+    font-size: 17px;
+}
+.account-note {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 14px;
+}
+.account-note a,
+.account-lead b {
+    color: var(--color-text);
+}
+.account-social {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+.account-social button,
+.account-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 50px;
+    border: 1.5px solid var(--color-text);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font: 600 16px var(--font-sans);
+    cursor: pointer;
+}
+.account-social svg {
+    width: 18px;
+    height: 18px;
+}
+.account-or {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: 14px;
+}
+.account-or::before,
+.account-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #d8cbb0;
+}
+.account-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.account-field-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+.account-field label,
+.account-field-head label {
+    font-size: 15px;
+    font-weight: 600;
+}
+.account-field-head a {
+    color: var(--color-text);
+    font-size: 15px;
+    font-weight: 500;
+}
+.account-input {
+    display: flex;
+    align-items: center;
+    height: 50px;
+    padding: 0 6px 0 14px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: #fff;
+}
+.account-input:focus-within {
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 1px var(--color-focus);
+}
+.account-input input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font: 400 17px var(--font-sans);
+    outline: none;
+}
+.account-input button {
+    height: 40px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-text);
+    font: 500 15px var(--font-sans);
+    cursor: pointer;
+}
+.account-input button:hover {
+    background: var(--color-bg-quiet);
+}
+.account-hint {
+    color: var(--color-text-soft);
+    font-size: 14px;
+}
+.account-keep {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    font-size: 16px;
+}
+.account-keep input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: var(--color-action);
+}
+.account-primary {
+    height: 52px;
+    margin-top: 4px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font: 600 17px var(--font-sans);
+    cursor: pointer;
+}
+.account-primary:hover {
+    background: var(--color-action-hover);
+}
+.account-secondary {
+    height: 52px;
+    margin-top: 4px;
+    font-size: 17px;
+}
+.account-quiet {
+    align-self: center;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--color-text);
+    font-size: 16px;
+    font-weight: 500;
+}
+/* What happened: a mismatch in the conflict colours, the rest quiet. */
+.account-message {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    font-size: 15px;
+    line-height: 1.45;
+}
+.account-message[hidden] {
+    display: none;
+}
+.account-message svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+}
+.account-message.is-mismatch {
+    border: 1px solid var(--color-conflict-border);
+    background: var(--color-conflict-bg);
+    color: var(--color-conflict-text);
+}
+.account-message.is-mismatch a {
+    color: inherit;
+    font-weight: 600;
+}
+.account-mail {
+    font-size: 18px;
+    line-height: 1.5;
+}
+button:focus-visible,
+a:focus-visible,
+.account-keep input:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+/* Phones and narrow windows: a strip of skyline above the poster. */
+@media (max-width: 899px) {
+    .account-street {
+        position: absolute;
+        bottom: auto;
+        height: 220px;
+        /* Close enough to see the Dom and the rooftops above the poster. */
+        background-size: auto 520px;
+        background-position: 68% top;
+    }
+    .account-top {
+        top: 18px;
+        left: 16px;
+        right: 16px;
+    }
+    .account-brand,
+    .account-switch {
+        height: 40px;
+    }
+    .account-brand {
+        padding: 0 14px 0 10px;
+        font-size: 18px;
+    }
+    .account-brand svg {
+        width: 24px;
+        height: 20px;
+    }
+    .account-switch {
+        padding: 0 14px;
+        font-size: 15px;
+    }
+    .account-switch span {
+        display: none;
+    }
+    .account-switch b {
+        margin: 0;
+    }
+    .account-poster {
+        width: auto;
+        max-width: 520px;
+        margin: 160px 16px 32px;
+        padding: 26px 22px 22px;
+        transform: rotate(-1deg);
+    }
+    @media (min-width: 552px) {
+        .account-poster {
+            margin-inline: auto;
+        }
+    }
+    .account-poster::before,
+    .account-poster::after {
+        top: -11px;
+        width: 72px;
+        height: 22px;
+    }
+    .account-poster::before {
+        left: 30px;
+    }
+    .account-poster::after {
+        right: 30px;
+    }
+    .account-poster form,
+    .account-poster .account-body {
+        gap: 12px;
+    }
+    .account-label {
+        font-size: 16px;
+    }
+    .account-poster h1 {
+        font-size: 34px;
+    }
+    .account-lead {
+        font-size: 15px;
+    }
+    .account-input {
+        height: 48px;
+    }
+    .account-mail {
+        font-size: 16px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .account-poster.is-pasted {
+        animation: none;
+    }
+}

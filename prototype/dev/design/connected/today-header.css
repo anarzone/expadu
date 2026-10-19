@@ -225,6 +225,22 @@ body.today-header .header-account-popover p {
     line-height: 1.5;
     color: var(--muted);
 }
+/* Sign out opens the sign-in page (account/), as the app does. */
+body.today-header .header-account-out {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 12px;
+    padding-top: 4px;
+    border-top: 1px solid var(--line);
+    color: var(--ink);
+    font-size: var(--text-small);
+    font-weight: 600;
+    text-decoration: none;
+}
+body.today-header .header-account-out:hover {
+    color: var(--color-action-text);
+}
 body.today-header .location-popover {
     background: var(--surface);
     border-color: var(--line);
