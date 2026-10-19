@@ -17,7 +17,7 @@ test('unsupported dated TRIAS fallback does not record a provider outage', funct
     Cache::flush();
     config(['services.motis.url' => null]);
     $transitous = Mockery::mock(TransitousAdapter::class);
-    $transitous->shouldReceive('withPlanTimeout')->andReturnSelf();
+    $transitous->shouldReceive('withTimeBudget')->andReturnSelf();
     $transitous->shouldReceive('plan')->andThrow(new RuntimeException('unavailable'));
     $trias = Mockery::mock(TriasAdapter::class);
     $trias->shouldNotReceive('plan');

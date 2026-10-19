@@ -49,6 +49,15 @@ class TriasAdapter implements RouteService
         return new JourneyResult($journeys, 'trias');
     }
 
+    /**
+     * TRIAS calls already time out after 3 s (connect 1 s) in VrsTriasService,
+     * and the failover only starts TRIAS with at least 2 s of budget left.
+     */
+    public function withTimeBudget(float $seconds): static
+    {
+        return $this;
+    }
+
     public function geocode(string $query, ?GeoPoint $bias = null): array
     {
         return [];

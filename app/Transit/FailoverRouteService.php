@@ -46,6 +46,25 @@ class FailoverRouteService implements RouteService
     /** Don't start a provider call with less than this much budget left. */
     private const MIN_ATTEMPT_SECONDS = 2.0;
 
+    /**
+     * The travel-time matrix has its own circuit, opened by a single failure:
+     * it is best-effort (cards fall back to estimates), callers often ask for
+     * walk and bike back to back, and a matrix hiccup must never trip the
+     * journey-planning circuit.
+     */
+    private const MATRIX_CIRCUIT = 'motis-matrix';
+
+    /** Absolute deadline (see now()) set by withTimeBudget(); null = per-call budgets only. */
+    private ?float $budgetDeadline = null;
+
+    public function withTimeBudget(float $seconds): static
+    {
+        $clone = clone $this;
+        $clone->budgetDeadline = $this->now() + max(0.0, $seconds);
+
+        return $clone;
+    }
+
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult
     {
         if (! $this->withinServiceArea($from) || ! $this->withinServiceArea($to)) {
@@ -107,6 +126,9 @@ class FailoverRouteService implements RouteService
     private function planWithProviders(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt, int $max, bool $arriveBy, bool $variety): array
     {
         $deadline = $this->now() + self::JOURNEY_BUDGET_SECONDS;
+        if ($this->budgetDeadline !== null) {
+            $deadline = min($deadline, $this->budgetDeadline);
+        }
         $providers = ['transitous' => $this->transitous, 'trias' => $this->trias];
         if ($departAt !== null || $arriveBy) {
             unset($providers['trias']);
@@ -129,9 +151,9 @@ class FailoverRouteService implements RouteService
                 break;
             }
 
-            $bounded = $adapter instanceof TransitousAdapter
-                ? $adapter->withPlanTimeout(min($remaining, 8.0))
-                : $adapter;
+            // Every adapter call, sub-calls included, finishes inside what is
+            // left of the budget.
+            $bounded = $adapter->withTimeBudget($remaining);
 
             try {
                 $result = $bounded->plan($from, $to, $departAt, $max, $arriveBy, $variety);
@@ -160,31 +182,39 @@ class FailoverRouteService implements RouteService
     {
         $cacheKey = 'geocode:'.md5($query.($bias ? "{$bias->lat},{$bias->lng}" : ''));
 
-        $cached = Cache::remember($cacheKey, 7 * 24 * 3600, function () use ($query, $bias) {
-            $providers = ['transitous' => $this->transitous];
+        $cached = Cache::get($cacheKey);
+        if (! is_array($cached)) {
+            $cached = null;
 
-            if ($this->motisConfigured()) {
-                $providers = ['motis' => $this->motis] + $providers;
-            }
-
-            foreach ($providers as $name => $adapter) {
+            foreach ($this->lookupProviders() as $name => $adapter) {
                 if ($this->breaker->isOpen($name)) {
                     continue;
                 }
 
-                try {
-                    $places = $adapter->geocode($query, $bias);
-                    $this->breaker->recordSuccess($name);
+                $bounded = $this->boundedForLookup($adapter);
+                if ($bounded === null) {
+                    break;
+                }
 
-                    return array_map(fn (Place $p) => $p->toArray(), $places);
+                try {
+                    $places = $bounded->geocode($query, $bias);
+                    $this->breaker->recordSuccess($name);
+                    $cached = array_map(fn (Place $p) => $p->toArray(), $places);
+                    break;
                 } catch (\Throwable $e) {
                     $this->breaker->recordFailure($name);
                     Log::warning("{$name} geocode failed", ['error' => $e->getMessage()]);
                 }
             }
 
-            return [];
-        });
+            // Cache only an answer a provider gave (an empty one included) —
+            // never a failure, which would hide the place for a week.
+            if ($cached === null) {
+                return [];
+            }
+
+            Cache::put($cacheKey, $cached, 7 * 24 * 3600);
+        }
 
         return array_map(fn (array $p) => Place::fromArray($p), $cached);
     }
@@ -194,19 +224,20 @@ class FailoverRouteService implements RouteService
         $cacheKey = sprintf('revgeo:%.4f,%.4f', $point->lat, $point->lng);
 
         $cached = Cache::remember($cacheKey, 24 * 3600, function () use ($point) {
-            $providers = ['transitous' => $this->transitous];
-
-            if ($this->motisConfigured()) {
-                $providers = ['motis' => $this->motis] + $providers;
-            }
-
-            foreach ($providers as $name => $adapter) {
+            foreach ($this->lookupProviders() as $name => $adapter) {
                 if ($this->breaker->isOpen($name)) {
                     continue;
                 }
 
+                // Out of budget: answer null (not cached — remember() treats a
+                // stored null as a miss).
+                $bounded = $this->boundedForLookup($adapter);
+                if ($bounded === null) {
+                    return null;
+                }
+
                 try {
-                    $place = $adapter->reverseGeocode($point);
+                    $place = $bounded->reverseGeocode($point);
                     $this->breaker->recordSuccess($name);
 
                     return $place?->toArray();
@@ -221,6 +252,38 @@ class FailoverRouteService implements RouteService
         return is_array($cached) ? Place::fromArray($cached) : null;
     }
 
+    /**
+     * Geocoding providers in order: our MOTIS first when configured.
+     *
+     * @return array<string, TransitousAdapter>
+     */
+    private function lookupProviders(): array
+    {
+        $providers = ['transitous' => $this->transitous];
+
+        if ($this->motisConfigured()) {
+            $providers = ['motis' => $this->motis] + $providers;
+        }
+
+        return $providers;
+    }
+
+    /**
+     * The adapter bound to what is left of this service's time budget, or
+     * null when too little is left to start a call. Without a budget the
+     * adapter keeps its own per-call timeouts.
+     */
+    private function boundedForLookup(TransitousAdapter $adapter): ?TransitousAdapter
+    {
+        if ($this->budgetDeadline === null) {
+            return $adapter;
+        }
+
+        $remaining = $this->budgetDeadline - $this->now();
+
+        return $remaining >= self::MIN_ATTEMPT_SECONDS ? $adapter->withTimeBudget($remaining) : null;
+    }
+
     public function travelMatrix(GeoPoint $origin, array $destinations, string $mode = 'BIKE'): array
     {
         if ($destinations === []) {
@@ -233,7 +296,10 @@ class FailoverRouteService implements RouteService
         // best-effort: outside the service area, or when MOTIS is already
         // known-down (breaker open), skip straight to the caller's fallback
         // rather than wait on a doomed call.
-        if (! $this->motisConfigured() || ! $this->withinServiceArea($origin) || $this->breaker->isOpen('motis')) {
+        if (! $this->motisConfigured()
+            || ! $this->withinServiceArea($origin)
+            || $this->breaker->isOpen('motis')
+            || $this->breaker->isOpen(self::MATRIX_CIRCUIT)) {
             return $nulls;
         }
 
@@ -251,10 +317,12 @@ class FailoverRouteService implements RouteService
         }
 
         try {
-            // Deliberately doesn't touch the circuit breaker — a matrix hiccup
-            // must never trip the journey-planning path.
             $minutes = $this->motis->travelMatrix($origin, $destinations, $mode);
+            $this->breaker->recordSuccess(self::MATRIX_CIRCUIT);
         } catch (\Throwable $e) {
+            // One failure opens the matrix circuit, so a walk call that timed
+            // out spares the bike call right after it (and the next lists).
+            $this->breaker->recordFailure(self::MATRIX_CIRCUIT, threshold: 1);
             Log::warning('travel matrix failed', ['error' => $e->getMessage()]);
 
             return $nulls;
