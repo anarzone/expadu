@@ -376,6 +376,93 @@ export function observeGeolocationPermission(
     };
 }
 
+// ── Background tracking, one session per page load ──
+// The app layout remounts on every Inertia visit. Without sharing, each mount
+// started a fresh high-accuracy watch and its first fix sent a new ping (on
+// Travel that ping reloaded the boards again). The layout now borrows one
+// module-level session: a remount within the grace window keeps the running
+// watch and its ping cooldown. Opting out or revoking permission still stops
+// it at once.
+const BACKGROUND_RELEASE_GRACE_MS = 3_000;
+
+let backgroundSession: ReturnType<typeof createGeolocationSession> | null =
+    null;
+let backgroundUsers = 0;
+let backgroundGranted = false;
+let stopBackgroundPermission: (() => void) | null = null;
+let backgroundReleaseTimer: ReturnType<typeof setTimeout> | null = null;
+
+const ignore = () => {};
+
+function syncBackgroundSession() {
+    if (backgroundUsers > 0 && backgroundGranted && !backgroundSession) {
+        backgroundSession = createGeolocationSession({
+            onPosition: ignore,
+            onQuality: ignore,
+            onError: ignore,
+        });
+    } else if (!backgroundGranted && backgroundSession) {
+        backgroundSession.stop();
+        backgroundSession = null;
+    }
+}
+
+/**
+ * Join the shared background session. It starts only once the browser
+ * permission is already granted — this never prompts. Returns the release
+ * function; the session outlives a release by a short grace period so a
+ * remounting layout picks it straight back up.
+ */
+export function acquireBackgroundLocation(): () => void {
+    if (backgroundReleaseTimer !== null) {
+        clearTimeout(backgroundReleaseTimer);
+        backgroundReleaseTimer = null;
+    }
+
+    backgroundUsers++;
+    stopBackgroundPermission ??= observeGeolocationPermission((granted) => {
+        backgroundGranted = granted;
+        syncBackgroundSession();
+    });
+    syncBackgroundSession();
+
+    let released = false;
+
+    return () => {
+        if (released) {
+            return;
+        }
+
+        released = true;
+        backgroundUsers = Math.max(0, backgroundUsers - 1);
+
+        if (backgroundUsers === 0) {
+            backgroundReleaseTimer = setTimeout(() => {
+                backgroundReleaseTimer = null;
+
+                if (backgroundUsers === 0) {
+                    stopBackgroundLocation();
+                }
+            }, BACKGROUND_RELEASE_GRACE_MS);
+        }
+    };
+}
+
+/** Stop background tracking now (opting out), whoever still holds it. */
+export function stopBackgroundLocation() {
+    if (backgroundReleaseTimer !== null) {
+        clearTimeout(backgroundReleaseTimer);
+        backgroundReleaseTimer = null;
+    }
+
+    backgroundSession?.stop();
+    backgroundSession = null;
+    backgroundUsers = 0;
+    stopBackgroundPermission?.();
+    stopBackgroundPermission = null;
+    backgroundGranted = false;
+}
+
 export function useGeolocation({
     enabled = true,
     pingIntervalMs = 300_000,
