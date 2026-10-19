@@ -25,10 +25,10 @@
         <div class="post-list">
             @forelse ($posts as $post)
                 <a class="post-card" href="{{ route('blog.show', $post['slug']) }}">
-                    <span class="mk-kicker">{{ $post['published_at']->format('j M Y') }}</span>
+                    <span class="mk-kicker"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M16 3v4M8 3v4M4 11h16"/></svg>{{ $post['published_at']->format('j M Y') }}</span>
                     <h3>{{ $post['title'] }}</h3>
                     <p>{{ $post['description'] }}</p>
-                    <span class="mk-go">Read the guide <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                    <span class="mk-go" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
                 </a>
             @empty
                 <p class="sub">First guides land this week.</p>
