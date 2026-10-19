@@ -2215,15 +2215,12 @@ html[data-xv-anim='on'] .xv [data-reveal='draw'] path.r {
 html[data-xv-anim='on'] .xv [data-reveal='draw']:not([data-in]) path.r {
     stroke-dashoffset: 2200;
 }
-/* The hero is the first screen and holds the page's LCP: its sliding
- * reveals paint at full opacity from the first frame and only move into
- * place. Everything below the hero still fades in. */
-html[data-xv-anim='on']
-    .xv
-    .xv-hero
-    :is([data-reveal='up'], [data-reveal='word'], [data-reveal='card']):not(
-        [data-in]
-    ) {
+/* The hero text is the page's LCP: it paints at full opacity from the
+ * first frame and only slides into place. The phone and poster cards keep
+ * their fade, so web-font swaps above them don't count as layout shifts.
+ * Everything below the hero still fades in. */
+html[data-xv-anim='on'] .xv .xv-hero [data-reveal='up']:not([data-in]),
+html[data-xv-anim='on'] .xv .xv-hero [data-reveal='word']:not([data-in]) {
     opacity: 1;
 }
 .xv svg [data-reveal] {
