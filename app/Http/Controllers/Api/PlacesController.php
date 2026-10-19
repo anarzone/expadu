@@ -6,6 +6,7 @@ use App\Enums\SpotCategory;
 use App\Enums\SpotFeedbackState;
 use App\Enums\TransportMode;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PlaceListResource;
 use App\Http\Resources\PlaceResource;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
@@ -285,7 +286,7 @@ class PlacesController extends Controller
 
         app(PlaceFacts::class)->attach($paginator->getCollection());
 
-        return PlaceResource::collection($paginator)
+        return PlaceListResource::collection($paginator)
             ->additional([
                 'nearby_included' => $nearbyIncluded,
                 // The resolved origin so the From control reflects the truth:

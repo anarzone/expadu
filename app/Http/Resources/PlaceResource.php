@@ -72,22 +72,33 @@ class PlaceResource extends JsonResource
             'feedback_state' => $this->feedback_state ?? null,
             'feedback_rating' => $this->feedback_rating ?? null,
             'facts' => $this->resolveFacts($placeFacts['practical']),
-            'place_facts' => [
-                'identity' => $placeFacts['identity'],
-                'name_kind' => $placeFacts['name_kind'],
-                'aliases' => $placeFacts['aliases'],
-                'location' => $placeFacts['location'],
-                'access' => $placeFacts['access'],
-                'fee' => $placeFacts['fee'],
-                'hours' => $placeFacts['hours'],
-                'contact' => $placeFacts['contact'],
-                'description' => $placeFacts['description'],
-                'negative_facts' => $placeFacts['negative_facts'],
-                'practical' => $placeFacts['practical'],
-                'activities' => $placeFacts['activities'],
-                'conflicts' => $placeFacts['conflicts'],
-                'revision' => $placeFacts['revision'],
-            ],
+            'place_facts' => $this->placeFacts($placeFacts),
+        ];
+    }
+
+    /**
+     * The full evidence record a detail view shows.
+     *
+     * @param  array<string, mixed>  $placeFacts
+     * @return array<string, mixed>
+     */
+    protected function placeFacts(array $placeFacts): array
+    {
+        return [
+            'identity' => $placeFacts['identity'],
+            'name_kind' => $placeFacts['name_kind'],
+            'aliases' => $placeFacts['aliases'],
+            'location' => $placeFacts['location'],
+            'access' => $placeFacts['access'],
+            'fee' => $placeFacts['fee'],
+            'hours' => $placeFacts['hours'],
+            'contact' => $placeFacts['contact'],
+            'description' => $placeFacts['description'],
+            'negative_facts' => $placeFacts['negative_facts'],
+            'practical' => $placeFacts['practical'],
+            'activities' => $placeFacts['activities'],
+            'conflicts' => $placeFacts['conflicts'],
+            'revision' => $placeFacts['revision'],
         ];
     }
 
