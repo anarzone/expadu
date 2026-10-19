@@ -1,17 +1,14 @@
 import { Deferred, Head, Link, router, usePage } from '@inertiajs/react';
 import { IconArrowRight, IconRefresh, IconX } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { index as eventsIndex } from '@/actions/App/Http/Controllers/Api/EventsController';
 import { show as showPlace } from '@/actions/App/Http/Controllers/Api/PlacesController';
 import { api } from '@/components/composer/types';
 import type { Slot } from '@/components/composer/types';
 import { EventDiscoveryCard } from '@/components/events/event-discovery-card';
 import { eventSelectionQuery } from '@/components/events/event-presentation';
-import { EventRichDetail } from '@/components/events/event-rich-detail';
 import type { EventOccurrence } from '@/components/events/types';
-import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
-import { PlaceDetailModal } from '@/components/places/place-detail-modal';
 import { FeedbackToast } from '@/components/places/place-feedback-menu';
 import type { Place } from '@/components/places/types';
 import { ServiceErrorBanner } from '@/components/service-error-banner';
@@ -42,6 +39,27 @@ import AppLayout from '@/layouts/app-layout';
 import { composer, events as eventsRoute, timetable } from '@/routes';
 import { catalogue } from '@/routes/composer';
 import '../../css/today.css';
+
+// The event sheet, place sheet and journey sheet only open after a tap, so
+// their code stays out of Today's first load and arrives as separate chunks.
+const loadPlaceDetail = () => import('@/components/places/place-detail-modal');
+const loadJourneySheet = () =>
+    import('@/components/journey/take-me-there-sheet');
+const EventRichDetail = lazy(() =>
+    import('@/components/events/event-rich-detail').then((module) => ({
+        default: module.EventRichDetail,
+    })),
+);
+const PlaceDetailModal = lazy(() =>
+    loadPlaceDetail().then((module) => ({
+        default: module.PlaceDetailModal,
+    })),
+);
+const TakeMeThereSheet = lazy(() =>
+    loadJourneySheet().then((module) => ({
+        default: module.TakeMeThereSheet,
+    })),
+);
 
 export default function Dashboard() {
     const { auth, tiles, rails, weather, forecast, savedPlan } = usePage<{
@@ -268,6 +286,11 @@ export default function Dashboard() {
 
     async function openPlace(id: number) {
         setDetailError('');
+        // Fetch the sheets' code while the place itself is loading, so opening
+        // it and tapping through to a route never waits on a chunk.
+        void Promise.all([loadPlaceDetail(), loadJourneySheet()]).catch(
+            () => {},
+        );
 
         try {
             const result = await api<{ data: Place }>(showPlace.url(id));
@@ -623,49 +646,55 @@ export default function Dashboard() {
                         paperworkContinuation}
                 </div>
             </div>
-            {eventDetail && (
-                <EventRichDetail
-                    occurrence={eventDetail}
-                    isMobile={isMobile}
-                    breadcrumb="Today"
-                    onClose={() => setEventDetail(null)}
-                    onPlan={() => chooseEvent(eventDetail)}
-                    onNavigate={() => eventJourney(eventDetail)}
-                    onOpenPlace={(id) => {
-                        setEventDetail(null);
-                        void openPlace(id);
-                    }}
-                />
-            )}
-            {placeDetail && (
-                <PlaceDetailModal
-                    place={placeDetail}
-                    isMobile={isMobile}
-                    meta={[
-                        placeDetail.fine_label ?? placeDetail.category,
-                        placeDetail.park ?? placeDetail.veedel,
-                    ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    feedback={{
-                        state: placeDetail.feedback_state,
-                        rating: placeDetail.feedback_rating,
-                        onAction: (action, rating) =>
-                            void saveFeedback(placeDetail.id, action, rating),
-                    }}
-                    onClose={() => setPlaceDetail(null)}
-                    onNavigate={(target) => {
-                        setPlaceDetail(null);
-                        setDestination(target);
-                    }}
-                />
-            )}
-            {destination && (
-                <TakeMeThereSheet
-                    destination={destination}
-                    onClose={() => setDestination(null)}
-                />
-            )}
+            <Suspense fallback={null}>
+                {eventDetail && (
+                    <EventRichDetail
+                        occurrence={eventDetail}
+                        isMobile={isMobile}
+                        breadcrumb="Today"
+                        onClose={() => setEventDetail(null)}
+                        onPlan={() => chooseEvent(eventDetail)}
+                        onNavigate={() => eventJourney(eventDetail)}
+                        onOpenPlace={(id) => {
+                            setEventDetail(null);
+                            void openPlace(id);
+                        }}
+                    />
+                )}
+                {placeDetail && (
+                    <PlaceDetailModal
+                        place={placeDetail}
+                        isMobile={isMobile}
+                        meta={[
+                            placeDetail.fine_label ?? placeDetail.category,
+                            placeDetail.park ?? placeDetail.veedel,
+                        ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        feedback={{
+                            state: placeDetail.feedback_state,
+                            rating: placeDetail.feedback_rating,
+                            onAction: (action, rating) =>
+                                void saveFeedback(
+                                    placeDetail.id,
+                                    action,
+                                    rating,
+                                ),
+                        }}
+                        onClose={() => setPlaceDetail(null)}
+                        onNavigate={(target) => {
+                            setPlaceDetail(null);
+                            setDestination(target);
+                        }}
+                    />
+                )}
+                {destination && (
+                    <TakeMeThereSheet
+                        destination={destination}
+                        onClose={() => setDestination(null)}
+                    />
+                )}
+            </Suspense>
             <FeedbackToast message={feedbackToast} />
         </AppLayout>
     );

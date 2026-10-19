@@ -60,6 +60,88 @@
     src: url('/fonts/fraunces-500.woff2') format('woff2');
 }
 
+/* Metric-matched fallbacks. Until a web font arrives, text is drawn in a local
+   face scaled to the web font's width and line box, so the swap moves almost
+   nothing. size-adjust is the ratio of the web font's rendered width to the
+   local face's over the app's own interface copy (kerning included);
+   ascent/descent/line-gap-override are the web font's hhea metrics (read from
+   public/fonts/*.woff2) divided by size-adjust. unicode-range keeps each face
+   to the scripts its web font covers, so Cyrillic and other scripts still fall
+   through to the system UI font unscaled. Arial and Georgia ship with macOS,
+   iOS and Windows; where local() finds nothing the stack behaves as before. */
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 400;
+    src: local('Arial'), local('ArialMT');
+    size-adjust: 104.31%;
+    ascent-override: 88.2%;
+    descent-override: 21.09%;
+    line-gap-override: 9.59%;
+    unicode-range:
+        U+0020-007E, U+00A0-017F, U+2013-2014, U+2018-201A, U+201C-201E,
+        U+2020-2022, U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 500;
+    src: local('Arial'), local('ArialMT');
+    size-adjust: 106.73%;
+    ascent-override: 86.2%;
+    descent-override: 20.61%;
+    line-gap-override: 9.37%;
+    unicode-range:
+        U+0020-007E, U+00A0-017F, U+2013-2014, U+2018-201A, U+201C-201E,
+        U+2020-2022, U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 600;
+    src: local('Arial Bold'), local('Arial-BoldMT');
+    size-adjust: 101.21%;
+    ascent-override: 90.9%;
+    descent-override: 21.74%;
+    line-gap-override: 9.88%;
+    unicode-range:
+        U+0020-007E, U+00A0-017F, U+2013-2014, U+2018-201A, U+201C-201E,
+        U+2020-2022, U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Geist Fallback';
+    font-weight: 700;
+    src: local('Arial Bold'), local('Arial-BoldMT');
+    size-adjust: 103.45%;
+    ascent-override: 88.93%;
+    descent-override: 21.27%;
+    line-gap-override: 9.67%;
+    unicode-range:
+        U+0020-007E, U+00A0-017F, U+2013-2014, U+2018-201A, U+201C-201E,
+        U+2020-2022, U+2026, U+2030, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Fraunces Fallback';
+    font-weight: 400;
+    src: local('Georgia');
+    size-adjust: 105.7%;
+    ascent-override: 92.53%;
+    descent-override: 24.13%;
+    line-gap-override: 0%;
+    unicode-range:
+        U+0020-007E, U+00A0-00FF, U+0131, U+0152-0153, U+2013-2014, U+2018-201E,
+        U+2022, U+2026, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+@font-face {
+    font-family: 'Fraunces Fallback';
+    font-weight: 500;
+    src: local('Georgia');
+    size-adjust: 107.37%;
+    ascent-override: 91.09%;
+    descent-override: 23.75%;
+    line-gap-override: 0%;
+    unicode-range:
+        U+0020-007E, U+00A0-00FF, U+0131, U+0152-0153, U+2013-2014, U+2018-201E,
+        U+2022, U+2026, U+2039-203A, U+20AC, U+2122, U+2212;
+}
+
 /* PWA: prevent zoom on iOS (double-tap + pinch) for native app feel */
 html {
     touch-action: manipulation; /* disables double-tap zoom */
@@ -89,9 +171,10 @@ input[type='time']::-webkit-calendar-picker-indicator {
 @theme {
     /* Typography */
     --font-sans:
-        'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-display: 'Fraunces', ui-serif, Georgia, serif;
+        'Geist', 'Geist Fallback', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --font-display: 'Fraunces', 'Fraunces Fallback', ui-serif, Georgia, serif;
     --font-mono: 'Geist Mono', ui-monospace, monospace;
 
     /* Border radius */
@@ -393,196 +476,6 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .dark .cat-event,
 .dark .cat-party {
     --cat-tint: #3a2015;
-}
-
-/* Departures dark board (KVB-style) — a dark surface in BOTH themes, lifted
-   slightly in dark mode. Mirrors prototype/departures-v4.html. The board owns
-   its own token scope (--bd-*) so its children read light-on-dark regardless of
-   the page theme. */
-.board {
-    --bd-bg: #0e1116;
-    --bd-panel: #161b22;
-    --bd-line: #262d38;
-    --bd-ink: #eef2f7;
-    --bd-sub: #8b95a3;
-    --st-now: #3ddc97;
-    --st-warn: #ffc24d;
-    --st-cancel: #ff6b54;
-}
-.dark .board {
-    --bd-bg: #141a22;
-    --bd-panel: #1c232d;
-    --bd-line: #303a47;
-    --bd-ink: #f3f7fb;
-    --bd-sub: #9aa6b4;
-}
-/* Split-flap board tiles — the airport departure board. Every board cell
-   (line, destination, each time) is a field of identical character tiles, one
-   glyph per tile; on a data update only the tiles whose glyph changed flip.
-   Tile size scales down on phones so a whole row still fits; the column headers
-   derive their widths from the same --tw/--tg/--col-gap so they stay aligned. */
-.board {
-    --tw: 12px;
-    --th: 18px;
-    --tg: 2px;
-    --col-gap: 8px;
-}
-@media (min-width: 768px) {
-    .board {
-        --tw: 17px;
-        --th: 25px;
-        --tg: 2.5px;
-        --col-gap: 14px;
-    }
-}
-.tile-field {
-    display: inline-flex;
-    gap: var(--tg);
-}
-.tile {
-    position: relative;
-    display: inline-block;
-    width: var(--tw);
-    height: var(--th);
-    border-radius: 4px;
-    background: #101318;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-    perspective: 300px;
-    color: var(--ink, #e7ecf2);
-}
-.tile-half {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 50%;
-    overflow: hidden;
-}
-.tile-top {
-    top: 0;
-    background: linear-gradient(#262c34, #1b2027);
-    border-radius: 4px 4px 0 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.65);
-}
-.tile-bottom {
-    bottom: 0;
-    background: linear-gradient(#171b21, #1f242c);
-    border-radius: 0 0 4px 4px;
-}
-.tile-half > span {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 200%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Geist Mono', ui-monospace, monospace;
-    font-weight: 700;
-    font-size: calc(var(--tw) * 0.86);
-    color: var(--ink, #e7ecf2);
-}
-.tile-top > span {
-    top: 0;
-}
-.tile-bottom > span {
-    bottom: 0;
-}
-/* Sequential mechanical flap: the old top leaf falls (accelerating, darkening),
-   then the new bottom leaf drops and settles with a slight overshoot. The
-   bottom's start delay is set inline (stagger + top duration) so tiles ripple
-   left-to-right. */
-.tile-flip-top {
-    z-index: 4;
-    transform-origin: 50% 100%;
-    backface-visibility: hidden;
-    animation: tile-top-fall 0.25s cubic-bezier(0.36, 0.08, 0.66, 0.5) both;
-}
-.tile-flip-bottom {
-    z-index: 4;
-    transform-origin: 50% 0%;
-    backface-visibility: hidden;
-    animation: tile-bottom-fall 0.32s cubic-bezier(0.26, 1.3, 0.5, 1) both;
-}
-@keyframes tile-top-fall {
-    from {
-        transform: rotateX(0);
-        filter: brightness(1);
-    }
-    to {
-        transform: rotateX(-90deg);
-        filter: brightness(0.48);
-    }
-}
-@keyframes tile-bottom-fall {
-    from {
-        transform: rotateX(90deg);
-        filter: brightness(0.52);
-    }
-    to {
-        transform: rotateX(0);
-        filter: brightness(1);
-    }
-}
-@media (prefers-reduced-motion: reduce) {
-    .tile-flip-top,
-    .tile-flip-bottom {
-        animation: none;
-        visibility: hidden;
-    }
-}
-/* A departure row (one per departure, airport-board style): line badge (col 1),
-   terminus (col 2) and the clock time (col 3), all on a single baseline. */
-.board-row {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: 8px;
-    padding: 7px 12px;
-    border-bottom: 1px solid var(--bd-line);
-}
-.board-row:last-child {
-    border-bottom: 0;
-}
-@media (min-width: 768px) {
-    .board-row {
-        column-gap: 12px;
-        padding: 8px 18px;
-    }
-}
-.board-row > .tile-field {
-    grid-column: 1;
-    grid-row: 1;
-}
-.board-dest {
-    grid-column: 2;
-    grid-row: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-}
-.board-hero {
-    grid-column: 3;
-    grid-row: 1;
-    justify-self: end;
-    --tw: 14px;
-    --th: 21px;
-    display: flex;
-    align-items: center;
-    gap: var(--tg);
-}
-@media (min-width: 768px) {
-    .board-hero {
-        --tw: 20px;
-        --th: 28px;
-    }
-}
-.board-hero-colon {
-    font-family: 'Geist Mono', ui-monospace, monospace;
-    font-weight: 700;
-    font-size: calc(var(--tw) * 0.78);
-    color: var(--bd-sub);
-    margin: 0 1px;
 }
 
 @layer utilities {
