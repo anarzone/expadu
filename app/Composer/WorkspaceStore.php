@@ -6,7 +6,6 @@ use App\Models\ComposerWorkspace;
 use App\Models\User;
 use App\Places\PlaceIdentity;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -37,6 +36,39 @@ class WorkspaceStore
             $s['focus'] = $plan['date'];
             $this->commit($s);
             $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+        });
+    }
+
+    /**
+     * Erasure worker: strip Paperwork appointments from every stored plan copy
+     * (plans, draft, versions, plan messages). Personal plans the person typed
+     * themselves stay; they are not Paperwork data.
+     */
+    public function purgeAppointmentCopies(int $userId): void
+    {
+        DB::transaction(function () use ($userId): void {
+            $row = ComposerWorkspace::query()->where('user_id', $userId)->lockForUpdate()->first();
+            if ($row === null) {
+                return;
+            }
+            $strip = fn (?array $plan): ?array => $plan === null ? null : [...$plan, 'slots' => array_values(array_filter(
+                $plan['slots'] ?? [],
+                fn (array $slot): bool => ($slot['is_appointment'] ?? false) !== true && ($slot['type'] ?? null) !== 'appointment',
+            ))];
+            $s = $row->state;
+            $s['plans'] = array_map($strip, $s['plans'] ?? []);
+            $s['draft'] = $strip($s['draft'] ?? null);
+            $s['versions'] = array_map(fn (array $version): array => [...$version, 'before' => $strip($version['before'] ?? null), 'after' => $strip($version['after'] ?? null)], $s['versions'] ?? []);
+            foreach ($s['conversations'] ?? [] as $i => $conversation) {
+                foreach ($conversation['messages'] ?? [] as $j => $message) {
+                    if (isset($message['plan'])) {
+                        $s['conversations'][$i]['messages'][$j]['plan'] = $strip($message['plan']);
+                    }
+                }
+            }
+            if ($s !== $row->state) {
+                $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+            }
         });
     }
 
@@ -99,7 +131,7 @@ class WorkspaceStore
                     break;
                 case 'proposal':
                     $this->require($s['draft'] === null, 'Apply or discard your unfinished changes before creating another plan.');
-                    $plan = Cache::get("composer:handoff:{$user->id}:{$input['token']}");
+                    $plan = app(PrivatePlanCache::class)->handoff($user, $input['token']);
                     $this->require(is_array($plan), 'This suggestion expired. Please ask again.');
                     $plan['date'] = CarbonImmutable::parse($plan['constraints']['window_start'])->setTimezone('Europe/Berlin')->format('Y-m-d');
                     $this->validatePlan($plan);
@@ -181,7 +213,7 @@ class WorkspaceStore
                 app(TasteSignals::class)->swappedAway($user, $displaced);
             }
             if ($action === 'proposal') {
-                DB::afterCommit(fn () => Cache::forget("composer:handoff:{$user->id}:{$input['token']}"));
+                DB::afterCommit(fn () => app(PrivatePlanCache::class)->forgetHandoff($user, $input['token']));
             }
 
             return $this->projectState($s) + ['revision' => $row->revision];
@@ -338,9 +370,23 @@ class WorkspaceStore
             $start = CarbonImmutable::parse($slot['start_at'])->setTimezone('Europe/Berlin');
             $end = CarbonImmutable::parse($slot['end_at'])->setTimezone('Europe/Berlin');
             $this->require($end > $start && $start->format('Y-m-d') === $plan['date'] && $end->format('Y-m-d') === $plan['date'], 'Choose an end time after the start, within the same day.');
-            $this->require($previous === null || $start >= CarbonImmutable::parse($previous['end_at']), ($previous['name'] ?? 'An activity').' overlaps '.$slot['name'].'. Choose a free time.');
+            $this->require($previous === null || $start >= CarbonImmutable::parse($previous['end_at']) || $this->recordedOverlap($previous, $slot), ($previous['name'] ?? 'An activity').' overlaps '.$slot['name'].'. Choose a free time.');
             $previous = $slot;
         }
+    }
+
+    /**
+     * Recorded appointments are facts from the person's records, not choices:
+     * two that clash stay with the plan's conflict warning, and an appointment
+     * of unknown length may run into what follows.
+     */
+    private function recordedOverlap(array $previous, array $slot): bool
+    {
+        $recorded = fn (array $item): bool => ($item['is_appointment'] ?? false) === true;
+
+        return ($recorded($previous) && $recorded($slot))
+            || ($recorded($previous) && ($previous['duration_known'] ?? true) === false)
+            || ($slot['may_overlap_previous'] ?? false) === true;
     }
 
     private function commit(array &$s): void

@@ -53,7 +53,7 @@ function buildNavGroups(): NavGroup[] {
             label: 'Personal',
             items: [
                 {
-                    title: 'Bureaucracy',
+                    title: 'Paperwork',
                     href: '/bureaucracy',
                     icon: IconFileText,
                 },

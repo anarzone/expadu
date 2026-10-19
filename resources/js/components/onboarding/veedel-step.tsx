@@ -202,8 +202,8 @@ export function VeedelStep({
                     {planning && (
                         <p className="mt-2 text-xs text-muted-foreground">
                             We&rsquo;ll ask about registering the address once
-                            you&rsquo;ve moved in — the 14-day clock starts
-                            then, not now.
+                            you&rsquo;ve moved in. Your move-in date matters for
+                            it, not your arrival.
                         </p>
                     )}
                 </div>

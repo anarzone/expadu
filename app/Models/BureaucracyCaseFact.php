@@ -25,12 +25,15 @@ class BureaucracyCaseFact extends Model
         'confirmed_at',
         'reconfirm_at',
         'superseded_at',
+        'effective_from', 'effective_until', 'end_date_unknown', 'answer_state',
+        'operation', 'recorded_at', 'recorded_by', 'supersedes_fact_id', 'provenance', 'context_id',
     ];
 
     /** @var list<string> */
     protected $hidden = [
         'value',
         'encrypted_value',
+        'provenance',
     ];
 
     /**
@@ -43,6 +46,11 @@ class BureaucracyCaseFact extends Model
             'confirmed_at' => 'datetime',
             'reconfirm_at' => 'datetime',
             'superseded_at' => 'datetime',
+            'effective_from' => 'immutable_date',
+            'effective_until' => 'immutable_date',
+            'end_date_unknown' => 'boolean',
+            'recorded_at' => 'immutable_datetime',
+            'provenance' => 'encrypted:array',
         ];
     }
 

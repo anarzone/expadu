@@ -28,7 +28,7 @@ const menuGroups: Array<{
         label: 'Settle',
         items: [
             {
-                title: 'Bureaucracy',
+                title: 'Paperwork',
                 href: '/bureaucracy',
                 icon: IconBuildingBank,
             },

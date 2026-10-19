@@ -4,12 +4,11 @@ use App\ContextEngine\ActionBus;
 use App\ContextEngine\ScoredAction;
 use App\Home\TileComposer;
 use App\Home\TileTriage;
-use App\Models\Task;
 use App\Models\User;
 use App\Models\UserEvent;
-use App\Models\UserTask;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Redis;
+use Tests\Support\ReviewedHomePlan;
 
 beforeEach(function () {
     // Triage keys + bus actions live in raw Redis and would leak between tests
@@ -23,19 +22,6 @@ beforeEach(function () {
         );
     }
 });
-
-/** An overdue Anmeldung deadline → a synthetic tile keyed "task:{userTask}". */
-function overdueDeadline(User $user): UserTask
-{
-    $task = Task::factory()->create([
-        'title' => 'Register your address (Anmeldung)',
-        'situation' => [$user->situation->value],
-        'deadline_type' => 'days_since_arrival',
-        'deadline_days' => 5,
-    ]);
-
-    return UserTask::create(['user_id' => $user->id, 'task_id' => $task->id, 'is_applicable' => true]);
-}
 
 /** A dashboard-channel bus action with a chosen severity (drives the tile tone). */
 function triageBusAction(string $type, float $score, string $severity, array $payload): ScoredAction
@@ -65,16 +51,20 @@ function recordDismissal(User $user, string $type, string $key): void
 
 test('a triaged tile drops out of the next build, and Undo brings it back', function () {
     $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(12)]);
-    $userTask = overdueDeadline($user);
-    $tileKey = "task:{$userTask->id}";
+    $fixture = ReviewedHomePlan::activate($user, ['fixture.triage' => ['deadline_days' => 5]],
+        ['arrival_date' => now()->subDays(12)->toDateString()]);
+    $context = homeContext($user, ['bureaucracyPlan' => $fixture['plan']]);
+    $tile = collect(app(TileComposer::class)->tiles($context))->firstWhere('type', 'bureaucracy_deadline');
+    expect($tile)->not->toBeNull();
+    $tileKey = $tile['key'];
 
-    expect(collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('key'))->toContain($tileKey);
+    expect(collect(app(TileComposer::class)->tiles($context))->pluck('key'))->toContain($tileKey);
 
     $this->actingAs($user)
         ->postJson('/api/tiles/triage', ['type' => 'bureaucracy_deadline', 'key' => $tileKey, 'action' => 'dismiss'])
         ->assertOk();
 
-    expect(collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('key'))->not->toContain($tileKey)
+    expect(collect(app(TileComposer::class)->tiles($context))->pluck('key'))->not->toContain($tileKey)
         ->and(UserEvent::where('user_id', $user->id)->where('event_type', 'card_dismissed')->count())->toBe(1);
 
     // Undo lifts the hide AND clears the dismiss signal (no lingering demotion).
@@ -82,7 +72,7 @@ test('a triaged tile drops out of the next build, and Undo brings it back', func
         ->postJson('/api/tiles/triage/undo', ['type' => 'bureaucracy_deadline', 'key' => $tileKey])
         ->assertOk();
 
-    expect(collect(app(TileComposer::class)->tiles(homeContext($user)))->pluck('key'))->toContain($tileKey)
+    expect(collect(app(TileComposer::class)->tiles($context))->pluck('key'))->toContain($tileKey)
         ->and(UserEvent::where('user_id', $user->id)->where('event_type', 'card_dismissed')->count())->toBe(0);
 });
 

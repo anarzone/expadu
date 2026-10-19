@@ -10,10 +10,15 @@ use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
 use App\Models\BureaucracyCaseMessage;
 use App\Models\BureaucracyCaseQuestion;
+use App\Models\BureaucracyProcessingConsent;
 use App\Models\Task;
 use App\Models\User;
+use App\Privacy\ProcessingPurpose;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
+use Tests\Support\ExternalProcessingFixtures;
+
+beforeEach(fn () => ExternalProcessingFixtures::configure());
 
 final class EndpointTestExtractor implements ExtractsCaseFact
 {
@@ -24,9 +29,9 @@ final class EndpointTestExtractor implements ExtractsCaseFact
 
     public function extract(CaseFactExtractionRequest $request): CaseFactExtractionResult
     {
-        $this->requests[] = $request;
-
-        return $this->result;
+        return ExternalProcessingFixtures::fakeExtraction($request, $this->result, function () use ($request): void {
+            $this->requests[] = $request;
+        });
     }
 }
 
@@ -80,6 +85,7 @@ test('the bounded message route requires authentication ownership and the curren
 
     $this->postJson(route('bureaucracy.case.messages.store'), [
         'question_id' => $question->id,
+        'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
         'message' => 'My goal is settlement.',
     ])->assertUnauthorized();
 
@@ -88,6 +94,7 @@ test('the bounded message route requires authentication ownership and the curren
     $this->actingAs($otherUser)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'My goal is settlement.',
         ])
         ->assertForbidden();
@@ -117,6 +124,7 @@ test('answered questions and inactive cases cannot be interpreted', function () 
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'My goal is settlement.',
         ])
         ->assertForbidden();
@@ -127,6 +135,7 @@ test('answered questions and inactive cases cannot be interpreted', function () 
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'My goal is settlement.',
         ])
         ->assertForbidden();
@@ -140,6 +149,7 @@ test('the bounded message payload validates identifiers and message length', fun
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'Valid answer',
             ...$payload,
         ])
@@ -164,6 +174,7 @@ test('a candidate response is typed and server labelled without changing facts q
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'I want to apply for permanent residence.',
         ])
         ->assertSuccessful()
@@ -191,6 +202,7 @@ test('all non-candidate outcomes return fixed application copy and never provide
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'Untrusted provider prose must not be returned.',
         ])
         ->assertSuccessful()
@@ -214,6 +226,7 @@ test('a candidate outside the authorized fact definition is rejected before labe
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'An unsafe candidate.',
         ])
         ->assertSuccessful()
@@ -234,6 +247,7 @@ test('the rolling quota permits twenty accepted messages and rejects the twenty 
         $this->actingAs($user)
             ->postJson(route('bureaucracy.case.messages.store'), [
                 'question_id' => $question->id,
+                'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
                 'message' => "Accepted attempt {$attempt}",
             ])
             ->assertSuccessful();
@@ -242,6 +256,7 @@ test('the rolling quota permits twenty accepted messages and rejects the twenty 
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'Attempt 21',
         ])
         ->assertTooManyRequests()
@@ -251,7 +266,8 @@ test('the rolling quota permits twenty accepted messages and rejects the twenty 
         ]);
 
     expect($extractor->requests)->toHaveCount(20)
-        ->and(BureaucracyCaseMessage::where('case_id', $case->id)->count())->toBe(20);
+        ->and(BureaucracyProcessingConsent::where('case_id', $case->id)->whereNotNull('attempted_at')->count())->toBe(20)
+        ->and(BureaucracyCaseMessage::where('case_id', $case->id)->count())->toBe(0);
 });
 
 test('messages older than the rolling twenty four hour window release quota', function () {
@@ -270,6 +286,7 @@ test('messages older than the rolling twenty four hour window release quota', fu
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'A fresh accepted attempt.',
         ])
         ->assertSuccessful();
@@ -295,6 +312,7 @@ test('the rolling quota counts only AI-assisted user extraction messages', funct
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'The one counted extraction.',
         ])
         ->assertSuccessful();
@@ -302,6 +320,7 @@ test('the rolling quota counts only AI-assisted user extraction messages', funct
     $this->actingAs($user)
         ->postJson(route('bureaucracy.case.messages.store'), [
             'question_id' => $question->id,
+            'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::FactExtraction),
             'message' => 'This extraction exceeds the quota.',
         ])
         ->assertTooManyRequests();

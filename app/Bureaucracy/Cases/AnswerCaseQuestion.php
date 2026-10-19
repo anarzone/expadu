@@ -17,9 +17,7 @@ final class AnswerCaseQuestion
     public function __construct(
         private CaseFactStore $factStore,
         private FactRegistry $factRegistry,
-        private CaseMatcher $caseMatcher,
-        private QuestionSelector $questionSelector,
-        private PendingAnswers $pendingAnswers,
+        private CurrentCaseQuestion $currentQuestion,
     ) {}
 
     public function answer(
@@ -66,20 +64,9 @@ final class AnswerCaseQuestion
                 throw new AuthorizationException;
             }
 
-            // Only the question currently on screen may be answered, so that a
-            // stale or forged id cannot write a fact. The plan is asked first;
-            // if it does not recognise the question, the pending-answers sweep
-            // gets a turn, because `ask()` creates rows from that ranking and
-            // the user is looking at one of them.
-            $currentQuestion = $this->questionSelector->current(
-                $case,
-                $this->caseMatcher->match($case),
-                true,
-            ) ?? $this->questionSelector->currentForKeys(
-                $case,
-                $this->pendingAnswers->forCase($case),
-                true,
-            );
+            // Stale/forged IDs cannot write facts. Text extraction uses this
+            // exact resolver too, including approved orientation questions.
+            $currentQuestion = $this->currentQuestion->for($case, true);
 
             if (! $currentQuestion instanceof BureaucracyCaseQuestion
                 || (int) $currentQuestion->getKey() !== (int) $lockedQuestion->getKey()) {
