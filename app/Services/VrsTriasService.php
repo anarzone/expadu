@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Support\PerfLogger;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -252,7 +254,71 @@ class VrsTriasService
             return null;
         }
 
+        return $this->parseStopEvents($response, $globalId, $limit, now()->utc()->toIso8601String());
+    }
+
+    /**
+     * Fetch live departures for several stops in one parallel round trip, under
+     * one deadline, instead of one sequential call per stop. Results land in the
+     * per-stop cache getDepartures() reads, so callers keep asking per stop and
+     * a stop that misses here simply takes its usual path.
+     *
+     * @param  list<string>  $stopNames
+     */
+    public function prefetchDepartures(array $stopNames, int $limit = 10, float $budgetSeconds = 3.0): void
+    {
+        if (! config('services.vrs.enabled') || Cache::get('trias_down')) {
+            return;
+        }
+
+        $deadline = microtime(true) + $budgetSeconds;
+
+        // Stop ids are cached for a day; a miss costs one lookup here.
+        $pending = [];
+        foreach (array_unique($stopNames) as $stopName) {
+            $globalId = $this->resolveStopGlobalId($stopName);
+            if ($globalId === null) {
+                continue;
+            }
+
+            $cacheKey = "trias_departures_v3_{$globalId['id']}_{$limit}";
+            if (! isset($pending[$cacheKey]) && ! Cache::has($cacheKey)) {
+                $pending[$cacheKey] = $globalId;
+            }
+        }
+
+        $remaining = $deadline - microtime(true);
+        if ($pending === [] || $remaining < 0.5) {
+            return;
+        }
+
+        $bodies = $this->postMany(
+            array_map(fn (array $globalId) => $this->buildStopEventRequest($globalId['id'], $limit), $pending),
+            min(3.0, $remaining),
+        );
         $observedAt = now()->utc()->toIso8601String();
+
+        foreach ($bodies as $cacheKey => $body) {
+            $departures = $body === null ? null : $this->parseStopEvents($body, $pending[$cacheKey]['id'], $limit, $observedAt);
+            if ($departures === null) {
+                continue;
+            }
+
+            Cache::put($cacheKey, [
+                'stop_name' => $pending[$cacheKey]['name'],
+                'source' => 'trias_rt',
+                ...$departures,
+            ], 60);
+        }
+    }
+
+    /**
+     * Parse a StopEventResponse into app-format departures.
+     *
+     * @return array{departures: array, observed_at: string}|null
+     */
+    private function parseStopEvents(string $response, string $globalId, int $limit, string $observedAt): ?array
+    {
         $parsed = $this->parseXml($response);
         if (! $parsed) {
             return null;
@@ -942,6 +1008,55 @@ class VrsTriasService
 
             return null;
         }
+    }
+
+    /**
+     * POST several TRIAS requests at once. Any failure trips the same 30 s
+     * breaker post() uses.
+     *
+     * @param  array<string, string>  $xmlByKey
+     * @return array<string, string|null> response bodies by key; null for a failed request
+     */
+    private function postMany(array $xmlByKey, float $timeout): array
+    {
+        $out = array_fill_keys(array_keys($xmlByKey), null);
+
+        $options = ['timeout' => $timeout, 'connect_timeout' => min(1.0, $timeout)];
+        $this->applyVrsSsl($options);
+        $url = config('services.vrs.trias_url');
+        $start = microtime(true);
+
+        $responses = Http::pool(function (Pool $pool) use ($xmlByKey, $options, $url) {
+            foreach ($xmlByKey as $key => $xml) {
+                $pool->as($key)
+                    ->withOptions($options)
+                    ->withHeaders(['Content-Type' => 'text/xml; charset=UTF-8'])
+                    ->withBody($xml, 'text/xml')
+                    ->post($url);
+            }
+        });
+
+        $error = null;
+        foreach ($xmlByKey as $key => $xml) {
+            $response = $responses[$key] ?? null;
+            if ($response instanceof Response && $response->successful()) {
+                $out[$key] = $response->body();
+
+                continue;
+            }
+
+            $error ??= $response instanceof \Throwable
+                ? $response->getMessage()
+                : 'HTTP '.($response instanceof Response ? $response->status() : 'no response');
+        }
+
+        if ($error !== null) {
+            $this->markTriasDown(round((microtime(true) - $start) * 1000), $error);
+        } else {
+            Cache::put('trias_healthy', true, 120);
+        }
+
+        return $out;
     }
 
     private function markTriasDown(float $durationMs, string $error): void

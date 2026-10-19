@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Support\PerfLogger;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -17,33 +18,93 @@ class KvbApiService
 {
     private const BASE = 'https://data.webservice-kvb.koeln/service/opendata';
 
+    private const STOPS_KEY = 'kvb:stops:v2';
+
+    /** Fresh for an hour, then served stale (refreshed after the response) for up to a week. */
+    private const STOPS_TTL = [3600, 7 * 86400];
+
+    /** After a failed fetch, wait this long before the next try: one timeout per minute, not per request. */
+    private const STOPS_RETRY_SECONDS = 60;
+
     /**
      * All KVB stops with coordinates and line assignments.
+     *
+     * The list changes rarely, so a board never waits on KVB once it has been
+     * fetched: it is served stale-while-revalidate, a failed refresh keeps the
+     * last good copy, and a failure is never cached as an empty list. Only a
+     * cold cache fetches on the request, one worker at a time.
      *
      * @return array<int, array{id: int, name: string, short: string, area: string, lines: string[], lat: float, lng: float}>
      */
     public function getStops(): array
     {
-        return Cache::remember('kvb:stops', 3600, function () {
-            $data = $this->fetch('haltestellen');
-            if (! $data) {
-                return [];
+        try {
+            // Memoised: the ~460 kB list is unserialised once per request.
+            $stale = Cache::memo()->get(self::STOPS_KEY);
+            if ($stale !== null) {
+                // A refresh that fails keeps the copy it was replacing for
+                // another hour rather than throwing after every response.
+                return Cache::memo()->flexible(self::STOPS_KEY, self::STOPS_TTL, function () use ($stale): array {
+                    try {
+                        return $this->fetchStopsOrFail();
+                    } catch (KvbUnavailableException) {
+                        return $stale;
+                    }
+                });
             }
 
-            return collect($data['features'] ?? [])
-                ->map(fn (array $f) => [
-                    'id' => $f['properties']['ASS'] ?? 0,
-                    'name' => $f['properties']['Name'] ?? '',
-                    'short' => $f['properties']['Kurzname'] ?? '',
-                    'area' => $f['properties']['Betriebsbereich'] ?? '',
-                    'lines' => array_filter(explode(' ', $f['properties']['Linien'] ?? '')),
-                    'lat' => $f['geometry']['coordinates'][1] ?? 0,
-                    'lng' => $f['geometry']['coordinates'][0] ?? 0,
-                ])
-                ->filter(fn (array $s) => $s['name'] && $s['lat'])
-                ->values()
-                ->all();
-        });
+            // Cold: one fetch at a time. The others wait, then read what it stored.
+            return Cache::lock('kvb:stops:fetch', 20)->block(
+                12,
+                fn () => Cache::flexible(self::STOPS_KEY, self::STOPS_TTL, fn () => $this->fetchStopsOrFail()),
+            );
+        } catch (KvbUnavailableException|LockTimeoutException) {
+            return [];
+        }
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string, short: string, area: string, lines: string[], lat: float, lng: float}>
+     *
+     * @throws KvbUnavailableException
+     */
+    private function fetchStopsOrFail(): array
+    {
+        if (Cache::has('kvb:stops:retry-after')) {
+            throw new KvbUnavailableException('KVB stop list failed recently');
+        }
+
+        $data = $this->fetch('haltestellen', timeout: 10);
+        $stops = $data ? $this->mapStops($data) : [];
+
+        if ($stops === []) {
+            Cache::put('kvb:stops:retry-after', true, self::STOPS_RETRY_SECONDS);
+
+            throw new KvbUnavailableException('KVB stop list unavailable');
+        }
+
+        return $stops;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<int, array{id: int, name: string, short: string, area: string, lines: string[], lat: float, lng: float}>
+     */
+    private function mapStops(array $data): array
+    {
+        return collect($data['features'] ?? [])
+            ->map(fn (array $f) => [
+                'id' => $f['properties']['ASS'] ?? 0,
+                'name' => $f['properties']['Name'] ?? '',
+                'short' => $f['properties']['Kurzname'] ?? '',
+                'area' => $f['properties']['Betriebsbereich'] ?? '',
+                'lines' => array_filter(explode(' ', $f['properties']['Linien'] ?? '')),
+                'lat' => $f['geometry']['coordinates'][1] ?? 0,
+                'lng' => $f['geometry']['coordinates'][0] ?? 0,
+            ])
+            ->filter(fn (array $s) => $s['name'] && $s['lat'])
+            ->values()
+            ->all();
     }
 
     /**
@@ -178,10 +239,10 @@ class KvbApiService
      *
      * @return array<string, mixed>|null
      */
-    private function fetch(string $endpoint): ?array
+    private function fetch(string $endpoint, int $timeout = 15): ?array
     {
         try {
-            $response = Http::timeout(15)
+            $response = Http::timeout($timeout)
                 ->withHeaders(['User-Agent' => 'Expadu/1.0 (Transit App for Expats)'])
                 ->get(self::BASE."/{$endpoint}/json");
 

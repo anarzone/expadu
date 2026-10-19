@@ -7,6 +7,7 @@ use App\Proto\TransitRealtime\FeedMessage;
 use App\Proto\TransitRealtime\TripDescriptor\ScheduleRelationship;
 use App\Proto\TransitRealtime\TripUpdate\StopTimeUpdate\ScheduleRelationship as StopScheduleRelationship;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Log;
  */
 class VrsRealtimeService
 {
+    private const FEED_KEY = 'vrs_gtfsrt_trip_updates_v2';
+
     /**
      * Get real-time updates indexed by trip_id.
      *
@@ -34,9 +37,21 @@ class VrsRealtimeService
             return [];
         }
 
-        return Cache::remember('vrs_gtfsrt_trip_updates_v2', 30, function () {
-            return $this->fetchAndParse();
-        });
+        // Read once per request (it is consulted per departure row). When it
+        // has expired, one worker refetches; the others wait for its copy.
+        $updates = Cache::memo()->get(self::FEED_KEY);
+        if (is_array($updates)) {
+            return $updates;
+        }
+
+        try {
+            return Cache::lock('vrs_gtfsrt:fetch', 15)->block(
+                10,
+                fn () => Cache::remember(self::FEED_KEY, 30, fn () => $this->fetchAndParse()),
+            );
+        } catch (LockTimeoutException) {
+            return [];
+        }
     }
 
     /**
