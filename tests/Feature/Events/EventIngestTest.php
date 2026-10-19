@@ -20,6 +20,11 @@ function fakeClassifier(array $result): object
 
         public int $calls = 0;
 
+        public function isConfigured(): bool
+        {
+            return true;
+        }
+
         public function classify(Event $event): array
         {
             $this->calls++;
