@@ -41,6 +41,9 @@ export default defineConfig({
             // The linked manifest is the static /site.webmanifest; this generated
             // one is kept in sync so the build never ships a contradictory copy.
             manifest: {
+                // Stable app identity: keeps existing installs the same app now
+                // that start_url no longer defaults it to '/'.
+                id: '/',
                 name: 'Expadu',
                 short_name: 'Expadu',
                 description: 'Your city. Your guide.',
@@ -51,7 +54,8 @@ export default defineConfig({
                 display: 'standalone',
                 orientation: 'portrait',
                 scope: '/',
-                start_url: '/',
+                // Launch straight into the app; '/' only redirects here.
+                start_url: '/dashboard',
                 icons: [
                     {
                         src: '/favicon.svg',
