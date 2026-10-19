@@ -4,6 +4,7 @@ namespace App\Console\Commands\Events;
 
 use App\Jobs\ProcessEventJob;
 use App\Models\Event;
+use App\Services\ClassifiesEvents;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
@@ -18,8 +19,14 @@ class BackfillEventTranslations extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(ClassifiesEvents $classifier): int
     {
+        if (! $classifier->isConfigured()) {
+            $this->warn('Event classifier is not configured (ANTHROPIC_API_KEY); nothing queued.');
+
+            return self::SUCCESS;
+        }
+
         $limit = max(1, (int) $this->option('limit'));
         $perMinute = max(1, (int) $this->option('per-minute'));
         $queued = 0;

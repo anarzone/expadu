@@ -11,6 +11,12 @@ use App\Models\Event;
 interface ClassifiesEvents
 {
     /**
+     * False when the classifier cannot run at all (e.g. no API key), so
+     * callers skip it instead of failing every job the same way.
+     */
+    public function isConfigured(): bool;
+
+    /**
      * @return array{
      *     relevance: float,
      *     confidence: float,

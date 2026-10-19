@@ -20,6 +20,11 @@ class AnthropicEventClassifier implements ClassifiesEvents
 
     private const TRANSLATION_CHUNK_SIZE = 2000;
 
+    public function isConfigured(): bool
+    {
+        return filled(config('services.anthropic.key'));
+    }
+
     public function classify(Event $event): array
     {
         $hasDescription = filled($event->description);
