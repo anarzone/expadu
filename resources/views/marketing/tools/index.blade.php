@@ -1,19 +1,27 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'Free tools for life in Germany — Expadu')
 @section('meta_description', 'Free calculators for newcomers in Germany: netto-brutto salary, Deutschlandticket break-even, permanent-residency timeline, citizenship quiz. No signup, official sources.')
 @section('canonical', route('tools.index'))
 @section('og_image', asset('marketing/og/tools.png'))
 @section('waitlist_source', 'tools')
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap">
         <div class="sec-head">
             <span class="eyebrow">Free · no signup · official sources</span>
-            <h1 style="font-size:clamp(1.9rem,3.6vw,2.6rem)">Tools for your life in Germany.</h1>
+            <h1>Tools for your life in Germany.</h1>
             <p class="sub">Each one answers a real newcomer question in under a minute — with the source for every number.</p>
         </div>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap">
         <div class="tool-grid">
             <a class="tool" href="{{ route('tools.netto') }}">
                 <span class="free">salary · 2026 tables</span>

@@ -1,5 +1,8 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'Netto-Brutto calculator '.$year.' — what\'s left of your German salary? — Expadu')
 @section('meta_description', 'Gross to net salary in Germany, '.$year.' rules: all six tax classes, every Bundesland, church tax, children, statutory or private insurance — cross-checked against the official BMF calculator. Free, no signup.')
 @section('canonical', route('tools.netto'))
@@ -22,12 +25,17 @@
     ], JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · full {{ $year }} payroll math</span>
         <h1>What's actually left of your German salary?</h1>
         <p class="sub">All six tax classes, every Bundesland, church tax, children, statutory or private insurance — the same formulas payroll uses, every constant sourced below.</p>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap tool-shell">
 
         <script type="application/json" id="tool-data">@json($toolData)</script>
 

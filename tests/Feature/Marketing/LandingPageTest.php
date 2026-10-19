@@ -119,8 +119,9 @@ test('other marketing pages keep the shared header and footer', function () {
     $response = $this->get(route('impressum'));
 
     $response->assertOk();
-    $response->assertSee('<nav class="site">', escape: false);
-    $response->assertSee('<footer class="site">', escape: false);
+    $response->assertSee('class="xv xv-site"', escape: false);
+    $response->assertSee('class="xv-footer"', escape: false);
+    $response->assertSee('id="waitlistForm"', escape: false);
 });
 
 test('the landing page links its free tools and cornerstone guides through named routes', function () {
