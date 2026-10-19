@@ -81,8 +81,9 @@ class ComposerController extends Controller
             'homeVeedel' => $homeVeedel,
             'homeBezirk' => $homeBezirk,
             // Saved origins for the From picker — id + label + sublabel; coordinates
-            // resolve server-side by id when one is picked.
-            'savedPlaces' => $request->user()->places()
+            // resolve server-side by id when one is picked. Lazy, so the deferred
+            // requests don't re-run the query.
+            'savedPlaces' => fn () => $request->user()->places()
                 ->whereNotNull('lat')
                 ->whereNotNull('lng')
                 ->orderByRaw("CASE category WHEN 'home' THEN 0 WHEN 'work' THEN 1 ELSE 2 END, sort_order")
