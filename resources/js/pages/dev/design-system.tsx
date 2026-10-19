@@ -13,6 +13,13 @@ import {
     Tile,
     categoryClass,
 } from '@/components/ds';
+import { Icon } from '@/components/ui/icon';
+import type { IconName, IconVariant } from '@/components/ui/icon';
+import {
+    lineIcons,
+    phosphorIcons,
+    travelIcons,
+} from '@/components/ui/icon-paths';
 import { cn } from '@/lib/utils';
 
 /* ── tiny inline icons (currentColor) so the page stays self-contained ── */
@@ -767,6 +774,45 @@ export default function DesignSystem() {
                                     {p.d}
                                 </div>
                             </Surface>
+                        ))}
+                    </div>
+                </Section>
+
+                {/* 11 icons */}
+                <Section
+                    n="11"
+                    eyebrow="Icons"
+                    title="The mock's icons"
+                    lead="<Icon name=… /> from @/components/ui/icon. Default draws Phosphor first (the shell, Today), variant=line the connected line set (Events), variant=travel Travel's own set."
+                >
+                    <div className="grid gap-8">
+                        {(
+                            [
+                                ['default', phosphorIcons],
+                                ['line', lineIcons],
+                                ['travel', travelIcons],
+                            ] as [IconVariant, Record<string, string>][]
+                        ).map(([variant, set]) => (
+                            <div key={variant}>
+                                <p className="mb-3 text-small font-semibold">
+                                    variant=&quot;{variant}&quot;
+                                </p>
+                                <ul className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
+                                    {Object.keys(set).map((name) => (
+                                        <li
+                                            key={name}
+                                            className="flex flex-col items-center gap-1.5 rounded-md bg-bg-surface p-3 text-caption text-text-soft"
+                                        >
+                                            <Icon
+                                                name={name as IconName}
+                                                variant={variant}
+                                                className="text-text"
+                                            />
+                                            {name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         ))}
                     </div>
                 </Section>
