@@ -651,7 +651,15 @@ function syncPanel() {
     const choicesText = $('#plan-choices-text');
     if (choicesText)
         choicesText.textContent = [planSummary(), ...chosen].join(' · ');
-    if (stage !== 'rest' && !from.value.trim()) from.value = yourLocation;
+    // An empty From starts from your location again, but never while you
+    // are clearing it to type another start (that put the text back as
+    // you deleted its last letter); leaving it empty does (below).
+    if (
+        stage !== 'rest' &&
+        !from.value.trim() &&
+        document.activeElement !== from
+    )
+        from.value = yourLocation;
     const big = desktopPlanner.matches && state.results && state.planBig;
     document.body.classList.toggle('plan-big', big);
     const grow = $('[data-action="plan-big"]');
@@ -2544,6 +2552,12 @@ document.addEventListener('input', (event) => {
             renderPlanner();
         }
     }
+});
+from.addEventListener('blur', () => {
+    if (from.value.trim() || document.body.dataset.planStage === 'rest')
+        return;
+    from.value = yourLocation;
+    syncPlanStage();
 });
 document.addEventListener('pointerdown', (event) => {
     if (
