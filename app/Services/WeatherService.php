@@ -9,6 +9,8 @@ use App\Services\Weather\OpenMeteoProvider;
 use App\Services\Weather\WeatherProvider;
 use App\Services\Weather\WttrInProvider;
 use App\Support\PerfLogger;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -99,19 +101,15 @@ class WeatherService
     private function buildForecast(float $lat, float $lng): array
     {
         $data = $this->fetch($lat, $lng);
-        $hourly = $data['hourly'] ?? [];
-        $nowHour = now('Europe/Berlin')->hour;
+        $now = now('Europe/Berlin');
+        $upcoming = $this->fromCurrentHour($data['hourly'] ?? [], $now);
         $rainStart = null;
 
-        $pastCurrent = false;
-        foreach ($hourly as $entry) {
-            if (! $pastCurrent) {
-                if ($entry['hour'] <= $nowHour) {
-                    continue;
-                }
-                $pastCurrent = true;
-            }
-            if ($entry['precipitation'] > 0.1) {
+        // The rain start looks past the current hour.
+        $nextHour = $now->copy()->startOfHour()->addHour()->getTimestamp();
+        foreach ($upcoming as $i => $entry) {
+            $later = isset($entry['time']) ? Carbon::parse($entry['time'])->getTimestamp() >= $nextHour : ($i > 0 || $entry['hour'] !== $now->hour);
+            if ($later && $entry['precipitation'] > 0.1) {
                 $rainStart = str_pad((string) $entry['hour'], 2, '0', STR_PAD_LEFT).':00';
                 break;
             }
@@ -122,25 +120,8 @@ class WeatherService
             || in_array($current['icon'] ?? '', ['rain', 'sleet', 'thunderstorm', 'hail']);
         $bikeScore = $this->calculateBikeScore($current, $rainStart, $isRainingNow);
 
-        // Build next-hours forecast (current hour + next 7 = 8 slots)
-        $nextHours = [];
-        $foundCurrent = false;
-        foreach ($hourly as $entry) {
-            $h = $entry['hour'];
-            if (! $foundCurrent) {
-                if ($h < $nowHour) {
-                    continue;
-                }
-                $foundCurrent = true;
-            }
-            $nextHours[] = [
-                'hour' => str_pad((string) $h, 2, '0', STR_PAD_LEFT).':00',
-                'precip' => round((float) $entry['precipitation'], 1),
-            ];
-            if (count($nextHours) >= 8) {
-                break;
-            }
-        }
+        // Next-hours forecast: the current hour + the next 7 = 8 slots.
+        $nextHours = array_map(fn (array $entry) => $this->hourSlot($entry), array_slice($upcoming, 0, 8));
 
         // Smart rain summary from hourly data
         $rainSummary = $this->buildRainSummary($nextHours, $isRainingNow);
@@ -160,6 +141,92 @@ class WeatherService
             'bike_score' => $bikeScore,
             'rain_summary' => $rainSummary,
             'hourly' => $nextHours,
+            'sun' => $data['sun'][$now->toDateString()] ?? null,
+        ];
+    }
+
+    /**
+     * One day's weather hour by hour, for the day a page shows (Events' sky,
+     * My day's free hours). A past day has no recorded weather and a day past
+     * the forecast has none either: both say so instead of showing anything.
+     *
+     * @return array{available: bool, reason: string|null, date: string, timezone: string, sunrise: string|null, sunset: string|null, hours: list<array<string, mixed>>}
+     */
+    public function getDayForecast(string $date, float $lat = 50.9375, float $lng = 6.9603): array
+    {
+        $tz = 'Europe/Berlin';
+        $empty = ['available' => false, 'reason' => null, 'date' => $date, 'timezone' => $tz, 'sunrise' => null, 'sunset' => null, 'hours' => []];
+        if ($date < now($tz)->toDateString()) {
+            return [...$empty, 'reason' => 'past'];
+        }
+
+        $data = $this->fetch($lat, $lng);
+        $hours = array_values(array_filter(
+            $data['hourly'] ?? [],
+            fn (array $entry) => isset($entry['time']) && Carbon::parse($entry['time'])->setTimezone($tz)->toDateString() === $date,
+        ));
+        if ($hours === []) {
+            return [...$empty, 'reason' => $data === [] ? 'unavailable' : 'beyond_forecast'];
+        }
+
+        return [
+            ...$empty,
+            'available' => true,
+            'sunrise' => $data['sun'][$date]['sunrise'] ?? null,
+            'sunset' => $data['sun'][$date]['sunset'] ?? null,
+            'hours' => array_map(fn (array $entry) => $this->hourSlot($entry), $hours),
+        ];
+    }
+
+    /**
+     * The hourly entries from the current hour on. Providers that give real
+     * instants are cut by time (so a 25-hour day and midnight are exact);
+     * hour-only ones by the clock hour, as before.
+     *
+     * @param  list<array<string, mixed>>  $hourly
+     * @return list<array<string, mixed>>
+     */
+    private function fromCurrentHour(array $hourly, CarbonInterface $now): array
+    {
+        if ($hourly !== [] && isset($hourly[0]['time'])) {
+            $hourStart = $now->copy()->startOfHour()->getTimestamp();
+
+            return array_values(array_filter(
+                $hourly,
+                fn (array $entry) => isset($entry['time']) && Carbon::parse($entry['time'])->getTimestamp() >= $hourStart,
+            ));
+        }
+
+        $result = [];
+        foreach ($hourly as $entry) {
+            if ($result === [] && $entry['hour'] < $now->hour) {
+                continue;
+            }
+            $result[] = $entry;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array<string, mixed>  $entry
+     * @return array<string, mixed>
+     */
+    private function hourSlot(array $entry): array
+    {
+        $icon = $entry['icon'] ?? null;
+
+        return [
+            'hour' => str_pad((string) $entry['hour'], 2, '0', STR_PAD_LEFT).':00',
+            'time' => $entry['time'] ?? null,
+            'precip' => round((float) $entry['precipitation'], 1),
+            'precip_probability' => $entry['precipitation_probability'] ?? null,
+            'temperature' => $entry['temperature'] ?? null,
+            'cloud_cover' => $entry['cloud_cover'] ?? null,
+            // Metres. Under 1 000 m is fog by the usual definition.
+            'visibility' => $entry['visibility'] ?? null,
+            'icon' => $icon,
+            'condition' => $icon === null ? null : $this->iconToCondition($icon),
         ];
     }
 

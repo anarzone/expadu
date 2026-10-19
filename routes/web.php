@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AlertController;
+use App\Http\Controllers\Api\DayController;
 use App\Http\Controllers\Api\EventBookmarkController;
 use App\Http\Controllers\Api\EventReminderController;
 use App\Http\Controllers\Api\EventsController;
@@ -151,6 +152,9 @@ $appRoutes = function () use ($appDomain) {
         Route::post('api/saved-journeys', [SavedJourneyController::class, 'store'])->name('api.saved-journeys.store');
         Route::delete('api/saved-journeys/{savedJourney}', [SavedJourneyController::class, 'destroy'])->whereNumber('savedJourney')->name('api.saved-journeys.destroy');
         // Live trip session — persists the chosen journey across screens/closes.
+        // The signed-in person's day (DayProjection); plans the next trip, so it
+        // shares the journey planner's rate limit.
+        Route::get('api/day', DayController::class)->middleware('throttle:journey')->name('api.day');
         Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.start');
         Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
         Route::post('api/location/confirm', LocationConfirmController::class)->name('api.location.confirm');

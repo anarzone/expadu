@@ -2,6 +2,7 @@
 
 namespace App\Services\Weather;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
@@ -30,9 +31,15 @@ class OpenMeteoProvider implements WeatherProvider
                     'latitude' => $lat,
                     'longitude' => $lng,
                     'current' => 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover',
-                    'hourly' => 'precipitation',
+                    'hourly' => 'precipitation,precipitation_probability,temperature_2m,cloud_cover,visibility,weather_code,is_day',
+                    'daily' => 'sunrise,sunset',
                     'timezone' => 'Europe/Berlin',
-                    'forecast_days' => 2,
+                    // Open-Meteo's local times keep one UTC offset for the whole
+                    // response, so a day that changes to winter time (25 Oct
+                    // 2026) would be an hour out. Instants are converted here.
+                    'timeformat' => 'unixtime',
+                    // A week ahead: Events reads the sky for the day it shows.
+                    'forecast_days' => 7,
                 ]);
 
             if (! $response->successful()) {
@@ -75,6 +82,7 @@ class OpenMeteoProvider implements WeatherProvider
                     'precipitation' => $precip,
                 ],
                 'hourly' => $this->buildHourly($data['hourly'] ?? []),
+                'sun' => $this->buildSun($data['daily'] ?? []),
             ];
         } catch (Throwable $e) {
             report($e);
@@ -84,19 +92,30 @@ class OpenMeteoProvider implements WeatherProvider
     }
 
     /**
-     * @return list<array{hour: int, precipitation: float}>
+     * One entry per hour, at its real instant in Europe/Berlin. Precipitation
+     * is the hour before the time, as Open-Meteo sums it.
+     *
+     * @return list<array<string, mixed>>
      */
     private function buildHourly(array $hourly): array
     {
-        $times = $hourly['time'] ?? [];
-        $precip = $hourly['precipitation'] ?? [];
         $result = [];
 
-        foreach ($times as $i => $time) {
-            $hour = (int) date('G', strtotime((string) $time));
+        foreach ($hourly['time'] ?? [] as $i => $time) {
+            if (! is_numeric($time)) {
+                continue;
+            }
+            $local = CarbonImmutable::createFromTimestamp((int) $time, 'Europe/Berlin');
+            $code = $hourly['weather_code'][$i] ?? null;
             $result[] = [
-                'hour' => $hour,
-                'precipitation' => (float) ($precip[$i] ?? 0),
+                'hour' => $local->hour,
+                'time' => $local->toIso8601String(),
+                'precipitation' => (float) ($hourly['precipitation'][$i] ?? 0),
+                'precipitation_probability' => $this->number($hourly['precipitation_probability'][$i] ?? null, true),
+                'temperature' => $this->number($hourly['temperature_2m'][$i] ?? null),
+                'cloud_cover' => $this->number($hourly['cloud_cover'][$i] ?? null, true),
+                'visibility' => $this->number($hourly['visibility'][$i] ?? null, true),
+                'icon' => is_numeric($code) ? $this->wmoToIcon((int) $code, isset($hourly['is_day'][$i]) ? (bool) $hourly['is_day'][$i] : null) : null,
             ];
         }
 
@@ -104,13 +123,44 @@ class OpenMeteoProvider implements WeatherProvider
     }
 
     /**
+     * Sunrise and sunset by local date.
+     *
+     * @return array<string, array{sunrise: string|null, sunset: string|null}>
+     */
+    private function buildSun(array $daily): array
+    {
+        $sun = [];
+        foreach (['sunrise', 'sunset'] as $key) {
+            foreach ($daily[$key] ?? [] as $time) {
+                if (! is_numeric($time)) {
+                    continue;
+                }
+                $local = CarbonImmutable::createFromTimestamp((int) $time, 'Europe/Berlin');
+                $sun[$local->toDateString()] ??= ['sunrise' => null, 'sunset' => null];
+                $sun[$local->toDateString()][$key] = $local->toIso8601String();
+            }
+        }
+
+        return $sun;
+    }
+
+    private function number(mixed $value, bool $whole = false): int|float|null
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        return $whole ? (int) round((float) $value) : round((float) $value, 1);
+    }
+
+    /**
      * Map WMO weather codes to our internal icon vocabulary.
      *
      * Reference: https://www.nodc.noaa.gov/archive/arc0021/0002199/1.1/data/0-data/HTML/WMO-CODE/WMO4677.HTM
      */
-    private function wmoToIcon(int $code): string
+    private function wmoToIcon(int $code, ?bool $isDay = null): string
     {
-        $isDay = now('Europe/Berlin')->hour >= 6 && now('Europe/Berlin')->hour < 20;
+        $isDay ??= now('Europe/Berlin')->hour >= 6 && now('Europe/Berlin')->hour < 20;
 
         return match (true) {
             $code === 0 => $isDay ? 'clear-day' : 'clear-night',
