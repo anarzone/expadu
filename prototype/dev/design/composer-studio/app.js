@@ -1460,6 +1460,8 @@
             behavior: reducedMotion() ? 'instant' : 'smooth',
         });
     }
+    // True while the page opens (below), so it lands where you are.
+    let landing = true;
     function revealLatest() {
         const feed = document.querySelector('.chat-feed');
         const reply = feed?.lastElementChild;
@@ -1477,7 +1479,10 @@
                 question.getBoundingClientRect().top <=
                 bottom - top;
         const target = fits ? question : reply;
-        const behavior = reducedMotion() ? 'instant' : 'smooth';
+        // Arriving with a request, the page lands on it at once; gliding
+        // from the top through the whole conversation is for a reply on a
+        // page you're already reading.
+        const behavior = landing || reducedMotion() ? 'instant' : 'smooth';
         const place = () => {
             const edge = contentTop() + 12;
             const delta = target.getBoundingClientRect().top - edge;
@@ -3160,6 +3165,7 @@
     )
         revealLatest();
     if (incomingPrompt) submit(incomingPrompt);
+    landing = false;
     // Opened from another section's bookmark, the list keeps its address
     // and Back is that section.
     if (initialPanel === 'saved' && savedFrom) openPanel(initialPanel, false);
