@@ -53,7 +53,11 @@ class PerfReportCommand extends Command
         usort($rows, fn ($a, $b) => ($b[$sort] ?? 0) <=> ($a[$sort] ?? 0));
         $rows = array_slice($rows, 0, (int) $this->option('top'));
 
+        $rate = (float) config('app.perf_sample_rate', 1.0);
         $this->info("Perf summary — last {$hours}h, sorted by {$sort} desc");
+        if ($rate < 1.0) {
+            $this->line(sprintf('Sampled at %d%%: counts are a fraction of real traffic; percentiles hold.', (int) round($rate * 100)));
+        }
         $this->table(
             ['key', 'count', 'ok%', 'p50ms', 'p95ms', 'p99ms', 'max'],
             array_map(fn ($r) => [$r['key'], $r['count'], $r['ok'], $r['p50'], $r['p95'], $r['p99'], $r['max']], $rows)

@@ -26,11 +26,29 @@ services:
       timeout: 5s
     restart: unless-stopped
 
+  # State: sessions, queues, locks. Bounded, never evicted (see EXP-95 and
+  # docker-compose.prod.yml). Check `redis-cli INFO memory` before lowering.
   redis:
     image: redis:alpine
     container_name: expadu-redis
+    command: redis-server --appendonly yes --maxmemory ${REDIS_MAXMEMORY:-256mb} --maxmemory-policy noeviction
     volumes:
       - redis-data:/data
+    networks:
+      - expadu
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      retries: 3
+      timeout: 5s
+    restart: unless-stopped
+
+  # Cache only: bounded, least-recently-used keys evicted, nothing persisted.
+  # Point the app at it with REDIS_CACHE_HOST=expadu-redis-cache.
+  redis-cache:
+    image: redis:alpine
+    container_name: expadu-redis-cache
+    command: redis-server --maxmemory ${REDIS_CACHE_MAXMEMORY:-128mb} --maxmemory-policy allkeys-lru --save '' --appendonly no
     networks:
       - expadu
     healthcheck:
