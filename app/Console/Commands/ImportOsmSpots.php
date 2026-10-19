@@ -231,6 +231,7 @@ class ImportOsmSpots extends Command
                 'veedel' => $veedel,
                 'tags' => $keptTags ?: null,
                 'opening_hours' => OpeningHoursParser::parse($tags['opening_hours'] ?? null),
+                'cuisine' => isset($tags['cuisine']) ? mb_substr(trim((string) $tags['cuisine']), 0, 255) : null,
                 'source_group' => $element['_category'],
                 'last_seen_at' => now(),
                 'is_active' => true,
