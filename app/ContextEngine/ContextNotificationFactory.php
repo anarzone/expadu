@@ -42,6 +42,7 @@ class ContextNotificationFactory
             monthsHeld: (int) ($action->payload['months_held'] ?? 0),
             thresholdMonths: (int) ($action->payload['threshold_months'] ?? 0),
             trackNote: (string) ($action->payload['track_note'] ?? ''),
+            pushReservation: $this->pushReservation($action),
         );
     }
 
@@ -59,6 +60,7 @@ class ContextNotificationFactory
             deadline: (string) ($action->payload['deadline'] ?? ''),
             taskId: isset($action->payload['task_id']) ? (int) $action->payload['task_id'] : null,
             appointmentAt: isset($action->payload['appointment_at']) ? (string) $action->payload['appointment_at'] : null,
+            pushReservation: $this->pushReservation($action),
         );
     }
 
@@ -130,5 +132,19 @@ class ContextNotificationFactory
         }
 
         return new MarketClosureNotification($reason, null);
+    }
+
+    /**
+     * The PushLedger reservation an evaluator put on the action, if any.
+     *
+     * @return array{key: string, nonce: string, sent_days: int}|null
+     */
+    private function pushReservation(ScoredAction $action): ?array
+    {
+        $reservation = $action->payload['push_reservation'] ?? null;
+
+        return is_array($reservation) && isset($reservation['key'], $reservation['nonce'], $reservation['sent_days'])
+            ? $reservation
+            : null;
     }
 }

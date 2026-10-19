@@ -16,6 +16,7 @@ use App\ContextEngine\Evaluators\TransitDelayEvaluator;
 use App\ContextEngine\Evaluators\TransitDisruptionEvaluator;
 use App\ContextEngine\Evaluators\WeatherEvaluator;
 use App\ContextEngine\Listeners\RecordContextAlert;
+use App\ContextEngine\Listeners\RecordReservedPushSent;
 use App\ContextEngine\Listeners\ScoredActionPushDispatcher;
 use App\Events\Context\MarketClosureDetected;
 use App\Events\Context\RhineLevelChanged;
@@ -117,6 +118,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
 
         Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
+        Event::listen(NotificationSent::class, RecordReservedPushSent::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
         Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);

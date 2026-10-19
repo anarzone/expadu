@@ -8,10 +8,15 @@ use Illuminate\Support\Facades\Redis;
 /**
  * Controls push notification frequency to prevent user fatigue.
  *
+ * Types are ScoredAction types — ActionBus is the only caller. These lists used
+ * to name types no producer emits (rhine, buergeramt, critical_disruption,
+ * weather_commute), so none of them ever matched: critical disruptions were
+ * held by quiet hours and weather pushed outside commute windows.
+ *
  * Three tiers:
- * - Tier 1 (push anytime): buergeramt, critical disruptions, event reminders
- * - Tier 2 (push during commute only): transit delays >10min, weather affecting commute
- * - Tier 3 (in-app only, never push): minor delays, weather updates, rhine level, news
+ * - Tier 1 (push anytime): Bürgeramt slots, critical disruptions
+ * - Tier 2 (push during commute only): transit delays, weather alerts
+ * - Tier 3 (in-app only, never push): Rhine level
  */
 class NotificationThrottle
 {
@@ -28,35 +33,45 @@ class NotificationThrottle
 
     // Types that should NEVER be pushed — in-app alerts only
     private const IN_APP_ONLY = [
-        'rhine',
-        'weather_info',
+        'rhine_level',
     ];
 
-    // Types exempt from quiet hours
+    // Types exempt from quiet hours (and transit_disruption when critical — see quietExempt())
     private const QUIET_EXEMPT = [
-        'buergeramt',
-        'critical_disruption',
+        'buergeramt_slot',
     ];
 
     // Types that only push during commute windows (6-9am, 4-7pm)
     private const COMMUTE_ONLY = [
         'transit_delay',
-        'weather_commute',
+        'weather_alert',
+    ];
+
+    /** ScoredAction type → NotificationPreference key (the keys NotificationPreference::defaults() exposes). */
+    private const PREF_KEYS = [
+        'transit_disruption' => 'transit',
+        'transit_delay' => 'transit',
+        'weather_alert' => 'weather',
+        'rhine_level' => 'rhine',
+        'buergeramt_slot' => 'burgeramt',
+        'bureaucracy_task' => 'checklist',
+        'permanent_residency_eligible' => 'checklist',
+        'market_closure' => 'events',
     ];
 
     /**
      * Check if a push notification can be sent to this user.
      * Returns false if throttled — the caller should still create an in-app Alert.
      */
-    public static function canPush(User $user, string $type): bool
+    public static function canPush(User $user, string $type, ?string $severity = null): bool
     {
         // Tier 3: never push
-        if (in_array($type, self::IN_APP_ONLY)) {
+        if (in_array($type, self::IN_APP_ONLY, true)) {
             return false;
         }
 
         // Check user notification preferences
-        $prefKey = self::typeToPrefKey($type);
+        $prefKey = self::PREF_KEYS[$type] ?? null;
         if ($prefKey && ! $user->wantsNotification($prefKey)) {
             return false;
         }
@@ -64,14 +79,14 @@ class NotificationThrottle
         $hour = now()->hour;
 
         // Quiet hours check (exempt for Tier 1 types)
-        if (! in_array($type, self::QUIET_EXEMPT)) {
+        if (! self::quietExempt($type, $severity)) {
             if ($hour >= self::QUIET_START || $hour < self::QUIET_END) {
                 return false;
             }
         }
 
         // Commute window check for Tier 2 types
-        if (in_array($type, self::COMMUTE_ONLY)) {
+        if (in_array($type, self::COMMUTE_ONLY, true)) {
             $isMorningCommute = $hour >= 6 && $hour <= 9;
             $isEveningCommute = $hour >= 16 && $hour <= 19;
             if (! $isMorningCommute && ! $isEveningCommute) {
@@ -131,15 +146,10 @@ class NotificationThrottle
         }
     }
 
-    private static function typeToPrefKey(string $type): ?string
+    /** A critical disruption on the user's line can't wait until morning. */
+    private static function quietExempt(string $type, ?string $severity): bool
     {
-        return match ($type) {
-            'transit_disruption', 'critical_disruption', 'transit_delay', 'leave_by_reminder' => 'transit',
-            'buergeramt' => 'burgeramt',
-            'weather_commute', 'weather_info' => 'weather',
-            'market_closure', 'event_reminder' => 'events',
-            'rhine' => 'rhine',
-            default => null,
-        };
+        return in_array($type, self::QUIET_EXEMPT, true)
+            || ($type === 'transit_disruption' && $severity === 'critical');
     }
 }
