@@ -2,8 +2,8 @@
    "Sign in and create an account" canvas, 19 Oct 2026). Each state has its
    address: #sign-in (the default), #mismatch (details don't match), #create,
    #check-email, #forgot, #sent and #new-password. The mock signs nobody in:
-   Sign in, Google and Apple open Today, and the emailed links are samples
-   that say so. */
+   Sign in and Google open Today, and the emailed links are samples that say
+   so. No Apple sign-in yet (owner, 19 Oct 2026). */
 (function () {
     'use strict';
     const TODAY = '../today-next/brief/';
@@ -43,8 +43,6 @@
 
     const google =
         '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 12h5a5 5 0 1 1-1.5-3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-    const apple =
-        '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15.5 3c.1 1.2-.4 2.3-1.1 3.1-.7.8-1.8 1.3-2.8 1.2-.1-1.1.4-2.3 1.1-3 .7-.8 1.9-1.3 2.8-1.3zM19 16.7c-.5 1.1-.7 1.6-1.3 2.6-.9 1.4-2.1 3-3.6 3-1.4 0-1.7-.9-3.6-.9-1.8 0-2.2.9-3.6.9-1.5 0-2.7-1.5-3.5-2.9C1.2 15.9 1 11.4 2.8 8.9 4 7.2 5.7 6.2 7.3 6.2c1.7 0 2.7.9 4.1.9 1.3 0 2.2-.9 4.1-.9 1.5 0 3 .8 4 2.2-3.5 1.9-2.9 6.9.5 8.3z"/></svg>';
     const mail =
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
     const check =
@@ -53,7 +51,7 @@
         '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5v5.5M12 16.5v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
     const social =
-        `<div class="account-social"><button type="button" data-social aria-label="Continue with Google">${google}Google</button><button type="button" data-social aria-label="Continue with Apple">${apple}Apple</button></div>` +
+        `<div class="account-social"><button type="button" data-social>${google}Continue with Google</button></div>` +
         '<p class="account-or">or with email</p>';
     const field = (id, label, type, complete, value = '') =>
         `<div class="account-field"><label for="${id}">${label}</label><div class="account-input"><input id="${id}" name="${id}" type="${type}" autocomplete="${complete}" required value="${esc(value)}"></div></div>`;

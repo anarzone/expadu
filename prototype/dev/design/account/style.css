@@ -200,8 +200,6 @@ body {
 }
 .account-social {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
 }
 .account-social button,
 .account-secondary {

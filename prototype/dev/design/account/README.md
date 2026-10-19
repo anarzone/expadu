@@ -13,8 +13,8 @@ strip of skyline above it.
 
 Each state has its own address (`app.js`):
 
-- `#sign-in` (the default): Google, Apple, email, password with Show and
-  Forgot password?, Keep me signed in.
+- `#sign-in` (the default): Continue with Google (no Apple sign-in yet),
+  email, password with Show and Forgot password?, Keep me signed in.
 - `#mismatch`: "That email and password don't match", above the fields; the
   email stays and the password takes the focus.
 - `#create`: name, email, one password with Show (at least 8 characters; the
@@ -27,6 +27,6 @@ Each state has its own address (`app.js`):
 - `#new-password`: one field; saving returns to sign in with "Your password
   is changed."
 
-The mock signs nobody in: Sign in, Google and Apple open Today, and the
-emailed links are samples that say so. Sign out in the account menu (Today's
-sheet, the other pages' header popover) opens this page.
+The mock signs nobody in: Sign in and Google open Today, and the emailed
+links are samples that say so. Sign out in the account menu (Today's sheet,
+the other pages' header popover) opens this page.
