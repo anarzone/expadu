@@ -14,6 +14,11 @@ import {
 } from './poster-model';
 import './poster-art.css';
 
+/** Class names joined with spaces (a template's leading spaces don't
+    survive the class-string lint fix). */
+const classes = (...names: (string | false | null | undefined)[]) =>
+    names.filter(Boolean).join(' ');
+
 type ArtSubject = Pick<PosterEvent, 'start' | 'category' | 'outdoor'>;
 
 /** The picture alone, for places that print the words themselves: a card's
@@ -32,7 +37,13 @@ export function PosterArt({
 
     return (
         <span
-            className={`pp-art pp--${ink} pp--${family}${variant ? ` pp-art--${variant}` : ''}${className ? ` ${className}` : ''}`}
+            className={classes(
+                'pp-art',
+                `pp--${ink}`,
+                `pp--${family}`,
+                variant && `pp-art--${variant}`,
+                className,
+            )}
             aria-hidden="true"
         >
             <span />
@@ -261,7 +272,16 @@ export function Poster({
     return (
         <article
             ref={card}
-            className={`pp pp--size-${size} pp--${ink} pp--${family}${gone ? 'is-past' : ''}${listing ? 'is-listing' : ''}${turned ? 'is-turned' : ''}${className ? ` ${className}` : ''}`}
+            className={classes(
+                'pp',
+                `pp--size-${size}`,
+                `pp--${ink}`,
+                `pp--${family}`,
+                gone && 'is-past',
+                listing && 'is-listing',
+                turned && 'is-turned',
+                className,
+            )}
             data-poster={event.id}
             data-wear={gone ? posterWear(event.id) : undefined}
             data-stamp={stamp || undefined}
