@@ -54,7 +54,7 @@
 
             <div class="tfield">
                 <label>Tax class</label>
-                <div class="chips-row" id="nb-class">
+                <div class="chips-row chips-row--six" id="nb-class">
                     <button type="button" data-v="1" aria-pressed="true">I</button>
                     <button type="button" data-v="2" aria-pressed="false">II</button>
                     <button type="button" data-v="3" aria-pressed="false">III</button>

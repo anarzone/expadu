@@ -409,6 +409,12 @@ section {
     max-width: 680px;
     padding-top: 24px;
 }
+.mk-page .tool-shell {
+    padding-top: 0;
+}
+.mk-page .tool-shell > .tool-form:first-of-type {
+    margin-top: 0;
+}
 .tool-shell h1 {
     font-size: clamp(1.9rem, 3.6vw, 2.5rem);
     margin: 10px 0 8px;
@@ -715,6 +721,13 @@ section {
     color: var(--ink);
     cursor: pointer;
 }
+.chips-row--six {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 56px));
+}
+.chips-row--six button {
+    padding-inline: 0;
+}
 .chips-row button[aria-pressed='true'] {
     background: var(--ink);
     border-color: var(--ink);
@@ -740,7 +753,8 @@ input[type='range'] {
     flex: 1;
     height: 8px;
     border-radius: 99px;
-    background: var(--surface2);
+    background: #fff;
+    box-shadow: inset 0 0 0 1.5px var(--border);
     outline-offset: 4px;
 }
 input[type='range']::-webkit-slider-thumb {
@@ -1571,7 +1585,22 @@ details.more .inner {
         border-radius: 32px 32px 0 0;
     }
     .mk-band {
-        padding-bottom: 72px;
+        padding-bottom: 96px;
+    }
+    .mk-band__art {
+        height: 110px;
+    }
+    .mk-page > section:first-child {
+        padding-top: 40px;
+    }
+    .mk-page .tool-shell {
+        padding-inline: 16px;
+    }
+    .tool-form,
+    .tool-result,
+    .tool-cta {
+        padding: 24px 20px;
+        border-radius: 24px;
     }
     .mk-hero h1 {
         font-size: clamp(2.1rem, 9.6vw, 2.8rem);
