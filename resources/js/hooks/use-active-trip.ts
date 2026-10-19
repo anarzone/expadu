@@ -85,9 +85,16 @@ export function useActiveTrip() {
         [],
     );
 
+    // `replace`: the server keeps a running trip unless told to replace it
+    // (409 trip_in_progress). Travel's trip page asks "Replace the trip
+    // you're on?" first; the older planners replace as they always have.
     const start = useCallback(
-        (journey: Journey, destination: TripPlace, origin: TripPlace | null) =>
-            post('/api/trip/start', { journey, destination, origin }),
+        (
+            journey: Journey,
+            destination: TripPlace,
+            origin: TripPlace | null,
+            { replace = true }: { replace?: boolean } = {},
+        ) => post('/api/trip/start', { journey, destination, origin, replace }),
         [post],
     );
 
