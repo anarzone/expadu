@@ -80,7 +80,7 @@ ENV VITE_SENTRY_DSN_PUBLIC=$VITE_SENTRY_DSN_PUBLIC \
     VITE_SENTRY_RELEASE=$VITE_SENTRY_RELEASE
 
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    npm run build && npm run build:ssr
+    npm run build:ssr
 
 # ── Stage 4: Production ───────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS production

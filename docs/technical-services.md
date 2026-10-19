@@ -41,6 +41,7 @@ Last updated: 2026-03-29
 - **URL:** `https://download.vrsinfo.de/gtfs/GTFS_VRS_mit_SPNV.zip`
 - **Command:** `php artisan gtfs:refresh`
 - **Schedule:** Weekly, Monday 3:00 AM
+- **New environment:** run `php artisan gtfs:refresh` once. The container no longer imports on boot, so an empty database has no timetable until then.
 - **Timeout:** 120 seconds
 - **Tables populated:** gtfs_stops (7,025), gtfs_routes (611), gtfs_trips, gtfs_stop_times (~2M), gtfs_calendar, gtfs_calendar_dates
 - **Processing:** Downloads ZIP, extracts CSVs, bulk inserts. Date format YYYYMMDD → YYYY-MM-DD conversion.

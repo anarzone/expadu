@@ -7,23 +7,20 @@ set -e
 # PHP-FPM workers running as www-data 500 on every request that logs.
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
 
+# Boot does only what the new code needs before it serves: the schema and
+# the framework caches. Seeding, the Paperwork import and a first GTFS import
+# are deploy or one-off steps (see the CI deploy jobs), never boot work — boot
+# runs on every restart, and anything slow here is downtime.
 echo "Running migrations..."
 php /var/www/html/artisan migrate --force
-
-echo "Running seeders..."
-php /var/www/html/artisan db:seed --force
-
-echo "Checking GTFS data..."
-GTFS_COUNT=$(php /var/www/html/artisan tinker --execute="echo \App\Models\Gtfs\GtfsStop::count();" 2>/dev/null | tail -1)
-if [ "$GTFS_COUNT" = "0" ] || [ -z "$GTFS_COUNT" ]; then
-    echo "No GTFS data — importing (this takes a few minutes on first deploy)..."
-    php /var/www/html/artisan gtfs:refresh || echo "GTFS import failed, will retry on next weekly schedule"
-fi
 
 echo "Caching config..."
 php /var/www/html/artisan config:cache
 php /var/www/html/artisan route:cache
 php /var/www/html/artisan view:cache
+# Optional speed-ups: a failure here must not stop the container booting.
+php /var/www/html/artisan event:cache || echo "event:cache failed; events are discovered at runtime"
+php /var/www/html/artisan filament:optimize || echo "filament:optimize failed; panels resolve at runtime"
 
 # A command killed by the last deploy keeps its withoutOverlapping lock in
 # Redis (AOF-persisted), which would skip it for up to a day. Nothing scheduled
