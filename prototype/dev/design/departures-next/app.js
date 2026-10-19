@@ -1655,7 +1655,12 @@ function renderResults() {
     const contents = list.length
         ? `${checksMarkup(checks(tripId, trip, list[0]))}<div class="route-workspace"><div class="plan-options" role="radiogroup" aria-label="Your options">${shown.map((route, index) => planOption(route, list, trip, index === 0 && shown.length > 1)).join('')}</div>${list.length > 3 ? `<button class="more-routes quiet-button" data-action="more-routes" aria-expanded="${state.more}">${state.more ? 'Fewer routes' : `${list.length - 3} later routes`}${icon('down')}</button>` : ''}${others}${chosen ? `<div class="plan-actions"><button type="button" class="primary plan-go" data-route="${chosen.id}">${icon('route')}Show the way</button><button type="button" class="quiet-button plan-save" data-action="save-plan" data-route-id="${chosen.id}">${saved.includes(chosen.id) ? 'In your plan · see it' : 'Add to plan'}</button></div>` : ''}</div>`
         : `<div class="result-empty"><span class="empty-symbol">${icon('route')}</span><h3>${empty.title}</h3><p>${empty.text}</p><div class="empty-actions">${empty.near ? `<button class="quiet-button" data-action="favourite-go" data-stop="${safe(hereStop())}">${icon('train')}See its departures</button>` : empty.reset ? '<button class="quiet-button" data-action="reset-filters">Reset journey choices</button>' : empty.mode ? `<button class="quiet-button" data-route-mode="${empty.mode}">Show the tram journey</button>` : `${empty.composer ? `<button class="quiet-button" data-action="composer-help">${icon('spark')}Ask Composer</button>` : ''}${empty.composer && fromStop ? `<button class="quiet-button" data-action="from-departures" data-stop-id="${safe(fromStop.id)}">${icon('train')}Departures from ${safe(placeName(fromStop.name))}</button>` : ''}<button class="quiet-button" data-action="example">Explore sample routes</button>`}</div></div>`;
-    $('#results').innerHTML = restore + header + contents;
+    // Back to your request shares the first row with sort (a lone row
+    // each, with the old gaps, once the heading went; review, 19 Oct 2026).
+    $('#results').innerHTML =
+        (restore
+            ? `<div class="results-lead">${restore}${header}</div>`
+            : header) + contents;
     syncPlanStage();
 }
 function selectedRoute(id, boardingOrigin = undefined) {

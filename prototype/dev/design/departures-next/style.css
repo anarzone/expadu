@@ -777,6 +777,18 @@ sup {
     font-size: var(--text-small);
     color: var(--teal);
 }
+/* With the results' heading (app.js): sort at its right where sort shows;
+   phones sort from the bar, so there the link has the row to itself. */
+.results-lead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: -6px 0 10px;
+}
+.results-lead .restore-request {
+    margin: 0;
+}
 .route-detail {
     display: none;
     min-width: 0;

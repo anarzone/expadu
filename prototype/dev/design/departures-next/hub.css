@@ -494,6 +494,14 @@ body.travel-palette .nearby-banner.is-labelled .tl-banner.is-unsure .tl-tile {
     body.travel-palette #results .results-top {
         justify-content: flex-end;
     }
+    /* Back to your request takes that row's left (style.css), where the
+       row alone would sit. */
+    body.travel-palette #results .results-lead {
+        margin: 0 0 12px;
+    }
+    body.travel-palette #results .results-lead .results-top {
+        margin: 0;
+    }
     body.travel-palette
         #results
         :is(.results-top h2, .results-heading > span) {
