@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\Cache;
  * appeal demotes cafés, then home-area + weather. Each rail carries a personal,
  * contextual title (RailCopy — e.g. "Stay dry this Monday"); some rails are
  * themselves situation-specific (with the kids; get oriented).
+ *
+ * @phpstan-type PoolSpot array{id: int, name: ?string, category: string, veedel: ?string, lat: ?float, lng: ?float, price_range: ?string}
  */
 class DiscoveryFeed
 {
@@ -36,10 +38,11 @@ class DiscoveryFeed
     /** Pull the whole light catalogue so every category can compete. */
     private const POOL = 2000;
 
-    /** The catalogue scan is global; cache it briefly so it isn't re-run per user. */
+    /** The catalogue scan is global; cache it so it isn't re-run per user. */
     private const SCAN_CACHE_KEY = 'discovery:spot-scan';
 
-    private const SCAN_TTL = 300;
+    /** Fresh for 5 minutes, then served stale for up to an hour while it refreshes. */
+    private const SCAN_TTL = [300, 3600];
 
     /** Cap on sit-down/work venues per rail, so a rail isn't all cafés. */
     private const LOW_APPEAL_CAP = 2;
@@ -88,8 +91,8 @@ class DiscoveryFeed
         // rewards proximity, so a park next door beats a far museum of equal
         // appeal. With no known origin it falls back to the global catalogue.
         $scored = $this->spotPool($originLat, $originLng)
-            ->reject(fn (Spot $spot) => isset($hidden[$spot->id]))
-            ->map(fn (Spot $spot) => $this->scoreSpot($spot, $weights, $homeAreas, $rain, $affinity, $originLat, $originLng))
+            ->reject(fn (array $spot) => isset($hidden[$spot['id']]))
+            ->map(fn (array $spot) => $this->scoreSpot($spot, $weights, $homeAreas, $rain, $affinity, $originLat, $originLng))
             ->sortByDesc('score')
             ->values();
 
@@ -127,6 +130,51 @@ class DiscoveryFeed
             $this->paperworkRail($context),
         ]));
 
+        return $this->withSpotPhotos($rails);
+    }
+
+    /**
+     * Load photos for the picked place cards only — the ~48 shown, not the
+     * whole scored pool.
+     *
+     * @param  list<array<string, mixed>>  $rails
+     * @return list<array<string, mixed>>
+     */
+    private function withSpotPhotos(array $rails): array
+    {
+        $ids = [];
+        foreach ($rails as $rail) {
+            foreach ($rail['cards'] as $card) {
+                if ($card['kind'] === 'spot') {
+                    $ids[] = (int) substr($card['id'], strlen('spot:'));
+                }
+            }
+        }
+
+        if ($ids === []) {
+            return $rails;
+        }
+
+        $spots = Spot::query()
+            ->whereIn('id', array_unique($ids))
+            ->with(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset'])
+            ->get()
+            ->keyBy('id');
+
+        foreach ($rails as &$rail) {
+            foreach ($rail['cards'] as &$card) {
+                if ($card['kind'] !== 'spot') {
+                    continue;
+                }
+                $spot = $spots->get((int) substr($card['id'], strlen('spot:')));
+                $media = $spot !== null ? $this->mediaSelector->select($spot, 'hero') : null;
+                $card['photo_url'] = $media?->remote_url;
+                $card['photo_attribution'] = $media?->attribution;
+            }
+            unset($card);
+        }
+        unset($rail);
+
         return $rails;
     }
 
@@ -137,17 +185,18 @@ class DiscoveryFeed
      * @param  array<string, float>  $weights
      * @param  list<string>  $homeAreas
      * @param  array<string, float>  $affinity
-     * @return array{spot: Spot, category: string, score: float}
+     * @param  PoolSpot  $spot
+     * @return array{spot: PoolSpot, category: string, score: float}
      */
-    private function scoreSpot(Spot $spot, array $weights, array $homeAreas, bool $rain, array $affinity, ?float $originLat, ?float $originLng): array
+    private function scoreSpot(array $spot, array $weights, array $homeAreas, bool $rain, array $affinity, ?float $originLat, ?float $originLng): array
     {
-        $category = $this->category($spot);
-        $key = "{$category}|".($spot->veedel ?? '');
+        $category = $spot['category'];
+        $key = "{$category}|".($spot['veedel'] ?? '');
 
         $score = CategoryAffinity::score($category, $affinity) * 45.0   // situation drives
             + ($weights[$key] ?? 0.0) * 25.0                            // behaviour refines
             + CategoryAppeal::score($category) * 20.0                   // café-demoting baseline
-            + (in_array($spot->veedel, $homeAreas, true) ? 8.0 : 0.0)   // home-area nudge
+            + (in_array($spot['veedel'], $homeAreas, true) ? 8.0 : 0.0) // home-area nudge
             + $this->proximityScore($spot, $originLat, $originLng)      // near ranks above far
             + ($rain && in_array($category, self::OUTDOOR, true) ? -25.0 : 0.0);
 
@@ -160,24 +209,25 @@ class DiscoveryFeed
      * value at the door, fading to zero by ~6km (a sensible browse radius in
      * Cologne). Off entirely when we don't know where the user is.
      */
-    private function proximityScore(Spot $spot, ?float $originLat, ?float $originLng): float
+    /** @param  PoolSpot  $spot */
+    private function proximityScore(array $spot, ?float $originLat, ?float $originLng): float
     {
-        if ($originLat === null || $originLng === null || $spot->lat === null || $spot->lng === null) {
+        if ($originLat === null || $originLng === null || $spot['lat'] === null || $spot['lng'] === null) {
             return 0.0;
         }
 
-        $km = NearbyPlaces::km($originLat, $originLng, (float) $spot->lat, (float) $spot->lng);
+        $km = NearbyPlaces::km($originLat, $originLng, $spot['lat'], $spot['lng']);
 
         return 35.0 * max(0.0, 1.0 - $km / 6.0);
     }
 
     /**
-     * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
+     * @param  Collection<int, array{spot: PoolSpot, category: string, score: float}>  $scored
      * @param  array<int, true>  $shown  spot ids already placed in earlier rails
      */
     private function homeRail(Collection $scored, array $homeAreas, ?string $veedel, bool $rain, array &$shown, ?float $originLat, ?float $originLng): ?array
     {
-        $home = $scored->filter(fn ($x) => in_array($x['spot']->veedel, $homeAreas, true));
+        $home = $scored->filter(fn ($x) => in_array($x['spot']['veedel'], $homeAreas, true));
 
         // Bound to a neighbourhood radius of the origin — the SAME anchor the
         // card "min away" is measured from — so an "in your area" badge and the
@@ -188,9 +238,9 @@ class DiscoveryFeed
         if ($originLat !== null && $originLng !== null) {
             $home = $home
                 ->map(function (array $x) use ($originLat, $originLng): array {
-                    $x['km'] = ($x['spot']->lat === null || $x['spot']->lng === null)
+                    $x['km'] = ($x['spot']['lat'] === null || $x['spot']['lng'] === null)
                         ? INF
-                        : NearbyPlaces::km($originLat, $originLng, (float) $x['spot']->lat, (float) $x['spot']->lng);
+                        : NearbyPlaces::km($originLat, $originLng, $x['spot']['lat'], $x['spot']['lng']);
 
                     return $x;
                 })
@@ -212,12 +262,12 @@ class DiscoveryFeed
     }
 
     /**
-     * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
+     * @param  Collection<int, array{spot: PoolSpot, category: string, score: float}>  $scored
      * @param  array<int, true>  $shown  spot ids already placed in earlier rails
      */
     private function newRail(Collection $scored, array $homeAreas, bool $rain, array &$shown): ?array
     {
-        $new = $scored->filter(fn ($x) => $x['spot']->veedel && ! in_array($x['spot']->veedel, $homeAreas, true));
+        $new = $scored->filter(fn ($x) => $x['spot']['veedel'] && ! in_array($x['spot']['veedel'], $homeAreas, true));
         if ($new->isEmpty()) {
             return null;
         }
@@ -233,7 +283,7 @@ class DiscoveryFeed
     /**
      * A situation-specific rail: family → the kids; just-arrived → orientation.
      *
-     * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
+     * @param  Collection<int, array{spot: PoolSpot, category: string, score: float}>  $scored
      * @param  array<int, true>  $shown  spot ids already placed in earlier rails
      */
     private function situationRail(Collection $scored, Profile $profile, bool $rain, array &$shown): ?array
@@ -265,7 +315,7 @@ class DiscoveryFeed
      * Pick cards for a rail, capping low-appeal (café/restaurant/bar/cowork)
      * so a rail never becomes a coffee list.
      *
-     * @param  Collection<int, array{spot: Spot, category: string, score: float}>  $scored
+     * @param  Collection<int, array{spot: PoolSpot, category: string, score: float}>  $scored
      * @param  array<int, true>  $shown  spot ids already placed in earlier rails; placed ids are added back
      * @return list<array<string, mixed>>
      */
@@ -302,22 +352,22 @@ class DiscoveryFeed
 
             $reason = $cardReason
                 ?? ($rain && ! in_array($x['category'], self::OUTDOOR, true) ? 'dry pick' : null);
-            $media = $this->mediaSelector->select($x['spot'], 'hero');
 
+            // Photos are filled in for the picked cards only (withSpotPhotos).
             $cards[] = [
-                'id' => "spot:{$x['spot']->id}",
-                'name' => $x['spot']->name,
-                'veedel' => $x['spot']->veedel,
+                'id' => "spot:{$x['spot']['id']}",
+                'name' => $x['spot']['name'],
+                'veedel' => $x['spot']['veedel'],
                 'category' => $x['category'],
-                'cost' => $x['spot']->price_range,
-                'lat' => (float) $x['spot']->lat,
-                'lng' => (float) $x['spot']->lng,
+                'cost' => $x['spot']['price_range'],
+                'lat' => (float) $x['spot']['lat'],
+                'lng' => (float) $x['spot']['lng'],
                 'is_new' => $markNew,
                 'kind' => 'spot',
                 'href' => null,
                 'reason' => $reason,
-                'photo_url' => $media?->remote_url,
-                'photo_attribution' => $media?->attribution,
+                'photo_url' => null,
+                'photo_attribution' => null,
             ];
         }
 
@@ -413,35 +463,37 @@ class DiscoveryFeed
     }
 
     /**
-     * The whole light spot catalogue, cached briefly — it's global (no per-user
-     * data), so the scan is shared while scoring stays per-request.
+     * The light spot catalogue nearest the user, as projected arrays: the
+     * verified name and map point (PlaceFacts), category, Veedel and price.
+     * Global data, so the scan is shared while scoring stays per-request.
      *
-     * @return Collection<int, Spot>
+     * Projecting is the expensive part (hydrating and resolving facts for the
+     * whole pool), so it happens inside the cached scan; requests score and
+     * pick on plain arrays and hydrate only the cards they show. Arrays, never
+     * models: cached objects come back incomplete on a warm read.
+     *
+     * @return Collection<int, PoolSpot>
      */
     private function spotPool(?float $originLat, ?float $originLng): Collection
     {
-        // Cache plain rows (not Eloquent models) and re-hydrate — serialising
-        // a model collection is fragile across cache drivers (it can come back
-        // as __PHP_Incomplete_Class on a hit); arrays always round-trip.
         $columns = ['id', 'name', 'category', 'veedel', 'lat', 'lng', 'price_range', 'rating'];
+        // The revisions change whenever identities, groupings or facts do, so
+        // the scan can be served stale (and refreshed after the response) for
+        // longer than it stays fresh.
         $cacheKey = self::SCAN_CACHE_KEY.':identity:'.app(PlaceIdentity::class)->revision().':grouping:'.app(DestinationGrouping::class)->revision().':facts:'.app(PlaceFacts::class)->revision();
 
         // No origin (GPS declined, nothing remembered): the old global, lowest-id
         // pool, cached once for everyone.
         if ($originLat === null || $originLng === null) {
-            $rows = Cache::remember($cacheKey, self::SCAN_TTL, fn () => app(DestinationGrouping::class)->general(Spot::query())
-                ->select($columns)
-                ->whereNotNull('lat')
-                ->whereNotNull('lng')
-                ->orderBy('id')
-                ->limit(self::POOL)
-                ->get()
-                ->toArray());
-
-            $spots = Spot::hydrate($rows)->load(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
-            app(PlaceFacts::class)->project($spots);
-
-            return $spots;
+            return collect(Cache::flexible($cacheKey, self::SCAN_TTL, fn (): array => $this->project(
+                app(DestinationGrouping::class)->general(Spot::query())
+                    ->select($columns)
+                    ->whereNotNull('lat')
+                    ->whereNotNull('lng')
+                    ->orderBy('id')
+                    ->limit(self::POOL)
+                    ->get(),
+            )));
         }
 
         // Nearest-first to the user, cached per ~1km cell (rounded so nearby
@@ -450,16 +502,30 @@ class DiscoveryFeed
         $cellLat = round($originLat, 2);
         $cellLng = round($originLng, 2);
 
-        $rows = Cache::remember(
+        return collect(Cache::flexible(
             $cacheKey.":{$cellLat},{$cellLng}",
             self::SCAN_TTL,
-            fn () => $this->nearby->nearest($cellLat, $cellLng, self::POOL, null, $columns)->toArray(),
-        );
+            fn (): array => $this->project(Spot::hydrate($this->nearby->nearest($cellLat, $cellLng, self::POOL, null, $columns)->toArray())),
+        ));
+    }
 
-        $spots = Spot::hydrate($rows)->load(['mediaAttachments.mediaAsset', 'identityAliases.mediaAttachments.mediaAsset']);
+    /**
+     * @param  Collection<int, Spot>  $spots
+     * @return list<PoolSpot>
+     */
+    private function project(Collection $spots): array
+    {
         app(PlaceFacts::class)->project($spots);
 
-        return $spots;
+        return $spots->map(fn (Spot $spot): array => [
+            'id' => (int) $spot->id,
+            'name' => $spot->name,
+            'category' => $this->category($spot),
+            'veedel' => $spot->veedel,
+            'lat' => $spot->lat !== null ? (float) $spot->lat : null,
+            'lng' => $spot->lng !== null ? (float) $spot->lng : null,
+            'price_range' => $spot->price_range,
+        ])->values()->all();
     }
 
     private function category(Spot $spot): string
@@ -473,13 +539,14 @@ class DiscoveryFeed
      * The key a spot de-dups on across rails: its visible label (name +
      * Veedel), lower-cased. Falls back to the id for the rare nameless spot.
      */
-    private function dedupKey(Spot $spot): string
+    /** @param  PoolSpot  $spot */
+    private function dedupKey(array $spot): string
     {
-        $name = trim((string) $spot->name);
+        $name = trim((string) $spot['name']);
 
         return $name !== ''
-            ? mb_strtolower($name).'|'.($spot->veedel ?? '')
-            : 'id:'.$spot->id;
+            ? mb_strtolower($name).'|'.($spot['veedel'] ?? '')
+            : 'id:'.$spot['id'];
     }
 
     /**
