@@ -1,5 +1,8 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'Deutschlandticket break-even calculator (Cologne, 2026) — Expadu')
 @section('meta_description', 'Is the €'.number_format($dticketEur, 0).' Deutschlandticket worth it for how you actually move? Drag your weekly trips — honest verdict with Cologne\'s current Rheinlandtarif fares. Free, no signup.')
 @section('canonical', route('tools.dticket'))
@@ -22,12 +25,17 @@
     ], JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · Cologne 2026 tariff</span>
         <h1>Is the Deutschlandticket worth it for you?</h1>
         <p class="sub">€{{ number_format($dticketEur, 0) }}/month, all local transit in Germany. Drag how often you actually ride.</p>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap tool-shell">
 
         <script type="application/json" id="tool-data">@json($toolData)</script>
 

@@ -105,27 +105,7 @@
         </g>
     </svg>
 
-    <header class="xv-wrap xv-nav" data-reveal="fade">
-        <a class="xv-logo" href="{{ route('home') }}" aria-label="Expadu home">
-            <svg viewBox="13 22 74 60" aria-hidden="true">{!! $logo !!}</svg>
-            <span class="xv-disp">Expadu</span>
-        </a>
-        <nav class="xv-nav__links" aria-label="Page sections">
-            <a class="xv-navlink" href="#day">The day</a>
-            <a class="xv-navlink" href="#street">Events</a>
-            <a class="xv-navlink" href="#composer">Composer</a>
-            <a class="xv-navlink" href="#trust">Trust</a>
-            <a class="xv-navlink" href="{{ route('blog.index') }}">Guides</a>
-        </nav>
-        <div class="xv-nav__cta">
-            @auth
-                <a class="xv-btn xv-btn--ink xv-btn--sm" href="{{ route('dashboard') }}">Open the app</a>
-            @else
-                <a class="xv-login" href="{{ route('login') }}">Log in</a>
-                <a class="xv-btn xv-btn--ink xv-btn--sm" href="#waitlistForm">Start free</a>
-            @endauth
-        </div>
-    </header>
+    @include('marketing.partials.header', ['onLanding' => true])
 
     <div class="xv-wrap xv-hero__grid">
         <div class="xv-hero__copy">
@@ -563,60 +543,17 @@
             <label>Email<input type="email" name="email" autocomplete="email" placeholder="you@example.com" required maxlength="255"></label>
             <label>City<input type="text" name="city" value="Cologne" autocomplete="address-level2" placeholder="Your city" required maxlength="120"></label>
             <button class="xv-btn xv-btn--cyan xv-btn--block" type="submit">Notify me</button>
+            @include('marketing.partials.waitlist-note')
             <p class="waitlist-msg" role="status" aria-live="polite"></p>
         </form>
     </div>
 </section>
 
 {{-- ═══════════ Footer ═══════════ --}}
-<footer class="xv-footer">
-    <div class="xv-wrap">
-        <div class="xv-footer__grid">
-            <div class="xv-footer__brand">
-                <a class="xv-logo xv-logo--light" href="{{ route('home') }}" aria-label="Expadu home">
-                    <svg viewBox="13 22 74 60" aria-hidden="true">{!! $logo !!}</svg>
-                    <span class="xv-disp">Expadu</span>
-                </a>
-                <p>The daily companion for life in a new city. Starting with Cologne.</p>
-            </div>
-            <nav class="xv-footer__links" aria-label="Footer">
-                <div>
-                    <strong>Product</strong>
-                    <a href="#day">Today</a>
-                    <a href="#street">Events</a>
-                    <a href="#day">Paperwork</a>
-                    <a href="#day">Travel</a>
-                    <a href="#composer">Composer</a>
-                </div>
-                <div>
-                    <strong>Learn</strong>
-                    <a href="{{ route('blog.index') }}">Field guide</a>
-                    <a href="{{ route('tools.index') }}">Free tools</a>
-                    <a href="#trust">How we check facts</a>
-                    <a href="#faq">FAQ</a>
-                </div>
-                <div>
-                    <strong>Account</strong>
-                    @auth
-                        <a href="{{ route('dashboard') }}">Open the app</a>
-                    @else
-                        <a href="{{ route('login') }}">Log in</a>
-                        <a href="#waitlistForm">Start free</a>
-                    @endauth
-                </div>
-                <div>
-                    <strong>Legal</strong>
-                    <a href="{{ route('impressum') }}">Impressum</a>
-                    <a href="{{ route('datenschutz') }}">Datenschutz</a>
-                </div>
-            </nav>
-        </div>
-        <div class="xv-footer__base">
-            <span>© {{ date('Y') }} Expadu · Made in Cologne</span>
-            <span>Times, events, places and checklists on this page are sample content from Expadu’s preview; the street, posters and map are illustrations. Expadu isn’t legal advice. Place data © OpenStreetMap contributors.</span>
-        </div>
-    </div>
-</footer>
+@include('marketing.partials.footer', [
+    'onLanding' => true,
+    'note' => 'Times, events, places and checklists on this page are sample content from Expadu’s preview; the street, posters and map are illustrations. Expadu isn’t legal advice. Place data © OpenStreetMap contributors.',
+])
 
 {{-- The day clock follows the story; the script only sets attributes. --}}
 <div class="xv-clock" aria-hidden="true">

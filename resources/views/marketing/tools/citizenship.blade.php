@@ -1,5 +1,8 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'German citizenship quiz — are you on track? (2024 rules) — Expadu')
 @section('meta_description', 'Five questions against the reformed StAG: 5-year standard track, 3-year fast track, spouse route — and dual citizenship. With sources, no signup.')
 @section('canonical', route('tools.citizenship'))
@@ -22,12 +25,17 @@
     ], JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · StAG, 2024 reform</span>
         <h1>Are you on track for a German passport?</h1>
         <p class="sub">Five questions against the current rules — since 2024 you generally keep your original citizenship.</p>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap tool-shell">
 
         <script type="application/json" id="tool-data">@json($rules)</script>
 

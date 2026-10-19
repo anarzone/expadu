@@ -1,4 +1,6 @@
 /* Landing — "Cologne in motion" (18 Oct 2026; "Cologne in colour", 7 Oct).
+ * Shared pieces (fonts, the .xv tokens, buttons, header, footer, the
+ * waitlist form) live in marketing.css, which every marketing page loads.
  * One sample Wednesday told in colour: daylight yellow → cool cyan → the day on
  * one pinned phone (teal → tram 4 → lilac → dusk → the Events street) → white
  * Composer → lilac map → ink night → white FAQ → orange next morning.
@@ -8,142 +10,8 @@
  * scroll timeline (CSS, off the main thread) or are stepped by
  * marketing-landing.ts; decorative SVG art follows the scroll, eased. */
 
-/* Display face: Bricolage Grotesque (SIL OFL 1.1), self-hosted variable font
- * (opsz 12–96, wght 600–800). Subsets as served by Google Fonts. */
-@font-face {
-    font-family: 'Bricolage Grotesque';
-    font-style: normal;
-    font-weight: 600 800;
-    font-display: swap;
-    src: url('/fonts/bricolage-grotesque-latin.woff2') format('woff2');
-    unicode-range:
-        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
-        U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-    font-family: 'Bricolage Grotesque';
-    font-style: normal;
-    font-weight: 600 800;
-    font-display: swap;
-    src: url('/fonts/bricolage-grotesque-latin-ext.woff2') format('woff2');
-    unicode-range:
-        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
-        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
-        U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-
-/* Handwritten notes: Permanent Marker (Apache 2.0), as in the Events posters. */
-@font-face {
-    font-family: 'Permanent Marker';
-    font-weight: 400;
-    font-display: swap;
-    src: url('/fonts/permanent-marker-400.ttf') format('truetype');
-}
-
 body.xv-body {
     background: #0b1a2b;
-}
-
-.xv {
-    --ink: #0b1a2b;
-    --teal: #00768b;
-    --teal-ink: #005466;
-    --cyan: #05badd;
-    --cyan-soft: #c9f1fa;
-    --cyan-mist: #eefbfe;
-    --cyan-glow: #9eeefd;
-    --orange: #ff3902;
-    --sun: #ff7a3d;
-    --yellow: #ffe363;
-    --yellow-soft: #fff6c2;
-    --amber-ink: #4d3a00;
-    --lilac: #dccbff;
-    --lilac-soft: #ece4ff;
-    --violet: #7047ac;
-    --violet-ink: #2a0f5c;
-    --violet-mid: #4b2a8f;
-    --deep-teal: #0f3a42;
-    --dusk: #2b1d3f;
-    --peach: #ffe0d4;
-    --slate: #34506b;
-    --mist: #a9e6f1;
-    --fog: #a9c4dd;
-    --night-card: #13263b;
-    --night-line: #23415e;
-    --ease: cubic-bezier(0.22, 1, 0.36, 1);
-
-    color: var(--ink);
-    background: var(--ink);
-    font-family:
-        Geist,
-        system-ui,
-        -apple-system,
-        'Segoe UI',
-        sans-serif;
-    line-height: 1.5;
-    overflow-x: clip;
-}
-.xv section {
-    padding: 0;
-}
-.xv h1,
-.xv h2,
-.xv h3,
-.xv p {
-    margin: 0;
-    font: inherit;
-    letter-spacing: inherit;
-}
-.xv a {
-    color: inherit;
-}
-.xv :focus-visible {
-    outline: 3px solid var(--ink);
-    outline-offset: 3px;
-}
-.xv .xv-disp {
-    font-family: 'Bricolage Grotesque', Geist, system-ui, sans-serif;
-    font-weight: 800;
-    font-optical-sizing: auto;
-}
-.xv .xv-marker,
-.xv .xv-svg-marker {
-    font-family: 'Permanent Marker', Geist, sans-serif;
-    font-weight: 400;
-    letter-spacing: 0;
-}
-.xv .xv-wrap {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding-inline: clamp(16px, 4vw, 48px);
-}
-.xv .xv-relative {
-    position: relative;
-}
-.xv .xv-white {
-    color: #fff;
-}
-
-/* ── Icons ─────────────────────────────────────────────────────── */
-.xv .xv-ico {
-    flex: none;
-    width: 18px;
-    height: 18px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-.xv .xv-ico--yellow {
-    stroke: var(--yellow);
-}
-.xv .xv-ico--fill-cyan {
-    fill: var(--cyan);
-    stroke: none;
-    width: 14px;
-    height: 14px;
 }
 
 /* ── Sections ──────────────────────────────────────────────────── */
@@ -239,67 +107,6 @@ body.xv-body {
     text-transform: uppercase;
 }
 
-/* ── Buttons and pills ─────────────────────────────────────────── */
-.xv .xv-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    min-height: 58px;
-    padding: 0 30px;
-    border: 0;
-    border-radius: 999px;
-    font-family: inherit;
-    font-size: 17px;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
-    transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease;
-}
-.xv .xv-btn:hover {
-    transform: translateY(-2px);
-}
-.xv .xv-btn:active {
-    transform: scale(0.98);
-}
-.xv .xv-btn--ink {
-    background: var(--ink);
-    color: #fff;
-}
-.xv .xv-btn--cyan {
-    background: var(--cyan);
-    color: var(--ink);
-}
-.xv .xv-btn--outline {
-    background: transparent;
-    border: 2px solid currentColor;
-    font-weight: 600;
-    padding: 0 26px;
-}
-.xv .xv-btn--sm {
-    min-height: 46px;
-    padding: 0 22px;
-    font-size: 15px;
-}
-.xv .xv-btn--lg {
-    min-height: 60px;
-    padding: 0 32px;
-    font-size: 18px;
-}
-.xv .xv-btn--block {
-    width: 100%;
-    min-height: 50px;
-    font-size: 15px;
-}
-.xv .xv-btn--lift-orange {
-    box-shadow: 0 8px 0 var(--orange);
-}
-.xv .xv-btn--lift-yellow {
-    box-shadow: 0 8px 0 var(--yellow);
-}
-
 /* ── Hero · 13:10 daylight ─────────────────────────────────────── */
 .xv .xv-hero {
     z-index: 1;
@@ -312,67 +119,6 @@ body.xv-body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-}
-.xv .xv-nav {
-    position: relative;
-    z-index: 5;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    min-height: 76px;
-    padding-top: 18px;
-}
-.xv .xv-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--ink);
-    text-decoration: none;
-}
-.xv .xv-logo svg {
-    width: 36px;
-    height: 30px;
-}
-.xv .xv-logo span {
-    font-size: 24px;
-    letter-spacing: -0.02em;
-}
-.xv .xv-logo__stem {
-    fill: var(--ink);
-}
-.xv .xv-logo--light {
-    color: #fff;
-}
-.xv .xv-logo--light .xv-logo__stem {
-    fill: #fff;
-}
-.xv .xv-nav__links {
-    display: flex;
-    gap: 2px;
-    margin-left: 16px;
-}
-.xv .xv-navlink,
-.xv .xv-login {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 14px;
-    border-radius: 999px;
-    color: var(--ink);
-    font-size: 15px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: background 0.18s ease;
-}
-.xv .xv-navlink:hover,
-.xv .xv-login:hover {
-    background: rgba(11, 26, 43, 0.08);
-}
-.xv .xv-nav__cta {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 6px;
 }
 .xv .xv-hero__grid {
     position: relative;
@@ -2227,141 +1973,6 @@ body.xv-body {
     font-size: 20px;
     transform: rotate(-3deg);
 }
-.xv .xv-form {
-    position: relative;
-    display: grid;
-    flex: 1 1 340px;
-    gap: 14px;
-    min-width: 0;
-    max-width: 460px;
-    padding: 26px;
-    border-radius: 28px;
-    background: #fff;
-    box-shadow: 0 14px 0 -2px var(--ink);
-}
-.xv .xv-form h3 {
-    font-size: 28px;
-    letter-spacing: -0.02em;
-}
-.xv .xv-form > div p {
-    margin-top: 6px;
-    color: var(--slate);
-    font-size: 15px;
-    line-height: 1.5;
-}
-.xv .xv-form label {
-    display: grid;
-    gap: 6px;
-    font-size: 14px;
-    font-weight: 700;
-}
-.xv .xv-form input {
-    min-height: 50px;
-    padding: 0 16px;
-    border: 2px solid var(--ink);
-    border-radius: 14px;
-    background: #fff;
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 1rem;
-    font-weight: 400;
-}
-.xv .xv-form input::placeholder {
-    color: var(--slate);
-}
-.xv .xv-form .waitlist-msg {
-    min-height: 0;
-    font-size: 14px;
-    line-height: 1.45;
-}
-.xv .xv-form .waitlist-msg:empty {
-    display: none;
-}
-.xv .xv-form .waitlist-msg.ok,
-.xv .xv-form .waitlist-msg.err {
-    padding: 10px 12px;
-    border-radius: 12px;
-}
-.xv .xv-form .waitlist-msg.ok {
-    background: var(--yellow);
-}
-.xv .xv-form .waitlist-msg.err {
-    background: #ffd9cc;
-    color: #a2300e;
-}
-
-/* ── Footer ────────────────────────────────────────────────────── */
-.xv .xv-footer {
-    position: relative;
-    z-index: 10;
-    padding: 48px 0 28px;
-    background: var(--ink);
-    color: #fff;
-}
-.xv .xv-footer__grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 40px;
-}
-.xv .xv-footer__brand {
-    display: grid;
-    flex: 1 1 260px;
-    align-content: start;
-    gap: 14px;
-    max-width: 360px;
-}
-.xv .xv-footer__brand p,
-.xv .xv-footer__base {
-    color: var(--fog);
-}
-.xv .xv-footer__brand p {
-    font-size: 15px;
-    line-height: 1.55;
-}
-.xv .xv-footer__links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 40px 64px;
-}
-.xv .xv-footer__links div {
-    display: grid;
-    align-content: start;
-    gap: 4px;
-}
-.xv .xv-footer__links strong {
-    margin-bottom: 6px;
-    color: var(--yellow);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-.xv .xv-footer__links a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 32px;
-    color: var(--fog);
-    font-size: 14px;
-    text-decoration: none;
-}
-.xv .xv-footer__links a:hover {
-    color: #fff;
-}
-.xv .xv-footer__base {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 8px 24px;
-    margin-top: 40px;
-    padding-top: 18px;
-    border-top: 1px solid var(--night-line);
-    font-size: 13px;
-}
-.xv .xv-footer__base span:last-child {
-    max-width: 48em;
-}
-
 /* ── Day clock ─────────────────────────────────────────────────── */
 .xv .xv-clock {
     position: fixed;
@@ -2432,7 +2043,6 @@ body.xv-body {
     }
 }
 @media (max-width: 999px) {
-    .xv .xv-nav__links,
     .xv .xv-note--familiar,
     .xv .xv-note--knows {
         display: none;
@@ -2450,9 +2060,6 @@ body.xv-body {
         border-radius: 32px 32px 0 0;
     }
     .xv .xv-hide-phone {
-        display: none;
-    }
-    .xv .xv-login {
         display: none;
     }
     .xv .xv-hero-stage {

@@ -1,13 +1,21 @@
 @extends('marketing.layout')
 
+@section('tone', 'cyan')
+@section('theme_color', '#05badd')
+
 @section('title', 'Datenschutz / Privacy — Expadu')
 @section('meta_description', 'Privacy policy for expadu.com and the Expadu app.')
 
+@section('hero')
+    <div class="wrap mk-hero__prose">
+    <span class="eyebrow">Privacy</span>
+    <h1><span lang="de">Datenschutzerklärung</span> / Privacy policy</h1>
+    <p class="meta">Last updated: 18 July 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
+    </div>
+@endsection
+
 @section('content')
 <div class="wrap prose">
-    <span class="eyebrow">Privacy</span>
-    <h1>Datenschutzerklärung / Privacy policy</h1>
-    <p class="meta">Last updated: 18 July 2026 · Written in English — the language of this service. Eine deutsche Fassung folgt.</p>
 
     <h2>1. Who is responsible</h2>
     <p>

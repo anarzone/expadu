@@ -1,13 +1,21 @@
 @extends('marketing.layout')
 
+@section('tone', 'cyan')
+@section('theme_color', '#05badd')
+
 @section('title', 'Impressum — Expadu')
 @section('meta_description', 'Impressum / legal notice for expadu.com.')
 
-@section('content')
-<div class="wrap prose">
+@section('hero')
+    <div class="wrap mk-hero__prose">
     <span class="eyebrow">Legal notice</span>
     <h1>Impressum</h1>
     <p class="meta">Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz)</p>
+    </div>
+@endsection
+
+@section('content')
+<div class="wrap prose">
 
     <h2>Betreiber / Operator</h2>
     <p>

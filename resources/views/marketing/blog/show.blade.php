@@ -1,5 +1,8 @@
 @extends('marketing.layout')
 
+@section('tone', 'lilac')
+@section('theme_color', '#dccbff')
+
 @section('title', $post['title'].' — Expadu')
 @section('meta_description', $post['description'])
 @section('canonical', route('blog.show', $post['slug']))
@@ -42,8 +45,7 @@
     $readMinutes = max(1, (int) round(str_word_count(strip_tags($post['body_html'])) / 200));
 @endphp
 
-@section('content')
-<main id="main">
+@section('hero')
     <header class="article-hero">
         <div class="wrap">
             <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -57,6 +59,10 @@
             </div>
         </div>
     </header>
+@endsection
+
+@section('content')
+<main id="main">
 
     <div class="wrap article-layout">
         <nav class="toc" aria-label="On this page" id="article-toc">

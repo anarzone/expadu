@@ -1,5 +1,8 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'Permanent residency (Niederlassungserlaubnis) timeline calculator — Expadu')
 @section('meta_description', 'When can you get German permanent residency? Watch your timeline fill up — Blue Card, skilled worker, family or general track (§9/§18c/§28 AufenthG).')
 @section('canonical', route('tools.residency'))
@@ -22,12 +25,17 @@
     ], JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · AufenthG tracks</span>
         <h1>When can you get permanent residency?</h1>
         <p class="sub">The Niederlassungserlaubnis ends visa renewals for good. Watch your timeline fill up.</p>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap tool-shell">
 
         <script type="application/json" id="tool-data">@json($toolData)</script>
 

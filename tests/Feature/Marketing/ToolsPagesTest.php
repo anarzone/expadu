@@ -6,8 +6,8 @@ test('the tools hub lists all three calculators', function () {
     $response = $this->get('/tools');
 
     $response->assertOk();
-    $response->assertSee('Deutschlandticket break-even');
-    $response->assertSee('Permanent-residency timeline');
+    $response->assertSeeText('Deutschlandticket break-even');
+    $response->assertSeeText('Permanent-residency timeline');
     $response->assertSee('Citizenship quiz');
 });
 
@@ -79,6 +79,6 @@ test('the netto-brutto tool covers all six tax classes with the §39b parameters
 });
 
 test('the tools hub and sitemap include the netto-brutto tool', function () {
-    $this->get('/tools')->assertOk()->assertSee('Netto-brutto calculator');
+    $this->get('/tools')->assertOk()->assertSeeText('Netto-brutto calculator');
     $this->get('/sitemap.xml')->assertOk()->assertSee(route('tools.netto'), escape: false);
 });
