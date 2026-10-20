@@ -461,6 +461,13 @@ a.plan-link:hover {
     width: 20px;
     height: 20px;
 }
+/* Why the trip couldn't start, under the Leave now card. */
+.leave-note {
+    margin: 8px 0 0;
+    color: var(--color-conflict-text);
+    font-size: var(--text-small);
+}
+
 /* Plan details (the mock's .today-sheet): when and where, its status, the
    trip there, what is recorded, then Edit and Remove. */
 .today-sheet .detail-intro {

@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { changeDay, failure } from '@/components/today/day-commands';
+import { routeTo } from '@/components/today/route-to';
 import { LineBadge } from '@/components/travel/line-badge';
 import { vehicleOf, vehicleWord } from '@/components/travel/line-look';
 import { Icon } from '@/components/ui/icon';
@@ -256,19 +257,14 @@ export function PlanSheet({
 function TripRow({ item, day }: { item: DayItem; day: DayProjection }) {
     const trip = day.next_trip?.target.id === item.id ? day.next_trip : null;
     const ride = trip?.journey?.legs.find((leg) => leg.mode !== 'walk');
-    const route = timetable({
-        query: {
-            to: item.location?.label ?? '',
-            ...(item.start_time ? { arrive_by: item.start_time } : {}),
-        },
-    });
+    const route = routeTo(item);
 
     if (trip?.leave_time && ride) {
         const kind = vehicleOf(ride.mode);
         const line = ride.line ?? '';
 
         return (
-            <Link className="sheet-row is-trip" href={route}>
+            <Link className="sheet-row is-trip" href={route ?? timetable.url()}>
                 {line ? (
                     <LineBadge line={line} kind={kind} />
                 ) : (
@@ -292,7 +288,7 @@ function TripRow({ item, day }: { item: DayItem; day: DayProjection }) {
         );
     }
 
-    if (!item.location?.routable || day.relation === 'past') {
+    if (!route || day.relation === 'past') {
         return null;
     }
 

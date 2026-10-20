@@ -2,11 +2,13 @@ import { Link } from '@inertiajs/react';
 import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
 import { changeDay, failure } from '@/components/today/day-commands';
+import { LeaveNow } from '@/components/today/leave-now';
 import {
     ItemStatus,
     PlanDetailsSheet,
     PlanSheet,
 } from '@/components/today/plan-sheets';
+import { routeTo } from '@/components/today/route-to';
 import {
     AnchoredMenu,
     MenuOption,
@@ -15,7 +17,6 @@ import {
 import { Icon } from '@/components/ui/icon';
 import { showToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
-import { timetable } from '@/routes';
 import type { DayItem, DayLink, DayProjection } from '@/types/day';
 
 /*
@@ -36,13 +37,7 @@ const dateLine = (day: DayProjection) =>
 
 const isDone = (item: DayItem) => item.completed || item.state === 'elapsed';
 
-type YourDayProps = {
-    day: DayProjection;
-    /** The Leave now card for the next plan (Travel's NextTripCard). */
-    leaveNow?: (item: DayItem) => ReactNode;
-};
-
-export function YourDay({ day, leaveNow }: YourDayProps) {
+export function YourDay({ day }: { day: DayProjection }) {
     const [adding, setAdding] = useState(false);
     const [details, setDetails] = useState<DayItem | null>(null);
     // Kept after closing so Edit plan can slide away with its words in it.
@@ -139,8 +134,12 @@ export function YourDay({ day, leaveNow }: YourDayProps) {
                                     onDone={() => void markDone(item, true)}
                                     onRemove={() => void remove(item)}
                                 >
-                                    {day.next_trip?.target.id === item.id &&
-                                        leaveNow?.(item)}
+                                    {day.next_trip?.target.id === item.id && (
+                                        <LeaveNow
+                                            day={day}
+                                            trip={day.next_trip}
+                                        />
+                                    )}
                                 </AgendaItem>
                                 {link && next && !isDone(next) && (
                                     <PlanLink
@@ -376,10 +375,7 @@ function PlanLink({
     const places = [from.location?.label, to.location?.label]
         .filter(Boolean)
         .join(' → ');
-    const routable =
-        to.location?.routable &&
-        to.location.label &&
-        link.reason !== 'same_place';
+    const route = link.reason === 'same_place' ? null : routeTo(to);
     const body = (
         <>
             <span className="plan-link-icon" aria-hidden="true">
@@ -392,20 +388,12 @@ function PlanLink({
                 {places && <small>{places}</small>}
                 <strong>{line}</strong>
             </span>
-            {routable && <span className="plan-link-action">Route</span>}
+            {route && <span className="plan-link-action">Route</span>}
         </>
     );
 
-    return routable ? (
-        <Link
-            className={`plan-link is-${tone}`}
-            href={timetable({
-                query: {
-                    to: to.location!.label!,
-                    ...(to.start_time ? { arrive_by: to.start_time } : {}),
-                },
-            })}
-        >
+    return route ? (
+        <Link className={`plan-link is-${tone}`} href={route}>
             {body}
         </Link>
     ) : (
