@@ -349,7 +349,7 @@ export function PlacesMap({
                 )}
 
             {selected && (
-                <div className="absolute right-3 bottom-3 left-3 z-10 flex animate-in items-center gap-3 rounded-[14px] border border-border bg-card p-3.5 shadow-lg duration-200 fade-in-0 slide-in-from-bottom-2 sm:left-auto sm:w-[380px]">
+                <div className="absolute right-3 bottom-3 left-3 z-10 flex animate-in items-center gap-3 rounded-[14px] border border-border bg-card p-3.5 shadow-lg duration-200 fade-in-0 slide-in-from-bottom-2 md:left-auto md:w-[380px]">
                     <div className="grid size-[46px] shrink-0 place-items-center rounded-xl bg-accent-soft text-[22px] text-primary">
                         {emojiFor(selected)}
                     </div>

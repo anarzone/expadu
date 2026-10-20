@@ -568,7 +568,7 @@ export default function Onboarding() {
                                 step === TOTAL_STEPS ? submit() : next()
                             }
                             disabled={!canProceed() || form.processing}
-                            className="ml-auto w-full rounded-xl bg-primary px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50 sm:w-auto sm:min-w-[200px]"
+                            className="ml-auto w-full rounded-xl bg-primary px-6 py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50 md:w-auto md:min-w-[200px]"
                         >
                             {form.processing ? 'Saving...' : buttonLabel()}
                         </button>

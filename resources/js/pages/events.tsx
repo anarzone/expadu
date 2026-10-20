@@ -570,7 +570,7 @@ export default function Events() {
                             Find an event. Make it part of your day.
                         </p>
                     </div>
-                    <span className="hidden size-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-soft text-cyan-h sm:flex">
+                    <span className="hidden size-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-soft text-cyan-h md:flex">
                         <IconCalendarEvent size={23} />
                     </span>
                 </header>
@@ -921,7 +921,7 @@ export default function Events() {
                                     type="button"
                                     onClick={locateMe}
                                     disabled={locationStatus === 'locating'}
-                                    className={`${controlClass} sm:ml-auto`}
+                                    className={`${controlClass} md:ml-auto`}
                                 >
                                     <IconCurrentLocation size={17} />
                                     {locationStatus === 'locating'

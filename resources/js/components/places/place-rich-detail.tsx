@@ -261,7 +261,7 @@ export function PlaceRichDetail({
                         src={place.photo_url!}
                         alt={place.name}
                         onError={() => setFailedPhoto(place.photo_url)}
-                        className="h-[170px] w-full object-cover sm:h-[210px]"
+                        className="h-[170px] w-full object-cover md:h-[210px]"
                     />
                     {place.photo_attribution && (
                         <figcaption className="flex flex-wrap items-center gap-x-3 px-1 py-1 text-xs leading-5 text-muted-foreground">
@@ -301,7 +301,7 @@ export function PlaceRichDetail({
                 {place.emoji ?? '📍'} {place.fine_label ?? place.category}
                 {place.park ? ` · ${place.park}` : ''}
             </div>
-            <h1 className="mt-2 max-w-[650px] font-display text-[36px] leading-[0.98] font-medium tracking-[-0.04em] sm:text-[46px]">
+            <h1 className="mt-2 max-w-[650px] font-display text-[36px] leading-[0.98] font-medium tracking-[-0.04em] md:text-[46px]">
                 {place.name}
             </h1>
             {locationLabel && (
@@ -368,7 +368,7 @@ export function PlaceRichDetail({
                     <h2 className="font-display text-[24px] font-medium tracking-[-0.02em]">
                         Useful before you go
                     </h2>
-                    <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div className="mt-3 grid grid-cols-1 gap-2.5 md:grid-cols-2">
                         {usefulFacts.map((fact, index) => (
                             <DetailCard
                                 key={`${fact.label}-${fact.value}-${index}`}
@@ -386,7 +386,7 @@ export function PlaceRichDetail({
                     <h2 className="font-display text-[24px] font-medium tracking-[-0.02em]">
                         What you can do here
                     </h2>
-                    <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div className="mt-3 grid grid-cols-1 gap-2.5 md:grid-cols-2">
                         {place.activities.map((activity) => (
                             <DetailCard
                                 key={`${activity.emoji}-${activity.label}`}
@@ -432,7 +432,7 @@ export function PlaceRichDetail({
 
     const rail = (
         <>
-            <div className="shrink-0 px-5 pt-6 pb-5 sm:px-6">
+            <div className="shrink-0 px-5 pt-6 pb-5 md:px-6">
                 <div className="font-mono text-[10px] font-semibold tracking-[0.1em] text-cyan-h uppercase">
                     Your next move
                 </div>
@@ -446,11 +446,11 @@ export function PlaceRichDetail({
             </div>
 
             {routingPoint && (
-                <div className="shrink-0 px-5 sm:px-6">
+                <div className="shrink-0 px-5 md:px-6">
                     <MiniMap
                         lat={routingPoint.lat}
                         lng={routingPoint.lng}
-                        className="h-40 w-full sm:h-48"
+                        className="h-40 w-full md:h-48"
                         onActivate={goHere}
                     />
                     <p className="mt-2 text-xs text-muted-foreground">
@@ -466,7 +466,7 @@ export function PlaceRichDetail({
                 place.place_facts?.hours?.status === 'known' &&
                 !place.hours_assumed && (
                     <div
-                        className={`mx-5 mt-4 shrink-0 rounded-[12px] px-4 py-3 text-[12.5px] leading-relaxed sm:mx-6 ${
+                        className={`mx-5 mt-4 shrink-0 rounded-[12px] px-4 py-3 text-[12.5px] leading-relaxed md:mx-6 ${
                             context.now.tone === 'good'
                                 ? 'bg-success-soft text-success'
                                 : 'bg-warn-soft text-warn'
@@ -477,7 +477,7 @@ export function PlaceRichDetail({
                     </div>
                 )}
 
-            <div className="mx-5 mt-4 shrink-0 overflow-hidden rounded-[15px] border border-border bg-card sm:mx-6">
+            <div className="mx-5 mt-4 shrink-0 overflow-hidden rounded-[15px] border border-border bg-card md:mx-6">
                 <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
                     <b className="text-[13px]">Your journey</b>
                     <span className="font-mono text-[10.5px] font-semibold text-cyan-h uppercase">
@@ -500,7 +500,7 @@ export function PlaceRichDetail({
             </div>
 
             {context && context.nearby.length > 0 && (
-                <div className="mx-5 mt-5 shrink-0 sm:mx-6">
+                <div className="mx-5 mt-5 shrink-0 md:mx-6">
                     <div className="font-mono text-[10px] font-semibold tracking-[0.1em] text-text-3 uppercase">
                         {place.activities.length > 0
                             ? 'What is at this place'
@@ -534,7 +534,7 @@ export function PlaceRichDetail({
                 </div>
             )}
 
-            <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-secondary/95 p-5 backdrop-blur sm:p-6">
+            <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-secondary/95 p-5 backdrop-blur md:p-6">
                 <button
                     type="button"
                     onClick={goHere}

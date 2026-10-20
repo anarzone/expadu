@@ -6,8 +6,6 @@ import {
     IconCalendarEvent,
     IconFileText,
     IconHome,
-    IconMoonStars,
-    IconSun,
     IconTrain,
 } from '@tabler/icons-react';
 import AppLogo from '@/components/app-logo';
@@ -15,13 +13,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { ICON_STROKE } from '@/constants/icons';
-import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import {
@@ -47,7 +42,6 @@ export function ConnectedAppHeader({ showBack }: { showBack?: boolean }) {
     const { auth, unreadAlertCount } = props;
     const currentPath = url.split('?')[0];
     const initials = useInitials();
-    const { resolvedAppearance, updateAppearance } = useAppearance();
 
     return (
         <header className="connected-app-header border-b border-border bg-card">
@@ -150,25 +144,6 @@ export function ConnectedAppHeader({ showBack }: { showBack?: boolean }) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-60">
                             <UserMenuContent user={auth.user} />
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                onSelect={() =>
-                                    updateAppearance(
-                                        resolvedAppearance === 'dark'
-                                            ? 'light'
-                                            : 'dark',
-                                    )
-                                }
-                            >
-                                {resolvedAppearance === 'dark' ? (
-                                    <IconSun />
-                                ) : (
-                                    <IconMoonStars />
-                                )}
-                                {resolvedAppearance === 'dark'
-                                    ? 'Light appearance'
-                                    : 'Dark appearance'}
-                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
