@@ -50,12 +50,6 @@
 .today-reference.today-flow .continue-actions .outline-action:hover {
     background: var(--surface-quiet);
 }
-.today-reference.today-flow .continue-item-dot {
-    background: var(--line);
-}
-.today-reference.today-flow .decision-marker {
-    background: var(--ink-soft);
-}
 
 /* Paperwork: lavender stays on its progress indicator; text in ink. */
 .today-reference.today-flow .paperwork-focus p {

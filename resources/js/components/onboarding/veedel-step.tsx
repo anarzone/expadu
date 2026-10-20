@@ -140,7 +140,7 @@ export function VeedelStep({
                                         (optional)
                                     </span>
                                 </div>
-                                <div className="flex flex-col gap-2 sm:flex-row">
+                                <div className="flex flex-col gap-2 md:flex-row">
                                     {[
                                         {
                                             value: 'registrable',

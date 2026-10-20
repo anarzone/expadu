@@ -155,7 +155,7 @@ export function AreaPicker({ areaLabel, open, onOpenChange, ...panel }: Props) {
             <button
                 onClick={() => onOpenChange(!open)}
                 aria-expanded={open}
-                className="flex w-full items-center gap-2 rounded-full border border-border bg-card px-[15px] py-[9px] text-[13.5px] font-semibold text-foreground shadow-card transition-colors hover:border-primary sm:w-auto"
+                className="flex w-full items-center gap-2 rounded-full border border-border bg-card px-[15px] py-[9px] text-[13.5px] font-semibold text-foreground shadow-card transition-colors hover:border-primary md:w-auto"
             >
                 <IconFilter size={15} stroke={ICON_STROKE} />
                 <span className="font-medium text-text-2">Searching in</span>
@@ -163,7 +163,7 @@ export function AreaPicker({ areaLabel, open, onOpenChange, ...panel }: Props) {
                 <IconChevronDown
                     size={13}
                     stroke={ICON_STROKE}
-                    className="ml-auto sm:ml-0"
+                    className="ml-auto md:ml-0"
                 />
             </button>
 

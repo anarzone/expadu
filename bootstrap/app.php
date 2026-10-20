@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Middleware\CanonicalRedirects;
-use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PerfTrackMiddleware;
 use App\Http\Middleware\RedirectIfAuthenticated;
@@ -34,7 +33,6 @@ return Application::configure(basePath: dirname(__DIR__))
                      Request::HEADER_X_FORWARDED_PROTO |
                      Request::HEADER_X_FORWARDED_AWS_ELB,
         );
-        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         $middleware->append(SecurityHeaders::class);
         $middleware->append(CanonicalRedirects::class);
 
@@ -46,7 +44,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             PerfTrackMiddleware::class,
-            HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             SetCacheHeaders::class,

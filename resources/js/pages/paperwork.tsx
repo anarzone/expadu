@@ -122,7 +122,8 @@ function Unavailable({ state }: { state: PlanEntry['state'] }) {
 
 export default function Paperwork({ entry, jurisdiction }: Props) {
     return (
-        <AppLayout rightPanel={null}>
+        // Paperwork keeps its own column until PW1 rebuilds it on the page frame.
+        <AppLayout fullWidth>
             <Head title="Paperwork" />
             {entry.state === 'ready' && entry.plan ? (
                 <PaperworkProvider

@@ -57,7 +57,7 @@
             const focus = M.paperworkFocus(getDay().paperwork);
             return `<aside class="brief-help" aria-labelledby="help-title"><div class="brief-help-intro"><span class="brief-composer-symbol">${I('spark')}</span><div><h2 id="help-title">Make today yours.</h2><p>A little help, when you need it.</p></div></div><div class="brief-prompts"><button data-today-prompt="day">Review my day</button><button data-today-prompt="tomorrow">Think about tomorrow</button></div>
                 ${focus ? `<a class="brief-paperwork" href="${processURL(focus.id)}" aria-label="Continue your ${E(focus.title)} checklist"><span class="brief-paperwork-icon">${I('document')}</span><span class="brief-paperwork-copy"><small>One thing to pick up · Sample</small><strong>${E(focus.title)}</strong><span>${E(focus.nextAction || 'Review your checklist')}</span></span><span class="brief-document-count"><b>${focus.prepared}<small>/${focus.total}</small></b><span>ready</span></span></a>` : ''}
-                <div class="brief-city"><h3>City help</h3><div><a href="${S.routes.departures}">${I('train')}Plan a journey</a><a href="${S.routes.services}?service=doctors">${I('health')}Find a doctor</a></div></div>
+                <div class="brief-city"><h3>City help</h3><div><a href="${S.routes.departures}">${I('train')}Plan a journey</a></div></div>
             </aside>`;
         }
         function discovery(items, highlight = false) {
@@ -75,24 +75,9 @@
             return `<section class="saved-ideas brief-saved" aria-labelledby="later-saved"><div class="brief-later-head"><h3 id="later-saved">Saved ideas</h3><button class="text-action" data-today-workspace="saved">${items.length ? `View all ${content.saved.length}` : 'View saved'}</button></div>${items.length ? items.map((item) => `<div class="brief-later-row"><button class="brief-saved-open" data-today-kept="${E(TodayContinuity.key(item))}"><span class="brief-saved-symbol">${I(item.type === 'event' ? 'calendar' : 'pin')}</span><span class="brief-row-copy"><strong>${E(item.title)}</strong><small>${E([item.type === 'event' ? shortDate(item.date) : item.label || 'Place', item.venue || item.area || item.location].filter(Boolean).join(' · '))}</small></span></button><button class="brief-kept-plan" data-today-kept-plan="${E(TodayContinuity.key(item))}" aria-label="Plan ${E(item.title)}">${I('calendar-plus')}</button></div>`).join('') : `<div class="brief-saved-empty">${I('bookmark')}<span><strong>Found something you like?</strong><small>Save it. Come back when it suits you.</small></span></div>`}</section>`;
         }
         function continuation(content) {
-            const c = content.composer,
-                journey = JourneyModel.capture;
+            const c = content.composer;
             return `<section class="brief-continue" aria-labelledby="later-continue"><div class="brief-later-head"><h3 id="later-continue">Pick up again</h3><button class="text-action" data-today-workspace="history">History</button></div>
                 ${c ? `<button class="brief-later-row brief-resume" data-today-resume><span class="brief-resume-symbol">${I('spark')}</span><span class="brief-row-copy"><small>${E(c.status)}${c.date ? ` · ${E(shortDate(c.date))}` : ''}</small><strong>${E(c.title)}</strong><span class="brief-resume-label">${E(c.action)}</span></span></button>` : `<button class="brief-later-row brief-resume" data-today-prompt="day"><span class="brief-resume-symbol">${I('spark')}</span><span class="brief-row-copy"><strong>Start a conversation</strong><small>Your ideas can start here.</small></span></button>`}
-                ${content.journeys
-                    .slice(0, 1)
-                    .map(
-                        (item) =>
-                            `<a class="brief-later-row brief-linked-record" href="${S.routes.departures}?route=${encodeURIComponent(item.id)}&date=${journey.date}&time=${journey.time}">${I('train')}<span class="brief-row-copy"><strong>${E(journey.from)} → ${E(journey.to)}</strong><small>Saved route · ${item.duration} min · Sample</small></span></a>`,
-                    )
-                    .join('')}
-                ${content.requests
-                    .slice(0, 1)
-                    .map(
-                        (item) =>
-                            `<a class="brief-later-row brief-linked-record" href="${S.routes.services}?service=${encodeURIComponent(item.category)}">${I('grid')}<span class="brief-row-copy"><strong>${E(item.title)}</strong><small>Requirements saved · nothing booked</small></span></a>`,
-                    )
-                    .join('')}
             </section>`;
         }
         function render(content) {
