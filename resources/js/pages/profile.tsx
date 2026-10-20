@@ -595,7 +595,7 @@ export default function Profile() {
         );
     }
 
-    // Search address via /api/geocode and get coordinates
+    // Search address via /api/geocode/search and get coordinates
     const [addrSuggestions, setAddrSuggestions] = useState<
         { name: string; address: string; lat: number; lng: number }[]
     >([]);
@@ -617,9 +617,24 @@ export default function Profile() {
 
                 timer = setTimeout(async () => {
                     try {
-                        const res = await fetch(
-                            `/api/geocode?q=${encodeURIComponent(query.trim())}`,
-                        );
+                        // What was typed goes in the body, never a URL or an access log.
+                        const res = await fetch('/api/geocode/search', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Accept: 'application/json',
+                                'X-CSRF-TOKEN':
+                                    document
+                                        .querySelector(
+                                            'meta[name="csrf-token"]',
+                                        )
+                                        ?.getAttribute('content') ?? '',
+                            },
+                            body: JSON.stringify({
+                                q: query.trim().slice(0, 100),
+                            }),
+                        });
 
                         if (res.ok) {
                             const data = await res.json();
