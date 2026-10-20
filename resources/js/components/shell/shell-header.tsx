@@ -115,7 +115,7 @@ export function ShellHeader() {
                     </span>
                     <Link
                         href={composer({ query: { panel: 'saved' } })}
-                        className="shell-icon-button"
+                        className="shell-icon-button shell-saved"
                         aria-label="Saved"
                         title="Saved"
                     >
