@@ -36,10 +36,16 @@ use RuntimeException;
  *  - Bank account: suggested, not started.
  *
  * Everything goes through the v2 commands, at the mock's moment, so the plan is the engine's own.
- * It replaces the E2E account's Paperwork record. Pair it with the `mock_clock` cookie
+ * It needs nothing else run first: it imports this checkout's catalogue, publishes its checked
+ * cards as the browser tests do, compiles the release, then replaces the account's Paperwork
+ * record. The account must exist (E2ETestUserSeeder). Pair it with the `mock_clock` cookie
  * (App\Support\MockClock):
  *
- *   php artisan db:seed --class='Database\Seeders\MockSample\PaperworkSeeder'
+ *   E2E_EMAIL=you@expadu.test php artisan db:seed --class=E2ETestUserSeeder
+ *   E2E_EMAIL=you@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\PaperworkSeeder'
+ *
+ * PAPERWORK_SAMPLE=quiet seeds the same record without the day's appointment, as the mock's
+ * quiet day shows it (today-next/brief/?view=quiet); the default is everyday.
  *
  * IMPORTANT: never registered in DatabaseSeeder; it refuses to run outside local.
  */
@@ -48,6 +54,8 @@ class PaperworkSeeder extends Seeder
     private const MOMENT = '2026-09-30 13:10:00';
 
     private const JURISDICTION = 'de-nrw-cologne';
+
+    private const VARIANTS = ['everyday', 'quiet'];
 
     private const FACTS = [
         'arrival_planned' => false,
@@ -71,6 +79,14 @@ class PaperworkSeeder extends Seeder
             return;
         }
 
+        $variant = (string) env('PAPERWORK_SAMPLE', 'everyday');
+
+        if (! in_array($variant, self::VARIANTS, true)) {
+            $this->command?->error('PAPERWORK_SAMPLE is one of: '.implode(', ', self::VARIANTS).'.');
+
+            return;
+        }
+
         $user = User::query()->where('email', (string) env('E2E_EMAIL', 'e2e@expadu.test'))->first();
 
         if ($user === null) {
@@ -84,14 +100,15 @@ class PaperworkSeeder extends Seeder
         CarbonImmutable::setTestNow($moment);
 
         try {
+            $this->artisan('bureaucracy:import-tasks');
             $this->publish();
-            $this->seed($user);
+            $this->seed($user, withAppointment: $variant === 'everyday');
         } finally {
             Carbon::setTestNow();
             CarbonImmutable::setTestNow();
         }
 
-        $this->command?->info("The Paperwork sample is in {$user->email}'s record.");
+        $this->command?->info("The Paperwork sample ({$variant}) is in {$user->email}'s record.");
     }
 
     /** The browser has no network to the official pages: a checked card counts when its quotes pass offline. */
@@ -106,10 +123,18 @@ class PaperworkSeeder extends Seeder
                     $recorder->apply($task);
                 }
             });
-        Artisan::call('bureaucracy:compile-catalogue', ['--deploy' => true]);
+        $this->artisan('bureaucracy:compile-catalogue', ['--deploy' => true]);
     }
 
-    private function seed(User $user): void
+    /** @param  array<string, mixed>  $options */
+    private function artisan(string $command, array $options = []): void
+    {
+        if (Artisan::call($command, $options) !== 0) {
+            throw new RuntimeException("{$command} failed: ".trim(Artisan::output()));
+        }
+    }
+
+    private function seed(User $user, bool $withAppointment): void
     {
         // A fresh record: the person, their dossier, answers, processes and documents.
         BureaucracyPerson::query()->where('account_user_id', $user->id)->delete();
@@ -126,13 +151,16 @@ class PaperworkSeeder extends Seeder
         $health = $this->start($user, $person, 'health.coverage');
 
         $this->event($user, $blueCard, 'preparation_started', []);
-        $this->event($user, $blueCard, 'appointment_recorded', [
-            'appointment_id' => (string) Str::uuid(),
-            'starts_at' => '2026-09-30T14:00:00+02:00',
-            'timezone' => 'Europe/Berlin',
-            'duration_minutes' => 30,
-            'location' => ['label' => 'Mülheim', 'lat' => 50.96103, 'lng' => 7.0048],
-        ]);
+
+        if ($withAppointment) {
+            $this->event($user, $blueCard, 'appointment_recorded', [
+                'appointment_id' => (string) Str::uuid(),
+                'starts_at' => '2026-09-30T14:00:00+02:00',
+                'timezone' => 'Europe/Berlin',
+                'duration_minutes' => 30,
+                'location' => ['label' => 'Mülheim', 'lat' => 50.96103, 'lng' => 7.0048],
+            ]);
+        }
 
         $this->event($user, $address, 'preparation_started', []);
         $this->event($user, $address, 'blocked_reported', ['note' => 'A document is not ready']);
@@ -158,7 +186,11 @@ class PaperworkSeeder extends Seeder
             ->first(fn (array $process) => $process['id'] === null && $process['definition_id'] === $definition);
 
         if ($proposal === null) {
-            throw new RuntimeException("The plan suggests no {$definition} process for the sample answers.");
+            $offered = collect($this->plan($user, $person)['processes'] ?? [])->pluck('definition_id')->implode(', ') ?: 'nothing';
+            $published = Task::query()->authoritative()->count();
+
+            throw new RuntimeException("The plan suggests no {$definition} process for the sample answers "
+                ."(it offers: {$offered}; {$published} cards are published).");
         }
 
         $receipt = app(StartProcess::class)->execute($user, $person->fresh(), self::JURISDICTION,
