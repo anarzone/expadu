@@ -1,0 +1,101 @@
+{
+    "name": "today-everyday",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".day-panel"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "Your day",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "ignore": ["y"]
+        },
+        {
+            "name": "date",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["x", "w", "y"]
+        },
+        {
+            "name": "plan time",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "ignore": ["y"]
+        },
+        {
+            "name": "plan title",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "ignore": ["y"]
+        },
+        {
+            "name": "plan place",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
+            "ignore": ["y"],
+            "widths": [360, 390, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan place @768",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
+            "ignore": ["y"],
+            "widths": [768],
+            "pixels": false
+        },
+        {
+            "name": "plan status",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
+            "ignore": ["y"],
+            "widths": [360, 390, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan status @768",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
+            "ignore": ["y"],
+            "widths": [768],
+            "pixels": false
+        },
+        {
+            "name": "plan options",
+            "mock": ".agenda-item .appointment-options summary",
+            "app": ".agenda-item button.appointment-options",
+            "ignore": ["y"]
+        },
+        {
+            "name": "Leave now",
+            "mock": ".agenda-item .trip-line",
+            "app": ".agenda-item .trip-line",
+            "contentDiffers": true,
+            "ignore": ["y", "h"]
+        },
+        {
+            "name": "Add a plan",
+            "mock": ".add-plan",
+            "app": ".add-plan",
+            "ignore": ["y"],
+            "pixels": false
+        }
+    ],
+    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land.",
+    "contentNote": "Leave now is Travel's NextTripCard (compact) on the sample route. It says 'Scheduled · not live' in the ride tile's sub-line, the coordinator's call for Travel and Today (20 Oct); the design session is redrawing Today's mock to match, which still shows a chip row. Until then its height and pixels differ and what follows sits a fraction of a pixel off, so Add a plan's pixels are not compared.",
+    "subpixelNote": "At 768 the missing deadline strip (76.8 px) leaves the first plan's place and status a fraction of a pixel off, so their text rasterises differently; boxes and styles are still exact."
+}
