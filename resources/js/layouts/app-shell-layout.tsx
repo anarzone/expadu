@@ -1,12 +1,12 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { FlashToast } from '@/components/flash-toast';
 import {
     ComposerTray,
     openComposerTray,
 } from '@/components/shell/composer-tray';
 import { ShellHeader } from '@/components/shell/shell-header';
+import { Toaster } from '@/components/ui/toast';
 import { useBackgroundLocation } from '@/hooks/use-background-location';
 import { useShellScroll } from '@/hooks/use-shell-scroll';
 import { useTracker } from '@/hooks/use-tracker';
@@ -71,7 +71,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
                 mounts here. */}
             {children}
             <ComposerTray onComposer={bare} />
-            <FlashToast />
+            <Toaster />
         </>
     );
 }
