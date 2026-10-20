@@ -16,6 +16,12 @@
      clouds, the puddles). Saved in greys (the gradient from white to
      black, shape by shape); the page maps grey back to the two colours.
 
+   What moves on its own (the mock's animation classes in street-art.css:
+   stars twinkling, wings, smoke, flickering windows, ripples, pigeons,
+   falling leaves, rain and its splashes) is drawn as separate pictures,
+   `parts` of its layer, each at rest, so the page moves it with transform
+   and opacity alone: the compositor's work, nothing repainted per frame.
+
    Run it after the mock's street changes:
        node tools/events-street/build.mjs
    It needs Playwright's Chromium (npx playwright install chromium) and
@@ -64,8 +70,8 @@ function withoutGrain(markup, prefix) {
     );
 
     if (!grain) {
-throw new Error(`no ${prefix} grain`);
-}
+        throw new Error(`no ${prefix} grain`);
+    }
 
     const box = grain[0].match(
         /y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/,
@@ -109,16 +115,22 @@ const layouts = {
                 id: 'cloud-a',
                 kind: 'tint',
                 svg: `<g fill="url(#grey)">${S[4]}</g>`,
+                // With its copy one street to the right, so it drifts round.
+                view: [0, 0, 4480, 960],
             },
             {
                 id: 'cloud-b',
                 kind: 'tint',
                 svg: `<g fill="url(#grey)">${S[5]}</g>`,
+                // With its copy one street to the right, so it drifts round.
+                view: [0, 0, 4480, 960],
             },
             {
                 id: 'cloud-c',
                 kind: 'tint',
                 svg: `<g fill="url(#grey)">${S[6]}</g>`,
+                // With its copy one street to the right, so it drifts round.
+                view: [0, 0, 4480, 960],
             },
             {
                 id: 'birds',
@@ -217,16 +229,22 @@ const layouts = {
                 id: 'cloud-a',
                 kind: 'tint',
                 svg: `<g fill="url(#grey)">${S[30]}</g>`,
+                // With its copy one street to the right, so it drifts round.
+                view: [0, 0, 702, 590],
             },
             {
                 id: 'cloud-b',
                 kind: 'tint',
                 svg: `<g fill="url(#grey)">${S[31]}</g>`,
+                // With its copy one street to the right, so it drifts round.
+                view: [0, 0, 702, 590],
             },
             {
                 id: 'cloud-c',
                 kind: 'tint',
                 svg: `<g fill="url(#grey)">${S[32]}</g>`,
+                // With its copy one street to the right, so it drifts round.
+                view: [0, 0, 702, 590],
             },
             {
                 id: 'birds',
@@ -310,13 +328,83 @@ const font = (file, weight) =>
     `@font-face{font-family:Geist;font-weight:${weight};src:url(data:font/woff2;base64,${readFileSync(join(root, 'public/fonts', file)).toString('base64')}) format('woff2')}`;
 const fonts = font('geist-700.woff2', 700);
 
-function page([w, h], view, defs, body) {
+function page([w, h], view, defs, body, css = '') {
     const box = view || [0, 0, w, h];
 
-    return `<!doctype html><html><head><style>${fonts}html,body{margin:0;background:transparent}svg{display:block}</style></head><body>
+    return `<!doctype html><html><head><style>${fonts}html,body{margin:0;background:transparent}svg{display:block}${css}</style></head><body>
 <svg xmlns="http://www.w3.org/2000/svg" width="${box[2]}" height="${box[3]}" viewBox="${box.join(' ')}" overflow="visible">
 <defs>${defs.join('')}${GREY}</defs><g id="layer">${body}</g></svg></body></html>`;
 }
+
+/* The mock's animation classes (street-art.css). A `group` class moves
+   all its elements alike, so they share one picture; an `each` class
+   scales or turns each element about its own box, so each gets its own. */
+const MOVING = {
+    tw: 'group',
+    flick: 'group',
+    blink: 'group',
+    rainfall: 'group',
+    wing: 'each',
+    smoke: 'each',
+    ripple: 'each',
+    'pig-walk': 'each',
+    'pig-head': 'each',
+    fall: 'each',
+    splash: 'each',
+};
+
+/* Marks the moving elements (data-part) and lists them: the part's id,
+   the mock's classes (the page animates by them) and its own custom
+   properties (a leaf's --fall). */
+function partsOf(svg) {
+    const parts = [];
+    const seen = {};
+    const marked = svg.replace(
+        /class="([a-z-]+)((?: [a-z0-9-]+)*)"(?: style="([^"]*)")?/g,
+        (match, first, rest, style) => {
+            const mode = MOVING[first];
+
+            if (!mode) {
+                return match;
+            }
+
+            const cls = first + rest;
+            const name = cls.split(' ').at(-1);
+            let id = name;
+
+            if (mode === 'each') {
+                seen[name] = (seen[name] ?? -1) + 1;
+                id = `${name}-${seen[name]}`;
+            }
+
+            if (!parts.some((p) => p.id === id)) {
+                const vars = Object.fromEntries(
+                    [...(style ?? '').matchAll(/(--[a-z-]+):\s*([^;]+)/g)].map(
+                        (m) => [m[1], m[2].trim()],
+                    ),
+                );
+                parts.push({
+                    id,
+                    cls,
+                    ...(Object.keys(vars).length ? { vars } : {}),
+                });
+            }
+
+            return `${match} data-part="${id}"`;
+        },
+    );
+
+    return { svg: marked, parts };
+}
+
+// The layer without its moving parts, and one part without the rest
+// (nor the parts inside it: a pigeon's head turns apart from its body).
+const still = '#layer [data-part]{visibility:hidden}';
+const only = (id) =>
+    `#layer *{visibility:hidden}#layer [data-part="${id}"],#layer [data-part="${id}"] *{visibility:visible}#layer [data-part="${id}"] [data-part],#layer [data-part="${id}"] [data-part] *{visibility:hidden}`;
+// Parts move away from where they rest, so they're drawn with room round
+// the board (birds start left of it, rain above it).
+const roomy = ([x, y, w, h]) => [x - 120, y - 120, w + 240, h + 240];
 
 /* The drawing's own pixels, trimmed to where anything is painted (alpha
    above zero), as PNG. Returns where the trim sits, in drawing units. */
@@ -351,11 +439,11 @@ async function draw(browserPage, scale, html, view, kind) {
 
                 for (let i = 0; i < px.length; i += 4) {
                     for (let ch = 0; ch < 3; ch++) {
-px[i + ch] = Math.min(
+                        px[i + ch] = Math.min(
                             255,
                             Math.round((px[i + ch] / base[ch]) * 255),
                         );
-}
+                    }
 
                     px[i + 3] = 255;
                 }
@@ -372,27 +460,27 @@ px[i + ch] = Math.min(
                 for (let x = 0; x < c.width; x++) {
                     if (px[(y * c.width + x) * 4 + 3] > 0) {
                         if (x < x0) {
-x0 = x;
-}
+                            x0 = x;
+                        }
 
                         if (x > x1) {
-x1 = x;
-}
+                            x1 = x;
+                        }
 
                         if (y < y0) {
-y0 = y;
-}
+                            y0 = y;
+                        }
 
                         if (y > y1) {
-y1 = y;
-}
+                            y1 = y;
+                        }
                     }
                 }
             }
 
             if (x1 < 0) {
-return null;
-}
+                return null;
+            }
 
             // Whole drawing units, so the picture lands on the same pixels.
             const ux0 = Math.floor(x0 / scale),
@@ -434,58 +522,92 @@ for (const [name, layout] of Object.entries(layouts)) {
 
     for (const layer of layout.layers) {
         const view = layer.view || [0, 0, ...layout.size];
+        const { svg, parts } = partsOf(layer.svg);
         const entry = { id: layer.id, kind: layer.kind, box: null, files: {} };
 
         if (layer.anchor) {
-entry.anchor = layer.anchor;
-}
+            entry.anchor = layer.anchor;
+        }
 
-        for (const scale of layout.scales) {
-            const browserPage = await browser.newPage({
-                viewport: { width: view[2], height: view[3] },
-                deviceScaleFactor: scale,
-            });
-            const drawn = await draw(
-                browserPage,
-                scale,
-                page(layout.size, view, layout.defs, layer.svg),
-                view,
-                layer.kind,
-            );
-            await browserPage.close();
+        // The layer at rest, then each moving part on its own.
+        const pictures = [
+            { id: layer.id, view, css: parts.length ? still : '', into: entry },
+            ...parts.map((part) => {
+                const into = { ...part, box: null, files: {} };
+                (entry.parts ??= []).push(into);
 
-            if (!drawn) {
-throw new Error(`${name}/${layer.id} draws nothing`);
-}
+                return {
+                    id: `${layer.id}-${part.id}`,
+                    view: roomy(view),
+                    css: only(part.id),
+                    into,
+                };
+            }),
+        ];
 
-            entry.box = drawn.box;
+        for (const picture of pictures) {
+            for (const scale of layout.scales) {
+                const browserPage = await browser.newPage({
+                    viewport: {
+                        width: picture.view[2],
+                        height: picture.view[3],
+                    },
+                    deviceScaleFactor: scale,
+                });
+                const drawn = await draw(
+                    browserPage,
+                    scale,
+                    page(
+                        layout.size,
+                        picture.view,
+                        layout.defs,
+                        svg,
+                        picture.css,
+                    ),
+                    picture.view,
+                    layer.kind,
+                );
+                await browserPage.close();
 
-            const png = join(tmp, `${name}-${layer.id}@${scale}.png`);
-            const file = `${layer.id}@${scale}x.webp`;
-            writeFileSync(png, Buffer.from(drawn.png, 'base64'));
-            // Masks only need their alpha; the colour comes from the page.
-            const quality = layer.kind === 'mask' ? 60 : (layer.quality ?? 85);
-            execFileSync('cwebp', [
-                '-quiet',
-                '-m',
-                '6',
-                '-q',
-                String(quality),
-                '-alpha_q',
-                '100',
-                '-sharp_yuv',
-                png,
-                '-o',
-                join(out, name, file),
-            ]);
-            const bytes = statSync(join(out, name, file)).size;
-            entry.files[scale] = `/events/street/${name}/${file}`;
-            total[name][scale] = (total[name][scale] || 0) + bytes;
-            console.log(
-                `${name}/${file}`.padEnd(34),
-                `${Math.round(bytes / 1024)} KB`.padStart(7),
-                drawn.box.join(' '),
-            );
+                if (!drawn) {
+                    // A layer made only of moving parts has no still picture.
+                    if (picture.into === entry && parts.length) {
+                        break;
+                    }
+
+                    throw new Error(`${name}/${picture.id} draws nothing`);
+                }
+
+                picture.into.box = drawn.box;
+
+                const png = join(tmp, `${name}-${picture.id}@${scale}.png`);
+                const file = `${picture.id}@${scale}x.webp`;
+                writeFileSync(png, Buffer.from(drawn.png, 'base64'));
+                // Masks only need their alpha; the colour comes from the page.
+                const quality =
+                    layer.kind === 'mask' ? 60 : (layer.quality ?? 85);
+                execFileSync('cwebp', [
+                    '-quiet',
+                    '-m',
+                    '6',
+                    '-q',
+                    String(quality),
+                    '-alpha_q',
+                    '100',
+                    '-sharp_yuv',
+                    png,
+                    '-o',
+                    join(out, name, file),
+                ]);
+                const bytes = statSync(join(out, name, file)).size;
+                picture.into.files[scale] = `/events/street/${name}/${file}`;
+                total[name][scale] = (total[name][scale] || 0) + bytes;
+                console.log(
+                    `${name}/${file}`.padEnd(40),
+                    `${Math.round(bytes / 1024)} KB`.padStart(7),
+                    drawn.box.join(' '),
+                );
+            }
         }
 
         result[name].layers.push(entry);
@@ -498,7 +620,7 @@ mkdirSync(dirname(manifest), { recursive: true });
 writeFileSync(manifest, `${JSON.stringify(result, null, 4)}\n`);
 
 for (const [name, scales] of Object.entries(total)) {
-for (const [scale, bytes] of Object.entries(scales)) {
-console.log(`${name} @${scale}x total: ${Math.round(bytes / 1024)} KB`);
-}
+    for (const [scale, bytes] of Object.entries(scales)) {
+        console.log(`${name} @${scale}x total: ${Math.round(bytes / 1024)} KB`);
+    }
 }

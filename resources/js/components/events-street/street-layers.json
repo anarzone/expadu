@@ -16,16 +16,54 @@
             {
                 "id": "stars",
                 "kind": "image",
-                "box": [14, 3, 2198, 163],
+                "box": [14, 3, 2182, 163],
                 "files": {
                     "1": "/events/street/desktop/stars@1x.webp",
                     "1.5": "/events/street/desktop/stars@1.5x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "tw0",
+                        "cls": "tw tw0",
+                        "box": [228, 6, 1783, 157],
+                        "files": {
+                            "1": "/events/street/desktop/stars-tw0@1x.webp",
+                            "1.5": "/events/street/desktop/stars-tw0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "tw3",
+                        "cls": "tw tw3",
+                        "box": [502, 16, 1510, 92],
+                        "files": {
+                            "1": "/events/street/desktop/stars-tw3@1x.webp",
+                            "1.5": "/events/street/desktop/stars-tw3@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "tw2",
+                        "cls": "tw tw2",
+                        "box": [68, 22, 2144, 143],
+                        "files": {
+                            "1": "/events/street/desktop/stars-tw2@1x.webp",
+                            "1.5": "/events/street/desktop/stars-tw2@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "tw1",
+                        "cls": "tw tw1",
+                        "box": [565, 10, 1584, 155],
+                        "files": {
+                            "1": "/events/street/desktop/stars-tw1@1x.webp",
+                            "1.5": "/events/street/desktop/stars-tw1@1.5x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "cloud-a",
                 "kind": "tint",
-                "box": [149, 0, 2067, 99],
+                "box": [149, 0, 4307, 99],
                 "files": {
                     "1": "/events/street/desktop/cloud-a@1x.webp",
                     "1.5": "/events/street/desktop/cloud-a@1.5x.webp"
@@ -34,7 +72,7 @@
             {
                 "id": "cloud-b",
                 "kind": "tint",
-                "box": [0, 47, 2240, 114],
+                "box": [0, 47, 4468, 114],
                 "files": {
                     "1": "/events/street/desktop/cloud-b@1x.webp",
                     "1.5": "/events/street/desktop/cloud-b@1.5x.webp"
@@ -43,7 +81,7 @@
             {
                 "id": "cloud-c",
                 "kind": "tint",
-                "box": [347, 82, 1763, 138],
+                "box": [347, 82, 4003, 138],
                 "files": {
                     "1": "/events/street/desktop/cloud-c@1x.webp",
                     "1.5": "/events/street/desktop/cloud-c@1.5x.webp"
@@ -52,11 +90,55 @@
             {
                 "id": "birds",
                 "kind": "image",
-                "box": [0, 61, 86, 23],
-                "files": {
-                    "1": "/events/street/desktop/birds@1x.webp",
-                    "1.5": "/events/street/desktop/birds@1.5x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "w0-0",
+                        "cls": "wing w0",
+                        "box": [-10, 66, 20, 7],
+                        "files": {
+                            "1": "/events/street/desktop/birds-w0-0@1x.webp",
+                            "1.5": "/events/street/desktop/birds-w0-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "w1-0",
+                        "cls": "wing w1",
+                        "box": [13, 76, 18, 6],
+                        "files": {
+                            "1": "/events/street/desktop/birds-w1-0@1x.webp",
+                            "1.5": "/events/street/desktop/birds-w1-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "w2-0",
+                        "cls": "wing w2",
+                        "box": [30, 61, 20, 6],
+                        "files": {
+                            "1": "/events/street/desktop/birds-w2-0@1x.webp",
+                            "1.5": "/events/street/desktop/birds-w2-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "w0-1",
+                        "cls": "wing w0",
+                        "box": [52, 79, 16, 5],
+                        "files": {
+                            "1": "/events/street/desktop/birds-w0-1@1x.webp",
+                            "1.5": "/events/street/desktop/birds-w0-1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "w1-1",
+                        "cls": "wing w1",
+                        "box": [70, 69, 16, 5],
+                        "files": {
+                            "1": "/events/street/desktop/birds-w1-1@1x.webp",
+                            "1.5": "/events/street/desktop/birds-w1-1@1.5x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "plane",
@@ -65,7 +147,18 @@
                 "files": {
                     "1": "/events/street/desktop/plane@1x.webp",
                     "1.5": "/events/street/desktop/plane@1.5x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "blink",
+                        "cls": "blink",
+                        "box": [-8, 36, 6, 4],
+                        "files": {
+                            "1": "/events/street/desktop/plane-blink@1x.webp",
+                            "1.5": "/events/street/desktop/plane-blink@1.5x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "far",
@@ -88,11 +181,64 @@
             {
                 "id": "smoke",
                 "kind": "image",
-                "box": [190, 162, 342, 54],
-                "files": {
-                    "1": "/events/street/desktop/smoke@1x.webp",
-                    "1.5": "/events/street/desktop/smoke@1.5x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "s0-0",
+                        "cls": "smoke s0",
+                        "box": [193, 204, 9, 9],
+                        "files": {
+                            "1": "/events/street/desktop/smoke-s0-0@1x.webp",
+                            "1.5": "/events/street/desktop/smoke-s0-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "s1-0",
+                        "cls": "smoke s1",
+                        "box": [192, 202, 12, 12],
+                        "files": {
+                            "1": "/events/street/desktop/smoke-s1-0@1x.webp",
+                            "1.5": "/events/street/desktop/smoke-s1-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "s2-0",
+                        "cls": "smoke s2",
+                        "box": [190, 200, 15, 16],
+                        "files": {
+                            "1": "/events/street/desktop/smoke-s2-0@1x.webp",
+                            "1.5": "/events/street/desktop/smoke-s2-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "s0-1",
+                        "cls": "smoke s0",
+                        "box": [520, 166, 9, 9],
+                        "files": {
+                            "1": "/events/street/desktop/smoke-s0-1@1x.webp",
+                            "1.5": "/events/street/desktop/smoke-s0-1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "s1-1",
+                        "cls": "smoke s1",
+                        "box": [518, 164, 12, 12],
+                        "files": {
+                            "1": "/events/street/desktop/smoke-s1-1@1x.webp",
+                            "1.5": "/events/street/desktop/smoke-s1-1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "s2-1",
+                        "cls": "smoke s2",
+                        "box": [516, 162, 16, 16],
+                        "files": {
+                            "1": "/events/street/desktop/smoke-s2-1@1x.webp",
+                            "1.5": "/events/street/desktop/smoke-s2-1@1.5x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "near",
@@ -110,7 +256,36 @@
                 "files": {
                     "1": "/events/street/desktop/windows@1x.webp",
                     "1.5": "/events/street/desktop/windows@1.5x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "f2",
+                        "cls": "flick f2",
+                        "box": [76, 211, 1814, 22],
+                        "files": {
+                            "1": "/events/street/desktop/windows-f2@1x.webp",
+                            "1.5": "/events/street/desktop/windows-f2@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "f1",
+                        "cls": "flick f1",
+                        "box": [122, 220, 1850, 14],
+                        "files": {
+                            "1": "/events/street/desktop/windows-f1@1x.webp",
+                            "1.5": "/events/street/desktop/windows-f1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "f0",
+                        "cls": "flick f0",
+                        "box": [203, 210, 1525, 24],
+                        "files": {
+                            "1": "/events/street/desktop/windows-f0@1x.webp",
+                            "1.5": "/events/street/desktop/windows-f0@1.5x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "wall",
@@ -174,7 +349,63 @@
                 "files": {
                     "1": "/events/street/desktop/puddles@1x.webp",
                     "1.5": "/events/street/desktop/puddles@1.5x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "ripple-0",
+                        "cls": "ripple",
+                        "box": [631, 940, 38, 8],
+                        "files": {
+                            "1": "/events/street/desktop/puddles-ripple-0@1x.webp",
+                            "1.5": "/events/street/desktop/puddles-ripple-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "ripple-1",
+                        "cls": "ripple",
+                        "box": [926, 947, 28, 6],
+                        "files": {
+                            "1": "/events/street/desktop/puddles-ripple-1@1x.webp",
+                            "1.5": "/events/street/desktop/puddles-ripple-1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "ripple-2",
+                        "cls": "ripple",
+                        "box": [1158, 938, 44, 8],
+                        "files": {
+                            "1": "/events/street/desktop/puddles-ripple-2@1x.webp",
+                            "1.5": "/events/street/desktop/puddles-ripple-2@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "ripple-3",
+                        "cls": "ripple",
+                        "box": [1514, 944, 32, 8],
+                        "files": {
+                            "1": "/events/street/desktop/puddles-ripple-3@1x.webp",
+                            "1.5": "/events/street/desktop/puddles-ripple-3@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "ripple-4",
+                        "cls": "ripple",
+                        "box": [1869, 940, 42, 8],
+                        "files": {
+                            "1": "/events/street/desktop/puddles-ripple-4@1x.webp",
+                            "1.5": "/events/street/desktop/puddles-ripple-4@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "ripple-5",
+                        "cls": "ripple",
+                        "box": [2143, 946, 34, 8],
+                        "files": {
+                            "1": "/events/street/desktop/puddles-ripple-5@1x.webp",
+                            "1.5": "/events/street/desktop/puddles-ripple-5@1.5x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "lamp-pool",
@@ -197,11 +428,67 @@
             {
                 "id": "street",
                 "kind": "image",
-                "box": [0, 835, 522, 125],
+                "box": [0, 835, 522, 109],
                 "files": {
                     "1": "/events/street/desktop/street@1x.webp",
                     "1.5": "/events/street/desktop/street@1.5x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "pw0-0",
+                        "cls": "pig-walk pw0",
+                        "box": [192, 934, 40, 25],
+                        "files": {
+                            "1": "/events/street/desktop/street-pw0-0@1x.webp",
+                            "1.5": "/events/street/desktop/street-pw0-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "ph0-0",
+                        "cls": "pig-head ph0",
+                        "box": [220, 928, 20, 12],
+                        "files": {
+                            "1": "/events/street/desktop/street-ph0-0@1x.webp",
+                            "1.5": "/events/street/desktop/street-ph0-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "pw1-0",
+                        "cls": "pig-walk pw1",
+                        "box": [255, 938, 37, 24],
+                        "files": {
+                            "1": "/events/street/desktop/street-pw1-0@1x.webp",
+                            "1.5": "/events/street/desktop/street-pw1-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "ph1-0",
+                        "cls": "pig-head ph1",
+                        "box": [248, 932, 19, 12],
+                        "files": {
+                            "1": "/events/street/desktop/street-ph1-0@1x.webp",
+                            "1.5": "/events/street/desktop/street-ph1-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "pw2-0",
+                        "cls": "pig-walk pw2",
+                        "box": [338, 932, 41, 25],
+                        "files": {
+                            "1": "/events/street/desktop/street-pw2-0@1x.webp",
+                            "1.5": "/events/street/desktop/street-pw2-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "ph2-0",
+                        "cls": "pig-head ph2",
+                        "box": [366, 924, 21, 13],
+                        "files": {
+                            "1": "/events/street/desktop/street-ph2-0@1x.webp",
+                            "1.5": "/events/street/desktop/street-ph2-0@1.5x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "lamp-glow",
@@ -215,20 +502,297 @@
             {
                 "id": "leaves",
                 "kind": "image",
-                "box": [50, 106, 186, 22],
-                "files": {
-                    "1": "/events/street/desktop/leaves@1x.webp",
-                    "1.5": "/events/street/desktop/leaves@1.5x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "fall0-0",
+                        "cls": "fall fall0",
+                        "vars": {
+                            "--fall": "800px"
+                        },
+                        "box": [82, 106, 20, 22],
+                        "files": {
+                            "1": "/events/street/desktop/leaves-fall0-0@1x.webp",
+                            "1.5": "/events/street/desktop/leaves-fall0-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "fall1-0",
+                        "cls": "fall fall1",
+                        "vars": {
+                            "--fall": "800px"
+                        },
+                        "box": [60, 106, 19, 22],
+                        "files": {
+                            "1": "/events/street/desktop/leaves-fall1-0@1x.webp",
+                            "1.5": "/events/street/desktop/leaves-fall1-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "fall2-0",
+                        "cls": "fall fall2",
+                        "vars": {
+                            "--fall": "800px"
+                        },
+                        "box": [50, 106, 19, 22],
+                        "files": {
+                            "1": "/events/street/desktop/leaves-fall2-0@1x.webp",
+                            "1.5": "/events/street/desktop/leaves-fall2-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "fall3-0",
+                        "cls": "fall fall3",
+                        "vars": {
+                            "--fall": "800px"
+                        },
+                        "box": [217, 106, 19, 22],
+                        "files": {
+                            "1": "/events/street/desktop/leaves-fall3-0@1x.webp",
+                            "1.5": "/events/street/desktop/leaves-fall3-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "fall4-0",
+                        "cls": "fall fall4",
+                        "vars": {
+                            "--fall": "800px"
+                        },
+                        "box": [78, 106, 20, 22],
+                        "files": {
+                            "1": "/events/street/desktop/leaves-fall4-0@1x.webp",
+                            "1.5": "/events/street/desktop/leaves-fall4-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "fall0-1",
+                        "cls": "fall fall0",
+                        "vars": {
+                            "--fall": "800px"
+                        },
+                        "box": [136, 106, 19, 22],
+                        "files": {
+                            "1": "/events/street/desktop/leaves-fall0-1@1x.webp",
+                            "1.5": "/events/street/desktop/leaves-fall0-1@1.5x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "rain",
                 "kind": "image",
-                "box": [0, 0, 2231, 960],
-                "files": {
-                    "1": "/events/street/desktop/rain@1x.webp",
-                    "1.5": "/events/street/desktop/rain@1.5x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "rainfall",
+                        "cls": "rainfall",
+                        "box": [-6, -65, 2237, 1106],
+                        "files": {
+                            "1": "/events/street/desktop/rain-rainfall@1x.webp",
+                            "1.5": "/events/street/desktop/rain-rainfall@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp0-0",
+                        "cls": "splash sp0",
+                        "box": [2126, 935, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp0-0@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp0-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp1-0",
+                        "cls": "splash sp1",
+                        "box": [130, 924, 12, 6],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp1-0@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp1-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp2-0",
+                        "cls": "splash sp2",
+                        "box": [1859, 932, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp2-0@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp2-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp3-0",
+                        "cls": "splash sp3",
+                        "box": [1491, 927, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp3-0@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp3-0@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp0-1",
+                        "cls": "splash sp0",
+                        "box": [1349, 931, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp0-1@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp0-1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp1-1",
+                        "cls": "splash sp1",
+                        "box": [1294, 926, 12, 4],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp1-1@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp1-1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp2-1",
+                        "cls": "splash sp2",
+                        "box": [960, 928, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp2-1@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp2-1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp3-1",
+                        "cls": "splash sp3",
+                        "box": [1609, 936, 12, 4],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp3-1@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp3-1@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp0-2",
+                        "cls": "splash sp0",
+                        "box": [2112, 930, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp0-2@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp0-2@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp1-2",
+                        "cls": "splash sp1",
+                        "box": [992, 927, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp1-2@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp1-2@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp2-2",
+                        "cls": "splash sp2",
+                        "box": [84, 924, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp2-2@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp2-2@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp3-2",
+                        "cls": "splash sp3",
+                        "box": [1036, 927, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp3-2@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp3-2@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp0-3",
+                        "cls": "splash sp0",
+                        "box": [848, 934, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp0-3@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp0-3@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp1-3",
+                        "cls": "splash sp1",
+                        "box": [1171, 930, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp1-3@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp1-3@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp2-3",
+                        "cls": "splash sp2",
+                        "box": [528, 924, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp2-3@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp2-3@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp3-3",
+                        "cls": "splash sp3",
+                        "box": [726, 925, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp3-3@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp3-3@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp0-4",
+                        "cls": "splash sp0",
+                        "box": [1136, 936, 13, 4],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp0-4@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp0-4@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp1-4",
+                        "cls": "splash sp1",
+                        "box": [1501, 926, 13, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp1-4@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp1-4@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp2-4",
+                        "cls": "splash sp2",
+                        "box": [1988, 933, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp2-4@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp2-4@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp3-4",
+                        "cls": "splash sp3",
+                        "box": [1634, 934, 12, 6],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp3-4@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp3-4@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp0-5",
+                        "cls": "splash sp0",
+                        "box": [1698, 933, 12, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp0-5@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp0-5@1.5x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp1-5",
+                        "cls": "splash sp1",
+                        "box": [789, 935, 13, 5],
+                        "files": {
+                            "1": "/events/street/desktop/rain-sp1-5@1x.webp",
+                            "1.5": "/events/street/desktop/rain-sp1-5@1.5x.webp"
+                        }
+                    }
+                ]
             }
         ]
     },
@@ -249,16 +813,54 @@
             {
                 "id": "stars",
                 "kind": "image",
-                "box": [14, 4, 309, 101],
+                "box": [14, 4, 309, 95],
                 "files": {
                     "2": "/events/street/phone/stars@2x.webp",
                     "3": "/events/street/phone/stars@3x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "tw0",
+                        "cls": "tw tw0",
+                        "box": [82, 13, 228, 47],
+                        "files": {
+                            "2": "/events/street/phone/stars-tw0@2x.webp",
+                            "3": "/events/street/phone/stars-tw0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "tw3",
+                        "cls": "tw tw3",
+                        "box": [89, 26, 90, 18],
+                        "files": {
+                            "2": "/events/street/phone/stars-tw3@2x.webp",
+                            "3": "/events/street/phone/stars-tw3@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "tw2",
+                        "cls": "tw tw2",
+                        "box": [299, 56, 7, 49],
+                        "files": {
+                            "2": "/events/street/phone/stars-tw2@2x.webp",
+                            "3": "/events/street/phone/stars-tw2@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "tw1",
+                        "cls": "tw tw1",
+                        "box": [164, 75, 3, 3],
+                        "files": {
+                            "2": "/events/street/phone/stars-tw1@2x.webp",
+                            "3": "/events/street/phone/stars-tw1@3x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "cloud-a",
                 "kind": "tint",
-                "box": [17, 16, 334, 35],
+                "box": [17, 16, 685, 35],
                 "files": {
                     "2": "/events/street/phone/cloud-a@2x.webp",
                     "3": "/events/street/phone/cloud-a@3x.webp"
@@ -267,7 +869,7 @@
             {
                 "id": "cloud-b",
                 "kind": "tint",
-                "box": [27, 49, 238, 41],
+                "box": [27, 49, 589, 41],
                 "files": {
                     "2": "/events/street/phone/cloud-b@2x.webp",
                     "3": "/events/street/phone/cloud-b@3x.webp"
@@ -276,7 +878,7 @@
             {
                 "id": "cloud-c",
                 "kind": "tint",
-                "box": [0, 66, 351, 68],
+                "box": [0, 66, 640, 68],
                 "files": {
                     "2": "/events/street/phone/cloud-c@2x.webp",
                     "3": "/events/street/phone/cloud-c@3x.webp"
@@ -285,11 +887,55 @@
             {
                 "id": "birds",
                 "kind": "image",
-                "box": [0, 35, 86, 24],
-                "files": {
-                    "2": "/events/street/phone/birds@2x.webp",
-                    "3": "/events/street/phone/birds@3x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "w0-0",
+                        "cls": "wing w0",
+                        "box": [-10, 41, 20, 6],
+                        "files": {
+                            "2": "/events/street/phone/birds-w0-0@2x.webp",
+                            "3": "/events/street/phone/birds-w0-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "w1-0",
+                        "cls": "wing w1",
+                        "box": [13, 50, 18, 6],
+                        "files": {
+                            "2": "/events/street/phone/birds-w1-0@2x.webp",
+                            "3": "/events/street/phone/birds-w1-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "w2-0",
+                        "cls": "wing w2",
+                        "box": [31, 35, 18, 6],
+                        "files": {
+                            "2": "/events/street/phone/birds-w2-0@2x.webp",
+                            "3": "/events/street/phone/birds-w2-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "w0-1",
+                        "cls": "wing w0",
+                        "box": [52, 54, 16, 5],
+                        "files": {
+                            "2": "/events/street/phone/birds-w0-1@2x.webp",
+                            "3": "/events/street/phone/birds-w0-1@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "w1-1",
+                        "cls": "wing w1",
+                        "box": [70, 43, 16, 6],
+                        "files": {
+                            "2": "/events/street/phone/birds-w1-1@2x.webp",
+                            "3": "/events/street/phone/birds-w1-1@3x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "plane",
@@ -298,7 +944,18 @@
                 "files": {
                     "2": "/events/street/phone/plane@2x.webp",
                     "3": "/events/street/phone/plane@3x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "blink",
+                        "cls": "blink",
+                        "box": [-7, 22, 4, 4],
+                        "files": {
+                            "2": "/events/street/phone/plane-blink@2x.webp",
+                            "3": "/events/street/phone/plane-blink@3x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "far",
@@ -321,11 +978,37 @@
             {
                 "id": "smoke",
                 "kind": "image",
-                "box": [104, 128, 11, 10],
-                "files": {
-                    "2": "/events/street/phone/smoke@2x.webp",
-                    "3": "/events/street/phone/smoke@3x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "s0-0",
+                        "cls": "smoke s0",
+                        "box": [106, 130, 7, 6],
+                        "files": {
+                            "2": "/events/street/phone/smoke-s0-0@2x.webp",
+                            "3": "/events/street/phone/smoke-s0-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "s1-0",
+                        "cls": "smoke s1",
+                        "box": [105, 129, 9, 8],
+                        "files": {
+                            "2": "/events/street/phone/smoke-s1-0@2x.webp",
+                            "3": "/events/street/phone/smoke-s1-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "s2-0",
+                        "cls": "smoke s2",
+                        "box": [104, 128, 11, 10],
+                        "files": {
+                            "2": "/events/street/phone/smoke-s2-0@2x.webp",
+                            "3": "/events/street/phone/smoke-s2-0@3x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "near",
@@ -343,7 +1026,18 @@
                 "files": {
                     "2": "/events/street/phone/windows@2x.webp",
                     "3": "/events/street/phone/windows@3x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "f1",
+                        "cls": "flick f1",
+                        "box": [193, 142, 4, 5],
+                        "files": {
+                            "2": "/events/street/phone/windows-f1@2x.webp",
+                            "3": "/events/street/phone/windows-f1@3x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "wall",
@@ -397,7 +1091,18 @@
                 "files": {
                     "2": "/events/street/phone/puddles@2x.webp",
                     "3": "/events/street/phone/puddles@3x.webp"
-                }
+                },
+                "parts": [
+                    {
+                        "id": "ripple-0",
+                        "cls": "ripple",
+                        "box": [251, 572, 18, 4],
+                        "files": {
+                            "2": "/events/street/phone/puddles-ripple-0@2x.webp",
+                            "3": "/events/street/phone/puddles-ripple-0@3x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "lamp-pool",
@@ -420,11 +1125,46 @@
             {
                 "id": "street",
                 "kind": "image",
-                "box": [60, 564, 62, 18],
-                "files": {
-                    "2": "/events/street/phone/street@2x.webp",
-                    "3": "/events/street/phone/street@3x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "pw0-0",
+                        "cls": "pig-walk pw0",
+                        "box": [60, 567, 19, 11],
+                        "files": {
+                            "2": "/events/street/phone/street-pw0-0@2x.webp",
+                            "3": "/events/street/phone/street-pw0-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "ph0-0",
+                        "cls": "pig-head ph0",
+                        "box": [72, 564, 10, 6],
+                        "files": {
+                            "2": "/events/street/phone/street-ph0-0@2x.webp",
+                            "3": "/events/street/phone/street-ph0-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "pw1-0",
+                        "cls": "pig-walk pw1",
+                        "box": [104, 571, 18, 11],
+                        "files": {
+                            "2": "/events/street/phone/street-pw1-0@2x.webp",
+                            "3": "/events/street/phone/street-pw1-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "ph1-0",
+                        "cls": "pig-head ph1",
+                        "box": [101, 568, 9, 6],
+                        "files": {
+                            "2": "/events/street/phone/street-ph1-0@2x.webp",
+                            "3": "/events/street/phone/street-ph1-0@3x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "lamp-glow",
@@ -438,20 +1178,135 @@
             {
                 "id": "leaves",
                 "kind": "image",
-                "box": [20, 46, 34, 22],
-                "files": {
-                    "2": "/events/street/phone/leaves@2x.webp",
-                    "3": "/events/street/phone/leaves@3x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "fall0-0",
+                        "cls": "fall fall0",
+                        "vars": {
+                            "--fall": "440px"
+                        },
+                        "box": [35, 46, 19, 22],
+                        "files": {
+                            "2": "/events/street/phone/leaves-fall0-0@2x.webp",
+                            "3": "/events/street/phone/leaves-fall0-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "fall1-0",
+                        "cls": "fall fall1",
+                        "vars": {
+                            "--fall": "440px"
+                        },
+                        "box": [24, 46, 19, 22],
+                        "files": {
+                            "2": "/events/street/phone/leaves-fall1-0@2x.webp",
+                            "3": "/events/street/phone/leaves-fall1-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "fall2-0",
+                        "cls": "fall fall2",
+                        "vars": {
+                            "--fall": "440px"
+                        },
+                        "box": [20, 46, 19, 22],
+                        "files": {
+                            "2": "/events/street/phone/leaves-fall2-0@2x.webp",
+                            "3": "/events/street/phone/leaves-fall2-0@3x.webp"
+                        }
+                    }
+                ]
             },
             {
                 "id": "rain",
                 "kind": "image",
-                "box": [0, 0, 346, 590],
-                "files": {
-                    "2": "/events/street/phone/rain@2x.webp",
-                    "3": "/events/street/phone/rain@3x.webp"
-                }
+                "box": null,
+                "files": {},
+                "parts": [
+                    {
+                        "id": "rainfall",
+                        "cls": "rainfall",
+                        "box": [-6, -65, 352, 722],
+                        "files": {
+                            "2": "/events/street/phone/rain-rainfall@2x.webp",
+                            "3": "/events/street/phone/rain-rainfall@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp0-0",
+                        "cls": "splash sp0",
+                        "box": [320, 569, 12, 5],
+                        "files": {
+                            "2": "/events/street/phone/rain-sp0-0@2x.webp",
+                            "3": "/events/street/phone/rain-sp0-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp1-0",
+                        "cls": "splash sp1",
+                        "box": [23, 559, 12, 4],
+                        "files": {
+                            "2": "/events/street/phone/rain-sp1-0@2x.webp",
+                            "3": "/events/street/phone/rain-sp1-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp2-0",
+                        "cls": "splash sp2",
+                        "box": [281, 566, 12, 5],
+                        "files": {
+                            "2": "/events/street/phone/rain-sp2-0@2x.webp",
+                            "3": "/events/street/phone/rain-sp2-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp3-0",
+                        "cls": "splash sp3",
+                        "box": [226, 561, 12, 5],
+                        "files": {
+                            "2": "/events/street/phone/rain-sp3-0@2x.webp",
+                            "3": "/events/street/phone/rain-sp3-0@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp0-1",
+                        "cls": "splash sp0",
+                        "box": [205, 565, 12, 5],
+                        "files": {
+                            "2": "/events/street/phone/rain-sp0-1@2x.webp",
+                            "3": "/events/street/phone/rain-sp0-1@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp1-1",
+                        "cls": "splash sp1",
+                        "box": [196, 560, 12, 4],
+                        "files": {
+                            "2": "/events/street/phone/rain-sp1-1@2x.webp",
+                            "3": "/events/street/phone/rain-sp1-1@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp2-1",
+                        "cls": "splash sp2",
+                        "box": [147, 562, 12, 5],
+                        "files": {
+                            "2": "/events/street/phone/rain-sp2-1@2x.webp",
+                            "3": "/events/street/phone/rain-sp2-1@3x.webp"
+                        }
+                    },
+                    {
+                        "id": "sp3-1",
+                        "cls": "splash sp3",
+                        "box": [243, 570, 12, 4],
+                        "files": {
+                            "2": "/events/street/phone/rain-sp3-1@2x.webp",
+                            "3": "/events/street/phone/rain-sp3-1@3x.webp"
+                        }
+                    }
+                ]
             }
         ]
     }
