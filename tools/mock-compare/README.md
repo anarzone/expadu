@@ -99,6 +99,11 @@ switcher; boxes and styles are measured without it).
 `node tools/mock-compare/dump.mjs <url> <root selector> <width> [login]` prints the element tree with
 boxes and text, so the mock's and the app's structures can be matched side by side. Cover every
 visible component of the slice, including open states (menus, sheets, focus) via `before`.
+The shell's open states have a config each: `shell-city`, `shell-account`, `shell-composer` (the
+tray and its + menu, on Paperwork, where both trays name the page), `shell-focus` (each pair tabs
+once more and compares the ring on `:focus`) and `shell-scroll` (phones: `PageDown` / `PageUp` steps;
+a pair is measured before its shot scrolls back to the top). A config's `pixelThreshold` lets that
+share of a shot differ, with its reason in a note.
 
 ## Same content
 
