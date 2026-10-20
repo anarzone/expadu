@@ -117,13 +117,17 @@ export function spareMin(journey: Journey, target: PlanTarget): number {
 const minutes = (iso: string) => Date.parse(iso) / 60_000;
 
 /**
- * The options in the order you'd pick them: by the chosen sort, then what
- * matters to you moves the ones that suit it up. Nothing is hidden.
+ * The options in the order you'd pick them: what matters to you moves the
+ * ones that suit it up, then the chosen sort. Asked to be there by a time,
+ * the first is the latest way that still leaves the margin (the mock's
+ * "Best for you"), then the tight ones, then the late ones. Nothing is
+ * hidden.
  */
 export function rankOptions(
     options: PlanOption[],
     sort: SortKey,
     prefs: Pref[],
+    deadline: { at: string; margin: number } | null = null,
 ): PlanOption[] {
     const key: Record<SortKey, (o: PlanOption) => number> = {
         arrival: (o) => minutes(o.journey.arrive_at),
@@ -139,13 +143,37 @@ export function rankOptions(
               Math.max(0, delayOf(o.journey) ?? 0) * 3
             : 0) +
         (prefs.includes('stepfree') && o.lifts?.length ? 60 : 0);
+    const by = deadline ? minutes(deadline.at) : null;
+    // 0: fits with the margin, 1: tight, 2: late.
+    const fit = (o: PlanOption) => {
+        if (by === null) {
+            return 0;
+        }
 
-    return [...options].sort(
-        (a, b) =>
+        const spare = by - minutes(o.journey.arrive_at);
+
+        return spare >= (deadline?.margin ?? 0) ? 0 : spare >= 0 ? 1 : 2;
+    };
+
+    return [...options].sort((a, b) => {
+        const order =
             penalty(a) - penalty(b) ||
+            (sort === 'arrival' ? fit(a) - fit(b) : 0);
+
+        if (order) {
+            return order;
+        }
+
+        // Among the ways that fit, the latest to leave comes first.
+        if (sort === 'arrival' && by !== null && fit(a) === 0) {
+            return minutes(b.journey.depart_at) - minutes(a.journey.depart_at);
+        }
+
+        return (
             key[sort](a) - key[sort](b) ||
-            minutes(a.journey.depart_at) - minutes(b.journey.depart_at),
-    );
+            minutes(a.journey.depart_at) - minutes(b.journey.depart_at)
+        );
+    });
 }
 
 /** The forecast hour you set off in, when it's known. */

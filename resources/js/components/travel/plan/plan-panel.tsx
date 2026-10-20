@@ -15,6 +15,7 @@ import {
     berlinInstant,
     berlinNow,
     checksFor,
+    marginOf,
     rankOptions,
     scheduleSummary,
 } from './plan-model';
@@ -466,9 +467,19 @@ export function PlanPanel({
             })),
         [answer],
     );
+    // Be there by: your plan's start (with its margin) or the time you set.
+    const deadline = useMemo(
+        () =>
+            target
+                ? { at: target.start_at, margin: marginOf(target) }
+                : schedule === 'arrive'
+                  ? { at: berlinInstant(date, time), margin: 0 }
+                  : null,
+        [target, schedule, date, time],
+    );
     const ranked = useMemo(
-        () => rankOptions(options, sort, prefs),
-        [options, sort, prefs],
+        () => rankOptions(options, sort, prefs, deadline),
+        [options, sort, prefs, deadline],
     );
     const shown = more ? ranked : ranked.slice(0, 3);
     const chosen =
