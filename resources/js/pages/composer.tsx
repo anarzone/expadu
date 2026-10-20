@@ -3,12 +3,9 @@ import {
     IconArrowRight,
     IconBookmark,
     IconCalendar,
-    IconCheck,
     IconChevronDown,
-    IconHistory,
     IconPlus,
     IconSparkles,
-    IconTrash,
     IconX,
 } from '@tabler/icons-react';
 import { clsx } from 'clsx';
@@ -41,6 +38,7 @@ import {
     YourDay,
     dayFacts,
     useComposerFrame,
+    useComposerOrigin,
 } from '@/components/composer/frame';
 import type { DayAround, PaperworkGlance } from '@/components/composer/frame';
 import { Guidance } from '@/components/composer/guidance';
@@ -49,6 +47,7 @@ import type { ItemDetails } from '@/components/composer/item-preview';
 import { ComposerLoading } from '@/components/composer/loading';
 import { OriginPicker } from '@/components/composer/origin-picker';
 import type { PlanOrigin } from '@/components/composer/origin-picker';
+import { WorkspacePanel } from '@/components/composer/panels';
 import { PlanCard } from '@/components/composer/plan-card';
 import { TimePicker } from '@/components/composer/time-picker';
 import { api, ApiError, dateLabel, today } from '@/components/composer/types';
@@ -58,14 +57,12 @@ import type {
     Slot,
     Workspace,
 } from '@/components/composer/types';
-import { SavedJourneys } from '@/components/departures/saved-journeys';
 import { travelDestinationParams } from '@/components/departures/travel-request';
 import {
     eventDateLabel,
     eventSchedule,
 } from '@/components/events/event-presentation';
 import { EventRichDetail } from '@/components/events/event-rich-detail';
-import { SavedEvents } from '@/components/events/saved-events';
 import type { EventOccurrence } from '@/components/events/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
@@ -176,6 +173,7 @@ export default function ComposerPage({
     const busyRef = useRef(false);
     const [error, setError] = useState('');
     const [retryMessage, setRetryMessage] = useState<string | null>(null);
+    const cameFrom = useComposerOrigin();
     const [panel, setPanel] = useState<Panel>(() => {
         const asked = new URL(page.url, 'http://localhost').searchParams.get(
             'panel',
@@ -187,6 +185,11 @@ export default function ComposerPage({
     });
     const [swap, setSwap] = useState<Swap | null>(null);
     const [browseDate, setBrowseDate] = useState(today);
+    // My Plans' day, and the page Saved ideas goes back to when its bookmark opened it.
+    const [plansDate, setPlansDate] = useState<string | null>(null);
+    const [savedFrom, setSavedFrom] = useState(() =>
+        panel === 'saved' ? cameFrom : null,
+    );
     const [confirm, setConfirm] = useState<'history' | null>(null);
     const [detail, setDetail] = useState<ItemDetails | null>(null);
     const [destination, setDestination] = useState<Destination | null>(null);
@@ -309,9 +312,14 @@ export default function ComposerPage({
             setBusy('');
         }
     }
-    function openBrowse(saved = false) {
+    function openBrowse() {
         setBrowseDate(activePlan?.date ?? today());
-        setPanel(saved ? 'saved' : 'browse');
+        setPanel('browse');
+    }
+    function openCollection(next: 'plans' | 'saved' | 'history') {
+        setSwap(null);
+        setSavedFrom(null);
+        setPanel(next);
     }
     async function startSwap(slot: Slot) {
         if (!activePlan) {
@@ -546,6 +554,7 @@ export default function ComposerPage({
             'saved'
         ) {
             setPanel('saved');
+            setSavedFrom(cameFrom);
         }
 
         const next = readComposerEntry(page.url);
@@ -562,7 +571,7 @@ export default function ComposerPage({
             void entryCommand.current({ action: 'open', date: planDate });
         }
         // A URL is context for review, never permission to send a message.
-    }, [page.url, planDate]);
+    }, [page.url, planDate, cameFrom]);
     useEffect(() => {
         setEntryEvent(null);
         setEntryError('');
@@ -652,6 +661,11 @@ export default function ComposerPage({
             openPlan(plan);
         }
     };
+    const collection =
+        panel === 'plans' || panel === 'saved' || panel === 'history'
+            ? panel
+            : null;
+    const dayDate = day?.date ?? today();
     const hasDay =
         !!day &&
         (facts.length > 0 ||
@@ -664,7 +678,11 @@ export default function ComposerPage({
             <Head title="Composer" />
             <div
                 id="composer-page"
-                className={clsx('composer-page', hasDay && 'has-composer-day')}
+                className={clsx(
+                    'composer-page',
+                    hasDay && 'has-composer-day',
+                    collection && 'has-panel',
+                )}
                 ref={root}
             >
                 <main id="main" tabIndex={-1}>
@@ -674,9 +692,7 @@ export default function ComposerPage({
                         workspace={workspace}
                         onAsk={ask}
                         onOpenPlan={openDay}
-                        onPanel={(next) =>
-                            next === 'saved' ? openBrowse(true) : setPanel(next)
-                        }
+                        onPanel={(next) => openCollection(next)}
                     />
                     <div className="composer-heading">
                         <ComposerMark />
@@ -1270,11 +1286,7 @@ export default function ComposerPage({
                                 <ComposerActions
                                     disabled={!!busy}
                                     origin={origin?.label ?? null}
-                                    onPanel={(next) =>
-                                        next === 'saved'
-                                            ? (setSwap(null), openBrowse(true))
-                                            : setPanel(next)
-                                    }
+                                    onPanel={(next) => openCollection(next)}
                                     onBrowse={() => {
                                         setSwap(null);
                                         openBrowse();
@@ -1335,9 +1347,59 @@ export default function ComposerPage({
                 >
                     <Icon name="spark" variant="line" />
                 </button>
+                {collection && (
+                    <WorkspacePanel
+                        panel={collection}
+                        workspace={workspace}
+                        today={dayDate}
+                        date={plansDate ?? activePlan?.date ?? dayDate}
+                        busy={!!busy}
+                        savedFrom={savedFrom}
+                        onDate={setPlansDate}
+                        onClose={() => {
+                            setPanel(null);
+                            setSavedFrom(null);
+                        }}
+                        onPanel={openCollection}
+                        onOpenPlan={(plan) => void openPlan(plan)}
+                        onPlanDay={(date) => {
+                            setPanel(null);
+                            void send(
+                                `Plan ${new Intl.DateTimeFormat('en-GB', {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long',
+                                }).format(new Date(`${date}T12:00:00`))}`,
+                            );
+                        }}
+                        onAppointment={(date) => {
+                            setBrowseDate(date);
+                            setPanel('appointment');
+                        }}
+                        onCancelDay={(date) =>
+                            void command({ action: 'cancel_day', date })
+                        }
+                        onResume={async (id) => {
+                            if (await command({ action: 'resume', id })) {
+                                setPanel(null);
+                                setSwap(null);
+                                scrollBottom(true);
+                            }
+                        }}
+                        onDeleteHistory={() => setConfirm('history')}
+                        onAdd={(slot) =>
+                            command({
+                                action: 'add',
+                                candidate: slot.id,
+                                date: plansDate ?? activePlan?.date ?? dayDate,
+                            })
+                        }
+                        onFull={fullDetails}
+                    />
+                )}
             </div>
             <Dialog
-                open={panel !== null}
+                open={panel !== null && collection === null}
                 onOpenChange={(open) => {
                     if (!open) {
                         setPanel(null);
@@ -1351,17 +1413,11 @@ export default function ComposerPage({
                     <DialogTitle>
                         {panel === 'origin'
                             ? 'Starting point'
-                            : panel === 'plans'
-                              ? 'My Plans'
-                              : panel === 'saved'
-                                ? 'Saved'
-                                : panel === 'history'
-                                  ? 'Conversations'
-                                  : panel === 'appointment'
-                                    ? 'Add an appointment'
-                                    : swap
-                                      ? 'Replace a place'
-                                      : 'Add to your plan'}
+                            : panel === 'appointment'
+                              ? 'Add an appointment'
+                              : swap
+                                ? 'Replace a place'
+                                : 'Add to your plan'}
                     </DialogTitle>
                     <DialogDescription className="sr-only">
                         Your conversation stays here while you explore.
@@ -1382,94 +1438,7 @@ export default function ComposerPage({
                             />
                         )}
 
-                        {panel === 'plans' && (
-                            <>
-                                {Object.values(workspace.plans)
-                                    .sort((a, b) =>
-                                        a.date.localeCompare(b.date),
-                                    )
-                                    .map((plan) => (
-                                        <button
-                                            key={plan.date}
-                                            className="composer-collection-item"
-                                            disabled={!!busy}
-                                            onClick={() => openPlan(plan)}
-                                        >
-                                            <IconCalendar size={20} />
-                                            <span>
-                                                {dateLabel(plan.date)}
-                                                <small>
-                                                    {plan.slots.length}{' '}
-                                                    {plan.slots.length === 1
-                                                        ? 'activity'
-                                                        : 'activities'}{' '}
-                                                    · In your plan
-                                                </small>
-                                            </span>
-                                            <IconArrowRight size={18} />
-                                        </button>
-                                    ))}
-                                {Object.keys(workspace.plans).length === 0 && (
-                                    <p className="composer-empty">
-                                        Your days will appear here. Start with a
-                                        request in Composer.
-                                    </p>
-                                )}
-                            </>
-                        )}
-                        {panel === 'history' && (
-                            <>
-                                {workspace.conversations
-                                    .toReversed()
-                                    .map((item) => (
-                                        <button
-                                            className="composer-collection-item"
-                                            key={item.id}
-                                            disabled={!!busy}
-                                            onClick={async () => {
-                                                if (
-                                                    await command({
-                                                        action: 'resume',
-                                                        id: item.id,
-                                                    })
-                                                ) {
-                                                    setPanel(null);
-                                                    setSwap(null);
-                                                    scrollBottom(true);
-                                                }
-                                            }}
-                                        >
-                                            <IconHistory size={20} />
-                                            <span>
-                                                {item.title}
-                                                <small>
-                                                    {new Date(
-                                                        item.created_at,
-                                                    ).toLocaleDateString()}{' '}
-                                                    · {item.messages.length}{' '}
-                                                    messages
-                                                </small>
-                                            </span>
-                                            {item.id === workspace.active && (
-                                                <IconCheck size={17} />
-                                            )}
-                                        </button>
-                                    ))}
-                                <p className="composer-panel-note">
-                                    Starting fresh keeps these conversations and
-                                    all your plans. Earlier conversations are
-                                    not used as automatic AI memory.
-                                </p>
-                                <button
-                                    className="composer-text-button is-danger"
-                                    onClick={() => setConfirm('history')}
-                                >
-                                    <IconTrash size={16} />
-                                    Delete conversation history
-                                </button>
-                            </>
-                        )}
-                        {(panel === 'browse' || panel === 'saved') && (
+                        {panel === 'browse' && (
                             <>
                                 <label className="composer-browse-date">
                                     <IconCalendar size={17} />
@@ -1488,13 +1457,10 @@ export default function ComposerPage({
                                         }}
                                     />
                                 </label>
-                                {panel === 'saved' && <SavedEvents />}
-                                {panel === 'saved' && <SavedJourneys />}
                                 <Catalogue
                                     key={`${panel}-${browseDate}-${swap?.slot.id ?? 'add'}`}
                                     date={browseDate}
                                     replaceSlot={swap?.slot}
-                                    saved={panel === 'saved'}
                                     exclude={activePlan?.slots.map(
                                         (slot) => slot.id,
                                     )}

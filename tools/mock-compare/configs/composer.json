@@ -488,6 +488,229 @@
                 360,
                 390
             ]
+        },
+        {
+            "name": "My Plans panel",
+            "mock": "#workspace-panel",
+            "app": "#workspace-panel",
+            "mockBefore": [
+                {
+                    "click": "details.composer-actions > summary"
+                },
+                {
+                    "click": ".composer-actions-menu [data-nav=\"plans\"]"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "click": "#workspace-panel [data-date=\"2026-10-02\"]"
+                },
+                {
+                    "wait": 200
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": "details.composer-actions > summary"
+                },
+                {
+                    "click": ".composer-actions-menu button:has-text(\"My Plans\")"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "click": "#workspace-panel [data-date=\"2026-10-02\"]"
+                },
+                {
+                    "wait": 200
+                }
+            ],
+            "pixels": false,
+            "ignoreReason": "The whole panel holds the week strip, whose dots differ (see week); its parts below are compared pixel for pixel."
+        },
+        {
+            "name": "panel top",
+            "mock": "#workspace-panel .panel-top",
+            "app": "#workspace-panel .panel-top"
+        },
+        {
+            "name": "panel back",
+            "mock": ".panel-top button",
+            "app": ".panel-top button"
+        },
+        {
+            "name": "panel title",
+            "mock": ".panel-top h2",
+            "app": ".panel-top h2"
+        },
+        {
+            "name": "plans heading",
+            "mock": ".plans-heading",
+            "app": ".plans-heading"
+        },
+        {
+            "name": "week",
+            "mock": ".day-selector",
+            "app": ".day-selector",
+            "contentDiffers": true,
+            "ignoreReason": "Dots mark the days with a plan. The account has the sample day's plans (30 Sept, 1 and 3 Oct), as Your day shows; the mock's My Plans reads its own empty Composer state, so it draws none."
+        },
+        {
+            "name": "week back",
+            "mock": ".day-selector .date-step",
+            "app": ".day-selector .date-step"
+        },
+        {
+            "name": "day chosen",
+            "mock": ".days button[aria-pressed=\"true\"]",
+            "app": ".days button[aria-pressed=\"true\"]"
+        },
+        {
+            "name": "day today",
+            "mock": ".days button.is-today",
+            "app": ".days button.is-today",
+            "contentDiffers": true,
+            "ignoreReason": "Today has a plan in the account (the sample day), so its dot shows; the mock's Composer state has none."
+        },
+        {
+            "name": "date line",
+            "mock": ".plans-date-line",
+            "app": ".plans-date-line"
+        },
+        {
+            "name": "date line title",
+            "mock": ".plans-date-line h2",
+            "app": ".plans-date-line h2"
+        },
+        {
+            "name": "date jump",
+            "mock": ".date-jump",
+            "app": ".date-jump"
+        },
+        {
+            "name": "empty day",
+            "mock": ".empty-day",
+            "app": ".empty-day"
+        },
+        {
+            "name": "empty day title",
+            "mock": ".empty-day h2",
+            "app": ".empty-day h2"
+        },
+        {
+            "name": "plan this day",
+            "mock": ".empty-day .studio-button",
+            "app": ".empty-day .studio-button"
+        },
+        {
+            "name": "choose saved",
+            "mock": ".empty-day a.plain-button",
+            "app": ".empty-day a.plain-button"
+        },
+        {
+            "name": "Saved ideas panel",
+            "mock": "#workspace-panel",
+            "app": "#workspace-panel",
+            "before": [
+                {
+                    "click": ".empty-day a.plain-button"
+                },
+                {
+                    "wait": 2000
+                }
+            ]
+        },
+        {
+            "name": "saved back",
+            "mock": ".panel-top button",
+            "app": ".panel-top button"
+        },
+        {
+            "name": "saved title",
+            "mock": ".panel-top h2",
+            "app": ".panel-top h2"
+        },
+        {
+            "name": "saved heading",
+            "mock": ".plans-heading",
+            "app": ".plans-heading"
+        },
+        {
+            "name": "saved count",
+            "mock": ".collection-total",
+            "app": ".collection-total"
+        },
+        {
+            "name": "saved empty",
+            "mock": ".saved-empty",
+            "app": ".saved-empty"
+        },
+        {
+            "name": "see what's on",
+            "mock": ".saved-empty .studio-button",
+            "app": ".saved-empty .studio-button"
+        },
+        {
+            "name": "History panel",
+            "mock": "#workspace-panel",
+            "app": "#workspace-panel",
+            "mockBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "click": "details.composer-actions > summary"
+                },
+                {
+                    "click": ".composer-actions-menu [data-nav=\"history\"]"
+                },
+                {
+                    "wait": 400
+                }
+            ],
+            "appBefore": [
+                {
+                    "key": "Escape"
+                },
+                {
+                    "wait": 400
+                },
+                {
+                    "click": "details.composer-actions > summary"
+                },
+                {
+                    "click": ".composer-actions-menu button:has-text(\"History\")"
+                },
+                {
+                    "wait": 400
+                }
+            ],
+            "pixels": false,
+            "ignoreReason": "Holds the account's conversations (see history section)."
+        },
+        {
+            "name": "history title",
+            "mock": ".panel-top h2",
+            "app": ".panel-top h2"
+        },
+        {
+            "name": "history intro",
+            "mock": ".history-intro",
+            "app": ".history-intro",
+            "index": 0
+        },
+        {
+            "name": "history section",
+            "mock": ".history-section",
+            "app": ".history-section",
+            "index": 0,
+            "contentDiffers": true,
+            "ignoreReason": "The account's newest conversation, started on the day it was seeded; the mock's is from its sample day."
         }
     ]
 }

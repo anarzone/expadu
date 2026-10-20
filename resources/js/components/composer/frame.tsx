@@ -71,7 +71,8 @@ export function rememberComposerOrigin(url: string): void {
     }
 }
 
-function useOrigin(): { url: string; name: string } {
+/** The page Composer was opened from (Back, and Saved ideas opened from that page's bookmark). */
+export function useComposerOrigin(): { url: string; name: string } {
     const [origin] = useState(() => {
         try {
             const url = sessionStorage.getItem(ORIGIN_KEY);
@@ -101,7 +102,7 @@ export function ComposerMark() {
 }
 
 export function BackButton() {
-    const origin = useOrigin();
+    const origin = useComposerOrigin();
 
     return (
         <button

@@ -133,13 +133,29 @@ test('conversation, a plan that goes straight in, time editing, Undo, history an
         .locator('.composer-actions-menu')
         .getByRole('button', { name: 'My Plans', exact: true })
         .click();
-    await expect(page.getByRole('dialog', { name: 'My Plans' })).toBeVisible();
-    await page
-        .getByRole('dialog', { name: 'My Plans' })
-        .getByRole('button')
-        .filter({ hasText: 'In your plan' })
-        .last()
+    // My Plans opens on today's week; step to the test day's and open it.
+    const plans = page.locator('#workspace-panel');
+    await expect(
+        plans.getByRole('heading', { name: 'My Plans' }),
+    ).toBeVisible();
+    const monday = (day: Date) => {
+        const start = new Date(day);
+        start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+        start.setHours(12, 0, 0, 0);
+
+        return start.getTime();
+    };
+    const weeks = Math.round((monday(date) - monday(new Date())) / 604800000);
+
+    for (let week = 0; week < weeks; week++) {
+        await plans.getByRole('button', { name: 'Next week' }).click();
+    }
+
+    await plans.locator(`[data-date="${dateValue}"]`).click();
+    await plans
+        .getByRole('button', { name: 'Change it with Composer' })
         .click();
+    await expect(plans).toHaveCount(0);
     await expect(page.locator('#composer-current-plan')).toBeVisible();
     // Undo goes newest first: the move, then the new day, which also leaves
     // the account as it was.
