@@ -431,3 +431,56 @@
     position: absolute;
     inset: -7px;
 }
+
+/* ---------- The weather chip in the street's corner ----------
+   On screen 20px in from the corner on a desktop, 12px on a phone (the
+   page sets --chip-inset in the street's own units). */
+.st-weather {
+    position: absolute;
+    z-index: 7;
+    top: var(--chip-inset, 18px);
+    right: var(--chip-inset, 24px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #fffdf8e0;
+    color: var(--color-text);
+    box-shadow: 0 2px 10px -6px #0006;
+    font-size: 12.5px;
+    line-height: 1.25;
+}
+.st-weather svg {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    fill: none;
+    stroke: #211d15;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.st-scene--phone .st-weather {
+    padding: 6px 10px;
+    font-size: 11px;
+}
+.st-scene--phone .st-weather svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Below 1000px the wall's posters sit as the mock's wall.css sets them
+   (2px down, inline). */
+@media (max-width: 999px) {
+    .st-slot > .pp {
+        display: inline-block;
+        margin: 2px 14px 22px 0;
+        vertical-align: top;
+    }
+}
+@media (max-width: 700px) {
+    .st-slot > .pp {
+        margin-right: 10px;
+    }
+}

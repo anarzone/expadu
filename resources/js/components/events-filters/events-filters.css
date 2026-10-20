@@ -44,7 +44,7 @@
     border-radius: 4px;
     background: var(--poster-yellow);
     color: var(--color-text);
-    font-family: 'Permanent Marker', var(--font-sans) !important;
+    font-family: 'Festival Marker', var(--font-sans) !important;
     font-size: 17px !important;
     font-weight: var(--weight-regular);
     line-height: 1.5;
@@ -58,8 +58,8 @@
         inset 0 0 0 2px #211d1526;
 }
 .evf-date .evf-chevron {
-    width: 18px;
-    height: 18px;
+    margin-left: 0;
+    color: var(--color-text);
 }
 .evf-search {
     display: flex;
@@ -76,8 +76,8 @@
 }
 .evf-search:focus-within {
     outline: 0;
-    border-color: var(--color-focus);
-    box-shadow: 0 0 0 1px var(--color-focus);
+    border-color: var(--color-brand-cyan);
+    box-shadow: inset 0 0 0 1px var(--color-brand-cyan);
 }
 .evf-search input {
     flex: 1;
@@ -118,11 +118,18 @@
     border-radius: var(--radius-lg);
     background: var(--color-bg-quiet);
 }
+.evf-free {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
 .evf-square[aria-pressed='true'] {
     background: var(--color-select-bg);
-    color: var(--color-select-text);
+    color: var(--color-text);
 }
-.evf-square[aria-pressed='true'] svg {
+/* Saved fills its bookmark; Free's tag stays an outline. */
+.evf-square:not(.evf-free)[aria-pressed='true'] svg {
     fill: currentColor;
 }
 
@@ -132,7 +139,13 @@
     flex: 1.7 1 0;
     gap: 8px;
     min-width: 0;
-    overflow: hidden;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Rounded as the mock's rail: it clips the first chip's corners. */
+    border-radius: var(--radius-lg);
+}
+.evf-categories::-webkit-scrollbar {
+    display: none;
 }
 .evf-categories button {
     display: flex;
@@ -152,9 +165,20 @@
 .evf-categories button:hover {
     background: var(--color-bg-quiet);
 }
+/* The chosen one sits on its own layer, as in the mock. */
 .evf-categories button[aria-pressed='true'] {
-    background: var(--color-select-bg);
+    position: relative;
+    isolation: isolate;
+    background: none;
     font-weight: var(--weight-semibold);
+}
+.evf-categories button[aria-pressed='true']::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
 }
 /* Narrower desktops: the categories drop their icons so the search keeps
    its room. */
@@ -210,9 +234,20 @@
     height: 14px !important;
     margin-left: -1px;
     color: var(--color-text-soft);
+    stroke-width: 1.7;
 }
-.evf-reset {
+/* As the mock's: a block whose icon sits on the text baseline. */
+.evf-controls > .evf-reset {
+    display: block;
+    gap: normal;
+    padding: 1px 6px;
     color: var(--color-action);
+    font-size: 16px !important;
+    line-height: 24px;
+}
+.evf-reset svg {
+    display: inline;
+    vertical-align: baseline;
 }
 .evf-dot {
     width: 6px;
@@ -245,63 +280,111 @@
     text-align: right;
 }
 
-/* The menus' own parts: Show only, the starting point's form. */
+/* The menus' own parts: Show only, the starting point's form. The mock's
+   panels close with a plain button, its icon on the text baseline. */
+.ui-menu:has(.evf-areas, .evf-travel-form, .evf-only, .evf-sorts)
+    .ui-menu-head
+    button {
+    display: block;
+    border-radius: 0;
+}
+.ui-menu:has(.evf-areas, .evf-travel-form, .evf-only, .evf-sorts)
+    .ui-menu-head
+    svg {
+    display: inline;
+    vertical-align: baseline;
+}
 .evf-only {
     margin-top: 10px;
-    padding-top: 6px;
+    padding-top: 8px;
     border-top: 1px solid var(--color-border);
 }
 .evf-only p {
-    margin: 4px 4px 6px;
+    margin: 0 0 4px;
+    padding: 0 8px;
     color: var(--color-text-soft);
-    font-size: var(--text-small);
+    font-size: var(--text-caption);
+    line-height: 1.5;
+}
+/* The categories' icons are ink, as the mock's options are. */
+.ui-menu:has(.evf-only) .ui-menu-option > svg {
+    color: var(--color-text);
+}
+/* Sort: its close sits inside the edge; on a desktop, the mock's narrow
+   panel. */
+.ui-menu:has(.evf-sorts) .ui-menu-head button {
+    margin-right: 0;
+}
+@media (min-width: 1000px) {
+    .ui-menu:has(.evf-sorts) {
+        padding: 6px;
+    }
+    .ui-menu:has(.evf-sorts) .ui-menu-head {
+        padding-left: 10px;
+    }
+    .evf-sorts .ui-menu-option {
+        padding: 8px 10px;
+    }
+}
+.evf-only .ui-menu-option {
+    justify-content: flex-start;
+    font-size: var(--text-control);
+    line-height: 1.5;
 }
 .evf-only svg {
     width: 18px;
     height: 18px;
+    color: var(--color-text);
     fill: none;
     stroke: currentColor;
 }
-.evf-travel-form {
-    display: grid;
-    gap: 12px;
+.evf-travel-form > label {
+    display: block;
 }
 .evf-travel-form input[name='from'] {
     box-sizing: border-box;
     width: 100%;
-    height: 44px;
-    padding: 0 12px;
-    border: 1px solid var(--color-border-strong);
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    background: var(--color-bg-quiet);
+    background: var(--color-bg-canvas);
     color: var(--color-text);
     font-size: 16px;
 }
+.evf-travel-form input[name='from']::placeholder {
+    color: var(--color-text-soft);
+}
+/* The field itself owns its focus, in the mock's cyan, without a second
+   ring outside its edge (events-next events.css). */
 .evf-travel-form input[name='from']:focus {
     outline: 0;
-    border-color: var(--color-focus);
-    box-shadow: 0 0 0 1px var(--color-focus);
+    border-color: var(--color-brand-cyan);
+    box-shadow: inset 0 0 0 1px var(--color-brand-cyan);
 }
 .evf-travel-form fieldset {
-    margin: 0;
+    margin: 10px 0 0;
     padding: 0;
     border: 0;
 }
 .evf-travel-form legend {
     margin-bottom: 6px;
+    padding: 0 2px;
     color: var(--color-text-soft);
-    font-size: var(--text-small);
+    font-size: var(--text-caption);
+    line-height: 1.5;
 }
 .evf-modes {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    padding: 4px;
-    border-radius: var(--radius-lg);
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    border-radius: var(--radius-md);
     background: var(--color-bg-quiet);
 }
 .evf-modes label {
     position: relative;
+    flex: 1 1 0;
+    text-align: center;
     cursor: pointer;
 }
 .evf-modes input {
@@ -313,11 +396,14 @@
     display: grid;
     place-items: center;
     height: 44px;
-    border-radius: var(--radius-md);
+    padding: 8px 4px;
+    border-radius: 8px;
+    font-size: var(--text-control);
+    line-height: 1.5;
 }
 .evf-modes svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
 }
 .evf-modes input:checked + span {
     background: var(--color-select-bg);
@@ -332,26 +418,37 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    margin-top: 8px;
 }
 .evf-travel-foot small {
     color: var(--color-text-soft);
-    font-size: var(--text-small);
+    font-size: var(--text-caption);
+    line-height: 1.5;
 }
 .evf-travel-foot button {
     min-height: 44px;
-    padding: 0 6px;
+    padding: 6px 12px;
     border: 0;
     background: none;
     color: var(--color-action-text);
     font: inherit;
-    font-size: var(--text-control);
+    font-size: var(--text-small);
+    line-height: 1.5;
     font-weight: var(--weight-semibold);
     cursor: pointer;
 }
 
 /* ---------- The calendar ---------- */
+/* The mock's panel: no hairline, opened from the row's left edge. It
+   opens 6px under the chip's upright box; the menu measures the tilted
+   chip, whose corner reaches lower (2.652px for the 153px chip, 2.6px for
+   the phone's 150px), and adds 4px. Text in it lands on whole pixels only
+   when the panel does. */
 .ui-menu:has(> .evc) {
+    margin-top: -0.652px;
+    max-height: min(480px, 70dvh);
     padding: 12px;
+    border: 0;
     border-radius: var(--radius-xl);
 }
 .evc-toolbar {
@@ -378,6 +475,12 @@
     font: inherit;
     cursor: pointer;
 }
+/* The mock leaves these buttons the browser's own padding. */
+.evc-views button,
+.evc-close,
+.evc-nav button {
+    padding: 1px 6px;
+}
 .evc-views button {
     flex: 1;
     height: 44px;
@@ -395,12 +498,13 @@
     place-items: center;
     width: 44px;
     height: 44px;
-    padding: 0;
+}
+.evc-nav button {
     border-radius: var(--radius-md);
 }
 .evc svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
 }
 .evc-nav {
     display: grid;
@@ -435,7 +539,7 @@
 }
 .evc-days button.is-outside {
     color: var(--color-text-soft);
-    opacity: 0.6;
+    opacity: 0.55;
 }
 .evc-days button[aria-pressed='true'] {
     background: var(--color-select-bg);
@@ -484,6 +588,9 @@
         gap: 5px;
         padding: 0 8px 0 10px;
     }
+    .evf-category {
+        text-align: left;
+    }
     .evf-controls > .evf-travel.evf-not-phone {
         margin-left: auto;
     }
@@ -502,11 +609,6 @@
     }
     .evf-date {
         gap: 6px;
-    }
-    /* Category and Area name themselves without their icons. */
-    .evf-category > svg:first-child,
-    .evf-area > .evf-glyph {
-        display: none;
     }
     .evf-controls > .evf-icon-control.evf-phone-only {
         border-radius: var(--radius-lg);
@@ -535,6 +637,28 @@
         background: var(--color-select-text);
     }
 }
+@media (max-width: 700px) {
+    .ui-menu:has(> .evc) {
+        margin-top: -0.6px;
+    }
+}
+@media (max-width: 480px) {
+    /* Category and Area name themselves without their icons. */
+    .evf-category-icon > svg,
+    .evf-area > .evf-glyph {
+        display: none;
+    }
+}
+@media (max-width: 380px) {
+    .evf-controls {
+        gap: 6px;
+    }
+    .evf-category,
+    .evf-area {
+        gap: 4px;
+        padding: 0 6px 0 8px;
+    }
+}
 
 /* ---------- No match, an empty day ---------- */
 .ev-empty {
@@ -544,11 +668,12 @@
     background: var(--color-bg-surface);
     text-align: center;
 }
+/* Inline, as in the mock: it sits on its line's baseline. */
 .ev-empty > svg {
-    display: block;
+    display: inline;
     width: 32px;
     height: 32px;
-    margin: 0 auto;
+    vertical-align: baseline;
     color: var(--color-brand-cyan);
 }
 .ev-empty h2 {
@@ -574,6 +699,8 @@
 .ev-empty-actions .ev-empty-clear {
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 10px;
     height: 42px;
     padding: 8px 12px;
     border: 1px solid var(--color-border);
@@ -583,6 +710,7 @@
     font: inherit;
     font-size: var(--text-caption);
     font-weight: var(--weight-medium);
+    line-height: 15px;
     cursor: pointer;
 }
 .ev-empty-actions .ev-empty-other {

@@ -1,0 +1,198 @@
+{
+    "name": "events-calendar",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-weather",
+        "before": [
+            {
+                "click": "#event-calendar-toggle"
+            },
+            {
+                "wait": 600
+            }
+        ]
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-weather",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "before": [
+            {
+                "click": ".evf-date"
+            },
+            {
+                "wait": 600
+            }
+        ]
+    },
+    "pairs": [
+        {
+            "name": "week panel",
+            "mock": "#event-calendar-panel",
+            "app": ".ui-menu:has(> .evc)",
+            "pixels": false,
+            "reason": "Its box and styles are compared; its pixels are compared part by part below. As a whole its rounded corners show the street behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky)."
+        },
+        {
+            "name": "toolbar",
+            "mock": ".event-calendar-toolbar",
+            "app": ".evc-toolbar"
+        },
+        {
+            "name": "views",
+            "mock": ".event-calendar-views",
+            "app": ".evc-views"
+        },
+        {
+            "name": "Week",
+            "mock": ".event-calendar-views button",
+            "app": ".evc-views button"
+        },
+        {
+            "name": "Month",
+            "mock": ".event-calendar-views button",
+            "app": ".evc-views button",
+            "index": 1
+        },
+        {
+            "name": "close",
+            "mock": "#event-calendar-close",
+            "app": ".evc-close"
+        },
+        {
+            "name": "close icon",
+            "mock": "#event-calendar-close svg",
+            "app": ".evc-close svg"
+        },
+        {
+            "name": "navigation",
+            "mock": ".event-calendar-navigation",
+            "app": ".evc-nav"
+        },
+        {
+            "name": "previous",
+            "mock": ".event-calendar-navigation button",
+            "app": ".evc-nav button"
+        },
+        {
+            "name": "previous icon",
+            "mock": ".event-calendar-navigation button svg",
+            "app": ".evc-nav button svg"
+        },
+        {
+            "name": "period",
+            "mock": "#event-calendar-period",
+            "app": ".evc-nav strong"
+        },
+        {
+            "name": "next",
+            "mock": ".event-calendar-navigation button",
+            "app": ".evc-nav button",
+            "index": 1
+        },
+        {
+            "name": "weekdays",
+            "mock": ".event-calendar-weekdays",
+            "app": ".evc-weekdays"
+        },
+        {
+            "name": "weekday",
+            "mock": ".event-calendar-weekdays span",
+            "app": ".evc-weekdays span"
+        },
+        {
+            "name": "week",
+            "mock": ".event-week",
+            "app": ".evc-days"
+        },
+        {
+            "name": "day",
+            "mock": ".event-week button",
+            "app": ".evc-days button"
+        },
+        {
+            "name": "chosen day",
+            "mock": ".event-week button",
+            "app": ".evc-days button",
+            "index": 2
+        },
+        {
+            "name": "footer",
+            "mock": ".event-calendar-footer",
+            "app": ".evc-foot"
+        },
+        {
+            "name": "chosen date",
+            "mock": "#event-calendar-selection",
+            "app": ".evc-foot span"
+        },
+        {
+            "name": "Today",
+            "mock": "#event-calendar-today",
+            "app": ".evc-foot button"
+        },
+        {
+            "name": "month panel",
+            "mock": "#event-calendar-panel",
+            "app": ".ui-menu:has(> .evc)",
+            "mockBefore": [
+                {
+                    "click": "[data-calendar-view='month']"
+                },
+                {
+                    "wait": 600
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": ".evc-views button:nth-child(2)"
+                },
+                {
+                    "wait": 600
+                }
+            ],
+            "pixels": false,
+            "reason": "Its box and styles are compared; its pixels are compared part by part below. As a whole its rounded corners show the street behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky)."
+        },
+        {
+            "name": "Month on",
+            "mock": ".event-calendar-views button",
+            "app": ".evc-views button",
+            "index": 1
+        },
+        {
+            "name": "month",
+            "mock": "#event-calendar-period",
+            "app": ".evc-nav strong"
+        },
+        {
+            "name": "month days",
+            "mock": ".event-week",
+            "app": ".evc-days"
+        },
+        {
+            "name": "day outside the month",
+            "mock": ".event-week button",
+            "app": ".evc-days button"
+        },
+        {
+            "name": "first of the month",
+            "mock": ".event-week button",
+            "app": ".evc-days button",
+            "index": 1
+        },
+        {
+            "name": "chosen day in the month",
+            "mock": ".event-week button[aria-pressed='true']",
+            "app": ".evc-days button[aria-pressed='true']"
+        }
+    ]
+}

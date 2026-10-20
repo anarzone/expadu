@@ -57,6 +57,9 @@ class EventOccurrencePresenter
                 'place_name' => $venue?->place?->name,
             ],
             'source_url' => $event->source_url,
+            // Where the listing came from and when it was last checked there.
+            'source' => $event->source,
+            'checked_at' => $event->verified_at?->toDateString(),
             'venue_id' => $event->venue_id,
             'is_recurring' => $event->recurrence !== null,
             'recurrence_text' => $this->recurrenceText($event),
