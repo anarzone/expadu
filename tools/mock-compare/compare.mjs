@@ -455,7 +455,8 @@ for (const width of widths) {
                     if (c.same) {
                         row.diffShare = c.diffPixels / c.total;
                         if (
-                            row.diffShare > pixelThreshold &&
+                            row.diffShare >
+                                (pair.pixelThreshold ?? pixelThreshold) &&
                             !pair.contentDiffers
                         )
                             row.problems.push(
