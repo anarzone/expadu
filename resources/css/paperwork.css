@@ -1,6 +1,7 @@
 /* Paperwork — ported from the approved prototype (prototype/dev/design/bureaucracy-next),
-   scoped to .paperwork-page so it cannot affect other pages. Tokens follow
-   prototype/dev/design/connected/tokens.css ("warm paper & Lagoon", 6 Oct 2026). */
+   scoped to .paperwork-page so it cannot affect other pages. Tokens come from
+   resources/css/app.css (F1, ported 1:1 from connected/tokens.css); the aliases below
+   are the names the mock's stylesheet still reads. */
 .paperwork-page {
     --cyan: #05badd;
     --orange: #ff3902;
@@ -9,99 +10,7 @@
     --yellow: #f8eebd;
     --radius: 24px;
 
-    /* ── Colour · surfaces ─────────────────────────────────────────────── */
-    --color-bg-canvas: #faf6ee; /* page background */
-    --color-bg-surface: #fffdf8; /* cards, sections, menus */
-    --color-bg-quiet: #f1ebdf; /* rows, inputs, hover */
-    --color-bg-inset: #f1ebdf; /* neutral pills */
-    --color-bg-hover: #e9e0cf; /* pressed neutral */
-    --color-bg-header: #fffdf8; /* app header */
-
-    /* ── Colour · lines ────────────────────────────────────────────────── */
-    --color-border: #e6ddcb; /* hairlines and separators (decorative) */
-    --color-border-strong: #8a8277; /* form controls: ≥3:1 on every surface */
-
-    /* ── Colour · text ─────────────────────────────────────────────────── */
-    --color-text: #211d15; /* titles, data, links */
-    --color-text-soft: #6e6657; /* body detail */
-    --color-text-muted: #6e6657; /* captions, labels */
-    --color-text-on-action: #ffffff;
-
-    /* ── Colour · action (one main action per section) ─────────────────── */
-    --color-action: #c23b0e;
-    --color-action-hover: #a9320b;
-    --color-action-text: #c23b0e; /* orange text actions on pale surfaces */
-    --color-action-tint: #fff4ec; /* hover behind outlined actions */
-
-    /* ── Colour · selection & travel ───────────────────────────────────── */
-    --color-select-bg: #def5f8;
-    --color-select-bg-hover: #cceef3;
-    --color-select-text: #00768b; /* teal: travel icons, line ink */
-    --color-focus: #00768b;
-
-    /* ── Colour · paperwork ────────────────────────────────────────────── */
-    --color-paper-bg: #efe7fb;
-    --color-paper-bg-quiet: #f3eefb;
-    --color-paper-text: #67409a;
-
-    /* ── Colour · attention (deadlines, tight timings, delays) ─────────── */
-    --color-attention-bg: #fff1d6;
-    --color-attention: #ffe49a;
-    --color-attention-border: #f1d79b;
-    --color-attention-text: #694207;
-
-    /* ── Colour · conflict (a plan that cannot work) ───────────────────── */
-    --color-conflict-bg: #fff0eb;
-    --color-conflict: #ffd9cc;
-    --color-conflict-border: #f2b8a8;
-    --color-conflict-text: #a2300e;
-
-    /* ── Colour · section icons and brand ──────────────────────────────── */
-    --color-nav-teal: #00768b; /* Today, Travel */
-    --color-nav-violet: #7047ac; /* Events, Services */
-    --color-nav-rust: #b94b18; /* Paperwork */
-    --color-brand-orange: #ff3902; /* logo only */
-    --color-brand-cyan: #05badd; /* logo only */
-
-    /* ── Typography ────────────────────────────────────────────────────── */
-    --font-sans: Geist, system-ui, -apple-system, 'Segoe UI', sans-serif;
-    --text-micro: 11px; /* smallest readable label */
-    --text-caption: 12px;
-    --text-small: 13px;
-    --text-control: 14px;
-    --text-body: 15px;
-    --text-section: 17px;
-    --text-title-sm: 20px;
-    --text-title: 24px;
-    --text-title-lg: 28px;
-    --text-display-sm: 32px; /* page heroes */
-    --text-display: 40px;
-    --text-display-lg: 52px; /* largest headline */
-    --text-display-fluid: clamp(36px, 4vw, 52px); /* plan times */
-
     /* Only the weights that are loaded (Geist 400/500/600/700). */
-    --weight-regular: 400;
-    --weight-medium: 500;
-    --weight-semibold: 600;
-    --weight-bold: 700;
-
-    --leading-tight: 1.1;
-    --leading-snug: 1.25;
-    --leading-body: 1.5;
-
-    /* ── Spacing (2px base) ────────────────────────────────────────────── */
-    --space-2: 2px;
-    --space-4: 4px;
-    --space-6: 6px;
-    --space-8: 8px;
-    --space-10: 10px;
-    --space-12: 12px;
-    --space-14: 14px;
-    --space-16: 16px; /* phone page gutter */
-    --space-20: 20px;
-    --space-24: 24px; /* desktop section padding */
-    --space-32: 32px;
-    --space-40: 40px;
 
     /* ── Breakpoints (reference: media queries cannot use variables) ────
        small phone ≤359 · phone ≤700 · tablet 701–999 · desktop ≥1000.
@@ -110,29 +19,6 @@
     --breakpoint-phone: 700px;
     --breakpoint-tablet: 999px;
     --breakpoint-desktop: 1000px;
-
-    /* ── Shape ─────────────────────────────────────────────────────────── */
-    --radius-sm: 8px; /* badges, pills, small chips */
-    --radius-md: 12px; /* controls, rows, menu items */
-    --radius-lg: 16px; /* cards, menus, fields */
-    --radius-xl: 24px; /* sections, event cards, sheets */
-    --radius-pill: 999px; /* buttons, chips */
-    --radius-round: 50%; /* dots, avatars, icon buttons */
-    --touch-target: 44px;
-
-    /* ── Elevation ─────────────────────────────────────────────────────── */
-    --shadow-flat: 0 1px 0 #51453814;
-    --shadow-raised: 0 4px 20px #3e352b14;
-    --shadow-menu: 0 14px 32px -12px rgba(39, 36, 31, 0.28);
-    --shadow-sheet: 0 10px 30px #3e352b22;
-    --ring-focus: 0 0 0 2px var(--color-focus);
-
-    /* ── Motion ────────────────────────────────────────────────────────── */
-    --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
-    --ease-standard: ease;
-    --duration-fast: 120ms;
-    --duration-base: 180ms;
-    --duration-slow: 280ms;
 
     --paper: var(--color-bg-canvas);
     --surface: var(--color-bg-surface);
@@ -155,15 +41,10 @@
     --warning-ink: #7b5721;
     --event-control-rail: var(--surface-quiet);
     --palette-header: var(--color-bg-header);
-    background-color: var(--paper);
 
+    /* The shared page frame (shell.css .page-frame) sets the column and its sides. */
     color: var(--ink);
     font: 16px/1.5 var(--font-sans);
-    background: var(--paper);
-    min-height: 100%;
-    padding: 22px 16px 120px;
-    max-width: 1180px;
-    margin: 0 auto;
 
     * {
         box-sizing: border-box;
@@ -507,10 +388,11 @@
         font-size: var(--text-caption);
         line-height: 1.6;
     }
+
+    /* ── style.css (prototype/dev/design/bureaucracy-next) ── */
+
+    /* ── style.css (prototype/dev/design/bureaucracy-next) ── */
     /* Bureaucracy workspace: compact process context, shared Expadu controls. */
-    & {
-        padding-top: 22px;
-    }
     .case-top,
     .case-navigation,
     .case-section-head,
@@ -533,6 +415,34 @@
     }
     .case-top .icon-button {
         flex: none;
+    }
+    /* Without a visible title the views lead the row; whose plan and Your
+       situation sit at its end. */
+    .case-top.is-untitled .person-picker {
+        margin-left: auto;
+    }
+    /* On a phone the one row stays one row: the views without their icons and
+       Your situation as its icon (its name stays for screen readers). */
+    @media (max-width: 480px) {
+        .case-top.is-untitled {
+            gap: 8px;
+        }
+        .case-top.is-untitled .case-tabs svg {
+            display: none;
+        }
+        .case-top.is-untitled .case-tabs button {
+            padding-inline: 12px;
+        }
+        .case-top.is-untitled
+            .case-details
+            :is(.case-details-long, .case-details-short) {
+            display: none;
+        }
+        .case-top.is-untitled .case-details {
+            width: 44px;
+            padding: 0;
+            justify-content: center;
+        }
     }
     .person-picker {
         position: relative;
@@ -671,15 +581,7 @@
         gap: 24px;
         align-items: start;
     }
-    .next-actions {
-        background: white;
-        border-radius: var(--radius-xl);
-        padding: 18px 16px 12px;
-    }
-    .next-actions > .case-section-head {
-        padding: 0 2px;
-    }
-    .next-actions .plain-button {
+    .process-overview .plain-button {
         font-size: var(--text-control);
         display: flex;
         gap: 7px;
@@ -687,7 +589,7 @@
         white-space: nowrap;
         min-height: 44px;
     }
-    .next-actions .plain-button svg {
+    .process-overview .plain-button svg {
         width: 18px;
     }
     .overview-action {
@@ -810,14 +712,22 @@
     .process-grid {
         background: white;
         border-radius: var(--radius-xl);
-        padding: 3px 16px;
+        padding: 4px 16px;
+    }
+    /* A task's next step, under its name. */
+    .process-next {
+        display: block;
+        margin: 2px 0 3px;
+        color: var(--color-text);
+        font-size: var(--text-control);
+        line-height: 1.4;
     }
     .process-summary {
         display: flex;
         align-items: center;
         gap: 11px;
         width: 100%;
-        padding: 16px 0;
+        padding: 8px 0;
         text-align: left;
     }
     .process-summary + .process-summary {
@@ -849,6 +759,10 @@
     .overview-dates {
         margin-top: 26px;
     }
+    /* Beside the tasks on a wide screen, below them on a phone. */
+    .case-overview-grid > .overview-dates {
+        margin-top: 0;
+    }
     .date-grid {
         display: grid;
         gap: 10px;
@@ -858,7 +772,8 @@
         align-items: center;
         text-align: left;
         gap: 12px;
-        background: #e8f4f7;
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         padding: 14px;
         width: 100%;
@@ -894,7 +809,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        margin-top: 22px;
+        margin-top: 16px;
         color: var(--muted);
         font-size: var(--text-control);
     }
@@ -1091,7 +1006,8 @@
     }
     .process-resources {
         border-radius: var(--radius-xl);
-        background: #e8f4f7;
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
         padding: 18px 16px 8px;
     }
     .process-resources > button,
@@ -1202,7 +1118,8 @@
         gap: 16px;
         padding: 16px;
         border-radius: var(--radius-lg);
-        background: var(--blue);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
         margin-bottom: 18px;
         font-size: var(--text-body);
     }
@@ -1394,7 +1311,7 @@
         line-height: 1.4;
     }
     /* Where a document comes from, or which tasks use a step's result: a
-   catalogue link, never a prerequisite. */
+       catalogue link, never a prerequisite. */
     .document-source {
         display: grid;
         grid-template-columns: 16px minmax(0, 1fr);
@@ -1428,13 +1345,14 @@
         gap: 14px;
         justify-content: space-between;
         border-radius: var(--radius-xl);
-        padding: 18px;
-        background: var(--blue);
+        padding: 16px;
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
         margin-bottom: 20px;
     }
-    .question-card h3 {
+    .question-card h2 {
         font-size: var(--text-section);
-        margin-top: 5px;
+        margin-top: 4px;
     }
     .question-context {
         font-size: var(--text-small);
@@ -1465,7 +1383,8 @@
         font-size: var(--text-control);
         padding: 12px 14px;
         margin-bottom: 18px;
-        background: var(--blue);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
     }
     .deferred-question span {
@@ -1561,11 +1480,16 @@
     .source-links {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px 14px;
+        gap: 0 18px;
         font-size: var(--text-body);
         margin-top: 10px;
     }
+    /* 44px to tap, as in Good to know's cards. */
     .source-links a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        margin-block: -10px;
         text-decoration: underline;
     }
     /* In-process Composer preview. The action edge fades into the workspace. */
@@ -1851,14 +1775,14 @@
         font-size: var(--text-control);
         padding: 12px 0;
     }
-    & main :is(button, a, summary, input, select):focus-visible {
+    &.paperwork-page main :is(button, a, summary, input, select):focus-visible {
         outline: 2px solid #08788e;
         outline-offset: 2px;
     }
-    main h2:focus {
+    &.paperwork-page h2:focus {
         outline: 0;
     }
-    main input:focus {
+    &.paperwork-page input:focus {
         border-color: #08788e;
     }
     @media (min-width: 1000px) {
@@ -1868,9 +1792,6 @@
         .case-overview-grid {
             grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
             gap: 24px;
-        }
-        .next-actions {
-            padding: 22px 22px 14px;
         }
         .overview-action {
             padding: 19px 0;
@@ -1883,6 +1804,9 @@
         }
         .date-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .case-overview-grid .date-grid {
+            grid-template-columns: minmax(0, 1fr);
         }
         .case-inline {
             max-width: 700px;
@@ -1950,7 +1874,7 @@
         }
     }
 
-    .sr-only {
+    &.paperwork-page .sr-only {
         position: absolute;
         width: 1px;
         height: 1px;
@@ -2038,7 +1962,8 @@
         flex-wrap: wrap;
         margin: -4px 0 20px;
         padding: 10px 14px;
-        background: var(--blue);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         font-size: var(--text-body);
     }
@@ -2125,7 +2050,7 @@
     .step-guide {
         padding: 16px;
         border-radius: var(--radius-lg);
-        background: var(--blue);
+        border: 1px solid var(--color-border);
         margin-bottom: 12px;
     }
     .step-guide > p {
@@ -2408,8 +2333,8 @@
         flex: none;
         width: 52px;
         height: 52px;
-        background: var(--blue);
-        color: var(--ink);
+        background: var(--color-paper-bg);
+        color: var(--color-paper-text);
         border-radius: var(--radius-xl);
         font-size: var(--text-title);
         font-weight: var(--weight-semibold);
@@ -2455,7 +2380,8 @@
     }
     .family-personal {
         padding: 22px;
-        background: var(--blue);
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-xl);
     }
     .family-small-icon {
@@ -2648,8 +2574,8 @@
     }
 
     /* Sample-day dates, a clearer header and tucked-away review tools
-   (7 October). Dates are the person's own records, never a calculated
-   legal deadline; amber marks the visa expiring today or tomorrow. */
+       (7 October). Dates are the person's own records, never a calculated
+       legal deadline; amber marks the visa expiring today or tomorrow. */
     .person-picker summary {
         padding: 0 10px 0 12px;
         border-radius: var(--radius-pill);
@@ -2667,10 +2593,10 @@
     .coming-row {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 12px;
         width: 100%;
         min-height: 64px;
-        padding: 10px 14px;
+        padding: 8px 16px;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-lg);
         background: var(--color-bg-surface);
@@ -2700,7 +2626,7 @@
     }
     .coming-what {
         display: grid;
-        gap: 2px;
+        gap: 4px;
         flex: 1;
         min-width: 0;
     }
@@ -2778,6 +2704,9 @@
         gap: 8px;
         min-width: 240px;
         padding: 12px;
+        /* Scrolls inside the room above Review (app.js). */
+        overflow-y: auto;
+        overscroll-behavior: contain;
         border-radius: var(--radius-lg);
         background: var(--color-bg-surface);
         box-shadow: 0 12px 36px #211d151a;
@@ -2803,6 +2732,31 @@
         background: var(--color-select-bg);
         color: var(--color-select-text);
         font-weight: var(--weight-semibold);
+    }
+    /* Phones: the Review menu rises from the bottom as a sheet over a light
+       scrim, as Events' pickers do, so its top never runs off the screen; a
+       tap on the scrim or Esc closes it (app.js). */
+    @media (max-width: 700px) {
+        .review-tools[open]::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 80;
+            background: #0005;
+        }
+        .review-tools-panel {
+            position: fixed;
+            top: auto;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 81;
+            min-width: 0;
+            max-height: calc(100dvh - 40px);
+            padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            box-shadow: var(--shadow-sheet);
+        }
     }
     /* A read-only persona preview says so above the page. */
     .persona-preview {
@@ -2874,12 +2828,12 @@
         line-height: 1.45;
     }
     /* "Tracking started · Undo": the undo sits at the end of the note. */
+    .process-note:has(.plain-button) {
+        align-items: center;
+    }
     .process-note .plain-button {
         margin-left: auto;
         min-height: 44px;
-    }
-    .process-note:has(.plain-button) {
-        align-items: center;
     }
     .review-tools-panel small {
         color: var(--color-text-soft);
@@ -2965,7 +2919,7 @@
     }
     /* The smallest phones keep both words; the Situation icon makes room. */
     @media (max-width: 380px) {
-        .case-top .case-details svg {
+        .case-top:not(.is-untitled) .case-details svg {
             display: none;
         }
     }
@@ -2983,47 +2937,759 @@
         }
     }
 
-    .person-menu,
-    .next-actions,
-    .process-grid,
-    .detail-steps,
-    .process-records,
-    .paperwork-group,
-    .case-inline,
-    .action-list,
-    .history-list,
-    .honest-empty,
-    .access-blank,
-    .form-field :is(input, select, textarea) {
-        background-color: var(--surface);
+    /* Good to know: guidance that applies to you but isn't a task (context
+       cards), grouped by topic. A quiet list; each opens to the card's own
+       checked text and its official pages. */
+    .good-to-know {
+        margin-top: 16px;
     }
-    .case-tabs {
-        background-color: var(--surface-quiet);
+    .context-list {
+        display: grid;
+        gap: 8px;
     }
-    .case-tabs [aria-pressed='true'] {
-        background-color: var(--surface);
+    .context-card {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-bg-surface);
     }
-    .process-resource-static {
+    .context-card summary {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 20px;
+        align-items: center;
+        gap: 12px;
+        min-height: 64px;
+        padding: 8px 16px;
+        cursor: pointer;
+        list-style: none;
+    }
+    .context-card summary::-webkit-details-marker {
+        display: none;
+    }
+    .context-card summary > span:nth-child(2) {
+        display: grid;
+        gap: 2px;
+    }
+    .context-card summary small {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .context-card summary > svg {
+        color: var(--color-text-soft);
+        transition: transform 200ms ease;
+    }
+    .context-card[open] summary > svg {
+        transform: rotate(180deg);
+    }
+    .context-text {
+        display: grid;
+        gap: 10px;
+        padding: 0 16px 16px 64px;
+        font-size: var(--text-control);
+        line-height: 1.55;
+    }
+    .context-text p {
+        max-width: 72ch;
+        margin: 0;
+    }
+    .context-text small {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .good-to-know .section-note {
+        margin: 4px 0 0;
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .context-topic + .context-topic {
+        margin-top: 18px;
+    }
+    .context-topic h3 {
+        margin: 0 2px 8px;
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+        font-weight: var(--weight-semibold);
+    }
+    /* Each link is 44px tall to tap; the row keeps its place, the extra
+       height reaching above and below the words. */
+    .context-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 18px;
+        margin-block: -11px;
+    }
+    .context-links a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        color: var(--color-text);
+        font-weight: var(--weight-semibold);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+    @media (max-width: 700px) {
+        .context-text {
+            padding: 0 16px 16px;
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .context-card summary > svg {
+            transition: none;
+        }
+    }
+
+    /* "No residence task applies to your answers." (an EU citizen's plan) */
+    .process-grid-note {
+        margin: 10px 2px 0;
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+
+    /* Sharing your plan: who sees what, and an invitation with chosen access. */
+    .sharing-grants h3,
+    .sharing-invite h3 {
+        margin: 18px 0 8px;
+        font-size: var(--text-section);
+    }
+    .sharing-grant {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+    }
+    .sharing-grant > span {
+        display: grid;
+        gap: 2px;
+    }
+    .sharing-grant small {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .sharing-scope {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+    }
+    .sharing-scope input {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--color-select-text);
+    }
+    .sharing-ready {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 12px;
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: var(--radius-md);
+        background: var(--color-select-bg);
+    }
+    .sharing-ready > span {
+        display: grid;
+        flex: 1 1 200px;
+        gap: 2px;
+    }
+    .sharing-ready small {
+        color: var(--color-text-soft);
+    }
+
+    /* ---------- Design pass — 10 October 2026 (owner request) ----------
+       Paperwork in its own colours within the shared roles: lavender for its
+       icons, statuses and progress, cyan only for what's selected, outlined
+       controls instead of grey fills, one ivory surface with hairlines for
+       every card. Search and filters sit at the top, and cards are tighter so
+       a phone's first screen shows more. */
+
+    /* Paperwork's icons: lavender with a violet glyph; done is solid violet. */
+    &.paperwork-page
+        :is(
+            .topic-icon,
+            .timeline-icon,
+            .step-symbol,
+            .document-symbol,
+            .situation-symbol,
+            .details-fact-icon,
+            .situation-emblem
+        ) {
+        background: var(--color-paper-bg);
+        color: var(--color-paper-text);
+    }
+    &.paperwork-page.paperwork-page
+        .bureaucracy-view
+        :is(.step-symbol.completed, .document-symbol.confirmed.confirmed) {
+        background: var(--color-paper-text);
+        color: var(--color-text-on-action);
+    }
+    &.paperwork-page.paperwork-page
+        .bureaucracy-view
+        .paper-process-link
+        > svg:first-child {
+        color: var(--color-paper-text);
+    }
+
+    /* Statuses: working on it in Paperwork's violet, blocked in attention,
+       waiting quiet, done solid, not started outlined. */
+    &.paperwork-page.paperwork-page
+        .state-badge:not(.blocked, .waiting, .completed, .not_started) {
+        background: var(--color-paper-bg);
+        color: var(--color-paper-text);
+        font-weight: var(--weight-semibold);
+    }
+    &.paperwork-page.paperwork-page .state-badge.waiting.waiting {
+        background: var(--color-paper-bg-quiet);
+        color: var(--color-text-soft);
+    }
+    &.paperwork-page.paperwork-page .state-badge.blocked.blocked {
+        background: var(--color-attention-bg);
+        color: var(--color-attention-text);
+    }
+    &.paperwork-page.paperwork-page .state-badge.completed.completed {
+        background: var(--color-paper-text);
+        color: var(--color-text-on-action);
+    }
+    &.paperwork-page.paperwork-page .state-badge.not_started.not_started {
+        background: transparent;
+        box-shadow: inset 0 0 0 1px var(--color-border);
+        color: var(--color-text-soft);
+    }
+
+    /* Each tracked task's progress: Paperwork's progress indicator. */
+    .process-progress {
+        display: block;
+        width: min(100%, 180px);
+        height: 4px;
+        margin-top: 8px;
+        border-radius: var(--radius-pill);
+        background: var(--color-paper-bg);
+        overflow: hidden;
+    }
+    .process-progress i {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--color-paper-text);
+    }
+
+    /* Controls: the views as a segmented control (the chosen one cyan),
+       whose plan and Your situation outlined, not grey. */
+    &.paperwork-page .case-tabs {
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border);
+    }
+    &.paperwork-page .case-tabs [aria-pressed='true'] {
+        background: var(--color-select-bg);
+        color: var(--color-text);
+        box-shadow: none;
+    }
+    &.paperwork-page .case-top .person-picker summary,
+    &.paperwork-page .case-top .case-details {
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border);
+    }
+    &.paperwork-page .case-top .person-picker summary:hover,
+    &.paperwork-page .case-top .case-details:hover {
+        background: var(--color-bg-quiet);
+    }
+
+    /* One search over the plan, beside the views. */
+    .case-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1 1 240px;
+        min-width: 0;
+        max-width: 440px;
+        height: 44px;
+        padding: 0 4px 0 14px;
+        border-radius: var(--radius-pill);
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border);
+        color: var(--color-text-soft);
+    }
+    .case-search:focus-within {
+        box-shadow: inset 0 0 0 2px var(--color-focus);
+    }
+    .case-search > svg {
+        flex: none;
+        width: 18px;
+        height: 18px;
+    }
+    .case-search input {
+        flex: 1;
+        min-width: 0;
+        height: 42px;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: var(--color-text);
+        font: inherit;
+        font-size: 16px;
+        outline: none;
+    }
+    /* The field's rounded edge is its focus ring; no second ring inside. */
+    &.paperwork-page .case-search input:is(:focus, :focus-visible) {
+        outline: none;
+        box-shadow: none;
+    }
+    .case-search input::placeholder {
+        color: var(--color-text-soft);
+    }
+    .case-search input::-webkit-search-cancel-button {
+        display: none;
+    }
+    .case-search-clear {
+        display: grid;
+        place-items: center;
+        flex: none;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border-radius: var(--radius-round);
+        color: var(--color-text-soft);
+    }
+    .case-search-clear[hidden] {
+        display: none;
+    }
+    .case-search-clear svg {
+        width: 16px;
+        height: 16px;
+    }
+    .search-summary {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 0;
+        margin: 0 0 14px;
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
     }
-    .process-resource-static small {
-        display: block;
+    .search-summary .plain-button,
+    .search-empty .plain-button {
+        min-height: 40px;
+        color: var(--color-text);
+        font-size: var(--text-small);
+        font-weight: var(--weight-semibold);
     }
-    .source-links a {
+    .search-empty {
+        margin-top: 8px;
+    }
+    /* Documents the search found, one tap from the Documents view. */
+    .search-docs {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        margin: 0 0 16px;
+        padding: 10px 14px;
+        border-radius: var(--radius-lg);
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border);
+        color: var(--color-text);
+        text-align: left;
+    }
+    .search-docs > svg:first-child {
+        flex: none;
+        box-sizing: border-box;
+        width: 36px;
+        height: 36px;
+        padding: 8px;
+        border-radius: var(--radius-md);
+        background: var(--color-paper-bg);
+        color: var(--color-paper-text);
+    }
+    .search-docs > svg:last-child {
+        flex: none;
+        width: 18px;
+        height: 18px;
+    }
+    .search-docs > span {
+        display: grid;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+    }
+    .search-docs strong {
+        font-size: var(--text-body);
+        font-weight: var(--weight-semibold);
+    }
+    .search-docs small {
+        overflow: hidden;
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+        text-overflow: ellipsis;
         white-space: nowrap;
     }
-    .sources-also {
-        margin-top: 8px;
-        font-size: var(--text-section);
+
+    /* Filters that work in place: compact chips, the chosen one cyan. */
+    .case-chips {
+        display: flex;
+        gap: 6px;
+        margin: 0 0 12px;
+        padding: 1px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .case-chips::-webkit-scrollbar {
+        display: none;
+    }
+    .case-chips button {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: 6px;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: var(--radius-pill);
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border);
+        color: var(--color-text);
+        font-size: var(--text-control);
+        white-space: nowrap;
+    }
+    .case-chips button span {
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+        font-variant-numeric: tabular-nums;
+    }
+    .case-chips [aria-pressed='true'] {
+        background: var(--color-select-bg);
+        box-shadow: none;
+        font-weight: var(--weight-semibold);
+    }
+    .case-chips [aria-pressed='true'] span {
+        color: var(--color-select-text);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+        .case-chips button,
+        .case-search {
+            transition:
+                background-color 160ms ease,
+                box-shadow 160ms ease;
+        }
     }
 
-    /* Your situation and the question card — ported from orientation.css. */
+    /* Tasks and dates: the same ivory card with hairlines between rows. */
+    &.paperwork-page :is(.process-grid, .paperwork-group) {
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border);
+    }
+    &.paperwork-page .process-summary + .process-summary {
+        border-top-color: var(--color-border);
+    }
+    &.paperwork-page .date-grid {
+        gap: 0;
+        padding: 4px 16px;
+        border-radius: var(--radius-xl);
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border);
+    }
+    &.paperwork-page .date-grid .timeline-row {
+        padding: 8px 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+    &.paperwork-page .date-grid .timeline-row + .timeline-row {
+        border-top: 1px solid var(--color-border);
+    }
+    @media (min-width: 1000px) {
+        .case-overview-grid.is-single {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    /* Coming up and the question: tighter, so more fits on the first screen.
+       The answer is the question's main action; Skip for now is quiet. */
+    &.paperwork-page .coming-row {
+        min-height: 56px;
+    }
+    &.paperwork-page .question-card {
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    &.paperwork-page .question-card .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    &.paperwork-page .question-card .button.primary {
+        border-color: transparent;
+        background: var(--color-action);
+        color: var(--color-text-on-action);
+    }
+    .question-skip {
+        min-height: 44px;
+        padding: 0 8px;
+        color: var(--color-text-soft);
+        font-size: var(--text-control);
+    }
+
+    /* The preview note: the shared surface with a hairline, not cyan. */
+    &.paperwork-page .persona-preview {
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border);
+    }
+    &.paperwork-page .persona-preview > svg {
+        color: var(--color-paper-text);
+    }
+
+    /* A task's page: the way back first, then its name with its status. */
+    .case-back .view-back {
+        margin-bottom: 2px;
+    }
+    .case-top:not(.is-untitled) h1 {
+        flex: 0 1 auto;
+    }
+    .case-title-status {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+    .case-top:not(.is-untitled) .person-picker {
+        margin-left: auto;
+    }
+
+    /* Documents: chips instead of the browser's list, balanced columns, and
+       tasks without documents named once below. */
+    .paperwork-filters {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 16px;
+        margin-bottom: 6px;
+    }
+    .paperwork-filters .case-chips {
+        max-width: 100%;
+    }
+    /* The status chips after the task chips, set apart by a hairline. */
+    .paperwork-filters .case-chips + .case-chips {
+        padding-left: 16px;
+        box-shadow: inset 1px 0 0 var(--color-border);
+    }
+    @media (max-width: 700px) {
+        .paperwork-filters .case-chips + .case-chips {
+            padding-left: 1px;
+            box-shadow: none;
+        }
+    }
+    &.paperwork-page .paperwork-groups {
+        display: block;
+        columns: 2 380px;
+        column-gap: 20px;
+    }
+    &.paperwork-page .paperwork-group {
+        break-inside: avoid;
+        margin-bottom: 20px;
+    }
+    .paper-count {
+        color: var(--color-paper-text);
+        font-size: var(--text-small);
+        font-weight: var(--weight-semibold);
+        white-space: nowrap;
+    }
+    .paperwork-none {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0 12px;
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+    }
+    .paperwork-none svg {
+        flex: none;
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Phones: the search on its own row under the views; task rows show their
+       status under the words (the whole row opens the task, so no arrow sits
+       under Composer's button); dates put their day under their name. */
+    @media (max-width: 700px) {
+        .case-top.is-searchable {
+            flex-wrap: wrap;
+            row-gap: 10px;
+        }
+        /* Without room beside the views, Your situation joins the search's
+           row instead of a row of its own. */
+        .case-top.is-searchable .case-search {
+            order: 10;
+            flex: 1 1 220px;
+            max-width: none;
+        }
+        .case-top.is-searchable .case-details {
+            order: 9;
+        }
+        .case-top.is-searchable .case-tabs {
+            width: auto;
+            flex: 1 1 auto;
+        }
+        .case-top:not(.is-untitled) {
+            flex-wrap: wrap;
+        }
+        .case-top:not(.is-untitled) .case-title-status {
+            order: 10;
+            flex: 1 1 100%;
+        }
+        &.paperwork-page .process-summary {
+            display: grid;
+            grid-template-columns: 36px minmax(0, 1fr);
+            column-gap: 12px;
+            align-items: start;
+        }
+        &.paperwork-page .process-card-status {
+            grid-column: 2;
+            margin-top: 6px;
+        }
+        &.paperwork-page .process-card-status .state-badge {
+            display: inline-flex;
+        }
+        &.paperwork-page .process-card-status > svg {
+            display: none;
+        }
+        &.paperwork-page .date-grid .timeline-row {
+            display: grid;
+            grid-template-columns: 36px minmax(0, 1fr) auto;
+            column-gap: 12px;
+            row-gap: 4px;
+            align-items: center;
+        }
+        &.paperwork-page .date-grid .timeline-row > .timeline-icon {
+            grid-row: 1 / span 2;
+        }
+        &.paperwork-page .date-grid .timeline-date {
+            grid-column: 2;
+            grid-row: 2;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 0 6px;
+            text-align: left;
+            font-size: var(--text-control);
+        }
+        &.paperwork-page .date-grid .timeline-date em,
+        &.paperwork-page .date-grid .timeline-date small {
+            display: inline;
+            margin: 0;
+        }
+        &.paperwork-page .date-grid .timeline-row > svg:last-child {
+            grid-column: 3;
+            grid-row: 1 / span 2;
+        }
+        &.paperwork-page .question-card .button {
+            padding: 8px 12px;
+        }
+        &.paperwork-page .question-card .question-skip {
+            padding: 0 6px;
+        }
+        &.paperwork-page .coming-when {
+            flex-basis: 74px;
+        }
+        /* A step's actions start at the left, clear of Composer's button. */
+        &.paperwork-page .step-actions {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0;
+        }
+    }
+
+    /* A step's own actions read as buttons: outlined, as secondary actions are. */
+    &.paperwork-page .step-actions .plain-button {
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: var(--radius-pill);
+        background: var(--color-bg-surface);
+        box-shadow: inset 0 0 0 1px var(--color-border-strong);
+        color: var(--color-text);
+        font-weight: var(--weight-medium);
+    }
+    &.paperwork-page .step-actions .plain-button:active {
+        background: var(--color-bg-quiet);
+    }
+    @media (max-width: 700px) {
+        &.paperwork-page .step-actions {
+            gap: 8px;
+        }
+    }
+    /* "Someone you shared with": whose plan, as a label (it isn't a menu for
+       them), and one line on who shared it and what they can do (owner, 18 Oct
+       2026, Composer review canvas board 15). */
+    .case-top .person-picker.is-static {
+        display: inline-flex;
+        align-items: center;
+        height: 44px;
+        padding: 0 14px;
+        border-radius: var(--radius-pill);
+        background: var(--color-bg-quiet);
+        color: var(--color-text);
+        font-size: var(--text-control);
+        font-weight: var(--weight-semibold);
+        white-space: nowrap;
+    }
+    .shared-note {
+        display: flex;
+        gap: 8px;
+        margin: 12px 2px 16px;
+        color: var(--color-text-soft);
+        font-size: var(--text-small);
+        line-height: 1.45;
+    }
+    .shared-note > svg {
+        flex: none;
+        width: 16px;
+        height: 16px;
+        margin-top: 2px;
+    }
+    .shared-note strong {
+        color: var(--color-text);
+        font-weight: var(--weight-semibold);
+    }
+    /* Outside the covered city: a way on (owner, 18 Oct 2026, Composer review
+       canvas board 16). */
+    .access-blank .coverage-notify {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        color: var(--color-text);
+        font-size: var(--text-small);
+    }
+    .access-blank .coverage-notify svg {
+        flex: none;
+        width: 18px;
+        height: 18px;
+        color: var(--color-select-text);
+    }
+    .access-blank .coverage-composer {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        margin-top: 20px;
+        padding-top: 12px;
+        border-top: 1px solid var(--color-border);
+        color: var(--color-text);
+        font-weight: var(--weight-medium);
+        text-decoration: none;
+    }
+    .access-blank .coverage-composer svg {
+        flex: none;
+        width: 18px;
+        height: 18px;
+    }
+    .access-blank .coverage-composer svg:last-child {
+        margin-left: auto;
+        color: var(--color-text-soft);
+    }
+
+    /* ── orientation.css (prototype/dev/design/bureaucracy-next) ── */
+    /* Compact, shared orientation. Selected answers are confirmed explicitly. */
     .orientation {
         color: var(--ink);
-        background: var(--surface);
+        background: white;
         border-radius: var(--radius-xl);
         padding: 16px 20px 20px;
         box-shadow: 0 8px 32px rgb(33 31 23 / 5%);
@@ -3135,7 +3801,7 @@
     }
     .orientation .orientation-primary {
         background: var(--action);
-        color: var(--color-text-on-action);
+        color: white;
         border: 0;
         border-radius: var(--radius-md);
         min-height: 44px;
@@ -3163,6 +3829,10 @@
         justify-content: space-between;
         margin: 14px 0 10px;
     }
+    .orientation-known,
+    .orientation-topics {
+        margin: 4px 0;
+    }
     .orientation summary {
         display: flex;
         align-items: center;
@@ -3181,6 +3851,104 @@
     }
     .orientation details[open] summary > svg:last-child {
         transform: rotate(180deg);
+    }
+    .orientation-known summary {
+        color: var(--muted);
+        font-size: var(--text-small);
+    }
+    .orientation-known dl {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        margin: 0 0 8px;
+        background: var(--paper);
+        border-radius: var(--radius-md);
+        font-size: var(--text-small);
+    }
+    .orientation-known dl div {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .orientation-known dt {
+        color: var(--muted);
+    }
+    .orientation-known dd {
+        margin: 0;
+        text-align: right;
+    }
+    .orientation-topics > div {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        padding: 4px 0 8px;
+    }
+    .orientation-topics button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--paper);
+        padding: 10px;
+        border-radius: var(--radius-md);
+        border: 0;
+        text-align: left;
+        min-height: 52px;
+        font-size: var(--text-small);
+    }
+    .orientation-topics button > svg:last-child {
+        margin-left: auto;
+        width: 16px;
+    }
+    .orientation-bottom {
+        padding-top: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .orientation-bottom > button {
+        border: 0;
+        background: transparent;
+        font-size: var(--text-control);
+        min-height: 44px;
+        padding: 4px 0;
+        align-self: flex-start;
+    }
+    .orientation-bottom small {
+        font-size: var(--text-caption);
+        line-height: 1.5;
+        color: var(--muted);
+    }
+    .orientation-answers {
+        display: grid;
+        gap: 8px;
+        margin: 16px 0;
+    }
+    .orientation-answers button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        text-align: left;
+        background: var(--paper);
+        border: 0;
+        border-radius: var(--radius-lg);
+    }
+    .orientation-answers small,
+    .orientation-answers strong {
+        display: block;
+    }
+    .orientation-answers small {
+        color: var(--muted);
+        font-size: var(--text-caption);
+        margin-bottom: 4px;
+    }
+    .orientation-answers strong {
+        font-size: var(--text-section);
+        font-weight: var(--weight-semibold);
+    }
+    .orientation .orientation-next {
+        margin: 0 0 12px;
     }
     .orientation-error {
         font-size: var(--text-control);
@@ -3204,6 +3972,10 @@
         + .bureaucracy-view
         :is(.getting-started, .question-card, .deferred-question) {
         display: none;
+    }
+    .studio .orientation {
+        max-width: none;
+        margin-bottom: 0;
     }
     @media (max-width: 700px) {
         .orientation {
@@ -3239,9 +4011,42 @@
         }
     }
 
+    /* The contextual Composer link replaces the floating launcher while answering. */
+    &.paperwork-page:has(#case-editor .orientation)
+        #composer-tray:has(.composer-launcher[aria-expanded='false']) {
+        visibility: hidden;
+        pointer-events: none;
+    }
     .orientation-actions > button {
         white-space: nowrap;
     }
+
+    @media (min-width: 1000px) {
+        &[data-case-view='overview']:has(#case-editor .orientation) {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            column-gap: 28px;
+            align-items: start;
+        }
+        &:has(#case-editor .orientation)
+            > :is(.case-top, .case-navigation, .case-footnote) {
+            grid-column: 1 / -1;
+        }
+        &[data-case-view='overview']:has(#case-editor .orientation)
+            > #case-editor {
+            grid-column: 1;
+        }
+        &[data-case-view='overview']:has(#case-editor .orientation)
+            > .bureaucracy-view {
+            grid-column: 2;
+            min-width: 0;
+        }
+        &:has(#case-editor .orientation) .case-overview-grid,
+        &:has(#case-editor .orientation) .date-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
     /* Details review stays in the same surface across Bureaucracy and Composer. */
     .orientation .details-entry {
         display: flex;
@@ -3492,42 +4297,704 @@
         }
     }
 
-    /* Your situation sits beside the overview on wide screens, as in the prototype. */
-    @media (min-width: 1000px) {
-        &[data-view='overview']:has(#case-editor .orientation) {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-            column-gap: 28px;
-            align-items: start;
-        }
-        &:has(#case-editor .orientation)
-            > :is(.case-top, .case-navigation, .case-footnote) {
-            grid-column: 1 / -1;
-        }
-        &[data-view='overview']:has(#case-editor .orientation) > #case-editor {
-            grid-column: 1;
-        }
-        &[data-view='overview']:has(#case-editor .orientation)
-            > .bureaucracy-view {
-            grid-column: 2;
-            min-width: 0;
-        }
-        &:has(#case-editor .orientation) :is(.case-overview-grid, .date-grid) {
-            grid-template-columns: 1fr;
-        }
+    /* Say it in your own words: a candidate answer you confirm or dismiss. */
+    .details-ai {
+        margin: 14px 0 0;
+        padding: 10px 12px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
     }
-    .orientation .details-error {
-        color: var(--color-conflict-text);
+    .details-ai summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 40px;
+        font-weight: var(--weight-semibold);
+        cursor: pointer;
+        list-style: none;
+    }
+    .details-ai summary::-webkit-details-marker {
+        display: none;
+    }
+    .details-ai summary svg {
+        width: 18px;
+        height: 18px;
+    }
+    .details-ai summary svg:last-child {
+        margin-left: auto;
+    }
+    .details-ai textarea {
+        width: 100%;
+        margin: 8px 0;
+        padding: 10px 12px;
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        font: inherit;
+        resize: vertical;
+    }
+    .details-suggestion {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        margin: 10px 0;
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        background: var(--color-select-bg);
+    }
+    .details-suggestion span {
+        flex: 1 1 160px;
+    }
+
+    /* ── situation.css (prototype/dev/design/bureaucracy-next) ── */
+    /* The same personal situation on the page and inside Composer. */
+    :is(.situation-welcome, .situation-summary) .orientation-primary {
+        background: var(--action);
+        color: white;
+        border: 0;
+        border-radius: var(--radius-md);
+        min-height: 44px;
+        padding: 10px 16px;
+        font-size: var(--text-body);
+        font-weight: var(--weight-semibold);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+    :is(.situation-welcome, .situation-summary) .orientation-secondary {
+        background: transparent;
+        border: 0;
+        border-radius: var(--radius-md);
+        padding: 10px 12px;
+        min-height: 44px;
+        font: inherit;
+        font-size: var(--text-control);
+        color: var(--ink);
+        cursor: pointer;
+    }
+    .situation-welcome {
+        display: grid;
+        gap: 24px;
+        margin: 10px 0 24px;
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        background: white;
+    }
+    .situation-welcome-copy {
+        padding: 24px 22px 0;
+    }
+    .situation-emblem,
+    .situation-symbol {
+        display: grid;
+        place-items: center;
+        flex: none;
+        color: var(--ink);
+        background: var(--cyan-soft, var(--color-select-bg, #dff4f8));
+        border-radius: var(--radius-lg);
+    }
+    .situation-emblem {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+    }
+    .situation-emblem.small {
+        width: 40px;
+        height: 40px;
+    }
+    .situation-emblem svg {
+        width: 26px;
+        height: 26px;
+    }
+    .situation-symbol {
+        width: 38px;
+        height: 38px;
+    }
+    .situation-symbol svg {
+        width: 21px;
+        height: 21px;
+    }
+    .situation-welcome h2 {
+        font-size: clamp(var(--text-title-lg), 4vw, var(--text-display));
+        letter-spacing: -0.045em;
+        line-height: 1.08;
+        margin: 0 0 12px;
+        max-width: 15ch;
+    }
+    .situation-welcome p {
+        color: var(--muted);
+        line-height: 1.5;
+        font-size: var(--text-body);
+        margin: 0 0 16px;
+        max-width: 46ch;
+    }
+    .situation-benefits {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
         font-size: var(--text-small);
-        margin: 8px 0 0;
+        font-weight: var(--weight-semibold);
     }
-    .question-card .orientation-error {
-        flex-basis: 100%;
+    .situation-benefits span {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .situation-benefits svg {
+        width: 18px;
+        height: 18px;
+    }
+    .situation-start {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 22px;
+        border-top: 1px solid var(--color-border);
+    }
+    .situation-start h3 {
         margin: 0;
+        font-size: var(--text-title-sm);
+        letter-spacing: -0.03em;
+        width: 100%;
+    }
+    .situation-start p,
+    .situation-start > small {
+        width: 100%;
+    }
+    .situation-start p {
+        margin: 0 0 6px;
+    }
+    .situation-start > small {
+        color: var(--muted);
+        margin-top: 6px;
+    }
+    .situation-start [data-situation='composer-start'] {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .situation-start .orientation-primary,
+    .situation-start .orientation-secondary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .situation-start svg,
+    .situation-summary svg,
+    .situation-topics svg,
+    .situation-change-grid svg,
+    .situation-change-card svg {
+        width: 20px;
+        height: 20px;
+        flex: none;
+    }
+    .situation-summary {
+        padding: 22px;
+        background: white;
+        border-radius: var(--radius-xl);
+        margin: 12px 0 24px;
+    }
+    /* On the overview: one line that opens in place. */
+    .situation-summary.situation-compact {
+        padding: 0;
+    }
+    .situation-compact > summary {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 64px;
+        padding: 12px 16px;
+        cursor: pointer;
+        list-style: none;
+        border-radius: var(--radius-xl);
+    }
+    .situation-compact > summary::-webkit-details-marker {
+        display: none;
+    }
+    .situation-compact > summary:focus-visible {
+        outline: 2px solid var(--color-focus);
+        outline-offset: 2px;
+    }
+    .situation-compact-copy {
+        display: grid;
+        flex: 1;
+        gap: 2px;
+        min-width: 0;
+    }
+    .situation-compact-copy strong {
+        font-size: var(--text-section);
+    }
+    .situation-compact-copy small {
+        color: var(--color-text-soft);
+        font-size: var(--text-caption);
+    }
+    .situation-compact > summary > svg {
+        color: var(--color-text-soft);
+        transition: transform 200ms ease;
+    }
+    .situation-compact[open] > summary > svg {
+        transform: rotate(180deg);
+    }
+    .situation-compact-body {
+        padding: 4px 22px 22px;
+    }
+    @media (max-width: 420px) {
+        .situation-compact-body {
+            padding: 4px 16px 18px;
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .situation-compact > summary > svg {
+            transition: none;
+        }
+    }
+    .situation-section-head {
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+    .situation-section-head h2 {
+        font-size: var(--text-title);
+        letter-spacing: -0.035em;
+        margin: 0 0 5px;
+    }
+    .situation-section-head p {
+        color: var(--muted);
+        font-size: var(--text-control);
+        margin: 0;
+        line-height: 1.45;
+    }
+    .situation-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: var(--radius-sm);
+        background: var(--paper);
+        padding: 6px 8px;
+        font-size: var(--text-caption);
+    }
+    .situation-status.review,
+    .situation-status.check {
+        background: #fff2cd;
+        color: #705418;
+    }
+    .situation-status.current {
+        background: var(--color-select-bg, #dff4f8);
+    }
+    .situation-status svg {
+        width: 16px;
+        height: 16px;
+    }
+    .situation-facts {
+        display: grid;
+        gap: 8px;
+    }
+    .situation-fact {
+        min-width: 0;
+        background: var(--paper);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+    .situation-fact > button {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 0;
+        padding: 11px;
+        text-align: left;
+        background: none;
+        min-height: 64px;
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+    }
+    .situation-fact > button > span:nth-child(2) {
+        min-width: 0;
+        flex: 1;
+    }
+    .situation-fact small,
+    .situation-change-grid small,
+    .situation-change-card small {
+        display: block;
+        color: var(--muted);
+        font-size: var(--text-caption);
+        margin-bottom: 3px;
+    }
+    .situation-fact strong {
+        font-size: var(--text-body);
+        font-weight: var(--weight-semibold);
+        overflow-wrap: anywhere;
+    }
+    .situation-fact > button > svg {
+        width: 17px;
+        height: 17px;
+        color: var(--muted);
+    }
+    .situation-fact.needs-review {
+        background: #fff7df;
+    }
+    .situation-fact-review {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px 8px;
+        font-size: var(--text-caption);
+        color: #705418;
+    }
+    .situation-fact-review button {
+        white-space: nowrap;
+        flex-shrink: 0;
+        font: inherit;
+        font-weight: var(--weight-semibold);
+        background: white;
+        border: 0;
+        border-radius: var(--radius-sm);
+        min-height: 44px;
+        padding: 0 10px;
+    }
+    .situation-summary-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+    }
+    .situation-summary-actions button {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .situation-summary-actions button:first-child {
+        border: 1px solid var(--color-border-strong);
+        background: var(--color-bg-surface);
+    }
+    .situation-checkin {
+        background: var(--color-bg-surface);
+        border: 1px solid var(--color-border);
+        padding: 16px;
+        border-radius: var(--radius-xl);
+        margin-bottom: 18px;
+    }
+    .situation-checkin p {
+        color: var(--muted);
+        font-size: var(--text-control);
+        line-height: 1.45;
+    }
+    .situation-checkin > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .situation-note {
+        color: var(--muted);
+        font-size: var(--text-small);
+        line-height: 1.5;
+    }
+    .situation-note svg {
+        width: 17px;
+        height: 17px;
+        vertical-align: middle;
+        margin-right: 6px;
+    }
+    .situation-notice {
+        font-size: var(--text-control);
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 12px;
+        background: var(--color-select-bg, #e5f5f8);
+        border-radius: var(--radius-md);
+    }
+    .situation-history {
+        margin-top: 16px;
+        font-size: var(--text-control);
+    }
+    .situation-history summary {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-height: 44px;
+        cursor: pointer;
+    }
+    .situation-history summary::-webkit-details-marker {
+        display: none;
+    }
+    .situation-history > div {
+        padding: 10px 0;
+    }
+    .situation-history strong {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: var(--text-control);
+    }
+    .situation-history small {
+        display: block;
+        margin: 5px 0 0 28px;
+        color: var(--muted);
+    }
+    .situation-topics {
+        margin: 24px 0;
+    }
+    .situation-topic-grid {
+        display: grid;
+        gap: 10px;
+    }
+    .situation-topic-grid article {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 16px;
+        background: white;
+        border-radius: var(--radius-xl);
+    }
+    .situation-topic-grid article > strong {
+        flex: 1;
+        font-size: var(--text-section);
+    }
+    .situation-topic-grid article > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        align-items: center;
+    }
+    .situation-topic-grid a,
+    .situation-topic-grid button {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 44px;
+        border: 0;
+        background: none;
+        font: inherit;
+        font-size: var(--text-small);
+        color: var(--ink);
+        cursor: pointer;
+    }
+    /* A secondary action: outlined in ink, not the selection colour. */
+    .situation-topic-grid button {
+        border: 1px solid var(--color-border-strong);
+        border-radius: var(--radius-md);
+        padding: 0 12px;
+        background: var(--color-bg-surface);
+        font-weight: var(--weight-semibold);
+    }
+    .situation-topic-grid button:disabled {
+        border-color: transparent;
+    }
+    .situation-topic-grid button:disabled {
+        color: var(--muted);
+        background: var(--paper);
+    }
+    .situation-progress {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--muted);
+        font-size: var(--text-small);
+        margin: 0 0 18px;
+    }
+    /* A label, not a selection: Paperwork's lavender. */
+    .situation-progress span:last-child {
+        border-radius: var(--radius-sm);
+        background: var(--color-paper-bg);
+        padding: 5px 9px;
+        color: var(--color-paper-text);
+        font-weight: var(--weight-semibold);
+    }
+    .situation-change-grid {
+        display: grid;
+        gap: 8px;
+    }
+    .situation-change-grid > button {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+        border: 0;
+        border-radius: var(--radius-lg);
+        background: var(--paper);
+        padding: 12px;
+        min-height: 66px;
+        font: inherit;
+        color: var(--ink);
+    }
+    .situation-change-grid > button > span:nth-child(2) {
+        flex: 1;
+    }
+    .situation-change-grid strong {
+        font-size: var(--text-body);
+    }
+    .situation-change-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--color-select-bg, #e5f5f8);
+        padding: 18px;
+        border-radius: var(--radius-xl);
+        margin-bottom: 20px;
+    }
+    .situation-change-card > svg {
+        width: 28px;
+        height: 28px;
+    }
+    .situation-change-card strong {
+        font-size: var(--text-title-sm);
+    }
+    .orientation .situation-summary {
+        margin: 0;
+        padding: 0;
+        background: none;
+    }
+    .situation-preview {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: var(--text-caption);
+        color: var(--muted);
+        margin: 16px 0;
+    }
+    .situation-preview label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .situation-preview select {
+        font: inherit;
+        color: var(--ink);
+        background: white;
+        border: 0;
+        border-radius: var(--radius-md);
+        padding: 8px;
+        min-height: 44px;
+        max-width: 190px;
+    }
+    .has-situation-guide .bureaucracy-view {
+        display: none;
+    }
+    :is(
+            .situation-welcome,
+            .situation-summary,
+            .situation-topics,
+            .situation-change-grid
+        )
+        button {
+        transition:
+            background 160ms ease,
+            transform 160ms ease;
+        touch-action: manipulation;
+    }
+    :is(
+            .situation-welcome,
+            .situation-summary,
+            .situation-topics,
+            .situation-change-grid
+        )
+        button:active {
+        transform: scale(0.985);
+    }
+    :is(
+            .situation-welcome,
+            .situation-summary,
+            .situation-topics,
+            .situation-change-grid
+        )
+        button:focus:not(:focus-visible) {
+        outline: none;
+    }
+    :is(
+            .situation-welcome,
+            .situation-summary,
+            .situation-topics,
+            .situation-change-grid
+        )
+        button:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 3px;
+    }
+    @media (min-width: 701px) {
+        .situation-welcome {
+            grid-template-columns: 1.15fr 1fr;
+            gap: 0;
+        }
+        .situation-welcome-copy {
+            padding: 32px;
+        }
+        .situation-start {
+            padding: 32px;
+            align-content: center;
+        }
+        .situation-facts {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .situation-topic-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .situation-summary {
+            padding: 26px;
+        }
+        .situation-change-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        :is(
+                .situation-welcome,
+                .situation-summary,
+                .situation-topics,
+                .situation-change-grid
+            )
+            button {
+            transition: none;
+            transform: none;
+        }
+    }
+    @media (max-width: 359px) {
+        .situation-welcome {
+            gap: 16px;
+        }
+        .situation-welcome-copy {
+            padding: 18px 18px 0;
+        }
+        .situation-start {
+            padding: 18px;
+        }
+        .situation-emblem {
+            margin-bottom: 12px;
+        }
+        .situation-benefits {
+            gap: 10px 12px;
+        }
+    }
+
+    /* "Address registration is now in Your tasks": what your answers opened. */
+    .situation-arrived {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin: 14px 0 0;
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        background: var(--color-select-bg);
+        color: var(--color-select-text);
+        font-size: var(--text-control);
+        line-height: 1.45;
+    }
+    .situation-arrived svg {
+        width: 18px;
+        height: 18px;
+        flex: none;
+        margin-top: 2px;
     }
 }
 
-/* Animations cannot be nested inside the page scope. */
 @keyframes case-reveal {
     from {
         opacity: 0;
@@ -3538,6 +5005,7 @@
         transform: translateY(0);
     }
 }
+
 @keyframes case-confirm-in {
     from {
         opacity: 0;

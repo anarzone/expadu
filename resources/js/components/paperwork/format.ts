@@ -222,5 +222,57 @@ export const lower = (text: string): string =>
 export function coverageNote(units: { state: string }[]): string {
     return units.length > 0 && units.every((u) => u.state === 'complete')
         ? 'Guidance is checked against official sources daily'
-        : 'Some guidance still needs checking';
+        : 'We’re still checking a few steps against official sources';
 }
+
+/** Search text: case- and accent-insensitive ("Übertrag" finds "ubertrag"). */
+const fold = (text: string | null | undefined): string =>
+    String(text ?? '')
+        .toLocaleLowerCase('en')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+/** Whether any of the texts holds the query; an empty query matches everything. */
+export function matches(
+    query: string,
+    ...texts: (string | null | undefined)[]
+): boolean {
+    const q = fold(query.trim());
+
+    return !q || texts.some((text) => fold(text).includes(q));
+}
+
+/** When a card was last checked against the official pages it quotes. */
+export function checkedLine(verifiedAt: string | null | undefined): string {
+    return verifiedAt
+        ? `Checked against the official pages on ${formatDate(verifiedAt)}`
+        : 'Current guidance needs checking';
+}
+
+export const topicLabels: Record<string, string> = {
+    address: 'Address',
+    residence: 'Residence',
+    tax: 'Tax',
+    health: 'Health insurance',
+    money: 'Money',
+    family: 'Family',
+    work: 'Work',
+    education: 'Education',
+    driving: 'Driving',
+};
+
+/** The task chips: what a task waits on, by its workflow. */
+export type TaskGroup = 'todo' | 'waiting' | 'blocked';
+
+export const taskGroup = (process: Pick<Process, 'state'>): TaskGroup => {
+    const tone = workflowTone(process.state.workflow);
+
+    return tone === 'blocked' || tone === 'waiting' ? tone : 'todo';
+};
+
+export const taskGroups: [TaskGroup | 'all', string][] = [
+    ['all', 'All'],
+    ['todo', 'To do'],
+    ['waiting', 'Waiting'],
+    ['blocked', 'Blocked'],
+];

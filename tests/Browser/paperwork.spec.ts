@@ -12,9 +12,10 @@ test.use({ serviceWorkers: 'block' });
 
 async function openPaperwork(page: Page): Promise<void> {
     await page.goto('/bureaucracy');
+    // No page title on screen: the heading is there for screen readers.
     await expect(
         page.getByRole('heading', { level: 1, name: 'Paperwork' }),
-    ).toBeVisible();
+    ).toBeAttached();
 }
 
 async function openBlueCard(page: Page): Promise<void> {
@@ -66,10 +67,16 @@ test.describe('Paperwork', () => {
 
         await openPaperwork(page);
 
+        // One list: each task carries its next step, so nothing is listed twice.
+        await expect(
+            page.getByRole('heading', { name: 'Your tasks' }),
+        ).toBeVisible();
+        await expect(page.locator('.process-next').first()).toContainText(
+            'Next:',
+        );
         await expect(
             page.getByRole('heading', { name: 'Next steps' }),
-        ).toBeVisible();
-        await expect(page.locator('.overview-action').first()).toBeVisible();
+        ).toHaveCount(0);
         await expect(
             page.locator('.process-summary', { hasText: 'EU Blue Card' }),
         ).toHaveCount(1);
@@ -84,6 +91,46 @@ test.describe('Paperwork', () => {
         // Every date is a target to aim for, never a legal deadline.
         await expect(page.getByText('Legal deadline')).toHaveCount(0);
         expect(errors).toEqual([]);
+    });
+
+    test('one search narrows tasks, dates and documents, and survives a reload', async ({
+        page,
+    }) => {
+        await openPaperwork(page);
+        const search = page.getByRole('searchbox', {
+            name: 'Search your paperwork',
+        });
+        await search.fill('anmeldung');
+        await expect(page.locator('.search-summary')).toContainText(
+            'for “anmeldung”',
+        );
+        await expect(page).toHaveURL(/[?&]q=anmeldung/);
+        await expect(
+            page.locator('.process-summary', { hasText: 'EU Blue Card' }),
+        ).toHaveCount(0);
+        await page.reload();
+        await expect(search).toHaveValue('anmeldung');
+        await expect(
+            page.locator('.process-summary', {
+                hasText: 'Address registration',
+            }),
+        ).toBeVisible();
+        await search.press('Escape');
+        await expect(search).toHaveValue('');
+        await expect(
+            page.locator('.process-summary', { hasText: 'EU Blue Card' }),
+        ).toBeVisible();
+        await search.fill('zzzz-nothing');
+        await expect(
+            page.getByRole('heading', {
+                name: 'Nothing matches “zzzz-nothing”',
+            }),
+        ).toBeVisible();
+        await page
+            .locator('.search-empty')
+            .getByRole('button', { name: 'Clear search' })
+            .click();
+        await expect(page.locator('.process-summary').first()).toBeVisible();
     });
 
     test('a task opens with its steps, and tracking can be started and undone', async ({
@@ -204,7 +251,8 @@ test.describe('Paperwork', () => {
         page,
     }) => {
         await openPaperwork(page);
-        await page.getByRole('button', { name: 'Sources & coverage' }).click();
+        // The coverage line under the plan: "Which ones" opens the sources.
+        await page.getByRole('button', { name: 'Which ones' }).click();
         const sheet = page.locator('dialog.detail-dialog');
         await expect(
             sheet.getByRole('heading', { name: 'Sources and coverage' }),
@@ -219,7 +267,7 @@ test.describe('Paperwork', () => {
     }) => {
         await openPaperwork(page);
         const card = await questionCard(page);
-        await expect(card.locator('h3')).not.toBeEmpty();
+        await expect(card.locator('h2')).not.toBeEmpty();
         await expect(card.locator('.question-why')).not.toBeEmpty();
         await expect(
             card.getByRole('button', { name: 'I don’t know' }),
@@ -234,7 +282,7 @@ test.describe('Paperwork', () => {
     }) => {
         await openPaperwork(page);
         const card = await questionCard(page);
-        const question = (await card.locator('h3').textContent()) ?? '';
+        const question = (await card.locator('h2').textContent()) ?? '';
         await card
             .getByRole('button', { name: /^(Answer|Enter date)$/ })
             .click();
@@ -304,11 +352,11 @@ test.describe('Paperwork', () => {
         await expect(panel).toHaveCount(0);
     });
 
-    test('on a phone the first next step is visible without scrolling', async ({
+    test('on a phone the first task is visible without scrolling', async ({
         page,
     }) => {
-        await page.setViewportSize({ width: 375, height: 812 });
+        await page.setViewportSize({ width: 390, height: 844 });
         await openPaperwork(page);
-        await expect(page.locator('.overview-action').first()).toBeInViewport();
+        await expect(page.locator('.process-summary').first()).toBeInViewport();
     });
 });

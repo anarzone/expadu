@@ -67,7 +67,7 @@ test('Paperwork has one page heading and an Overview / Documents switch', async 
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(
         page.getByRole('heading', { level: 1, name: 'Paperwork' }),
-    ).toBeVisible();
+    ).toBeAttached();
     await expect(
         page.getByRole('button', { name: 'Overview', exact: true }),
     ).toHaveAttribute('aria-pressed', 'true');
