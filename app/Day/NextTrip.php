@@ -52,7 +52,7 @@ class NextTrip
     /**
      * @return array<string, mixed>
      */
-    public function for(DayItem $target, ?TripOrigin $origin, CarbonImmutable $now): array
+    public function for(DayItem $target, ?TripOrigin $origin, CarbonImmutable $now, ?Journey $planned = null): array
     {
         $margin = self::marginFor($target);
         $base = [
@@ -68,6 +68,9 @@ class NextTrip
             'from' => $origin?->toArray(),
             'margin_min' => $margin,
             'checked_at' => $now->setTimezone('Europe/Berlin')->toIso8601String(),
+            // Stop names carry the city ("Köln Neumarkt"); the card shows
+            // them as the stop signs do.
+            'city' => config('geocoding.search_default.city'),
         ];
 
         if ($target->startAt === null || ! $target->startAt->greaterThan($now)) {
@@ -98,10 +101,30 @@ class NextTrip
         }
 
         $options = array_map(fn (Journey $journey) => $this->option($journey, $target->startAt, $notBefore, $margin), $result->journeys);
+
+        // The way the person picked ("Add to plan"): the router's same way
+        // carries the mark, or the stored one joins the options.
+        $mine = null;
+        if ($planned !== null) {
+            $stored = $this->option($planned, $target->startAt, $notBefore, $margin);
+            $index = array_search($stored['key'], array_column($options, 'key'), true);
+            if ($index === false) {
+                $options[] = $stored;
+                $index = array_key_last($options);
+            }
+            $options[$index]['in_plan'] = true;
+            $mine = $options[$index]['catchable'] ? $options[$index] : null;
+        }
+
         $catchable = array_values(array_filter($options, fn (array $o) => $o['catchable']));
 
         $fitting = array_values(array_filter($catchable, fn (array $o) => $o['spare_min'] >= $margin));
         $tight = array_values(array_filter($catchable, fn (array $o) => $o['spare_min'] >= 0 && $o['spare_min'] < $margin));
+
+        // Your way, while it still leaves the margin.
+        if ($mine !== null && $mine['spare_min'] >= $margin) {
+            return $this->answer($base, $options, $mine, 'fits', 'planned', $now, $result->source);
+        }
 
         if ($fitting !== []) {
             // The latest leave that keeps the margin; the earliest arrival breaks a tie.
@@ -109,7 +132,8 @@ class NextTrip
             $chosen = $fitting[0];
             $later = array_values(array_filter($tight, fn (array $o) => $o['leave'] > $chosen['leave']));
             usort($later, fn (array $a, array $b) => $b['leave'] <=> $a['leave']);
-            $skipped = $later[0] ?? null;
+            // "Your 13:24 has only 2 min spare": your way first, else the later tight one.
+            $skipped = $mine ?? ($later[0] ?? null);
 
             return $this->answer($base, $options, $chosen, 'fits', $skipped ? 'earlier_for_margin' : 'margin_met', $now, $result->source, $skipped);
         }
@@ -228,6 +252,8 @@ class NextTrip
                 'from' => $ride->from->name,
             ],
             'time_basis' => $option['realtime'] ? 'live' : 'scheduled',
+            // The way the person added to their plan.
+            'in_plan' => $option['in_plan'] ?? false,
         ];
     }
 

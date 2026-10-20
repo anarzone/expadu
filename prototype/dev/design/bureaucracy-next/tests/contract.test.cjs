@@ -44,14 +44,14 @@ test('next actions are the todo steps, earliest target first, at most three', ()
     assert.equal(p.overview.next_actions[0].dates[0].date, '2026-10-01');
     assert.equal(p.overview.next_actions[1].dates[0].date, '2026-10-01');
     assert.deepEqual(p.overview.next_actions[2].dates, []);
-    assert.equal(p.overview.remaining_action_count, 2);
+    assert.equal(p.overview.remaining_action_count, 3);
     // The bank task isn't started: its step needs a start first.
     assert.equal(
         p.actions.find((a) => a.id === 'bank:0').requires_process_start,
         true,
     );
-    assert.equal(p.progress.total, 6);
-    assert.equal(p.progress.todo.count, 5);
+    assert.equal(p.progress.total, 7);
+    assert.equal(p.progress.todo.count, 6);
     assert.equal(p.progress.waiting.count, 1);
 });
 
@@ -362,9 +362,9 @@ test('three answers or skips in a row pause; an answer that keeps not fitting st
 
 test('coverage lists every reviewed unit without claiming completeness', () => {
     const units = plan(fresh()).coverage.units;
-    // Ten task cards, twelve context cards, two options and two withheld
-    // ones.
-    assert.equal(units.length, 26);
+    // Eleven task cards (with the employee's income tax return), twelve
+    // context cards, two options and two withheld ones.
+    assert.equal(units.length, 27);
     assert.equal(units.filter((u) => u.state === 'unconfirmed').length, 2);
     assert.ok(units.every((u) => ['partial', 'unconfirmed'].includes(u.state)));
     assert.equal(
@@ -489,6 +489,7 @@ test('each task carries its own name and whether its start can still be undone',
             'Address registration',
             'Health insurance',
             'Bank account',
+            'Income tax return',
         ],
     );
     // Names, not the first step's heading.

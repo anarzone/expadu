@@ -157,7 +157,13 @@ enum Applicability
         return $sawUnknown ? self::Unknown : self::Yes;
     }
 
-    private static function evaluateCondition(mixed $expected, mixed $actual): self
+    /** The canonical assessor supplies its clock; legacy callers keep their adapter default. */
+    public static function evaluateConditionAt(mixed $expected, mixed $actual, CarbonImmutable $onDate): self
+    {
+        return self::evaluateCondition($expected, $actual, $onDate);
+    }
+
+    private static function evaluateCondition(mixed $expected, mixed $actual, ?CarbonImmutable $onDate = null): self
     {
         if ($expected === null) {
             throw new DomainException('Applicability conditions cannot use an explicit null operand.');
@@ -215,7 +221,7 @@ enum Applicability
                 throw new DomainException('The at_least_months_ago applicability operator requires a non-negative integer operand.');
             }
 
-            return self::evaluateDateAge($actual, $operand);
+            return self::evaluateDateAge($actual, $operand, $onDate);
         }
 
         if ($operator === 'months_ago_between') {
@@ -239,9 +245,9 @@ enum Applicability
                 return self::No;
             }
 
-            $today = CarbonImmutable::today(config('app.timezone'));
-            $matches = $date->lessThanOrEqualTo($today->subMonthsNoOverflow($operand[0]))
-                && $date->greaterThan($today->subMonthsNoOverflow($operand[1] + 1));
+            $today = $onDate?->startOfDay() ?? CarbonImmutable::today(config('app.timezone'));
+            $matches = $date->toDateString() <= $today->subMonthsNoOverflow($operand[0])->toDateString()
+                && $date->toDateString() > $today->subMonthsNoOverflow($operand[1] + 1)->toDateString();
 
             return $matches ? self::Yes : self::No;
         }
@@ -265,7 +271,7 @@ enum Applicability
         return $matches ? self::Yes : self::No;
     }
 
-    private static function evaluateDateAge(mixed $actual, int $months): self
+    private static function evaluateDateAge(mixed $actual, int $months, ?CarbonImmutable $onDate = null): self
     {
         if ($actual === null) {
             return self::Unknown;
@@ -277,7 +283,9 @@ enum Applicability
             return self::No;
         }
 
-        return $date->lessThanOrEqualTo(CarbonImmutable::today(config('app.timezone'))->subMonthsNoOverflow($months))
+        $today = $onDate?->startOfDay() ?? CarbonImmutable::today(config('app.timezone'));
+
+        return $date->toDateString() <= $today->subMonthsNoOverflow($months)->toDateString()
             ? self::Yes
             : self::No;
     }

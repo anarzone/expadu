@@ -92,22 +92,38 @@ const norm = (prop, v) => {
     return s.replace(/\s+/g, ' ');
 };
 
+// A side's own cookies, e.g. the app's mock_clock, so the server works out the mock's day too.
+// Sign-in sends them as well: a page loaded without the mock's clock can change what the
+// comparison then shows (a sample trip in the past ends).
+async function addSideCookies(context, side) {
+    if (!side.cookies) return;
+    await context.addCookies(
+        Object.entries(side.cookies).map(([name, value]) => ({
+            name,
+            value,
+            url: new URL(side.url).origin,
+        })),
+    );
+}
+
 async function login(browser, side) {
     const l = side.login;
     if (!l) return undefined;
     const origin = new URL(side.url).origin;
     // Reuse a saved session while it still opens the app: repeated sign-ins
     // trip the login rate limit.
+    const email = process.env.MOCK_COMPARE_EMAIL ?? l.email;
     const cache = path.join(
         'storage',
         'mock-compare',
-        `.session-${new URL(origin).port || 'default'}.json`,
+        `.session-${new URL(origin).port || 'default'}-${email.replace(/[^a-z0-9]+/gi, '_')}.json`,
     );
     if (fs.existsSync(cache)) {
         const context = await browser.newContext({
             storageState: cache,
             serviceWorkers: 'block',
         });
+        await addSideCookies(context, side);
         const page = await context.newPage();
         await page.goto(side.url, { waitUntil: 'commit' });
         const ok = !new URL(page.url()).pathname.startsWith('/login');
@@ -118,14 +134,12 @@ async function login(browser, side) {
         viewport: { width: 1280, height: 900 },
         serviceWorkers: 'block',
     });
+    await addSideCookies(context, side);
     const page = await context.newPage();
     await page.goto(origin + (l.path ?? '/login'), {
         waitUntil: 'domcontentloaded',
     });
-    await page
-        .getByLabel(/email/i)
-        .first()
-        .fill(process.env.MOCK_COMPARE_EMAIL ?? l.email);
+    await page.getByLabel(/email/i).first().fill(email);
     await page
         .getByLabel(/password/i)
         .first()
@@ -151,6 +165,10 @@ async function login(browser, side) {
             `Sign-in to ${origin} failed${error ? `: ${error}` : ''}`,
         );
     }
+    // The saved session is shared by every config on this port, so it keeps none of this
+    // config's own cookies.
+    for (const name of Object.keys(side.cookies ?? {}))
+        await context.clearCookies({ name });
     fs.mkdirSync(path.dirname(cache), { recursive: true });
     await context.storageState({ path: cache });
     await context.close();
@@ -158,6 +176,14 @@ async function login(browser, side) {
 }
 
 const sessions = {};
+
+async function steps(page, list) {
+    for (const step of list ?? []) {
+        if (step.click) await page.locator(step.click).first().click();
+        if (step.key) await page.keyboard.press(step.key);
+        if (step.wait) await page.waitForTimeout(step.wait);
+    }
+}
 
 async function open(browser, sideName, width) {
     const side = cfg[sideName];
@@ -176,16 +202,14 @@ async function open(browser, sideName, width) {
                 ? side.storage
                 : undefined),
     });
+    await addSideCookies(context, side);
     const page = await context.newPage();
     if (cfg.clock) await page.clock.setFixedTime(new Date(cfg.clock));
     for (const s of side.init ?? []) await page.addInitScript(s);
     await page.goto(side.url, { waitUntil: 'networkidle', timeout: 45000 });
     if (side.wait) await page.waitForSelector(side.wait, { timeout: 20000 });
     await page.evaluate(() => document.fonts.ready);
-    for (const step of side.before ?? []) {
-        if (step.click) await page.locator(step.click).first().click();
-        if (step.wait) await page.waitForTimeout(step.wait);
-    }
+    await steps(page, side.before);
     await page.waitForTimeout(cfg.settle ?? 400);
     return { context, page };
 }
@@ -235,10 +259,15 @@ async function shot(page, pair, sideName) {
         .locator(sel)
         .nth(pair[`${sideName}Index`] ?? pair.index ?? 0);
     try {
+        // An element shot scrolls the page; start every shot from the top so
+        // both sides land on the same offset whatever was shot before.
+        await page.evaluate(() => window.scrollTo(0, 0));
         return await loc.screenshot({
             animations: 'disabled',
             caret: 'hide',
             timeout: 5000,
+            // A side's own chrome (a sticky header) can sit over a scrolled element; hide it here.
+            style: cfg[sideName].screenshotStyle,
         });
     } catch {
         return null;
@@ -341,9 +370,19 @@ await canvas.setContent('<html><body></body></html>');
 for (const width of widths) {
     const mock = await open(browser, 'mock', width);
     const app = await open(browser, 'app', width);
+    // The first screen, as it loads: before any pair scrolls the page or opens a sheet.
+    const [fa, fb] = await Promise.all([
+        mock.page.screenshot({ animations: 'disabled' }),
+        app.page.screenshot({ animations: 'disabled' }),
+    ]);
     const rows = [];
     for (const pair of pairs) {
         if (pair.widths && !pair.widths.includes(width)) continue;
+        // A pair's own steps (opening a sheet) run on both pages and stay done for the pairs after it.
+        await Promise.all([
+            steps(mock.page, pair.mockBefore ?? pair.before),
+            steps(app.page, pair.appBefore ?? pair.before),
+        ]);
         const [m, a] = await Promise.all([
             measure(mock.page, pair, 'mock'),
             measure(app.page, pair, 'app'),
@@ -429,10 +468,6 @@ for (const width of widths) {
         if (row.problems.length) failures++;
         rows.push(row);
     }
-    const [fa, fb] = await Promise.all([
-        mock.page.screenshot({ animations: 'disabled' }),
-        app.page.screenshot({ animations: 'disabled' }),
-    ]);
     const full = await compose(canvas, fa, fb, `viewport @${width}`);
     fs.writeFileSync(
         path.join(out, `${width}-viewport.png`),

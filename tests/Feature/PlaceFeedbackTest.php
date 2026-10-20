@@ -2,7 +2,7 @@
 
 use App\Composer\IntentWeights;
 use App\Enums\SpotFeedbackState;
-use App\Home\HomeFeed;
+use App\Home\DiscoveryFeed;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
 use App\Models\User;
@@ -24,7 +24,7 @@ function feedbackUser(): User
 
 function railSpotNames(User $user): Collection
 {
-    return collect(app(HomeFeed::class)->rails($user))
+    return collect(app(DiscoveryFeed::class)->for(homeContext($user)))
         ->flatMap(fn (array $rail) => collect($rail['cards'])->pluck('name'));
 }
 

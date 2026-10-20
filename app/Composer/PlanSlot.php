@@ -26,8 +26,10 @@ final readonly class PlanSlot
             'subtitle' => $this->candidate->subtitle,
             'category' => $this->candidate->category,
             'veedel' => $this->candidate->veedel,
-            'lat' => $this->candidate->lat,
-            'lng' => $this->candidate->lng,
+            // A text-only appointment place has no map point to show or route to.
+            'lat' => $this->candidate->routable ? $this->candidate->lat : null,
+            'lng' => $this->candidate->routable ? $this->candidate->lng : null,
+            'routable' => $this->candidate->routable,
             'outdoor' => $this->candidate->outdoor,
             'cost_tier' => $this->candidate->costTier,
             'place_facts' => $this->candidate->placeFacts,
@@ -40,8 +42,13 @@ final readonly class PlanSlot
             'start_at' => $this->startAt->toIso8601String(),
             'end_at' => $this->endAt->toIso8601String(),
             'start_time' => $this->startAt->format('H:i'),
-            'end_time' => $this->endAt->format('H:i'),
+            // Unknown appointment length: no end is drawn or assumed ("End time not known").
+            'end_time' => $this->candidate->durationKnown ? $this->endAt->format('H:i') : null,
+            'duration_known' => $this->candidate->durationKnown,
             'travel_min_from_previous' => $this->travelMinFromPrevious,
+            // Leg flags; Plan::toArray() sets them from the neighbouring slot.
+            'travel_known' => true,
+            'may_overlap_previous' => false,
             // When there's travel into this slot, the latest you can leave
             // the previous stop — drives the anchor's "leave by" line.
             'leave_by' => $this->travelMinFromPrevious > 0
@@ -53,7 +60,7 @@ final readonly class PlanSlot
             // fixed anchors via start_time/leave_by above).
             'is_landmark' => $this->candidate->isLandmark,
             'band' => $this->band(),
-            'duration_label' => $this->durationLabel(),
+            'duration_label' => $this->candidate->durationKnown ? $this->durationLabel() : null,
             'why' => $this->why,
         ];
     }

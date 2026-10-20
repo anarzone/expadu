@@ -1,7 +1,6 @@
 <?php
 
 use App\Home\DiscoveryFeed;
-use App\Home\PromptSuggestions;
 use App\Models\Event;
 use App\Models\MediaAsset;
 use App\Models\Spot;
@@ -129,28 +128,6 @@ test('the tonight rail surfaces today\'s upcoming events', function () {
 
 test('an empty spot catalogue does not blow up the feed', function () {
     expect(app(DiscoveryFeed::class)->for(homeContext(feedUser())))->toBeArray();
-});
-
-test('prompt suggestions surface Anmeldung for a recent arrival, capped at four', function () {
-    $user = User::factory()->onboarded()->create([
-        'arrival_date' => now()->subDays(5),
-        'veedel' => 'Ehrenfeld',
-        'situation' => 'student',
-        'is_eu' => true,
-    ]);
-
-    $chips = app(PromptSuggestions::class)->for(homeContext($user));
-
-    expect(count($chips))->toBeGreaterThan(0)->toBeLessThanOrEqual(4);
-
-    $anmeldung = collect($chips)->first(fn ($c) => str_contains($c['label'], 'Anmeldung'));
-    expect($anmeldung)->not->toBeNull();
-    // It deep-links to the verified checklist rather than the composer.
-    expect($anmeldung['href'] ?? null)->toBe('/bureaucracy');
-    // Every chip carries an icon key (the frontend maps it to a Tabler icon) —
-    // labels are plain text, no leading emoji glyphs.
-    expect($anmeldung['icon'] ?? null)->toBe('checklist');
-    expect(collect($chips)->every(fn ($c) => ! empty($c['icon'])))->toBeTrue();
 });
 
 test('the global spot catalogue scan is cached as plain rows', function () {

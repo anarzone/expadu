@@ -51,7 +51,7 @@ test('the appointment trip offers the planned tram and the earlier one, from the
     assert.equal(J.tripFor('Neumarkt', 'Museum Ludwig'), 'capture');
     assert.equal(J.tripFor('Mülheim', 'Neumarkt'), null);
     const steps = J.tripSteps(J.route('day-1314'));
-    assert.equal(steps.at(-1).title, 'Blue Card appointment');
+    assert.equal(steps.at(-1).title, 'EU Blue Card appointment');
     assert.equal(steps.at(-1).detail, 'Starts at 14:00');
     assert.ok(steps.every((step) => step.mode !== 'ride'));
 });

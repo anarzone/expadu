@@ -4,11 +4,9 @@ namespace App\Http\Middleware;
 
 use App\Bureaucracy\BureaucracyPersonas;
 use App\Bureaucracy\OpenTaskCount;
-use App\Home\FeaturedEvent;
+use App\Models\ActiveTrip;
 use App\Models\NotificationPreference;
 use App\Models\UserSetting;
-use App\Services\DisruptionService;
-use App\Services\RhineService;
 use App\Services\UserLocationService;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
@@ -85,7 +83,9 @@ class HandleInertiaRequests extends Middleware
             // The user's live trip (if any) — powers the app-wide "trip in
             // progress" banner and lets Departures reopen the journey. Cheap
             // indexed lookup; present on first paint so the banner never flickers.
-            'activeTrip' => fn () => $request->user()?->activeTrip?->toShared(),
+            // A finished trip isn't shown and is deleted on the way, so where
+            // it started isn't kept past the trip (ActiveTrip::currentFor).
+            'activeTrip' => fn () => ActiveTrip::currentFor($request->user())?->toShared(),
             // User location — only a real, confirmed or recently accepted
             // origin is shared. Never invent a home or city-centre position.
             'userLocation' => function () use ($request) {
@@ -108,9 +108,8 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Right-panel city widgets. Deferred (never block first paint) and shared
-     * so every page that shows the RightPanel — Today, Composer, Places — is
-     * fed, not just the dashboard.
+     * The city's weather and forecast (all Today still reads of the old
+     * right-panel widgets). Deferred (never block first paint) and shared.
      *
      * Once-props: the client keeps them across navigations and tells the server
      * so, which then skips the widgets request until they lapse. They used to
@@ -135,32 +134,6 @@ class HandleInertiaRequests extends Middleware
         return [
             'weather' => $widget(fn () => app(WeatherService::class)->getCurrentWeather()),
             'forecast' => $widget(fn () => app(WeatherService::class)->getForecast()),
-            'rhineLevel' => $widget(fn () => app(RhineService::class)->getCurrentLevel()),
-            'featuredEvent' => $widget(fn () => app(FeaturedEvent::class)->forToday()),
-            'activeDisruptions' => $widget(fn () => $this->activeDisruptions()),
         ];
-    }
-
-    /**
-     * Today's curated events for the right-panel widget.
-     *
-     * @return list<array<string, mixed>>
-     */
-    /**
-     * Active transit/city disruptions for the right-panel widget (top 2).
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function activeDisruptions(): array
-    {
-        return collect(app(DisruptionService::class)->getLineDisruptions())
-            ->map(fn (array $d) => [
-                'title' => $d['title'],
-                'severity' => $d['severity'],
-                'lines' => $d['affected_lines'],
-            ])
-            ->take(2)
-            ->values()
-            ->all();
     }
 }

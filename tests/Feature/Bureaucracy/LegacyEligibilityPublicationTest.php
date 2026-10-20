@@ -9,16 +9,6 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Redis;
 use Inertia\Testing\AssertableInertia as Assert;
 
-test('paperwork does not publish an eligibility estimate from legacy permit dates', function () {
-    $user = User::factory()->onboarded()->create([
-        'situation' => 'non_eu_employee',
-        'profile_attributes' => ['permit_held_since' => now()->subYears(8)->toDateString()],
-    ]);
-
-    $this->actingAs($user)->get('/bureaucracy')->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('bureaucracy')->where('eligibility', null)->has('casePlan'));
-});
-
 test('previously stored legacy eligibility alerts are hidden from page and shared counts', function () {
     $user = User::factory()->onboarded()->create();
     Alert::factory()->create(['user_id' => $user->id, 'subtype' => 'permanent_residency', 'read_at' => null, 'dismissed_at' => null]);

@@ -27,6 +27,10 @@ Schedule::command('transit:check-delays')->everyFifteenMinutes()->withoutOverlap
 // the user is attending (time-critical)
 Schedule::command('events:send-occurrence-reminders')->everyFiveMinutes()->withoutOverlapping(10);
 Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping(60);
+// Plan a trip's "Remind me when to leave": five minutes before the planned way.
+Schedule::command('travel:send-leave-reminders')->everyMinute()->withoutOverlapping(2);
+// Its "We keep watching it": a Change of plan when the planned way changes.
+Schedule::command('travel:watch-planned-trips')->everyTwoMinutes()->withoutOverlapping(5);
 
 // Weather alerts — every 2 hours, only during commute windows (time-critical)
 Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlapping(30);
@@ -38,6 +42,17 @@ Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:
 
 // Transit news feed (read by transit:check-disruptions on its next run)
 Schedule::command('news:scrape')->everyFiveMinutes()->withoutOverlapping()->runInBackground();
+
+// Paperwork v2 upkeep: expire processing permits and interaction state, run
+// queued erasures and reassessments (reassessment reminders feed the bus).
+Schedule::command('bureaucracy:process-erasures')->everyMinute()->withoutOverlapping(5)->onOneServer()->runInBackground();
+Schedule::command('bureaucracy:process-reassessments')->everyMinute()->withoutOverlapping(5)->onOneServer()->runInBackground();
+Schedule::command('bureaucracy:prune-processing')->everyFiveMinutes()->withoutOverlapping()->onOneServer()->runInBackground();
+Schedule::command('bureaucracy:prune-interactions')->everyFiveMinutes()->withoutOverlapping()->onOneServer()->runInBackground();
+Schedule::command('bureaucracy:erase-unguarded-dependents')->hourly()->withoutOverlapping()->onOneServer()->runInBackground();
+// Re-check every card's source quotes against the official pages. A pass keeps a checked card
+// published, a failure withdraws and escalates it; changes ship as a new catalogue release.
+Schedule::command('bureaucracy:verify-sources --deploy')->timezone('Europe/Berlin')->dailyAt('05:15')->withoutOverlapping()->onOneServer()->runInBackground();
 
 // Events
 Schedule::command('events:scrape')->everyThirtyMinutes()->withoutOverlapping()->runInBackground();

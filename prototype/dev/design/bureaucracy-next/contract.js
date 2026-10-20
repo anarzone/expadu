@@ -16,6 +16,7 @@
         health: { id: 'health.coverage', topic: 'health' },
         bank: { id: 'banking.account', topic: 'money' },
         'tax-history': { id: 'tax.identification', topic: 'tax' },
+        tax: { id: 'tax.income_tax_return', topic: 'tax' },
         family: { id: 'residence.family.first', topic: 'residence' },
         integration: { id: 'education.integration_course', topic: 'education' },
     };
@@ -28,6 +29,7 @@
         'core.health_insurance': 'health.coverage',
         'core.bank_account': 'banking.account',
         'core.steuer_id': 'tax.identification',
+        'nee.tax_return': 'tax.income_tax_return',
         'case.family.first_permit.prepare': 'residence.family.first',
         'fam.residence_permits': 'residence.family.first',
         'fam.integration_course': 'education.integration_course',
@@ -36,7 +38,7 @@
     const definitionOf = (r) => unitDefinitions[r.key] || r.definition || null;
     // Catalogue step kinds (process-map.yaml): an "action" step is the
     // submission, so its completion event is submission_recorded.
-    const actionSteps = ['case.bc.first_application.submit'];
+    const actionSteps = ['case.bc.first_application.submit', 'nee.tax_return'];
     // Each process's own short name (schema/process-titles.yaml,
     // processes[].title since f7e6f117). Names only, no figures.
     const processTitles = {
@@ -45,6 +47,7 @@
         'health.coverage': 'Health insurance',
         'residence.blue_card.first': 'EU Blue Card',
         'tax.identification': 'Tax ID',
+        'tax.income_tax_return': 'Income tax return',
         'residence.family.first': 'Joining your family',
         'education.integration_course': 'Integration course',
     };

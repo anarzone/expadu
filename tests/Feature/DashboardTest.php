@@ -25,7 +25,7 @@ test('authenticated new users enter Today without a questionnaire', function () 
     expect($user->fresh()->onboarded_at)->toBeNull();
 });
 
-test('dashboard defers tiles and weather', function () {
+test('dashboard defers the day and weather', function () {
     $user = User::factory()->onboarded()->create();
     $this->actingAs($user);
 
@@ -33,10 +33,10 @@ test('dashboard defers tiles and weather', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('dashboard')
-        ->missing('tiles')
+        ->missing('day')
         ->missing('weather')
         ->loadDeferredProps(fn ($reload) => $reload
-            ->has('tiles')
+            ->has('day.items')
             ->has('weather')
         )
     );

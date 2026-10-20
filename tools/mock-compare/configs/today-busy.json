@@ -1,0 +1,184 @@
+{
+    "name": "today-busy",
+    "seed": "php artisan mock:sample-day busy --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=busy",
+        "wait": ".day-panel"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "Your day",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "ignore": ["y", "w", "h", "x"],
+            "contentDiffers": true
+        },
+        {
+            "name": "date",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["x", "w", "y", "h"]
+        },
+        {
+            "name": "plan time",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "ignore": ["y"]
+        },
+        {
+            "name": "plan title",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "ignore": ["y"]
+        },
+        {
+            "name": "plan place",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
+            "ignore": ["y"],
+            "widths": [360, 390, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan place @768",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
+            "ignore": ["y"],
+            "widths": [768],
+            "pixels": false
+        },
+        {
+            "name": "plan status",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
+            "ignore": ["y"],
+            "widths": [360, 390, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan status @768",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
+            "ignore": ["y"],
+            "widths": [768],
+            "pixels": false
+        },
+        {
+            "name": "plan options",
+            "mock": ".agenda-item .appointment-options summary",
+            "app": ".agenda-item button.appointment-options",
+            "ignore": ["y"]
+        },
+        {
+            "name": "second plan time",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "index": 1,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "second plan title",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "index": 1,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "second plan place",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
+            "index": 1,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "second plan status",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
+            "index": 1,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "third plan time",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "index": 2,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "third plan title",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "index": 2,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "third plan place",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
+            "index": 2,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "third plan status",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
+            "index": 2,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "first trip between plans",
+            "mock": ".plan-link",
+            "app": ".plan-link",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": ["y", "h"]
+        },
+        {
+            "name": "first trip icon",
+            "mock": ".plan-link .plan-link-icon",
+            "app": ".plan-link .plan-link-icon",
+            "index": 0,
+            "ignore": ["y", "background-color"],
+            "contentDiffers": true
+        },
+        {
+            "name": "second trip between plans",
+            "mock": ".plan-link",
+            "app": ".plan-link",
+            "index": 1,
+            "contentDiffers": true,
+            "ignore": ["y", "h"]
+        },
+        {
+            "name": "second trip icon",
+            "mock": ".plan-link .plan-link-icon",
+            "app": ".plan-link .plan-link-icon",
+            "index": 1,
+            "ignore": ["y", "background-color"],
+            "contentDiffers": true
+        }
+    ],
+    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land.",
+    "contentNote": "The mock's sample words are longer ('Wed 30 Sept · Sample day · 3 plans', 'Mülheim → Ehrenfeld · sample estimate') and wrap, so heading and trip rows differ in w/h; the trips between plans are live travel times (here 34 min, only 26 spare: tight), so their icon colour follows that status. Pairs below them sit at other sub-pixel offsets, so their pixels are not compared.",
+    "subpixelNote": "At 768 the missing deadline strip (76.8 px) leaves the first plan's place and status a fraction of a pixel off, so their text rasterises differently; boxes and styles are still exact."
+}

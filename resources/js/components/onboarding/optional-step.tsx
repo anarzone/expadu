@@ -18,7 +18,7 @@ const germanLevels = [
  * Residence details used to sit on the branch question's screen, which pushed
  * it to eight questions and 2.5 viewports. They belong here instead: none of
  * them blocks a feature, and every one of them can be answered later — the
- * registered facts through PendingAnswers on the Bureaucracy page, the rest
+ * registered facts through PendingAnswers on the Paperwork page, the rest
  * through the task card that needs them.
  *
  * They share a screen with interests so there is exactly one thing to skip,
