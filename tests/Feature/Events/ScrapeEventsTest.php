@@ -266,3 +266,40 @@ test('a hidden copy is the event again once no live copy is left', function () {
     expect($hidden->fresh()->status)->toBe('active')
         ->and(Event::where('title', 'Comedy night')->count())->toBe(1);
 });
+
+test('after a complete scrape an event koeln.de stopped listing is set aside, and comes back when listed again', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDays(3)->setTime(20, 0);
+    $gone = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'gone', 'title' => 'Cancelled show',
+        'starts_at' => $start, 'status' => 'active', 'verified_at' => now()->subDays(3)]);
+    $recent = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'recent', 'title' => 'Missed once',
+        'starts_at' => $start, 'status' => 'active', 'verified_at' => now()->subHours(6)]);
+    Http::fake(['www.koeln.de/*' => Http::sequence()
+        ->push(['total_pages' => 1, 'events' => [koelnEvent('listed', 'Listed show', $start->toDateTimeString())]])
+        ->push(['total_pages' => 1, 'events' => [koelnEvent('gone', 'Cancelled show', $start->toDateTimeString())]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($gone->fresh()->status)->toBe('unlisted')
+        ->and($recent->fresh()->status)->toBe('active') // not two days yet
+        ->and(Event::where('source_uid', 'listed')->value('status'))->toBe('active');
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($gone->fresh()->status)->toBe('active');
+});
+
+test('a scrape with a failed page sets nothing aside', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $stale = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'stale', 'title' => 'On page two',
+        'starts_at' => now()->addDays(5)->setTime(20, 0), 'status' => 'active', 'verified_at' => now()->subDays(3)]);
+    Http::fake(['www.koeln.de/*' => Http::sequence()
+        ->push(['total_pages' => 2, 'events' => [koelnEvent('first', 'Page one show', now()->addDay()->toDateTimeString())]])
+        ->push('', 500)]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($stale->fresh()->status)->toBe('active');
+});
