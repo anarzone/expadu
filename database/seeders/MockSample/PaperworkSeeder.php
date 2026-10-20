@@ -36,10 +36,13 @@ use RuntimeException;
  *  - Bank account: suggested, not started.
  *
  * Everything goes through the v2 commands, at the mock's moment, so the plan is the engine's own.
- * It replaces the E2E account's Paperwork record. Pair it with the `mock_clock` cookie
+ * It needs nothing else run first: it imports this checkout's catalogue, publishes its checked
+ * cards as the browser tests do, compiles the release, then replaces the account's Paperwork
+ * record. The account must exist (E2ETestUserSeeder). Pair it with the `mock_clock` cookie
  * (App\Support\MockClock):
  *
- *   php artisan db:seed --class='Database\Seeders\MockSample\PaperworkSeeder'
+ *   E2E_EMAIL=you@expadu.test php artisan db:seed --class=E2ETestUserSeeder
+ *   E2E_EMAIL=you@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\PaperworkSeeder'
  *
  * IMPORTANT: never registered in DatabaseSeeder; it refuses to run outside local.
  */
@@ -84,6 +87,7 @@ class PaperworkSeeder extends Seeder
         CarbonImmutable::setTestNow($moment);
 
         try {
+            $this->artisan('bureaucracy:import-tasks');
             $this->publish();
             $this->seed($user);
         } finally {
@@ -106,7 +110,15 @@ class PaperworkSeeder extends Seeder
                     $recorder->apply($task);
                 }
             });
-        Artisan::call('bureaucracy:compile-catalogue', ['--deploy' => true]);
+        $this->artisan('bureaucracy:compile-catalogue', ['--deploy' => true]);
+    }
+
+    /** @param  array<string, mixed>  $options */
+    private function artisan(string $command, array $options = []): void
+    {
+        if (Artisan::call($command, $options) !== 0) {
+            throw new RuntimeException("{$command} failed: ".trim(Artisan::output()));
+        }
     }
 
     private function seed(User $user): void
@@ -158,7 +170,11 @@ class PaperworkSeeder extends Seeder
             ->first(fn (array $process) => $process['id'] === null && $process['definition_id'] === $definition);
 
         if ($proposal === null) {
-            throw new RuntimeException("The plan suggests no {$definition} process for the sample answers.");
+            $offered = collect($this->plan($user, $person)['processes'] ?? [])->pluck('definition_id')->implode(', ') ?: 'nothing';
+            $published = Task::query()->authoritative()->count();
+
+            throw new RuntimeException("The plan suggests no {$definition} process for the sample answers "
+                ."(it offers: {$offered}; {$published} cards are published).");
         }
 
         $receipt = app(StartProcess::class)->execute($user, $person->fresh(), self::JURISDICTION,
