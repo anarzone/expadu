@@ -268,7 +268,7 @@ tasks:
     is_published: false
     description: |
       Register the spouse's Cologne address within two weeks after moving into the
-      dwelling. Bring the passport and the landlord's Wohnungsgeberbestätigung; the
+      dwelling. Bring the passport and the landlord's Wohnungsgeberbescheinigung; the
       Cologne page lists the additional documents required for people arriving from
       abroad. This deadline is tied to moving into the dwelling, not visa issuance.
     phase: arrival
@@ -284,10 +284,30 @@ tasks:
       - https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-20.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§17 BMG', url: 'https://www.gesetze-im-internet.de/bmg/__17.html'}
       - {kind: implementation, label: 'Stadt Köln · Anmeldung', url: 'https://www.stadt-koeln.de/service/produkt/anmeldung-ihres-wohnsitzes-1'}
+    claims:
+      - id: two-weeks
+        states: within two weeks after moving into the dwelling
+        source: '§17 BMG'
+        quote: Wer eine Wohnung bezieht, hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden.
+      - id: deadline
+        covers: deadline
+        source: '§17 BMG'
+        quote: Wer eine Wohnung bezieht, hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden.
+      - id: passport
+        states: Bring the passport
+        source: 'Stadt Köln · Anmeldung'
+        quote: Nationalpass und gegebenenfalls weitere aufenthaltsrechtliche Dokumente
+      - id: landlord-confirmation
+        states: the landlord's Wohnungsgeberbescheinigung
+        source: 'Stadt Köln · Anmeldung'
+        quote: 'Wenn Sie zur Miete wohnen: Wohnungsgeberbescheinigung über den Einzug'
+      - id: from-abroad
+        states: the additional documents required for people arriving from abroad
+        source: 'Stadt Köln · Anmeldung'
+        quote: 'Wenn Sie aus dem Ausland zuziehen und verheiratet oder verpartnert sind: Eheurkunde oder Lebenspartnerschaftsurkunde'
