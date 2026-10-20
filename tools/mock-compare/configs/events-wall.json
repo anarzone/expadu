@@ -134,31 +134,41 @@
             "name": "first poster tape",
             "mock": ".st-slot .pp .pp-front .pp-tape",
             "app": ".st-slot .pp .pp-front .pp-tape",
-            "index": 0
+            "index": 0,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "first poster title",
             "mock": ".st-slot .pp .pp-front .pp-title",
             "app": ".st-slot .pp .pp-front .pp-title",
-            "index": 0
+            "index": 0,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "first poster time",
             "mock": ".st-slot .pp .pp-front .pp-time",
             "app": ".st-slot .pp .pp-front .pp-time",
-            "index": 0
+            "index": 0,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "first poster meta",
             "mock": ".st-slot .pp .pp-front .pp-meta",
             "app": ".st-slot .pp .pp-front .pp-meta",
-            "index": 0
+            "index": 0,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "first poster price",
             "mock": ".st-slot .pp .pp-front .pp-price",
             "app": ".st-slot .pp .pp-front .pp-price",
-            "index": 0
+            "index": 0,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "first poster save",
@@ -180,31 +190,41 @@
             "name": "second poster tape",
             "mock": ".st-slot .pp .pp-front .pp-tape",
             "app": ".st-slot .pp .pp-front .pp-tape",
-            "index": 1
+            "index": 1,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "second poster title",
             "mock": ".st-slot .pp .pp-front .pp-title",
             "app": ".st-slot .pp .pp-front .pp-title",
-            "index": 1
+            "index": 1,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "second poster time",
             "mock": ".st-slot .pp .pp-front .pp-time",
             "app": ".st-slot .pp .pp-front .pp-time",
-            "index": 1
+            "index": 1,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "second poster meta",
             "mock": ".st-slot .pp .pp-front .pp-meta",
             "app": ".st-slot .pp .pp-front .pp-meta",
-            "index": 1
+            "index": 1,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "second poster price",
             "mock": ".st-slot .pp .pp-front .pp-price",
             "app": ".st-slot .pp .pp-front .pp-price",
-            "index": 1
+            "index": 1,
+            "pixelThreshold": 0.03,
+            "reason": "A part of a tilted (1.4° or -1.1°), zoomed poster, its tape tilted again (-3°): with its box and computed styles identical to a thousandth of a pixel, its edges still anti-alias a few pixels apart (at most 2.9% of the part). Up to 3% of its pixels may differ; a changed word or shape moves far more than that."
         },
         {
             "name": "second poster save",
@@ -223,7 +243,5 @@
             "reason": "Its rounded corners show the street behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its words, box and styles are compared."
         }
     ],
-    "screenshotStyleReason": "The street's rain falls across the posters, the column and the pager; each side draws it its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky), so it is hidden only while these elements are shot, as is each side's floating Composer button.",
-    "pixelThreshold": 0.03,
-    "pixelThresholdReason": "Posters are tilted (1.4° or -1.1°) and zoomed, and their tapes tilted again (-3°): with geometry and styles identical to a thousandth of a pixel, their edges still anti-alias a few pixels apart (at most 2.9% of a part). Up to 3% of a part's pixels may differ; a changed word or shape moves far more than that."
+    "screenshotStyleReason": "The street's rain falls across the posters, the column and the pager; each side draws it its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky), so it is hidden only while these elements are shot, as is each side's floating Composer button."
 }
