@@ -17,7 +17,8 @@ export type EventFilters = {
     free: boolean;
     saved: boolean;
     sort: EventSort;
-    /** The starting point's name, as typed or chosen. */
+    /** The starting point, only as a district, stop or venue's own name or
+        a saved place's key (home, work); never a typed address. */
     from: string | null;
 };
 

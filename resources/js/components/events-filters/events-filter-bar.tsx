@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import GeocodeController from '@/actions/App/Http/Controllers/Api/GeocodeController';
+import EventStartingPointController from '@/actions/App/Http/Controllers/Api/EventStartingPointController';
 import { api } from '@/components/composer/types';
 import {
     AnchoredMenu,
@@ -66,6 +66,10 @@ const chevron = (
 export type TravelMode = 'transit' | 'walk' | 'bike';
 export type StartingPoint = {
     name: string;
+    /** What the URL may carry: a district, stop or venue's own name, or a
+        saved place's key (home, work). Null for anything else, a typed
+        address above all, which stays in the page's state. */
+    key: string | null;
     /** Resolved coordinates; null when the place isn't recognised. */
     point: { lat: number; lng: number } | null;
 };
@@ -92,6 +96,7 @@ export function EventsFilterBar({
     categories,
     areas,
     from,
+    savedPlaces,
     mode,
     onFrom,
     onMode,
@@ -103,6 +108,8 @@ export function EventsFilterBar({
     categories: Category[];
     areas: string[];
     from: StartingPoint | null;
+    /** The person's own Home and Work, when saved. */
+    savedPlaces: StartingPoint[];
     mode: TravelMode;
     onFrom: (from: StartingPoint | null) => void;
     onMode: (mode: TravelMode) => void;
@@ -212,6 +219,7 @@ export function EventsFilterBar({
             {({ close }) => (
                 <StartingPointForm
                     from={from}
+                    savedPlaces={savedPlaces}
                     mode={mode}
                     onFrom={onFrom}
                     onMode={onMode}
@@ -494,24 +502,45 @@ type Suggestion = {
     street: string | null;
     lat: number;
     lng: number;
+    key: string | null;
+};
+
+const SAVED_ICONS: Record<string, IconName> = {
+    home: 'home',
+    work: 'briefcase',
 };
 
 /** Where distances are measured from, and how you travel. */
 function StartingPointForm({
     from,
+    savedPlaces,
     mode,
     onFrom,
     onMode,
     onDone,
 }: {
     from: StartingPoint | null;
+    savedPlaces: StartingPoint[];
     mode: TravelMode;
     onFrom: (from: StartingPoint | null) => void;
     onMode: (mode: TravelMode) => void;
     onDone: () => void;
 }) {
     const [text, setText] = useState(from?.name ?? '');
-    const [found, setFound] = useState<Suggestion[]>([]);
+    // The suggestions, with the text they were found for.
+    const [results, setResults] = useState<{ q: string; rows: Suggestion[] }>({
+        q: '',
+        rows: [],
+    });
+    const typed = text.trim();
+    const typing = typed !== '' && typed !== from?.name;
+    const found = results.q === typed ? results.rows : [];
+
+    // Suggestions come by POST, so what's typed stays out of URLs and logs.
+    const suggest = (q: string, signal?: AbortSignal) =>
+        api<Suggestion[]>(EventStartingPointController.url(), { q }, signal)
+            .then((rows) => rows.slice(0, 5))
+            .catch(() => [] as Suggestion[]);
 
     useEffect(() => {
         const q = text.trim();
@@ -522,13 +551,11 @@ function StartingPointForm({
 
         const controller = new AbortController();
         const timer = window.setTimeout(() => {
-            api<Suggestion[]>(
-                GeocodeController.url({ query: { q } }),
-                undefined,
-                controller.signal,
-            )
-                .then((rows) => setFound(rows.slice(0, 5)))
-                .catch(() => setFound([]));
+            suggest(q, controller.signal).then((rows) => {
+                if (!controller.signal.aborted) {
+                    setResults({ q, rows });
+                }
+            });
         }, 250);
 
         return () => {
@@ -538,9 +565,40 @@ function StartingPointForm({
     }, [text, from?.name]);
 
     const choose = (s: Suggestion) => {
-        onFrom({ name: s.name, point: { lat: s.lat, lng: s.lng } });
+        onFrom({
+            name: s.name,
+            key: s.key,
+            point: { lat: s.lat, lng: s.lng },
+        });
         setText(s.name);
-        setFound([]);
+    };
+
+    const pick = (place: StartingPoint) => {
+        onFrom(place);
+        setText(place.name);
+    };
+
+    // Done takes the first suggestion, waiting for it if it's on its way;
+    // a place nothing matches is kept by name, with no distances.
+    const submit = async () => {
+        if (!typed) {
+            onFrom(null);
+        } else if (typing) {
+            const rows =
+                results.q === typed
+                    ? results.rows
+                    : typed.length >= 2
+                      ? await suggest(typed)
+                      : [];
+
+            if (rows[0]) {
+                choose(rows[0]);
+            } else {
+                onFrom({ name: typed, key: null, point: null });
+            }
+        }
+
+        onDone();
     };
 
     return (
@@ -548,14 +606,7 @@ function StartingPointForm({
             className="evf-travel-form"
             onSubmit={(e) => {
                 e.preventDefault();
-
-                if (found[0] && text.trim() && text.trim() !== from?.name) {
-                    choose(found[0]);
-                } else if (!text.trim()) {
-                    onFrom(null);
-                }
-
-                onDone();
+                void submit();
             }}
         >
             <label>
@@ -569,7 +620,7 @@ function StartingPointForm({
                     onChange={(e) => setText(e.target.value)}
                 />
             </label>
-            {found.length && text.trim() !== from?.name ? (
+            {found.length && typing ? (
                 <MenuOptions>
                     {found.map((s) => (
                         <MenuOption
@@ -580,6 +631,20 @@ function StartingPointForm({
                             onSelect={() => choose(s)}
                         >
                             {s.name}
+                        </MenuOption>
+                    ))}
+                </MenuOptions>
+            ) : savedPlaces.length && !typing ? (
+                <MenuOptions>
+                    {savedPlaces.map((p) => (
+                        <MenuOption
+                            key={p.key}
+                            icon={SAVED_ICONS[p.key ?? ''] ?? 'pin'}
+                            keepOpen
+                            selected={from?.key === p.key}
+                            onSelect={() => pick(p)}
+                        >
+                            {p.name}
                         </MenuOption>
                     ))}
                 </MenuOptions>
