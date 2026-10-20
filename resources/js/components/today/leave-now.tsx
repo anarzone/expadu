@@ -52,9 +52,6 @@ export function LeaveNow({
                 id="today-trip"
                 // The plan it's for is right above it.
                 compact
-                // Timetable-only times say so in the label row, so the
-                // ride tile keeps its boarding stop.
-                scheduledAs="chip"
                 going={going}
                 onStart={start}
                 confirm={starter.confirm}
