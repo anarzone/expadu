@@ -38,8 +38,9 @@ The report lands in `storage/mock-compare/<name>/report.md` with one image per p
 (mock · app · diff). Exit code 1 means something differs.
 
 Sign-in uses the E2E account (`MOCK_COMPARE_EMAIL` / `MOCK_COMPARE_PASSWORD` override the config) and
-the session is cached in `storage/mock-compare/.session-<port>.json`, so repeated runs don't trip the
-login rate limit.
+the session is cached per port and account in `storage/mock-compare/.session-<port>-<account>.json`, so
+repeated runs don't trip the login rate limit. Sign-in sends the side's `cookies` too, so a page loaded
+while signing in already has the mock's clock; the cached session keeps none of them.
 
 ## Config
 
@@ -119,7 +120,7 @@ On your machine (`APP_ENV=local` only):
 - **Your own account:** sessions share the local database, so compare as your own account rather
   than the E2E one: `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class=E2ETestUserSeeder`, seed
   that account, run with `MOCK_COMPARE_EMAIL=<you>@expadu.test`, and delete
-  `storage/mock-compare/.session-<port>.json` once so it signs in again.
+  `storage/mock-compare/.session-<port>-<account>.json` once so it signs in again.
 - **Paperwork's sample record:** `E2E_EMAIL=<you>@expadu.test php artisan db:seed
 --class='Database\Seeders\MockSample\PaperworkSeeder'` (after E2ETestUserSeeder for that account).
   It imports this checkout's catalogue, publishes its checked cards as the browser tests do and
