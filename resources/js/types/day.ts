@@ -63,6 +63,20 @@ export type DayItem = {
     available: boolean;
     /** A Paperwork appointment's process (its checklist: "What to bring"). */
     process_id: number | null;
+    /** The way picked for it in Plan a trip ("Add to plan"), when there is one. */
+    planned?: PlannedTrip | null;
+};
+
+export type PlannedTrip = {
+    id: number;
+    target_id: string;
+    depart_at: string;
+    depart_time: string;
+    arrive_time: string;
+    ride: { line: string | null; mode: string; time: string } | null;
+    remind: boolean;
+    /** When "Remind me when to leave" goes (five minutes before). */
+    remind_at: string;
 };
 
 /** The trip between two consecutive plans. `not_checked` is never a guess. */
@@ -92,6 +106,7 @@ export type NextTripStatus = 'fits' | 'tight' | 'late' | 'unavailable';
 export type NextTripReason =
     | 'margin_met'
     | 'earlier_for_margin'
+    | 'planned'
     | 'already_there'
     | 'only_tight'
     | 'no_connection_in_time'
@@ -120,6 +135,8 @@ export type TripOption = {
     } | null;
     /** From the legs' realtime flags: live times, or the timetable's. */
     time_basis: 'live' | 'scheduled';
+    /** The way the person added to their plan ("your 13:24"). */
+    in_plan?: boolean;
 };
 
 /** When to leave for the next thing (App\Day\NextTrip). */

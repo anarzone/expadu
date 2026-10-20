@@ -86,7 +86,10 @@ class PlanLinks
         if ($this->left($deadline) < self::MIN_CALL_SECONDS) {
             return [...$link, 'status' => 'not_checked', 'reason' => 'not_checked'];
         }
-        $result = $this->routes->withTimeBudget($this->left($deadline))->plan($a, $b, $to->startAt, 6, true);
+        // Leave when the first plan ends: the earliest arrival is the most
+        // time there is to spare. (An arrive-by search answers with the rides
+        // arriving just before the start, which would read every gap as tight.)
+        $result = $this->routes->withTimeBudget($this->left($deadline))->plan($a, $b, $from->endAt);
         if ($result->source === 'degraded') {
             return [...$link, 'status' => 'not_checked', 'reason' => 'routing_unavailable'];
         }

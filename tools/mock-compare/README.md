@@ -129,4 +129,6 @@ On your machine (`APP_ENV=local` only):
   record, not a plan of `mock:sample-day`'s.
 - **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
 --seed` (create it with the postgis and vector extensions first), and start the compare app server
-  with the same `DB_DATABASE`. Never `migrate:fresh` the shared one.
+  with the same `DB_DATABASE`. Never `migrate:fresh` the shared one. Put `DB_DATABASE` (and your
+  own `REDIS_PREFIX`) in the worktree's `.env`: a variable set on the command line doesn't reach
+  Laravel under `php -S` on every setup, so the server can quietly read the shared database.

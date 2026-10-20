@@ -1,10 +1,10 @@
 <?php
 
-use App\Bureaucracy\Cases\AnswerCaseQuestion;
 use App\Bureaucracy\Cases\CaseMatcher;
 use App\Bureaucracy\Cases\QuestionSelector;
 use App\Enums\BureaucracyCoverageState;
 use App\Models\BureaucracyCase;
+use App\Models\BureaucracyCaseFact;
 use App\Models\Task;
 use App\Models\User;
 
@@ -26,7 +26,11 @@ test('an unknown family citizenship condition asks a real question instead of lo
 
     $question = app(QuestionSelector::class)->select($case, $match);
     expect($question->fact_key)->toBe('sponsor');
-    app(AnswerCaseQuestion::class)->answer($user, $question, $answer);
+    // The answer, confirmed as the v2 question sessions record it.
+    BureaucracyCaseFact::factory()->for($case, 'case')->create([
+        'key' => 'sponsor', 'value' => $answer,
+        'state' => 'confirmed', 'confirmed_at' => now(), 'reconfirm_at' => now()->addYear(),
+    ]);
 
     $after = app(CaseMatcher::class)->match($case);
     expect($after->matchedRuleKeys)->toBe($applies ? ['fixture.family-citizenship'] : [])

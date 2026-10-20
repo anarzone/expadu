@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Composer\TravelEstimator;
 use App\Http\Controllers\Controller;
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
@@ -25,6 +26,9 @@ use Illuminate\Support\Str;
  */
 class JourneySuggestController extends Controller
 {
+    /** Places within this reach of you (or the city) come before same-named ones far away. */
+    private const NEARBY_KM = 50;
+
     public function __invoke(Request $request, RouteService $routes): JsonResponse
     {
         $validated = $request->validate([
@@ -62,12 +66,20 @@ class JourneySuggestController extends Controller
 
         $matches = collect($routes->geocode($query, $bias));
 
+        // The geocoder ranks an exact name anywhere above a nearby one
+        // ("Wiener Platz" in München before Köln's): what's within reach
+        // comes first, the geocoder's order kept within each.
+        $distance = app(TravelEstimator::class);
+        $far = fn (Place $place) => $distance->haversineKm($bias->lat, $bias->lng, $place->point->lat, $place->point->lng) > self::NEARBY_KM ? 1 : 0;
+
         if ($useSearchDefault) {
             $aliases = collect([$searchDefault['city'], ...$searchDefault['aliases']])
                 ->filter(fn ($alias) => is_string($alias) && trim($alias) !== '')
                 ->map(fn (string $alias) => mb_strtolower(trim($alias)))
                 ->all();
-            $matches = $matches->sortBy(fn (Place $place) => Str::contains(mb_strtolower($place->name.' '.$place->area), $aliases) ? 0 : 1);
+            $matches = $matches->sortBy(fn (Place $place) => [$far($place), Str::contains(mb_strtolower($place->name.' '.$place->area), $aliases) ? 0 : 1]);
+        } else {
+            $matches = $matches->sortBy(fn (Place $place) => $far($place));
         }
 
         $hits = $matches

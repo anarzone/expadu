@@ -2,22 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\StoredJourney;
 use App\Models\ActiveTrip;
 use App\Transit\DepartureTime;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StartTripRequest extends FormRequest
 {
-    /** The modes a journey leg can have (as the App\Transit adapters map them). */
-    public const MODES = ['walk', 'bike', 'bus', 'tram', 'subway', 'rail', 'ferry'];
-
-    /** The stored journey stays a journey: big enough for a long multi-leg trip with its shapes. */
-    private const MAX_JOURNEY_BYTES = 262144;
-
-    private const MAX_STOPS_PER_LEG = 200;
-
     private ?ActiveTrip $resume = null;
 
     private ?ActiveTrip $other = null;
@@ -30,17 +22,7 @@ class StartTripRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'journey' => ['required', 'array'],
-            'journey.depart_at' => ['required', 'string', 'max:40'],
-            'journey.arrive_at' => ['required', 'string', 'max:40'],
-            'journey.legs' => ['required', 'array', 'min:1', 'max:40'],
-            'journey.legs.*' => ['required', 'array'],
-            'journey.legs.*.mode' => ['required', 'string', Rule::in(self::MODES)],
-            'journey.legs.*.intermediate_stops' => ['sometimes', 'nullable', 'array', 'max:'.self::MAX_STOPS_PER_LEG],
-            'journey.legs.*.polyline' => ['sometimes', 'nullable', 'string', 'max:100000'],
-            'journey.legs.*.depart_at' => ['required', 'string', 'max:40'],
-            'journey.legs.*.arrive_at' => ['required', 'string', 'max:40'],
-            'journey.legs.*.to.name' => ['sometimes', 'nullable', 'string', 'max:300'],
+            ...StoredJourney::rules(),
             'destination' => ['required', 'array'],
             'destination.name' => ['required', 'string', 'max:200'],
             'destination.lat' => ['required', 'numeric', 'between:-90,90'],
@@ -63,7 +45,7 @@ class StartTripRequest extends FormRequest
                 return;
             }
             $journey = $this->input('journey');
-            if (strlen((string) json_encode($journey)) > self::MAX_JOURNEY_BYTES) {
+            if (strlen((string) json_encode($journey)) > StoredJourney::MAX_BYTES) {
                 $validator->errors()->add('journey', 'This route is too large to start. Find a fresh route.');
 
                 return;
