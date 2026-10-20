@@ -61,6 +61,8 @@ export type DayItem = {
     /** Only confirmed Composer plans take Mark as done. */
     completable: boolean;
     available: boolean;
+    /** A Paperwork appointment's process (its checklist: "What to bring"). */
+    process_id: number | null;
 };
 
 /** The trip between two consecutive plans. `not_checked` is never a guess. */

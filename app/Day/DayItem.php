@@ -34,6 +34,8 @@ final readonly class DayItem
         public bool $available = true,
         public ?string $category = null,
         public ?string $subtitle = null,
+        // A Paperwork appointment's process (its checklist: "What to bring").
+        public ?int $processId = null,
     ) {}
 
     public function routable(): bool
@@ -104,6 +106,7 @@ final readonly class DayItem
             'completed_at' => $this->completedAt?->setTimezone($tz)->toIso8601String(),
             'completable' => $this->completable,
             'available' => $this->available,
+            'process_id' => $this->processId,
         ];
     }
 }
