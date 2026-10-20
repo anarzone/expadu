@@ -610,7 +610,7 @@
                     "click": ".empty-day a.plain-button"
                 },
                 {
-                    "wait": 2000
+                    "wait": 5000
                 }
             ]
         },
@@ -683,7 +683,7 @@
                 }
             ],
             "pixels": false,
-            "ignoreReason": "Holds the account's conversations (see history section)."
+            "ignoreReason": "Below the list, the mock's note describes the prototype itself (\"Sample responses · history stays in this browser\"); the app says where history really is, and offers Delete conversation history (a privacy control the mock leaves out; sent to the design session). The title, intro and conversation row above match pixel for pixel."
         },
         {
             "name": "history title",
@@ -700,9 +700,7 @@
             "name": "history section",
             "mock": ".history-section",
             "app": ".history-section",
-            "index": 0,
-            "contentDiffers": true,
-            "ignoreReason": "The account's newest conversation, started on the day it was seeded; the mock's is from its sample day."
+            "index": 0
         }
     ]
 }

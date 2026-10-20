@@ -8,6 +8,7 @@ use App\Models\ComposerWorkspace;
 use App\Models\Event;
 use App\Models\Spot;
 use App\Models\User;
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -20,8 +21,9 @@ use Illuminate\Support\Facades\DB;
  *  - tonight's two sample events, Street culture night (18:30, Rheinauhafen) and Cinema
  *    under the stars (20:00, Stadtgarten), both labelled as sample programme;
  *  - a pharmacy beside Wiener Platz, near the sample's 14:00 appointment;
- *  - a new conversation on that account, so Composer opens on its welcome as the mock
- *    does (earlier conversations stay in History, plans stay as they are).
+ *  - that account's conversation history, cleared to one new conversation started at the
+ *    sample's moment, so Composer opens on its welcome and History lists it as the mock
+ *    does ("New conversation · 30 Sept · 0 messages"); plans stay as they are.
  *
  * The person's own day comes from MockSample\PaperworkSeeder (the appointment) and
  * `mock:sample-day` (plans). These rows are fictional and exist on this machine only;
@@ -76,9 +78,20 @@ class ComposerSeeder extends Seeder
             'lat' => 50.96118, 'lng' => 7.00502, 'is_active' => true, 'is_recommendable' => false,
         ]);
 
-        $revision = (int) ComposerWorkspace::query()->where('user_id', $organiser->id)->value('revision');
-        app(WorkspaceStore::class)->command($organiser, ['revision' => $revision, 'action' => 'fresh']);
+        // The mock's history is one conversation from its sample day; on the sample clock,
+        // so it is dated 30 September (just before the mock's 13:10).
+        $moment = CarbonImmutable::parse('2026-09-30 13:00', 'Europe/Berlin');
+        Carbon::setTestNow($moment);
+        CarbonImmutable::setTestNow($moment);
 
-        $this->command?->info('The Composer sample listings are in place (2 events tonight, 1 pharmacy), on a new conversation.');
+        try {
+            $revision = (int) ComposerWorkspace::query()->where('user_id', $organiser->id)->value('revision');
+            app(WorkspaceStore::class)->command($organiser, ['revision' => $revision, 'action' => 'delete_history']);
+        } finally {
+            Carbon::setTestNow();
+            CarbonImmutable::setTestNow();
+        }
+
+        $this->command?->info('The Composer sample listings are in place (2 events tonight, 1 pharmacy), with one new conversation.');
     }
 }
