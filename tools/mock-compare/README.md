@@ -85,7 +85,9 @@ while signing in already has the mock's clock; the cached session keeps none of 
 
 Per pair: `index` (or `mockIndex` / `appIndex`), `widths`, `props` (replaces the default list),
 `ignore` (props or `x`/`y`/`w`/`h` to skip, each with a reason in the PR), `pixels: false`,
-`contentDiffers: true`, `before` (steps run on both pages just before this pair, and left done for
+`contentDiffers: true`, `pixelThreshold` (the share of differing pixels this pair may have, e.g. `0.03`
+for a tilted, zoomed part that anti-aliases differently while its box and styles match; the config-wide
+`pixelThreshold` applies otherwise, default 0), `before` (steps run on both pages just before this pair, and left done for
 the pairs after it, so open states go last; `mockBefore` / `appBefore` when the selectors differ).
 Per side: `wait`, `init` (scripts run before the page), `before` (`[{ "click": "selector" },
 { "key": "Escape" }, { "wait": 300 }]` to open a menu or sheet first), `cookies` (`{ "name": "value" }`
