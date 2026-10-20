@@ -138,15 +138,36 @@ test('media capture failures never discard a koeln.de event', function () {
         ->and(MediaAsset::query()->count())->toBe(0);
 });
 
-test('distinct source ids with the same title and date are not globally deduplicated', function () {
+test('the same title and time at different venues stay two events', function () {
     User::factory()->create(['email' => 'system@expadu.com']);
     Queue::fake();
     $start = now()->addDay()->toDateTimeString();
+    $elsewhere = koelnEvent('distinct-2', 'Shared title', $start);
+    $elsewhere['venue'] = ['venue' => 'Gloria', 'address' => 'Apostelnstr. 11'];
     Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [
-        koelnEvent('distinct-1', 'Shared title', $start), koelnEvent('distinct-2', 'Shared title', $start),
+        koelnEvent('distinct-1', 'Shared title', $start), $elsewhere,
     ]])]);
     $this->artisan('events:scrape')->assertSuccessful();
     expect(Event::where('title', 'Shared title')->count())->toBe(2);
+});
+
+test('a re-created koeln.de post is the same event, not a second copy', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDay()->toDateTimeString();
+    Http::fake(['www.koeln.de/*' => Http::sequence()
+        ->push(['total_pages' => 1, 'events' => [koelnEvent('old-post', 'Comedy night', $start)]])
+        // koeln.de re-created the post under a new id and page, and briefly
+        // listed a venue-less copy next to it.
+        ->push(['total_pages' => 1, 'events' => [
+            ['url' => 'https://www.koeln.de/event/comedy-night-2/'] + koelnEvent('new-post', 'Comedy night', $start),
+            ['venue' => ['venue' => 'Siehe Beschreibung']] + koelnEvent('venue-less', 'Comedy night', $start),
+        ]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect(Event::where('title', 'Comedy night')->where('status', 'active')->pluck('source_uid')->all())->toBe(['new-post']);
 });
 
 test('the scraper refreshes changed koeln.de records and queues a new enrichment', function () {
@@ -206,4 +227,42 @@ test('the scraper does not re-enrich an unchanged koeln.de record', function () 
     $this->artisan('events:scrape')->assertSuccessful();
 
     Queue::assertNothingPushed();
+});
+
+test('a listing for a hidden copy updates the live copy without breaking the run', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDay()->setTime(20, 0);
+    $hidden = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'hidden-copy', 'title' => 'Comedy night',
+        'starts_at' => $start, 'location_name' => 'Bürgerhaus Stollwerck', 'status' => 'hidden']);
+    $kept = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'kept-copy', 'title' => 'Comedy night',
+        'starts_at' => $start, 'location_name' => 'Bürgerhaus Stollwerck', 'status' => 'active']);
+    // koeln.de dropped the kept post and lists the hidden one again, then another event.
+    $relisted = koelnEvent('hidden-copy', 'Comedy night', $start->toDateTimeString());
+    $relisted['description'] = 'Neue Beschreibung des Abends.';
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [
+        $relisted, koelnEvent('after-it', 'Later concert', $start->copy()->addDay()->toDateTimeString()),
+    ]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($kept->fresh())->source_uid->toBe('kept-copy')->description->toBe('Neue Beschreibung des Abends.')
+        ->and($hidden->fresh()->status)->toBe('hidden')
+        ->and(Event::where('source_uid', 'after-it')->exists())->toBeTrue();
+});
+
+test('a hidden copy is the event again once no live copy is left', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDay()->setTime(20, 0);
+    $hidden = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'only-copy', 'title' => 'Comedy night',
+        'starts_at' => $start, 'location_name' => 'Bürgerhaus Stollwerck', 'status' => 'hidden']);
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [
+        koelnEvent('only-copy', 'Comedy night', $start->toDateTimeString()),
+    ]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($hidden->fresh()->status)->toBe('active')
+        ->and(Event::where('title', 'Comedy night')->count())->toBe(1);
 });
