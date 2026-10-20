@@ -1,11 +1,7 @@
 {
     "name": "travel-plan-options-phone",
     "clock": "2026-09-30T13:10:00+02:00",
-    "widths": [
-        360,
-        390,
-        768
-    ],
+    "widths": [360, 390, 768],
     "height": 900,
     "tolerance": 0.5,
     "mock": {
@@ -49,36 +45,254 @@
     },
     "note": "Measuring aid, on both sides alike: the planner's own scrolling and its sticky bars (back row, Show the way / Add to plan) are made static, so an element scrolled into view for its screenshot isn't covered by a sticky bar or measured at a different scroll; layout and styles are otherwise untouched. Pairs run top of the page first: a screenshot of a tall element (results, an option) scrolls the page, and an element shot after that sits at another sub-pixel offset on each side. Journey details are closed on phones (the mock's links inside them are clipped, not shown), so the boarding stop and Places nearby are measured on desktop.",
     "pairs": [
-        {"name": "from field", "mock": ".from-field", "app": ".from-field", "ignore": ["y"], "reason": "The mock's own sample wording (\"(sample)\"). (its note)", "contentDiffers": true},
-        {"name": "from note", "mock": "#from-note", "app": "#from-note", "contentDiffers": true, "ignore": ["w"], "reason": "The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it."},
-        {"name": "picked plan", "mock": ".to-picked", "app": ".to-picked"},
-        {"name": "picked plan title", "mock": ".to-picked strong", "app": ".to-picked strong"},
-        {"name": "picked plan place", "mock": ".to-picked small", "app": ".to-picked small"},
-        {"name": "we checked", "mock": ".plan-checks", "app": ".plan-checks", "contentDiffers": true, "reason": "The checks are live (timetable-only departures at the sample moment, today's KVB lifts), so the chips' words, and how they wrap, differ from the mock's sample.", "ignore": ["h", "y"]},
-        {"name": "we checked title", "mock": ".plan-checks-toggle strong", "app": ".plan-checks-toggle strong"},
-        {"name": "check chip", "mock": ".plan-check-chips .tl-chip", "app": ".plan-check-chips .tl-chip", "index": 0, "contentDiffers": true, "ignore": ["background-color", "border-bottom-color", "border-bottom-style", "border-bottom-width", "border-left-color", "border-left-style", "border-left-width", "border-right-color", "border-right-style", "border-right-width", "border-top-color", "border-top-style", "border-top-width", "color", "padding-bottom", "padding-top", "w"], "reason": "Live: the app's departures are timetable-only at the sample moment (the unsure chip)."},
-        {"name": "best chip", "mock": ".plan-option .tl-chip.is-best", "app": ".plan-option .tl-chip.is-best", "widths": [390, 768]},
-        {"name": "best chip @360", "mock": ".plan-option .tl-chip.is-best", "app": ".plan-option .tl-chip.is-best", "widths": [360], "ignore": ["y"], "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher. Shifted, its rounded ends land on another sub-pixel offset and antialiase differently (15 edge pixels); box and styles match.", "pixels": false},
-        {"name": "spare chip", "mock": ".plan-option-head .tl-chip", "app": ".plan-option-head .tl-chip", "index": 1, "widths": [390, 768]},
-        {"name": "spare chip @360", "mock": ".plan-option-head .tl-chip", "app": ".plan-option-head .tl-chip", "index": 1, "widths": [360], "ignore": ["y"], "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."},
-        {"name": "option title", "mock": ".plan-option-title", "app": ".plan-option-title", "index": 0, "widths": [390, 768]},
-        {"name": "option title @360", "mock": ".plan-option-title", "app": ".plan-option-title", "index": 0, "widths": [360], "ignore": ["y"], "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."},
-        {"name": "option line", "mock": ".plan-option-title .tl-line", "app": ".plan-option-title .tl-line", "index": 0, "widths": [390, 768]},
-        {"name": "option line @360", "mock": ".plan-option-title .tl-line", "app": ".plan-option-title .tl-line", "index": 0, "widths": [360], "ignore": ["y"], "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."},
-        {"name": "option times", "mock": ".plan-option-times", "app": ".plan-option-times", "index": 0, "widths": [390, 768]},
-        {"name": "option times @360", "mock": ".plan-option-times", "app": ".plan-option-times", "index": 0, "widths": [360], "ignore": ["y"], "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."},
-        {"name": "first reason", "mock": ".plan-option-reasons > span", "app": ".plan-option-reasons > span", "index": 0, "widths": [390, 768]},
-        {"name": "first reason @360", "mock": ".plan-option-reasons > span", "app": ".plan-option-reasons > span", "index": 0, "widths": [360], "ignore": ["y"], "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."},
-        {"name": "details toggle", "mock": ".details-toggle", "app": ".details-toggle", "index": 0, "ignore": ["y"], "reason": "Follows the reasons above (weather)."},
-        {"name": "back row", "mock": ".plan-back-row", "app": ".plan-back-row"},
-        {"name": "bar title", "mock": "#plan-bar-title", "app": "#plan-bar-title"},
-        {"name": "results", "mock": "#results", "app": "#results", "contentDiffers": true, "ignore": ["h"], "reason": "Live checks and option reasons (below) change its height."},
-        {"name": "first option", "mock": ".plan-option", "app": ".plan-option", "index": 0, "contentDiffers": true, "ignore": ["h"], "reason": "Its weather reason: the mock's sample weather; the forecast has no hours for a past day.", "widths": [390, 768]},
-        {"name": "first option @360", "mock": ".plan-option", "app": ".plan-option", "index": 0, "contentDiffers": true, "ignore": ["h", "y"], "reason": "Its weather reason: the mock's sample weather; the forecast has no hours for a past day. At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher.", "widths": [360]},
-        {"name": "second option", "mock": ".plan-option", "app": ".plan-option", "index": 1, "contentDiffers": true, "ignore": ["h", "y"], "reason": "Its weather reason (see first option)."},
-        {"name": "In your plan", "mock": ".plan-option:nth-of-type(2) .plan-option-reasons > span:nth-child(3)", "app": ".plan-option:nth-of-type(2) .plan-option-reasons > span:nth-child(3)", "contentDiffers": true, "ignore": ["y"], "reason": "Third reason of the second option: the mock's is its sample weather, the app's is \"In your plan\" (no forecast for a past day)."},
-        {"name": "actions", "mock": ".plan-actions", "app": ".plan-actions", "ignore": ["y"], "reason": "Follows the options above, whose reasons differ (the mock's sample weather; no forecast for a past day). Below the fold, after content that differs (the mock's sample weather; its platform picker, \"Platform not known\" here): it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.", "pixels": false},
-        {"name": "Show the way", "mock": ".plan-go", "app": ".plan-go", "ignore": ["y"], "reason": "Follows the options above, whose reasons differ (the mock's sample weather; no forecast for a past day). Below the fold, after content that differs (the mock's sample weather; its platform picker, \"Platform not known\" here): it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.", "pixels": false},
-        {"name": "Add to plan", "mock": ".plan-save", "app": ".plan-save", "ignore": ["y"], "reason": "Follows the options above, whose reasons differ (the mock's sample weather; no forecast for a past day). Below the fold, after content that differs (the mock's sample weather; its platform picker, \"Platform not known\" here): it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.", "pixels": false}
+        {
+            "name": "from field",
+            "mock": ".from-field",
+            "app": ".from-field",
+            "ignore": ["y"],
+            "reason": "The mock's own sample wording (\"(sample)\"). (its note)",
+            "contentDiffers": true
+        },
+        {
+            "name": "from note",
+            "mock": "#from-note",
+            "app": "#from-note",
+            "contentDiffers": true,
+            "ignore": ["w"],
+            "reason": "The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it."
+        },
+        { "name": "picked plan", "mock": ".to-picked", "app": ".to-picked" },
+        {
+            "name": "picked plan title",
+            "mock": ".to-picked strong",
+            "app": ".to-picked strong"
+        },
+        {
+            "name": "picked plan place",
+            "mock": ".to-picked small",
+            "app": ".to-picked small"
+        },
+        {
+            "name": "we checked",
+            "mock": ".plan-checks",
+            "app": ".plan-checks",
+            "contentDiffers": true,
+            "reason": "The checks are live (timetable-only departures at the sample moment, today's KVB lifts), so the chips' words, and how they wrap, differ from the mock's sample.",
+            "ignore": ["h", "y"]
+        },
+        {
+            "name": "we checked title",
+            "mock": ".plan-checks-toggle strong",
+            "app": ".plan-checks-toggle strong"
+        },
+        {
+            "name": "check chip",
+            "mock": ".plan-check-chips .tl-chip",
+            "app": ".plan-check-chips .tl-chip",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": [
+                "background-color",
+                "border-bottom-color",
+                "border-bottom-style",
+                "border-bottom-width",
+                "border-left-color",
+                "border-left-style",
+                "border-left-width",
+                "border-right-color",
+                "border-right-style",
+                "border-right-width",
+                "border-top-color",
+                "border-top-style",
+                "border-top-width",
+                "color",
+                "padding-bottom",
+                "padding-top",
+                "w"
+            ],
+            "reason": "Live: the app's departures are timetable-only at the sample moment (the unsure chip)."
+        },
+        {
+            "name": "best chip",
+            "mock": ".plan-option .tl-chip.is-best",
+            "app": ".plan-option .tl-chip.is-best",
+            "widths": [390, 768]
+        },
+        {
+            "name": "best chip @360",
+            "mock": ".plan-option .tl-chip.is-best",
+            "app": ".plan-option .tl-chip.is-best",
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher. Shifted, its rounded ends land on another sub-pixel offset and antialiase differently (15 edge pixels); box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "spare chip",
+            "mock": ".plan-option-head .tl-chip",
+            "app": ".plan-option-head .tl-chip",
+            "index": 1,
+            "widths": [390, 768]
+        },
+        {
+            "name": "spare chip @360",
+            "mock": ".plan-option-head .tl-chip",
+            "app": ".plan-option-head .tl-chip",
+            "index": 1,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "option title",
+            "mock": ".plan-option-title",
+            "app": ".plan-option-title",
+            "index": 0,
+            "widths": [390, 768]
+        },
+        {
+            "name": "option title @360",
+            "mock": ".plan-option-title",
+            "app": ".plan-option-title",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "option line",
+            "mock": ".plan-option-title .tl-line",
+            "app": ".plan-option-title .tl-line",
+            "index": 0,
+            "widths": [390, 768]
+        },
+        {
+            "name": "option line @360",
+            "mock": ".plan-option-title .tl-line",
+            "app": ".plan-option-title .tl-line",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "option times",
+            "mock": ".plan-option-times",
+            "app": ".plan-option-times",
+            "index": 0,
+            "widths": [390, 768]
+        },
+        {
+            "name": "option times @360",
+            "mock": ".plan-option-times",
+            "app": ".plan-option-times",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "first reason",
+            "mock": ".plan-option-reasons > span",
+            "app": ".plan-option-reasons > span",
+            "index": 0,
+            "widths": [390, 768]
+        },
+        {
+            "name": "first reason @360",
+            "mock": ".plan-option-reasons > span",
+            "app": ".plan-option-reasons > span",
+            "index": 0,
+            "widths": [360],
+            "ignore": ["y"],
+            "reason": "At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher."
+        },
+        {
+            "name": "details toggle",
+            "mock": ".details-toggle",
+            "app": ".details-toggle",
+            "index": 0,
+            "ignore": ["y"],
+            "reason": "Follows the reasons above (weather)."
+        },
+        {
+            "name": "back row",
+            "mock": ".plan-back-row",
+            "app": ".plan-back-row"
+        },
+        {
+            "name": "bar title",
+            "mock": "#plan-bar-title",
+            "app": "#plan-bar-title"
+        },
+        {
+            "name": "results",
+            "mock": "#results",
+            "app": "#results",
+            "contentDiffers": true,
+            "ignore": ["h"],
+            "reason": "Live checks and option reasons (below) change its height."
+        },
+        {
+            "name": "first option",
+            "mock": ".plan-option",
+            "app": ".plan-option",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": ["h"],
+            "reason": "Its weather reason: the mock's sample weather; the forecast has no hours for a past day.",
+            "widths": [390, 768]
+        },
+        {
+            "name": "first option @360",
+            "mock": ".plan-option",
+            "app": ".plan-option",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": ["h", "y"],
+            "reason": "Its weather reason: the mock's sample weather; the forecast has no hours for a past day. At 360 the mock's sample checks wrap onto three rows (\"Lifts unknown\" on its own) and today's live ones onto two, so the options start 30px higher.",
+            "widths": [360]
+        },
+        {
+            "name": "second option",
+            "mock": ".plan-option",
+            "app": ".plan-option",
+            "index": 1,
+            "contentDiffers": true,
+            "ignore": ["h", "y"],
+            "reason": "Its weather reason (see first option)."
+        },
+        {
+            "name": "In your plan",
+            "mock": ".plan-option:nth-of-type(2) .plan-option-reasons > span:nth-child(3)",
+            "app": ".plan-option:nth-of-type(2) .plan-option-reasons > span:nth-child(3)",
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "reason": "Third reason of the second option: the mock's is its sample weather, the app's is \"In your plan\" (no forecast for a past day)."
+        },
+        {
+            "name": "actions",
+            "mock": ".plan-actions",
+            "app": ".plan-actions",
+            "ignore": ["y"],
+            "reason": "Follows the options above, whose reasons differ (the mock's sample weather; no forecast for a past day). Below the fold, after content that differs (the mock's sample weather; its platform picker, \"Platform not known\" here): it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "Show the way",
+            "mock": ".plan-go",
+            "app": ".plan-go",
+            "ignore": ["y"],
+            "reason": "Follows the options above, whose reasons differ (the mock's sample weather; no forecast for a past day). Below the fold, after content that differs (the mock's sample weather; its platform picker, \"Platform not known\" here): it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "Add to plan",
+            "mock": ".plan-save",
+            "app": ".plan-save",
+            "ignore": ["y"],
+            "reason": "Follows the options above, whose reasons differ (the mock's sample weather; no forecast for a past day). Below the fold, after content that differs (the mock's sample weather; its platform picker, \"Platform not known\" here): it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        }
     ]
 }
