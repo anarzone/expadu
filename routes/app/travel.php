@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\JourneyPlanController;
 use App\Http\Controllers\Api\JourneySuggestController;
 use App\Http\Controllers\Api\JourneySuggestSearchController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
+use App\Http\Controllers\Api\PlannedTripController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
 use App\Http\Controllers\Api\SavedJourneyController;
 use App\Http\Controllers\Api\StationSearchController;
@@ -44,6 +45,10 @@ Route::get('api/travel/stations', StationSearchController::class)->middleware('t
 Route::get('api/travel/favourite-stops', [FavouriteStopController::class, 'index'])->name('api.travel.favourite-stops.index');
 Route::post('api/travel/favourite-stops', [FavouriteStopController::class, 'store'])->name('api.travel.favourite-stops.store');
 Route::delete('api/travel/favourite-stops', [FavouriteStopController::class, 'destroy'])->name('api.travel.favourite-stops.destroy');
+// Plan a trip's "Add to plan": the way picked for a plan on your day.
+Route::post('api/travel/planned-trips', [PlannedTripController::class, 'store'])->name('api.travel.planned-trips.store');
+Route::patch('api/travel/planned-trips/{plannedTrip}', [PlannedTripController::class, 'update'])->whereNumber('plannedTrip')->name('api.travel.planned-trips.update');
+Route::delete('api/travel/planned-trips/{plannedTrip}', [PlannedTripController::class, 'destroy'])->whereNumber('plannedTrip')->name('api.travel.planned-trips.destroy');
 // The signed-in person's day (DayProjection); plans the next trip, so it
 // shares the journey planner's rate limit.
 Route::get('api/day', DayController::class)->middleware('throttle:journey')->name('api.day');

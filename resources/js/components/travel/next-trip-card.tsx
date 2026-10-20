@@ -175,7 +175,11 @@ function optionTitle(option: TripOption): string {
 }
 
 function optionDetail(option: TripOption, trip: NextTrip): string {
-    const parts = [`Leave ${option.leave_time}`, `there ${option.arrive_time}`];
+    // The way you added to your plan, as the mock names it.
+    const parts = [
+        option.in_plan ? 'In your plan' : `Leave ${option.leave_time}`,
+        `there ${option.arrive_time}`,
+    ];
 
     if (option.status === 'cancelled') {
         return 'Cancelled';
@@ -187,7 +191,7 @@ function optionDetail(option: TripOption, trip: NextTrip): string {
             : `${-option.spare_min} min late for ${trip.target.start_time}`,
     );
 
-    if (option.ride && option.time_basis === 'scheduled') {
+    if (option.ride && option.time_basis === 'scheduled' && !option.in_plan) {
         parts.push(sourceLabel({ source: 'scheduled' }));
     }
 
@@ -213,7 +217,18 @@ type NextTripCardProps = {
     /** When where you are isn't known. */
     onLocate?: () => void;
     /** Clock and info icons for labels, from the app's icon set. */
-    icons?: { clock?: ReactNode; unsure?: ReactNode; timer?: ReactNode };
+    icons?: {
+        clock?: ReactNode;
+        unsure?: ReactNode;
+        timer?: ReactNode;
+        offline?: ReactNode;
+    };
+    /**
+     * Where timetable-only times are said: in the ride tile's line
+     * (Travel's mock, the coordinator's call (b)) or as the unsure chip row
+     * above the tiles (Today's mock).
+     */
+    scheduledAs?: 'tile' | 'chip';
 };
 
 export function NextTripCard({
@@ -228,6 +243,7 @@ export function NextTripCard({
     onPlan,
     onLocate,
     icons = {},
+    scheduledAs = 'tile',
 }: NextTripCardProps) {
     const [open, setOpen] = useState(false);
     const leaveIn = useMinutesUntil(trip.leave_at);
@@ -303,7 +319,7 @@ export function NextTripCard({
                 sub={
                     // Timetable times only: said where the time is, in the
                     // tile's own line, so the card keeps the mock's rows.
-                    trip.time_basis === 'scheduled'
+                    trip.time_basis === 'scheduled' && scheduledAs === 'tile'
                         ? `${stopName(ride.from.name, trip.city)} · ${sourceLabel({ source: 'scheduled' })}`
                         : stopName(ride.from.name, trip.city)
                 }
@@ -362,6 +378,16 @@ export function NextTripCard({
         late ? (
             <TravelChip key="late" kind="attention" icon={icons.clock}>
                 Nothing gets there by {trip.target.start_time}
+            </TravelChip>
+        ) : null,
+        ride && trip.time_basis === 'scheduled' && scheduledAs === 'chip' ? (
+            <TravelChip
+                key="basis"
+                kind="unsure"
+                icon={icons.offline ?? icons.unsure}
+                size="sm"
+            >
+                {sourceLabel({ source: 'scheduled' })}
             </TravelChip>
         ) : null,
     ].filter(Boolean);

@@ -27,6 +27,8 @@ Schedule::command('transit:check-delays')->everyFifteenMinutes()->withoutOverlap
 // the user is attending (time-critical)
 Schedule::command('events:send-occurrence-reminders')->everyFiveMinutes()->withoutOverlapping(10);
 Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping(60);
+// Plan a trip's "Remind me when to leave": five minutes before the planned way.
+Schedule::command('travel:send-leave-reminders')->everyMinute()->withoutOverlapping(2);
 
 // Weather alerts — every 2 hours, only during commute windows (time-critical)
 Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlapping(30);

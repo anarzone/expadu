@@ -2010,6 +2010,159 @@
 :where(.travel-page) .other-ways-note {
     margin-top: var(--space-12);
 }
+:where(.travel-page) .plan-saved {
+    max-width: 640px;
+}
+:where(.travel-page) .plan-saved-mark {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
+:where(.travel-page) .plan-saved-mark svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2.6;
+}
+:where(.travel-page) .plan-saved h2 {
+    margin: var(--space-14) 0 0;
+    font-size: var(--text-display-sm);
+    line-height: 1.05;
+    letter-spacing: -1px;
+}
+:where(.travel-page) .plan-saved-summary {
+    margin: var(--space-6) 0 0;
+    font-size: var(--text-body);
+    font-variant-numeric: tabular-nums;
+}
+:where(.travel-page) .plan-saved-list {
+    margin: var(--space-16) 0 0;
+    padding: 0px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-surface);
+    list-style: none;
+    overflow: hidden;
+}
+:where(.travel-page) .plan-saved-list li + li {
+    border-top: 1px solid var(--color-border);
+}
+:where(.travel-page) .plan-saved-list :is(button, .is-note) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    width: 100%;
+    min-height: 64px;
+    padding: var(--space-8) var(--space-14);
+    border: 0px;
+    background: none;
+    color: var(--color-text);
+    font-style: inherit;
+    font-variant: inherit;
+    font-weight: inherit;
+    font-stretch: inherit;
+    font-size: inherit;
+    font-family: inherit;
+    font-optical-sizing: inherit;
+    font-size-adjust: inherit;
+    font-kerning: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    font-language-override: inherit;
+    text-align: left;
+    line-height: var(--leading-snug);
+    cursor: pointer;
+}
+:where(.travel-page) .plan-saved-list .is-note {
+    align-items: flex-start;
+    padding-block: var(--space-12);
+    cursor: default;
+}
+:where(.travel-page)
+    .plan-saved-list
+    :is(button, .is-note)
+    > span:nth-child(2) {
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+}
+:where(.travel-page) .plan-saved-list small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+:where(.travel-page) .plan-saved-list button > svg {
+    width: 16px;
+    height: 16px;
+    color: var(--color-text-soft);
+}
+:where(.travel-page) .plan-saved-icon {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--color-bg-quiet);
+}
+:where(.travel-page) .plan-saved-icon.is-watch {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+:where(.travel-page) .plan-saved-icon svg {
+    width: 18px;
+    height: 18px;
+}
+:where(.travel-page) .plan-switch {
+    flex: 0 0 auto;
+    position: relative;
+    width: 46px;
+    height: 28px;
+    border-radius: 14px;
+    background: var(--color-border-strong);
+    transition: background-color var(--duration-fast) var(--ease-standard);
+}
+:where(.travel-page) .plan-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-round);
+    background: var(--color-bg-surface);
+    box-shadow: var(--shadow-flat);
+    transition: left var(--duration-fast) var(--ease-standard);
+}
+:where(.travel-page) [aria-checked='true'] > .plan-switch {
+    background: var(--color-text);
+}
+:where(.travel-page) [aria-checked='true'] > .plan-switch::after {
+    left: 21px;
+}
+:where(.travel-page) .plan-saved-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-10);
+    margin-top: var(--space-16);
+}
+:where(.travel-page) .plan-saved-actions button {
+    flex: 1 1 180px;
+    min-height: 52px;
+}
+.travel-page .plan-saved-actions .quiet-button {
+    border: 1.5px solid var(--color-text);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+.travel-page .primary.is-ink {
+    background: var(--color-text);
+    color: var(--color-text-on-action);
+}
 @media (prefers-reduced-motion: reduce) {
     :where(.travel-page) .plan-prefs button > span,
     :where(.travel-page) .plan-checks-more svg,
@@ -2228,6 +2381,17 @@
 }
 :where(.travel-page) .other-ways-note {
     margin: var(--space-10) 0 0;
+}
+:where(.travel-page) .plan-saved-mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--line, var(--color-text));
+    color: var(--ink, var(--color-text-on-action));
+}
+:where(.travel-page) .plan-saved-actions button {
+    flex: 1 1 0px;
+    min-width: 0px;
 }
 @media (max-width: 999px) {
     .travel-page[data-view='journey'] .plan-back-row {

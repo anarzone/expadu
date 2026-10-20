@@ -243,6 +243,8 @@ type PlanOptionsProps = {
     onSelect: (id: string) => void;
     expanded: Set<string>;
     onToggle: (id: string) => void;
+    /** Whether an option is the way in your plan ("In your plan"). */
+    planned?: (option: PlanOption) => boolean;
 };
 
 /** The options as one choice; "Best for you" names the first when there's a choice. */
@@ -255,6 +257,7 @@ export function PlanOptions({
     onSelect,
     expanded,
     onToggle,
+    planned,
 }: PlanOptionsProps) {
     return (
         <div
@@ -266,7 +269,12 @@ export function PlanOptions({
                 const on = option.id === selected;
                 const open = expanded.has(option.id);
                 const best = index === 0 && options.length > 1;
-                const reasons = reasonsFor(option, answer, target);
+                const reasons = reasonsFor(
+                    option,
+                    answer,
+                    target,
+                    planned?.(option) ?? false,
+                );
                 const disclosure = `route-disclosure-${option.id}`;
 
                 return (

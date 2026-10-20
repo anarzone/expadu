@@ -221,6 +221,7 @@ export function reasonsFor(
     option: PlanOption,
     answer: PlanAnswer | null,
     target: PlanTarget | null,
+    inPlan = false,
 ): Reason[] {
     const { journey } = option;
     const reasons: Reason[] = [];
@@ -259,6 +260,10 @@ export function reasonsFor(
                   }
                 : { text: 'Dry on the way', kind: 'ok', icon: 'sun' },
         );
+    }
+
+    if (inPlan) {
+        reasons.push({ text: 'In your plan', kind: 'ok', icon: 'calendar' });
     }
 
     if (isCancelled(journey)) {

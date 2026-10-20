@@ -3,9 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnchoredMenu, MenuOption } from '@/components/ui/anchored-menu';
 import { Calendar, berlinToday } from '@/components/ui/date-control';
 import { TimeField } from '@/components/ui/time-field';
+import { showToast } from '@/components/ui/toast';
+import { usePushSubscription } from '@/hooks/use-push-subscription';
 import { cn } from '@/lib/utils';
-import type { DayItem, DayProjection } from '@/types/day';
+import type { DayItem, DayProjection, PlannedTrip } from '@/types/day';
 import type { FavouriteStop } from '../nearby/types';
+import { stopName } from '../stop-name';
 import { TravelIcon } from '../travel-icon';
 import { PlanFields, findPlace } from './plan-fields';
 import type { FieldValue } from './plan-fields';
@@ -29,7 +32,8 @@ import type {
     Schedule,
     SortKey,
 } from './plan-model';
-import { PlanChecks, PlanOptions } from './plan-results';
+import { PlanChecks, PlanOptions, optionLabel } from './plan-results';
+import { PlanSaved } from './plan-saved';
 
 /**
  * Plan a trip (departures-next #journey-view; owner, 14 Oct 2026): beside
@@ -159,6 +163,13 @@ export function PlanPanel({
     const [big, setBig] = useState(false);
     const [editing, setEditing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    // "Added to your plan": the saved view, the way just kept, the reminder.
+    const [saved, setSaved] = useState<PlannedTrip | null>(null);
+    const [mine, setMine] = useState<PlannedTrip | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [remindBusy, setRemindBusy] = useState(false);
+    const [remindNote, setRemindNote] = useState<string | null>(null);
+    const push = usePushSubscription();
     const toField = useRef<HTMLInputElement>(null);
     const request = useRef<AbortController | null>(null);
     const target = picked?.target ?? null;
@@ -577,12 +588,28 @@ export function PlanPanel({
             !item.completed &&
             item.location?.routable === true,
     );
+    // "Mülheim · Wiener Platz": the place, and where the next trip gets off.
+    const nextTrip = day?.next_trip;
+    const alight = nextTrip?.journey?.legs
+        .filter((leg) => leg.mode !== 'walk' && leg.mode !== 'bike')
+        .at(-1)?.to.name;
+    const placeDetail = (item: DayItem) =>
+        [
+            item.location?.label,
+            nextTrip?.target.id === item.id && alight
+                ? stopName(alight, nextTrip.city)
+                : null,
+        ]
+            .filter(Boolean)
+            .join(' · ');
     const home = savedPlaces.find((p) => p.category === 'home');
     const work = savedPlaces.find((p) => p.category === 'work');
     const compact = results && !editing && !desktop;
-    const barTitle = results
-        ? `To ${picked?.title ?? to.place?.name ?? to.text}`
-        : 'Plan a trip';
+    const barTitle = saved
+        ? 'Saved'
+        : results
+          ? `To ${picked?.title ?? to.place?.name ?? to.text}`
+          : 'Plan a trip';
     const whenNote =
         schedule === 'arrive' &&
         target &&
@@ -597,6 +624,136 @@ export function PlanPanel({
         request.current?.abort();
         setResults(false);
         setStatus({ kind: 'idle' });
+        setSaved(null);
+    };
+
+    // "Add to plan": the chosen way, kept for the plan on your day.
+    const plannedNow =
+        mine?.target_id === target?.id && mine
+            ? mine
+            : target
+              ? (day?.items.find((item) => item.id === target.id)?.planned ??
+                null)
+              : null;
+    const isPlanned = (option: PlanOption | null) =>
+        !!option &&
+        !!plannedNow &&
+        option.journey.depart_time === plannedNow.depart_time &&
+        option.journey.arrive_time === plannedNow.arrive_time;
+
+    const addToPlan = async () => {
+        if (!chosen || !target || saving) {
+            return;
+        }
+
+        if (isPlanned(chosen) && plannedNow) {
+            setSaved(plannedNow);
+
+            return;
+        }
+
+        setSaving(true);
+
+        try {
+            const response = await fetch('/api/travel/planned-trips', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: jsonHeaders(),
+                body: JSON.stringify({
+                    date: berlinNow(new Date(target.start_at)).date,
+                    target_id: target.id,
+                    journey: chosen.journey,
+                    // On by default where notifications are already allowed,
+                    // as the mock shows it; otherwise the switch asks.
+                    remind: push.isSubscribed,
+                }),
+            });
+            const data = (await response.json().catch(() => null)) as {
+                planned?: PlannedTrip;
+                message?: string;
+            } | null;
+
+            if (!response.ok || !data?.planned) {
+                showToast(
+                    data?.message ?? 'Your plan couldn’t be saved. Try again.',
+                    true,
+                );
+
+                return;
+            }
+
+            const kept = data.planned;
+            setMine(kept);
+            setSaved(kept);
+            setRemindNote(null);
+            // Leave now and My day read the planned way from your day.
+            router.reload({ only: ['day'] });
+            showToast('Added to your plan', {
+                undo: async () => {
+                    const undone = await fetch(
+                        `/api/travel/planned-trips/${kept.id}`,
+                        {
+                            method: 'DELETE',
+                            credentials: 'same-origin',
+                            headers: jsonHeaders(),
+                        },
+                    );
+
+                    if (undone.ok) {
+                        setMine(null);
+                        setSaved(null);
+                        router.reload({ only: ['day'] });
+                    }
+                },
+            });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const toggleRemind = async () => {
+        if (!saved) {
+            return;
+        }
+
+        const next = !saved.remind;
+        setRemindBusy(true);
+        setRemindNote(null);
+
+        try {
+            // Turning it on asks for notifications first, once.
+            if (next && !push.isSubscribed && !(await push.subscribe())) {
+                setRemindNote(
+                    'Notifications are off for Expadu: allow them, then try again.',
+                );
+
+                return;
+            }
+
+            const response = await fetch(
+                `/api/travel/planned-trips/${saved.id}`,
+                {
+                    method: 'PATCH',
+                    credentials: 'same-origin',
+                    headers: jsonHeaders(),
+                    body: JSON.stringify({ remind: next }),
+                },
+            );
+            const data = (await response.json().catch(() => null)) as {
+                planned?: PlannedTrip;
+            } | null;
+
+            if (!response.ok || !data?.planned) {
+                setRemindNote('The reminder couldn’t be changed. Try again.');
+
+                return;
+            }
+
+            setMine(data.planned);
+            setSaved(data.planned);
+        } finally {
+            setRemindBusy(false);
+        }
     };
 
     const sortMenu = (className: string) => (
@@ -679,21 +836,29 @@ export function PlanPanel({
                     type="button"
                     className="icon-button"
                     aria-label={
-                        results
-                            ? 'Back to where and when'
-                            : 'Fold Plan a trip away'
+                        saved
+                            ? 'Back to your options'
+                            : results
+                              ? 'Back to where and when'
+                              : 'Fold Plan a trip away'
                     }
-                    onClick={results ? closeResults : onFold}
+                    onClick={
+                        saved
+                            ? () => setSaved(null)
+                            : results
+                              ? closeResults
+                              : onFold
+                    }
                 >
                     <TravelIcon name={results ? 'back' : 'up'} />
                 </button>
                 <span className="plan-bar-title">
                     <strong id="plan-bar-title">{barTitle}</strong>
-                    <small id="plan-bar-sub" hidden={!results}>
+                    <small id="plan-bar-sub" hidden={!results || !!saved}>
                         {summary} · from {fromLabel}
                     </small>
                 </span>
-                {results && ranked.length && !desktop
+                {results && !saved && ranked.length && !desktop
                     ? sortMenu('icon-button plan-bar-sort')
                     : null}
             </div>
@@ -1085,7 +1250,7 @@ export function PlanPanel({
                                                         {item.title}
                                                     </strong>
                                                     <small>
-                                                        {item.location?.label}
+                                                        {placeDetail(item)}
                                                     </small>
                                                 </span>
                                                 <span className="day-place-pick">
@@ -1098,176 +1263,268 @@ export function PlanPanel({
                                 </div>
                             </>
                         ) : null}
+                        <div className="plan-explainer">
+                            <span data-icon="eye">
+                                <TravelIcon name="eye" />
+                            </span>
+                            <p>
+                                <strong>Built from today’s conditions</strong>
+                                <span>
+                                    Before we suggest a way, we check
+                                    departures, notices, the weather, what else
+                                    is on your day and lifts on the way. Each
+                                    answer says which of them it had.
+                                </span>
+                            </p>
+                        </div>
                     </section>
                     {results ? (
-                        <section id="results" aria-labelledby="results-title">
-                            <div className="results-top">
-                                <h2 id="results-title" tabIndex={-1}>
-                                    {ranked.length ? barTitle : 'Your journey'}
-                                </h2>
-                                <div className="results-heading">
-                                    <span>
-                                        {summary} · from {fromLabel}
-                                    </span>
-                                    {ranked.length && desktop
-                                        ? sortMenu('icon-button')
-                                        : null}
-                                </div>
-                            </div>
-                            {status.kind === 'loading' ? (
-                                <div className="result-empty" role="status">
-                                    <span className="empty-symbol">
-                                        <TravelIcon name="route" />
-                                    </span>
-                                    <h3>Finding the ways</h3>
-                                    <p>
-                                        Asking the routes and live times for{' '}
-                                        {to.place?.name ?? to.text}.
-                                    </p>
-                                </div>
-                            ) : status.kind === 'location' ? (
-                                <div className="result-empty">
-                                    <span className="empty-symbol">
-                                        <TravelIcon name="locate" />
-                                    </span>
-                                    <h3>Where are you starting?</h3>
-                                    <p>
-                                        Share your location, or type where
-                                        you’re starting in From.
-                                    </p>
-                                    <div className="empty-actions">
-                                        <button
-                                            type="button"
-                                            className="quiet-button"
-                                            disabled={locating}
-                                            onClick={onLocate}
-                                        >
-                                            <TravelIcon name="locate" />
-                                            {locating
-                                                ? 'Locating…'
-                                                : 'Use my location'}
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : status.kind === 'error' ? (
-                                <div className="result-empty" role="alert">
-                                    <span className="empty-symbol">
-                                        <TravelIcon name="route" />
-                                    </span>
-                                    <h3>No ways right now</h3>
-                                    <p>{status.message}</p>
-                                    <div className="empty-actions">
-                                        <button
-                                            type="button"
-                                            className="quiet-button"
-                                            onClick={() => void plan()}
-                                        >
-                                            Try again
-                                        </button>
-                                    </div>
-                                </div>
-                            ) : answer && ranked.length ? (
+                        <section
+                            id="results"
+                            aria-labelledby={
+                                saved ? 'plan-saved-title' : 'results-title'
+                            }
+                        >
+                            {saved ? (
+                                <PlanSaved
+                                    planned={saved}
+                                    title={
+                                        chosen
+                                            ? optionLabel(chosen)
+                                            : (picked?.title ?? '')
+                                    }
+                                    target={target}
+                                    desktop={desktop}
+                                    remindBusy={remindBusy}
+                                    remindNote={remindNote}
+                                    onRemind={() => void toggleRemind()}
+                                    onDay={() => {
+                                        // My day (TR6) isn't built yet: Travel
+                                        // shows the way as your next trip.
+                                        closeResults();
+                                        onFold();
+                                    }}
+                                    onChange={() => setSaved(null)}
+                                    onDone={() => {
+                                        closeResults();
+                                        onFold();
+                                    }}
+                                />
+                            ) : (
                                 <>
-                                    <PlanChecks
-                                        checks={checksFor(answer, chosen, {
-                                            target,
-                                            day,
-                                            stepfree:
-                                                prefs.includes('stepfree'),
-                                        })}
-                                    />
-                                    <div className="route-workspace">
-                                        <PlanOptions
-                                            options={shown}
-                                            answer={answer}
-                                            target={target}
-                                            destination={
-                                                picked?.title ??
-                                                to.place?.name ??
-                                                to.text
-                                            }
-                                            selected={chosen?.id ?? null}
-                                            onSelect={setSelected}
-                                            expanded={open}
-                                            onToggle={(id) => {
-                                                setTouched(true);
-                                                setExpanded(() => {
-                                                    const next = new Set(open);
-
-                                                    if (next.has(id)) {
-                                                        next.delete(id);
-                                                    } else {
-                                                        next.add(id);
-                                                    }
-
-                                                    return next;
-                                                });
-                                            }}
-                                        />
-                                        {ranked.length > 3 ? (
-                                            <button
-                                                type="button"
-                                                className="more-routes quiet-button"
-                                                aria-expanded={more}
-                                                onClick={() =>
-                                                    setMore((value) => !value)
-                                                }
-                                            >
-                                                {more
-                                                    ? 'Fewer routes'
-                                                    : `${ranked.length - 3} more routes`}
-                                                <TravelIcon name="down" />
-                                            </button>
-                                        ) : null}
-                                        {chosen ? (
-                                            <div className="plan-actions">
+                                    <div className="results-top">
+                                        <h2 id="results-title" tabIndex={-1}>
+                                            {ranked.length
+                                                ? barTitle
+                                                : 'Your journey'}
+                                        </h2>
+                                        <div className="results-heading">
+                                            <span>
+                                                {summary} · from {fromLabel}
+                                            </span>
+                                            {ranked.length && desktop
+                                                ? sortMenu('icon-button')
+                                                : null}
+                                        </div>
+                                    </div>
+                                    {status.kind === 'loading' ? (
+                                        <div
+                                            className="result-empty"
+                                            role="status"
+                                        >
+                                            <span className="empty-symbol">
+                                                <TravelIcon name="route" />
+                                            </span>
+                                            <h3>Finding the ways</h3>
+                                            <p>
+                                                Asking the routes and live times
+                                                for {to.place?.name ?? to.text}.
+                                            </p>
+                                        </div>
+                                    ) : status.kind === 'location' ? (
+                                        <div className="result-empty">
+                                            <span className="empty-symbol">
+                                                <TravelIcon name="locate" />
+                                            </span>
+                                            <h3>Where are you starting?</h3>
+                                            <p>
+                                                Share your location, or type
+                                                where you’re starting in From.
+                                            </p>
+                                            <div className="empty-actions">
                                                 <button
                                                     type="button"
-                                                    className="primary plan-go"
-                                                    onClick={() => {
-                                                        setTouched(true);
-                                                        setExpanded(
-                                                            new Set([
-                                                                ...open,
-                                                                chosen.id,
-                                                            ]),
-                                                        );
-                                                        window.setTimeout(
-                                                            () => {
-                                                                document
-                                                                    .getElementById(
-                                                                        `route-disclosure-${chosen.id}`,
-                                                                    )
-                                                                    ?.scrollIntoView(
-                                                                        {
-                                                                            block: 'nearest',
-                                                                            behavior:
-                                                                                'smooth',
-                                                                        },
-                                                                    );
-                                                            },
-                                                            50,
-                                                        );
-                                                    }}
+                                                    className="quiet-button"
+                                                    disabled={locating}
+                                                    onClick={onLocate}
                                                 >
-                                                    <TravelIcon name="route" />
-                                                    Show the way
+                                                    <TravelIcon name="locate" />
+                                                    {locating
+                                                        ? 'Locating…'
+                                                        : 'Use my location'}
                                                 </button>
                                             </div>
-                                        ) : null}
-                                    </div>
+                                        </div>
+                                    ) : status.kind === 'error' ? (
+                                        <div
+                                            className="result-empty"
+                                            role="alert"
+                                        >
+                                            <span className="empty-symbol">
+                                                <TravelIcon name="route" />
+                                            </span>
+                                            <h3>No ways right now</h3>
+                                            <p>{status.message}</p>
+                                            <div className="empty-actions">
+                                                <button
+                                                    type="button"
+                                                    className="quiet-button"
+                                                    onClick={() => void plan()}
+                                                >
+                                                    Try again
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : answer && ranked.length ? (
+                                        <>
+                                            <PlanChecks
+                                                checks={checksFor(
+                                                    answer,
+                                                    chosen,
+                                                    {
+                                                        target,
+                                                        day,
+                                                        stepfree:
+                                                            prefs.includes(
+                                                                'stepfree',
+                                                            ),
+                                                    },
+                                                )}
+                                            />
+                                            <div className="route-workspace">
+                                                <PlanOptions
+                                                    options={shown}
+                                                    answer={answer}
+                                                    target={target}
+                                                    destination={
+                                                        picked?.title ??
+                                                        to.place?.name ??
+                                                        to.text
+                                                    }
+                                                    selected={
+                                                        chosen?.id ?? null
+                                                    }
+                                                    planned={isPlanned}
+                                                    onSelect={setSelected}
+                                                    expanded={open}
+                                                    onToggle={(id) => {
+                                                        setTouched(true);
+                                                        setExpanded(() => {
+                                                            const next =
+                                                                new Set(open);
+
+                                                            if (next.has(id)) {
+                                                                next.delete(id);
+                                                            } else {
+                                                                next.add(id);
+                                                            }
+
+                                                            return next;
+                                                        });
+                                                    }}
+                                                />
+                                                {ranked.length > 3 ? (
+                                                    <button
+                                                        type="button"
+                                                        className="more-routes quiet-button"
+                                                        aria-expanded={more}
+                                                        onClick={() =>
+                                                            setMore(
+                                                                (value) =>
+                                                                    !value,
+                                                            )
+                                                        }
+                                                    >
+                                                        {more
+                                                            ? 'Fewer routes'
+                                                            : `${ranked.length - 3} more routes`}
+                                                        <TravelIcon name="down" />
+                                                    </button>
+                                                ) : null}
+                                                {chosen ? (
+                                                    <div className="plan-actions">
+                                                        <button
+                                                            type="button"
+                                                            className="primary plan-go"
+                                                            onClick={() => {
+                                                                setTouched(
+                                                                    true,
+                                                                );
+                                                                setExpanded(
+                                                                    new Set([
+                                                                        ...open,
+                                                                        chosen.id,
+                                                                    ]),
+                                                                );
+                                                                window.setTimeout(
+                                                                    () => {
+                                                                        document
+                                                                            .getElementById(
+                                                                                `route-disclosure-${chosen.id}`,
+                                                                            )
+                                                                            ?.scrollIntoView(
+                                                                                {
+                                                                                    block: 'nearest',
+                                                                                    behavior:
+                                                                                        'smooth',
+                                                                                },
+                                                                            );
+                                                                    },
+                                                                    50,
+                                                                );
+                                                            }}
+                                                        >
+                                                            <TravelIcon name="route" />
+                                                            Show the way
+                                                        </button>
+                                                        {target ? (
+                                                            <button
+                                                                type="button"
+                                                                className="quiet-button plan-save"
+                                                                disabled={
+                                                                    saving
+                                                                }
+                                                                onClick={() =>
+                                                                    void addToPlan()
+                                                                }
+                                                            >
+                                                                {isPlanned(
+                                                                    chosen,
+                                                                )
+                                                                    ? 'In your plan · see it'
+                                                                    : 'Add to plan'}
+                                                            </button>
+                                                        ) : null}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="result-empty">
+                                            <span className="empty-symbol">
+                                                <TravelIcon name="route" />
+                                            </span>
+                                            <h3>
+                                                No way found for this request
+                                            </h3>
+                                            <p>
+                                                Nothing goes there at that time.
+                                                Try another time, or a place
+                                                nearby.
+                                            </p>
+                                        </div>
+                                    )}
                                 </>
-                            ) : (
-                                <div className="result-empty">
-                                    <span className="empty-symbol">
-                                        <TravelIcon name="route" />
-                                    </span>
-                                    <h3>No way found for this request</h3>
-                                    <p>
-                                        Nothing goes there at that time. Try
-                                        another time, or a place nearby.
-                                    </p>
-                                </div>
                             )}
                         </section>
                     ) : null}
