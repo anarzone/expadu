@@ -90,6 +90,25 @@ const NAMES: Record<SkyLook, string> = {
     mist: 'Mist',
 };
 
+/** "12° Sunny" for a whole hour, or nothing without its forecast. */
+export function weatherWords(
+    forecast: DayForecast | null | undefined,
+    hour: number,
+    daylight: boolean,
+): string | null {
+    const h = forecastHour(forecast, hour);
+
+    if (!h) {
+        return null;
+    }
+
+    const look = lookOf(h);
+    const name =
+        look === 'clear' ? (daylight ? 'Sunny' : 'Clear') : NAMES[look];
+
+    return `${h.temperature !== null ? `${Math.round(h.temperature)}° ` : ''}${name}`;
+}
+
 // The mock's chip glyphs (street-art.js sky()).
 const ICON = {
     sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8ZM12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4',
