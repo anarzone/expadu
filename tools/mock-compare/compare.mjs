@@ -98,10 +98,11 @@ async function login(browser, side) {
     const origin = new URL(side.url).origin;
     // Reuse a saved session while it still opens the app: repeated sign-ins
     // trip the login rate limit.
+    const email = process.env.MOCK_COMPARE_EMAIL ?? l.email;
     const cache = path.join(
         'storage',
         'mock-compare',
-        `.session-${new URL(origin).port || 'default'}.json`,
+        `.session-${new URL(origin).port || 'default'}-${email.replace(/[^a-z0-9]+/gi, '_')}.json`,
     );
     if (fs.existsSync(cache)) {
         const context = await browser.newContext({
@@ -122,10 +123,7 @@ async function login(browser, side) {
     await page.goto(origin + (l.path ?? '/login'), {
         waitUntil: 'domcontentloaded',
     });
-    await page
-        .getByLabel(/email/i)
-        .first()
-        .fill(process.env.MOCK_COMPARE_EMAIL ?? l.email);
+    await page.getByLabel(/email/i).first().fill(email);
     await page
         .getByLabel(/password/i)
         .first()
