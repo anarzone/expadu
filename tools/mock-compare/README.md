@@ -89,8 +89,9 @@ the pairs after it, so open states go last; `mockBefore` / `appBefore` when the 
 Per side: `wait`, `init` (scripts run before the page), `before` (`[{ "click": "selector" },
 { "key": "Escape" }, { "wait": 300 }]` to open a menu or sheet first), `cookies` (`{ "name": "value" }`
 on that side's origin, e.g. the app's `mock_clock`; PHP decodes cookie values, so write `+` as `%2B`),
-`screenshotStyle` (CSS applied only while element screenshots are taken, e.g. to hide that side's
-sticky header where the tool has scrolled it over the element; boxes and styles are measured without it).
+`screenshotStyle` (CSS applied only while element screenshots are taken, to hide that side's own
+chrome that can sit over an element: a sticky header, the floating Composer button, the local QA
+switcher; boxes and styles are measured without it).
 
 ## Finding the pairs
 

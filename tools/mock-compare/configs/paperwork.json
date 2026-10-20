@@ -5,7 +5,7 @@
     "mock": {
         "url": "/dev/design/bureaucracy-next/",
         "wait": ".process-grid",
-        "screenshotStyle": "#shell, #shell * { visibility: hidden !important; }"
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
     },
     "app": {
         "url": "/bureaucracy",
@@ -17,7 +17,7 @@
             "email": "e2e@expadu.test",
             "password": "e2e-password"
         },
-        "screenshotStyle": ".shell, .shell * { visibility: hidden !important; }"
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
     },
     "pairs": [
         {
