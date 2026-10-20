@@ -16,6 +16,8 @@ import type { StreetLayoutName } from './street-layout';
 import { STREET, streetFit } from './street-layout';
 import StreetScene from './street-scene';
 import { streetSky } from './street-sky';
+import type { DayForecast } from './street-weather';
+import { WeatherChip, weatherFor } from './street-weather';
 
 const PHONE = '(max-width: 700px)';
 // One spacing (owner, 16 Oct 2026): a desktop's street ends 16px above the
@@ -36,7 +38,7 @@ function useLayoutName(): StreetLayoutName {
 }
 
 /** Cologne's clock as a decimal hour, ticking each minute. */
-function useNowHour(): number {
+export function useNowHour(): number {
     const read = () => {
         const [h, m] = berlinClock(new Date().toISOString()).split(':');
 
@@ -61,9 +63,12 @@ export function EventsStreet({
     wall,
     column,
     poster,
+    forecast,
 }: {
     date: string;
     today: string;
+    /** The day's forecast (EventController's deferred weather). */
+    forecast?: DayForecast | null;
     /** The day's listings on the wall (after the page's filters). */
     wall: StreetListing[];
     /** The column holds the whole day and stays put while you filter. */
@@ -126,7 +131,7 @@ export function EventsStreet({
     const timed = wall.filter((l) => l.poster.start);
     // Today's sky is now; another day's opens on its first listing's hour.
     const firstHour = timed.length
-        ? parseInt(timed[0].poster.start!, 10) + 0.5
+        ? Math.min(...timed.map((l) => parseInt(l.poster.start!, 10))) + 0.5
         : 12;
     const skyHour = isToday ? nowHour : firstHour;
     const fit = box
@@ -148,6 +153,7 @@ export function EventsStreet({
         width: fit?.width ?? STREET[layout].size[0],
         skyHeight: STREET[layout].sky,
         phone: layout === 'phone',
+        weather: weatherFor(forecast),
     });
 
     return (
@@ -160,7 +166,16 @@ export function EventsStreet({
             {fit ? (
                 <div
                     className="ev-street-fit"
-                    style={{ zoom: fit.zoom, width: fit.width, height }}
+                    style={
+                        {
+                            zoom: fit.zoom,
+                            width: fit.width,
+                            height,
+                            // The chip sits 20px (12px on a phone) in from
+                            // the corner on screen, at any zoom.
+                            '--chip-inset': `${((layout === 'phone' ? 12 : 20) / fit.zoom).toFixed(2)}px`,
+                        } as CSSProperties
+                    }
                 >
                     <StreetScene
                         layout={layout}
@@ -185,6 +200,14 @@ export function EventsStreet({
                         onPhonePage={setPhonePage}
                         poster={(item, where, style) =>
                             poster(item, where, style)
+                        }
+                        chip={
+                            <WeatherChip
+                                forecast={forecast}
+                                hour={skyHour}
+                                daylight={sky.daylight}
+                                date={date}
+                            />
                         }
                     />
                 </div>

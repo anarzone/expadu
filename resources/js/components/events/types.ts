@@ -28,6 +28,9 @@ export type EventOccurrence = {
         lng: number | null;
         place_id: number | null;
         place_name: string | null;
+        /** The venue's recorded setting and step-free access (Events). */
+        setting?: 'indoor' | 'outdoor' | null;
+        wheelchair?: string | null;
     };
     source_url: string | null;
     venue_id?: number | null;

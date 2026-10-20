@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Enums\EventCategory;
 use App\Models\Event;
+use App\Services\WeatherService;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,10 +32,36 @@ class EventController extends Controller
             'date' => $day->toDateString(),
             'today' => $today->toDateString(),
             'filters' => $this->filters($request),
-            'listings' => Event::occurringBetween($day->startOfDay(), $day->endOfDay())
+            'listings' => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
-                ->values(),
+                ->values()
+                ->all()),
+            // The street's sky and the rain warnings; the page draws a plain
+            // sky until it arrives, and says so when there is none.
+            'weather' => Inertia::defer(fn () => app(WeatherService::class)->getDayForecast($day->toDateString())),
         ]);
+    }
+
+    /**
+     * The venue's recorded setting (indoor/outdoor) and step-free access,
+     * from place_features, in one query for the day: what the street's rain
+     * warning and the poster's Accessibility read. Unknown stays null.
+     *
+     * @param  list<array<string, mixed>>  $listings
+     * @return list<array<string, mixed>>
+     */
+    private function withVenueFacts(array $listings): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map(fn (array $l) => $l['venue']['place_id'] ?? null, $listings))));
+        $facts = $ids === [] ? collect() : DB::table('place_features')->whereIn('spot_id', $ids)->get(['spot_id', 'setting', 'wheelchair'])->keyBy('spot_id');
+
+        return array_map(function (array $listing) use ($facts): array {
+            $fact = $facts->get($listing['venue']['place_id'] ?? 0);
+            $listing['venue']['setting'] = $fact?->setting;
+            $listing['venue']['wheelchair'] = $fact?->wheelchair;
+
+            return $listing;
+        }, $listings);
     }
 
     /**

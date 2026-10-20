@@ -26,8 +26,13 @@ import type {
     StartingPoint,
     TravelMode,
 } from '@/components/events-filters/events-filter-bar';
-import { EventsStreet } from '@/components/events-street/events-street';
+import {
+    EventsStreet,
+    useNowHour,
+} from '@/components/events-street/events-street';
 import type { StreetListing } from '@/components/events-street/events-street';
+import { rainLikely } from '@/components/events-street/street-weather';
+import type { DayForecast } from '@/components/events-street/street-weather';
 import { Poster } from '@/components/posters/poster-art';
 import { posterEvent, posterWeekday } from '@/components/posters/poster-model';
 import { showToast } from '@/components/ui/toast';
@@ -45,6 +50,8 @@ type Props = {
     listings: EventOccurrence[];
     /** From the URL, so a deep link opens the same view. */
     filters: EventFilters;
+    /** The day's forecast, deferred (WeatherService::getDayForecast). */
+    weather?: DayForecast;
 };
 
 type Listing = StreetListing & {
@@ -79,12 +86,36 @@ function km(
     return 12742 * Math.asin(Math.sqrt(h));
 }
 
+/* What the listing or the venue's record says: the venue's recorded
+   setting, or a listing that says it's outdoors or open-air. Never more. */
+const outdoor = (o: EventOccurrence) =>
+    o.venue.setting === 'outdoor' ||
+    /\b(outdoors?|open[- ]air|im freien)\b/i.test(
+        `${o.title_original ?? ''} ${o.title} ${o.summary ?? ''}`,
+    );
+
+/** The venue's recorded step-free access, in words; nothing when unknown. */
+const stepFree = (value: string | null | undefined) =>
+    value === 'yes'
+        ? 'Wheelchair accessible'
+        : value === 'limited'
+          ? 'Partly wheelchair accessible'
+          : value === 'no'
+            ? 'Not wheelchair accessible'
+            : undefined;
+
 const distanceLabel = (value: number) =>
     value < 1 ? `${Math.round(value * 1000)} m` : `${value.toFixed(1)} km`;
 
 /** Events: the day's listings as posters on a Cologne street (the mock's
     events-next), narrowed by the filters above it. */
-export default function Events({ date, today, listings, filters }: Props) {
+export default function Events({
+    date,
+    today,
+    listings,
+    filters,
+    weather,
+}: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const saved = useSavedEvents(auth.user.id);
     const f = { ...noFilters, ...filters };
@@ -292,12 +323,71 @@ export default function Events({ date, today, listings, filters }: Props) {
         }
     }
 
+    // Today's posters say where they stand now: on (until its listed end),
+    // over, and rain likely at the start for an outdoor venue.
+    const nowHour = useNowHour();
+    const hours = (time: string) =>
+        Number(time.slice(0, 2)) + Number(time.slice(3, 5)) / 60;
+    const todayState = (listing: Listing) => {
+        const p = listing.poster;
+
+        if (date !== today || !p.start) {
+            return { when: null, flags: null };
+        }
+
+        const start = hours(p.start);
+        let end = p.end ? hours(p.end) : null;
+
+        if (end !== null && end <= start) {
+            end += 24;
+        }
+
+        const when =
+            end === null
+                ? null
+                : nowHour >= end
+                  ? ('over' as const)
+                  : nowHour >= start
+                    ? ('now' as const)
+                    : null;
+        const wet =
+            when !== 'over' &&
+            outdoor(listing.occurrence) &&
+            rainLikely(weather, p.start);
+
+        return {
+            when,
+            flags:
+                when || wet ? (
+                    <>
+                        {when === 'now' ? (
+                            <span className="pp-flag pp-flag--now">
+                                <span aria-hidden="true" />
+                                On now · until {p.end}
+                            </span>
+                        ) : when === 'over' ? (
+                            <span className="pp-flag pp-flag--over">Over</span>
+                        ) : null}
+                        {wet ? (
+                            <span className="pp-flag pp-flag--rain">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 3.5c-3.2 4.2-5.6 7.2-5.6 10.2a5.6 5.6 0 0 0 11.2 0c0-3-2.4-6-5.6-10.2Z" />
+                                </svg>
+                                Rain likely · forecast
+                            </span>
+                        ) : null}
+                    </>
+                ) : null,
+        };
+    };
+
     const poster = (
         item: StreetListing,
         where: 'wall' | 'column',
         style?: CSSProperties,
     ) => {
         const listing = item as Listing;
+        const state = todayState(listing);
 
         return (
             <Poster
@@ -308,6 +398,9 @@ export default function Events({ date, today, listings, filters }: Props) {
                 distance={
                     listing.km !== null ? distanceLabel(listing.km) : undefined
                 }
+                access={stepFree(listing.occurrence.venue.wheelchair)}
+                when={state.when}
+                flags={state.flags}
                 saved={saved.keys.has(listing.key)}
                 onSave={() => toggleSave(listing)}
             />
@@ -381,6 +474,7 @@ export default function Events({ date, today, listings, filters }: Props) {
                         wall={wall}
                         column={day}
                         poster={poster}
+                        forecast={weather}
                     />
                 )}
             </section>
