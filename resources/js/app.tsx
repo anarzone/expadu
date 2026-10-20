@@ -1,10 +1,10 @@
 import { createInertiaApp, router } from '@inertiajs/react';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { Component, StrictMode } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { showToast } from '@/components/flash-toast';
+import { showToast } from '@/components/ui/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { resolvePage } from '@/lib/resolve-page';
 import '../css/app.css';
 
 /**
@@ -63,11 +63,20 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) =>
-        resolvePageComponent(
-            `./pages/${name}.tsx`,
-            import.meta.glob('./pages/**/*.tsx'),
-        ),
+    resolve: resolvePage,
+    defaults: {
+        // Moving to another page fades the page across in 150ms while the
+        // shell stays still (shell.css). Same-page visits (filters, polling,
+        // forms) swap without it.
+        visitOptions: (href, options) =>
+            options.method === 'get' &&
+            !options.only?.length &&
+            !options.except?.length &&
+            new URL(href, window.location.href).pathname !==
+                window.location.pathname
+                ? { ...options, viewTransition: true }
+                : options,
+    },
     setup({ el, App, props }) {
         // Reuse server markup so a slow startup does not replace an already
         // visible form or discard input. SSR can be unavailable, so keep the
@@ -156,9 +165,9 @@ router.on('error', (event) => {
 
     if (typeof first === 'string') {
         // The toast is held in a module store, so calling this even during
-        // Inertia's error re-render (which remounts <FlashToast>) is safe —
+        // Inertia's error re-render (which can remount the page) is safe —
         // the freshly-mounted toast reads the latest message.
-        showToast(first);
+        showToast(first, { error: true });
     }
 });
 
@@ -180,6 +189,7 @@ router.on('invalid', (event) => {
               : status !== undefined && status >= 500
                 ? 'The server hit an error. Nothing was saved — try again in a moment.'
                 : 'Something blocked the response — an ad blocker or browser extension may be interfering. Try turning it off for this site, or reload.',
+        { error: true },
     );
 });
 
@@ -187,5 +197,6 @@ router.on('invalid', (event) => {
 router.on('exception', () => {
     showToast(
         "Couldn't reach the server. Check your connection and try again.",
+        { error: true },
     );
 });

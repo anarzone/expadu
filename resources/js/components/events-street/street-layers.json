@@ -1,0 +1,458 @@
+{
+    "desktop": {
+        "size": [2240, 960],
+        "scales": [1, 1.5],
+        "inline": {
+            "lampFrame": "<path d=\"M-14 -572 L-22 -640 M14 -572 L22 -640 M0 -572 V-640 M-18 -606 h36\" stroke=\"#2b3a34\" stroke-width=\"2.6\" fill=\"none\"></path>\n  <path d=\"M-26 -640 h52 L10 -664 h-20 Z\" fill=\"#2b3a34\"></path><path d=\"M-10 -664 h20 l-4 -8 h-12 Z\" fill=\"#3c4d46\"></path>\n  <circle cx=\"0\" cy=\"-678\" r=\"5\" fill=\"#2b3a34\"></circle><path d=\"M-1.5 -683 h3 v-10 h-3 Z\" fill=\"#2b3a34\"></path>\n  <path d=\"M-26 -640 h52\" stroke=\"#ffffff\" stroke-opacity=\"0.18\" stroke-width=\"1.5\"></path>\n",
+            "moonGlow": "<radialgradient id=\"stdmoonglow\">\n    <stop offset=\"0\" stop-color=\"#f4f1dc\" stop-opacity=\"0.45\"></stop>\n    <stop offset=\"1\" stop-color=\"#f4f1dc\" stop-opacity=\"0\"></stop>\n  </radialgradient>\n  "
+        },
+        "grain": {
+            "y": 250,
+            "height": 630,
+            "opacity": 0.6,
+            "tile": 128
+        },
+        "layers": [
+            {
+                "id": "stars",
+                "kind": "image",
+                "box": [14, 3, 2198, 163],
+                "files": {
+                    "1": "/events/street/desktop/stars@1x.webp",
+                    "1.5": "/events/street/desktop/stars@1.5x.webp"
+                }
+            },
+            {
+                "id": "cloud-a",
+                "kind": "tint",
+                "box": [149, 0, 2067, 99],
+                "files": {
+                    "1": "/events/street/desktop/cloud-a@1x.webp",
+                    "1.5": "/events/street/desktop/cloud-a@1.5x.webp"
+                }
+            },
+            {
+                "id": "cloud-b",
+                "kind": "tint",
+                "box": [0, 47, 2240, 114],
+                "files": {
+                    "1": "/events/street/desktop/cloud-b@1x.webp",
+                    "1.5": "/events/street/desktop/cloud-b@1.5x.webp"
+                }
+            },
+            {
+                "id": "cloud-c",
+                "kind": "tint",
+                "box": [347, 82, 1763, 138],
+                "files": {
+                    "1": "/events/street/desktop/cloud-c@1x.webp",
+                    "1.5": "/events/street/desktop/cloud-c@1.5x.webp"
+                }
+            },
+            {
+                "id": "birds",
+                "kind": "image",
+                "box": [0, 61, 86, 23],
+                "files": {
+                    "1": "/events/street/desktop/birds@1x.webp",
+                    "1.5": "/events/street/desktop/birds@1.5x.webp"
+                }
+            },
+            {
+                "id": "plane",
+                "kind": "image",
+                "box": [0, 36, 2, 4],
+                "files": {
+                    "1": "/events/street/desktop/plane@1x.webp",
+                    "1.5": "/events/street/desktop/plane@1.5x.webp"
+                }
+            },
+            {
+                "id": "far",
+                "kind": "mask",
+                "box": [0, 21, 2240, 217],
+                "files": {
+                    "1": "/events/street/desktop/far@1x.webp",
+                    "1.5": "/events/street/desktop/far@1.5x.webp"
+                }
+            },
+            {
+                "id": "far-light",
+                "kind": "mask",
+                "box": [600, 136, 564, 62],
+                "files": {
+                    "1": "/events/street/desktop/far-light@1x.webp",
+                    "1.5": "/events/street/desktop/far-light@1.5x.webp"
+                }
+            },
+            {
+                "id": "smoke",
+                "kind": "image",
+                "box": [190, 162, 342, 54],
+                "files": {
+                    "1": "/events/street/desktop/smoke@1x.webp",
+                    "1.5": "/events/street/desktop/smoke@1.5x.webp"
+                }
+            },
+            {
+                "id": "near",
+                "kind": "mask",
+                "box": [0, 170, 2222, 68],
+                "files": {
+                    "1": "/events/street/desktop/near@1x.webp",
+                    "1.5": "/events/street/desktop/near@1.5x.webp"
+                }
+            },
+            {
+                "id": "windows",
+                "kind": "image",
+                "box": [0, 208, 2192, 29],
+                "files": {
+                    "1": "/events/street/desktop/windows@1x.webp",
+                    "1.5": "/events/street/desktop/windows@1.5x.webp"
+                }
+            },
+            {
+                "id": "wall",
+                "kind": "image",
+                "box": [0, 230, 2240, 730],
+                "files": {
+                    "1": "/events/street/desktop/wall@1x.webp",
+                    "1.5": "/events/street/desktop/wall@1.5x.webp"
+                }
+            },
+            {
+                "id": "grain",
+                "kind": "multiply",
+                "box": [0, 0, 128, 128],
+                "files": {
+                    "1": "/events/street/desktop/grain@1x.webp",
+                    "1.5": "/events/street/desktop/grain@1.5x.webp"
+                }
+            },
+            {
+                "id": "shadow",
+                "kind": "image",
+                "box": [82, 285, 472, 610],
+                "files": {
+                    "1": "/events/street/desktop/shadow@1x.webp",
+                    "1.5": "/events/street/desktop/shadow@1.5x.webp"
+                }
+            },
+            {
+                "id": "tree",
+                "kind": "image",
+                "box": [0, 0, 268, 142],
+                "files": {
+                    "1": "/events/street/desktop/tree@1x.webp",
+                    "1.5": "/events/street/desktop/tree@1.5x.webp"
+                }
+            },
+            {
+                "id": "edge",
+                "kind": "image",
+                "box": [975, 244, 386, 667],
+                "files": {
+                    "1": "/events/street/desktop/edge@1x.webp",
+                    "1.5": "/events/street/desktop/edge@1.5x.webp"
+                },
+                "anchor": "right"
+            },
+            {
+                "id": "column",
+                "kind": "image",
+                "box": [0, 0, 300, 740],
+                "files": {
+                    "1": "/events/street/desktop/column@1x.webp",
+                    "1.5": "/events/street/desktop/column@1.5x.webp"
+                }
+            },
+            {
+                "id": "puddles",
+                "kind": "tint",
+                "box": [570, 930, 1646, 29],
+                "files": {
+                    "1": "/events/street/desktop/puddles@1x.webp",
+                    "1.5": "/events/street/desktop/puddles@1.5x.webp"
+                }
+            },
+            {
+                "id": "lamp-pool",
+                "kind": "image",
+                "box": [0, 922, 272, 36],
+                "files": {
+                    "1": "/events/street/desktop/lamp-pool@1x.webp",
+                    "1.5": "/events/street/desktop/lamp-pool@1.5x.webp"
+                }
+            },
+            {
+                "id": "lamp",
+                "kind": "image",
+                "box": [52, 356, 68, 588],
+                "files": {
+                    "1": "/events/street/desktop/lamp@1x.webp",
+                    "1.5": "/events/street/desktop/lamp@1.5x.webp"
+                }
+            },
+            {
+                "id": "street",
+                "kind": "image",
+                "box": [0, 835, 522, 125],
+                "files": {
+                    "1": "/events/street/desktop/street@1x.webp",
+                    "1.5": "/events/street/desktop/street@1.5x.webp"
+                }
+            },
+            {
+                "id": "lamp-glow",
+                "kind": "image",
+                "box": [0, 214, 206, 240],
+                "files": {
+                    "1": "/events/street/desktop/lamp-glow@1x.webp",
+                    "1.5": "/events/street/desktop/lamp-glow@1.5x.webp"
+                }
+            },
+            {
+                "id": "leaves",
+                "kind": "image",
+                "box": [50, 106, 186, 22],
+                "files": {
+                    "1": "/events/street/desktop/leaves@1x.webp",
+                    "1.5": "/events/street/desktop/leaves@1.5x.webp"
+                }
+            },
+            {
+                "id": "rain",
+                "kind": "image",
+                "box": [0, 0, 2231, 960],
+                "files": {
+                    "1": "/events/street/desktop/rain@1x.webp",
+                    "1.5": "/events/street/desktop/rain@1.5x.webp"
+                }
+            }
+        ]
+    },
+    "phone": {
+        "size": [351, 590],
+        "scales": [2, 3],
+        "inline": {
+            "lampFrame": "<path d=\"M-14 -572 L-22 -640 M14 -572 L22 -640 M0 -572 V-640 M-18 -606 h36\" stroke=\"#2b3a34\" stroke-width=\"2.6\" fill=\"none\"></path>\n  <path d=\"M-26 -640 h52 L10 -664 h-20 Z\" fill=\"#2b3a34\"></path><path d=\"M-10 -664 h20 l-4 -8 h-12 Z\" fill=\"#3c4d46\"></path>\n  <circle cx=\"0\" cy=\"-678\" r=\"5\" fill=\"#2b3a34\"></circle><path d=\"M-1.5 -683 h3 v-10 h-3 Z\" fill=\"#2b3a34\"></path>\n  <path d=\"M-26 -640 h52\" stroke=\"#ffffff\" stroke-opacity=\"0.18\" stroke-width=\"1.5\"></path>\n",
+            "moonGlow": "<radialgradient id=\"stpmoonglow\">\n    <stop offset=\"0\" stop-color=\"#f4f1dc\" stop-opacity=\"0.45\"></stop>\n    <stop offset=\"1\" stop-color=\"#f4f1dc\" stop-opacity=\"0\"></stop>\n  </radialgradient>\n  "
+        },
+        "grain": {
+            "y": 162,
+            "height": 372,
+            "opacity": 0.6,
+            "tile": 128
+        },
+        "layers": [
+            {
+                "id": "stars",
+                "kind": "image",
+                "box": [14, 4, 309, 101],
+                "files": {
+                    "2": "/events/street/phone/stars@2x.webp",
+                    "3": "/events/street/phone/stars@3x.webp"
+                }
+            },
+            {
+                "id": "cloud-a",
+                "kind": "tint",
+                "box": [17, 16, 334, 35],
+                "files": {
+                    "2": "/events/street/phone/cloud-a@2x.webp",
+                    "3": "/events/street/phone/cloud-a@3x.webp"
+                }
+            },
+            {
+                "id": "cloud-b",
+                "kind": "tint",
+                "box": [27, 49, 238, 41],
+                "files": {
+                    "2": "/events/street/phone/cloud-b@2x.webp",
+                    "3": "/events/street/phone/cloud-b@3x.webp"
+                }
+            },
+            {
+                "id": "cloud-c",
+                "kind": "tint",
+                "box": [0, 66, 351, 68],
+                "files": {
+                    "2": "/events/street/phone/cloud-c@2x.webp",
+                    "3": "/events/street/phone/cloud-c@3x.webp"
+                }
+            },
+            {
+                "id": "birds",
+                "kind": "image",
+                "box": [0, 35, 86, 24],
+                "files": {
+                    "2": "/events/street/phone/birds@2x.webp",
+                    "3": "/events/street/phone/birds@3x.webp"
+                }
+            },
+            {
+                "id": "plane",
+                "kind": "image",
+                "box": [0, 22, 2, 4],
+                "files": {
+                    "2": "/events/street/phone/plane@2x.webp",
+                    "3": "/events/street/phone/plane@3x.webp"
+                }
+            },
+            {
+                "id": "far",
+                "kind": "mask",
+                "box": [0, 13, 351, 139],
+                "files": {
+                    "2": "/events/street/phone/far@2x.webp",
+                    "3": "/events/street/phone/far@3x.webp"
+                }
+            },
+            {
+                "id": "far-light",
+                "kind": "mask",
+                "box": [42, 89, 221, 39],
+                "files": {
+                    "2": "/events/street/phone/far-light@2x.webp",
+                    "3": "/events/street/phone/far-light@3x.webp"
+                }
+            },
+            {
+                "id": "smoke",
+                "kind": "image",
+                "box": [104, 128, 11, 10],
+                "files": {
+                    "2": "/events/street/phone/smoke@2x.webp",
+                    "3": "/events/street/phone/smoke@3x.webp"
+                }
+            },
+            {
+                "id": "near",
+                "kind": "mask",
+                "box": [0, 117, 349, 35],
+                "files": {
+                    "2": "/events/street/phone/near@2x.webp",
+                    "3": "/events/street/phone/near@3x.webp"
+                }
+            },
+            {
+                "id": "windows",
+                "kind": "image",
+                "box": [10, 134, 330, 18],
+                "files": {
+                    "2": "/events/street/phone/windows@2x.webp",
+                    "3": "/events/street/phone/windows@3x.webp"
+                }
+            },
+            {
+                "id": "wall",
+                "kind": "image",
+                "box": [0, 150, 351, 440],
+                "files": {
+                    "2": "/events/street/phone/wall@2x.webp",
+                    "3": "/events/street/phone/wall@3x.webp"
+                }
+            },
+            {
+                "id": "grain",
+                "kind": "multiply",
+                "box": [0, 0, 128, 128],
+                "files": {
+                    "2": "/events/street/phone/grain@2x.webp",
+                    "3": "/events/street/phone/grain@3x.webp"
+                }
+            },
+            {
+                "id": "shadow",
+                "kind": "image",
+                "box": [155, 199, 56, 350],
+                "files": {
+                    "2": "/events/street/phone/shadow@2x.webp",
+                    "3": "/events/street/phone/shadow@3x.webp"
+                }
+            },
+            {
+                "id": "tree",
+                "kind": "image",
+                "box": [0, 0, 148, 78],
+                "files": {
+                    "2": "/events/street/phone/tree@2x.webp",
+                    "3": "/events/street/phone/tree@3x.webp"
+                }
+            },
+            {
+                "id": "column",
+                "kind": "image",
+                "box": [0, 0, 300, 740],
+                "files": {
+                    "2": "/events/street/phone/column@2x.webp",
+                    "3": "/events/street/phone/column@3x.webp"
+                }
+            },
+            {
+                "id": "puddles",
+                "kind": "tint",
+                "box": [216, 569, 68, 10],
+                "files": {
+                    "2": "/events/street/phone/puddles@2x.webp",
+                    "3": "/events/street/phone/puddles@3x.webp"
+                }
+            },
+            {
+                "id": "lamp-pool",
+                "kind": "image",
+                "box": [0, 556, 105, 32],
+                "files": {
+                    "2": "/events/street/phone/lamp-pool@2x.webp",
+                    "3": "/events/street/phone/lamp-pool@3x.webp"
+                }
+            },
+            {
+                "id": "lamp",
+                "kind": "image",
+                "box": [0, 230, 29, 341],
+                "files": {
+                    "2": "/events/street/phone/lamp@2x.webp",
+                    "3": "/events/street/phone/lamp@3x.webp"
+                }
+            },
+            {
+                "id": "street",
+                "kind": "image",
+                "box": [60, 564, 62, 18],
+                "files": {
+                    "2": "/events/street/phone/street@2x.webp",
+                    "3": "/events/street/phone/street@3x.webp"
+                }
+            },
+            {
+                "id": "lamp-glow",
+                "kind": "image",
+                "box": [0, 147, 79, 140],
+                "files": {
+                    "2": "/events/street/phone/lamp-glow@2x.webp",
+                    "3": "/events/street/phone/lamp-glow@3x.webp"
+                }
+            },
+            {
+                "id": "leaves",
+                "kind": "image",
+                "box": [20, 46, 34, 22],
+                "files": {
+                    "2": "/events/street/phone/leaves@2x.webp",
+                    "3": "/events/street/phone/leaves@3x.webp"
+                }
+            },
+            {
+                "id": "rain",
+                "kind": "image",
+                "box": [0, 0, 346, 590],
+                "files": {
+                    "2": "/events/street/phone/rain@2x.webp",
+                    "3": "/events/street/phone/rain@3x.webp"
+                }
+            }
+        ]
+    }
+}

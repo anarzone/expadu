@@ -117,26 +117,17 @@ test('an around-plan event does not overlap another known appointment', () => {
     assert.equal(C.around(day, []), null);
 });
 
-test('Composer names the next missing decision without confirming or mutating a proposal', () => {
+test('Composer’s pick-up is an unsent message or the conversation; nothing waits to be confirmed', () => {
+    assert.equal(C.decision({ kind: 'message' }).kind, 'message');
+    assert.equal(C.decision({ kind: 'conversation' }).kind, 'conversation');
+    // Changes go straight into the plan with Undo (board 3): no proposal,
+    // selection or time review is asked for here.
     const proposal = {
         kind: 'proposal',
         date: '2026-10-03',
         items: [{ title: 'First', start: '13:00' }, { title: 'Second' }],
-        pending: 0,
     };
-    const before = JSON.stringify(proposal);
-    assert.equal(C.decision(proposal).kind, 'time');
-    assert.equal(C.decision(proposal).count, 1);
-    assert.equal(JSON.stringify(proposal), before);
-    assert.equal(C.decision({ ...proposal, items: [] }).kind, 'changes');
-    assert.equal(
-        C.decision({
-            ...proposal,
-            items: [{ title: 'First', start: '13:00', end: '14:00' }],
-            pending: 2,
-        }).kind,
-        'selections',
-    );
+    assert.equal(C.decision(proposal), null);
     assert.equal(C.decision(null), null);
 });
 
@@ -199,18 +190,8 @@ test('an imminent commitment and its disruption outrank an unrelated draft and d
     );
 });
 
-test('today’s unfinished decision is promoted, but future drafts and undated messages stay secondary', () => {
+test('Composer never takes Today’s lead: a draft message stays secondary', () => {
     const day = context.TodayNext.scenario('quiet');
-    const proposal = {
-        kind: 'proposal',
-        date: day.date,
-        items: [{ title: 'A plan', start: '17:00', end: '18:00' }],
-    };
-    assert.equal(C.priority(day, { composer: proposal }).lead, 'composer');
-    assert.equal(
-        C.priority(day, { composer: { ...proposal, date: '2026-10-03' } }).lead,
-        'discovery',
-    );
     assert.equal(
         C.priority(day, {
             composer: { kind: 'message', excerpt: 'A draft about tomorrow' },
@@ -220,8 +201,9 @@ test('today’s unfinished decision is promoted, but future drafts and undated m
     assert.equal(
         C.priority(day, {
             composer: {
-                ...proposal,
-                items: [{ title: 'Ended', start: '10:00', end: '11:00' }],
+                kind: 'proposal',
+                date: day.date,
+                items: [{ title: 'A plan', start: '17:00', end: '18:00' }],
             },
         }).lead,
         'discovery',
@@ -325,17 +307,6 @@ test('a first-visit sample contains no assumed appointments or paperwork', () =>
     assert.equal(day.paperwork.length, 0);
     assert.equal(day.upcoming.length, 0);
     assert.equal(C.priority(day, {}).lead, 'essentials');
-});
-
-test('a today draft with a passed start asks for a time review instead of claiming readiness', () => {
-    const day = context.TodayNext.scenario('quiet');
-    const draft = {
-        kind: 'proposal',
-        date: day.date,
-        items: [{ title: 'Park', start: '13:00', end: '14:00' }],
-    };
-    assert.equal(C.decision(draft, day).kind, 'passed-time');
-    assert.equal(draft.items[0].start, '13:00');
 });
 
 test('a journey leaving soon takes precedence even when the appointment is later', () => {

@@ -95,7 +95,7 @@ test('quiet days retain city help and discovery without manufacturing a personal
     const html = render('quiet');
     assert.match(html, /No plans yet/);
     assert.match(html, /Plan a journey/);
-    assert.match(html, /Find a doctor/);
+    assert.doesNotMatch(html, /Find a doctor|Find a service/);
     assert.match(html, /Street culture night/);
     assert.doesNotMatch(html, /Blue Card appointment|data-day-swipe/);
 });

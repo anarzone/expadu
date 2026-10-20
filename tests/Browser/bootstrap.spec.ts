@@ -35,7 +35,7 @@ test('startup preserves the rendered form, its focus and an early draft', async 
     await expect(name).toBeFocused();
     await expect(name).toHaveValue('Draft typed before startup');
     await page
-        .getByRole('button', { name: 'Account menu', exact: true })
+        .getByRole('button', { name: 'Your account', exact: true })
         .click();
     await expect(page.locator('[data-test="logout-button"]')).toBeVisible();
     await page.keyboard.press('Escape');
@@ -68,7 +68,7 @@ test('startup remains usable when the server returns an empty app root', async (
     await page.goto('/settings/profile');
     await expect(page.getByLabel('Name', { exact: true })).toBeVisible();
     await page
-        .getByRole('button', { name: 'Account menu', exact: true })
+        .getByRole('button', { name: 'Your account', exact: true })
         .click();
     await expect(page.locator('[data-test="logout-button"]')).toBeVisible();
 });
@@ -98,7 +98,7 @@ test('core pages attach without hydration errors', async ({ page }) => {
     ]) {
         await page.goto(path);
         await page
-            .getByRole('button', { name: 'Account menu', exact: true })
+            .getByRole('button', { name: 'Your account', exact: true })
             .click();
         await expect(page.locator('[data-test="logout-button"]')).toBeVisible();
         await page.keyboard.press('Escape');

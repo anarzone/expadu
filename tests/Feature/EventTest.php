@@ -1,55 +1,37 @@
 <?php
 
-use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Event;
 use App\Models\User;
-use App\Models\Venue;
+use Carbon\CarbonImmutable;
 
-test('events page renders the shell with filters from the URL', function () {
-    $user = User::factory()->onboarded()->create();
-    $this->actingAs($user);
+test('events page shows the chosen day, earlier hours included', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-08 15:00', 'Europe/Berlin'));
+    $this->actingAs(User::factory()->onboarded()->create());
+    Event::factory()->create(['title' => 'Morning talk', 'starts_at' => '2026-10-08 10:00:00', 'ends_at' => '2026-10-08 11:00:00']);
+    Event::factory()->create(['title' => 'Evening concert', 'starts_at' => '2026-10-08 19:00:00', 'ends_at' => null]);
+    Event::factory()->create(['title' => 'Next day', 'starts_at' => '2026-10-09 19:00:00']);
 
-    $response = $this->get(route('events', [
-        'window' => 'weekend', 'category' => 'sports', 'free' => 1,
-        'sort' => 'nearest', 'mode' => 'bike',
-    ]));
+    $this->get(route('events'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('events')
+            ->where('date', '2026-10-08')
+            ->where('today', '2026-10-08')
+            ->has('listings', 2)
+            ->where('listings.0.title_original', 'Morning talk')
+            ->where('listings.1.title_original', 'Evening concert'));
 
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('events')
-        ->where('filters.window', 'weekend')
-        ->where('filters.category', 'sports')
-        ->where('filters.free', true)
-        ->where('filters.sort', 'nearest')
-        ->where('filters.mode', 'bike')
-    );
+    $this->get(route('events', ['date' => '2026-10-09']))
+        ->assertInertia(fn ($page) => $page
+            ->where('date', '2026-10-09')
+            ->has('listings', 1)
+            ->where('listings.0.title_original', 'Next day'));
 });
 
-test('an invalid window falls back to today', function () {
+test('an invalid date is refused', function () {
     $this->actingAs(User::factory()->onboarded()->create());
 
-    $this->get(route('events', ['window' => 'someday']))
-        ->assertInertia(fn ($page) => $page->where('filters.window', 'today'));
-});
-
-test('veedel options list only veedels with upcoming events', function () {
-    // Pin the Inertia asset version — CI has no Vite manifest, so the
-    // partial-reload handshake would 409 with a file-derived version.
-    config(['app.asset_url' => 'testing']);
-
-    $this->actingAs(User::factory()->onboarded()->create());
-
-    $active = Venue::create(['name' => 'A', 'veedel' => 'Ehrenfeld']);
-    $stale = Venue::create(['name' => 'B', 'veedel' => 'Porz']);
-    Event::factory()->create(['venue_id' => $active->id, 'starts_at' => now()->addDay()]);
-    Event::factory()->create(['venue_id' => $stale->id, 'starts_at' => now()->subDays(30), 'status' => 'expired']);
-
-    $this->get(route('events'), [
-        'X-Inertia' => 'true',
-        'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
-        'X-Inertia-Partial-Component' => 'events',
-        'X-Inertia-Partial-Data' => 'veedelOptions',
-    ])->assertOk()->assertJsonPath('props.veedelOptions', ['Ehrenfeld']);
+    $this->get(route('events', ['date' => '2026-02-31']))->assertSessionHasErrors('date');
 });
 
 test('legacy detail and saved URLs redirect to the events page', function () {

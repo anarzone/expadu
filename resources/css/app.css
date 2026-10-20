@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
+@import './shell.css';
+@import './primitives.css';
 
 /* Self-hosted fonts — eliminates Google Fonts render-blocking request */
 @font-face {

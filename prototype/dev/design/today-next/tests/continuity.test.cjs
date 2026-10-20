@@ -8,7 +8,6 @@ vm.runInNewContext(
     context,
 );
 const C = context.TodayContinuity;
-const copy = (value) => JSON.parse(JSON.stringify(value));
 
 test('fresh users and confirmed-only plans are not presented as unfinished work', () => {
     assert.equal(C.project().hasContinuation, false);
@@ -28,42 +27,27 @@ test('fresh users and confirmed-only plans are not presented as unfinished work'
     assert.equal(C.project({ shared: null, workspace: null }).saved.length, 0);
 });
 
-test('unfinished changes, even removing all items, stay separate from confirmed plans', () => {
+test('a leftover proposal or department selections make no pick-up card: changes go straight in', () => {
     const workspace = {
         proposal: { date: '2026-10-03', baseId: 'confirmed', items: [] },
         plans: [{ id: 'confirmed', items: [{ title: 'Existing plan' }] }],
     };
-    const before = JSON.stringify(workspace);
-    const result = C.project({ workspace }).composer;
-    assert.equal(result.status, 'Awaiting confirmation');
-    assert.equal(result.title, 'Changes to your plan');
-    assert.equal(result.items.length, 0);
-    assert.equal(JSON.stringify(workspace), before);
-});
-
-test('scheduled department selections are resumable without duplicating an existing proposal', () => {
-    const event = {
-        id: 'cinema',
-        type: 'event',
-        occurrence: 'cinema-oct3',
-        title: 'Cinema',
-        date: '2026-10-03',
-        scheduled: true,
-    };
     const shared = {
         draft: [
-            event,
-            { id: 'context', title: 'Journey context', scheduled: false },
+            {
+                id: 'cinema',
+                type: 'event',
+                title: 'Cinema',
+                date: '2026-10-03',
+                scheduled: true,
+            },
         ],
     };
-    assert.equal(C.project({ shared }).composer.items.length, 1);
-    const workspace = {
-        proposal: {
-            date: event.date,
-            items: [{ ...event, id: 'event:cinema' }],
-        },
-    };
-    assert.equal(C.project({ shared, workspace }).composer.pending, 0);
+    const before = JSON.stringify({ workspace, shared });
+    const result = C.project({ workspace, shared });
+    assert.equal(result.composer, null);
+    assert.equal(result.hasContinuation, false);
+    assert.equal(JSON.stringify({ workspace, shared }), before);
 });
 
 test('saved collection keeps distinct occurrences, never invents a record, and rejects malformed data', () => {
@@ -100,33 +84,22 @@ test('saved collection keeps distinct occurrences, never invents a record, and r
     assert.equal(C.project({ shared: { savedIdeas: {} } }).saved.length, 0);
 });
 
-test('saved services and journeys retain their actual data and exclude stale identifiers', () => {
+test('Services requests and saved journeys are not part of Today’s pick-up', () => {
     const result = C.project({
-        categories: [{ id: 'doctors' }],
         shared: {
             serviceRequests: [
                 {
                     type: 'service',
                     category: 'doctors',
                     title: 'Find a doctor',
-                    requirements: { area: 'Ehrenfeld', language: 'English' },
-                },
-                {
-                    type: 'service',
-                    category: 'missing',
-                    title: 'Missing',
-                    requirements: {},
+                    requirements: { area: 'Ehrenfeld' },
                 },
             ],
         },
-        savedJourneys: ['r9', 'missing', 'r9'],
-        journeyModel: { routes: [{ id: 'r9', line: '9', depart: '23:37' }] },
     });
-    assert.equal(result.requests.length, 1);
-    assert.equal(result.requests[0].requirements.area, 'Ehrenfeld');
-    assert.deepEqual(copy(result.journeys), [
-        { id: 'r9', line: '9', depart: '23:37' },
-    ]);
+    assert.equal(result.requests, undefined);
+    assert.equal(result.journeys, undefined);
+    assert.equal(result.hasContinuation, false);
 });
 
 test('an unsent message wins over past conversation; empty current chapters do not revive old work', () => {
