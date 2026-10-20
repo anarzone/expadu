@@ -101,12 +101,15 @@ const normal = (text: string) =>
 
 export default function ComposerPage({
     workspace: initial,
+    entry: handedOver = null,
     prompt,
     planDate,
     pins = [],
     savedPlaces = [],
 }: {
     workspace: Workspace;
+    /** What a page handed over by POST (the tray's words and the page they came from), once. */
+    entry?: { prompt: string; about: string | null } | null;
     prompt?: string;
     planDate?: string;
     pins?: string[];
@@ -124,6 +127,11 @@ export default function ComposerPage({
     const [entryError, setEntryError] = useState('');
     const [entryRetry, setEntryRetry] = useState(0);
     const [initialInput] = useState(() => {
+        // Words just handed over from another page come first; they wait for Send.
+        if (handedOver?.prompt) {
+            return handedOver.prompt;
+        }
+
         try {
             return (
                 sessionStorage.getItem(`expadu-composer-message-${userId}`) ||
@@ -134,6 +142,10 @@ export default function ComposerPage({
             return prompt || '';
         }
     });
+    // "About: …": what the page was showing, kept with this request until left out.
+    const [about, setAbout] = useState<string | null>(
+        handedOver?.about ?? null,
+    );
     const [input, setInput] = useRemember(
         initialInput,
         `composer-input-${userId}`,
@@ -1188,6 +1200,19 @@ export default function ComposerPage({
                                 </button>
                             )}
                         </section>
+                    )}
+
+                    {about && (
+                        <div className="composer-about">
+                            <span>About: {about}</span>
+                            <button
+                                type="button"
+                                aria-label="Leave this out"
+                                onClick={() => setAbout(null)}
+                            >
+                                <IconX size={15} />
+                            </button>
+                        </div>
                     )}
 
                     {newBelow && (
