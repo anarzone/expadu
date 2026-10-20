@@ -24,7 +24,14 @@ export interface Location {
     paperFilter: string;
     /** A requirement row to open and scroll to on the documents view. */
     focus: string | null;
+    /** One search over tasks, dates, documents and Good to know (overview and documents). */
+    q: string;
+    /** Whose plan: someone who shared theirs; null is your own. */
+    person: number | null;
 }
+
+/** The views the one search applies to. */
+export const searchable: View[] = ['overview', 'paperwork'];
 
 const views: View[] = ['overview', 'paperwork', 'actions', 'history', 'detail'];
 const filters: ActionFilter[] = [
@@ -47,12 +54,18 @@ function fromUrl(): Location {
         filter: filter && filters.includes(filter) ? filter : 'all',
         paperFilter: q.get('documents') ?? 'all',
         focus: q.get('document'),
+        q: q.get('q') ?? '',
+        person: Number(q.get('person')) || null,
     };
 }
 
 function toUrl(location: Location): string {
     const url = new URL(window.location.href);
     url.search = '';
+
+    if (location.person) {
+        url.searchParams.set('person', String(location.person));
+    }
 
     if (location.view !== 'overview') {
         url.searchParams.set('view', location.view);
@@ -76,6 +89,10 @@ function toUrl(location: Location): string {
 
     if (location.view === 'paperwork' && location.focus) {
         url.searchParams.set('document', location.focus);
+    }
+
+    if (searchable.includes(location.view) && location.q.trim()) {
+        url.searchParams.set('q', location.q);
     }
 
     return url.toString();
@@ -179,6 +196,8 @@ export function PaperworkProvider({
                 process: null,
                 step: null,
                 focus: null,
+                // The search follows you between Overview and Documents only.
+                q: searchable.includes(next.view) ? current.q : '',
                 ...next,
             };
             window.history.pushState({}, '', toUrl(location));
@@ -320,7 +339,7 @@ export function PaperworkProvider({
 
     return (
         <PaperworkContext.Provider value={value}>
-            <div className="paperwork-page" data-view={location.view}>
+            <div className="paperwork-page" data-case-view={location.view}>
                 {children}
                 <div
                     className={clsx('toast', message && 'show')}

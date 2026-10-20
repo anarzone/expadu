@@ -1,76 +1,24 @@
-import {
-    IconAdjustmentsHorizontal,
-    IconArrowLeft,
-    IconArrowRight,
-    IconBriefcase,
-    IconBuildingBank,
-    IconCalendar,
-    IconCheck,
-    IconChevronDown,
-    IconClock,
-    IconFileText,
-    IconHeartbeat,
-    IconHome,
-    IconId,
-    IconInfoCircle,
-    IconLayoutGrid,
-    IconMapPin,
-    IconPencil,
-    IconPlus,
-    IconReceiptTax,
-    IconSchool,
-    IconUsers,
-    IconX,
-} from '@tabler/icons-react';
-import type { ComponentType } from 'react';
+import { Icon as SharedIcon } from '@/components/ui/icon';
+import type { LineIconName } from '@/components/ui/icon';
 
-// The prototype's icon names, drawn with the app's Tabler set.
-const icons = {
-    sliders: IconAdjustmentsHorizontal,
-    back: IconArrowLeft,
-    calendar: IconCalendar,
-    check: IconCheck,
-    down: IconChevronDown,
-    arrow: IconArrowRight,
-    clock: IconClock,
-    document: IconFileText,
-    info: IconInfoCircle,
-    grid: IconLayoutGrid,
-    pencil: IconPencil,
-    plus: IconPlus,
-    people: IconUsers,
-    pin: IconMapPin,
-    briefcase: IconBriefcase,
-    close: IconX,
-} satisfies Record<
-    string,
-    ComponentType<{ stroke?: number; 'aria-hidden'?: boolean }>
->;
-
-export type IconName = keyof typeof icons;
+// Paperwork draws the mock's line set (connected/icons.js), as its page does.
+export type IconName = LineIconName;
 
 export function Icon({ name }: { name: IconName }) {
-    const Component = icons[name];
-
-    return <Component stroke={1.7} aria-hidden />;
+    return <SharedIcon name={name} variant="line" />;
 }
 
-// A task's icon and tint come from its topic.
-const topics: Record<
-    string,
-    {
-        icon: ComponentType<{ stroke?: number; 'aria-hidden'?: boolean }>;
-        tone: string;
-    }
-> = {
-    residence: { icon: IconId, tone: 'blue' },
-    address: { icon: IconHome, tone: 'peach' },
-    tax: { icon: IconReceiptTax, tone: 'yellow' },
-    health: { icon: IconHeartbeat, tone: 'green' },
-    money: { icon: IconBuildingBank, tone: 'yellow' },
-    family: { icon: IconUsers, tone: 'peach' },
-    work: { icon: IconBriefcase, tone: 'blue' },
-    education: { icon: IconSchool, tone: 'green' },
+// A task's icon comes from its topic (bureaucracy-next/plan.js); every
+// Paperwork icon is lavender with a violet glyph, whatever its tone.
+const topics: Record<string, { icon: IconName; tone: string }> = {
+    residence: { icon: 'document', tone: '' },
+    address: { icon: 'pin', tone: 'peach' },
+    tax: { icon: 'document', tone: 'yellow' },
+    health: { icon: 'health', tone: 'green' },
+    money: { icon: 'bank', tone: 'blue' },
+    family: { icon: 'people', tone: 'violet' },
+    work: { icon: 'briefcase', tone: 'blue' },
+    education: { icon: 'book', tone: 'green' },
 };
 
 export function TopicIcon({
@@ -80,12 +28,11 @@ export function TopicIcon({
     topic: string | null | undefined;
     tone?: string;
 }) {
-    const entry = topics[topic ?? ''] ?? { icon: IconFileText, tone: '' };
-    const Component = entry.icon;
+    const entry = topics[topic ?? ''] ?? { icon: 'document', tone: '' };
 
     return (
         <span className={`topic-icon ${tone ?? entry.tone}`}>
-            <Component stroke={1.7} aria-hidden />
+            <Icon name={entry.icon} />
         </span>
     );
 }
