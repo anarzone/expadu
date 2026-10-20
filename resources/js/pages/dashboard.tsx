@@ -1,6 +1,9 @@
 import { Deferred, Head, usePage } from '@inertiajs/react';
+import { CityHelp, CityLinks } from '@/components/today/city-help';
+import type { Forecast, Weather } from '@/components/today/city-help';
 import { useDayRefresh } from '@/components/today/use-day-refresh';
 import { YourDay } from '@/components/today/your-day';
+import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { LoadingLines, useDelayedLoading } from '@/components/ui/loading';
 import AppLayout from '@/layouts/app-layout';
 import type { DayProjection } from '@/types/day';
@@ -12,7 +15,18 @@ import '../../css/today.css';
  * order. No title row: the section menu says where you are.
  */
 export default function Today() {
-    const { auth, day } = usePage<{ day?: DayProjection }>().props;
+    const { auth, day, weather, forecast, station, stop, favouriteStops } =
+        usePage<{
+            day?: DayProjection;
+            weather?: Weather;
+            forecast?: Forecast;
+            station?: Station | null;
+            stop: string | null;
+            favouriteStops?: FavouriteStop[];
+        }>().props;
+    const planned = !!day?.items.some(
+        (item) => !item.completed && item.state !== 'elapsed',
+    );
     const firstName = auth.user.name.trim().split(/\s+/)[0];
 
     useDayRefresh(day);
@@ -28,7 +42,21 @@ export default function Today() {
                             {day ? <YourDay day={day} /> : <DayLoading />}
                         </Deferred>
                     </div>
-                    <div className="next-area" />
+                    <div className="next-area">
+                        <div className="practical-surface">
+                            <CityHelp
+                                weather={weather}
+                                forecast={forecast}
+                                station={station}
+                                stop={stop}
+                                favourites={favouriteStops ?? []}
+                                planned={planned}
+                            />
+                        </div>
+                        <div className="continue-support">
+                            <CityLinks />
+                        </div>
+                    </div>
                 </div>
             </div>
         </AppLayout>

@@ -1,0 +1,140 @@
+{
+    "name": "today-city",
+    "seed": "E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "liveNote": "Live clock, as Travel's travel-nearby: departures and the forecast are today's real ones, so those pairs are content (box and styles still exact). y is set aside until the deadline strip and the Paperwork panel (TD2, with #121) and the phone order (TD5) are in. On the live clock the account has no plans today, so the app's Check departures would stay folded; the init script opens it from 701px, as the mock's sample day (with plans) does.",
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".city-help"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".city-help",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            {
+                "wait": 1500
+            }
+        ],
+        "init": [
+            "if (innerWidth >= 701) new MutationObserver(() => document.querySelectorAll('.departure-board:not([open])').forEach((d) => { d.open = true; })).observe(document, { subtree: true, childList: true })"
+        ]
+    },
+    "pairs": [
+        {
+            "name": "city help",
+            "mock": "section.city-help",
+            "app": "section.city-help",
+            "pixels": false,
+            "ignore": ["y", "h"]
+        },
+        {
+            "name": "heading",
+            "mock": ".city-help .section-head h2",
+            "app": ".city-help .section-head h2",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "forecast",
+            "mock": ".forecast-strip",
+            "app": ".forecast-strip",
+            "contentDiffers": true,
+            "ignore": ["y"]
+        },
+        {
+            "name": "forecast now",
+            "mock": ".forecast-strip b",
+            "app": ".forecast-strip b",
+            "contentDiffers": true,
+            "ignore": ["y", "x", "w"]
+        },
+        {
+            "name": "forecast source",
+            "mock": ".forecast-strip small",
+            "app": ".forecast-strip small",
+            "contentDiffers": true,
+            "ignore": ["y"]
+        },
+        {
+            "name": "Check departures",
+            "mock": ".departure-board > summary",
+            "app": ".departure-board > summary",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "stop",
+            "mock": ".stop-trigger",
+            "app": ".stop-trigger",
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "capture",
+            "mock": ".board-capture",
+            "app": ".board-capture",
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "first line",
+            "mock": ".departure-strips .nearby-strip",
+            "app": ".departure-strips .nearby-strip",
+            "contentDiffers": true,
+            "ignore": ["y", "h"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Full timetable",
+            "mock": ".board-full",
+            "app": ".board-full",
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "city links",
+            "mock": ".city-source-section",
+            "app": ".city-source-section",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "city links title",
+            "mock": ".continue-head h3",
+            "app": ".continue-head h3",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "official websites",
+            "mock": ".continue-head .record-label",
+            "app": ".continue-head .record-label",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "KVB transport",
+            "mock": ".city-source-links a",
+            "app": ".city-source-links a",
+            "index": 0,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "City news",
+            "mock": ".city-source-links a",
+            "app": ".city-source-links a",
+            "index": 1,
+            "ignore": ["y"],
+            "pixels": false
+        }
+    ],
+    "subpixelNote": "With nothing above Cologne today yet (the deadline strip and Paperwork panel come with #121; the phone order in TD5) its parts sit at other fractions of a pixel than the mock's, so text rasterises differently: their pixels are not compared until then; boxes and styles are exact."
+}
