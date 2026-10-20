@@ -3,13 +3,13 @@
 use App\Models\ComposerWorkspace;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Database\Seeders\MockSample\EventsSeeder;
 use Illuminate\Support\Facades\Cache;
 
-test('the sample events refuse to write listings or weather outside the local environment', function () {
+test('the sample events write no listings or weather outside the local environment', function () {
     User::factory()->onboarded()->create(['email' => 'e2e@expadu.test']);
 
-    $this->artisan('mock:sample-events')->assertFailed();
-    $this->artisan('mock:sample-events', ['--remove' => true])->assertFailed();
+    $this->seed(EventsSeeder::class);
 
     $this->assertDatabaseCount('events', 0);
     $this->assertDatabaseCount('venues', 0);

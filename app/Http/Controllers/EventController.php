@@ -56,6 +56,7 @@ class EventController extends Controller
             'starting_point' => $from,
             'saved_places' => $points->savedPlaces($request->user()),
             'appointment' => $day->isSameDay($today) ? $this->appointment($request, $today) : null,
+            'catalogue' => $this->catalogue(),
             'listings' => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
                 ->values()
@@ -64,6 +65,29 @@ class EventController extends Controller
             // sky until it arrives, and says so when there is none.
             'weather' => Inertia::defer(fn () => app(WeatherService::class)->getDayForecast($day->toDateString())),
         ]);
+    }
+
+    /**
+     * What the filters offer: every category and area the listed events
+     * have, on any day, as the mock's pickers do (its whole catalogue), so a
+     * choice can point to another day.
+     *
+     * @return array{categories: list<string>, areas: list<string>}
+     */
+    private function catalogue(): array
+    {
+        $categories = Event::query()->visible()->distinct()->pluck('category')
+            ->map(fn (?string $category) => EventCategory::fromLegacy($category)->value)
+            ->unique()->values()->all();
+        $areas = Event::query()->visible()
+            ->join('venues', 'venues.id', '=', 'events.venue_id')
+            ->whereNotNull('venues.veedel')
+            ->distinct()
+            ->orderBy('venues.veedel')
+            ->pluck('venues.veedel')
+            ->all();
+
+        return ['categories' => $categories, 'areas' => $areas];
     }
 
     /**

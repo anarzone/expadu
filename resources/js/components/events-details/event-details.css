@@ -24,7 +24,9 @@
     width: min(560px, calc(100vw - 32px));
     height: min(828px, calc(100vh - 32px));
     max-height: none;
-    /* Centred (the CSS reset takes the browser's margin away). */
+    /* Centred in the page beside its scrollbar, as the mock's dialog is
+       (the CSS reset takes the browser's margin away). */
+    inset-inline: 0;
     margin: auto;
     border-radius: 24px;
     background: var(--color-bg-canvas);
@@ -147,7 +149,7 @@
     margin: 0;
     padding: 0;
     color: var(--pp-text);
-    font-family: var(--font-poster);
+    font-family: var(--poster-display);
     font-size: clamp(28px, 7.5cqi, 40px);
     font-weight: 800;
     line-height: 0.92;
@@ -161,7 +163,7 @@
     z-index: 1;
     grid-area: time;
     color: transparent;
-    font-family: var(--font-poster);
+    font-family: var(--poster-display);
     font-size: 44px;
     font-weight: 800;
     line-height: 0.9;

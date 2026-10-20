@@ -9,8 +9,8 @@ import type { EventOccurrence } from '@/components/events/types';
 import { EventDetails } from '@/components/events-details/event-details';
 import type { EventFilters } from '@/components/events-filters/event-filters';
 import {
-    dayAreas,
-    dayCategories,
+    areaChoices,
+    categoryChoices,
     eventsUrl,
     matches,
     narrowed,
@@ -59,6 +59,9 @@ type Props = {
     saved_places: PlacePoint[];
     /** Today's last recorded appointment, for the details' "For you". */
     appointment: { title: string; end: string } | null;
+    /** The categories and areas the listings have on any day, for the
+        filters (the mock's catalogue). */
+    catalogue: { categories: string[]; areas: string[] };
 };
 
 /** The open details, as the URL carries them (?event=&start=). */
@@ -147,6 +150,7 @@ export default function Events({
     starting_point,
     saved_places,
     appointment,
+    catalogue,
 }: Props) {
     const { props: shared, url } = usePage<{ auth: Auth }>();
     const { auth } = shared;
@@ -467,8 +471,11 @@ export default function Events({
                 filters={current}
                 onFilters={onFilters}
                 onDate={onDate}
-                categories={dayCategories(listings, current.category)}
-                areas={dayAreas(listings, current.area)}
+                categories={categoryChoices(
+                    catalogue.categories,
+                    current.category,
+                )}
+                areas={areaChoices(catalogue.areas, current.area)}
                 from={shownFrom}
                 savedPlaces={saved_places.map(asStartingPoint)}
                 mode={mode}

@@ -41,9 +41,9 @@
                 "wait": 300
             }
         ],
-        "init": [
-            "if (!document.cookie.split('; ').some((c) => c.startsWith('mock_clock='))) { document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'; location.reload(); }"
-        ]
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        }
     },
     "pairs": [
         {

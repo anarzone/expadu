@@ -115,7 +115,8 @@ export function matches(
     return words(f.q).every((w) => hay.includes(w));
 }
 
-/** The categories a day offers, in the app's order, with the chosen one. */
+/** The categories the listings have, on any day (the mock's catalogue), in
+    the app's order, with the chosen one. */
 const ORDER = [
     'culture',
     'party',
@@ -126,11 +127,11 @@ const ORDER = [
     'other',
 ];
 
-export function dayCategories(
-    listings: EventOccurrence[],
+export function categoryChoices(
+    listed: string[],
     chosen: string | null,
 ): { value: string; label: string; icon: IconName }[] {
-    const present = new Set(listings.map((o) => o.category));
+    const present = new Set(listed);
 
     if (chosen) {
         present.add(chosen);
@@ -142,14 +143,9 @@ export function dayCategories(
     }));
 }
 
-/** The areas a day's listings are in, A to Z, with the chosen one. */
-export function dayAreas(
-    listings: EventOccurrence[],
-    chosen: string | null,
-): string[] {
-    const areas = new Set(
-        listings.map((o) => o.venue.veedel).filter((v): v is string => !!v),
-    );
+/** The areas the listings are in, on any day, A to Z, with the chosen one. */
+export function areaChoices(listed: string[], chosen: string | null): string[] {
+    const areas = new Set(listed);
 
     if (chosen) {
         areas.add(chosen);

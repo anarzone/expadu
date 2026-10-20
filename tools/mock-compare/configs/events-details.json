@@ -29,9 +29,9 @@
                 "wait": 1500
             }
         ],
-        "init": [
-            "if (!document.cookie.split('; ').some((c) => c.startsWith('mock_clock='))) { document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'; location.reload(); }"
-        ]
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        }
     },
     "pairs": [
         {
@@ -57,23 +57,17 @@
         {
             "name": "date tape",
             "mock": ".event-hero .pp-tape",
-            "app": ".evd-tape",
-            "ignore": ["font-family"],
-            "reason": "Same font files under the mock's own names (events-next/fonts: its 'Poster Grotesque' is Bricolage Grotesque, its 'Festival Marker' Permanent Marker); the app uses the shared token names."
+            "app": ".evd-tape"
         },
         {
             "name": "title",
             "mock": ".event-hero-title",
-            "app": ".ev-details .ui-sheet-head h2",
-            "ignore": ["font-family"],
-            "reason": "Same font files under the mock's own names (events-next/fonts: its 'Poster Grotesque' is Bricolage Grotesque, its 'Festival Marker' Permanent Marker); the app uses the shared token names."
+            "app": ".ev-details .ui-sheet-head h2"
         },
         {
             "name": "start",
             "mock": ".event-hero-time",
-            "app": ".evd-time",
-            "ignore": ["font-family"],
-            "reason": "Same font files under the mock's own names (events-next/fonts: its 'Poster Grotesque' is Bricolage Grotesque, its 'Festival Marker' Permanent Marker); the app uses the shared token names."
+            "app": ".evd-time"
         },
         {
             "name": "close",
