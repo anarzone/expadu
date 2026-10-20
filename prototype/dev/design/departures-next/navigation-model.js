@@ -4,6 +4,7 @@
    Museum Ludwig: existing catalogue osm:node/633480736.
    Wiener Platz: the sample day's appointment area, from the place layer's
    anchor (connected/sample-places.js); the appointment has no exact address.
+   Its stop carries KVB's own name, Mülheim Wiener Platz.
    Coordinates checked 2026-09-29. Lines below only connect known places. */
 (function (root) {
     const J = root.JourneyModel;
@@ -16,7 +17,10 @@
         },
         dom: { name: 'Dom / Hbf', point: [6.958611, 50.941694] },
         ludwig: { name: 'Museum Ludwig', point: [6.9600217, 50.9408347] },
-        wienerplatz: { name: 'Wiener Platz', point: [7.0048, 50.96103] },
+        wienerplatz: {
+            name: 'Mülheim Wiener Platz',
+            point: [7.0048, 50.96103],
+        },
     };
     const tripOf = (route) => J.tripOf?.(route) || J.capture;
     // A captured journey (the evening's, from the VRS timetable) brings its

@@ -439,6 +439,18 @@
     .trip-title strong {
         font-size: 17px;
     }
+    /* A long stop name (KVB's "Mülheim Wiener Platz") wraps under its
+       mark instead of running into the next one; the strip keeps room
+       for two lines and the time. */
+    .way-node.is-stop > span {
+        width: max-content;
+        max-width: 84px;
+        white-space: normal;
+        text-align: center;
+    }
+    .way-strip {
+        margin-bottom: 62px;
+    }
 }
 /* The card keeps one row only where the facts have room beside the
    title and the buttons (desktop's Nearby); below that, stacked: title,
