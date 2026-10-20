@@ -37,14 +37,32 @@ export type Plan = {
     feasibility_checked?: boolean;
     origin_label?: string | null;
 };
+/** What a change did to one item: moved (old → new time), added, removed, or in place of another. */
+export type ChangeRow = {
+    kind: 'moved' | 'added' | 'removed' | 'replaced';
+    id: string;
+    title: string;
+    type: string;
+    from?: string;
+    to?: string;
+    was?: string;
+};
 export type Message = {
     id: string;
     role: 'user' | 'assistant';
     text: string;
     created_at: string;
+    /** plan · change · undone · earlier_draft · bureaucracy · find · journey · unknown · failed */
     kind?: string;
     query?: string;
-    plan?: Plan;
+    /** A plan card's day, as it is now (null once cancelled); an earlier draft's own copy. */
+    plan?: Plan | null;
+    date?: string;
+    change_id?: string;
+    rows?: ChangeRow[];
+    code?: string;
+    draft_id?: string;
+    reapplied_change?: string | null;
 };
 export type Conversation = {
     id: string;
@@ -52,23 +70,28 @@ export type Conversation = {
     created_at: string;
     messages: Message[];
 };
-export type Version = {
+/** One applied change; Undo works newest first per day. */
+export type Change = {
     id: string;
     date: string;
-    before: Plan | null;
-    after: Plan | null;
-    created_at: string;
-    undone: boolean;
+    label: string;
+    rows: ChangeRow[];
+    created_at: string | null;
+    undone_at: string | null;
+    undoable: boolean;
 };
 export type Workspace = {
     revision: number;
-    approval: 'ask' | 'routine';
+    schema: number;
     active: string;
     focus: string | null;
-    draft: Plan | null;
     plans: Record<string, Plan>;
-    versions: Version[];
+    changes: Change[];
     conversations: Conversation[];
+    /** Compatibility for components/today until TD1: always null, always 'routine'. */
+    draft: Plan | null;
+    approval: 'routine';
+    versions: { id: string; date: string; undone: boolean }[];
 };
 export type Command = {
     action: string;
@@ -91,10 +114,17 @@ export function today() {
 }
 export class ApiError extends Error {
     public status: number;
+    /** The response body, e.g. a refusal's `workspace` as it now is. */
+    public data: Record<string, unknown>;
 
-    constructor(message: string, status: number) {
+    constructor(
+        message: string,
+        status: number,
+        data: Record<string, unknown> = {},
+    ) {
         super(message);
         this.status = status;
+        this.data = data;
     }
 }
 export async function api<T>(
@@ -152,6 +182,7 @@ export async function api<T>(
                         : (data.message ??
                           'Could not connect. Please try again.'),
                 response.status,
+                data,
             );
         }
 

@@ -44,6 +44,7 @@ use App\Transit\Dto\GeoPoint;
 use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -83,6 +84,8 @@ class ComposerController extends Controller
 
         return Inertia::render('composer', [
             'workspace' => app(WorkspaceStore::class)->read($request->user()),
+            // What a page handed over by POST (see entry()); present once.
+            'entry' => $request->session()->get('composer.entry'),
             'prompt' => $request->query('prompt'),
             'planDate' => $request->query('plan'),
             'pins' => array_values(array_filter(explode(',', (string) $request->query('pins')))),
@@ -107,6 +110,23 @@ class ComposerController extends Controller
             'bezirke' => Inertia::defer(fn () => $veedels->bezirkRail($homeBezirk)),
             'veedelsByBezirk' => Inertia::defer(fn () => $veedels->veedelsByBezirk()),
         ]);
+    }
+
+    /**
+     * What a page hands Composer (the tray's words and the page they came
+     * from) arrives by POST and waits in a one-time session flash, never in
+     * the URL, so it stays out of browser history and access logs.
+     */
+    public function entry(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'prompt' => ['required', 'string', 'max:500'],
+            'about' => ['nullable', 'string', 'max:160'],
+            'panel' => ['nullable', Rule::in(['plans', 'saved', 'history'])],
+        ]);
+        $request->session()->flash('composer.entry', ['prompt' => trim($validated['prompt']), 'about' => $validated['about'] ?? null]);
+
+        return redirect()->route('composer', array_filter(['panel' => $validated['panel'] ?? null]));
     }
 
     /**

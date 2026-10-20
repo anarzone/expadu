@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // Uses the dedicated E2E account. Real workspace endpoints and persistence; no mocked mutations.
-test('conversation, manual plan approval, time editing, history and reload', async ({
+test('conversation, a plan that goes straight in, time editing, Undo, history and reload', async ({
     page,
 }, testInfo) => {
     const errors: string[] = [];
@@ -36,10 +36,6 @@ test('conversation, manual plan approval, time editing, history and reload', asy
             state = await response.json();
         }
 
-        if (state.draft) {
-            await command({ action: 'discard' });
-        }
-
         for (const [date, plan] of Object.entries(state.plans) as [
             string,
             { slots: { name: string }[] },
@@ -50,7 +46,6 @@ test('conversation, manual plan approval, time editing, history and reload', asy
         }
 
         await command({ action: 'fresh' });
-        await command({ action: 'approval', mode: 'ask' });
     });
     await page.reload();
     const input = page.getByRole('textbox', { name: 'Message Composer' });
@@ -82,13 +77,17 @@ test('conversation, manual plan approval, time editing, history and reload', asy
     }
 
     await dialog
-        .getByRole('button', { name: 'Add to proposal', exact: true })
+        .getByRole('button', { name: 'Add to plan', exact: true })
         .click();
     await expect(dialog).not.toBeVisible();
     await expect(input).toHaveValue('Keep this unsent thought');
     const current = page.locator('#composer-current-plan');
+    // It goes straight in: the day is in your plans, and its reply carries Undo.
     await expect(current.getByText(name, { exact: true })).toBeVisible();
-    await expect(current.getByText('Proposed changes')).toBeVisible();
+    await expect(current.getByText('In your plans')).toBeVisible();
+    await expect(
+        page.getByRole('button', { name: 'Undo', exact: true }).last(),
+    ).toBeVisible();
     await current.getByRole('button', { name: 'Edit time' }).last().click();
     await current.getByRole('button', { name: 'From time 10:00' }).click();
     const time = page.getByRole('dialog', { name: 'Choose from time' });
@@ -106,11 +105,14 @@ test('conversation, manual plan approval, time editing, history and reload', asy
         current.getByRole('button', { name: 'From time 10:01' }),
     ).toBeVisible();
     await page.keyboard.press('Escape');
+    // Keeping the new time puts it straight in; the reply says it as it is now.
     await current.getByRole('button', { name: 'Keep time' }).click();
-    await current.getByRole('button', { name: 'Apply changes' }).click();
     await expect(
-        current.getByText('Confirmed plan', { exact: true }),
+        page.getByText(`${name} is now 10:01–11:00.`, { exact: true }),
     ).toBeVisible();
+    await expect(
+        current.getByRole('button', { name: 'Apply changes' }),
+    ).toHaveCount(0);
     await page.goto(`/composer?plan=${dateValue}`);
     await expect(
         page.locator('#composer-current-plan').getByText(name, { exact: true }),
@@ -130,6 +132,16 @@ test('conversation, manual plan approval, time editing, history and reload', asy
         .last()
         .click();
     await expect(page.locator('#composer-current-plan')).toBeVisible();
+    // Undo goes newest first: the move, then the new day, which also leaves
+    // the account as it was.
+    await page.getByRole('button', { name: 'Undo last change' }).click();
+    await expect(
+        page
+            .locator('#composer-current-plan')
+            .getByText('10:00', { exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Undo last change' }).click();
+    await expect(page.locator('#composer-current-plan')).toHaveCount(0);
     await page.screenshot({
         path: `/tmp/composer-app-${testInfo.project.name}.png`,
         fullPage: true,
@@ -142,7 +154,7 @@ test('conversation, manual plan approval, time editing, history and reload', asy
     expect(errors).toEqual([]);
 });
 
-test('server recommendation, inline swap, preview and approval', async ({
+test('server recommendation goes straight in, inline swap, preview and Undo', async ({
     page,
 }) => {
     test.setTimeout(90000);
@@ -164,7 +176,7 @@ test('server recommendation, inline swap, preview and approval', async ({
     ).toBeGreaterThan(0);
     const plan = page.locator('#composer-current-plan');
     await expect(plan).toBeVisible({ timeout: 60000 });
-    await expect(plan.getByText('Proposed changes')).toBeVisible();
+    await expect(plan.getByText('In your plans')).toBeVisible();
     await input.fill('A thought I have not sent');
     await plan
         .getByRole('button', { name: 'Swap place', exact: true })
@@ -192,12 +204,12 @@ test('server recommendation, inline swap, preview and approval', async ({
     await preview.getByRole('button', { name: 'Close preview' }).click();
     await alternatives.locator('.composer-option-choose').first().click();
     await expect(alternatives).not.toBeVisible();
-    await expect(
-        plan.getByRole('button', { name: 'Apply changes' }),
-    ).toBeVisible();
-    await plan.getByRole('button', { name: 'Apply changes' }).click();
-    await expect(
-        plan.getByText('Confirmed plan', { exact: true }),
-    ).toBeVisible();
+    // The swap went in; its reply says what is in place of what, with Undo.
+    await expect(page.getByText(/is in place of/).last()).toBeVisible();
+    await page
+        .getByRole('button', { name: 'Undo', exact: true })
+        .last()
+        .click();
+    await expect(page.getByText(/^Undone: Replaced/).last()).toBeVisible();
     await expect(input).toHaveValue('A thought I have not sent');
 });

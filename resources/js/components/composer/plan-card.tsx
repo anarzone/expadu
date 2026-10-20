@@ -8,46 +8,35 @@ import {
 } from '@tabler/icons-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ComposerLoading } from './loading';
 import { TimeEditor } from './time-picker';
 import { dateLabel } from './types';
 import type { Command, Plan, Slot } from './types';
 
+/** The day as it is in your plans; every change goes straight in with its Undo. */
 export function PlanCard({
     plan,
-    draft = false,
     readonly = false,
     busy = false,
     command,
     swap,
     preview,
     onAdd,
-    onCancel,
 }: {
     plan: Plan;
-    draft?: boolean;
     readonly?: boolean;
     busy?: boolean;
     command?: (command: Command) => Promise<boolean>;
     swap?: (slot: Slot) => void;
     preview?: (slot: Slot, children: ReactNode) => ReactNode;
     onAdd?: () => void;
-    onCancel?: () => void;
 }) {
     const [editing, setEditing] = useState<string | null>(null);
-    const [dateOpen, setDateOpen] = useState(false);
 
     return (
         <div className="composer-plan" data-testid="composer-plan">
             <div className="composer-plan-heading">
                 <div>
-                    <span className="composer-eyebrow">
-                        {readonly
-                            ? 'Earlier version'
-                            : draft
-                              ? 'Proposed changes'
-                              : 'Confirmed plan'}
-                    </span>
+                    <span className="composer-eyebrow">In your plans</span>
                     <h2>{dateLabel(plan.date)}</h2>
                     {plan.origin_label && (
                         <small className="composer-origin-label">
@@ -55,40 +44,10 @@ export function PlanCard({
                         </small>
                     )}
                 </div>
-                {!readonly && draft && (
-                    <button
-                        className="composer-icon-button"
-                        aria-label="Change plan date"
-                        onClick={() => setDateOpen(!dateOpen)}
-                    >
-                        <IconCalendar size={19} />
-                    </button>
-                )}
-                {!readonly && !draft && (
+                {!readonly && (
                     <IconCheck size={20} className="composer-green" />
                 )}
             </div>
-            {dateOpen && (
-                <label className="composer-date-edit">
-                    Plan date
-                    <input
-                        type="date"
-                        defaultValue={plan.date}
-                        disabled={busy}
-                        onChange={async (e) => {
-                            if (
-                                e.target.value &&
-                                (await command?.({
-                                    action: 'date',
-                                    date: e.target.value,
-                                }))
-                            ) {
-                                setDateOpen(false);
-                            }
-                        }}
-                    />
-                </label>
-            )}
             <ol className="composer-timeline">
                 {plan.slots.map((slot) => (
                     <li key={slot.id}>
@@ -166,6 +125,7 @@ export function PlanCard({
                                                 command?.({
                                                     action: 'remove',
                                                     id: slot.id,
+                                                    date: plan.date,
                                                 })
                                             }
                                         >
@@ -182,6 +142,7 @@ export function PlanCard({
                                                     await command?.({
                                                         action: 'edit',
                                                         id: slot.id,
+                                                        date: plan.date,
                                                         start,
                                                         end,
                                                     })
@@ -196,12 +157,6 @@ export function PlanCard({
                         </div>
                     </li>
                 ))}
-                {plan.slots.length === 0 && (
-                    <li className="composer-empty">
-                        No activities left. Apply to cancel this day, or add
-                        something new.
-                    </li>
-                )}
             </ol>
             {!readonly && (
                 <>
@@ -215,42 +170,6 @@ export function PlanCard({
                         </span>
                     </div>
                     <div className="composer-plan-footer">
-                        {draft ? (
-                            <>
-                                <button
-                                    className="composer-primary"
-                                    disabled={busy}
-                                    onClick={() =>
-                                        plan.slots.length === 0
-                                            ? onCancel?.()
-                                            : command?.({ action: 'approve' })
-                                    }
-                                >
-                                    {busy ? (
-                                        <ComposerLoading compact />
-                                    ) : (
-                                        <IconCheck size={17} />
-                                    )}
-                                    {plan.slots.length
-                                        ? 'Apply changes'
-                                        : 'Cancel this day'}
-                                </button>
-                                <button
-                                    className="composer-text-button"
-                                    disabled={busy}
-                                    onClick={() =>
-                                        command?.({ action: 'discard' })
-                                    }
-                                >
-                                    Discard
-                                </button>
-                            </>
-                        ) : (
-                            <span className="composer-green">
-                                <IconCheck size={16} />
-                                Saved in My Plans
-                            </span>
-                        )}
                         <button
                             className="composer-text-button"
                             disabled={busy}
@@ -258,6 +177,18 @@ export function PlanCard({
                         >
                             <IconPlus size={16} />
                             Add activity
+                        </button>
+                        <button
+                            className="composer-text-button"
+                            disabled={busy}
+                            onClick={() =>
+                                command?.({
+                                    action: 'cancel_day',
+                                    date: plan.date,
+                                })
+                            }
+                        >
+                            Cancel this day
                         </button>
                     </div>
                 </>
