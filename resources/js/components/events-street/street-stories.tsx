@@ -2,7 +2,7 @@
    each hour with listings is a ring in the sky; opening one plays that
    hour's posters in turn, then the next hour's. A story moves on by
    itself after 3.6s (never with reduced motion), holds while pressed or
-   paused or while its poster is turned over, and closes with Escape. */
+   paused or while its details are open, and closes with Escape. */
 
 import type { CSSProperties, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -160,12 +160,10 @@ export function StoryViewer({
     const current = list[index];
     const [paused, setPaused] = useState(false);
     const [pressed, setPressed] = useState(false);
-    const [turned, setTurned] = useState(false);
     const [reduce] = useState(reducedMotion);
-    const held = paused || pressed || turned || waiting;
+    const held = paused || pressed || waiting;
     const bar = useRef<HTMLElement>(null);
     const clock = useRef<Animation | null>(null);
-    const stage = useRef<HTMLDivElement>(null);
     const press = useRef<{ y: number; at: number } | null>(null);
     const swiped = useRef(0);
     const close = () => onStory(null);
@@ -193,7 +191,6 @@ export function StoryViewer({
             }
         }
 
-        setTurned(false);
         onStory({ hour, index: next });
     };
     const latest = useRef(step);
@@ -240,29 +237,7 @@ export function StoryViewer({
         }
     }, [held, story.hour, index]);
 
-    // The poster turned over (its back has Save and the facts) holds the
-    // story.
-    useEffect(() => {
-        const node = stage.current;
-
-        if (!node) {
-            return;
-        }
-
-        const watch = new MutationObserver(() =>
-            setTurned(!!node.querySelector('.pp.is-turned')),
-        );
-        watch.observe(node, {
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['class'],
-        });
-
-        return () => watch.disconnect();
-    }, []);
-
-    // Escape closes (a turned poster takes it first, to turn back); the
-    // arrow keys step.
+    // Escape closes; the arrow keys step.
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (waiting) {
@@ -415,7 +390,6 @@ export function StoryViewer({
                 {/* Holding pauses; a swipe up shows the next poster, down
                     the one before. */}
                 <div
-                    ref={stage}
                     className="st-story-stage"
                     onPointerDown={(e) => {
                         press.current = { y: e.clientY, at: Date.now() };
