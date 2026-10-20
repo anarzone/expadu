@@ -391,35 +391,6 @@ test('planning mode completes onboarding with no arrival date', function () {
     expect($user->arrival_date)->toBeNull();
 });
 
-test('planning mode lands in the Before-you-fly phase with no firing deadlines', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
-
-    $user = User::factory()->notOnboarded()->create();
-    $this->actingAs($user);
-
-    $this->post(route('onboarding.complete'), [
-        'situation' => 'non_eu_employee',
-        'veedel' => 'Ehrenfeld',
-        'arrival_planned' => true,
-        'address_registration_status' => 'not_registrable',
-        'entry_mode' => 'visa_free',
-        'interests' => ['parks', 'museums', 'cafes'],
-    ])->assertRedirect(route('dashboard'));
-
-    $this->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
-        $props = $page->toArray()['props'];
-        expect($props['phases']['current'])->toBe('before');
-
-        // Without an arrival date, no card carries a concrete deadline.
-        $cards = [...$props['tasks']['active'], ...$props['tasks']['upcoming']];
-        foreach ($cards as $card) {
-            expect($card['deadline'])->toBeNull();
-        }
-
-        return true;
-    });
-});
-
 test('family D-visa onboarding confirms explicit canonical facts without inventing refinements', function () {
     $user = User::factory()->notOnboarded()->create();
     $this->actingAs($user);

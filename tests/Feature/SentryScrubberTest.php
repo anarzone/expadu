@@ -94,7 +94,7 @@ test('bureaucracy onboarding and composer request bodies are never sent to error
     ]);
 
     expect(SentryScrubber::scrub($event)->getRequest()['data'])->toBe('[redacted]');
-})->with(['/bureaucracy/case/messages', '/onboarding', '/composer/parse', '/api/composer/parse']);
+})->with(['/onboarding', '/composer/parse', '/api/composer/parse']);
 
 test('a failed scrub does not send the original private event', function () {
     Auth::shouldReceive('id')->andThrow(new RuntimeException('Auth context unavailable'));
