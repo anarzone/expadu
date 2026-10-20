@@ -6,6 +6,7 @@ import type { Journey, JourneyLeg } from '@/types/transit';
 import { TravelChip } from './labels';
 import { lineLook, vehicleOf, vehicleWord } from './line-look';
 import type { LineLook } from './line-look';
+import { stopName } from './stop-name';
 import { TravelIcon } from './travel-icon';
 import {
     RideLabel,
@@ -64,7 +65,10 @@ function rideLook(leg: JourneyLeg): LineLook {
  * where you get off, there. A change is one stop at the next ride's time
  * (the mock's sample has one ride; a longer way keeps the strip readable).
  */
-export function wayNodes(journey: Journey): WayStripNode[] {
+export function wayNodes(
+    journey: Journey,
+    city?: string | null,
+): WayStripNode[] {
     const nodes: WayStripNode[] = [
         { kind: 'start', name: 'Start', time: journey.depart_time },
     ];
@@ -82,7 +86,7 @@ export function wayNodes(journey: Journey): WayStripNode[] {
         if (last) {
             nodes.push({
                 kind: 'stop',
-                name: last.to.name,
+                name: stopName(last.to.name, city),
                 time: leg.depart_time,
                 look,
             });
@@ -93,7 +97,7 @@ export function wayNodes(journey: Journey): WayStripNode[] {
 
             nodes.push({
                 kind: 'stop',
-                name: leg.from.name,
+                name: stopName(leg.from.name, city),
                 time: leg.depart_time,
                 look,
             });
@@ -111,7 +115,7 @@ export function wayNodes(journey: Journey): WayStripNode[] {
     if (last) {
         nodes.push({
             kind: 'stop',
-            name: last.to.name,
+            name: stopName(last.to.name, city),
             time: last.arrive_time,
             look: rideLook(last),
         });
@@ -296,7 +300,7 @@ export function NextTripCard({
                     />
                 }
                 value={ride.depart_time}
-                sub={ride.from.name}
+                sub={stopName(ride.from.name, trip.city)}
             />
         ) : (
             <TripFact
@@ -310,7 +314,10 @@ export function NextTripCard({
             key="there"
             label="There"
             value={trip.arrive_time}
-            sub={trip.target.location ?? (ride ? ride.to.name : '')}
+            sub={
+                trip.target.location ??
+                (ride ? stopName(ride.to.name, trip.city) : '')
+            }
         />,
         late ? (
             <TripFact
@@ -384,7 +391,7 @@ export function NextTripCard({
             more={
                 compact ? undefined : (
                     <>
-                        <WayStrip nodes={wayNodes(journey)} />
+                        <WayStrip nodes={wayNodes(journey, trip.city)} />
                         <OtherWays trip={trip} onCompare={onPlan} />
                     </>
                 )
