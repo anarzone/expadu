@@ -300,7 +300,13 @@ export function NextTripCard({
                     />
                 }
                 value={ride.depart_time}
-                sub={stopName(ride.from.name, trip.city)}
+                sub={
+                    // Timetable times only: said where the time is, in the
+                    // tile's own line, so the card keeps the mock's rows.
+                    trip.time_basis === 'scheduled'
+                        ? `${stopName(ride.from.name, trip.city)} · ${sourceLabel({ source: 'scheduled' })}`
+                        : stopName(ride.from.name, trip.city)
+                }
             />
         ) : (
             <TripFact
@@ -356,11 +362,6 @@ export function NextTripCard({
         late ? (
             <TravelChip key="late" kind="attention" icon={icons.clock}>
                 Nothing gets there by {trip.target.start_time}
-            </TravelChip>
-        ) : null,
-        ride && trip.time_basis === 'scheduled' ? (
-            <TravelChip key="basis" kind="unsure" icon={icons.unsure} size="sm">
-                {sourceLabel({ source: 'scheduled' })}
             </TravelChip>
         ) : null,
     ].filter(Boolean);
