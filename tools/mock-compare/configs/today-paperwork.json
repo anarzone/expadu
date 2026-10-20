@@ -1,0 +1,168 @@
+{
+    "name": "today-paperwork",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "contentNote": "Paperwork's own words where the mock's sample differs: 'Visa expires tomorrow' (the mock says 'D visa'), the engine's next step 'Prepare the evidence for your first Blue Card application' (the mock: 'Submit your Blue Card application' / 'Review your documents'), and 'Your records' without the mock's '· Sample'. On phones the engine's longer next step wraps to more lines, so the strip is taller and its icons sit lower.",
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".deadline-strip"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".deadline-strip",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "deadline strip",
+            "mock": "a.deadline-strip",
+            "app": "a.deadline-strip",
+            "contentDiffers": true,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "deadline symbol",
+            "mock": ".deadline-symbol",
+            "app": ".deadline-symbol",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "deadline headline",
+            "mock": ".deadline-copy strong",
+            "app": ".deadline-copy strong",
+            "contentDiffers": true,
+            "ignore": ["w"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "deadline summary",
+            "mock": ".deadline-copy small",
+            "app": ".deadline-copy small",
+            "contentDiffers": true,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "deadline arrow",
+            "mock": "a.deadline-strip > svg",
+            "app": "a.deadline-strip > svg",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Paperwork heading",
+            "mock": ".paperwork-panel .section-head h2",
+            "app": ".paperwork-panel .section-head h2",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "your records",
+            "mock": ".paperwork-panel .record-label",
+            "app": ".paperwork-panel .record-label",
+            "contentDiffers": true,
+            "ignore": ["w", "h", "x"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "process",
+            "mock": ".paperwork-copy h3",
+            "app": ".paperwork-copy h3",
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["y", "w"]
+        },
+        {
+            "name": "next step",
+            "mock": ".paperwork-copy p",
+            "app": ".paperwork-copy p",
+            "contentDiffers": true,
+            "ignore": ["h", "w", "y"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "documents ring",
+            "mock": ".document-progress",
+            "app": ".document-progress",
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "ring count",
+            "mock": ".document-progress strong",
+            "app": ".document-progress strong",
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "ring label",
+            "mock": ".document-progress span",
+            "app": ".document-progress span",
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "your situation",
+            "mock": ".situation-link",
+            "app": ".situation-link",
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "review details",
+            "mock": ".situation-link span",
+            "app": ".situation-link span",
+            "ignore": ["y"],
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "deadline strip (phone)",
+            "mock": "a.deadline-strip",
+            "app": "a.deadline-strip",
+            "contentDiffers": true,
+            "widths": [360, 390],
+            "ignore": ["h", "y"]
+        },
+        {
+            "name": "deadline symbol (phone)",
+            "mock": ".deadline-symbol",
+            "app": ".deadline-symbol",
+            "widths": [360, 390],
+            "ignore": ["h", "y"],
+            "contentDiffers": true
+        },
+        {
+            "name": "deadline headline (phone)",
+            "mock": ".deadline-copy strong",
+            "app": ".deadline-copy strong",
+            "contentDiffers": true,
+            "ignore": ["h", "w", "y"],
+            "widths": [360, 390]
+        },
+        {
+            "name": "deadline summary (phone)",
+            "mock": ".deadline-copy small",
+            "app": ".deadline-copy small",
+            "contentDiffers": true,
+            "widths": [360, 390],
+            "ignore": ["h", "y"]
+        },
+        {
+            "name": "deadline arrow (phone)",
+            "mock": "a.deadline-strip > svg",
+            "app": "a.deadline-strip > svg",
+            "widths": [360, 390],
+            "ignore": ["h", "y"],
+            "contentDiffers": true
+        }
+    ],
+    "subpixelNote": "The engine's next step is two lines where the mock's is one. The panel's copy is centred beside the ring, so the process title sits higher (its y is aside) and the ring and Your situation sit at other fractions of a pixel, where their text rasterises differently: boxes and styles are exact."
+}

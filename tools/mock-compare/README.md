@@ -134,7 +134,9 @@ On your machine (`APP_ENV=local` only):
 --class='Database\Seeders\MockSample\PaperworkSeeder'` (after E2ETestUserSeeder for that account).
   It imports this checkout's catalogue, publishes its checked cards as the browser tests do and
   compiles the release itself, so it needs nothing else first, then replaces that account's
-  Paperwork record through the v2 commands. `configs/paperwork.json` expects it.
+  Paperwork record through the v2 commands. `configs/paperwork.json` and the Today configs expect it
+  (`PAPERWORK_SAMPLE=quiet` for `today-quiet`): the Blue Card appointment on the sample day is that
+  record, not a plan of `mock:sample-day`'s.
 - **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
 --seed` (create it with the postgis and vector extensions first), and start the compare app server
   with the same `DB_DATABASE`. Never `migrate:fresh` the shared one. Put `DB_DATABASE` (and your

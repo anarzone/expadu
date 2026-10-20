@@ -18,10 +18,11 @@ use Illuminate\Support\Str;
  * so tools/mock-compare shows the app and the mock with the same words.
  * Run it before a comparison, with the mock's view:
  *
- *   everyday  the Blue Card appointment at 14:00
+ *   everyday  nothing of its own: the Blue Card appointment at 14:00 is
+ *             Paperwork's record (seed MockSample\PaperworkSeeder too)
  *   busy      and a language class and Meet Maya after it
- *   quiet     nothing on the day
- *   travel    everyday plus the two evening events as plans (Travel's mock)
+ *   quiet     nothing on the day (and no Paperwork seed)
+ *   travel    the two evening events as plans (Travel's mock)
  *
  * Every view also keeps Coming up (1 and 3 October). It replaces only those
  * three dates; the account's other plans stay. Pair it with the
@@ -129,18 +130,9 @@ class MockSampleDayCommand extends Command
             return $plans;
         }
 
-        // Recorded from Paperwork in the mock: an official appointment at
-        // Wiener Platz, with its fixed time.
-        $slots = [$this->slot([
-            'id' => 'mock:blue-card-appointment',
-            'type' => 'appointment',
-            'category' => 'appointment',
-            'name' => 'Blue Card appointment',
-            'location' => 'Mülheim',
-            'lat' => 50.96103,
-            'lng' => 7.0048,
-            'swappable' => false,
-        ], $day, '14:00', '14:30')];
+        // The Blue Card appointment is Paperwork's record (MockSample\PaperworkSeeder);
+        // the day projection reads it from there.
+        $slots = [];
 
         if ($view === 'busy') {
             $slots[] = $this->personal('mock:class', 'Language class', 'Ehrenfeld', 50.9497, 6.9187, $day, '15:30', '16:30');
@@ -152,7 +144,7 @@ class MockSampleDayCommand extends Command
             $slots[] = $this->event('mock:cinema', 'Cinema under the stars', 'Stadtgarten', 'Neustadt-Nord', 50.9445, 6.93694, $day, '20:00', '22:00');
         }
 
-        return [$day => $slots] + $plans;
+        return ($slots === [] ? [] : [$day => $slots]) + $plans;
     }
 
     /** @return array<string, mixed> */

@@ -7,6 +7,8 @@ export type City = {
     name: string;
     country: string;
     aliases: string[];
+    /** Today's Useful city links: official websites only. */
+    links: { name: string; url: string; icon: 'train' | 'document' }[];
 };
 
 export const CITIES: City[] = [
@@ -15,6 +17,18 @@ export const CITIES: City[] = [
         name: 'Cologne',
         country: 'Germany',
         aliases: ['Köln', 'Koeln'],
+        links: [
+            {
+                name: 'KVB transport',
+                url: 'https://www.kvb.koeln/fahrtinfo/betriebslage/',
+                icon: 'train',
+            },
+            {
+                name: 'City news',
+                url: 'https://www.stadt-koeln.de/politik-und-verwaltung/presse/',
+                icon: 'document',
+            },
+        ],
     },
 ];
 
