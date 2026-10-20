@@ -58,3 +58,6 @@ tests/Browser/.artifacts/
 # Python helper bytecode
 __pycache__/
 *.py[cod]
+
+# mock-compare reports (tools/mock-compare)
+/storage/mock-compare/

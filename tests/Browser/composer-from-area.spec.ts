@@ -32,32 +32,6 @@ test('chosen starting point is sent independently of the requested search area',
         return route.fulfill({ json: { plan: { slots: [] } } });
     });
     await page.goto('/composer');
-    await page.evaluate(async () => {
-        const state = await (
-            await fetch('/composer/workspace', {
-                headers: { Accept: 'application/json' },
-            })
-        ).json();
-
-        if (!state.draft) {
-            return;
-        }
-
-        await fetch('/composer/workspace', {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document
-                    .querySelector('meta[name="csrf-token"]')!
-                    .getAttribute('content')!,
-            },
-            body: JSON.stringify({
-                action: 'discard',
-                revision: state.revision,
-            }),
-        });
-    });
     await page.reload();
     await page.getByRole('button', { name: 'Composer actions' }).click();
     await page.getByRole('menuitem', { name: /Starting point/ }).click();
