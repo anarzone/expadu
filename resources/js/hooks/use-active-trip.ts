@@ -2,8 +2,10 @@ import { router, usePage } from '@inertiajs/react';
 import { useCallback, useRef, useState } from 'react';
 import {
     persistTrip,
+    TripConflictError,
     TripRequestError,
 } from '@/components/departures/trip-request';
+import type { TripConflict } from '@/components/departures/trip-request';
 import type { Journey } from '@/components/journey/take-me-there-sheet';
 
 /** A place the trip runs from/to — the coordinates power live map-matching. */
@@ -40,6 +42,8 @@ export function useActiveTrip() {
     const [busy, setBusy] = useState(false);
     const busyRef = useRef(false);
     const [error, setError] = useState<string | null>(null);
+    // A trip is running and this one would replace it: a question, not an error.
+    const [conflict, setConflict] = useState<TripConflict | null>(null);
 
     const post = useCallback(
         async (url: string, body?: Record<string, unknown>) => {
@@ -50,6 +54,7 @@ export function useActiveTrip() {
             busyRef.current = true;
             setBusy(true);
             setError(null);
+            setConflict(null);
 
             try {
                 await persistTrip(
@@ -70,6 +75,12 @@ export function useActiveTrip() {
 
                 return true;
             } catch (err) {
+                if (err instanceof TripConflictError) {
+                    setConflict(err.trip);
+
+                    return false;
+                }
+
                 setError(
                     err instanceof TripRequestError
                         ? err.message
@@ -100,5 +111,15 @@ export function useActiveTrip() {
 
     const end = useCallback(() => post('/api/trip/end'), [post]);
 
-    return { activeTrip: activeTrip ?? null, start, end, busy, error };
+    const clearConflict = useCallback(() => setConflict(null), []);
+
+    return {
+        activeTrip: activeTrip ?? null,
+        start,
+        end,
+        busy,
+        error,
+        conflict,
+        clearConflict,
+    };
 }

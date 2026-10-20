@@ -5,6 +5,7 @@ import type { Journey, JourneyLeg } from '@/types/transit';
 import { TravelChip } from './labels';
 import { lineLook, vehicleOf, vehicleWord } from './line-look';
 import type { LineLook } from './line-look';
+import { TravelIcon } from './travel-icon';
 import {
     RideLabel,
     TripAction,
@@ -57,28 +58,66 @@ function rideLook(leg: JourneyLeg): LineLook {
     return lineLook(leg.line, vehicleOf(leg.mode));
 }
 
-/** The way as one strip of stations: start, each ride's stops, there. */
+/**
+ * The way as one strip of stations: start, where you board, each change,
+ * where you get off, there. A change is one stop at the next ride's time
+ * (the mock's sample has one ride; a longer way keeps the strip readable).
+ */
 export function wayNodes(journey: Journey): WayStripNode[] {
     const nodes: WayStripNode[] = [
         { kind: 'start', name: 'Start', time: journey.depart_time },
     ];
+    let last: JourneyLeg | null = null;
+    let walked = false;
 
     for (const leg of journey.legs) {
         if (!isRide(leg)) {
-            nodes.push({ kind: 'walk' });
+            walked = true;
             continue;
         }
 
         const look = rideLook(leg);
-        nodes.push(
-            { kind: 'stop', name: leg.from.name, time: leg.depart_time, look },
-            {
-                kind: 'ride',
-                line: leg.line ?? vehicleWord(vehicleOf(leg.mode)),
+
+        if (last) {
+            nodes.push({
+                kind: 'stop',
+                name: last.to.name,
+                time: leg.depart_time,
                 look,
-            },
-            { kind: 'stop', name: leg.to.name, time: leg.arrive_time, look },
-        );
+            });
+        } else {
+            if (walked) {
+                nodes.push({ kind: 'walk' });
+            }
+
+            nodes.push({
+                kind: 'stop',
+                name: leg.from.name,
+                time: leg.depart_time,
+                look,
+            });
+        }
+
+        nodes.push({
+            kind: 'ride',
+            line: leg.line ?? vehicleWord(vehicleOf(leg.mode)),
+            look,
+        });
+        last = leg;
+        walked = false;
+    }
+
+    if (last) {
+        nodes.push({
+            kind: 'stop',
+            name: last.to.name,
+            time: last.arrive_time,
+            look: rideLook(last),
+        });
+    }
+
+    if (walked || !last) {
+        nodes.push({ kind: 'walk' });
     }
 
     nodes.push({ kind: 'there', name: 'There', time: journey.arrive_time });
@@ -86,7 +125,13 @@ export function wayNodes(journey: Journey): WayStripNode[] {
     return nodes;
 }
 
-function OtherWays({ trip }: { trip: NextTrip }) {
+function OtherWays({
+    trip,
+    onCompare,
+}: {
+    trip: NextTrip;
+    onCompare?: () => void;
+}) {
     const rows = trip.alternatives.map((option) => (
         <li key={option.leave_at + option.lines.join(',')}>
             <span>
@@ -100,6 +145,16 @@ function OtherWays({ trip }: { trip: NextTrip }) {
         <div className="trip-line-others">
             <h3>Other ways</h3>
             <ul>{rows}</ul>
+            {onCompare ? (
+                <button
+                    type="button"
+                    className="text-action"
+                    onClick={onCompare}
+                >
+                    Compare them in Plan a trip
+                    <TravelIcon name="arrow" />
+                </button>
+            ) : null}
         </div>
     ) : null;
 }
@@ -127,7 +182,7 @@ function optionDetail(option: TripOption, trip: NextTrip): string {
             : `${-option.spare_min} min late for ${trip.target.start_time}`,
     );
 
-    if (option.time_basis === 'scheduled') {
+    if (option.ride && option.time_basis === 'scheduled') {
         parts.push('timetable time');
     }
 
@@ -143,6 +198,8 @@ type NextTripCardProps = {
     going?: boolean;
     /** "I'm on my way": starts the trip shown. */
     onStart?: () => void;
+    /** "Replace the trip you're on?": takes the button's place while it's asked. */
+    confirm?: ReactNode;
     starting?: boolean;
     /** Where "Back to your trip" goes. */
     tripHref?: string;
@@ -160,6 +217,7 @@ export function NextTripCard({
     compact = false,
     going = false,
     onStart,
+    confirm,
     starting = false,
     tripHref,
     onPlan,
@@ -292,14 +350,16 @@ export function NextTripCard({
                 Nothing gets there by {trip.target.start_time}
             </TravelChip>
         ) : null,
-        trip.time_basis === 'scheduled' ? (
+        ride && trip.time_basis === 'scheduled' ? (
             <TravelChip key="basis" kind="unsure" icon={icons.unsure} size="sm">
                 Timetable times · not live
             </TravelChip>
         ) : null,
     ].filter(Boolean);
 
-    const action = going ? (
+    const action = confirm ? (
+        confirm
+    ) : going ? (
         <TripAction icon="route" href={tripHref}>
             Back to your trip
         </TripAction>
@@ -324,7 +384,7 @@ export function NextTripCard({
                 compact ? undefined : (
                     <>
                         <WayStrip nodes={wayNodes(journey)} />
-                        <OtherWays trip={trip} />
+                        <OtherWays trip={trip} onCompare={onPlan} />
                     </>
                 )
             }

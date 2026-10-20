@@ -300,8 +300,15 @@ export type WayStripNode =
 
 /** The way as one strip of stations, each name and time under its mark. */
 export function WayStrip({ nodes }: { nodes: WayStripNode[] }) {
+    // More than two stations between start and there: names wrap under
+    // their marks instead of running into each other.
+    const crowded = nodes.filter((node) => node.kind === 'stop').length > 2;
+
     return (
-        <div className="way-strip" aria-hidden="true">
+        <div
+            className={cn('way-strip', crowded && 'is-crowded')}
+            aria-hidden="true"
+        >
             {nodes.map((node, index) => {
                 if (node.kind === 'walk') {
                     return <span key={index} className="way-walk" />;
@@ -335,7 +342,7 @@ export function WayStrip({ nodes }: { nodes: WayStripNode[] }) {
                     >
                         <i />
                         <span>
-                            {node.name}
+                            <span className="way-name">{node.name}</span>
                             <small>{node.time}</small>
                         </span>
                     </span>
