@@ -1681,7 +1681,7 @@ body.xv-body {
     display: block;
     width: 100%;
     height: clamp(300px, 52vw, 720px);
-    font-family: Geist, system-ui, sans-serif;
+    font-family: Geist, 'Geist Fallback', system-ui, sans-serif;
 }
 .xv .xv-map figcaption {
     margin-top: 12px;
