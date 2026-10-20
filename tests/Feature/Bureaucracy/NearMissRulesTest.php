@@ -40,6 +40,7 @@ function spouseCase(string $sponsorTitle): BureaucracyCase
     app(CaseFactStore::class)->synchronizeConfirmedFacts($user, [
         'citizenship_group' => 'non_eu',
         'purpose' => 'family',
+        'sponsor' => 'non_eu',
         'current_residence_title' => 'family_reunification',
         'case_goal' => 'renew_current_title',
         'sponsor_current_title' => $sponsorTitle,

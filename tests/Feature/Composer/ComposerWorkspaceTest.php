@@ -1,5 +1,8 @@
 <?php
 
+use App\Composer\AppointmentRepository;
+use App\Composer\Constraints;
+use App\Composer\PrivatePlanCache;
 use App\Composer\TodayPlanStore;
 use App\Composer\WorkspaceUpgrade;
 use App\Models\ComposerWorkspace;
@@ -8,7 +11,6 @@ use App\Models\Spot;
 use App\Models\Task;
 use App\Models\User;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -31,7 +33,7 @@ function workspacePlan(): array
 
 function seedWorkspaceProposal($test, User $user): array
 {
-    Cache::put("composer:handoff:{$user->id}:test-token", workspacePlan(), 60);
+    app(PrivatePlanCache::class)->putHandoff($user, 'test-token', workspacePlan());
 
     return $test->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'test-token'])->assertOk()->json();
 }
@@ -254,6 +256,7 @@ test('the upgrade migration moves stored workspaces once and makes open tabs rel
 test('today reads current revisions and dismissing its summary preserves saved plans', function () {
     $user = User::factory()->onboarded()->create();
     $plan = workspacePlan();
+    $plan['appointment_revision'] = app(AppointmentRepository::class)->revision($user, Constraints::fromArray($plan['constraints']));
     app(TodayPlanStore::class)->save($user, $plan, 'Tomorrow');
     $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '12:00', 'end' => '13:00'])->assertOk();
     expect(app(TodayPlanStore::class)->get($user)['slots'][0]['start_time'])->toBe('12:00');
@@ -264,7 +267,7 @@ test('today reads current revisions and dismissing its summary preserves saved p
 
 test('catalogue handoffs cannot be taken from another user', function () {
     $owner = User::factory()->onboarded()->create();
-    Cache::put("composer:handoff:{$owner->id}:private-token", workspacePlan(), 60);
+    app(PrivatePlanCache::class)->putHandoff($owner, 'private-token', workspacePlan());
     $this->actingAs(User::factory()->onboarded()->create())->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'private-token'])
         ->assertUnprocessable()->assertJsonPath('refusal.code', 'expired')->assertJsonPath('workspace.plans', []);
 });
@@ -389,7 +392,7 @@ test('composed selections must respect category companions and time constraints'
     ])];
     $plan['constraints'] = array_replace($plan['constraints'], $constraints);
     Spot::query()->whereKey(1)->update(['category' => $category]);
-    Cache::put("composer:handoff:{$user->id}:constrained-token", $plan, 60);
+    app(PrivatePlanCache::class)->putHandoff($user, 'constrained-token', $plan);
     $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'constrained-token'])
         ->assertUnprocessable()->assertJsonPath('refusal.code', 'unavailable')->assertJsonPath('workspace.plans', []);
 })->with([
@@ -405,7 +408,7 @@ test('an explicitly shortened visit may fit a window shorter than the default du
     $plan['slots'] = [$plan['slots'][0]];
     $plan['constraints']['window_start'] = $plan['slots'][0]['start_at'];
     $plan['constraints']['window_end'] = $plan['slots'][0]['end_at'];
-    Cache::put("composer:handoff:{$user->id}:shortened-token", $plan, 60);
+    app(PrivatePlanCache::class)->putHandoff($user, 'shortened-token', $plan);
     $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'shortened-token'])->assertSuccessful()
         ->assertJsonPath("plans.{$plan['date']}.slots.0.recommendation_status", 'available');
 });
@@ -419,7 +422,7 @@ test('manual additions measure the radius from the saved plan origin', function 
     Spot::query()->whereKey(1)->update(['lat' => 50.99, 'lng' => 6.99]);
     $far = Spot::factory()->create(['id' => 3, 'category' => 'park', 'lat' => 50.9375, 'lng' => 6.9603, 'tags' => ['opening_hours' => 'Mo-Su 00:00-24:00']]);
     $near = Spot::factory()->create(['id' => 4, 'category' => 'park', 'lat' => 50.991, 'lng' => 6.991, 'tags' => ['opening_hours' => 'Mo-Su 00:00-24:00']]);
-    Cache::put("composer:handoff:{$user->id}:origin-token", $plan, 60);
+    app(PrivatePlanCache::class)->putHandoff($user, 'origin-token', $plan);
     $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'origin-token'])->assertSuccessful();
 
     $this->postJson('/composer/workspace', [
@@ -450,7 +453,7 @@ test('automatic place timing uses the selected plan window', function (string $s
     $plan['constraints']['window_start'] = $date.'T'.$start.':00+02:00';
     $plan['constraints']['window_end'] = $date.'T'.$end.':00+02:00';
     $user = User::factory()->onboarded()->create();
-    Cache::put("composer:handoff:{$user->id}:window-token", $plan, 60);
+    app(PrivatePlanCache::class)->putHandoff($user, 'window-token', $plan);
     $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'window-token'])->assertSuccessful();
 
     $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'add', 'candidate' => 'spot:1'])

@@ -2,86 +2,41 @@
 
 namespace App\Console\Commands\Bureaucracy;
 
-use App\Bureaucracy\PathGenerator;
-use App\ContextEngine\Evaluators\BureaucracyEvaluator;
-use App\ContextEngine\Evaluators\PermanentResidencyEvaluator;
-use App\Enums\TaskStatus;
+use App\Bureaucracy\ReadModel\AccountHolderPlan;
+use App\Bureaucracy\ReadModel\PlanAttention;
+use App\Bureaucracy\ReadModel\ReassessPerson;
+use App\Models\BureaucracyPerson;
 use App\Models\User;
-use App\Profile\Applicability;
 use Illuminate\Console\Command;
 
-/**
- * Scheduled daily at 09:00 Europe/Berlin. Iterates onboarded users, materialises
- * any missing user_task rows for their situation, and feeds each task through
- * BureaucracyEvaluator. The evaluator decides whether to emit a ScoredAction.
- *
- * Each user also gets one PermanentResidencyEvaluator pass — the good-news
- * counterpart that surfaces NE eligibility into the Alerts "Good news" lane.
- *
- * Dedup is handled inside the evaluators (deadline push first-crossing per tier;
- * residency announce-once per threshold) so this command can safely re-run
- * without spamming users.
- */
-class RemindCommand extends Command
+final class RemindCommand extends Command
 {
-    protected $signature = 'bureaucracy:remind {--user= : Only process this user id} {--dry-run : Skip ActionBus writes}';
+    protected $signature = 'bureaucracy:remind {--user= : Only process this user id} {--dry-run : Read current plans without writing processes, cache or notifications}';
 
-    protected $description = 'Score bureaucracy tasks for onboarded users and surface urgent ones via the action bus';
+    protected $description = 'Surface attention events from the shared account-holder plan';
 
-    public function handle(BureaucracyEvaluator $evaluator, PermanentResidencyEvaluator $residencyEvaluator, PathGenerator $generator): int
+    public function handle(ReassessPerson $refresh, AccountHolderPlan $plans, PlanAttention $attention): int
     {
         $usersProcessed = 0;
-        $tasksEvaluated = 0;
-
-        $query = User::query()->whereNotNull('onboarded_at')->whereNotNull('situation');
+        $eventsEvaluated = 0;
+        $query = User::query()->whereNotNull('onboarded_at')->whereNotNull('email_verified_at')
+            ->whereIn('id', BureaucracyPerson::query()->where('record_status', 'active')->whereNotNull('account_user_id')->select('account_user_id'));
         if ($specific = $this->option('user')) {
-            $query->where('id', (int) $specific);
+            $query->whereKey((int) $specific);
         }
-
-        $query->chunkById(100, function ($users) use ($evaluator, $residencyEvaluator, $generator, &$usersProcessed, &$tasksEvaluated): void {
+        $query->chunkById(100, function ($users) use ($refresh, $plans, $attention, &$usersProcessed, &$eventsEvaluated): void {
             foreach ($users as $user) {
-                $profile = $generator->ensure($user);
                 $usersProcessed++;
-
-                // Good-news pass: surface permanent-residency eligibility once
-                // the permit clears the track threshold (announce-once inside).
+                $eventsEvaluated += count($attention->for($plans->for($user)));
                 if (! $this->option('dry-run')) {
-                    $residencyEvaluator->evaluate($user, $profile);
-                }
-
-                $user->userTasks()
-                    ->where('status', TaskStatus::Done->value)
-                    ->whereNotNull('next_due_at')
-                    ->where('next_due_at', '<=', now())
-                    ->whereHas('task', fn ($query) => $query->where('recurrence_months', '>', 0))
-                    ->update([
-                        'status' => TaskStatus::NotStarted->value,
-                        'completed_at' => null,
-                        'next_due_at' => null,
-                        'snoozed_until' => null,
-                    ]);
-
-                $userTasks = $user->userTasks()->with('task')->open()->get();
-                foreach ($userTasks as $userTask) {
-                    // Tasks that stopped applying (path switch, attribute
-                    // change) must never push reminders.
-                    if ($userTask->task === null
-                        || $generator->applicability($userTask->task, $profile) !== Applicability::Yes) {
-                        continue;
+                    $personId = BureaucracyPerson::query()->where('account_user_id', $user->id)->where('record_status', 'active')->value('id');
+                    if ($personId !== null) {
+                        $refresh->execute($personId);
                     }
-
-                    if ($this->option('dry-run')) {
-                        $tasksEvaluated++;
-
-                        continue;
-                    }
-                    $evaluator->evaluate($user, $userTask);
-                    $tasksEvaluated++;
                 }
             }
         });
-
-        $this->info("Done. users={$usersProcessed} user_tasks_evaluated={$tasksEvaluated}");
+        $this->info("Done. users={$usersProcessed} attention_events_evaluated={$eventsEvaluated}");
 
         return self::SUCCESS;
     }

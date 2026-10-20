@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'type', 'subtype', 'group_key', 'occurrence_count', 'severity', 'category', 'lane', 'title', 'body', 'deep_link', 'read_at', 'dismissed_at'])]
+#[Fillable(['user_id', 'type', 'subtype', 'group_key', 'occurrence_count', 'severity', 'category', 'lane', 'title', 'body', 'deep_link', 'read_at', 'dismissed_at', 'guidance_reference'])]
 class Alert extends Model
 {
     /** @use HasFactory<AlertFactory> */
@@ -89,6 +89,7 @@ class Alert extends Model
             'type' => AlertType::class,
             'read_at' => 'datetime',
             'dismissed_at' => 'datetime',
+            'guidance_reference' => 'array',
         ];
     }
 

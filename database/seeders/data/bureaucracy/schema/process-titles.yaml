@@ -1,0 +1,34 @@
+# Short display names for each process (definition-level titles), shown above its steps.
+# Names only: no figures, deadlines or legal claims, so they need no source quotes.
+version: '2026-10-08.1'
+titles:
+  address.registration: Address registration
+  banking.account: Bank account
+  education.enrolment: University enrolment
+  education.integration_course: Integration course
+  health.coverage: Health insurance
+  residence.blue_card.first: EU Blue Card
+  residence.chancenkarte: Opportunity Card (Chancenkarte)
+  residence.citizenship: German citizenship
+  residence.family.eu_card: Residence card for family of EU citizens
+  residence.family.first: Joining your family
+  residence.family.german.first: Joining a German family member
+  residence.family.independent: Your own residence right after separation
+  residence.family.renewal: Renewing your family residence permit
+  residence.other_routes: Other residence routes
+  residence.passport_transfer: Moving your permit to a new passport
+  residence.pending_application: While your application is pending
+  residence.settlement.blue_card: Permanent residence with a Blue Card
+  residence.settlement.general: Permanent residence
+  residence.settlement.german_family: Permanent residence as family of a German
+  residence.settlement.skilled_worker: Permanent residence for skilled workers
+  residence.settlement.spouse: Permanent residence for spouses
+  residence.status_verification: Checking your residence title
+  residence.student.first: Student residence permit
+  residence.student.job_search: Job search after graduation
+  residence.student.work: Working while you study
+  residence.visitor_sponsorship: Inviting a visitor
+  residence.work_permit.first: Work residence permit
+  tax.identification: Tax ID
+  tax.income_tax_return: Income tax return
+  tax.self_employment.registration: Registering as self-employed

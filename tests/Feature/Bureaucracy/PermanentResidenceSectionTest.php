@@ -2,6 +2,7 @@
 
 use App\Bureaucracy\Cases\CaseMatcher;
 use App\Bureaucracy\Facts\CaseFactStore;
+use App\Bureaucracy\Facts\ConfirmedFactView;
 use App\Bureaucracy\Facts\LegacyFactBootstrapper;
 use App\Models\User;
 
@@ -32,14 +33,14 @@ function matchedKeysForSponsor(string $sponsorTitle): array
         'onboarded_at' => now(),
     ]);
 
-    // `sponsor` is derived by ProfileEngine from bureaucracy_path, so seed the
-    // case from the profile first and then add the facts a user actually answers.
+    // Citizenship is an explicit answer, not evidence inferred from a path.
     app(LegacyFactBootstrapper::class)->bootstrap($user);
 
     // Everything the §18c spouse route requires, so the ONLY variable under
     // test is which permanent residence permit the sponsor holds.
     $case = app(CaseFactStore::class)->synchronizeConfirmedFacts($user, [
         'sponsor_current_title' => $sponsorTitle,
+        'sponsor' => 'non_eu',
         'current_residence_title' => 'family_reunification',
         'case_goal' => 'settlement_permit',
         'family_residence_permit_held_since' => now()->subYears(4)->toDateString(),
@@ -78,6 +79,10 @@ it('accepts both permanent residence values through onboarding', function (strin
         'interests' => [],
     ])->assertSessionHasNoErrors();
 
-    // Either permanent residence permit means the holder is settled.
-    expect(data_get($user->fresh()->profile_attributes, 'settled_at'))->not->toBeNull();
-})->with(['settlement_permit_9', 'settlement_permit_18c']);
+    // Keep the exact title as a fact, not a global completion declaration.
+    $user->refresh();
+    $facts = app(ConfirmedFactView::class)->forCase($user->bureaucracyCase, now()->toDateString())['values'];
+    expect($facts['current_residence_title'])->toBe($title)
+        ->and($facts)->not->toHaveKey('residence_title_expires_at')
+        ->and(data_get($user->profile_attributes, 'settled_at'))->toBeNull();
+})->with(['settlement_permit_9', 'settlement_permit_18c', 'settlement_permit_unknown']);

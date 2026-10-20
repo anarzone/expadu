@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Bureaucracy;
 
+use App\Privacy\ProcessingAcceptanceRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -25,6 +26,7 @@ class StoreCaseMessageRequest extends FormRequest
         return [
             'question_id' => ['required', 'integer', 'min:1'],
             'message' => ['required', 'string', 'max:2000', 'regex:/\\S/u'],
+            ...ProcessingAcceptanceRules::rules(),
         ];
     }
 
@@ -34,8 +36,8 @@ class StoreCaseMessageRequest extends FormRequest
     public function after(): array
     {
         return [function (Validator $validator): void {
-            if (array_diff(array_keys($this->all()), ['question_id', 'message']) !== []) {
-                $validator->errors()->add('request', 'Only question_id and message are accepted.');
+            if (array_diff(array_keys($this->all()), ['question_id', 'message', 'processing']) !== []) {
+                $validator->errors()->add('request', 'Only question_id, message and request permission are accepted.');
             }
         }];
     }

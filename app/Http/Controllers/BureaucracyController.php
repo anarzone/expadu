@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Bureaucracy\Cases\CurrentCasePlan;
+use App\Bureaucracy\GuidancePublication;
 use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\PermanentResidencyEligibility;
+use App\Bureaucracy\ReadModel\AccountHolderPlan;
+use App\Bureaucracy\ReadModel\AccountPlanEntry;
 use App\Enums\DeadlineType;
 use App\Enums\TaskStatus;
 use App\Models\Task;
@@ -17,7 +20,6 @@ use App\Services\BuergeramtService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -25,27 +27,25 @@ use Inertia\Response;
 class BureaucracyController extends Controller
 {
     /**
-     * The "I'm settled" bulk action. Arrival basics — matched by key SUFFIX so
-     * every branch variant (nee.anmeldung, core.anmeldung, stu.anmeldung …) is
-     * covered — are marked Done; the journey-to-permanent-residency content
-     * that's wrong once you hold PR is marked not-applicable. Everything else
-     * (Schufa, church tax, Haftpflicht, the annual tax return) is left as
-     * evergreen reference.
-     *
-     * @var list<string>
+     * Paperwork: the v2 plan for the signed-in account holder. Everything on the page comes
+     * from the plan read model; changes go through the bureaucracy/v2 JSON commands.
      */
-    private const ARRIVAL_BASICS = ['anmeldung', 'steuer_id', 'health_insurance', 'bank_account', 'rundfunkbeitrag'];
-
-    /** @var list<string> Journey-to-PR content retired once the user holds permanent residency. */
-    private const PR_JOURNEY_KEYS = ['shared.long_game', 'bc.ne_fast_track', 'shared.fiktionsbescheinigung'];
+    public function index(Request $request, AccountPlanEntry $entry): Response
+    {
+        return Inertia::render('paperwork', [
+            'entry' => $entry->for($request->user()),
+            'jurisdiction' => app(AccountHolderPlan::class)->jurisdiction($request->user()),
+        ]);
+    }
 
     /**
-     * The bureaucracy page payload. The path is recomputed from the profile
+     * The legacy bureaucracy page, kept reachable (unlinked) while its engine is retired.
+     * The path is recomputed from the profile
      * attribute bag on every load (idempotent); cards land in lanes the
      * React side renders without further logic: active / upcoming /
      * completed / not_applicable / info / no_longer_relevant + teasers.
      */
-    public function index(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility, CurrentCasePlan $currentCasePlan): Response
+    public function legacy(Request $request, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility, CurrentCasePlan $currentCasePlan): Response
     {
         $user = $request->user();
         $profile = $generator->ensure($user);
@@ -74,6 +74,11 @@ class BureaucracyController extends Controller
      */
     public function buildPayload(User $user, Profile $profile, Collection $userTasks, BuergeramtService $buergeramtService, ProfileEngine $profileEngine, PathGenerator $generator, PermanentResidencyEligibility $eligibility): array
     {
+        $profile = $generator->profileFor($user);
+        $publication = app(GuidancePublication::class);
+        $withdrawn = $userTasks->reject(fn (UserTask $row): bool => $publication->allows($row->task));
+        $userTasks = $userTasks->diff($withdrawn)->values();
+
         // Done task keys unlock dependants: a card is blocked while any of
         // its depends_on keys is not completed.
         $doneKeys = $userTasks
@@ -123,16 +128,16 @@ class BureaucracyController extends Controller
 
         $pathOptions = $profileEngine->pathOptionsFor($user);
 
-        $settled = ($profile->attributes['settled_at'] ?? null) !== null;
-        // Detect-and-suggest: offer the one-tap "I'm settled" to long-term
-        // residents who still carry open arrival basics. Never auto-applied.
-        $settledSuggestion = ! $settled
-            && ($profile->daysSinceArrival() ?? 0) > 365
-            && $userTasks->contains(fn (UserTask $ut) => ($ut->status ?? TaskStatus::NotStarted) !== TaskStatus::Done
-                && $ut->is_applicable
-                && in_array(Str::afterLast($ut->task->key ?? '', '.'), self::ARRIVAL_BASICS, true));
+        $settled = in_array($profile->attributes['current_residence_title'] ?? null, ['settlement_permit_9', 'settlement_permit_18c'], true);
+        // The old bulk-completion suggestion misrepresented what a declaration proved.
+        $settledSuggestion = false;
 
         return [
+            'guidanceGaps' => $withdrawn->map(fn (UserTask $row): array => [
+                'user_task_id' => $row->id,
+                'reason' => 'review_required',
+                'progress_preserved' => true,
+            ])->values()->all(),
             'situation' => $user->situation?->value,
             'path' => [
                 'current' => $user->bureaucracy_path,
@@ -180,40 +185,16 @@ class BureaucracyController extends Controller
         return back();
     }
 
-    /**
-     * One-tap "I'm already settled here". Marks the arrival basics Done and
-     * retires the journey-to-permanent-residency content for residents who
-     * handled all this years ago — a fast, reversible bulk skip. Every task
-     * stays re-openable from its card; nothing is hidden silently.
-     */
+    /** A general life-stage declaration does not complete work or establish a legal title. */
     public function settle(Request $request): RedirectResponse
     {
         $user = $request->user();
 
-        $user->userTasks()->with('task')->get()->each(function (UserTask $userTask) {
-            $key = $userTask->task?->key;
-            if ($key === null) {
-                return;
-            }
-
-            if (in_array(Str::afterLast($key, '.'), self::ARRIVAL_BASICS, true)) {
-                if (($userTask->status ?? TaskStatus::NotStarted) !== TaskStatus::Done) {
-                    // Record WHY. Completing a handful of tasks silently on the
-                    // user's behalf is what made the app look like it knew
-                    // things it was never told.
-                    $userTask->markDone('settled_declaration');
-                }
-            } elseif (in_array($key, self::PR_JOURNEY_KEYS, true)) {
-                $userTask->update(['is_applicable' => false]);
-            }
-        });
-
-        // Record the declaration: the suggestion banner won't return and the
-        // "you may qualify for permanent residency" hint stays suppressed.
+        // Retain the user's declaration as product history, not legal evidence.
         $user->update([
             'profile_attributes' => [
                 ...(array) ($user->profile_attributes ?? []),
-                'settled_at' => now()->toDateString(),
+                'arrival_setup_declared_at' => now()->toDateString(),
             ],
         ]);
 
@@ -232,10 +213,7 @@ class BureaucracyController extends Controller
 
         $current = match (true) {
             $days === null => 'before',
-            // Declaring "I'm settled" (holding permanent residency) reaches the
-            // final milestone — otherwise 'permanent' is never the current phase
-            // and dangles ahead forever, even once you already hold it.
-            ($profile->attributes['settled_at'] ?? null) !== null => 'permanent',
+            in_array($profile->attributes['current_residence_title'] ?? null, ['settlement_permit_9', 'settlement_permit_18c'], true) => 'permanent',
             $days <= 14 => 'first_14',
             $days <= 90 => 'first_90',
             default => 'settled',
@@ -288,10 +266,7 @@ class BureaucracyController extends Controller
     private function formatCard(UserTask $userTask, User $user, Profile $profile, array $doneKeys, array $titlesByKey, BuergeramtService $buergeramtService): array
     {
         $task = $userTask->task;
-        // A booked appointment IS the deadline.
-        $deadline = $userTask->appointment_at
-            ? $userTask->appointment_at->copy()
-            : $task->computeDeadlineFor($user, $profile->attributes);
+        $deadline = $task->computeDeadlineFor($user, $profile->attributes);
 
         // Documents may cross-link the task that produces them
         // ("Meldebescheinigung ← from Anmeldung").
@@ -334,12 +309,9 @@ class BureaucracyController extends Controller
 
         $status = $userTask->status ?? TaskStatus::NotStarted;
         [$deadlineTier, $deadlineNote] = $this->deadlineState($task, $profile, $daysRemaining, $status);
-        if ($userTask->appointment_at && $status !== TaskStatus::Done) {
-            $deadlineNote = 'Your appointment: '.$userTask->appointment_at->format('D j M, H:i');
-        }
         // What the note strip can DO about a missing date.
         $deadlineAction = match (true) {
-            $deadlineTier === 'paused', $deadlineTier === 'needs_answer' => 'moved_in',
+            $deadlineTier === 'needs_answer' && $task->deadline_type === DeadlineType::DaysSinceMoveIn => 'moved_in',
             $deadline === null
                 && $task->deadline_type === DeadlineType::PermitWindow
                 && ($profile->attributes['entry_mode'] ?? null) === 'd_visa'
@@ -417,8 +389,7 @@ class BureaucracyController extends Controller
     }
 
     /**
-     * Deadline tier + the human note for the two date-less special states:
-     * paused (move-in pending) and the D-visa permit window.
+     * A missing date is not proof of no obligation, a pause, or urgency.
      *
      * @return array{0: string, 1: string|null}
      */
@@ -429,26 +400,17 @@ class BureaucracyController extends Controller
         }
 
         if ($daysRemaining === null) {
-            if ($task->deadline_type === DeadlineType::DaysSinceMoveIn
-                && ($profile->attributes['housing_status'] ?? null) === 'temporary') {
-                return ['paused', 'Deadline paused — the clock starts when you move into a long-term address.'];
-            }
-
-            // Onboarding no longer forces the move-in date, so this task can
-            // reach a user with nothing to count from. §17 BMG gives two weeks
-            // and §54 makes missing it finable, so silence is the wrong
-            // default: say the clock is missing and what would start it.
-            if ($task->deadline_type === DeadlineType::DaysSinceMoveIn
-                && ($profile->attributes['moved_in_at'] ?? null) === null) {
-                return ['needs_answer', 'Your 14-day registration deadline needs your move-in date. Add it to see the exact date.'];
+            if ($task->deadline_type === DeadlineType::DaysSinceMoveIn) {
+                return ['needs_answer', 'Deadline date unknown. Add your actual move-in date to check the timing.'];
             }
 
             if ($task->deadline_type === DeadlineType::PermitWindow
                 && ($profile->attributes['entry_mode'] ?? null) === 'd_visa') {
-                return ['urgent', 'Due before your visa expires — tell us the expiry date and this becomes a real countdown.'];
+                return ['needs_answer', 'Deadline date unknown. Add your visa expiry date to check the timing.'];
             }
 
-            return ['no_deadline', null];
+            return $task->deadline_type === DeadlineType::None
+                ? ['no_deadline', null] : ['needs_answer', 'Deadline date unknown. Check the missing details in your plan.'];
         }
 
         if ($task->deadline_type === DeadlineType::PermitWindow
@@ -463,9 +425,6 @@ class BureaucracyController extends Controller
         }
 
         return [match (true) {
-            // Months past the deadline: the window has closed — soften from a
-            // precise "overdue by N days" countdown to a lapsed loose end.
-            $daysRemaining < -UserTask::STALE_OVERDUE_DAYS => 'lapsed',
             $daysRemaining < 0 => 'overdue',
             $daysRemaining <= 3 => 'critical',
             $daysRemaining <= 7 => 'urgent',
@@ -526,8 +485,7 @@ class BureaucracyController extends Controller
     private function bucket(UserTask $userTask, string $tier): string
     {
         // An explicit opt-out wins over everything — a "doesn't apply to me"
-        // card belongs in Not applicable, even when it's an info card (e.g. the
-        // PR-journey notes a settled resident retires via "I'm settled").
+        // card belongs in Not applicable, even when it's an info card.
         if (! $userTask->is_applicable) {
             return 'not_applicable';
         }
@@ -539,12 +497,8 @@ class BureaucracyController extends Controller
             return 'completed';
         }
 
-        // Paused (move-in pending) stays in the attention lane — it's the
-        // user's primary next thing even without a ticking clock. `needs_answer`
-        // is the same case and more urgent: the two-week Anmeldung window is
-        // running, we just cannot say from when. Burying it under "upcoming"
-        // would hide the one card whose clock we most need started.
-        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching', 'paused', 'needs_answer', 'lapsed'], true)
+        // Missing timing stays findable without asserting that a clock has started.
+        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching', 'needs_answer'], true)
             ? 'active'
             : 'upcoming';
     }
