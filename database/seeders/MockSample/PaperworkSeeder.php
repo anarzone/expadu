@@ -53,6 +53,13 @@ class PaperworkSeeder extends Seeder
 {
     private const MOMENT = '2026-09-30 13:10:00';
 
+    /**
+     * The day's 14:00 appointment keeps one id, so the Travel sample
+     * (MockSample\TravelSeeder, tools/mock-compare) can point at it:
+     * "appointment:<this>" on the day.
+     */
+    public const APPOINTMENT_ID = '7b6c1f0e-2a4d-4e8b-9c3f-1d5e7a9b0c2d';
+
     private const JURISDICTION = 'de-nrw-cologne';
 
     private const VARIANTS = ['everyday', 'quiet'];
@@ -154,7 +161,7 @@ class PaperworkSeeder extends Seeder
 
         if ($withAppointment) {
             $this->event($user, $blueCard, 'appointment_recorded', [
-                'appointment_id' => (string) Str::uuid(),
+                'appointment_id' => self::APPOINTMENT_ID,
                 'starts_at' => '2026-09-30T14:00:00+02:00',
                 'timezone' => 'Europe/Berlin',
                 'duration_minutes' => 30,

@@ -572,6 +572,7 @@ export default function Timetable() {
                                 icons={{
                                     clock: <TravelIcon name="clock" />,
                                     unsure: <TravelIcon name="info" />,
+                                    offline: <TravelIcon name="offline" />,
                                     timer: <TravelIcon name="timer" />,
                                 }}
                             />

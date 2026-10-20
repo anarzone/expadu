@@ -223,12 +223,6 @@ type NextTripCardProps = {
         timer?: ReactNode;
         offline?: ReactNode;
     };
-    /**
-     * Where timetable-only times are said: in the ride tile's line
-     * (Travel's mock, the coordinator's call (b)) or as the unsure chip row
-     * above the tiles (Today's mock).
-     */
-    scheduledAs?: 'tile' | 'chip';
 };
 
 export function NextTripCard({
@@ -243,7 +237,6 @@ export function NextTripCard({
     onPlan,
     onLocate,
     icons = {},
-    scheduledAs = 'tile',
 }: NextTripCardProps) {
     const [open, setOpen] = useState(false);
     const leaveIn = useMinutesUntil(trip.leave_at);
@@ -316,13 +309,7 @@ export function NextTripCard({
                     />
                 }
                 value={ride.depart_time}
-                sub={
-                    // Timetable times only: said where the time is, in the
-                    // tile's own line, so the card keeps the mock's rows.
-                    trip.time_basis === 'scheduled' && scheduledAs === 'tile'
-                        ? `${stopName(ride.from.name, trip.city)} · ${sourceLabel({ source: 'scheduled' })}`
-                        : stopName(ride.from.name, trip.city)
-                }
+                sub={stopName(ride.from.name, trip.city)}
             />
         ) : (
             <TripFact
@@ -374,20 +361,21 @@ export function NextTripCard({
         ? `Your ${trip.skipped.ride.time} has only ${trip.skipped.spare_min}\u00a0min spare${compact ? '' : ' · listed under Other ways'}`
         : null;
 
+    // Timetable times only: said first, over the facts, so the ride tile
+    // keeps its boarding stop (departures-next, 20 Oct 2026).
     const flags = [
-        late ? (
-            <TravelChip key="late" kind="attention" icon={icons.clock}>
-                Nothing gets there by {trip.target.start_time}
-            </TravelChip>
-        ) : null,
-        ride && trip.time_basis === 'scheduled' && scheduledAs === 'chip' ? (
+        ride && trip.time_basis === 'scheduled' ? (
             <TravelChip
                 key="basis"
                 kind="unsure"
                 icon={icons.offline ?? icons.unsure}
-                size="sm"
             >
                 {sourceLabel({ source: 'scheduled' })}
+            </TravelChip>
+        ) : null,
+        late ? (
+            <TravelChip key="late" kind="attention" icon={icons.clock}>
+                Nothing gets there by {trip.target.start_time}
             </TravelChip>
         ) : null,
     ].filter(Boolean);
