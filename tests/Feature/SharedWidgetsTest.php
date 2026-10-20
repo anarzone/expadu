@@ -5,7 +5,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-const WIDGET_PROPS = ['weather', 'forecast', 'rhineLevel', 'featuredEvent', 'activeDisruptions'];
+const WIDGET_PROPS = ['weather', 'forecast'];
 
 function widgetUser(): User
 {
