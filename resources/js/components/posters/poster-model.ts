@@ -224,38 +224,6 @@ export function posterTape(
 export const isPast = (event: Pick<PosterEvent, 'date'>, today: string) =>
     !!event.date && event.date < today;
 
-const minutes = (time: string) => {
-    const [h, m] = time.split(':').map(Number);
-
-    return h * 60 + m;
-};
-
-/** How an event sits after the person's own plan that day, from their
-    recorded appointment only. Empty when it doesn't follow one. */
-export function posterFit(
-    event: Pick<PosterEvent, 'date' | 'start'>,
-    appointment: { title: string; end: string | null } | null | undefined,
-    today: string,
-): string {
-    if (
-        !appointment?.end ||
-        !event.start ||
-        event.date !== today ||
-        event.start <= appointment.end
-    ) {
-        return '';
-    }
-
-    const gap = minutes(event.start) - minutes(appointment.end);
-    const hours = Math.floor(gap / 60),
-        rest = gap % 60;
-    const span = hours
-        ? `${hours} ${hours === 1 ? 'hour' : 'hours'}${rest ? ` ${rest} min` : ''}`
-        : `${rest} min`;
-
-    return `It starts ${span} after your ${appointment.title} ends.`;
-}
-
 /** A past poster wears in one of three ways, always the same for it. */
 export const posterWear = (id: string) =>
     [...id].reduce((sum, c) => sum + c.charCodeAt(0), 0) % 3;
