@@ -103,6 +103,19 @@ export function PlanSaved({
                         <span className="plan-switch" aria-hidden="true" />
                     </button>
                 </li>
+                {/* travel:watch-planned-trips, from 90 minutes before. */}
+                <li className="is-note">
+                    <span className="plan-saved-icon is-watch">
+                        <TravelIcon name="eye" />
+                    </span>
+                    <span>
+                        <strong>We keep watching it</strong>
+                        <small>
+                            Live delays and KVB notices. If something changes,
+                            you get a “Change of plan” with a new way.
+                        </small>
+                    </span>
+                </li>
             </ul>
             <div className="plan-saved-actions">
                 <button

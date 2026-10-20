@@ -22,6 +22,12 @@ class PlannedTrip extends Model
     /** "Remind me when to leave": this long before the way leaves. */
     public const REMIND_BEFORE_MINUTES = 5;
 
+    /** "We keep watching it": from this long before the way leaves. */
+    public const WATCH_FROM_MINUTES = 90;
+
+    /** Changes of plan, mildest first: a worse one is pushed again, a milder one never. */
+    public const ALERTS = ['notice', 'late', 'cancelled'];
+
     /**
      * Dates keep their offset on the way in: a way at 13:10 in Cologne is
      * stored as that instant, not as 13:10 UTC.
@@ -30,6 +36,7 @@ class PlannedTrip extends Model
 
     protected $fillable = [
         'user_id', 'date', 'target_id', 'title', 'journey', 'depart_at', 'arrive_at', 'remind', 'reminded_at',
+        'planned_at', 'alerted_kind', 'alerted_at',
     ];
 
     /**
@@ -44,6 +51,8 @@ class PlannedTrip extends Model
             'arrive_at' => 'immutable_datetime',
             'remind' => 'boolean',
             'reminded_at' => 'immutable_datetime',
+            'planned_at' => 'immutable_datetime',
+            'alerted_at' => 'immutable_datetime',
         ];
     }
 
@@ -91,6 +100,22 @@ class PlannedTrip extends Model
             'remind' => $this->remind,
             'remind_at' => $this->remindAt()->setTimezone($tz)->format('H:i'),
         ];
+    }
+
+    /**
+     * A ride as people say it: "Tram 4".
+     *
+     * @param  array{line?: ?string, mode?: ?string}  $ride
+     */
+    public static function rideName(array $ride): string
+    {
+        $word = match ($ride['mode'] ?? null) {
+            'bus' => 'Bus',
+            'rail', 'subway' => 'Train',
+            default => 'Tram',
+        };
+
+        return trim($word.' '.($ride['line'] ?? ''));
     }
 
     /** The day is over: the planned way goes (and with it what was stored). */
