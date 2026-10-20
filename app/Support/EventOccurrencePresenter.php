@@ -131,10 +131,12 @@ class EventOccurrencePresenter
      */
     public function chips(Event $event): array
     {
-        $chips = is_array($event->chips) ? $event->chips : [];
+        // "free" comes from the source's own price fields only. A stored
+        // "free" chip from the classifier was a guess when the source said
+        // nothing about the price.
+        $chips = array_diff(is_array($event->chips) ? $event->chips : [], ['free']);
 
-        if (($event->is_free || strtolower((string) $event->price_text) === 'free')
-            && ! in_array('free', $chips, true)) {
+        if ($event->is_free || strtolower((string) $event->price_text) === 'free') {
             $chips[] = 'free';
         }
 

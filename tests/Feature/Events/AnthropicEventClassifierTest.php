@@ -178,3 +178,24 @@ test('classifier reports a refusal apart from malformed output', function () {
 
     app(AnthropicEventClassifier::class)->classify($event);
 })->throws(ClassificationRefused::class, 'general_harms');
+
+test('a tip that guesses is dropped; one that restates the listing is kept', function (string $tip, ?string $kept) {
+    Http::preventStrayRequests();
+    Http::fake(['api.anthropic.com/v1/messages' => Http::response([
+        'content' => [['type' => 'tool_use', 'input' => [
+            'relevance' => 0.5, 'confidence' => 0.8, 'category' => 'culture', 'language' => 'de',
+            'chips' => ['free', 'solo-OK'], 'title_en' => 'Talk', 'description_en' => 'A talk.',
+            'summary_en' => 'A talk at the town hall.', 'tip_en' => $tip,
+        ]]],
+    ])]);
+    $event = Event::factory()->create(['title' => 'Vortrag', 'description' => 'Ein Vortrag im Rathaus.', 'price_text' => 'kostenlos']);
+
+    $result = app(AnthropicEventClassifier::class)->classify($event);
+
+    expect($result['tip_en'])->toBe($kept)
+        ->and($result['chips'])->toBe(['solo-OK']); // "free" only ever comes from the price fields
+})->with([
+    'restates the listing' => ['Admission is free, at the town hall.', 'Admission is free, at the town hall.'],
+    'hedges' => ['It appears to be aimed at locals.', null],
+    'names a language the listing never mentions' => ['The talk is in German.', null],
+]);
