@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { cn } from '@/lib/utils';
 import { TravelBanner, TravelChip } from '../labels';
 import { LineBadge } from '../line-badge';
 import { lineLook, vehicleWord } from '../line-look';
@@ -298,7 +299,10 @@ export function NearbyView({
                                     lines: toggleIn(filters.lines, l.line),
                                 }),
                             <span
-                                className={`nearby-badge${l.look.bus ? 'is-bus' : ''}`}
+                                className={cn(
+                                    'nearby-badge',
+                                    l.look.bus && 'is-bus',
+                                )}
                                 style={
                                     {
                                         '--line': l.look.colour,
@@ -334,7 +338,10 @@ export function NearbyView({
                                     return (
                                         <span
                                             key={line}
-                                            className={`nearby-badge${known?.look.bus ? 'is-bus' : ''}`}
+                                            className={cn(
+                                                'nearby-badge',
+                                                known?.look.bus && 'is-bus',
+                                            )}
                                             style={
                                                 {
                                                     '--line':
@@ -528,7 +535,10 @@ export function NearbyView({
                             </span>
                             <span className="nearby-detail-time">
                                 <span
-                                    className={`nearby-time is-large${stale || !d.live ? 'is-paused' : ''}`}
+                                    className={cn(
+                                        'nearby-time is-large',
+                                        (stale || !d.live) && 'is-paused',
+                                    )}
                                 >
                                     <strong>{t.big}</strong>
                                     {t.unit ? <small>{t.unit}</small> : null}
@@ -770,7 +780,10 @@ export function NearbyView({
                                             return (
                                                 <span
                                                     key={line}
-                                                    className={`nearby-badge${look.bus ? 'is-bus' : ''}`}
+                                                    className={cn(
+                                                        'nearby-badge',
+                                                        look.bus && 'is-bus',
+                                                    )}
                                                     style={
                                                         {
                                                             '--line':
