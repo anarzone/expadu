@@ -162,31 +162,22 @@
         {
             "name": "overview grid",
             "mock": ".case-overview-grid",
-            "app": ".case-overview-grid",
-            "ignore": ["h"],
-            "ignoreReason": "The real catalogue gives this employee a fifth task, Income tax return (nee.tax_return applies to every employee). The mock's sample leaves it out, so this count or height differs; the design session is asked to add it to the sample."
+            "app": ".case-overview-grid"
         },
         {
             "name": "tasks",
             "mock": "section.process-overview",
-            "app": "section.process-overview",
-            "ignore": ["h"],
-            "ignoreReason": "The real catalogue gives this employee a fifth task, Income tax return (nee.tax_return applies to every employee). The mock's sample leaves it out, so this count or height differs; the design session is asked to add it to the sample."
+            "app": "section.process-overview"
         },
         {
             "name": "tasks heading",
             "mock": "#processes-heading",
-            "app": "#processes-heading",
-            "contentDiffers": true,
-            "ignoreReason": "The real catalogue gives this employee a fifth task, Income tax return (nee.tax_return applies to every employee). The mock's sample leaves it out, so this count or height differs; the design session is asked to add it to the sample."
+            "app": "#processes-heading"
         },
         {
             "name": "tasks actions",
             "mock": ".process-overview .case-icon-actions",
-            "app": ".process-overview .case-icon-actions",
-            "ignore": ["x", "w"],
-            "contentDiffers": true,
-            "ignoreReason": "The real catalogue gives this employee a fifth task, Income tax return (nee.tax_return applies to every employee). The mock's sample leaves it out, so this count or height differs; the design session is asked to add it to the sample. (\"All steps 7\" is a glyph wider than \"6\")"
+            "app": ".process-overview .case-icon-actions"
         },
         {
             "name": "history",
@@ -196,25 +187,19 @@
         {
             "name": "task chips",
             "mock": ".case-chips",
-            "app": ".case-chips",
-            "contentDiffers": true,
-            "ignoreReason": "The real catalogue gives this employee a fifth task, Income tax return (nee.tax_return applies to every employee). The mock's sample leaves it out, so this count or height differs; the design session is asked to add it to the sample."
+            "app": ".case-chips"
         },
         {
             "name": "chip All",
             "mock": ".case-chips button",
             "app": ".case-chips button",
-            "index": 0,
-            "contentDiffers": true,
-            "ignoreReason": "The real catalogue gives this employee a fifth task, Income tax return (nee.tax_return applies to every employee). The mock's sample leaves it out, so this count or height differs; the design session is asked to add it to the sample."
+            "index": 0
         },
         {
             "name": "chip To do",
             "mock": ".case-chips button",
             "app": ".case-chips button",
-            "index": 1,
-            "contentDiffers": true,
-            "ignoreReason": "The real catalogue gives this employee a fifth task, Income tax return (nee.tax_return applies to every employee). The mock's sample leaves it out, so this count or height differs; the design session is asked to add it to the sample."
+            "index": 1
         },
         {
             "name": "chip Waiting",
@@ -231,9 +216,7 @@
         {
             "name": "task list",
             "mock": ".process-grid",
-            "app": ".process-grid",
-            "ignore": ["h"],
-            "ignoreReason": "The real catalogue gives this employee a fifth task, Income tax return (nee.tax_return applies to every employee). The mock's sample leaves it out, so this count or height differs; the design session is asked to add it to the sample."
+            "app": ".process-grid"
         },
         {
             "name": "task EU Blue Card",
@@ -311,9 +294,7 @@
             "name": "task Bank account",
             "mock": ".process-summary",
             "app": ".process-summary",
-            "index": 3,
-            "contentDiffers": true,
-            "ignoreReason": "Two glyphs (the y and n of \"payments\") rasterise a few pixels differently although the text, font, styles and box are identical; the row's icon, name and status pairs match pixel for pixel."
+            "index": 3
         },
         {
             "name": "task Bank account icon",
@@ -361,10 +342,7 @@
             "name": "dates (below the tasks)",
             "mock": "section.overview-dates",
             "app": "section.overview-dates",
-            "widths": [360, 390, 768],
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "widths": [360, 390, 768]
         },
         {
             "name": "dates heading",
@@ -376,10 +354,7 @@
             "name": "dates heading (below the tasks)",
             "mock": "#dates-heading",
             "app": "#dates-heading",
-            "widths": [360, 390, 768],
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "widths": [360, 390, 768]
         },
         {
             "name": "dates add",
@@ -391,10 +366,7 @@
             "name": "dates add (below the tasks)",
             "mock": ".overview-dates .case-section-head .icon-button",
             "app": ".overview-dates .case-section-head .icon-button",
-            "widths": [360, 390, 768],
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "widths": [360, 390, 768]
         },
         {
             "name": "date: submission",
@@ -408,10 +380,7 @@
             "mock": ".timeline-row",
             "app": ".timeline-row",
             "widths": [360, 390, 768],
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "index": 0,
-            "contentDiffers": true
+            "index": 0
         },
         {
             "name": "date: appointment",
@@ -425,10 +394,7 @@
             "mock": ".timeline-row",
             "app": ".timeline-row",
             "widths": [360, 390, 768],
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "index": 1,
-            "contentDiffers": true
+            "index": 1
         },
         {
             "name": "date: appointment time",
@@ -442,10 +408,7 @@
             "mock": ".timeline-row .timeline-date",
             "app": ".timeline-row .timeline-date",
             "widths": [360, 390, 768],
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "index": 1,
-            "contentDiffers": true
+            "index": 1
         },
         {
             "name": "date: document expiry",
@@ -459,10 +422,7 @@
             "mock": ".timeline-row",
             "app": ".timeline-row",
             "widths": [360, 390, 768],
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "index": 2,
-            "contentDiffers": true
+            "index": 2
         },
         {
             "name": "date: target",
@@ -476,69 +436,45 @@
             "mock": ".timeline-row",
             "app": ".timeline-row",
             "widths": [360, 390, 768],
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "index": 3,
-            "contentDiffers": true
+            "index": 3
         },
         {
             "name": "good to know",
             "mock": "section.good-to-know",
-            "app": "section.good-to-know",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "app": "section.good-to-know"
         },
         {
             "name": "good to know heading",
             "mock": "#good-heading",
-            "app": "#good-heading",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "app": "#good-heading"
         },
         {
             "name": "good to know topic",
             "mock": ".context-topic h3",
             "app": ".context-topic h3",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "index": 0,
-            "contentDiffers": true
+            "index": 0
         },
         {
             "name": "good to know card",
             "mock": "details.context-card",
             "app": "details.context-card",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "index": 0,
-            "contentDiffers": true
+            "index": 0
         },
         {
             "name": "good to know card title",
             "mock": "details.context-card summary",
             "app": "details.context-card summary",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "index": 0,
-            "contentDiffers": true
+            "index": 0
         },
         {
             "name": "coverage line",
             "mock": ".coverage-strip",
-            "app": ".coverage-strip",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "app": ".coverage-strip"
         },
         {
             "name": "Which ones",
             "mock": ".coverage-strip button",
-            "app": ".coverage-strip button",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "app": ".coverage-strip button"
         },
         {
             "name": "footnote",
@@ -574,26 +510,17 @@
         {
             "name": "sheet title",
             "mock": "dialog.detail-dialog .dialog-head h2",
-            "app": "dialog.detail-dialog .dialog-head h2",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "app": "dialog.detail-dialog .dialog-head h2"
         },
         {
             "name": "sheet close",
             "mock": "dialog.detail-dialog .dialog-head .icon-button",
-            "app": "dialog.detail-dialog .dialog-head .icon-button",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "app": "dialog.detail-dialog .dialog-head .icon-button"
         },
         {
             "name": "sheet intro",
             "mock": "dialog.detail-dialog p",
-            "app": "dialog.detail-dialog p",
-            "ignore": ["y"],
-            "ignoreReason": "Sits below Your tasks, which is one real row (Income tax return) longer than the mock's sample, so it starts that much lower. The offset has a fraction of a pixel (83.6px, 142.4px on a phone), so glyph edges rasterise differently; size, styles and wording still match.",
-            "contentDiffers": true
+            "app": "dialog.detail-dialog p"
         },
         {
             "name": "source record",
