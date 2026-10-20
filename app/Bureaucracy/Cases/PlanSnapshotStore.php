@@ -16,6 +16,7 @@ final class PlanSnapshotStore
     public function __construct(
         private CaseMatcher $caseMatcher,
         private CasePlanComposer $planComposer,
+        private CaseAttributes $caseAttributes,
     ) {}
 
     /**
@@ -32,7 +33,7 @@ final class PlanSnapshotStore
                 ->firstOrFail();
             $result = $this->caseMatcher->match($lockedCase);
             $sections = $this->planComposer->compose($lockedCase, $result);
-            $signature = $this->signature($lockedCase, $result);
+            $signature = $this->signature($lockedCase, $result, $sections);
             $activeSnapshots = BureaucracyPlanSnapshot::query()
                 ->where('case_id', $lockedCase->getKey())
                 ->whereNull('superseded_at')
@@ -77,12 +78,19 @@ final class PlanSnapshotStore
     /**
      * @throws JsonException
      */
-    private function signature(BureaucracyCase $case, CaseMatchResult $result): string
+    private function signature(BureaucracyCase $case, CaseMatchResult $result, array $sections): string
     {
         return hash('sha256', json_encode([
             // Presentation is part of what a snapshot stores, so it has to be
             // part of what invalidates one.
             'layout_version' => CasePlanComposer::LayoutVersion,
+            'sections_hash' => hash_hmac('sha256', json_encode($sections, JSON_THROW_ON_ERROR), (string) config('app.key')),
+            // Compatibility fields can still change without a case fact-version
+            // bump. Bind snapshots to the exact validated input until T06 cutover.
+            'input_hash' => hash_hmac('sha256', json_encode([
+                'attributes' => $this->caseAttributes->for($case),
+                'arrival_date' => $case->user()->firstOrFail()->arrival_date?->toDateString(),
+            ], JSON_THROW_ON_ERROR), (string) config('app.key')),
             'rule_versions' => $result->ruleVersions,
             'task_state' => $this->taskState($case, $result),
             'date_boundary' => today()->toDateString(),

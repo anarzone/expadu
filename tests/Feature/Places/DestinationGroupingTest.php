@@ -319,7 +319,7 @@ test('saved child slots retain coordinates and timing and prevent a sibling from
     $candidates = collect(app(CandidateRepository::class)->byIds(["spot:{$child->id}", "spot:{$cafe->id}"], $start, 50.951, 6.951))->keyBy('id');
     $slots = [(new PlanSlot($candidates["spot:{$child->id}"], $start, $start->addHour(), 0))->toArray(), (new PlanSlot($candidates["spot:{$cafe->id}"], $start->addHours(2), $start->addHours(3), 0))->toArray()];
     $plan = ['constraints' => $window->toArray(), 'slots' => $slots, 'pins' => ["spot:{$child->id}"], 'origin' => [50.951, 6.951]];
-    Cache::put("composer:plan:{$user->id}", $plan, 3600);
+    $plan = storeComposerPlan($user, $plan);
     app(TodayPlanStore::class)->save($user, $plan, 'Tennis and coffee');
     $saved = app(TodayPlanStore::class)->get($user)['slots'][0];
     expect($saved['id'])->toBe($slots[0]['id'])
@@ -328,7 +328,7 @@ test('saved child slots retain coordinates and timing and prevent a sibling from
         ->and($saved['start_at'])->toBe($slots[0]['start_at'])
         ->and($saved['end_at'])->toBe($slots[0]['end_at']);
     $this->actingAs($user)->postJson('/composer/swap', ['slot' => 1])->assertSuccessful();
-    $stored = Cache::get("composer:plan:{$user->id}");
+    $stored = storedComposerPlan($user);
     expect($stored['slots'][0]['id'])->toBe("spot:{$child->id}")
         ->and($stored['slots'][0]['lat'])->toBe($child->lat)
         ->and($stored['slots'][0]['lng'])->toBe($child->lng)

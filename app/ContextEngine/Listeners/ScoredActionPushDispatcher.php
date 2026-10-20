@@ -2,9 +2,11 @@
 
 namespace App\ContextEngine\Listeners;
 
+use App\Bureaucracy\Reminders\PlanReminderDelivery;
 use App\ContextEngine\ContextNotificationFactory;
 use App\ContextEngine\ScoredAction;
 use App\Events\Context\ScoredActionInserted;
+use App\Notifications\BureaucracyPlanNotification;
 use App\Support\NotificationThrottle;
 use App\Support\RedisLogger;
 use Carbon\CarbonInterface;
@@ -44,6 +46,10 @@ class ScoredActionPushDispatcher
 
         $notification = $this->notifications->build($action);
         if ($notification === null) {
+            if ($action->type === 'bureaucracy_task') {
+                app(PlanReminderDelivery::class)->release($action->payload);
+            }
+
             return; // dashboard-only action type
         }
 
@@ -55,10 +61,10 @@ class ScoredActionPushDispatcher
             'score' => $action->score,
         ];
 
-        // Pushes reserved in the PushLedger (bureaucracy tiers, the residency
-        // milestone) are deduped there — bureaucracy tiers can even repeat a
-        // severity (critical, then overdue) — so they skip this check.
-        $dedupe = ! isset($action->payload['push_reservation']);
+        // Pushes reserved in the PushLedger (the residency milestone) or in
+        // PlanReminderDelivery (paperwork reminders) are deduped there, so they
+        // skip this check.
+        $dedupe = ! isset($action->payload['push_reservation']) && $action->type !== 'bureaucracy_task';
         if ($dedupe && $this->alreadyPushed($action)) {
             RedisLogger::log("scored_action_push_dispatch:{$user->id}", $context + ['mode' => 'deduped']);
 
@@ -80,7 +86,10 @@ class ScoredActionPushDispatcher
         // insert time, so we don't re-check here — just record-sent.
         try {
             $user->notify($notification);
-            NotificationThrottle::recordSent($user);
+            // A paperwork reminder records its own send once it clears shouldSend().
+            if (! $notification instanceof BureaucracyPlanNotification) {
+                NotificationThrottle::recordSent($user);
+            }
             if ($dedupe) {
                 $this->rememberPushed($action);
             }
@@ -89,6 +98,12 @@ class ScoredActionPushDispatcher
                 'notification' => $notification::class,
             ]);
         } catch (\Throwable $e) {
+            if ($notification instanceof BureaucracyPlanNotification) {
+                app(PlanReminderDelivery::class)->release($notification->reference);
+                // Let the durable reassessment retry; admitting a queue job is not delivery.
+                // Its failure record keeps the exception class, not private provider text.
+                throw $e;
+            }
             Log::error('ScoredActionPushDispatcher failed to send', $context + [
                 'error' => $e->getMessage(),
             ]);
