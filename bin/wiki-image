@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Upload an image to BookStack and print the Markdown to embed it.
+#
+# The BookStack MCP server has no image tool — create_attachment only attaches a
+# link — so screenshots go through the REST image gallery instead.
+#
+#   bin/wiki-image screenshot.png 42
+#   -> ![screenshot.png](https://wiki.localhost/uploads/images/gallery/...)
+#
+# Credentials come from the bookstack MCP entry in ~/.claude.json so there is
+# only one place they live.
+
+set -euo pipefail
+
+usage() { echo "usage: $(basename "$0") <image-file> <bookstack-page-id> [alt-text]" >&2; exit 64; }
+
+[ $# -ge 2 ] || usage
+file="$1"; page_id="$2"; alt="${3:-$(basename "$1")}"
+
+[ -f "$file" ] || { echo "no such file: $file" >&2; exit 66; }
+case "$page_id" in ''|*[!0-9]*) echo "page id must be numeric, got: $page_id" >&2; exit 64;; esac
+
+config="${CLAUDE_CONFIG:-$HOME/.claude.json}"
+[ -f "$config" ] || { echo "cannot read $config" >&2; exit 69; }
+
+# Pull the bookstack MCP env wherever it sits in the config tree.
+creds=$(jq -r '
+  [ .. | objects | select(has("env")) | .env
+    | select(has("BOOKSTACK_BASE_URL") and has("BOOKSTACK_TOKEN_ID")) ][0]
+  | "\(.BOOKSTACK_BASE_URL)\t\(.BOOKSTACK_TOKEN_ID)\t\(.BOOKSTACK_TOKEN_SECRET)"
+' "$config")
+
+[ -n "$creds" ] && [ "$creds" != "null" ] || {
+  echo "no bookstack MCP credentials found in $config" >&2; exit 69; }
+
+IFS=$'\t' read -r base token_id token_secret <<<"$creds"
+
+response=$(curl -sS --fail-with-body -X POST "$base/api/image-gallery" \
+  -H "Authorization: Token ${token_id}:${token_secret}" \
+  -F "type=gallery" \
+  -F "uploaded_to=${page_id}" \
+  -F "name=$(basename "$file")" \
+  -F "image=@${file}") || {
+    echo "upload failed: $response" >&2; exit 70; }
+
+url=$(printf '%s' "$response" | jq -r '.url // empty')
+[ -n "$url" ] || { echo "no url in response: $response" >&2; exit 70; }
+
+printf '![%s](%s)\n' "$alt" "$url"

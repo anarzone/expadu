@@ -2,6 +2,8 @@
 
 namespace App\Notifications;
 
+use App\ContextEngine\ClaimsReservedPush;
+use App\ContextEngine\ReservedPush;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -9,9 +11,9 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class BureaucracyDeadlineNotification extends Notification implements ShouldQueue
+class BureaucracyDeadlineNotification extends Notification implements ReservedPush, ShouldQueue
 {
-    use Queueable;
+    use ClaimsReservedPush, Queueable;
 
     public function __construct(
         public string $taskTitle,
@@ -20,6 +22,7 @@ class BureaucracyDeadlineNotification extends Notification implements ShouldQueu
         public string $deadline,
         public ?int $taskId = null,
         public ?string $appointmentAt = null, // ISO — set when the deadline IS a booked appointment
+        public ?array $pushReservation = null, // PushLedger reservation for this tier's push
     ) {}
 
     /**

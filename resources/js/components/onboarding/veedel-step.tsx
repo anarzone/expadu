@@ -6,31 +6,19 @@ import {
     IconSearch,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { DateField } from '@/components/date-field';
 import { OnboardingIcon } from '@/components/onboarding/onboarding-icon';
 import { ICON_STROKE } from '@/constants/icons';
-
-const germanLevels = [
-    { value: 'none', label: 'None' },
-    { value: 'a1', label: 'A1' },
-    { value: 'a2', label: 'A2' },
-    { value: 'b1', label: 'B1' },
-    { value: 'b2', label: 'B2' },
-    { value: 'c1', label: 'C1' },
-    { value: 'c2', label: 'C2' },
-];
+import { ARRIVAL_BOUNDS, MOVE_IN_BOUNDS } from '@/lib/date-bounds';
 
 export function VeedelStep({
     veedels,
     veedel,
     arrivalDate,
     arrivalPlanned,
-    hasDeutschlandticket,
     onVeedelChange,
     onArrivalDateChange,
     onArrivalPlannedChange,
-    onDticketChange,
-    documentedGermanLevel,
-    onDocumentedGermanLevelChange,
     addressRegistrationStatus,
     onAddressRegistrationStatusChange,
     movedInAt,
@@ -40,18 +28,22 @@ export function VeedelStep({
     veedel: string;
     arrivalDate: string;
     arrivalPlanned: boolean | null;
-    hasDeutschlandticket: boolean;
     onVeedelChange: (value: string) => void;
     onArrivalDateChange: (value: string) => void;
     onArrivalPlannedChange: (value: boolean) => void;
-    onDticketChange: (value: boolean) => void;
-    documentedGermanLevel: string;
-    onDocumentedGermanLevelChange: (value: string) => void;
     addressRegistrationStatus: string;
     onAddressRegistrationStatusChange: (value: string) => void;
     movedInAt: string;
     onMovedInAtChange: (value: string) => void;
 }) {
+    // Whether they are here yet decides whether the address questions mean
+    // anything, so it is asked first and gates the rest of the screen. Until
+    // it is answered the address half stays closed too: asking "can you
+    // register at this address" before knowing whether they have one is the
+    // same mistake in a quieter form.
+    const arrived = arrivalPlanned === false;
+    const planning = arrivalPlanned === true;
+
     return (
         <div className="mx-auto max-w-[600px] px-6 pb-24">
             <div className="py-2 pb-6">
@@ -65,79 +57,6 @@ export function VeedelStep({
             </div>
 
             <div className="flex flex-col gap-5">
-                <div>
-                    <div className="mb-2 text-[13px] font-semibold">
-                        Which Veedel do you live in?{' '}
-                        <span className="font-normal text-muted-foreground">
-                            (your district)
-                        </span>
-                    </div>
-                    <VeedelPicker
-                        veedels={veedels}
-                        value={veedel}
-                        onChange={onVeedelChange}
-                    />
-                    <div className="mt-3">
-                        <div className="mb-2 text-[13px] font-semibold">
-                            Can you register at this address?
-                        </div>
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                            {[
-                                {
-                                    value: 'registrable',
-                                    label: 'Yes, I can register here',
-                                },
-                                {
-                                    value: 'not_registrable',
-                                    label: 'No, not at this address',
-                                },
-                                {
-                                    value: 'unsure',
-                                    label: "I'm not sure",
-                                },
-                            ].map((opt) => (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() =>
-                                        onAddressRegistrationStatusChange(
-                                            opt.value,
-                                        )
-                                    }
-                                    aria-pressed={
-                                        addressRegistrationStatus === opt.value
-                                    }
-                                    className={`min-h-11 flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
-                                        addressRegistrationStatus === opt.value
-                                            ? 'border-primary bg-accent-soft text-primary'
-                                            : 'border-border bg-card hover:border-primary/30'
-                                    }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                        This tells us whether a move-in date can anchor
-                        address-registration guidance.
-                    </p>
-                    {addressRegistrationStatus === 'registrable' && (
-                        <label className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
-                            When did you move into this address?
-                            <input
-                                type="date"
-                                aria-label="When did you move into this address?"
-                                value={movedInAt}
-                                onChange={(event) =>
-                                    onMovedInAtChange(event.target.value)
-                                }
-                                className="min-h-11 rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm font-normal outline-none focus:border-primary"
-                            />
-                        </label>
-                    )}
-                </div>
-
                 <div>
                     <div className="mb-2 text-[13px] font-semibold">
                         When did you arrive in Germany?
@@ -181,14 +100,12 @@ export function VeedelStep({
                         </p>
                     ) : arrivalPlanned === false ? (
                         <>
-                            <input
-                                type="date"
-                                aria-label="When did you arrive in Germany?"
+                            <DateField
+                                label="When did you arrive in Germany?"
+                                min={ARRIVAL_BOUNDS.min}
+                                max={ARRIVAL_BOUNDS.max}
                                 value={arrivalDate}
-                                onChange={(event) =>
-                                    onArrivalDateChange(event.target.value)
-                                }
-                                className="min-h-11 w-full rounded-[10px] border-[1.5px] border-border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                                onChange={onArrivalDateChange}
                             />
                             <p className="mt-1.5 text-xs text-muted-foreground">
                                 Arrival helps sequence your first plan. Your
@@ -198,72 +115,97 @@ export function VeedelStep({
                         </>
                     ) : null}
                 </div>
-
                 <div>
                     <div className="mb-2 text-[13px] font-semibold">
-                        Do you have a documented German level?{' '}
+                        {planning
+                            ? 'Which Veedel are you moving to?'
+                            : 'Which Veedel do you live in?'}{' '}
                         <span className="font-normal text-muted-foreground">
-                            (optional — only choose a level you can document)
+                            {planning
+                                ? '(not sure yet? pick the area you have in mind)'
+                                : '(your district)'}
                         </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        {germanLevels.map((l) => (
-                            <button
-                                key={l.value}
-                                type="button"
-                                onClick={() =>
-                                    onDocumentedGermanLevelChange(
-                                        documentedGermanLevel === l.value
-                                            ? ''
-                                            : l.value,
-                                    )
-                                }
-                                aria-pressed={documentedGermanLevel === l.value}
-                                className={`min-h-11 rounded-full border-[1.5px] px-3.5 py-1.5 font-mono text-[13px] transition-all ${
-                                    documentedGermanLevel === l.value
-                                        ? 'border-primary bg-accent-soft font-semibold text-primary'
-                                        : 'border-border bg-card hover:border-primary/30'
-                                }`}
-                            >
-                                {l.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <div>
-                    <div className="mb-2 text-[13px] font-semibold">
-                        Do you have a Deutschlandticket?{' '}
-                        <span className="font-normal text-muted-foreground">
-                            (optional)
-                        </span>
-                    </div>
-                    <div className="flex gap-2">
-                        {[
-                            { value: true, label: 'Yes, I have one' },
-                            { value: false, label: 'Not yet' },
-                        ].map((opt) => (
-                            <button
-                                key={String(opt.value)}
-                                type="button"
-                                onClick={() => onDticketChange(opt.value)}
-                                aria-pressed={
-                                    hasDeutschlandticket === opt.value
-                                }
-                                className={`min-h-11 flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
-                                    hasDeutschlandticket === opt.value
-                                        ? 'border-primary bg-accent-soft text-primary'
-                                        : 'border-border bg-card hover:border-primary/30'
-                                }`}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
-                        If you do, we'll show trips as covered instead of
-                        quoting a single fare.
-                    </p>
+                    <VeedelPicker
+                        veedels={veedels}
+                        value={veedel}
+                        onChange={onVeedelChange}
+                    />
+                    {arrived && (
+                        <>
+                            <div className="mt-3">
+                                <div className="mb-2 text-[13px] font-semibold">
+                                    Can you register at this address?{' '}
+                                    <span className="font-normal text-muted-foreground">
+                                        (optional)
+                                    </span>
+                                </div>
+                                <div className="flex flex-col gap-2 sm:flex-row">
+                                    {[
+                                        {
+                                            value: 'registrable',
+                                            label: 'Yes, I can register here',
+                                        },
+                                        {
+                                            value: 'not_registrable',
+                                            label: 'No, not at this address',
+                                        },
+                                        {
+                                            value: 'unsure',
+                                            label: "I'm not sure",
+                                        },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            onClick={() =>
+                                                onAddressRegistrationStatusChange(
+                                                    opt.value,
+                                                )
+                                            }
+                                            aria-pressed={
+                                                addressRegistrationStatus ===
+                                                opt.value
+                                            }
+                                            className={`min-h-11 flex-1 rounded-[10px] border-[1.5px] px-3 py-2.5 text-[13px] font-semibold transition-all ${
+                                                addressRegistrationStatus ===
+                                                opt.value
+                                                    ? 'border-primary bg-accent-soft text-primary'
+                                                    : 'border-border bg-card hover:border-primary/30'
+                                            }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="mt-1.5 text-xs text-muted-foreground">
+                                This tells us whether a move-in date can anchor
+                                address-registration guidance.
+                            </p>
+                            {addressRegistrationStatus === 'registrable' && (
+                                <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] font-semibold">
+                                    <span id="moved-in-label">
+                                        When did you move into this address?
+                                    </span>
+                                    <DateField
+                                        label="When did you move into this address?"
+                                        min={MOVE_IN_BOUNDS.min}
+                                        max={MOVE_IN_BOUNDS.max}
+                                        value={movedInAt}
+                                        onChange={onMovedInAtChange}
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
+                    {planning && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            We&rsquo;ll ask about registering the address once
+                            you&rsquo;ve moved in — the 14-day clock starts
+                            then, not now.
+                        </p>
+                    )}
                 </div>
             </div>
         </div>

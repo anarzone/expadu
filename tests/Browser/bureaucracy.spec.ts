@@ -1,6 +1,17 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
+/**
+ * The date inputs are three segments (day / month / year) rather than one
+ * `<input type="date">`, so a Playwright `.fill()` has three boxes to fill.
+ */
+async function fillDate(page: Page, label: string, iso: string): Promise<void> {
+    const [year, month, day] = iso.split('-');
+
+    await page.getByLabel(`${label} — day`).fill(day);
+    await page.getByLabel(`${label} — month`).fill(month);
+    await page.getByLabel(`${label} — year`).fill(year);
+}
 // After a rebuild the asset hashes change, and a stale PWA service worker keeps
 // serving the previous build — so the page renders old code and assertions fail
 // against markup that is already fixed. Every other spec touching built assets
@@ -34,6 +45,27 @@ async function switchPersona(
         await page.getByRole('button', { name: 'Reset tasks' }).click();
         await page.waitForLoadState('networkidle');
     }
+}
+
+/**
+ * The same clamp Carbon's addMonthsNoOverflow applies, formatted the way the
+ * deadline label renders it: "23 Oct".
+ */
+function monthsAhead(months: number): string {
+    const today = new Date();
+    const target = new Date(today.getFullYear(), today.getMonth() + months, 1);
+    const lastDay = new Date(
+        target.getFullYear(),
+        target.getMonth() + 1,
+        0,
+    ).getDate();
+
+    target.setDate(Math.min(today.getDate(), lastDay));
+
+    return target.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+    });
 }
 
 function decodeHtmlAttribute(value: string): string {
@@ -297,8 +329,13 @@ test.describe('Verified bureaucracy case plan', () => {
             await expect(
                 rightPanel.getByText('Your verified deadlines'),
             ).toBeVisible();
+            // The persona's visa expiry is relative — two months out — so that
+            // a fixture proving deadline rendering cannot itself expire. Derive
+            // the label the same way rather than pinning a literal date.
             await expect(
-                rightPanel.getByText('check or act by 1 Oct').first(),
+                rightPanel
+                    .getByText(`check or act by ${monthsAhead(2)}`)
+                    .first(),
             ).toBeVisible();
         }
 
@@ -431,7 +468,7 @@ test.describe('Onboarding v2', () => {
         await page.goto('/onboarding');
         await page.waitForLoadState('networkidle');
 
-        // Step 1 — friendly welcome with the privacy line
+        // Step 1 — the cover screen states the length and the disclaimer.
         await expect(
             page.getByText("Let's make it a list", { exact: false }),
         ).toBeVisible();
@@ -441,62 +478,42 @@ test.describe('Onboarding v2', () => {
         await expect(
             page.getByText('not legal advice', { exact: false }),
         ).toBeVisible();
+        // The cover is not a question, so it is excluded from the count.
+        await expect(page.getByText('3 questions')).toBeVisible();
         await page.getByRole('button', { name: "Let's get started" }).click();
 
-        // Family entry asks only the facts relevant to a family route.
+        // Step 2 asks the branch question and nothing else. Residence details
+        // used to share this screen, which made it eight questions long.
+        await expect(page.getByText('1 of 3')).toBeVisible();
+        await expect(
+            page.getByText('What German paperwork do you hold right now?', {
+                exact: false,
+            }),
+        ).toHaveCount(0);
         await page.getByRole('button', { name: "I'm joining family" }).click();
-        await expect(
-            page.getByText('How did you enter Germany?', { exact: false }),
-        ).toBeVisible();
-        await page
-            .getByRole('button', { name: 'With a national D visa' })
-            .click();
-        await page
-            .getByRole('button', { name: 'My sponsor has a Blue Card' })
-            .click();
-        await expect(
-            page.getByRole('button', { name: 'Apply for an EU Blue Card' }),
-        ).toHaveCount(0);
-        await page
-            .getByRole('button', { name: 'Apply for family reunification' })
-            .click();
-
-        // Switching situation clears family-only answers and reveals the
-        // existing-title and goal questions for a non-EU employee.
-        await page.getByRole('button', { name: 'I have a job here' }).click();
-        await page.getByRole('button', { name: 'No', exact: true }).click();
-        await page
-            .getByRole('button', {
-                name: 'I already hold a German residence permit',
-            })
-            .click();
-        await page
-            .getByRole('button', { name: 'Work residence permit' })
-            .click();
-        await page
-            .getByRole('button', { name: 'Apply for an EU Blue Card' })
-            .click();
-        await page
-            .getByLabel('When does this title expire?')
-            .fill('2027-09-01');
-        await page
-            .getByRole('button', { name: 'EU Blue Card', exact: true })
-            .click();
-        await expect(
-            page.getByLabel('When does this title expire?'),
-        ).toBeVisible();
-        await expect(
-            page.getByLabel('When does this title expire?'),
-        ).toHaveValue('');
-        await expect(
-            page.getByRole('button', { name: 'Apply for an EU Blue Card' }),
-        ).toHaveCount(0);
-        await page
-            .getByLabel('When does this title expire?')
-            .fill('2027-10-01');
         await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Step 3 keeps address-registration status distinct from arrival.
+        // Step 3 asks whether they are here BEFORE anything about an address:
+        // that answer decides whether the address questions mean anything.
+        await expect(
+            page.getByText('Can you register at this address?'),
+        ).toHaveCount(0);
+
+        // Still planning: no address to register, and the Veedel question
+        // shifts to the future tense.
+        await page.getByRole('button', { name: 'Still planning' }).click();
+        await expect(
+            page.getByText('Which Veedel are you moving to?'),
+        ).toBeVisible();
+        await expect(
+            page.getByText('Can you register at this address?'),
+        ).toHaveCount(0);
+
+        await page.getByRole('button', { name: "I'm here" }).click();
+        await expect(
+            page.getByText('Which Veedel do you live in?'),
+        ).toBeVisible();
+        await fillDate(page, 'When did you arrive in Germany?', '2026-06-15');
         await page
             .getByRole('button', { name: 'Pick your neighbourhood' })
             .click();
@@ -506,62 +523,96 @@ test.describe('Onboarding v2', () => {
             .click();
         await expect(
             page.getByRole('button', { name: 'Continue' }),
-        ).toBeDisabled();
+        ).toBeEnabled();
+
+        // Saying "yes" to registering still commits to the move-in date: a
+        // registrable address with no date has no clock to start.
         await page
             .getByRole('button', { name: 'Yes, I can register here' })
             .click();
         await expect(
-            page.getByLabel('When did you move into this address?'),
-        ).toBeVisible();
-        await expect(
             page.getByRole('button', { name: 'Continue' }),
         ).toBeDisabled();
-        await page
-            .getByLabel('When did you move into this address?')
-            .fill('2026-07-01');
+        await fillDate(
+            page,
+            'When did you move into this address?',
+            '2026-07-01',
+        );
+
+        // Switching back to planning must RETRACT those answers, not just hide
+        // them — otherwise someone who has not arrived submits a move-in date.
+        await page.getByRole('button', { name: 'Still planning' }).click();
         await expect(
-            page.getByRole('button', { name: 'Continue' }),
-        ).toBeDisabled();
+            page.getByLabel('When did you move into this address? — day'),
+        ).toHaveCount(0);
         await page.getByRole('button', { name: "I'm here" }).click();
         await expect(
-            page.getByLabel('When did you arrive in Germany?'),
-        ).toBeVisible();
-        await expect(
-            page.getByRole('button', { name: 'Continue' }),
-        ).toBeDisabled();
-        await page
-            .getByLabel('When did you arrive in Germany?')
-            .fill('2026-06-15');
-        await page.getByRole('button', { name: 'B1' }).click();
+            page.getByRole('button', { name: 'Yes, I can register here' }),
+        ).toHaveAttribute('aria-pressed', 'false');
+        await fillDate(page, 'When did you arrive in Germany?', '2026-06-15');
         await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Interests are optional, so the user can keep moving without picks.
+        // Step 4 — everything optional on one screen, skippable in one click.
+        await expect(page.getByText('3 of 3')).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Skip for now' }),
+        ).toBeVisible();
+        await expect(
+            page.getByText('What German paperwork do you hold right now?', {
+                exact: false,
+            }),
+        ).toBeVisible();
+        await page.getByRole('button', { name: 'A national D visa' }).click();
+        await page
+            .getByRole('button', { name: 'My sponsor has a Blue Card' })
+            .click();
+        // A family route never offers the Blue Card goal.
+        await expect(
+            page.getByRole('button', { name: 'Apply for an EU Blue Card' }),
+        ).toHaveCount(0);
+        await page
+            .getByRole('button', { name: 'Apply for family reunification' })
+            .click();
+
+        // Changing the situation clears family-only answers. The two now live
+        // on different screens, so this walks back and forward again.
+        await page.getByRole('button', { name: 'Go back' }).click();
+        await page.getByRole('button', { name: 'Go back' }).click();
+        await page.getByRole('button', { name: 'I have a job here' }).click();
+        await page.getByRole('button', { name: 'No', exact: true }).click();
+        await page.getByRole('button', { name: 'Continue' }).click();
+        await page.getByRole('button', { name: 'Continue' }).click();
+
+        await expect(
+            page.getByRole('button', { name: 'My sponsor has a Blue Card' }),
+        ).toHaveCount(0);
+        await page.getByRole('button', { name: 'A residence permit' }).click();
+        // Having said they hold a permit, the follow-up must not offer the
+        // choice directly above it back as a title.
+        await expect(
+            page.getByRole('button', { name: 'National D visa', exact: true }),
+        ).toHaveCount(0);
+        await page
+            .getByRole('button', { name: 'Work residence permit' })
+            .click();
+        await expect(
+            page.getByLabel('When does this title expire? — day'),
+        ).toHaveValue('');
+        await fillDate(page, 'When does this title expire?', '2027-10-01');
+        await page
+            .getByRole('button', { name: 'Apply for an EU Blue Card' })
+            .click();
+
+        // Interests and German level share this screen and stay optional.
+        await page.getByRole('button', { name: 'B1' }).click();
         await expect(
             page.getByText('What are you into?', { exact: false }),
         ).toBeVisible();
-        await expect(
-            page.getByText('optional', { exact: false }).first(),
-        ).toBeVisible();
-        await page.getByRole('button', { name: 'Continue' }).click();
 
-        // Confirmation is an answer summary; the verified plan is built only
-        // after submit at /bureaucracy.
-        await expect(
-            page.getByText('Check your answers', { exact: false }),
-        ).toBeVisible();
+        // The plan is built after submit, never claimed during onboarding.
         await expect(
             page.getByRole('button', { name: 'Open my first plan' }),
         ).toBeVisible();
-        await expect(
-            page.getByText('2027-10-01', { exact: true }),
-        ).toBeVisible();
-        await expect(
-            page.getByText('2026-06-15', { exact: true }),
-        ).toBeVisible();
-        await expect(page.getByText('Your goal', { exact: true })).toHaveCount(
-            0,
-        );
-        await expect(page.getByText('B1', { exact: true })).toBeVisible();
         await expect(page.getByText('First on your list')).toHaveCount(0);
         await expect(page.getByText(/due \d+ \w+/)).toHaveCount(0);
 

@@ -1,0 +1,135 @@
+{
+  "status": "fetched_pending_native_geometry",
+  "checked_at": "2026-10-01T10:57:29.935642+00:00",
+  "requested": 600,
+  "matching_source_objects": 600,
+  "refusal_reasons": {},
+  "geometry_nodes": 4776,
+  "requests": [
+    {
+      "type": "way",
+      "requested": 300,
+      "sha256": "8c30afc1d05e67d64e0df4ae5f10a05b8a0e3a493307b6bbc2354af6b56176b3",
+      "checked_at": "2026-10-01T10:57:06.636871+00:00"
+    },
+    {
+      "type": "way",
+      "requested": 242,
+      "sha256": "98cbb8c814a503fdeae83bc25e8dd031db2933fa4a6d8b7303ddb98020b0f1fa",
+      "checked_at": "2026-10-01T10:57:07.911451+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "1536b439cee6fb6b6c1f8bf0d6c7e4163b62f5d5ce224c6aac18db36e57198d3",
+      "checked_at": "2026-10-01T10:57:09.060991+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "833122ca78b3049db84cc262d97931f799e8c903b1fb2662e22923e8a58d46fd",
+      "checked_at": "2026-10-01T10:57:10.211221+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "eac5eae75bddd060945e1ee877757d5b75f95f34065beee03e30a0c3b63a3534",
+      "checked_at": "2026-10-01T10:57:11.362225+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "67bebc385f7566a1318c5894682eb47b431a07bf7ee7753605b60518a95aa600",
+      "checked_at": "2026-10-01T10:57:12.517663+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "6761b61502c092b09e3d0fd3cf76689fdc99b800b62ad6d337056cd35d4fbd6c",
+      "checked_at": "2026-10-01T10:57:13.646692+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "d6fdec6e67a107713be3d06a4b54b8d21bddfb8fe35c7f1cb2aef603f5474145",
+      "checked_at": "2026-10-01T10:57:14.792813+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "ad1b8e80332e0a6446587c6c3ef47550cdb9d044e4a2388b254ef9d19a893af5",
+      "checked_at": "2026-10-01T10:57:15.991786+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "502d1734e0fc509f08d92b670abb3c02d4dbc570ed93bfe703b90e942b4bbcc8",
+      "checked_at": "2026-10-01T10:57:17.150377+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "c1892393ae890bd154c794207f6a21ef2528ae9b8d011fc46d38f9bc4d37cb8a",
+      "checked_at": "2026-10-01T10:57:18.262722+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "331114a1ca30e31148e201f6be03743dfdc08476f5d6a80f5f02dc824e73d230",
+      "checked_at": "2026-10-01T10:57:19.375394+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "6a16341fa73076a6c323a2250d8177ef2262fe1b3caf117996e6ac99f7090de9",
+      "checked_at": "2026-10-01T10:57:20.504091+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "d14a6bea094f6e8abca87fac82e80fc97aa4532fb8e95100539fb3516699e361",
+      "checked_at": "2026-10-01T10:57:21.633464+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "56c880871b7ae23e2e0651a76be9c33190c877865cedeb0fd958d1e49dacde6a",
+      "checked_at": "2026-10-01T10:57:22.762171+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "925956fa85533377b92f4f939a34d59eafbbb21291668a26f1de5df0068ff06f",
+      "checked_at": "2026-10-01T10:57:24.011263+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 300,
+      "sha256": "4a91d1d36393e9b7958bc8e1f4f7e6700f13ab9a086a300b05fb26fa4e168625",
+      "checked_at": "2026-10-01T10:57:25.484199+00:00"
+    },
+    {
+      "type": "node",
+      "requested": 276,
+      "sha256": "fa80925c9780085e30c6aed39d5ad411666e9cd0c5aff1145c87cbde3d2d5a0f",
+      "checked_at": "2026-10-01T10:57:26.620992+00:00"
+    },
+    {
+      "type": "way",
+      "requested": 300,
+      "sha256": "a8c1f415ed807580da4906ede979d11a7bb3f6d0fc0eeac5474ae031dbabd601",
+      "checked_at": "2026-10-01T10:57:27.774612+00:00"
+    },
+    {
+      "type": "way",
+      "requested": 242,
+      "sha256": "a6fa151730c75e987f501f2357c3f2dbf9bcfb40dd755c5521d8fa09677e0d7f",
+      "checked_at": "2026-10-01T10:57:28.922871+00:00"
+    }
+  ],
+  "source": "https://api.openstreetmap.org/api/0.6",
+  "contributor_identities_retained": false,
+  "database_changed": false,
+  "selection_sha256": "980567848a9f34ddedfd1dbedcab34ce7d28045b964c0c3c94b7f3fa4d25474b",
+  "source_proof_sha256": "94672c8e2b30f9f7fb06bf8c1ed426277cae879abf8462fa6a0c21be145c6e94"
+}

@@ -20,7 +20,7 @@ class CategoryHours
     /** Daylight-bound outdoor categories — usable from morning until dusk. */
     private const DAYLIGHT = [
         'park', 'playground', 'pitch', 'basketball', 'tennis', 'skatepark',
-        'lake', 'dog_park', 'table_tennis', 'boules', 'bbq', 'picnic',
+        'lake', 'nature', 'dog_park', 'table_tennis', 'boules', 'bbq', 'picnic',
     ];
 
     /**

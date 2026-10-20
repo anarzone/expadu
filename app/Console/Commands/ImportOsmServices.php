@@ -46,7 +46,9 @@ class ImportOsmServices extends Command
 
             try {
                 $response = Http::timeout(90)
-                    ->get('https://overpass.kumi.systems/api/interpreter', ['data' => $query]);
+                    ->withUserAgent(ImportOsmSpots::USER_AGENT)
+                    ->asForm()
+                    ->post('https://overpass-api.de/api/interpreter', ['data' => $query]);
 
                 if (! $response->successful()) {
                     $this->warn("    {$category} query failed: status {$response->status()}");

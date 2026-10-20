@@ -49,6 +49,8 @@ type Constraints = {
     window_end: string;
     areas: string[];
     categories: string[];
+    activities?: string[];
+    radius_km?: number | null;
     companions: string | null;
     budget: string | null;
     archetype?: string | null;
@@ -230,9 +232,8 @@ function defaultAmount(categories: string[]): 'just' | 'few' | 'full' {
 }
 
 /**
- * Only meaningful cost tiers reach the card. "free" and "budget" tell you
- * something; "normal" is just the default "no known price" bucket — noise, so
- * it's hidden rather than shown as a confusing word.
+ * Only useful compact cost labels reach the card. Standard paid and unknown
+ * prices stay hidden rather than appearing as a misleading badge.
  */
 function costLabel(tier: string): string | null {
     return tier === 'free' ? 'free' : tier === 'low' ? 'budget' : null;
@@ -602,7 +603,14 @@ export default function Composer() {
             return;
         }
 
-        const next: Constraints = { ...constraints, ...patch };
+        const next: Constraints = {
+            ...constraints,
+            ...patch,
+            // Picking a new category deliberately replaces a parsed sport.
+            activities: patch.categories
+                ? (patch.activities ?? [])
+                : constraints.activities,
+        };
         setConstraints(next);
         void runCompose(next, { archetype, locked, excluded });
     }
@@ -876,10 +884,18 @@ export default function Composer() {
     const whenLabel =
         TIME_OPTS.find((o) => o.value === whenKey)?.label ?? 'Afternoon';
     const doingValue = constraints?.categories[0] ?? '';
-    const doingLabel = doingValue
-        ? (facets.categories.find((c) => c.value === doingValue)?.label ??
-          doingValue)
-        : 'anything';
+    const doingLabel = constraints?.activities?.length
+        ? constraints.activities
+              .map((activity) =>
+                  activity === 'soccer'
+                      ? 'football'
+                      : activity.replaceAll('_', ' '),
+              )
+              .join(', ')
+        : doingValue
+          ? (facets.categories.find((c) => c.value === doingValue)?.label ??
+            doingValue)
+          : 'anything';
     const doingTokenOpts = [
         { value: '', label: 'Anything' },
         ...facets.categories,

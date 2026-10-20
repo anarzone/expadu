@@ -11,10 +11,22 @@ use App\Models\BureaucracyCase;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
+use App\Profile\Applicability;
 use Illuminate\Support\Collection;
 
 final class CasePlanComposer
 {
+    /**
+     * Bump when the composer files the same rules into different sections.
+     *
+     * The snapshot signature covers the CASE — facts, matched rules, dates —
+     * so a purely presentational change never invalidated it, and a stored
+     * plan kept its old layout until the user's situation happened to change.
+     * That is how "Options you may qualify for" went on showing a universal
+     * caveat after the routing for it was fixed.
+     */
+    public const LayoutVersion = '2026-08-23.good-to-know';
+
     /** @var list<string> */
     private const SectionKeys = [
         'current_status',
@@ -22,15 +34,19 @@ final class CasePlanComposer
         'next',
         'coming_up',
         'options',
+        'good_to_know',
         'waiting',
         'information_needed',
+        'opens_when',
         'not_covered',
     ];
 
     public function __construct(
+        private NearMissRules $nearMissRules,
         private FactRegistry $factRegistry,
         private CaseFactStore $factStore,
         private RuleSourcePolicy $sourcePolicy,
+        private CaseAttributes $caseAttributes,
     ) {}
 
     /**
@@ -39,7 +55,13 @@ final class CasePlanComposer
     public function compose(BureaucracyCase $case, CaseMatchResult $result): array
     {
         $sections = array_fill_keys(self::SectionKeys, []);
-        $user = $case->user()->firstOrFail();
+        $user = $case->relationLoaded('user')
+            ? $case->user
+            : $case->user()->firstOrFail();
+        // Profile underneath, confirmed case facts on top — the same bag every
+        // applies_if is judged against, so a card's paragraphs and documents
+        // answer to exactly what the case knows.
+        $audience = $this->caseAttributes->for($case);
         $visibleKeys = array_values(array_unique([
             ...$result->safeRuleKeys,
             ...$result->universalRuleKeys,
@@ -73,8 +95,15 @@ final class CasePlanComposer
 
             $userTask = $userTasks->get($task->id);
             $section = $this->sectionFor($task, $userTask, $doneKeys);
-            $sections[$section][] = $this->taskItem($case, $user, $task);
+            $sections[$section][] = $this->taskItem($case, $user, $task, $audience);
         }
+
+        // One card per unanswered QUESTION, not per blocked rule. Two rules can
+        // wait on the same fact — a family-reunification renewal has two that
+        // both hinge on whether the household continues — and a card each meant
+        // the page asked the identical question twice under a heading that
+        // named neither step.
+        $blockedByFact = [];
 
         foreach ($result->unknownRuleKeys as $key) {
             $task = $tasks->get($key);
@@ -83,20 +112,40 @@ final class CasePlanComposer
                 continue;
             }
 
-            $missingFacts = $result->missingFactsByRule[$key] ?? [];
-            $questions = [];
-
-            foreach ($missingFacts as $factKey) {
-                $definition = $this->factRegistry->definition($factKey);
-                $questions[] = [
-                    'question' => $definition->question,
-                    'why' => $definition->why,
-                ];
+            foreach ($result->missingFactsByRule[$key] ?? [] as $factKey) {
+                $blockedByFact[$factKey][] = $task->title;
             }
+        }
+
+        foreach ($blockedByFact as $factKey => $titles) {
+            $definition = $this->factRegistry->definition($factKey);
+            $titles = array_values(array_unique(array_filter($titles)));
+            sort($titles, SORT_STRING);
 
             $sections['information_needed'][] = [
                 'kind' => 'information_needed',
-                'questions' => $questions,
+                'fact_key' => $factKey,
+                // Kept as a list so the card renderer stays unchanged for any
+                // caller that still reads it.
+                'questions' => [[
+                    'question' => $definition->question,
+                    'why' => $definition->why,
+                ]],
+                // What the answer would actually unblock, so the card can say
+                // which step it is holding rather than "a possible step".
+                'unlocks' => $titles,
+            ];
+        }
+
+        // Routes that do not apply YET, with the one answer that opens them.
+        // A hidden rule is invisible for a reason the user cannot see.
+        foreach ($this->nearMissRules->forCase($case) as $row) {
+            $sections['opens_when'][] = [
+                'kind' => 'opens_when',
+                'key' => $row['key'],
+                'content_version' => $row['content_version'],
+                'title' => $row['title'],
+                'opens_when' => $row['opens_when'],
             ];
         }
 
@@ -154,6 +203,15 @@ final class CasePlanComposer
         }
 
         if ($task->isInfo()) {
+            // A universal card applies to everyone regardless of case, so by
+            // definition it is not a route THIS person might qualify for.
+            // Everything info-shaped used to fall through to `options`, which
+            // put "we may not have a reviewed rule for your title" under a
+            // heading promising "possible routes to compare".
+            if ($task->coverage_scope === 'universal') {
+                return 'good_to_know';
+            }
+
             return match ($task->phase) {
                 'ongoing' => 'coming_up',
                 'waiting' => 'waiting',
@@ -187,7 +245,37 @@ final class CasePlanComposer
     /**
      * @return array<string, mixed>
      */
-    private function taskItem(BureaucracyCase $case, User $user, Task $task): array
+    /**
+     * Documents this person should actually be handed. Same rule the catalogue
+     * uses: only a definite No removes one, and the condition never ships.
+     *
+     * @param  array<string, mixed>  $audience
+     * @return list<mixed>
+     */
+    private function documentsFor(Task $task, array $audience): array
+    {
+        return collect($task->documents_required ?? [])
+            ->filter(function (mixed $doc) use ($audience): bool {
+                $condition = is_array($doc) ? ($doc['applies_if'] ?? null) : null;
+
+                return ! is_array($condition)
+                    || Applicability::evaluate($condition, $audience) !== Applicability::No;
+            })
+            ->map(function (mixed $doc): mixed {
+                if (is_array($doc)) {
+                    unset($doc['applies_if']);
+                }
+
+                return $doc;
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $audience  what this case knows about the person
+     */
+    private function taskItem(BureaucracyCase $case, User $user, Task $task, array $audience): array
     {
         $attributes = null;
 
@@ -200,13 +288,13 @@ final class CasePlanComposer
             'key' => $task->key,
             'content_version' => $task->content_version,
             'title' => $task->title,
-            'description' => $task->description,
+            'description' => $task->descriptionFor($audience),
             'type' => $task->type,
             'phase' => $task->phase,
             'urgency' => $task->urgency?->value,
             'depends_on' => $task->depends_on ?? [],
             'deadline' => $task->computeDeadlineFor($user, $attributes)?->toDateString(),
-            'documents_required' => $task->documents_required ?? [],
+            'documents_required' => $this->documentsFor($task, $audience),
             'decision_options' => $task->decision_options ?? [],
             'how_to_steps' => $task->how_to_steps ?? [],
             'links' => $task->links ?? [],

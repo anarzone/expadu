@@ -1,8 +1,12 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'Permanent residency (Niederlassungserlaubnis) timeline calculator — Expadu')
 @section('meta_description', 'When can you get German permanent residency? Watch your timeline fill up — Blue Card, skilled worker, family or general track (§9/§18c/§28 AufenthG).')
 @section('canonical', route('tools.residency'))
+@section('og_image', asset('marketing/og/tools-residency.png'))
 @section('waitlist_source', 'tool-residency')
 
 @push('head')
@@ -11,7 +15,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'WebApplication',
         'name' => 'German permanent-residency timeline calculator',
         'applicationCategory' => 'UtilitiesApplication',
@@ -21,12 +25,17 @@
     ], JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · AufenthG tracks</span>
         <h1>When can you get permanent residency?</h1>
         <p class="sub">The Niederlassungserlaubnis ends visa renewals for good. Watch your timeline fill up.</p>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap tool-shell">
 
         <script type="application/json" id="tool-data">@json($toolData)</script>
 
@@ -69,7 +78,7 @@
 
         <div class="tool-cta">
             <p>Expadu <b>counts this down for you</b> — and tells you the moment you cross the bar.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

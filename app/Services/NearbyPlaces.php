@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Spot;
+use App\Places\DestinationGrouping;
 use Illuminate\Contracts\Database\Query\Builder;
 use Illuminate\Support\Collection;
 
@@ -117,8 +118,7 @@ class NearbyPlaces
      */
     public function nearest(float $lat, float $lng, int $limit, ?array $categories = null, ?array $columns = null): Collection
     {
-        $query = Spot::query()
-            ->recommendationEligible()
+        $query = app(DestinationGrouping::class)->general(Spot::query())
             ->when($columns !== null, fn ($q) => $q->select($columns))
             ->whereNotNull('lat')
             ->whereNotNull('lng')

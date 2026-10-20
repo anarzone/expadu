@@ -113,7 +113,7 @@ tasks:
       - Meldebescheinigung
       - Residence permits
     links:
-      - https://www.arbeitsagentur.de/familie-und-kinder/kindergeld-beantragen
+      - https://www.arbeitsagentur.de/familie-und-kinder/kindergeld
     how_to_steps:
       - title: Wait for everyone's Steuer-IDs
         body: Each child gets their own Steuer-ID a few weeks after Anmeldung. You can't file the Kindergeld application without all of them.
@@ -157,7 +157,6 @@ tasks:
       - Meldebescheinigung for both
       - Marriage certificate
     links:
-      - https://www.commerzbank.de/portal/en/englishsite/englishsite.html
     how_to_steps:
       - title: Pick a joint-friendly bank
         body: Traditional banks (Sparkasse, Commerzbank, Deutsche Bank) handle joint accounts well. Online banks like N26 are personal-only — both spouses need separate accounts.

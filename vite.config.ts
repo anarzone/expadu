@@ -110,10 +110,15 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
+                        // Exact package folders only. A bare includes('react')
+                        // also caught @sentry/react (Replay + Feedback),
+                        // react-day-picker, @headlessui/react, every
+                        // @radix-ui/react-* and @tabler/icons-react — ~1 MB
+                        // loaded before first paint on every page.
                         if (
-                            id.includes('react') ||
-                            id.includes('react-dom') ||
-                            id.includes('scheduler')
+                            /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(
+                                id,
+                            )
                         ) {
                             return 'vendor-react';
                         }

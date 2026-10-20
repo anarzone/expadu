@@ -1,0 +1,478 @@
+{
+  "started_at": "2026-09-29T13:08:20+00:00",
+  "environment": "staging",
+  "mode": "rollback_only_batch_v3_candidate_performance",
+  "verification_code_sha256": "0a880b9f7a1254f15dfb78291aa1d05216f7ed5f48a4c09198dcc127182ae3d8",
+  "candidate_code_sha256": {
+    "PerformanceDestinationGrouping.php": "bbafa756d0091cecf26e8960816d36a049fcb9ecdb891a18100065dea8c11262",
+    "PerformancePlacesController.php": "c2c15943c451d241dc39b160dcd7c92335ded26890c952b261b0779cf3d04539",
+    "PerformancePlaceFactsV2.php": "2498da3e8f4e1fccab3c490905f9b3abfaf74df31f102c597834caf7ac382a8a"
+  },
+  "package_sha256": "ecfc2777acf6e91d8e574394418120163e725d2b432201179fbcc60fd20f605a",
+  "samples_per_case": 30,
+  "measurement_scope": "Laravel HTTP kernel and middleware; controller and equivalent access policy replaced in verifier process only; no external network round trip",
+  "raw_records_exported": false,
+  "production_changed": false,
+  "catalogue_commit_attempted": false,
+  "running_application_files_changed": false,
+  "jit_configuration_changed": false,
+  "fixed_request_time": "2026-09-29T12:00:00+02:00",
+  "variants": {
+    "deployed_baseline": {
+      "food_first": {
+        "samples_ms": [
+          1117.910715,
+          920.115415,
+          942.563837,
+          946.34352,
+          918.493476,
+          933.635172,
+          904.572434,
+          927.775864,
+          1054.73878,
+          935.100949,
+          929.902688,
+          951.883904,
+          941.391421,
+          963.835602,
+          941.673105,
+          952.157627,
+          948.271822,
+          995.001444,
+          962.227223,
+          956.435196,
+          939.58352,
+          946.358839,
+          967.865648,
+          930.495974,
+          963.967203,
+          941.136058,
+          968.352934,
+          977.072836,
+          952.731232,
+          958.870464
+        ],
+        "first_read_ms": 1117.910715,
+        "median_ms": 947.3153305000001,
+        "p95_ms": 1054.73878,
+        "max_ms": 1117.910715,
+        "response_total": 1805,
+        "public_place_ids": [
+          1,
+          2,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          1084
+        ],
+        "payload_sha256": "4fd8a9151ff1e4742547c0c55de8aa39f5d87fbfbab37dcf7d140f9d7b6f98a4",
+        "controller_class": "App\\Http\\Controllers\\Api\\PlacesController"
+      },
+      "food_second": {
+        "samples_ms": [
+          918.417793,
+          921.276226,
+          937.768618,
+          942.23487,
+          994.029271,
+          1065.583063,
+          959.676112,
+          1093.535828,
+          1093.957672,
+          2082.754403,
+          1694.38913,
+          1132.988685,
+          998.848486,
+          965.233856,
+          946.823642,
+          947.199167,
+          928.938434,
+          922.053834,
+          953.677561,
+          982.271574,
+          997.539031,
+          915.647679,
+          897.225585,
+          966.631912,
+          990.405068,
+          917.41922,
+          921.963432,
+          1022.951086,
+          1215.974208,
+          960.298837
+        ],
+        "first_read_ms": 918.417793,
+        "median_ms": 962.7663465,
+        "p95_ms": 1694.38913,
+        "max_ms": 2082.754403,
+        "response_total": 1805,
+        "public_place_ids": [
+          1123,
+          1135,
+          1139,
+          1145,
+          1175,
+          1203,
+          1210,
+          1212,
+          1213,
+          1217,
+          1248,
+          1266,
+          1271,
+          1272,
+          1277,
+          1288,
+          1289,
+          1293,
+          1295,
+          1318
+        ],
+        "payload_sha256": "f1db635e0028a6b973d01740a998383c68d3eb21247f2f9cdb2f9ffdf0fbd048",
+        "controller_class": "App\\Http\\Controllers\\Api\\PlacesController"
+      }
+    },
+    "expanded_candidate": {
+      "food_first": {
+        "samples_ms": [
+          447.420196,
+          416.85848,
+          477.527505,
+          431.118166,
+          410.185884,
+          411.054173,
+          420.493163,
+          418.51734,
+          412.643632,
+          445.558334,
+          443.436789,
+          417.362927,
+          424.631691,
+          411.709501,
+          455.870814,
+          409.663557,
+          413.067396,
+          414.024568,
+          470.2365,
+          412.537671,
+          415.827549,
+          413.341639,
+          420.543963,
+          406.254798,
+          406.191477,
+          417.71025,
+          426.748315,
+          423.402077,
+          412.765474,
+          407.36373
+        ],
+        "first_read_ms": 447.420196,
+        "median_ms": 417.1107035,
+        "p95_ms": 470.2365,
+        "max_ms": 477.527505,
+        "response_total": 3456,
+        "public_place_ids": [
+          1,
+          2,
+          5,
+          6,
+          7,
+          8,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          1084
+        ],
+        "payload_sha256": "fc9c3ab9de491c082835ddbc01b25393898e6af16065896e66a1cbc30fda9d2b",
+        "controller_class": "App\\Http\\Controllers\\Api\\PerformancePlacesController"
+      },
+      "food_second": {
+        "samples_ms": [
+          429.135663,
+          428.394654,
+          414.565054,
+          413.099957,
+          426.361391,
+          420.367602,
+          429.230825,
+          417.241245,
+          427.915768,
+          406.196997,
+          415.679226,
+          414.480093,
+          422.413745,
+          434.787249,
+          431.719893,
+          411.914663,
+          429.159503,
+          405.026542,
+          431.623572,
+          425.892305,
+          417.054762,
+          419.192987,
+          416.82624,
+          412.861634,
+          418.193456,
+          406.51152,
+          419.056586,
+          487.031375,
+          479.162603,
+          513.779726
+        ],
+        "first_read_ms": 429.135663,
+        "median_ms": 419.78029449999997,
+        "p95_ms": 487.031375,
+        "max_ms": 513.779726,
+        "response_total": 3456,
+        "public_place_ids": [
+          1123,
+          1135,
+          1139,
+          1145,
+          1175,
+          1203,
+          1210,
+          1212,
+          1213,
+          1217,
+          1248,
+          1266,
+          1271,
+          1272,
+          1277,
+          1288,
+          1289,
+          1293,
+          1295,
+          1318
+        ],
+        "payload_sha256": "a384f10d65f54a234c16a8b2876e19eb4e93de0145ce1efde478a5b627a2e07c",
+        "controller_class": "App\\Http\\Controllers\\Api\\PerformancePlacesController"
+      }
+    }
+  },
+  "database_settings": [
+    {
+      "name": "jit",
+      "setting": "on"
+    },
+    {
+      "name": "jit_above_cost",
+      "setting": "100000"
+    },
+    {
+      "name": "jit_inline_above_cost",
+      "setting": "500000"
+    },
+    {
+      "name": "jit_optimize_above_cost",
+      "setting": "500000"
+    },
+    {
+      "name": "server_version",
+      "setting": "16.13 (Debian 16.13-1.pgdg12+1)"
+    }
+  ],
+  "narrow_queries": {
+    "deployed_baseline": {
+      "key_lookup": {
+        "public_place_id": 1,
+        "samples": 30,
+        "median_ms": 1.4593375000000002,
+        "p95_ms": 2.360867,
+        "max_ms": 2.402227,
+        "payload_sha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+      },
+      "detail_api": {
+        "public_place_id": 1,
+        "samples": 30,
+        "median_ms": 12.990950999999999,
+        "p95_ms": 16.074827,
+        "max_ms": 17.132839,
+        "payload_sha256": "2c18821713e1c076a5d5db30ef9b032c590ffc9455ceccbd272684b2562e3ac3"
+      }
+    },
+    "expanded_candidate": {
+      "key_lookup": {
+        "public_place_id": 1,
+        "samples": 30,
+        "median_ms": 55.326922,
+        "p95_ms": 126.885554,
+        "max_ms": 164.727072,
+        "payload_sha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b"
+      },
+      "detail_api": {
+        "public_place_id": 1,
+        "samples": 30,
+        "median_ms": 34.906504999999996,
+        "p95_ms": 84.725184,
+        "max_ms": 87.160932,
+        "payload_sha256": "0cafe7a82c3193b587630e933972323b19be0bb9ba8520c22fa2b733d3a12c55"
+      }
+    }
+  },
+  "released_successful_import_child_savepoints": 4643,
+  "caller_rollback_boundaries_retained": true,
+  "all_expanded_access_ids_identical": true,
+  "access_ids_compared": 11271,
+  "api_parity": {
+    "food_first": {
+      "identical": true,
+      "total": 3456,
+      "payload_sha256": "fc9c3ab9de491c082835ddbc01b25393898e6af16065896e66a1cbc30fda9d2b"
+    },
+    "food_second": {
+      "identical": true,
+      "total": 3456,
+      "payload_sha256": "a384f10d65f54a234c16a8b2876e19eb4e93de0145ce1efde478a5b627a2e07c"
+    },
+    "detail": {
+      "identical": true,
+      "total": null,
+      "payload_sha256": "0cafe7a82c3193b587630e933972323b19be0bb9ba8520c22fa2b733d3a12c55"
+    },
+    "court": {
+      "identical": true,
+      "total": 666,
+      "payload_sha256": "04bf57938c4a8da81e1ee4ca4375daf2705e4f4739c3a82757f9dc6c98c5501f"
+    },
+    "pitch": {
+      "identical": true,
+      "total": 366,
+      "payload_sha256": "2e50661f3d9eec2543762adec6e3ec6bb38df69ab14e1d76fb6e7fccc7a4bb5b"
+    },
+    "park": {
+      "identical": true,
+      "total": 264,
+      "payload_sha256": "c254f6bb0c7f090385987f4712612c8292c0aa162bf7d1cd258bbae7184bbe9d"
+    },
+    "playground": {
+      "identical": true,
+      "total": 1198,
+      "payload_sha256": "319d9ff6cb283e27811dd614f9d07073e3073ed7b442755a37bd839b5dfaf358"
+    },
+    "tennis_activity": {
+      "identical": true,
+      "total": 169,
+      "payload_sha256": "c491f355c92f466874438120115276f45612107b3d6217a5319cedc9dc0aecae"
+    },
+    "cafe_activity": {
+      "identical": true,
+      "total": 682,
+      "payload_sha256": "9567b245d1820465d028cf20a4c75d2086b0119fb915b1e845450d8c11a9e607"
+    }
+  },
+  "p95_ratio_to_deployed_baseline": {
+    "food_first": 0.445832189843252,
+    "food_second": 0.2874377357460975
+  },
+  "more_than_20_percent_slower": {
+    "food_first": false,
+    "food_second": false
+  },
+  "status": "passed",
+  "rollback_exact": true,
+  "before_table_digests": {
+    "spots": {
+      "count": 9928,
+      "sha256": "443e38d902175eca69f44a86b041be0e8ba45b8fe1e17fe40c86869ef40840e4"
+    },
+    "veedels": {
+      "count": 86,
+      "sha256": "18e43715a76634f449795efa80e37fda3f7de39582b9b122239182886ec30caf"
+    },
+    "place_fact_observations": {
+      "count": 4085,
+      "sha256": "e68858e199e7ee371d5f7a80533ab85591f346061ed9b1059924ebdbbe1db87c"
+    },
+    "place_fact_corrections": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "place_fact_revisions": {
+      "count": 1,
+      "sha256": "e6f10061ed7146a598e27af2dbc35e5b80627a4ac6744118d4553fac9e0228f9"
+    },
+    "place_destination_reviews": {
+      "count": 12,
+      "sha256": "2826f25ab45f6494f9fc7d73568b0e038b8ecc9311e726b5ab4cff45182103cd"
+    },
+    "place_reconciliations": {
+      "count": 798,
+      "sha256": "701772695c48ec0a7e2f791ca9112e628ea24dce2729ce1fc82b15e65a6b5d18"
+    },
+    "media_assets": {
+      "count": 588,
+      "sha256": "a98dd72b391692991fa677700353756e7620dbb634d10d7f6253212898ca66bd"
+    },
+    "media_attachments": {
+      "count": 1680,
+      "sha256": "d835edc121eec75712aefbf89de01383ff7989aec88f51f24bdcd5ed1ddde955"
+    }
+  },
+  "after_table_digests": {
+    "spots": {
+      "count": 9928,
+      "sha256": "443e38d902175eca69f44a86b041be0e8ba45b8fe1e17fe40c86869ef40840e4"
+    },
+    "veedels": {
+      "count": 86,
+      "sha256": "18e43715a76634f449795efa80e37fda3f7de39582b9b122239182886ec30caf"
+    },
+    "place_fact_observations": {
+      "count": 4085,
+      "sha256": "e68858e199e7ee371d5f7a80533ab85591f346061ed9b1059924ebdbbe1db87c"
+    },
+    "place_fact_corrections": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "place_fact_revisions": {
+      "count": 1,
+      "sha256": "e6f10061ed7146a598e27af2dbc35e5b80627a4ac6744118d4553fac9e0228f9"
+    },
+    "place_destination_reviews": {
+      "count": 12,
+      "sha256": "2826f25ab45f6494f9fc7d73568b0e038b8ecc9311e726b5ab4cff45182103cd"
+    },
+    "place_reconciliations": {
+      "count": 798,
+      "sha256": "701772695c48ec0a7e2f791ca9112e628ea24dce2729ce1fc82b15e65a6b5d18"
+    },
+    "media_assets": {
+      "count": 588,
+      "sha256": "a98dd72b391692991fa677700353756e7620dbb634d10d7f6253212898ca66bd"
+    },
+    "media_attachments": {
+      "count": 1680,
+      "sha256": "d835edc121eec75712aefbf89de01383ff7989aec88f51f24bdcd5ed1ddde955"
+    }
+  },
+  "baseline_statistics_refreshed_after_rollback": true,
+  "completed_at": "2026-09-29T13:12:10+00:00",
+  "note": "Successful nested import savepoints are released into the retained caller transaction to avoid retained-savepoint read inflation. This changes verifier transaction resource handling only, not application queries or source data. Compare the expanded candidate against the current deployed baseline. These are sequential samples. Sequence and analysis counters can advance. A harness pass is separate from the p95 gate and does not establish deployment or full-programme completion."
+}

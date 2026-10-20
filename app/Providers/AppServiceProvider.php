@@ -16,6 +16,7 @@ use App\ContextEngine\Evaluators\TransitDelayEvaluator;
 use App\ContextEngine\Evaluators\TransitDisruptionEvaluator;
 use App\ContextEngine\Evaluators\WeatherEvaluator;
 use App\ContextEngine\Listeners\RecordContextAlert;
+use App\ContextEngine\Listeners\RecordReservedPushSent;
 use App\ContextEngine\Listeners\ScoredActionPushDispatcher;
 use App\Events\Context\MarketClosureDetected;
 use App\Events\Context\RhineLevelChanged;
@@ -27,6 +28,7 @@ use App\Jobs\ValidateMediaAssetJob;
 use App\Listeners\CreateAlertFromNotification;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
+use App\Support\Ssr\SsrGateway;
 use App\Transit\Contracts\RouteService;
 use App\Transit\FailoverRouteService;
 use Carbon\CarbonImmutable;
@@ -41,6 +43,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Ssr\Gateway;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -63,6 +66,9 @@ class AppServiceProvider extends ServiceProvider
             RouteService::class,
             FailoverRouteService::class,
         );
+
+        // Inertia SSR with a short timeout instead of Laravel's 30 s default.
+        $this->app->singleton(Gateway::class, SsrGateway::class);
 
         // The composer parser: heuristic by default (no key), the
         // OpenAI-compatible driver once a provider key is configured. The
@@ -117,6 +123,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
 
         Event::listen(NotificationSent::class, CreateAlertFromNotification::class);
+        Event::listen(NotificationSent::class, RecordReservedPushSent::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
         Event::listen(TransitDelayDetected::class, TransitDelayEvaluator::class);

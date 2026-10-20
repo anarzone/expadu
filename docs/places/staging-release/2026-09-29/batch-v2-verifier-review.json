@@ -1,0 +1,18 @@
+{
+  "reviewer": "staging_data_review",
+  "recorded_at": "2026-09-29T12:32:42.335726+00:00",
+  "scope": "Static source/hash/control-flow review before staging execution",
+  "findings": "No material findings",
+  "verifier_sha256": "5aca086151ce146c72b2a316799d7db43ad8db52e82f844e762955d1f4b973d6",
+  "controller_and_facts_binding_assertions": true,
+  "listing_samples_per_page_per_variant": 30,
+  "key_lookup_samples_per_variant": 30,
+  "detail_api_samples_per_variant": 30,
+  "full_payload_parity_cases": 9,
+  "full_expanded_access_id_parity": true,
+  "p95_gate_scope": "Food/drink listing pages one and two against deployed current-data baseline; narrow-query timing reported separately",
+  "live_application_files_changed": false,
+  "raw_records_exported": false,
+  "status": "review_passed_measurement_completed_speed_gate_failed",
+  "result": "staging-batch-v2-performance.json"
+}

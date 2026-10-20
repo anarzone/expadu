@@ -1,0 +1,15 @@
+{
+  "baseline_sha256": "2356f373dedbf7aeb0e0c3a33609a4efaaff0dd85110ce7147675ad6a607362d",
+  "controller_sha256": "ffd371181ad0cea0cabb64b9cf8376e9262a27d8975afa9b4d362a6d5fda6f55",
+  "results": {
+    "food_drink": 1805,
+    "culture": 215,
+    "park": 263,
+    "pitch": 366,
+    "court": 666,
+    "playground": 1197,
+    "dog_park": 48,
+    "swimming": 8
+  },
+  "evidence": "Actual eight native HTTP-kernel calls from /tmp/exp72-ready-rehearsal.log in this session, before the rolled-back import."
+}

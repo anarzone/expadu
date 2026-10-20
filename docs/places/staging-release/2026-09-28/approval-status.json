@@ -1,0 +1,13 @@
+{
+  "recorded_at": "2026-09-28T20:26:46.006323+00:00",
+  "action": "Read-only staging Places reconciliation; export only counts, checksums and conflicting public source/place IDs",
+  "attempt_executed": false,
+  "automatic_approval_result": "rejected",
+  "reason": "Automatic approval review did not treat the user continuation message as explicit authorization for staging data inspection and summary export.",
+  "pending_question": "May I read the staging Places tables and save only counts, checksums and conflicting public place IDs locally? Raw records and user information will stay on the server.",
+  "summary_only_check_retried_via_alternative": false,
+  "staging_data_read": false,
+  "staging_data_changed": false,
+  "production_changed": false,
+  "independent_work": "Prepare and verify a transaction-only import rehearsal against the existing isolated local public-data database."
+}

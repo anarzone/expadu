@@ -93,6 +93,7 @@ test('the residence title enum registers its canonical route options', function 
         'standard_work_permit',
         'blue_card',
         'family_reunification',
+        'settlement_permit_9',
         'settlement_permit_18c',
         'other',
     ]);
@@ -107,6 +108,7 @@ test('the sponsor title enum registers its canonical route options', function ()
         'standard_work_permit',
         'blue_card_pending',
         'blue_card',
+        'settlement_permit_9',
         'settlement_permit_18c',
         'other',
     ]);

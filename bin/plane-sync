@@ -1,0 +1,366 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Turn a Plane card into a working branch and a doc stub.
+ *
+ * Move a card to In Progress in Plane's UI, run this, and each such ticket gets:
+ *   - a git branch  <type>/EXP-<n>-<slug>  created from staging (never checked out)
+ *   - a stub page in BookStack's Work Log, under a chapter for its area label
+ *   - a link on the Plane item pointing at that page
+ *   - one comment on the Plane item naming the branch
+ *
+ * Idempotent: anything already done is skipped, so it is safe on a loop.
+ *
+ *   bin/plane-sync              # act
+ *   bin/plane-sync --dry-run    # show what it would do
+ *   bin/plane-sync --watch=60   # re-run every 60s until interrupted
+ *
+ * Credentials come from the plane/bookstack MCP entries in ~/.claude.json, so
+ * there is one place they live. See also bin/wiki-image.
+ */
+
+const PROJECT_ID = 'ec0e00d7-6c81-424b-bc9b-ea9243c8e892';
+const WORK_LOG_BOOK = 6;
+const BASE_BRANCH = 'staging';
+
+$opts = getopt('', ['dry-run', 'watch::', 'help']);
+if (isset($opts['help'])) {
+    fwrite(STDOUT, "usage: plane-sync [--dry-run] [--watch[=seconds]]\n");
+    exit(0);
+}
+$dryRun = isset($opts['dry-run']);
+$watch = isset($opts['watch']) ? max(10, (int) ($opts['watch'] ?: 60)) : null;
+
+// ---------------------------------------------------------------- credentials
+
+function mcpEnv(string $server): array
+{
+    $path = getenv('CLAUDE_CONFIG') ?: getenv('HOME').'/.claude.json';
+    if (! is_readable($path)) {
+        fail("cannot read $path");
+    }
+    $found = null;
+    $walk = function ($node) use (&$walk, $server, &$found) {
+        if ($found !== null || ! is_array($node)) {
+            return;
+        }
+        foreach ($node as $key => $value) {
+            if ($key === $server && is_array($value) && isset($value['env'])) {
+                $found = $value['env'];
+
+                return;
+            }
+            $walk($value);
+        }
+    };
+    $walk(json_decode(file_get_contents($path), true));
+
+    return $found ?? fail("no '$server' MCP credentials in $path");
+}
+
+function fail(string $message): never
+{
+    fwrite(STDERR, "plane-sync: $message\n");
+    exit(1);
+}
+
+// ----------------------------------------------------------------- http + git
+
+function http(string $method, string $url, array $headers, ?array $body = null): array
+{
+    $ch = curl_init($url);
+    $hdrs = [];
+    foreach ($headers as $k => $v) {
+        $hdrs[] = "$k: $v";
+    }
+    if ($body !== null) {
+        $hdrs[] = 'Content-Type: application/json';
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+    }
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => $method,
+        CURLOPT_HTTPHEADER => $hdrs,
+        CURLOPT_TIMEOUT => 30,
+    ]);
+    $raw = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+
+    if ($raw === false) {
+        return ['code' => 0, 'body' => null, 'error' => $err];
+    }
+
+    return ['code' => $code, 'body' => json_decode($raw, true), 'raw' => $raw];
+}
+
+function git(string ...$args): array
+{
+    $cmd = 'git '.implode(' ', array_map('escapeshellarg', $args)).' 2>&1';
+    exec($cmd, $out, $status);
+
+    return ['ok' => $status === 0, 'out' => trim(implode("\n", $out))];
+}
+
+// ------------------------------------------------------------ naming from the ticket
+
+/** Branch prefix, inferred from the leading verb of the ticket title. */
+function branchType(string $title): string
+{
+    $first = strtolower(strtok(trim($title), ' '));
+
+    $fix = ['fix', 'resolve', 'investigate', 'repair', 'stop', 'prevent', 'handle', 'unbreak'];
+    $docs = ['write', 'document'];
+    $chore = ['clean', 'migrate', 'retire', 'update', 'refactor', 'remove', 'delete',
+        'complete', 'finish', 'polish', 'rotate', 'enable', 'promote', 'confirm',
+        'run', 'decide', 'verify', 'approve', 'supply', 'obtain', 'pursue', 'revisit'];
+
+    return match (true) {
+        in_array($first, $fix, true) => 'fix',
+        in_array($first, $docs, true) => 'docs',
+        in_array($first, $chore, true) => 'chore',
+        default => 'feat',
+    };
+}
+
+function slug(string $text, int $max = 48): string
+{
+    $s = strtolower($text);
+    $s = preg_replace('/[^a-z0-9]+/', '-', $s);
+    $s = trim($s, '-');
+    if (strlen($s) > $max) {
+        $s = substr($s, 0, $max);
+        $s = substr($s, 0, strrpos($s, '-') ?: $max); // don't cut mid-word
+    }
+
+    return trim($s, '-');
+}
+
+// --------------------------------------------------------------------- run once
+
+function syncOnce(bool $dryRun): int
+{
+    $plane = mcpEnv('plane');
+    $book = mcpEnv('bookstack');
+
+    $planeRoot = rtrim($plane['PLANE_BASE_URL'], '/')
+        ."/api/v1/workspaces/{$plane['PLANE_WORKSPACE_SLUG']}/projects/".PROJECT_ID;
+    $planeHeaders = ['X-API-Key' => $plane['PLANE_API_KEY']];
+
+    $bookRoot = rtrim($book['BOOKSTACK_BASE_URL'], '/').'/api';
+    $bookHeaders = ['Authorization' => "Token {$book['BOOKSTACK_TOKEN_ID']}:{$book['BOOKSTACK_TOKEN_SECRET']}"];
+
+    $states = http('GET', "$planeRoot/states/?per_page=100", $planeHeaders);
+    if ($states['code'] !== 200) {
+        fail("cannot read states (HTTP {$states['code']})");
+    }
+    $started = [];
+    foreach ($states['body']['results'] as $s) {
+        if ($s['group'] === 'started') {
+            $started[$s['id']] = $s['name'];
+        }
+    }
+    if (! $started) {
+        fail('no state in the "started" group — is this the right project?');
+    }
+
+    $labels = http('GET', "$planeRoot/labels/?per_page=100", $planeHeaders);
+    $labelName = [];
+    foreach ($labels['body']['results'] ?? [] as $l) {
+        $labelName[$l['id']] = $l['name'];
+    }
+
+    // PQL is unavailable on Community edition, so filter client-side.
+    $issues = http('GET', "$planeRoot/issues/?per_page=100", $planeHeaders);
+    if ($issues['code'] !== 200) {
+        fail("cannot read work items (HTTP {$issues['code']})");
+    }
+    $inProgress = array_filter(
+        $issues['body']['results'],
+        fn ($i) => isset($started[$i['state']])
+    );
+
+    if (! $inProgress) {
+        echo "Nothing in progress.\n";
+
+        return 0;
+    }
+
+    $acted = 0;
+    foreach ($inProgress as $issue) {
+        $n = $issue['sequence_id'];
+        $id = "EXP-$n";
+        $title = $issue['name'];
+
+        $areas = array_values(array_filter(array_map(
+            fn ($lid) => $labelName[$lid] ?? null,
+            $issue['labels'] ?? []
+        ), fn ($x) => $x !== null && $x !== 'blocked-on-owner'));
+        $area = $areas[0] ?? 'general';
+
+        $blocked = in_array('blocked-on-owner', array_map(
+            fn ($lid) => $labelName[$lid] ?? '', $issue['labels'] ?? []
+        ), true);
+
+        echo "\n$id  $title\n";
+        if ($blocked) {
+            echo "  ! labelled blocked-on-owner — skipping (needs a human decision)\n";
+
+            continue;
+        }
+
+        // ---- branch -------------------------------------------------------
+        $existing = git('branch', '--list', "*$id-*");
+        $branch = $existing['out'] !== ''
+            ? ltrim(trim(explode("\n", $existing['out'])[0]), '* ')
+            : branchType($title).'/'.$id.'-'.slug($title);
+
+        if ($existing['out'] !== '') {
+            echo "  = branch exists: $branch\n";
+        } elseif ($dryRun) {
+            echo "  + would create branch: $branch\n";
+        } else {
+            $made = git('branch', $branch, BASE_BRANCH);
+            if (! $made['ok']) {
+                echo "  ! branch failed: {$made['out']}\n";
+
+                continue;
+            }
+            echo "  + branch created: $branch (from ".BASE_BRANCH.")\n";
+            $acted++;
+        }
+
+        // ---- doc ----------------------------------------------------------
+        $search = http('GET', "$bookRoot/search?"
+            .http_build_query(['query' => "\"$id\" {type:page}", 'count' => 5]), $bookHeaders);
+        $page = null;
+        foreach ($search['body']['data'] ?? [] as $hit) {
+            if (str_contains($hit['name'], $id)) {
+                $page = $hit;
+                break;
+            }
+        }
+
+        if ($page) {
+            echo "  = doc exists: {$page['url']}\n";
+            $pageUrl = $page['url'];
+        } elseif ($dryRun) {
+            echo "  + would create doc in Work Log / ".ucfirst($area)."\n";
+            $pageUrl = null;
+        } else {
+            $chapterId = ensureChapter($bookRoot, $bookHeaders, ucfirst($area), $area);
+            $body = [
+                'name' => "$id — $title",
+                'book_id' => WORK_LOG_BOOK,
+                'markdown' => stub($id, $title, $branch, $area),
+            ];
+            if ($chapterId) {
+                $body['chapter_id'] = $chapterId;
+            }
+            $made = http('POST', "$bookRoot/pages", $bookHeaders, $body);
+            if ($made['code'] >= 300) {
+                echo "  ! doc failed (HTTP {$made['code']})\n";
+                $pageUrl = null;
+            } else {
+                // The create response carries slug/book_id but not always a url,
+                // so fall back to composing it rather than emitting an empty link.
+                $pageUrl = $made['body']['url']
+                    ?? rtrim($book['BOOKSTACK_BASE_URL'], '/')
+                        .'/books/work-log/page/'.($made['body']['slug'] ?? '');
+                echo "  + doc created: $pageUrl\n";
+                $acted++;
+            }
+        }
+
+        if ($dryRun || ! $pageUrl) {
+            continue;
+        }
+
+        // ---- link + comment, each at most once ----------------------------
+        $wikiUrl = preg_replace('#^https?://127\.0\.0\.1:3000#', 'https://wiki.localhost', $pageUrl);
+
+        $links = http('GET', "$planeRoot/issues/{$issue['id']}/links/", $planeHeaders);
+        $hasLink = false;
+        foreach ($links['body']['results'] ?? [] as $l) {
+            if (str_contains($l['url'], 'work-log')) {
+                $hasLink = true;
+                break;
+            }
+        }
+        if (! $hasLink) {
+            http('POST', "$planeRoot/issues/{$issue['id']}/links/", $planeHeaders, ['url' => $wikiUrl]);
+            echo "  + linked doc on the ticket\n";
+        }
+
+        $comments = http('GET', "$planeRoot/issues/{$issue['id']}/comments/", $planeHeaders);
+        $announced = false;
+        foreach ($comments['body']['results'] ?? [] as $c) {
+            if (str_contains($c['comment_html'] ?? '', 'Branch ready')) {
+                $announced = true;
+                break;
+            }
+        }
+        if (! $announced) {
+            http('POST', "$planeRoot/issues/{$issue['id']}/comments/", $planeHeaders, [
+                'comment_html' => "<p><strong>Branch ready</strong> — <code>$branch</code>, "
+                    ."cut from <code>".BASE_BRANCH."</code>.</p>"
+                    ."<p>Notes go in <a href=\"$wikiUrl\">Work Log → ".ucfirst($area)." → $id</a>.</p>",
+            ]);
+            echo "  + commented on the ticket\n";
+        }
+    }
+
+    echo "\n".($dryRun ? "Dry run — nothing changed.\n" : "Done.\n");
+
+    return 0;
+}
+
+function ensureChapter(string $root, array $headers, string $name, string $area): ?int
+{
+    $list = http('GET', "$root/chapters?".http_build_query(['count' => 100]), $headers);
+    foreach ($list['body']['data'] ?? [] as $c) {
+        if ($c['book_id'] === WORK_LOG_BOOK && strcasecmp($c['name'], $name) === 0) {
+            return $c['id'];
+        }
+    }
+    $made = http('POST', "$root/chapters", $headers, [
+        'book_id' => WORK_LOG_BOOK,
+        'name' => $name,
+        'tags' => [['name' => 'area', 'value' => $area]],
+    ]);
+
+    return $made['body']['id'] ?? null;
+}
+
+function stub(string $id, string $title, string $branch, string $area): string
+{
+    return <<<MD
+        Ticket: **$id** · status: in progress · branch `$branch` · area `$area`
+
+        ## Problem
+
+        $title
+
+        ## Approach
+
+        _filled in as the work happens_
+
+        ## Result
+
+        _filled in by `/ticket-done $id`_
+        MD;
+}
+
+// ------------------------------------------------------------------------ main
+
+if ($watch === null) {
+    exit(syncOnce($dryRun));
+}
+
+echo "Watching Plane every {$watch}s. Ctrl-C to stop.\n";
+while (true) {
+    syncOnce($dryRun);
+    sleep($watch);
+}

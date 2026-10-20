@@ -1,0 +1,28 @@
+{
+  "total": 4927,
+  "previous_proposal_ids_preserved": 4327,
+  "new_unique_facility_ids": 600,
+  "name_kind": {
+    "source": 4237,
+    "descriptive": 690
+  },
+  "fee": {
+    "unknown": 4835,
+    "free": 55,
+    "paid": 37
+  },
+  "access": {
+    "unknown": 4114,
+    "public": 813
+  },
+  "hours_known": 1458,
+  "website_known": 1723,
+  "phone_known": 1466,
+  "address_known": 2371,
+  "verified_entrances": 0,
+  "policy_publishable_photo_associations": 119,
+  "new_photos": 0,
+  "photo_urls_freshly_health_checked": false,
+  "remote_changed": false,
+  "candidate_export_sha256": "f08bb5f0e1e5d794b1e1687041b3662ad1b48fb85a5cf54a603f9a648d975939"
+}

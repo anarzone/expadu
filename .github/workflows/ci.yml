@@ -235,6 +235,13 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      # Relative persona dates and Node assertions must share the app calendar,
+      # including the UTC/Berlin month boundary after local midnight.
+      - name: Match browser-test calendar to application
+        run: |
+          browser_test_timezone="$(php -r 'require "vendor/autoload.php"; echo (require "config/app.php")["timezone"];')"
+          echo "TZ=$browser_test_timezone" >> "$GITHUB_ENV"
+
       - name: Migrate + seed (content + E2E user)
         run: |
           php artisan migrate --force --seed
@@ -330,6 +337,7 @@ jobs:
           # (it's public — shipped to browsers — but a secret keeps the log clean);
           # the environment is derived from the branch, the release from the sha.
           build-args: |
+            APP_COMMIT=${{ github.sha }}
             VITE_SENTRY_DSN_PUBLIC=${{ secrets.VITE_SENTRY_DSN_PUBLIC }}
             VITE_SENTRY_ENVIRONMENT=${{ steps.tag.outputs.tag == 'staging' && 'staging' || 'production' }}
             VITE_SENTRY_RELEASE=${{ github.sha }}
@@ -405,6 +413,7 @@ jobs:
             sleep 5
             docker exec staging-app php artisan migrate --force
             docker exec staging-app php artisan bureaucracy:import-tasks --prune
+            docker image prune -f
 
   deploy-production:
     name: Deploy to Production
@@ -426,3 +435,4 @@ jobs:
             sleep 5
             docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force
             docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --prune
+            docker image prune -f

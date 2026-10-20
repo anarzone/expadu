@@ -5,10 +5,19 @@
  * Module-scope dedup prevents React strict mode double-mount from
  * firing identical events twice within 1 second.
  */
+import { useCallback } from 'react';
+
 let lastEvent = { type: '', time: 0 };
 
 export function useTracker() {
-    function track(eventType: string, payload?: Record<string, unknown>) {
+    // Stable across renders so callers can list `track` in an effect's deps
+    // without the effect re-firing every render. It closes over nothing
+    // reactive — the dedup state is module scope and the CSRF token is read
+    // from the DOM at call time.
+    const track = useCallback(function track(
+        eventType: string,
+        payload?: Record<string, unknown>,
+    ) {
         const now = Date.now();
 
         if (eventType === lastEvent.type && now - lastEvent.time < 1000) {
@@ -33,7 +42,7 @@ export function useTracker() {
                 ...(payload ? { payload } : {}),
             }),
         }).catch(() => {});
-    }
+    }, []);
 
     return { track };
 }

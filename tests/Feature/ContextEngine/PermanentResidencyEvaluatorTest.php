@@ -1,13 +1,18 @@
 <?php
 
+use App\Bureaucracy\PermanentResidencyEligibility;
 use App\ContextEngine\ActionBus;
 use App\ContextEngine\Evaluators\PermanentResidencyEvaluator;
 use App\ContextEngine\ScoredAction;
 use App\Models\Alert;
 use App\Models\User;
+use App\Notifications\PermanentResidencyEligibleNotification;
+use App\Profile\ProfileEngine;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redis;
+use NotificationChannels\WebPush\WebPushChannel;
 
 uses()->group('context-engine');
 
@@ -102,4 +107,49 @@ test('eligibility is announced only once per threshold', function () {
     app(PermanentResidencyEvaluator::class)->evaluate($user);
 
     expect(Alert::where('user_id', $user->id)->count())->toBe(1);
+});
+
+test('a throttled milestone push goes out on a later run, without a second Good-news card', function () {
+    $user = eligibleResident();
+    Redis::set("notif_throttle:last:{$user->id}", now()->timestamp); // per-user caps hold the push
+
+    app(PermanentResidencyEvaluator::class)->evaluate($user);
+
+    Notification::assertNothingSentTo($user);
+
+    Redis::del("notif_throttle:last:{$user->id}");
+    $this->travel(1)->day();
+    app(PermanentResidencyEvaluator::class)->evaluate($user);
+
+    Notification::assertSentToTimes($user, PermanentResidencyEligibleNotification::class, 1);
+    expect(Alert::where('user_id', $user->id)->count())->toBe(1);
+});
+
+test('a milestone whose push went out is not pushed again', function () {
+    $user = eligibleResident();
+
+    app(PermanentResidencyEvaluator::class)->evaluate($user);
+    $sent = Notification::sent($user, PermanentResidencyEligibleNotification::class)->first();
+
+    // The queue worker fires this once the web push has gone out.
+    event(new NotificationSent($user, $sent, WebPushChannel::class));
+
+    Redis::del("notif_throttle:last:{$user->id}");
+    $this->travel(1)->day();
+    app(PermanentResidencyEvaluator::class)->evaluate($user);
+
+    Notification::assertSentToTimes($user, PermanentResidencyEligibleNotification::class, 1);
+});
+
+test('residents announced before pushes were tracked are not pushed again', function () {
+    $user = eligibleResident();
+    $threshold = app(PermanentResidencyEligibility::class)->for(app(ProfileEngine::class)->build($user))['threshold_months'];
+
+    // All the old Cache::add gate left behind: announced, no push bookkeeping.
+    Cache::put("permanent_residency_announced:{$user->id}:{$threshold}", true, now()->addDays(180));
+
+    app(PermanentResidencyEvaluator::class)->evaluate($user);
+
+    Notification::assertNothingSentTo($user);
+    expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty();
 });

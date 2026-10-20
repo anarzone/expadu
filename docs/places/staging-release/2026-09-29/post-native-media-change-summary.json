@@ -1,0 +1,32 @@
+{
+  "checked_at": "2026-09-29T11:13:03+00:00",
+  "environment": "staging",
+  "raw_records_exported": false,
+  "media_changes": {
+    "media_assets": {
+      "changed_rows": 125,
+      "changed_fields": {
+        "last_seen_at": 123,
+        "updated_at": 125,
+        "failure_count": 3,
+        "next_validation_at": 3
+      },
+      "earliest_changed_timestamp": "2026-09-29T13:00:09",
+      "latest_changed_timestamp": "2026-09-29T13:08:45",
+      "health_transitions": [],
+      "new_rows": 0,
+      "removed_rows": 0
+    },
+    "media_attachments": {
+      "changed_rows": 2,
+      "changed_fields": {
+        "updated_at": 2
+      },
+      "earliest_changed_timestamp": "2026-09-29T13:07:51",
+      "latest_changed_timestamp": "2026-09-29T13:08:22",
+      "health_transitions": [],
+      "new_rows": 0,
+      "removed_rows": 0
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "commit": "c2a006fe23d96890e37d77a864c749aa6560cb4a",
+  "pull_request": "https://github.com/anarzone/expadu/pull/58",
+  "draft": true,
+  "documentation_only_followup": true,
+  "review": "No material findings; local evidence only",
+  "normal_commit_hooks": "passed; no staged PHP so application suite not triggered",
+  "ci_run": "https://github.com/anarzone/expadu/actions/runs/36549377114",
+  "ci_status_at_publication": "in_progress",
+  "jira_comments": {
+    "EXP-69": "9c6b427e-33b3-44e9-bdce-cbc4b08dd4e7",
+    "EXP-72": "3ea966ed-f05d-4531-8465-2e2c0ed49a2f"
+  },
+  "wiki_page": 36,
+  "all_external_document_updates_read_back_exactly": true,
+  "primary_documents_mirrored": [
+    "docs/places/production-readiness.md",
+    "docs/places/staging-release/2026-09-28/PLAN.md"
+  ],
+  "primary_documents_preserved_due_to_differences": [],
+  "staging_inspection_or_import_attempted_this_turn": false,
+  "staging_approval": "Specific read/summary-export approval question pending",
+  "production_changed": false
+}

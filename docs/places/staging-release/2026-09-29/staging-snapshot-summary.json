@@ -1,0 +1,22 @@
+{
+  "captured_at": "2026-09-29T10:55:10+00:00",
+  "environment": "staging",
+  "read_only": true,
+  "raw_data_retained_on_server": true,
+  "existing_user_accounts_or_plans_loaded": false,
+  "tables": {
+    "spots": 9928,
+    "veedels": 86,
+    "place_fact_observations": 4085,
+    "place_fact_corrections": 0,
+    "place_fact_revisions": 1,
+    "place_destination_reviews": 12,
+    "place_reconciliations": 798,
+    "media_assets": 588,
+    "media_attachments": 1680
+  },
+  "snapshot_sha256": "059ef734743d8387ae877e2d3965fad5fee0c3eb7365e4c23fb67e0bed26d0a8",
+  "serialization_roundtrip_verified": true,
+  "full_database_restore_tested": false,
+  "recovery_limitation": "The original writer normalizes per-row JSON into PHP arrays, which can conflate JSON objects and arrays. Serialization roundtrip is not typed-row recovery; superseded lossless snapshot required before recovery use."
+}

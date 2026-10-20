@@ -1,0 +1,4991 @@
+{
+  "schema_version": 1,
+  "audit": "EXP-70",
+  "environment": "staging",
+  "observed_at": "2026-09-17",
+  "staging_commit": "b9033f81f44ee0e6673b7bedef4275141d412666",
+  "population": {
+    "canonical_places_api_total": 2809,
+    "requested_per_cohort": 20,
+    "total_sample": 100
+  },
+  "sampling_method": {
+    "goal": "20 parks, sports centres, playground destinations, culture destinations and cafes; prefer 10 Innenstadt and 10 outer-city records where the catalogue permits it",
+    "selection": "stable API response order with deliberate descriptive-name challenge rows; all IDs and coordinates frozen below",
+    "deep_review": "four Innenstadt and four outer-city frozen rows per cohort where available; shortages are filled from the available stratum; every selected row is evaluated against the same five provider tracks",
+    "request_cap": "maximum 50 successful provider-page or provider-API requests per source during this audit"
+  },
+  "sampling_notes": [
+    "Sports-centre availability produced 2 Innenstadt and 18 outer-city records in the first complete 20-record sample; this shortfall is preserved.",
+    "The outer-city cafe query returned zero records because the current OSM cafe importer is bounded to an inner-city box; all 20 cafe rows are central and this shortfall is preserved.",
+    "Empty activities arrays mean there are no reviewed destination memberships yet. EXP-72 owns the first reviewed pilot, so parent-place evidence is only a multi-activity candidate signal.",
+    "Cafe quality fields are marked not_exposed_by_spots_endpoint rather than inferred from the richer Places endpoint."
+  ],
+  "places": [
+    {
+      "sample_key": "park-4779",
+      "cohort": "park",
+      "selection_group": "central_descriptive",
+      "staging_id": 4779,
+      "name": "Picknickplatz · Innere Kanalstraße",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9586845,
+      "longitude": 6.9612186,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4728",
+      "cohort": "park",
+      "selection_group": "central_descriptive",
+      "staging_id": 4728,
+      "name": "Picknickplatz · Rheinpark",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Deutz",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9488658,
+      "longitude": 6.9736341,
+      "map_source_url": null,
+      "parent_place": "Rheinpark",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4749",
+      "cohort": "park",
+      "selection_group": "central_descriptive",
+      "staging_id": 4749,
+      "name": "Picknickplatz · Innerer Grüngürtel",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9463097,
+      "longitude": 6.9317878,
+      "map_source_url": null,
+      "parent_place": "Innerer Grüngürtel",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4747",
+      "cohort": "park",
+      "selection_group": "central_descriptive",
+      "staging_id": 4747,
+      "name": "Picknickplatz · Innerer Grüngürtel",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9421518,
+      "longitude": 6.9291954,
+      "map_source_url": null,
+      "parent_place": "Innerer Grüngürtel",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4772",
+      "cohort": "park",
+      "selection_group": "central_descriptive",
+      "staging_id": 4772,
+      "name": "Picknickplatz",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Altstadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9397022,
+      "longitude": 6.9517102,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-96",
+      "cohort": "park",
+      "selection_group": "central_named",
+      "staging_id": 96,
+      "name": "Lentpark",
+      "category": "park",
+      "fine_label": "Park",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9570502,
+      "longitude": 6.9656767,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-120",
+      "cohort": "park",
+      "selection_group": "central_named",
+      "staging_id": 120,
+      "name": "Skulpturenpark",
+      "category": "park",
+      "fine_label": "Park",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9555,
+      "longitude": 6.9710346,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/K%C3%B6ln-Neustadt-Nord_Elsa-Br%C3%A4ndstr%C3%B6m-Stra%C3%9Fe_9_R%C3%BCckseite.jpg/1280px-K%C3%B6ln-Neustadt-Nord_Elsa-Br%C3%A4ndstr%C3%B6m-Stra%C3%9Fe_9_R%C3%BCckseite.jpg",
+        "attribution": "HOWI - Horsch, Willy · CC BY 3.0 · Wikimedia Commons",
+        "source_url": "https://commons.wikimedia.org/wiki/File:K%C3%B6ln-Neustadt-Nord_Elsa-Br%C3%A4ndstr%C3%B6m-Stra%C3%9Fe_9_R%C3%BCckseite.jpg",
+        "license_url": "https://creativecommons.org/licenses/by/3.0"
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "free",
+        "status": "known"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-71",
+      "cohort": "park",
+      "selection_group": "central_named",
+      "staging_id": 71,
+      "name": "Theodor-Heuss-Park",
+      "category": "park",
+      "fine_label": "Park",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9504889,
+      "longitude": 6.9610467,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Theodor-Heuss-Ring%20Koeln02.jpg?width=800",
+        "attribution": "Own work · CC0 · Wikimedia Commons",
+        "source_url": null,
+        "license_url": null
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-186",
+      "cohort": "park",
+      "selection_group": "central_named",
+      "staging_id": 186,
+      "name": "Theodor-Heuss-Park",
+      "category": "park",
+      "fine_label": "Park",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9503799,
+      "longitude": 6.9645835,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Theodor-Heuss-Ring%2C%20s%C3%BCdlicher%20Teil%2C%20K%C3%B6ln%2C%20Blick%20Richtung%20Osten-0333.jpg?width=800",
+        "attribution": "Raimond Spekking · CC BY-SA 4.0 · Wikimedia Commons",
+        "source_url": null,
+        "license_url": null
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-104",
+      "cohort": "park",
+      "selection_group": "central_named",
+      "staging_id": 104,
+      "name": "August-Sander-Park",
+      "category": "park",
+      "fine_label": "Park",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.948541,
+      "longitude": 6.9439249,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4744",
+      "cohort": "park",
+      "selection_group": "outer_rodenkirchen_descriptive",
+      "staging_id": 4744,
+      "name": "Picknickplatz · Rosenzweigpark",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Zollstock",
+      "bezirk": "Rodenkirchen",
+      "sample_stratum": "outer",
+      "latitude": 50.9087523,
+      "longitude": 6.9428289,
+      "map_source_url": null,
+      "parent_place": "Rosenzweigpark",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4743",
+      "cohort": "park",
+      "selection_group": "outer_rodenkirchen_descriptive",
+      "staging_id": 4743,
+      "name": "Picknickplatz · Vorgebirgspark",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Zollstock",
+      "bezirk": "Rodenkirchen",
+      "sample_stratum": "outer",
+      "latitude": 50.9082428,
+      "longitude": 6.9535383,
+      "map_source_url": null,
+      "parent_place": "Vorgebirgspark",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4638",
+      "cohort": "park",
+      "selection_group": "outer_rodenkirchen_descriptive",
+      "staging_id": 4638,
+      "name": "Picknickplatz · Vorgebirgspark",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Zollstock",
+      "bezirk": "Rodenkirchen",
+      "sample_stratum": "outer",
+      "latitude": 50.9078326,
+      "longitude": 6.9502272,
+      "map_source_url": null,
+      "parent_place": "Vorgebirgspark",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4742",
+      "cohort": "park",
+      "selection_group": "outer_rodenkirchen_descriptive",
+      "staging_id": 4742,
+      "name": "Picknickplatz · Vorgebirgspark",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Zollstock",
+      "bezirk": "Rodenkirchen",
+      "sample_stratum": "outer",
+      "latitude": 50.9072412,
+      "longitude": 6.9521867,
+      "map_source_url": null,
+      "parent_place": "Vorgebirgspark",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-4792",
+      "cohort": "park",
+      "selection_group": "outer_rodenkirchen_descriptive",
+      "staging_id": 4792,
+      "name": "Picknickplatz · Äußerer Grüngürtel",
+      "category": "park",
+      "fine_label": "Picnic spot",
+      "name_kind": "descriptive",
+      "veedel": "Marienburg",
+      "bezirk": "Rodenkirchen",
+      "sample_stratum": "outer",
+      "latitude": 50.8978879,
+      "longitude": 6.9716473,
+      "map_source_url": null,
+      "parent_place": "Äußerer Grüngürtel",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-191",
+      "cohort": "park",
+      "selection_group": "outer_lindenthal",
+      "staging_id": 191,
+      "name": "Landschaftspark Belvedere",
+      "category": "park",
+      "fine_label": "Park",
+      "name_kind": "source",
+      "veedel": "Widdersdorf",
+      "bezirk": "Lindenthal",
+      "sample_stratum": "outer",
+      "latitude": 50.9601222,
+      "longitude": 6.8622366,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bildstock%20Carl-von-Linn%C3%A9-Weg%20Ecke%20Belvederestra%C3%9Fe.jpg?width=800",
+        "attribution": "Asperatus · CC BY-SA 4.0 · Wikimedia Commons",
+        "source_url": null,
+        "license_url": null
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-1399",
+      "cohort": "park",
+      "selection_group": "outer_lindenthal",
+      "staging_id": 1399,
+      "name": "Belvedere Ausblick",
+      "category": "park",
+      "fine_label": "Viewpoint",
+      "name_kind": "source",
+      "veedel": "Widdersdorf",
+      "bezirk": "Lindenthal",
+      "sample_stratum": "outer",
+      "latitude": 50.9567175,
+      "longitude": 6.8662905,
+      "map_source_url": null,
+      "parent_place": "Landschaftspark Belvedere",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-1396",
+      "cohort": "park",
+      "selection_group": "outer_lindenthal",
+      "staging_id": 1396,
+      "name": "Belvedere Domblick",
+      "category": "park",
+      "fine_label": "Viewpoint",
+      "name_kind": "source",
+      "veedel": "Widdersdorf",
+      "bezirk": "Lindenthal",
+      "sample_stratum": "outer",
+      "latitude": 50.9640815,
+      "longitude": 6.8520302,
+      "map_source_url": null,
+      "parent_place": "Landschaftspark Belvedere",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Aussichtsturm%20Belvedere%20Park%20Panorama%20360%C2%B0%20-%20panoramio.jpg?width=800",
+        "attribution": "Pappnaas666 · CC BY-SA 3.0 · Wikimedia Commons",
+        "source_url": null,
+        "license_url": null
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-88",
+      "cohort": "park",
+      "selection_group": "outer_lindenthal",
+      "staging_id": 88,
+      "name": "Bethlehem-Platz",
+      "category": "park",
+      "fine_label": "Park",
+      "name_kind": "source",
+      "veedel": "Widdersdorf",
+      "bezirk": "Lindenthal",
+      "sample_stratum": "outer",
+      "latitude": 50.9735587,
+      "longitude": 6.8355239,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "park-1397",
+      "cohort": "park",
+      "selection_group": "outer_lindenthal",
+      "staging_id": 1397,
+      "name": "Belvedere Blickfang",
+      "category": "park",
+      "fine_label": "Viewpoint",
+      "name_kind": "source",
+      "veedel": "Widdersdorf",
+      "bezirk": "Lindenthal",
+      "sample_stratum": "outer",
+      "latitude": 50.9564522,
+      "longitude": 6.85404,
+      "map_source_url": null,
+      "parent_place": "Landschaftspark Belvedere",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8841",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8841,
+      "name": "Tennisverband Mittelrhein e.V.",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Seeberg",
+      "bezirk": "Chorweiler",
+      "sample_stratum": "outer",
+      "latitude": 51.0250616,
+      "longitude": 6.9100524,
+      "map_source_url": "https://www.openstreetmap.org/node/1676321895",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8882",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8882,
+      "name": "Sportanlage SV Fühlingen-Chorweiler",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Fühlingen",
+      "bezirk": "Chorweiler",
+      "sample_stratum": "outer",
+      "latitude": 51.0379544,
+      "longitude": 6.9101074,
+      "map_source_url": "https://www.openstreetmap.org/way/1520787704",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8870",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8870,
+      "name": "RTHC Leverkusen",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Flittard",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 51.0189836,
+      "longitude": 7.0066856,
+      "map_source_url": "https://www.openstreetmap.org/way/979820209",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8874",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8874,
+      "name": "Spiel und Sport Köln – Nippes 1912 e.V.",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Niehl",
+      "bezirk": "Nippes",
+      "sample_stratum": "outer",
+      "latitude": 50.9732582,
+      "longitude": 6.957934,
+      "map_source_url": "https://www.openstreetmap.org/way/1230625149",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Friedrich-Karl-Straße 100, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8846",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8846,
+      "name": "Schule Gathestraße / DJK Löwe Köln e.V.",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Riehl",
+      "bezirk": "Nippes",
+      "sample_stratum": "outer",
+      "latitude": 50.9656175,
+      "longitude": 6.9762611,
+      "map_source_url": "https://www.openstreetmap.org/node/4467092583",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Garthestraße 20-24, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8844",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8844,
+      "name": "Tennishalle",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Niehl",
+      "bezirk": "Nippes",
+      "sample_stratum": "outer",
+      "latitude": 50.9685732,
+      "longitude": 6.990363,
+      "map_source_url": "https://www.openstreetmap.org/node/3558462906",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8864",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8864,
+      "name": "Eisenbahner-Sportverein Olympia-Sporthalle",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Nippes",
+      "bezirk": "Nippes",
+      "sample_stratum": "outer",
+      "latitude": 50.96212,
+      "longitude": 6.9452559,
+      "map_source_url": "https://www.openstreetmap.org/way/295971620",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Werkstattstraße 38b, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8868",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8868,
+      "name": "Bezirkssportanlage Bocklemünd",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Ossendorf",
+      "bezirk": "Ehrenfeld",
+      "sample_stratum": "outer",
+      "latitude": 50.978203,
+      "longitude": 6.8770583,
+      "map_source_url": "https://www.openstreetmap.org/way/634361188",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8866",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8866,
+      "name": "Dünnwalder Turnverein 1905 e.V.",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Höhenhaus",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.9910109,
+      "longitude": 7.0440645,
+      "map_source_url": "https://www.openstreetmap.org/way/514692206",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8877",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8877,
+      "name": "TC Mülheim",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Buchheim",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.971485,
+      "longitude": 7.024143,
+      "map_source_url": "https://www.openstreetmap.org/way/1349567455",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Piccoloministraße 1, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8881",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8881,
+      "name": "Sportanlage Venloer Straße/Kolkrabenweg",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Vogelsang",
+      "bezirk": "Ehrenfeld",
+      "sample_stratum": "outer",
+      "latitude": 50.9652219,
+      "longitude": 6.8816282,
+      "map_source_url": "https://www.openstreetmap.org/way/1503548252",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8862",
+      "cohort": "sports_centre",
+      "selection_group": "central_available",
+      "staging_id": 8862,
+      "name": "Sporthalle Adolf-Fischer-Straße",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Altstadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9469782,
+      "longitude": 6.9483079,
+      "map_source_url": "https://www.openstreetmap.org/way/252343311",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Adolf-Fischer-Straße 3, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8860",
+      "cohort": "sports_centre",
+      "selection_group": "central_available",
+      "staging_id": 8860,
+      "name": "basic-fit Spichernstraße 8",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9425269,
+      "longitude": 6.9369349,
+      "map_source_url": "https://www.openstreetmap.org/way/227994092",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Spichernstraße 8"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8848",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8848,
+      "name": "XTRAFIT",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Buchheim",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.9508957,
+      "longitude": 7.0141076,
+      "map_source_url": "https://www.openstreetmap.org/way/32658668",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "known"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Germaniastraße 47, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8855",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8855,
+      "name": "Fitness-Center",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Dellbrück",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.975404,
+      "longitude": 7.0577693,
+      "map_source_url": "https://www.openstreetmap.org/way/171165858",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Wasserwerkstraße 6, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8876",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8876,
+      "name": "Walter Blickhäuser Sportanlage",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Buchforst",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.9489573,
+      "longitude": 7.0110141,
+      "map_source_url": "https://www.openstreetmap.org/way/1341838974",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8867",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8867,
+      "name": "St. Antonius TC Widdersdorf",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Widdersdorf",
+      "bezirk": "Lindenthal",
+      "sample_stratum": "outer",
+      "latitude": 50.970145,
+      "longitude": 6.8448851,
+      "map_source_url": "https://www.openstreetmap.org/way/631106330",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "known"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8858",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8858,
+      "name": "Tennishalle West 1",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Widdersdorf",
+      "bezirk": "Lindenthal",
+      "sample_stratum": "outer",
+      "latitude": 50.9698608,
+      "longitude": 6.8444836,
+      "map_source_url": "https://www.openstreetmap.org/way/202127200",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Rath-Mengenicher Weg 3, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8880",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8880,
+      "name": "SC Holweide 68",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Holweide",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.9589102,
+      "longitude": 7.0404469,
+      "map_source_url": "https://www.openstreetmap.org/way/1484761280",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Schlagbaumsweg 185, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "sports_centre-8872",
+      "cohort": "sports_centre",
+      "selection_group": "outer_available",
+      "staging_id": 8872,
+      "name": "Sportanlage Eythstraße",
+      "category": "court",
+      "fine_label": "Sports centre",
+      "name_kind": "source",
+      "veedel": "Kalk",
+      "bezirk": "Kalk",
+      "sample_stratum": "outer",
+      "latitude": 50.9448962,
+      "longitude": 7.0115934,
+      "map_source_url": "https://www.openstreetmap.org/way/1124433297",
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-444",
+      "cohort": "playground_destination",
+      "selection_group": "central_descriptive",
+      "staging_id": 444,
+      "name": "Spielplatz",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9586858,
+      "longitude": 6.9615297,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-312",
+      "cohort": "playground_destination",
+      "selection_group": "central_descriptive",
+      "staging_id": 312,
+      "name": "Spielplatz",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9574936,
+      "longitude": 6.9603841,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-311",
+      "cohort": "playground_destination",
+      "selection_group": "central_descriptive",
+      "staging_id": 311,
+      "name": "Spielplatz · Lentstraße",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9574749,
+      "longitude": 6.9627285,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-314",
+      "cohort": "playground_destination",
+      "selection_group": "central_descriptive",
+      "staging_id": 314,
+      "name": "Spielplatz · Krefelder Wall",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9545291,
+      "longitude": 6.9542254,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-4044",
+      "cohort": "playground_destination",
+      "selection_group": "central_descriptive",
+      "staging_id": 4044,
+      "name": "Spielplatz · Melchiorstraße",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9531839,
+      "longitude": 6.9543395,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-3408",
+      "cohort": "playground_destination",
+      "selection_group": "central_named",
+      "staging_id": 3408,
+      "name": "Ursulaplatz",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Altstadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9456564,
+      "longitude": 6.9549244,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-301",
+      "cohort": "playground_destination",
+      "selection_group": "central_named",
+      "staging_id": 301,
+      "name": "Wasserspielplatz",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9433976,
+      "longitude": 6.9301363,
+      "map_source_url": null,
+      "parent_place": "Innerer Grüngürtel",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-305",
+      "cohort": "playground_destination",
+      "selection_group": "central_named",
+      "staging_id": 305,
+      "name": "Reischplatz",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Deutz",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9362579,
+      "longitude": 6.9761735,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-3238",
+      "cohort": "playground_destination",
+      "selection_group": "central_named",
+      "staging_id": 3238,
+      "name": "Oskar-Platz",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Altstadt-Süd",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9338456,
+      "longitude": 6.94249,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-3578",
+      "cohort": "playground_destination",
+      "selection_group": "central_named",
+      "staging_id": 3578,
+      "name": "Nächelsgasse",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Altstadt-Süd",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.929356,
+      "longitude": 6.9617576,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-4281",
+      "cohort": "playground_destination",
+      "selection_group": "outer_chorweiler_descriptive",
+      "staging_id": 4281,
+      "name": "Spielplatz",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Merkenich",
+      "bezirk": "Chorweiler",
+      "sample_stratum": "outer",
+      "latitude": 51.0243331,
+      "longitude": 6.9558747,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-3310",
+      "cohort": "playground_destination",
+      "selection_group": "outer_chorweiler_descriptive",
+      "staging_id": 3310,
+      "name": "Spielplatz · Fährgasse",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Merkenich",
+      "bezirk": "Chorweiler",
+      "sample_stratum": "outer",
+      "latitude": 51.0261625,
+      "longitude": 6.9601491,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-2981",
+      "cohort": "playground_destination",
+      "selection_group": "outer_chorweiler_descriptive",
+      "staging_id": 2981,
+      "name": "Spielplatz · Merkenicher Hauptstraße",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Merkenich",
+      "bezirk": "Chorweiler",
+      "sample_stratum": "outer",
+      "latitude": 51.0225766,
+      "longitude": 6.9613047,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-3834",
+      "cohort": "playground_destination",
+      "selection_group": "outer_chorweiler_descriptive",
+      "staging_id": 3834,
+      "name": "Spielplatz · Oranjehofstraße",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Fühlingen",
+      "bezirk": "Chorweiler",
+      "sample_stratum": "outer",
+      "latitude": 51.0211185,
+      "longitude": 6.9255607,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-3889",
+      "cohort": "playground_destination",
+      "selection_group": "outer_chorweiler_descriptive",
+      "staging_id": 3889,
+      "name": "Spielplatz · Kasselberger Weg",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "descriptive",
+      "veedel": "Merkenich",
+      "bezirk": "Chorweiler",
+      "sample_stratum": "outer",
+      "latitude": 51.0392471,
+      "longitude": 6.9347563,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": true,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-4575",
+      "cohort": "playground_destination",
+      "selection_group": "outer_porz",
+      "staging_id": 4575,
+      "name": "An den Maien (Ost)",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Poll",
+      "bezirk": "Porz",
+      "sample_stratum": "outer",
+      "latitude": 50.9206387,
+      "longitude": 6.9892804,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-3190",
+      "cohort": "playground_destination",
+      "selection_group": "outer_porz",
+      "staging_id": 3190,
+      "name": "Käulchensweg",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Poll",
+      "bezirk": "Porz",
+      "sample_stratum": "outer",
+      "latitude": 50.9130983,
+      "longitude": 6.9863864,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-406",
+      "cohort": "playground_destination",
+      "selection_group": "outer_porz",
+      "staging_id": 406,
+      "name": "Augustastraße/Sophienstraße",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Westhoven",
+      "bezirk": "Porz",
+      "sample_stratum": "outer",
+      "latitude": 50.9037457,
+      "longitude": 7.0277303,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-3268",
+      "cohort": "playground_destination",
+      "selection_group": "outer_porz",
+      "staging_id": 3268,
+      "name": "André-Citroën-Straße",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Westhoven",
+      "bezirk": "Porz",
+      "sample_stratum": "outer",
+      "latitude": 50.9013282,
+      "longitude": 7.0227232,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "public",
+        "status": "known"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": false,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "playground_destination-2949",
+      "cohort": "playground_destination",
+      "selection_group": "outer_porz",
+      "staging_id": 2949,
+      "name": "Am Westhover Berg/Viktoriastraße",
+      "category": "playground",
+      "fine_label": "Playground",
+      "name_kind": "source",
+      "veedel": "Westhoven",
+      "bezirk": "Porz",
+      "sample_stratum": "outer",
+      "latitude": 50.9019101,
+      "longitude": 7.0281769,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1549",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1549,
+      "name": "Weinmuseum",
+      "category": "culture",
+      "fine_label": "Museum",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9564077,
+      "longitude": 6.9676982,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Amsterdamer Straße 1, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1822",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1822,
+      "name": "Rheinseilbahn",
+      "category": "culture",
+      "fine_label": "Attraction",
+      "name_kind": "source",
+      "veedel": "Deutz",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.953581,
+      "longitude": 6.977046,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Zoobr%C3%BCcke_%28Zoo_bridge%29_and_Rheinseilbahn_over_the_Rhine_in_Cologne%2C_Germany.jpg/1280px-Zoobr%C3%BCcke_%28Zoo_bridge%29_and_Rheinseilbahn_over_the_Rhine_in_Cologne%2C_Germany.jpg",
+        "attribution": "Ebertplatz aka Gerd Franke, Cologne/Köln · CC BY-SA 3.0 · Wikimedia Commons",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Zoobr%C3%BCcke_(Zoo_bridge)_and_Rheinseilbahn_over_the_Rhine_in_Cologne,_Germany.jpg",
+        "license_url": "http://creativecommons.org/licenses/by-sa/3.0/"
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1603",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1603,
+      "name": "Labor",
+      "category": "culture",
+      "fine_label": "Gallery",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9509151,
+      "longitude": 6.9572116,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "free",
+        "status": "known"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Ebertplatzpassage 5, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1604",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1604,
+      "name": "Gold + Beton",
+      "category": "culture",
+      "fine_label": "Gallery",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9508192,
+      "longitude": 6.9569863,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "free",
+        "status": "known"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Ebertplatzpassage, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1602",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1602,
+      "name": "Institut für Alles Mögliche",
+      "category": "culture",
+      "fine_label": "Gallery",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9507893,
+      "longitude": 6.9572271,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "free",
+        "status": "known"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1628",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1628,
+      "name": "Priska Pasquer Gallery",
+      "category": "culture",
+      "fine_label": "Gallery",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9512414,
+      "longitude": 6.9670709,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1659",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1659,
+      "name": "Kronleuchtersaal",
+      "category": "culture",
+      "fine_label": "Attraction",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.950666,
+      "longitude": 6.963442,
+      "map_source_url": null,
+      "parent_place": "Theodor-Heuss-Park",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Kronleuchtersaal06.jpg/1280px-Kronleuchtersaal06.jpg",
+        "attribution": "A.Savin · CC BY-SA 3.0 · Wikimedia Commons",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Kronleuchtersaal06.jpg",
+        "license_url": "https://creativecommons.org/licenses/by-sa/3.0"
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1779",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1779,
+      "name": "Eigelsteintorburg",
+      "category": "culture",
+      "fine_label": "Attraction",
+      "name_kind": "source",
+      "veedel": "Altstadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9493118,
+      "longitude": 6.9568695,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1592",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1592,
+      "name": "CO 3",
+      "category": "culture",
+      "fine_label": "Gallery",
+      "name_kind": "source",
+      "veedel": "Altstadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9491175,
+      "longitude": 6.9622011,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Thürmchenswall 66, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1512",
+      "cohort": "culture_destination",
+      "selection_group": "central",
+      "staging_id": 1512,
+      "name": "Deutsches Tanzarchiv",
+      "category": "culture",
+      "fine_label": "Museum",
+      "name_kind": "source",
+      "veedel": "Neustadt-Nord",
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9486933,
+      "longitude": 6.9433901,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/MediaPark_K%C3%B6ln%2C_Haus_7_%28Komed%29-0392.jpg/1280px-MediaPark_K%C3%B6ln%2C_Haus_7_%28Komed%29-0392.jpg",
+        "attribution": "Raimond Spekking · CC BY-SA 4.0 · Wikimedia Commons",
+        "source_url": "https://commons.wikimedia.org/wiki/File:MediaPark_K%C3%B6ln,_Haus_7_(Komed)-0392.jpg",
+        "license_url": "https://creativecommons.org/licenses/by-sa/4.0"
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "free",
+        "status": "known"
+      },
+      "hours": {
+        "value": null,
+        "status": "known"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1601",
+      "cohort": "culture_destination",
+      "selection_group": "outer_kalk",
+      "staging_id": 1601,
+      "name": "IDYLL",
+      "category": "culture",
+      "fine_label": "Gallery",
+      "name_kind": "source",
+      "veedel": "Kalk",
+      "bezirk": "Kalk",
+      "sample_stratum": "outer",
+      "latitude": 50.9364149,
+      "longitude": 6.9985548,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1530",
+      "cohort": "culture_destination",
+      "selection_group": "outer_kalk",
+      "staging_id": 1530,
+      "name": "Müllseum",
+      "category": "culture",
+      "fine_label": "Museum",
+      "name_kind": "source",
+      "veedel": "Humboldt/Gremberg",
+      "bezirk": "Kalk",
+      "sample_stratum": "outer",
+      "latitude": 50.9322238,
+      "longitude": 6.9912107,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "free",
+        "status": "known"
+      },
+      "hours": {
+        "value": null,
+        "status": "known"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Burgenlandstraße 3a, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1643",
+      "cohort": "culture_destination",
+      "selection_group": "outer_kalk",
+      "staging_id": 1643,
+      "name": "Kunsthaus Kalk",
+      "category": "culture",
+      "fine_label": "Gallery",
+      "name_kind": "source",
+      "veedel": "Kalk",
+      "bezirk": "Kalk",
+      "sample_stratum": "outer",
+      "latitude": 50.9342637,
+      "longitude": 7.0086419,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "free",
+        "status": "known"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Dillenburger Straße 67, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1573",
+      "cohort": "culture_destination",
+      "selection_group": "outer_kalk",
+      "staging_id": 1573,
+      "name": "Rotwildgehege",
+      "category": "culture",
+      "fine_label": "Zoo",
+      "name_kind": "source",
+      "veedel": "Brück",
+      "bezirk": "Kalk",
+      "sample_stratum": "outer",
+      "latitude": 50.9400459,
+      "longitude": 7.0992043,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "known"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1571",
+      "cohort": "culture_destination",
+      "selection_group": "outer_kalk",
+      "staging_id": 1571,
+      "name": "Wildschweingehege",
+      "category": "culture",
+      "fine_label": "Zoo",
+      "name_kind": "source",
+      "veedel": "Rath/Heumar",
+      "bezirk": "Kalk",
+      "sample_stratum": "outer",
+      "latitude": 50.939398,
+      "longitude": 7.1069907,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1717",
+      "cohort": "culture_destination",
+      "selection_group": "outer_muelheim",
+      "staging_id": 1717,
+      "name": "NSG Flittarder Rheinaue",
+      "category": "culture",
+      "fine_label": "Attraction",
+      "name_kind": "source",
+      "veedel": "Stammheim",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.9928342,
+      "longitude": 6.9712966,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1805",
+      "cohort": "culture_destination",
+      "selection_group": "outer_muelheim",
+      "staging_id": 1805,
+      "name": "Optischer Telegraph",
+      "category": "culture",
+      "fine_label": "Attraction",
+      "name_kind": "source",
+      "veedel": "Flittard",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.9960392,
+      "longitude": 6.9823306,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": {
+        "url": "https://upload.wikimedia.org/wikipedia/commons/1/19/Stamps_of_Germany_%28Berlin%29_1983%2C_MiNr_693.jpg",
+        "attribution": "Public domain · Wikimedia Commons",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Stamps_of_Germany_(Berlin)_1983,_MiNr_693.jpg",
+        "license_url": null
+      },
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Egonstraße 152, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": false,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1667",
+      "cohort": "culture_destination",
+      "selection_group": "outer_muelheim",
+      "staging_id": 1667,
+      "name": "Skulpturenpark Stammheim",
+      "category": "culture",
+      "fine_label": "Attraction",
+      "name_kind": "source",
+      "veedel": "Stammheim",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.9864562,
+      "longitude": 6.9829631,
+      "map_source_url": null,
+      "parent_place": "Stammheimer Schlosspark",
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": true,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1556",
+      "cohort": "culture_destination",
+      "selection_group": "outer_muelheim",
+      "staging_id": 1556,
+      "name": "Stellwerk Köln-Dünnwald",
+      "category": "culture",
+      "fine_label": "Museum",
+      "name_kind": "source",
+      "veedel": "Dünnwald",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 50.9998657,
+      "longitude": 7.0352806,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Rönsahler Straße 1, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "culture_destination-1532",
+      "cohort": "culture_destination",
+      "selection_group": "outer_muelheim",
+      "staging_id": 1532,
+      "name": "Karnevalsmuseum",
+      "category": "culture",
+      "fine_label": "Museum",
+      "name_kind": "source",
+      "veedel": "Dünnwald",
+      "bezirk": "Mülheim",
+      "sample_stratum": "outer",
+      "latitude": 51.0013412,
+      "longitude": 7.0454647,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "unreviewed_pending_EXP-72",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "unknown"
+      },
+      "fee": {
+        "value": "free",
+        "status": "known"
+      },
+      "hours": {
+        "value": null,
+        "status": "unknown"
+      },
+      "entrance_status": "unknown",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/places",
+      "observed_at": "2026-09-17"
+    },
+    {
+      "sample_key": "cafe-8456",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8456,
+      "name": "Das Café",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9379117,
+      "longitude": 6.9601206,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 1
+    },
+    {
+      "sample_key": "cafe-1412",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 1412,
+      "name": "Carls",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9379117,
+      "longitude": 6.9601206,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 2
+    },
+    {
+      "sample_key": "cafe-8264",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8264,
+      "name": "Eiscafe Stella D'oro",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.937133,
+      "longitude": 6.96116,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 3
+    },
+    {
+      "sample_key": "cafe-8453",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8453,
+      "name": "Lint No. 7",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9381561,
+      "longitude": 6.9608956,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Lintgasse 7, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 4
+    },
+    {
+      "sample_key": "cafe-1146",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 1146,
+      "name": "Cafe Extrablatt",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.938316,
+      "longitude": 6.960433,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Alter Markt 28-32, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 5
+    },
+    {
+      "sample_key": "cafe-8265",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8265,
+      "name": "Wallraf-Richartz-Cafe",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9373626,
+      "longitude": 6.9586648,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Martinstraße 39, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 6
+    },
+    {
+      "sample_key": "cafe-8271",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8271,
+      "name": "Marco Polo",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9386286,
+      "longitude": 6.9603805,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 7
+    },
+    {
+      "sample_key": "cafe-8284",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8284,
+      "name": "Beppo Bratu",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9377913,
+      "longitude": 6.9622064,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 8
+    },
+    {
+      "sample_key": "cafe-8229",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8229,
+      "name": "Enteresan",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9373536,
+      "longitude": 6.9625359,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Frankenwerft 13"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 9
+    },
+    {
+      "sample_key": "cafe-1149",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 1149,
+      "name": "Oma Janßen",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9389612,
+      "longitude": 6.9603087,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Alter Markt, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 10
+    },
+    {
+      "sample_key": "cafe-8287",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8287,
+      "name": "Café-Lounge",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9390135,
+      "longitude": 6.9597549,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Alter Markt 55"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 11
+    },
+    {
+      "sample_key": "cafe-8221",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8221,
+      "name": "Café Art",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9359101,
+      "longitude": 6.9600982,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 12
+    },
+    {
+      "sample_key": "cafe-8272",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8272,
+      "name": "Kaffebud",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9390972,
+      "longitude": 6.9603208,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Alter Markt"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 13
+    },
+    {
+      "sample_key": "cafe-8274",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8274,
+      "name": "Amory am Rhein",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9369892,
+      "longitude": 6.9627577,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 14
+    },
+    {
+      "sample_key": "cafe-1225",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 1225,
+      "name": "Eiscafé FroYo",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9386157,
+      "longitude": 6.9623323,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 15
+    },
+    {
+      "sample_key": "cafe-1277",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 1277,
+      "name": "Mansito",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9361002,
+      "longitude": 6.9585491,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Gürzenichstraße 24a, Köln"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 16
+    },
+    {
+      "sample_key": "cafe-8277",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8277,
+      "name": "Eiscafe Toto",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9371072,
+      "longitude": 6.9574359,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 17
+    },
+    {
+      "sample_key": "cafe-1334",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 1334,
+      "name": "Café Bach",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9355216,
+      "longitude": 6.9598213,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 18
+    },
+    {
+      "sample_key": "cafe-1152",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 1152,
+      "name": "Starbucks",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.936383,
+      "longitude": 6.9576418,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": null
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 19
+    },
+    {
+      "sample_key": "cafe-8454",
+      "cohort": "cafe",
+      "selection_group": "central_only_outer_query_empty",
+      "staging_id": 8454,
+      "name": "Louis Cafe",
+      "category": "cafe",
+      "fine_label": "Cafe",
+      "name_kind": "source",
+      "veedel": null,
+      "bezirk": "Innenstadt",
+      "sample_stratum": "innenstadt",
+      "latitude": 50.9392116,
+      "longitude": 6.95851,
+      "map_source_url": null,
+      "parent_place": null,
+      "activities": [],
+      "activity_membership_status": "not_exposed_by_spots_endpoint",
+      "photo": null,
+      "access": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "fee": {
+        "value": "unknown",
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "hours": {
+        "value": null,
+        "status": "not_exposed_by_spots_endpoint"
+      },
+      "entrance_status": "not_exposed_by_spots_endpoint",
+      "contact": {
+        "website": null,
+        "phone": null,
+        "address": "Kleine Budengasse 1-3"
+      },
+      "description": null,
+      "challenge_flags": {
+        "missing_photo": true,
+        "generic_or_descriptive_name": false,
+        "multi_activity_candidate": false,
+        "restricted_or_uncertain_access": true,
+        "uncertain_entrance": true
+      },
+      "observed_via": "authenticated_staging_api",
+      "endpoint": "/api/spots",
+      "observed_at": "2026-09-17",
+      "selection_rank": 20
+    }
+  ]
+}

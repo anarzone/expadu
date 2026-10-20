@@ -5,7 +5,10 @@ import {
     IconExternalLink,
 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { ICON_STROKE } from '@/constants/icons';
+import { ProgressBreakdown, revealSection } from './progress-breakdown';
+import type { ProgressSegment } from './progress-breakdown';
 import { TaskCardFramingB } from './task-card-framing-b';
 import type { FramingBTask, TaskOffice } from './task-card-framing-b';
 
@@ -117,6 +120,17 @@ export function ChecklistFramingB({
         inLane(tasks.no_longer_relevant ?? []),
     );
 
+    /**
+     * Opening a collapsed lane is a state change, and a collapsed section has
+     * nothing to scroll to — so the open has to be committed before the scroll
+     * is attempted. This is the case `flushSync` exists for: update, then read
+     * the DOM in the same handler.
+     */
+    const revealLane = (open: () => void, id: string) => {
+        flushSync(open);
+        revealSection(id);
+    };
+
     useEffect(() => {
         if (focusTaskId === null) {
             return;
@@ -140,6 +154,36 @@ export function ChecklistFramingB({
             (o) =>
                 o.value === path.current && o.value !== path.options[0]?.value,
         )?.label;
+
+    /**
+     * The hero total, itemised. `progress` is derived in the page from exactly
+     * these three lanes, so the segments always reconcile with the headline.
+     */
+    const segments: ProgressSegment[] = [
+        {
+            key: 'done',
+            label: 'done',
+            count: tasks.completed.length,
+            tone: 'done',
+            onSelect: () =>
+                revealLane(() => setCompletedOpen(true), 'checklist-completed'),
+        },
+        {
+            key: 'active',
+            label: 'to do next',
+            count: tasks.active.length,
+            tone: 'now',
+            onSelect: () => revealSection('checklist-do-next'),
+        },
+        {
+            key: 'upcoming',
+            label: 'coming up',
+            count: tasks.upcoming.length,
+            tone: 'later',
+            onSelect: () =>
+                revealLane(() => setUpcomingOpen(true), 'checklist-coming-up'),
+        },
+    ];
 
     const allDone =
         progress.total > 0 &&
@@ -212,15 +256,8 @@ export function ChecklistFramingB({
                         : {nextDeadline.title}
                     </p>
                 )}
-                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
-                    <div
-                        className="h-full bg-primary transition-[width] duration-500 ease-out"
-                        style={{ width: `${progress.percent}%` }}
-                    />
-                </div>
-                <div className="mt-2 flex justify-between font-mono text-[13px] text-muted-foreground">
-                    <span className="text-primary">{progress.done} done</span>
-                    <span>{progress.total - progress.done} remaining</span>
+                <div className="mt-4">
+                    <ProgressBreakdown segments={segments} />
                 </div>
             </div>
 
@@ -273,7 +310,10 @@ export function ChecklistFramingB({
                 <>
                     {/* Do next */}
                     {tasks.active.length > 0 && (
-                        <section>
+                        <section
+                            id="checklist-do-next"
+                            className="scroll-mt-24"
+                        >
                             <h3 className="mb-2.5 text-[11px] font-bold tracking-wide text-[#6B6860] uppercase dark:text-[#AAA89F]">
                                 Do next ({tasks.active.length})
                             </h3>
@@ -313,6 +353,7 @@ export function ChecklistFramingB({
                     {/* Coming up */}
                     {tasks.upcoming.length > 0 && (
                         <CollapsibleSection
+                            id="checklist-coming-up"
                             label="Coming up"
                             count={tasks.upcoming.length}
                             open={upcomingOpen}
@@ -375,6 +416,7 @@ export function ChecklistFramingB({
             {/* Completed */}
             {tasks.completed.length > 0 && (
                 <CollapsibleSection
+                    id="checklist-completed"
                     label="Completed"
                     count={tasks.completed.length}
                     open={completedOpen}
@@ -778,12 +820,15 @@ function InfoCard({
 }
 
 function CollapsibleSection({
+    id,
     label,
     count,
     open,
     onToggle,
     children,
 }: {
+    /** Scroll target for a progress segment that reveals this lane. */
+    id?: string;
     label: string;
     count: number;
     open: boolean;
@@ -791,7 +836,7 @@ function CollapsibleSection({
     children: React.ReactNode;
 }) {
     return (
-        <section>
+        <section id={id} className="scroll-mt-24">
             <button
                 onClick={onToggle}
                 className="flex w-full cursor-pointer items-center justify-between rounded-[10px] border border-[#E2DFD6] bg-white px-3.5 py-2.5 transition-colors hover:bg-[#EFEDE7] dark:border-[#3A3930] dark:bg-[#1E1D15] dark:hover:bg-[#2A2920]"

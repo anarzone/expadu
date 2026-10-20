@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Places\PlaceIdentity;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -56,7 +57,13 @@ class SanitizeSpots extends Command
             return self::SUCCESS;
         }
 
-        DB::table('spots')->whereIn('id', $ids)->delete();
+        $query = DB::table('spots')->whereIn('id', $ids);
+        if (app(PlaceIdentity::class)->hasProtectedRecords($query)) {
+            $this->error('This selection contains retained place identities. Deactivate records instead of deleting their references.');
+
+            return self::FAILURE;
+        }
+        $query->delete();
         $this->info('Removed '.count($ids).' spots.');
 
         return self::SUCCESS;

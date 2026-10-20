@@ -26,7 +26,6 @@ class EventOccurrencePresenter
         $venue = $event->venue;
         $venueName = $this->venueName($venue->name ?? $event->location_name);
         $media = $this->selectMedia($event);
-        $allowLegacyPlaceMedia = $this->allowLegacyPlaceMedia($event);
 
         return [
             'id' => $event->id,
@@ -37,8 +36,8 @@ class EventOccurrencePresenter
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
             'meta' => $this->meta($startsAt, $endsAt, $venueName, $venue?->veedel),
-            'photo_url' => $media?->remote_url ?? ($allowLegacyPlaceMedia ? $venue->place->photo_url : null),
-            'photo_attribution' => $media?->attribution ?? ($allowLegacyPlaceMedia ? $venue->place->photo_attribution : null),
+            'photo_url' => $media?->remote_url,
+            'photo_attribution' => $media?->attribution,
             'photo_source_url' => $media?->source_page_url,
             'photo_license_url' => $media?->license_url,
             'chips' => $this->chips($event),
@@ -63,21 +62,21 @@ class EventOccurrencePresenter
 
     /**
      * The displayable photo for an event card — same rights-gated cascade as
-     * the full contract (event poster → event hero → venue → place, then the
-     * legacy place photo only where no managed media exists), so lighter
+     * the full contract (event poster → event hero → venue → place), so lighter
      * surfaces (the Today "Tonight" rail) can never show an image the events
      * page would refuse.
      *
-     * @return array{url: string|null, attribution: string|null}
+     * @return array{url: string|null, attribution: string|null, source_url: string|null, license_url: string|null}
      */
     public function photo(Event $event): array
     {
         $media = $this->selectMedia($event);
-        $place = $this->allowLegacyPlaceMedia($event) ? $event->venue?->place : null;
 
         return [
-            'url' => $media?->remote_url ?? $place?->photo_url,
-            'attribution' => $media?->attribution ?? $place?->photo_attribution,
+            'url' => $media?->remote_url,
+            'attribution' => $media?->attribution,
+            'source_url' => $media?->source_page_url,
+            'license_url' => $media?->license_url,
         ];
     }
 
@@ -89,13 +88,6 @@ class EventOccurrencePresenter
             ?? $this->mediaSelector->select($event, 'hero')
             ?? ($venue ? $this->mediaSelector->select($venue, 'hero') : null)
             ?? ($venue?->place ? $this->mediaSelector->select($venue->place, 'hero') : null);
-    }
-
-    private function allowLegacyPlaceMedia(Event $event): bool
-    {
-        $place = $event->venue?->place;
-
-        return $place !== null && ! $this->mediaSelector->hasManagedMedia($place);
     }
 
     public function meta(CarbonImmutable $startsAt, ?CarbonImmutable $endsAt, ?string $venueName, ?string $veedel): string

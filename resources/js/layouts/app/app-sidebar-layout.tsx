@@ -26,7 +26,7 @@ export default function AppSidebarLayout({
 
     useEffect(() => {
         track('page_viewed', { page: window.location.pathname });
-    }, []);
+    }, [track]);
 
     return (
         <AppShell variant="sidebar">

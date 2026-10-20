@@ -78,6 +78,60 @@ enum Applicability
     }
 
     /**
+     * For a rule that does NOT apply, the conditions standing between the user
+     * and its nearest AND-group.
+     *
+     * A rule the engine hides is invisible for a reason the user cannot see. A
+     * spouse of a Blue Card holder, for instance, does not get the §9(3a)
+     * settlement route — it needs the sponsor to hold §18c — and nothing said
+     * so, which reads as the route not existing rather than not being open yet.
+     *
+     * Groups containing an unresolved condition are skipped: those are missing
+     * answers, which the information-needed lane already covers.
+     *
+     * @param  list<array<string, mixed>>|null  $appliesIf
+     * @param  array<string, mixed>  $attributes
+     * @return list<array{attribute: string, expected: mixed}>
+     */
+    public static function blockingConditions(?array $appliesIf, array $attributes): array
+    {
+        if (self::evaluate($appliesIf, $attributes) !== self::No) {
+            return [];
+        }
+
+        $nearest = null;
+
+        foreach ($appliesIf ?? [] as $group) {
+            $failed = [];
+            $unresolved = false;
+
+            foreach ($group as $attribute => $expected) {
+                $verdict = self::evaluateCondition($expected, $attributes[$attribute] ?? null);
+
+                if ($verdict === self::Unknown) {
+                    $unresolved = true;
+
+                    break;
+                }
+
+                if ($verdict === self::No) {
+                    $failed[] = ['attribute' => $attribute, 'expected' => $expected];
+                }
+            }
+
+            if ($unresolved || $failed === []) {
+                continue;
+            }
+
+            if ($nearest === null || count($failed) < count($nearest)) {
+                $nearest = $failed;
+            }
+        }
+
+        return $nearest ?? [];
+    }
+
+    /**
      * @param  array<string, mixed>  $group
      * @param  array<string, mixed>  $attributes
      */

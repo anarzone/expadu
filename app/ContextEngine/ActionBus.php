@@ -21,27 +21,6 @@ class ActionBus
      * Insert (or update) a scored action for a user. Throttled push channels
      * are stripped here so downstream delivery does not need to re-check.
      */
-    /**
-     * Map ScoredAction types to notification-preference keys (the same
-     * keys NotificationPreference::defaults() exposes). Roadmap #4.
-     *
-     * If a user has wantsNotification($key) === false, the push channel
-     * is stripped before the action lands in the bus — dashboard card
-     * still shows but no push is sent. This works regardless of whether
-     * push delivery flows through the legacy notify() path or the
-     * future dispatcher path.
-     */
-    private const TYPE_TO_PREF_KEY = [
-        'transit_disruption' => 'transit',
-        'transit_delay' => 'transit',
-        'weather_alert' => 'weather',
-        'rhine_level' => 'rhine',
-        'buergeramt_slot' => 'burgeramt',
-        'bureaucracy_task' => 'checklist',
-        'permanent_residency_eligible' => 'checklist',
-        'market_closure' => 'events',
-    ];
-
     public function insert(User $user, ScoredAction $action): ScoredAction
     {
         // Per-user mute (Roadmap #6 backend) — when a user has muted a
@@ -54,13 +33,12 @@ class ActionBus
             $action = $action->withoutChannel(ScoredAction::CHANNEL_PUSH);
         }
 
-        if (in_array(ScoredAction::CHANNEL_PUSH, $action->deliverChannels, true)) {
-            $prefKey = self::TYPE_TO_PREF_KEY[$action->type] ?? null;
-            if ($prefKey !== null && method_exists($user, 'wantsNotification') && ! $user->wantsNotification($prefKey)) {
-                $action = $action->withoutChannel(ScoredAction::CHANNEL_PUSH);
-            } elseif (! NotificationThrottle::canPush($user, $action->type)) {
-                $action = $action->withoutChannel(ScoredAction::CHANNEL_PUSH);
-            }
+        // Preference off, quiet hours, commute-only types and the per-user caps
+        // all live in NotificationThrottle, keyed by these same action types.
+        // The dashboard card still shows when the push is stripped.
+        if (in_array(ScoredAction::CHANNEL_PUSH, $action->deliverChannels, true)
+            && ! NotificationThrottle::canPush($user, $action->type, $action->severity)) {
+            $action = $action->withoutChannel(ScoredAction::CHANNEL_PUSH);
         }
 
         $key = $this->key($user->id);

@@ -1,0 +1,38 @@
+{
+  "existing_identity_holds_screened": 2428,
+  "selected": 600,
+  "by_category": {
+    "table_tennis": 46,
+    "bbq": 2,
+    "skatepark": 3,
+    "pitch": 18,
+    "dog_park": 1,
+    "playground": 508,
+    "basketball": 13,
+    "boules": 9
+  },
+  "by_fee_evidence": {
+    "unknown": 594,
+    "free": 6
+  },
+  "refusal_reasons": {
+    "public_access_not_established": 1818,
+    "source_backed_or_unknown_counterpart": 50,
+    "outside_unnamed_supported_facility_cohort": 75,
+    "target_not_independent_held_facility": 72,
+    "unsupported_or_conflicting_fee": 2,
+    "missing_ambiguity_edges": 3
+  },
+  "legacy_records_changed": 0,
+  "identity_merges": 0,
+  "status": "selected_pending_source_and_native_checks",
+  "prepared_at": "2026-10-01T10:57:05.461654+00:00",
+  "input_sha256": {
+    "inventory": "e89849ab76a6cd640a2561af8ed5a77accd2f5d923694b4bd7381f63b2f82d64",
+    "places-only.json": "b8cd63c8e757e697a529fc693368aa0b34bac2e1ffb77aab1bdc1af10da0c9ef",
+    "supported-package/holds.jsonl": "313d36f6935a24a040856d0887ae0e0fe377f25a4383cf0d429c0f3353d65d26",
+    "supported-package/identity-review.jsonl": "8e67c95469821595f1111059c69a188adb3451594edb66797d981566d85e3a06"
+  },
+  "selection_sha256": "980567848a9f34ddedfd1dbedcab34ce7d28045b964c0c3c94b7f3fa4d25474b",
+  "remote_changed": false
+}

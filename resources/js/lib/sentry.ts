@@ -1,17 +1,24 @@
+import {
+    browserTracingIntegration,
+    captureException,
+    init,
+} from '@sentry/react';
+import type { ErrorInfo } from 'react';
+
 /**
- * Lazy Sentry initialization.
- * Called after app mounts to keep @sentry/react out of the critical path.
+ * Lazy Sentry. app.tsx imports this module only after the app mounts, so
+ * @sentry/react stays out of the critical path — and everything Sentry goes
+ * through here, so there is one Sentry chunk. Named imports keep Replay,
+ * Feedback and the rest of the SDK out of it.
  */
-export async function initSentry(): Promise<void> {
+export function initSentry(): void {
     const dsn = import.meta.env.VITE_SENTRY_DSN_PUBLIC;
 
     if (!dsn) {
         return;
     }
 
-    const Sentry = await import('@sentry/react');
-
-    Sentry.init({
+    init({
         dsn,
         // Prefer an explicit env (staging|production, injected at build) over
         // Vite's MODE, which is always "production" for any built bundle.
@@ -21,9 +28,10 @@ export async function initSentry(): Promise<void> {
         // Never attach the browser's IP / cookies. The backend attributes
         // errors by user id, which is enough to correlate the two sides.
         sendDefaultPii: false,
+        // Page-load and navigation timings for 10% of sessions. The sample
+        // rate was set before, but without this integration nothing traced.
+        integrations: [browserTracingIntegration()],
         tracesSampleRate: 0.1,
-        replaysSessionSampleRate: 0,
-        replaysOnErrorSampleRate: 1.0,
         ignoreErrors: [
             'ResizeObserver loop',
             'Non-Error promise rejection',
@@ -47,4 +55,9 @@ export async function initSentry(): Promise<void> {
             return event;
         },
     });
+}
+
+/** Report a render error caught by the app's error boundary. No-op until init ran. */
+export function captureRenderError(error: Error, info: ErrorInfo): void {
+    captureException(error, { extra: { componentStack: info.componentStack } });
 }

@@ -1,0 +1,23 @@
+[
+  {
+    "ticket": "EXP-69",
+    "issue_id": "f86787e7-a0e6-4cb9-971c-6c7205d8aeac",
+    "comment_id": "dd4b82d1-e877-4dfb-9b87-97aa76d4c7a5",
+    "comment_verified": true,
+    "state_unchanged": "f461aebd-0985-469e-8763-d62d2fc288e6"
+  },
+  {
+    "ticket": "EXP-70",
+    "issue_id": "778e9106-2855-4d01-bbc2-e71f0b71245a",
+    "comment_id": "da8cd90b-59c0-4176-b5ad-d5e0645347f7",
+    "comment_verified": true,
+    "state_unchanged": "f461aebd-0985-469e-8763-d62d2fc288e6"
+  },
+  {
+    "ticket": "EXP-72",
+    "issue_id": "8b28e050-bd90-496c-8119-d43f29909c2a",
+    "comment_id": "3d94296d-27ae-4617-b29f-4dc12db2a124",
+    "comment_verified": true,
+    "state_unchanged": "f461aebd-0985-469e-8763-d62d2fc288e6"
+  }
+]

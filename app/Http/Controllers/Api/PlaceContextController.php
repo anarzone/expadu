@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Enums\SpotCategory;
 use App\Http\Controllers\Controller;
 use App\Models\Spot;
+use App\Places\DestinationGrouping;
+use App\Places\PlaceFacts;
 use App\Services\WeatherService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -68,7 +70,7 @@ class PlaceContextController extends Controller
     }
 
     /**
-     * Other places around this one — facilities sharing the same mapped
+     * Other places around this one — reviewed components sharing the same
      * destination when there is one, otherwise anything
      * within ~300m. Excludes the place itself and its own same-name
      * cluster siblings (those are the "×N here" chip).
@@ -77,8 +79,8 @@ class PlaceContextController extends Controller
      */
     private function nearby(Spot $spot): array
     {
-        $query = Spot::query()
-            ->recommendationEligible()
+        $grouping = app(DestinationGrouping::class);
+        $query = $grouping->eligible(Spot::query())
             ->whereKeyNot($spot->id)
             ->where('name', '!=', $spot->name)
             ->whereIn('category', SpotCategory::placesFines())
@@ -90,26 +92,12 @@ class PlaceContextController extends Controller
             [$spot->lat, $spot->lng, $spot->lat],
         );
 
-        if (in_array($spot->getRawOriginal('category'), ['park', 'sports_centre'], true)) {
-            // A destination's "around here" is what is contained inside it.
-            $query->where(function ($contained) use ($spot) {
-                $contained->where('parent_spot_id', $spot->id);
-
-                if ($spot->getRawOriginal('category') === 'park') {
-                    // Compatibility while legacy park_name rows await their
-                    // next source-backed containment refresh.
-                    $contained->orWhere(fn ($legacy) => $legacy
-                        ->whereNull('parent_spot_id')
-                        ->where('park_name', $spot->name));
-                }
-            });
-        } elseif ($spot->parent_spot_id) {
-            // Same mapped destination = same venue, however large it is.
-            $query->where('parent_spot_id', $spot->parent_spot_id);
-        } elseif ($spot->park_name) {
-            // Legacy fallback during parent-ID rollout.
-            $query->whereNull('parent_spot_id')->where('park_name', $spot->park_name);
+        if (in_array($spot->getRawOriginal('category'), DestinationGrouping::DESTINATIONS, true)) {
+            $grouping->components($query, [$spot->id]);
+        } elseif ($spot->destination_spot_id) {
+            $grouping->components($query, [$grouping->groupIds([$spot->id])[$spot->id]]);
         } else {
+            $grouping->general($query);
             $query->whereRaw(
                 '(6371 * acos(LEAST(1, cos(radians(?)) * cos(radians(lat)) * cos(radians(lng) - radians(?)) + sin(radians(?)) * sin(radians(lat))))) <= ?',
                 [$spot->lat, $spot->lng, $spot->lat, self::NEARBY_RADIUS_KM],
@@ -125,7 +113,10 @@ class PlaceContextController extends Controller
             // Over-fetch, then collapse same-name rows (three OSM
             // "Tischtennisplatte" entries are one chip, not three).
             ->limit($limit * 3)
-            ->get()
+            ->get();
+        app(PlaceFacts::class)->project($rows);
+
+        $rows = $rows
             ->unique('name')
             ->take($limit)
             ->values();

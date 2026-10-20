@@ -1,0 +1,13 @@
+{
+  "reviewed_at": "2026-09-28T20:26:46.008441+00:00",
+  "scope": "local source review only; no database or network access",
+  "code_sha256": "9a85863dc124cba94e7b4f6e646b013ce66f0a54b1e8560219424e0f9845945d",
+  "resolved_findings": [
+    "Pin every reviewed input, including executable importer and baseline fingerprints",
+    "Assert every record and independently expected Composer identity is checked; reject visibility losses",
+    "Keep bootstrap and HTTP errors in the execution environment; disable telemetry for this process",
+    "Accurately disclose feedback lookup scoped to a non-persisted synthetic user ID"
+  ],
+  "remaining_material_findings": [],
+  "runtime_or_staging_claim": false
+}

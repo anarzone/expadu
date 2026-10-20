@@ -27,6 +27,17 @@ class MediaAttachmentFactory extends Factory
             'priority' => 100,
             'is_primary' => false,
             'is_manually_locked' => false,
+            'match_status' => 'pending',
         ];
+    }
+
+    public function accepted(): static
+    {
+        return $this->state(fn (): array => [
+            'match_status' => 'accepted',
+            'match_method' => 'manual_review',
+            'match_evidence' => ['review' => 'Correct place'],
+            'match_reviewed_at' => now(),
+        ]);
     }
 }

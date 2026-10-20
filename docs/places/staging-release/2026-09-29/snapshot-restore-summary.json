@@ -1,0 +1,56 @@
+{
+  "checked_at": "2026-09-29T11:43:03+00:00",
+  "environment": "staging",
+  "mode": "temporary_table_column_text_restore",
+  "snapshot_sha256": "1d76a549dc6064ac3d6c78c92a0363eb9fa11a722172a29ae556af11742803f9",
+  "verification_code_sha256": "9ea0c66b2832064fc09fe7c004fadcd95d36de32524907a412824a5de373d1d9",
+  "raw_records_exported": false,
+  "private_users_or_plans_loaded": false,
+  "persistent_catalogue_writes": false,
+  "tables": {
+    "spots": {
+      "restored_rows": 9928,
+      "exact_postgresql_column_text_match": true
+    },
+    "veedels": {
+      "restored_rows": 86,
+      "exact_postgresql_column_text_match": true
+    },
+    "place_fact_observations": {
+      "restored_rows": 4085,
+      "exact_postgresql_column_text_match": true
+    },
+    "place_fact_corrections": {
+      "restored_rows": 0,
+      "exact_postgresql_column_text_match": true
+    },
+    "place_fact_revisions": {
+      "restored_rows": 1,
+      "exact_postgresql_column_text_match": true
+    },
+    "place_destination_reviews": {
+      "restored_rows": 12,
+      "exact_postgresql_column_text_match": true
+    },
+    "place_reconciliations": {
+      "restored_rows": 798,
+      "exact_postgresql_column_text_match": true
+    },
+    "media_assets": {
+      "restored_rows": 588,
+      "exact_postgresql_column_text_match": true
+    },
+    "media_attachments": {
+      "restored_rows": 1680,
+      "exact_postgresql_column_text_match": true
+    }
+  },
+  "limitations": [
+    "Validates typed column values, generated columns, check/not-null/unique constraints and indexes against current schema",
+    "LIKE does not copy foreign keys or application triggers; external relationships and full-database disaster recovery are not exercised",
+    "Shared media may change independently; this test never overwrites live tables"
+  ],
+  "status": "passed",
+  "temporary_tables_removed": true,
+  "full_database_restore_tested": false
+}

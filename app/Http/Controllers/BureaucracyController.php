@@ -198,7 +198,10 @@ class BureaucracyController extends Controller
 
             if (in_array(Str::afterLast($key, '.'), self::ARRIVAL_BASICS, true)) {
                 if (($userTask->status ?? TaskStatus::NotStarted) !== TaskStatus::Done) {
-                    $userTask->markDone();
+                    // Record WHY. Completing a handful of tasks silently on the
+                    // user's behalf is what made the app look like it knew
+                    // things it was never told.
+                    $userTask->markDone('settled_declaration');
                 }
             } elseif (in_array($key, self::PR_JOURNEY_KEYS, true)) {
                 $userTask->update(['is_applicable' => false]);
@@ -293,13 +296,37 @@ class BureaucracyController extends Controller
         // Documents may cross-link the task that produces them
         // ("Meldebescheinigung ← from Anmeldung").
         $documents = collect($task->documents_required ?? [])
+            // A document may name who it is for, in the same predicate format a
+            // task uses. This exists so one card can serve every branch without
+            // handing a single person the paperwork for a family of four.
+            //
+            // Only a definite No hides it: an unanswered question must leave the
+            // document on the list, because a document shown to someone who
+            // turns out not to need it costs them a moment, and one hidden from
+            // someone who did costs them the appointment.
+            ->filter(function ($doc) use ($profile): bool {
+                $condition = is_array($doc) ? ($doc['applies_if'] ?? null) : null;
+
+                return ! is_array($condition)
+                    || Applicability::evaluate($condition, $profile->attributes) !== Applicability::No;
+            })
             ->map(function ($doc) use ($titlesByKey) {
-                if (is_array($doc) && isset($doc['from'])) {
+                // Plenty of documents are still plain strings.
+                if (! is_array($doc)) {
+                    return $doc;
+                }
+
+                if (isset($doc['from'])) {
                     $doc['from_title'] = $titlesByKey[$doc['from']] ?? null;
                 }
 
+                // The condition is a server-side concern; it decided whether
+                // this document is here at all and has no business in the page.
+                unset($doc['applies_if']);
+
                 return $doc;
             })
+            ->values()
             ->all();
         $daysRemaining = $deadline
             ? (int) now()->startOfDay()->diffInDays($deadline->startOfDay(), false)
@@ -312,7 +339,7 @@ class BureaucracyController extends Controller
         }
         // What the note strip can DO about a missing date.
         $deadlineAction = match (true) {
-            $deadlineTier === 'paused' => 'moved_in',
+            $deadlineTier === 'paused', $deadlineTier === 'needs_answer' => 'moved_in',
             $deadline === null
                 && $task->deadline_type === DeadlineType::PermitWindow
                 && ($profile->attributes['entry_mode'] ?? null) === 'd_visa'
@@ -360,6 +387,9 @@ class BureaucracyController extends Controller
             'status' => $status->value,
             'status_label' => $status->label(),
             'status_tone' => $status->tone(),
+            // Null unless the app completed this for the user, so the card can
+            // say who decided instead of leaving them to wonder.
+            'completed_source' => $userTask->completed_source,
             'deadline' => $deadline?->toDateString(),
             'days_remaining' => $daysRemaining,
             'deadline_tier' => $deadlineTier,
@@ -402,6 +432,15 @@ class BureaucracyController extends Controller
             if ($task->deadline_type === DeadlineType::DaysSinceMoveIn
                 && ($profile->attributes['housing_status'] ?? null) === 'temporary') {
                 return ['paused', 'Deadline paused — the clock starts when you move into a long-term address.'];
+            }
+
+            // Onboarding no longer forces the move-in date, so this task can
+            // reach a user with nothing to count from. §17 BMG gives two weeks
+            // and §54 makes missing it finable, so silence is the wrong
+            // default: say the clock is missing and what would start it.
+            if ($task->deadline_type === DeadlineType::DaysSinceMoveIn
+                && ($profile->attributes['moved_in_at'] ?? null) === null) {
+                return ['needs_answer', 'Your 14-day registration deadline needs your move-in date. Add it to see the exact date.'];
             }
 
             if ($task->deadline_type === DeadlineType::PermitWindow
@@ -501,8 +540,11 @@ class BureaucracyController extends Controller
         }
 
         // Paused (move-in pending) stays in the attention lane — it's the
-        // user's primary next thing even without a ticking clock.
-        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching', 'paused', 'lapsed'], true)
+        // user's primary next thing even without a ticking clock. `needs_answer`
+        // is the same case and more urgent: the two-week Anmeldung window is
+        // running, we just cannot say from when. Burying it under "upcoming"
+        // would hide the one card whose clock we most need started.
+        return in_array($tier, ['overdue', 'critical', 'urgent', 'approaching', 'paused', 'needs_answer', 'lapsed'], true)
             ? 'active'
             : 'upcoming';
     }

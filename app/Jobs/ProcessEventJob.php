@@ -54,6 +54,12 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
+        // No API key: every call would 401. Leave the event untranslated
+        // for the backfill to pick up once a key is set.
+        if (! $classifier->isConfigured()) {
+            return;
+        }
+
         $result = $classifier->classify($event);
 
         // Below the confidence floor: keep the translation but DROP the

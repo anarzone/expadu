@@ -191,7 +191,6 @@ tasks:
         from: stu.enrolment
     links:
       - https://www.n26.com/en-de
-      - https://www.deutsche-bank.de/pk/konten-und-karten/girokonto/junges-konto.html
     how_to_steps:
       - title: Pick online-only or branch-based
         body: N26 and C24 are fast and English-friendly. Deutsche Bank, Commerzbank offer student accounts with branch service.

@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "baseline_tables_scoped": 10,
+  "archived_baseline_sequences_checked": 9,
+  "all_sequences_restored_after_vocabulary_refusal": true,
+  "analyze_in_transaction_and_after_rollback_succeeded": true,
+  "shared_development_changed": false,
+  "remote_changed": false
+}

@@ -1,7 +1,7 @@
 <x-mail::message>
 # Almost on the list
 
-You asked us to let you know when Expadu arrives in **{{ $city }}**.
+You asked to hear first when the new Expadu opens. We noted **{{ $city }}** as your city.
 
 One tap to confirm it was really you — that's it:
 

@@ -46,19 +46,38 @@ class OnboardingRequest extends FormRequest
             // shapes the home feed and composer (see Interest enum).
             'interests' => ['nullable', 'array', 'max:'.Interest::MAX_SELECT],
             'interests.*' => ['string', Rule::in(array_column(Interest::cases(), 'value'))],
-            // Asked only when the EU follow-up was answered "No" — entry
-            // details inform the guidance shown in the first plan.
-            'entry_mode' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit']), Rule::requiredIf(fn (): bool => $this->requiresEntryMode())],
+            // Offered when the EU follow-up was answered "No", but never
+            // required: PendingAnswers asks for entry_mode on the Bureaucracy
+            // page for every situation, so a skip here is recoverable rather
+            // than lost. It stays the highest-value optional answer — 17
+            // applies_if references, more than any other fact.
+            'entry_mode' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['d_visa', 'visa_free', 'has_permit'])],
             // D-visa holders can give their expiry — it becomes the real
             // permit deadline instead of a vague warning.
             'visa_expires_at' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('entry_mode') !== 'd_visa'), 'nullable', 'date_format:Y-m-d'],
-            'current_residence_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_18c', 'other'])],
+            'current_residence_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card', 'family_reunification', 'settlement_permit_9', 'settlement_permit_18c', 'other'])],
             'residence_title_expires_at' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || ! $this->filled('current_residence_title')), 'nullable', 'date_format:Y-m-d'],
             'case_goal' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply()), 'nullable', 'string', Rule::in($this->availableCaseGoals())],
-            'sponsor_current_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('situation') !== Situation::FamilyReunification->value), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_18c', 'other'])],
+            'sponsor_current_title' => [Rule::excludeIf(fn (): bool => ! $this->residenceFactsApply() || $this->input('situation') !== Situation::FamilyReunification->value), 'nullable', 'string', Rule::in(['national_d_visa', 'standard_work_permit', 'blue_card_pending', 'blue_card', 'settlement_permit_9', 'settlement_permit_18c', 'other'])],
             'documented_german_level' => ['nullable', 'string', Rule::in(array_column(GermanLevel::cases(), 'value'))],
-            'moved_in_at' => ['nullable', 'date_format:Y-m-d', Rule::requiredIf(fn (): bool => $this->input('address_registration_status') === 'registrable'), Rule::prohibitedIf(fn (): bool => $this->input('address_registration_status') !== 'registrable')],
-            'address_registration_status' => ['required', 'string', Rule::in(['registrable', 'not_registrable', 'unsure'])],
+            // You cannot have moved into a Cologne address before arriving in
+            // the country. The wizard used to ask the address questions BEFORE
+            // the arrival question, so switching to "Still planning" left a
+            // move-in date behind and this happily stored it.
+            'moved_in_at' => [
+                'nullable',
+                'date_format:Y-m-d',
+                Rule::requiredIf(fn (): bool => $this->input('address_registration_status') === 'registrable'
+                    && ! $this->boolean('arrival_planned')),
+                Rule::prohibitedIf(fn (): bool => $this->input('address_registration_status') !== 'registrable'
+                    || $this->boolean('arrival_planned')),
+            ],
+            // Optional, with a caveat we surface rather than hide: skipping it
+            // leaves the Anmeldung task without its 14-day countdown, so
+            // BureaucracyController::deadlineState() says so on the card and
+            // links the answer. Forcing it here would block signup on a
+            // question someone who has not moved in yet cannot answer.
+            'address_registration_status' => ['nullable', 'string', Rule::in(['registrable', 'not_registrable', 'unsure'])],
         ];
     }
 

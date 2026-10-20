@@ -42,6 +42,35 @@ async function globalSetup(config: FullConfig) {
     // Confirm the session actually lands on the app — not the verify-email or
     // onboarding wall — before we bank it for every test.
     await page.goto('/dashboard');
+
+    // date-field.spec.ts de-onboards this shared account to reach the wizard
+    // and puts it back afterwards. If such a run died in between, every later
+    // run lands on the onboarding wall and fails here with a timeout that says
+    // nothing about why. Put the account back rather than stranding the suite;
+    // if that does not work, the original timeout below still reports it.
+    if (new URL(page.url()).pathname.startsWith('/onboarding')) {
+        // Logging in regenerates the session, so the token read above is stale
+        // and would come back 419.
+        const fresh = await context.cookies();
+        const token = decodeURIComponent(
+            fresh.find((c) => c.name === 'XSRF-TOKEN')?.value ?? '',
+        );
+
+        // The wizard's own submit — the QA persona endpoint sits behind the
+        // onboarded guard, so it cannot rescue an account that is not.
+        await page.request.post('/onboarding/complete', {
+            headers: { 'X-XSRF-TOKEN': token, Accept: 'text/html' },
+            form: {
+                situation: 'non_eu_employee',
+                is_eu: '0',
+                arrival_planned: '0',
+                arrival_date: '2024-01-15',
+                veedel: 'Altstadt-Nord',
+            },
+        });
+        await page.goto('/dashboard');
+    }
+
     await page.waitForURL('**/dashboard**', { timeout: 15_000 });
 
     await context.storageState({ path: 'tests/Browser/.auth/session.json' });

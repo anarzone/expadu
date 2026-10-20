@@ -1,8 +1,12 @@
 @extends('marketing.layout')
 
+@section('tone', 'yellow')
+@section('theme_color', '#ffe363')
+
 @section('title', 'Netto-Brutto calculator '.$year.' — what\'s left of your German salary? — Expadu')
 @section('meta_description', 'Gross to net salary in Germany, '.$year.' rules: all six tax classes, every Bundesland, church tax, children, statutory or private insurance — cross-checked against the official BMF calculator. Free, no signup.')
 @section('canonical', route('tools.netto'))
+@section('og_image', asset('marketing/og/tools-netto-brutto.png'))
 @section('waitlist_source', 'tool-netto')
 
 @push('head')
@@ -11,7 +15,7 @@
 
 @push('structured-data')
     <script type="application/ld+json">{!! json_encode([
-        '@context' => 'https://schema.org',
+        '@@context' => 'https://schema.org',
         '@type' => 'WebApplication',
         'name' => 'German netto-brutto salary calculator '.$year,
         'applicationCategory' => 'FinanceApplication',
@@ -21,12 +25,17 @@
     ], JSON_UNESCAPED_SLASHES) !!}</script>
 @endpush
 
-@section('content')
-<section>
+@section('hero')
     <div class="wrap tool-shell">
         <span class="eyebrow">Free tool · full {{ $year }} payroll math</span>
         <h1>What's actually left of your German salary?</h1>
         <p class="sub">All six tax classes, every Bundesland, church tax, children, statutory or private insurance — the same formulas payroll uses, every constant sourced below.</p>
+    </div>
+@endsection
+
+@section('content')
+<section>
+    <div class="wrap tool-shell">
 
         <script type="application/json" id="tool-data">@json($toolData)</script>
 
@@ -45,7 +54,7 @@
 
             <div class="tfield">
                 <label>Tax class</label>
-                <div class="chips-row" id="nb-class">
+                <div class="chips-row chips-row--six" id="nb-class">
                     <button type="button" data-v="1" aria-pressed="true">I</button>
                     <button type="button" data-v="2" aria-pressed="false">II</button>
                     <button type="button" data-v="3" aria-pressed="false">III</button>
@@ -162,7 +171,7 @@
 
         <div class="tool-cta">
             <p>Salary sorted? Expadu handles <b>everything else about arriving</b> — the permits, the deadlines, the city.</p>
-            <a class="btn btn-primary" href="{{ route('register') }}">Start free</a>
+            <a class="btn btn-primary" href="#waitlist">Start free</a>
         </div>
     </div>
 </section>

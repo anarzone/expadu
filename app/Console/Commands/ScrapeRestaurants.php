@@ -52,7 +52,7 @@ class ScrapeRestaurants extends Command
             $elements = [];
             foreach (self::BBOXES as $bbox) {
                 $query = $this->buildQuery($osmType, $bbox);
-                $response = Http::asForm()->timeout(60)->post(self::OVERPASS_URL, ['data' => $query]);
+                $response = Http::asForm()->withUserAgent(ImportOsmSpots::USER_AGENT)->timeout(60)->post(self::OVERPASS_URL, ['data' => $query]);
 
                 if ($response->successful()) {
                     $elements = array_merge($elements, $response->json('elements') ?? []);
