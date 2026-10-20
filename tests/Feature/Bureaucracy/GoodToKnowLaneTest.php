@@ -50,7 +50,19 @@ function keysIn(array $sections, string $section): array
     return collect($sections[$section] ?? [])->pluck('key')->filter()->values()->all();
 }
 
-it('files a universal caveat under good to know, not under options', function () {
+it('files the unrecognized-title caveat under good to know, not under options', function () {
+    $sections = planSectionsFor([
+        'citizenship_group' => 'non_eu',
+        'purpose' => 'employment',
+        'permit_track' => 'blue_card',
+        'current_residence_title' => 'other',
+    ]);
+
+    expect(keysIn($sections, 'good_to_know'))->toContain('case.bc.verify_status_source')
+        ->and(keysIn($sections, 'options'))->not->toContain('case.bc.verify_status_source');
+});
+
+it('does not show the unrecognized-title caveat to someone with a recognised title', function () {
     $sections = planSectionsFor([
         'citizenship_group' => 'non_eu',
         'purpose' => 'employment',
@@ -58,8 +70,7 @@ it('files a universal caveat under good to know, not under options', function ()
         'current_residence_title' => 'blue_card',
     ]);
 
-    expect(keysIn($sections, 'good_to_know'))->toContain('case.bc.verify_status_source')
-        ->and(keysIn($sections, 'options'))->not->toContain('case.bc.verify_status_source');
+    expect(keysIn($sections, 'good_to_know'))->not->toContain('case.bc.verify_status_source');
 });
 
 it('still calls a real route an option', function () {
@@ -68,6 +79,7 @@ it('still calls a real route an option', function () {
     $sections = planSectionsFor([
         'citizenship_group' => 'non_eu',
         'purpose' => 'family',
+        'sponsor' => 'non_eu',
         'current_residence_title' => 'family_reunification',
         'case_goal' => 'renew_current_title',
         'sponsor_current_title' => 'settlement_permit_18c',

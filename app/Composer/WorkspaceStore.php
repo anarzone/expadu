@@ -6,7 +6,6 @@ use App\Models\ComposerWorkspace;
 use App\Models\User;
 use App\Places\PlaceIdentity;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -71,7 +70,7 @@ class WorkspaceStore
                 app(TasteSignals::class)->swappedAway($user, $displaced);
             }
             if ($input['action'] === 'proposal') {
-                DB::afterCommit(fn () => Cache::forget("composer:handoff:{$user->id}:{$input['token']}"));
+                DB::afterCommit(fn () => app(PrivatePlanCache::class)->forgetHandoff($user, $input['token']));
             }
 
             return $this->projectState($s) + ['revision' => $row->revision, 'refusal' => null];
@@ -103,7 +102,7 @@ class WorkspaceStore
 
                 return null;
             case 'proposal':
-                $plan = Cache::get("composer:handoff:{$user->id}:{$input['token']}");
+                $plan = app(PrivatePlanCache::class)->handoff($user, $input['token']);
                 $this->require(is_array($plan), 'expired', 'This suggestion expired. Please ask again.');
                 $date = CarbonImmutable::parse($plan['constraints']['window_start'])->setTimezone('Europe/Berlin')->format('Y-m-d');
                 $this->apply($s, $date, $plan, 'Planned '.$this->weekday($date));
@@ -396,6 +395,53 @@ class WorkspaceStore
         throw new WorkspaceRefusal('not_found', 'This earlier proposal is no longer available.');
     }
 
+    /**
+     * Erasure worker: strip Paperwork appointments from every stored plan copy
+     * (plans, each change's before and after, earlier proposals) and their names
+     * from change rows, labels and replies. Personal plans the person typed
+     * themselves stay; they are not Paperwork data.
+     */
+    public function purgeAppointmentCopies(int $userId): void
+    {
+        DB::transaction(function () use ($userId): void {
+            $row = ComposerWorkspace::query()->where('user_id', $userId)->lockForUpdate()->first();
+            if ($row === null) {
+                return;
+            }
+            $s = $this->state($row);
+            $isAppointment = fn (array $slot): bool => ($slot['is_appointment'] ?? false) === true || ($slot['type'] ?? null) === 'appointment';
+            $copies = [...array_values($s['plans']), ...array_column($s['changes'], 'before'), ...array_column($s['changes'], 'after'),
+                ...array_column(array_merge(...array_column($s['conversations'], 'messages')), 'plan')];
+            $found = collect($copies)->filter()->flatMap(fn (array $plan) => $plan['slots'] ?? [])->filter($isAppointment);
+            $ids = $found->pluck('id')->filter()->all();
+            $names = $found->pluck('name')->filter()->unique()->all();
+            $mentions = fn (?string $text): bool => $text !== null && collect($names)->contains(fn (string $name) => str_contains($text, $name));
+            $strip = fn (?array $plan): ?array => $plan === null ? null : [...$plan, 'slots' => array_values(array_filter($plan['slots'] ?? [], fn (array $slot) => ! $isAppointment($slot)))];
+            $rows = fn (array $rows): array => array_values(array_filter($rows, fn (array $row): bool => ! in_array($row['id'], $ids, true)));
+
+            $s['plans'] = array_map($strip, $s['plans']);
+            $s['changes'] = array_map(fn (array $change): array => [...$change, 'before' => $strip($change['before']), 'after' => $strip($change['after']),
+                'rows' => $rows($change['rows']), 'label' => $mentions($change['label']) ? 'Changed your plan' : $change['label']], $s['changes']);
+            foreach ($s['conversations'] as $i => $conversation) {
+                foreach ($conversation['messages'] as $j => $message) {
+                    if (is_array($message['plan'] ?? null)) {
+                        $message['plan'] = $strip($message['plan']);
+                    }
+                    if (isset($message['rows'])) {
+                        $message['rows'] = $rows($message['rows']);
+                    }
+                    if ($message['role'] === 'assistant' && $mentions($message['text'])) {
+                        $message['text'] = 'Your plan changed.';
+                    }
+                    $s['conversations'][$i]['messages'][$j] = $message;
+                }
+            }
+            if ($s !== $row->state) {
+                $row->update(['state' => $s, 'revision' => $row->revision + 1]);
+            }
+        });
+    }
+
     private function state(?ComposerWorkspace $row): array
     {
         return $this->upgrade->toCurrent($row?->state ?? $this->initial());
@@ -499,9 +545,23 @@ class WorkspaceStore
             $start = CarbonImmutable::parse($slot['start_at'])->setTimezone('Europe/Berlin');
             $end = CarbonImmutable::parse($slot['end_at'])->setTimezone('Europe/Berlin');
             $this->require($end > $start && $start->format('Y-m-d') === $plan['date'] && $end->format('Y-m-d') === $plan['date'], 'invalid_time', 'Choose an end time after the start, within the same day.');
-            $this->require($previous === null || $start >= CarbonImmutable::parse($previous['end_at']), 'clash', ($previous['name'] ?? 'An activity').' overlaps '.$slot['name'].'.');
+            $this->require($previous === null || $start >= CarbonImmutable::parse($previous['end_at']) || $this->recordedOverlap($previous, $slot), 'clash', ($previous['name'] ?? 'An activity').' overlaps '.$slot['name'].'.');
             $previous = $slot;
         }
+    }
+
+    /**
+     * Recorded appointments are facts from the person's records, not choices:
+     * two that clash stay with the plan's conflict warning, and an appointment
+     * of unknown length may run into what follows.
+     */
+    private function recordedOverlap(array $previous, array $slot): bool
+    {
+        $recorded = fn (array $item): bool => ($item['is_appointment'] ?? false) === true;
+
+        return ($recorded($previous) && $recorded($slot))
+            || ($recorded($previous) && ($previous['duration_known'] ?? true) === false)
+            || ($slot['may_overlap_previous'] ?? false) === true;
     }
 
     /** One plan card per day in a conversation; it shows the day as it is. */

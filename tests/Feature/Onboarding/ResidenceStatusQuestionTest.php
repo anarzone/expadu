@@ -48,9 +48,9 @@ it('still records a D visa entry as both the entry mode and the current title', 
 
     $user->refresh();
 
-    // entry_mode is a profile attribute; current_residence_title is a case
-    // fact, so they live in different stores.
-    expect($user->profile_attributes['entry_mode'] ?? null)->toBe('d_visa')
+    // Both explicit answers use the same encrypted dossier, not a second profile copy.
+    expect(confirmedFact($user, 'entry_mode'))->toBe('d_visa')
+        ->and($user->profile_attributes['entry_mode'] ?? null)->toBeNull()
         ->and(confirmedFact($user, 'current_residence_title'))->toBe('national_d_visa');
 });
 

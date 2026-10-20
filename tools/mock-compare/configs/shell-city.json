@@ -1,0 +1,99 @@
+{
+    "name": "shell-city",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": "header",
+        "before": [
+            {
+                "click": "header button.city"
+            },
+            {
+                "wait": 300
+            }
+        ]
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": "header",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            {
+                "click": "header button.shell-city"
+            },
+            {
+                "wait": 300
+            }
+        ]
+    },
+    "contentNote": "The note's words are the coordinator's ('Expadu covers Cologne for now.') in place of the mock's demo note ('Demo cities · content stays Cologne').",
+    "pairs": [
+        {
+            "name": "city (open)",
+            "mock": "header button.city",
+            "app": "header button.shell-city"
+        },
+        {
+            "name": "city panel",
+            "mock": "#location-popover",
+            "app": "#location-popover",
+            "pixels": false
+        },
+        {
+            "name": "search",
+            "mock": ".location-search",
+            "app": ".location-search"
+        },
+        {
+            "name": "search icon",
+            "mock": ".location-search svg",
+            "app": ".location-search svg"
+        },
+        {
+            "name": "search field",
+            "mock": ".location-search input",
+            "app": ".location-search input"
+        },
+        {
+            "name": "results",
+            "mock": ".location-results",
+            "app": ".location-results"
+        },
+        {
+            "name": "Cologne",
+            "mock": ".location-option",
+            "app": ".location-option"
+        },
+        {
+            "name": "Cologne pin",
+            "mock": ".location-mark",
+            "app": ".location-mark"
+        },
+        {
+            "name": "Cologne name",
+            "mock": ".location-copy strong",
+            "app": ".location-copy strong"
+        },
+        {
+            "name": "Cologne country",
+            "mock": ".location-copy small",
+            "app": ".location-copy small"
+        },
+        {
+            "name": "selected",
+            "mock": ".location-selected",
+            "app": ".location-selected"
+        },
+        {
+            "name": "note",
+            "mock": ".location-note",
+            "app": ".location-note",
+            "contentDiffers": true,
+            "ignore": ["h"]
+        }
+    ]
+}

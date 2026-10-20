@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Alerts\AlertClassifier;
 use App\Models\Alert;
 use App\Notifications\BureaucracyDeadlineNotification;
+use App\Notifications\BureaucracyPlanNotification;
 use App\Notifications\EventReminderNotification;
 use App\Notifications\MarketClosureNotification;
 use App\Notifications\PermanentResidencyEligibleNotification;
@@ -58,6 +59,7 @@ class CreateAlertFromNotification
             || $notification instanceof RhineFloodNotification
             || $notification instanceof MarketClosureNotification
             || $notification instanceof BureaucracyDeadlineNotification
+            || $notification instanceof BureaucracyPlanNotification
             || $notification instanceof PermanentResidencyEligibleNotification) {
             return;
         }

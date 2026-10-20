@@ -2,6 +2,7 @@
 
 namespace App\Home;
 
+use App\Bureaucracy\ReadModel\PlanAttention;
 use App\ContextEngine\ActionBus;
 use App\ContextEngine\ScoredAction;
 use App\Models\UserEvent;
@@ -297,40 +298,31 @@ class TileComposer
     private function deadlineTiles(HomeContext $context): array
     {
         $tiles = [];
-
-        foreach ($context->openTasks as $userTask) {
-            $status = $userTask->deadline_status;
-            $urgency = $status['urgency'];
-
+        foreach (app(PlanAttention::class)->for(app(CurrentBureaucracyPlan::class)->for($context)) as $row) {
+            $urgency = $row['urgency'];
             $score = match ($urgency) {
                 'overdue' => self::SCORE_OVERDUE,
-                'critical' => self::SCORE_CRITICAL_DEADLINE,
-                'urgent' => self::SCORE_URGENT_DEADLINE,
+                'critical', 'appointment_today' => self::SCORE_CRITICAL_DEADLINE,
+                'urgent', 'appointment_tomorrow' => self::SCORE_URGENT_DEADLINE,
                 default => null,
             };
-
             if ($score === null) {
                 continue;
             }
-
             $tiles[] = new Tile(
                 type: 'bureaucracy_deadline',
-                title: $userTask->task->title,
-                subtitle: $status['label'],
+                title: $row['title'],
+                subtitle: $row['label'],
                 emoji: '📋',
-                severity: $urgency === 'overdue' ? 'danger' : ($urgency === 'critical' ? 'warn' : 'info'),
-                score: $score + ($status['days_remaining'] !== null ? -0.01 * max($status['days_remaining'], 0) : 0),
+                severity: $urgency === 'overdue' && $row['kind'] === 'legal_due' ? 'danger' : 'warn',
+                score: $score,
                 href: '/bureaucracy',
-                key: "task:{$userTask->id}",
-                meta: [
-                    'user_task_id' => $userTask->id,
-                    'urgency' => $urgency,
-                    'days_remaining' => $status['days_remaining'],
-                ],
+                key: 'bureaucracy:'.$row['id'],
+                meta: ['person_id' => $row['person_id'], 'process_id' => $row['process_id'], 'event_id' => $row['id'],
+                    'assessment_revision' => $row['assessment_revision'], 'temporal_kind' => $row['kind'],
+                    'action' => $row['action'], 'urgency' => $urgency, 'days_remaining' => $row['days_remaining']],
             );
         }
-
-        // Cap deadline tiles so one user's backlog doesn't fill the screen.
         usort($tiles, fn (Tile $a, Tile $b) => $b->score <=> $a->score);
 
         return array_slice($tiles, 0, 3);

@@ -29,12 +29,14 @@ final class CurrentCasePlan
                 ->whereKey($case->getKey())
                 ->lockForUpdate()
                 ->firstOrFail();
+            if ($lockedCase->status === 'erased') {
+                return $this->presenter->preview($lockedCase, [], 'not_covered') + ['record_status' => 'erased'];
+            }
             $snapshot = $this->snapshotStore->store($lockedCase);
 
             // The plan asks first, because a question it raises can change what
-            // the plan asserts. Only when it has nothing left do we fall back to
-            // the wider sweep — which finds facts gating published-but-unapproved
-            // branches, the ones nothing else in the app would ever ask for.
+            // the plan asserts. Essential orientation is available when no
+            // approved dependency needs an answer; legacy rules never ask questions.
             $question = $this->questionSelector->select($lockedCase)
                 ?? $this->questionSelector->ask(
                     $lockedCase,

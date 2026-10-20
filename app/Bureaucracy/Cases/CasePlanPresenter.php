@@ -13,6 +13,7 @@ use App\Models\BureaucracyCaseQuestion;
 use App\Models\BureaucracyFactConflict;
 use App\Models\BureaucracyPlanSnapshot;
 use App\Models\UserTask;
+use App\Privacy\ProcessingPurpose;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -97,11 +98,14 @@ final class CasePlanPresenter
      */
     private function ai(BureaucracyCase $case): array
     {
-        $available = ! $this->factExtractor instanceof UnavailableCaseFactExtractor;
+        $available = ! $this->factExtractor instanceof UnavailableCaseFactExtractor && ProcessingPurpose::FactExtraction->available();
 
         return [
             'available' => $available,
-            'consented' => $case->hasCurrentAiConsent(),
+            'consented' => false,
+            'consent_scope' => 'single_request',
+            'notice_version' => config('bureaucracy_privacy.notice_version'),
+            'provider_version' => ProcessingPurpose::FactExtraction->providerVersion(),
             'processor_name' => $available ? (string) config('services.bureaucracy_llm.processor_name') : null,
             'processor_privacy_url' => $available ? (string) config('services.bureaucracy_llm.processor_privacy_url') : null,
             'remaining_quota' => $available ? $this->aiQuota->remaining($case) : 0,
@@ -281,6 +285,7 @@ final class CasePlanPresenter
             'family_reunification' => 'Family reunification permit',
             'settlement_permit_9' => 'Permanent residence (§9)',
             'settlement_permit_18c' => 'Permanent residence (§18c)',
+            'settlement_permit_unknown' => 'Permanent residence (section not known)',
             'family_reunification_permit' => 'Family reunification permit',
             'renew_current_title' => 'Renew my current title',
             'settlement_permit' => 'Apply for a settlement permit',

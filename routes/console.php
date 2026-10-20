@@ -41,6 +41,17 @@ Schedule::command('bureaucracy:remind')->timezone('Europe/Berlin')->dailyAt('09:
 // Transit news feed (read by transit:check-disruptions on its next run)
 Schedule::command('news:scrape')->everyFiveMinutes()->withoutOverlapping()->runInBackground();
 
+// Paperwork v2 upkeep: expire processing permits and interaction state, run
+// queued erasures and reassessments (reassessment reminders feed the bus).
+Schedule::command('bureaucracy:process-erasures')->everyMinute()->withoutOverlapping(5)->onOneServer()->runInBackground();
+Schedule::command('bureaucracy:process-reassessments')->everyMinute()->withoutOverlapping(5)->onOneServer()->runInBackground();
+Schedule::command('bureaucracy:prune-processing')->everyFiveMinutes()->withoutOverlapping()->onOneServer()->runInBackground();
+Schedule::command('bureaucracy:prune-interactions')->everyFiveMinutes()->withoutOverlapping()->onOneServer()->runInBackground();
+Schedule::command('bureaucracy:erase-unguarded-dependents')->hourly()->withoutOverlapping()->onOneServer()->runInBackground();
+// Re-check every card's source quotes against the official pages. A pass keeps a checked card
+// published, a failure withdraws and escalates it; changes ship as a new catalogue release.
+Schedule::command('bureaucracy:verify-sources --deploy')->timezone('Europe/Berlin')->dailyAt('05:15')->withoutOverlapping()->onOneServer()->runInBackground();
+
 // Events
 Schedule::command('events:scrape')->everyThirtyMinutes()->withoutOverlapping()->runInBackground();
 Schedule::command('events:import-official --days=40')->hourly()->withoutOverlapping()->onOneServer()->runInBackground();

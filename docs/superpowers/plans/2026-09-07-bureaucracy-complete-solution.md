@@ -12,13 +12,20 @@
 
 ## Global constraints
 
+- **Owner scope change, 8 September:** do not transfer saved legacy task/document
+  progress into the replacement workflows. Preserve account identity and confirmed
+  answers; start replacement workflow/evidence readiness from their own explicit
+  events. Legacy rows may remain stored but must not influence new totals, readiness,
+  completion or reminders. This removes progress-map/replay work from T15 and its
+  acceptance gates below, not account/fact safety or QA isolation. No bulk data
+  deletion or live reset is authorised by this change.
 - Separate plans for family members are required in this release, not an optional next phase. Account membership alone must not grant access to another adult's information.
 - Preserve `Task::authoritative()` and every `RuleSourcePolicy` check during migration and in the successor publication adapter. Neither a passing test nor a working link is legal-content approval.
 - Unknown is not false, non-EU, visa-free, self-employed, eligible, complete or safe to ignore. A skipped answer stays unknown.
 - No AI-authored legal content. AI may propose schema-bound facts; confirmation, authorisation and deterministic assessment remain mandatory.
 - Keep historical facts and progress. Do not relabel a past legal title as the current one or treat an appointment as an application.
-- No live AI calls, legal-content approval, bulk live migration, push, merge or deployment is authorised by this plan alone.
-- Preserve concurrent work. The current `staging` checkout is dirty, including `BureaucracyController.php`; do not stash, reset, switch or overwrite it. The isolated-worktree choice requested earlier is still unresolved.
+- No live AI calls, bulk live migration, push, merge or deployment is authorised. The owner subsequently authorised source-based content review; record that provenance honestly, not as an independent legal review.
+- Preserve concurrent work. The current `staging` checkout is dirty; do not stash, reset, switch or overwrite it. The authorised isolated checkout is `.claude/worktrees/bureaucracy-backend-v2` on `codex/bureaucracy-backend-v2`.
 - All source edits use `apply_patch`, test-first development and normal commit hooks. Tests must use isolated data services, not the running app's database or shared Redis.
 - Keep city and authority differences in reviewed data/configuration. Cologne is the first supported jurisdiction, not an assumption embedded in every class.
 - This is the complete implementation scope, delivered in ordered increments. Completing an early increment does not complete the solution.
@@ -88,12 +95,22 @@ Historical items below include regressions already fixed in earlier commits. The
 
 Keep existing users as login identities. Add a Bureaucracy workspace for organisation, not automatic data sharing. Keep `BureaucracyCase` as a person's dossier so encrypted facts and their history can be migrated without inventing a second competing fact store. Add process instances below the dossier.
 
+**Execution refinement, 8 September:** a linked account has one canonical person,
+not a duplicate dossier for every household invitation. Workspace memberships are
+separate from that identity and from access grants. Accepting an invitation links
+the authenticated recipient's existing person to that workspace and grants only
+the scopes they explicitly accept; it never copies or merges facts by email/name.
+The person's original workspace remains organisational metadata, not access authority.
+This closes a duplication risk in the earlier per-workspace account uniqueness.
+
 All new tables use generated migration timestamps, foreign keys, explicit indexes and timestamps. No deployed migration is edited. Table names below are logical names with the `bureaucracy_` prefix unless stated otherwise.
 
 | Entity | Essential fields and constraints |
 |---|---|
 | `workspaces` | `id`, unique `owner_user_id`; ownership manages the workspace, not another adult's dossier |
-| `people` | `id`, `workspace_id`, nullable `account_user_id`, encrypted display label, `record_version`; unique linked account per workspace; unlinked records contain only the minimum needed for an invitation/authorised dependent |
+| `people` | `id`, original `workspace_id`, nullable globally unique `account_user_id`, encrypted display label, `record_version`; unlinked dependent records contain only the authorised minimum |
+| `workspace_people` | unique workspace/person membership; organisation only, never an access grant |
+| `invitations` | workspace, inviter, hashed recipient identity and expiring single-use token, requested scopes, accepted/revoked timestamps; acceptance links a canonical authenticated person |
 | `access_grants` | `person_id`, `grantee_user_id`, granted scopes, grantor, authority basis/reference, accepted/revoked/expiry timestamps, version; no sensitive dossier in invite tokens |
 | `relationships` | two person IDs in an authorised workspace, type, effective interval, confirmation provenance; marriage/sponsor/guardian roles are separate assertions, not inferred from account membership |
 | existing `cases` | add `person_id`, unique per person, revision; make legacy `user_id` nullable and use it only for the original account holder during migration; new dependent dossiers use explicit person ownership, not that compatibility column; remove its old unique constraint only after cutover adapters are safe |
@@ -148,7 +165,7 @@ Assessment outputs separate concepts:
 relevance: relevant | not_relevant | unknown
 coverage: covered | partial | unsupported | review_required
 criterion: met | unmet | unknown | conflict
-assessment: requirements_met | not_met | needs_information | not_assessable
+assessment: requirements_met | supported_preparation | not_met | needs_information | not_assessable
 workflow: not_started | preparing | blocked | submitted | waiting_authority |
           action_required | completed | cancelled
 ```
@@ -430,6 +447,15 @@ Paths in this section are repository-relative. “Create” marks proposed files
 
 **Depends on:** T05–T14.
 
+**Scope amendment:** saved-progress transfer was waived by the owner. Do not build
+`ProgressMigrationMap`, merge/split progress replay, old checkbox availability
+imports, or legacy workflow/appointment/submission imports. Their older checklist
+entries below are superseded. Retain existing records without replaying them. The
+remaining work is safe account/dossier attachment, confirmed-fact provenance,
+idempotent fact conversion, explicit uncertainty and QA reset/preview isolation.
+Recorded appointments in new v2 processes remain supported; this amendment does
+not authorise deleting either old appointments or new v2 work.
+
 **Create:** `app/Bureaucracy/Migration/LegacyMigrationPlanner.php`, `BackfillPersonDossiers.php`, `ProgressMigrationMap.php`, `ReconcileMigration.php`; `app/Console/Commands/Bureaucracy/MigrateDossiersCommand.php`; `tests/Feature/Bureaucracy/MigrationRehearsalTest.php`, `FamilyQaPreviewTest.php`; schema cutover migration removing the unique `cases.user_id` constraint only at the safe point.
 **Modify:** `app/Bureaucracy/QA/ResetPersonaState.php`, `ScenarioFactSynchronizer.php`, `BureaucracyPersonas.php`, `BureaucracyDemoController.php` and existing persona tests.
 
@@ -438,7 +464,7 @@ Paths in this section are repository-relative. “Create” marks proposed files
 - [ ] Map task keys using reviewed T07 mappings. One-to-one progress is preserved. Merge/split cases use explicit step-level mappings or retain unmapped history and request reconfirmation; never mark a newly introduced requirement complete because a former broad task was complete.
 - [ ] Import document checkmarks as attributed availability reports for that legacy use only. Preserve appointment and submission events separately. Old snapshots are archived/untrusted for decisions; reset only task-owned cache namespaces.
 - [ ] Remove the legacy unique account constraint after all account-only routes select the explicit account holder and all new commands enforce person scope. Re-run backfill and assert zero duplicate people/processes/events.
-- [ ] Keep QA preview read-only and separate from real dossiers. QA “become” resets only the test subject's state. Test A→B→A, repeated same persona, all title options, another account's unchanged records, family grants and no stale badge/conflict. Do not give real users admin rights as part of migration.
+- [ ] Keep QA preview read-only and separate from real dossiers. Test A→B→A, repeated same persona, all title options, another account's unchanged records, family grants and no stale badge/conflict. Do not give real users admin rights as part of migration. Implementation resolution, 8 September: the old “become”/reset commands target the acting real account and have no trusted disposable-subject boundary, so they are retired with explicit 410 errors rather than reused for family QA. The canonical in-memory preview needs no reset; persistent interaction tests run in isolated test services. Frontend preview integration remains required. Legacy CLI provisioning is not a cutover step and must not overwrite existing accounts.
 
 **Exit:** restore/replay on disposable databases passes, account/fact/progress totals reconcile, unresolved records remain visibly unresolved, and no deletion/prune is necessary for cutover.
 
