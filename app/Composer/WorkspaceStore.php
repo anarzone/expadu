@@ -151,6 +151,24 @@ class WorkspaceStore
                 $this->undo($s, $input['change'] ?? null);
 
                 return null;
+            case 'complete':
+            case 'uncomplete':
+                // A check mark on a plan, not a plan change: no change row, no
+                // Undo entry, no message. Only the account's own row is read.
+                $date = $input['date'];
+                $this->require(isset($s['plans'][$date]), 'not_in_plan', 'That plan is no longer in your day.');
+                $identity = app(PlaceIdentity::class);
+                $s['plans'][$date] = $identity->normalizePlan($s['plans'][$date]);
+                $id = $identity->candidateIds([$input['id']])[0];
+                $index = collect($s['plans'][$date]['slots'])->search(fn ($slot) => $slot['id'] === $id);
+                $this->require($index !== false, 'not_in_plan', 'That plan is no longer in your day.');
+                if ($input['action'] === 'complete') {
+                    $s['plans'][$date]['slots'][$index]['completed_at'] ??= now('Europe/Berlin')->toIso8601String();
+                } else {
+                    unset($s['plans'][$date]['slots'][$index]['completed_at']);
+                }
+
+                return null;
             default:
                 return $this->mutate($s, $input);
         }

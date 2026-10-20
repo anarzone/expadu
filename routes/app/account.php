@@ -35,6 +35,17 @@ if (! app()->environment('production')) {
     Route::get('dev/cards', fn () => Inertia::render('dev/cards'))->name('dev.cards');
 }
 
+// The shared primitives (components/ui), for checking against the mock —
+// local + staging only, like the design-system reference below.
+Route::get('dev/primitives', function () {
+    abort_if(
+        app()->isProduction() && ! str_contains((string) request()->getHost(), 'staging'),
+        404,
+    );
+
+    return Inertia::render('dev/primitives');
+})->name('dev.primitives');
+
 // Design-system reference — visible on local + staging, hidden on
 // production. Staging runs APP_ENV=production, so gate on the host.
 Route::get('dev/design-system', function () {

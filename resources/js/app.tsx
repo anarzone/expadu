@@ -2,7 +2,7 @@ import { createInertiaApp, router } from '@inertiajs/react';
 import { Component, StrictMode } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
-import { showToast } from '@/components/flash-toast';
+import { showToast } from '@/components/ui/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { resolvePage } from '@/lib/resolve-page';
 import '../css/app.css';
@@ -165,9 +165,9 @@ router.on('error', (event) => {
 
     if (typeof first === 'string') {
         // The toast is held in a module store, so calling this even during
-        // Inertia's error re-render (which remounts <FlashToast>) is safe —
+        // Inertia's error re-render (which can remount the page) is safe —
         // the freshly-mounted toast reads the latest message.
-        showToast(first);
+        showToast(first, { error: true });
     }
 });
 
@@ -189,6 +189,7 @@ router.on('invalid', (event) => {
               : status !== undefined && status >= 500
                 ? 'The server hit an error. Nothing was saved — try again in a moment.'
                 : 'Something blocked the response — an ad blocker or browser extension may be interfering. Try turning it off for this site, or reload.',
+        { error: true },
     );
 });
 
@@ -196,5 +197,6 @@ router.on('invalid', (event) => {
 router.on('exception', () => {
     showToast(
         "Couldn't reach the server. Check your connection and try again.",
+        { error: true },
     );
 });
