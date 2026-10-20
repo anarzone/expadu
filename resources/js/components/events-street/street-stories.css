@@ -1,0 +1,310 @@
+/* The street's hour rings and story viewer: the mock's Stories board
+   (events-next street-art.js `rings` and `story`, wall.css "Stories in
+   the sky"). The viewer sits over the shell (60) and under sheets and
+   toasts (79 and up). */
+
+/* ---------- Hour rings, floating in the street's sky ---------- */
+
+.st-rings {
+    position: absolute;
+    z-index: 4;
+}
+
+.st-rings > div {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.st-rings > div::-webkit-scrollbar {
+    display: none;
+}
+
+.st-rings button {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text, #211d15);
+    font: inherit;
+    cursor: pointer;
+}
+
+.st-ring {
+    display: grid;
+    place-items: center;
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 200deg,
+        #f2c94c,
+        #ef7d2a,
+        #c23b0e,
+        #e8cc6e,
+        #f2c94c
+    );
+}
+
+.st-ring[data-seen] {
+    background: #cdbfa3;
+}
+
+/* An hour's ring shows its first poster's picture. */
+.st-art {
+    position: relative;
+    display: block;
+    width: 66px;
+    height: 66px;
+    overflow: hidden;
+    border: 3px solid #faf6ee;
+    border-radius: 50%;
+    background: #e6ddcb;
+    container-type: inline-size;
+}
+
+.st-ring-label {
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: #fffdf8;
+    box-shadow: 0 2px 6px #211d1526;
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.st-ring-label[data-seen] {
+    font-weight: 500;
+}
+
+/* A phone: 12px in from the sky's corner, level with the weather, and
+   sideways up to it (EventsStreet sets the right edge). */
+.st-rings--phone {
+    top: 12px;
+    left: 12px;
+}
+
+.st-rings--phone > div {
+    gap: 12px;
+}
+
+/* More rings than room: the row fades where it's cut. */
+.st-rings--phone > div[data-more] {
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+
+/* A desktop or tablet: in the sky, 30% along the street, the circles
+   level with the weather (EventsStreet sets left, top and max-width). */
+.st-rings--desktop > div {
+    gap: 14px;
+    padding: 4px 4px 8px;
+}
+
+.st-rings--desktop .st-ring {
+    width: 68px;
+    height: 68px;
+    box-shadow: 0 6px 16px #211d1540;
+}
+
+.st-rings--desktop .st-art {
+    width: 62px;
+    height: 62px;
+}
+
+/* ---------- The story viewer ---------- */
+
+.st-story {
+    position: fixed;
+    z-index: 71;
+    display: flex;
+    flex-direction: column;
+    color: #fff;
+    font-size: 16px;
+    line-height: 1.5;
+    outline: none;
+}
+
+/* The page's own text size on a phone, as in the mock. */
+.st-story--phone {
+    inset: 0;
+    font-size: 15px;
+}
+
+/* The mock's story buttons keep the browser's own padding (its own
+   buttons only: a poster's buttons keep theirs). */
+.st-story-head button,
+.st-story-tap,
+.st-story-arrow {
+    padding: 1px 6px;
+}
+
+.st-story--desktop {
+    top: max(16px, calc(50vh - 450px));
+    left: calc(50% - 230px);
+    width: 460px;
+    height: min(900px, calc(100vh - 32px));
+    overflow: hidden;
+    border-radius: 22px;
+    box-shadow: 0 30px 80px -20px #000a;
+}
+
+.st-story-scrim {
+    position: fixed;
+    z-index: 70;
+    inset: 0;
+    background: rgb(20 16 30 / 0.62);
+    backdrop-filter: blur(3px);
+}
+
+.st-story-arrow {
+    position: fixed;
+    z-index: 72;
+    top: calc(50vh - 24px);
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border: 1px solid #e6ddcb;
+    border-radius: 50%;
+    background: #fffdf8;
+    box-shadow: 0 4px 12px -6px #0005;
+    color: #211d15;
+    cursor: pointer;
+}
+
+.st-story-arrow--prev {
+    left: calc(50% - 300px);
+}
+
+.st-story-arrow--next {
+    left: calc(50% + 252px);
+}
+
+.st-story-arrow svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.st-story-bars {
+    display: flex;
+    gap: 4px;
+    padding: 12px 12px 0;
+}
+
+.st-story-bars > span {
+    flex: 1;
+    height: 3px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: rgb(255 255 255 / 0.35);
+}
+
+/* Each bar is drawn full and scaled, so its fill runs on the compositor. */
+.st-story-bars i {
+    display: block;
+    height: 100%;
+    background: #fff;
+    transform: scaleX(0);
+    transform-origin: left;
+}
+
+.st-story-bars i[data-done] {
+    transform: none;
+}
+
+.st-story-head {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 8px 0 14px;
+}
+
+.st-story-hour {
+    display: flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 7px;
+    background: #1d4d8f;
+    box-shadow: inset 0 0 0 2px #fff;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.st-story-count {
+    font-size: 13px;
+    line-height: 1.2;
+    text-shadow: 0 1px 2px #0006;
+}
+
+.st-story-pause,
+.st-story-close {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: none;
+    color: #fff;
+    cursor: pointer;
+}
+
+.st-story-pause {
+    margin-left: auto;
+    filter: drop-shadow(0 1px 2px #0006);
+}
+
+.st-story-pause svg {
+    display: block;
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
+}
+
+.st-story-close {
+    font-size: 26px;
+}
+
+.st-story-stage {
+    position: relative;
+    display: grid;
+    flex: 1;
+    place-items: center;
+    touch-action: none;
+}
+
+.st-story-tap {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: calc((100% - 300px) / 2);
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.st-story--desktop .st-story-tap {
+    width: calc((100% - 380px) / 2);
+}
+
+.st-story-tap--prev {
+    left: 0;
+}
+
+.st-story-tap--next {
+    right: 0;
+}
+
+.st-story-poster {
+    position: relative;
+    filter: drop-shadow(0 20px 30px rgb(0 0 0 / 0.4));
+}

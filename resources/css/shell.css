@@ -120,9 +120,13 @@ html {
 .shell-nav > a:hover {
     background: var(--color-bg-quiet);
 }
-.shell-nav > a[aria-current],
-.shell-nav > a:active {
+.shell-nav > a[aria-current] {
     background: var(--color-select-bg);
+}
+/* Pressed or reached by keys, a section takes the selected tint at 75%,
+   as the mock's ::before does (shell-review.css). */
+.shell-nav > a:is(:active, :focus-visible):not([aria-current]) {
+    background: color-mix(in srgb, var(--color-select-bg) 75%, transparent);
 }
 
 /* City, Saved and the account, at the header's end. */
@@ -422,7 +426,9 @@ html {
 .shell-account-menu h2 {
     margin: 0 0 8px;
     font-size: var(--text-section);
-    font-weight: var(--weight-semibold);
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
+    letter-spacing: -0.7px;
 }
 .shell-account-menu p {
     margin: 6px 0 0;
@@ -434,23 +440,31 @@ html {
 .shell-account-menu [role='menuitem'] {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
     width: 100%;
     min-height: 44px;
-    padding: 0 10px;
-    margin-inline: -10px;
-    box-sizing: content-box;
-    border-radius: var(--radius-md);
+    padding: 0;
+    border: 0;
+    background: none;
     color: var(--color-text);
+    font: inherit;
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
+    text-align: start;
     text-decoration: none;
-    outline: none;
     cursor: pointer;
 }
+/* As the mock's Sign out: the words take the action colour, no fill. */
 .shell-account-menu [role='menuitem'][data-highlighted] {
-    background: var(--color-bg-quiet);
+    color: var(--color-action-text);
+    outline: none;
+}
+.shell-account-menu [role='menuitem']:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.shell-account-links [role='menuitem'] {
+    justify-content: space-between;
+    gap: 8px;
 }
 .shell-account-menu [role='menuitem'] b {
     min-width: 20px;
@@ -467,13 +481,12 @@ html {
     padding-top: 4px;
     border-top: 1px solid var(--color-border);
 }
-.shell-account-out {
-    margin-top: 4px;
+/* The mock's Sign out (today-header.css .header-account-out): a line
+   above it, then the words. */
+.shell-account-out [role='menuitem'] {
+    margin-top: 12px;
     padding-top: 4px;
     border-top: 1px solid var(--color-border);
-}
-.shell-account-out [role='menuitem'][data-highlighted] {
-    color: var(--color-action-text);
 }
 
 /* ── Tablets (701–999): compact sections; the city shows its pin, Composer
@@ -656,6 +669,7 @@ html {
         border-radius: var(--radius-round);
         background: var(--color-select-text);
         color: #fff;
+        box-shadow: 0 4px 14px #183f4426;
         cursor: pointer;
         transition:
             translate var(--duration-base) ease,
@@ -774,18 +788,25 @@ html {
 .composer-tray:has(textarea:focus) {
     box-shadow:
         0 0 0 1px var(--color-border-strong),
-        0 8px 28px #3e352b1c;
+        0 4px 20px #3e352b0d;
+}
+/* Every icon in the tray is 20px, as the mock's are. */
+.composer-tray svg {
+    width: 20px;
+    height: 20px;
 }
 :root.keyboard-open .composer-tray {
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
 }
 .composer-tray textarea {
     display: block;
-    width: 100%;
+    /* Inset 8px a side, as the mock's request sits in its .composer-entry. */
+    width: calc(100% - 16px);
     min-height: 52px;
     max-height: 120px;
     box-sizing: border-box;
-    padding: 4px 8px;
+    margin-inline: 8px;
+    padding: 4px 0;
     border: 0;
     outline: 0;
     resize: none;
@@ -811,8 +832,10 @@ html {
 .composer-tray-actions > button {
     display: grid;
     place-items: center;
+    gap: 7px;
     width: 44px;
     height: 44px;
+    padding: 8px;
     border: 0;
     border-radius: var(--radius-md);
     background: transparent;
@@ -823,8 +846,6 @@ html {
     background: var(--color-bg-quiet);
 }
 .composer-tray-actions > button svg {
-    width: 22px;
-    height: 22px;
     transition: transform 160ms ease;
 }
 .composer-tray-actions > button[aria-expanded='true'] svg {
@@ -854,6 +875,7 @@ html {
     color: var(--color-text);
     font-size: 15px;
     line-height: 1.5;
+    text-align: left;
     text-decoration: none;
 }
 .composer-tray-menu a:is(:hover, :focus-visible) {
@@ -864,13 +886,16 @@ html {
     border-top: 1px solid var(--color-border);
     border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
-.composer-tray-menu svg {
-    width: 18px;
-    height: 18px;
+/* An icon on its line of text, as the mock's inline icons sit
+   (its + and close, and its menu's icons). */
+.composer-tray-icon svg {
+    display: inline;
+    vertical-align: baseline;
 }
 .composer-tray-send {
     display: grid;
     place-items: center;
+    gap: 0;
     width: 44px;
     height: 44px;
     margin-left: auto;
@@ -884,10 +909,6 @@ html {
     transition:
         background-color 160ms ease,
         transform 160ms ease;
-}
-.composer-tray-send svg {
-    width: 20px;
-    height: 20px;
 }
 .composer-tray-send:disabled {
     background-color: transparent;
@@ -921,10 +942,6 @@ html {
         background-color 160ms ease,
         color 160ms ease;
 }
-.composer-tray-dismiss svg {
-    width: 18px;
-    height: 18px;
-}
 .composer-tray-dismiss:is(:hover, :focus-visible) {
     background: var(--color-bg-quiet);
     color: var(--color-text);
@@ -955,6 +972,7 @@ html {
     place-items: center;
     width: 32px;
     height: 32px;
+    padding: 1px 6px;
     border: 0;
     border-radius: var(--radius-round);
     background: transparent;
@@ -963,10 +981,6 @@ html {
 }
 .composer-tray-about button:hover {
     background: var(--color-bg-hover);
-}
-.composer-tray-about svg {
-    width: 14px;
-    height: 14px;
 }
 .composer-tray :is(a, button):focus-visible {
     outline: 2px solid var(--color-focus);
@@ -987,9 +1001,9 @@ html {
             0 24px 60px -24px #211d1599,
             0 0 0 100vmax rgb(33 29 21 / 0.12);
     }
+    /* Under the header it keeps the same shadow while you type. */
     .composer-tray:has(textarea:focus) {
         box-shadow:
-            0 0 0 1px var(--color-border-strong),
             0 24px 60px -24px #211d1599,
             0 0 0 100vmax rgb(33 29 21 / 0.12);
     }
@@ -1003,9 +1017,6 @@ html {
     }
     .composer-tray-about {
         max-width: calc(100% - 52px);
-    }
-    .composer-tray textarea {
-        width: calc(100% - 52px);
     }
     /* Under the header the menu opens down, onto the page, not off the
        top of the screen. */

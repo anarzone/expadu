@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Day\Contracts\RecordedAppointments;
 use App\Enums\EventCategory;
+use App\Models\ComposerWorkspace;
 use App\Models\Event;
+use App\Services\WeatherService;
 use App\Support\EventOccurrencePresenter;
+use App\Support\EventStartingPoint;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,20 +25,117 @@ class EventController extends Controller
 {
     public function __construct(private readonly EventOccurrencePresenter $presenter) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request, EventStartingPoint $points): Response
     {
-        $input = $request->validate(['date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01']]);
+        $input = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01'],
+            // A listing's details (?event=&start=) open on that listing's day.
+            'event' => ['nullable', 'integer'],
+            'start' => ['nullable', 'date', 'after_or_equal:2000-01-01', 'before:2100-01-01'],
+        ]);
         $today = CarbonImmutable::now('Europe/Berlin');
-        $day = isset($input['date']) ? CarbonImmutable::parse($input['date'], 'Europe/Berlin') : $today;
+        $day = match (true) {
+            isset($input['date']) => CarbonImmutable::parse($input['date'], 'Europe/Berlin'),
+            isset($input['start']) => CarbonImmutable::parse($input['start'])->setTimezone('Europe/Berlin')->startOfDay(),
+            default => $today,
+        };
+        $filters = $this->filters($request);
+        // The URL's starting point counts only as a public point or the
+        // person's own saved place; anything else is dropped.
+        $from = $points->resolve($filters['from'], $request->user());
+        $filters['from'] = $from['key'] ?? null;
+
+        if ($from === null && $filters['sort'] === 'closest') {
+            $filters['sort'] = 'soonest';
+        }
 
         return Inertia::render('events', [
             'date' => $day->toDateString(),
             'today' => $today->toDateString(),
-            'filters' => $this->filters($request),
-            'listings' => Event::occurringBetween($day->startOfDay(), $day->endOfDay())
+            'filters' => $filters,
+            'starting_point' => $from,
+            'saved_places' => $points->savedPlaces($request->user()),
+            'appointment' => $day->isSameDay($today) ? $this->appointment($request, $today) : null,
+            'catalogue' => $this->catalogue(),
+            'listings' => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
-                ->values(),
+                ->values()
+                ->all()),
+            // The street's sky and the rain warnings; the page draws a plain
+            // sky until it arrives, and says so when there is none.
+            'weather' => Inertia::defer(fn () => app(WeatherService::class)->getDayForecast($day->toDateString())),
         ]);
+    }
+
+    /**
+     * What the filters offer: every category and area the listed events
+     * have, on any day, as the mock's pickers do (its whole catalogue), so a
+     * choice can point to another day.
+     *
+     * @return array{categories: list<string>, areas: list<string>}
+     */
+    private function catalogue(): array
+    {
+        $categories = Event::query()->visible()->distinct()->pluck('category')
+            ->map(fn (?string $category) => EventCategory::fromLegacy($category)->value)
+            ->unique()->values()->all();
+        $areas = Event::query()->visible()
+            ->join('venues', 'venues.id', '=', 'events.venue_id')
+            ->whereNotNull('venues.veedel')
+            ->distinct()
+            ->orderBy('venues.veedel')
+            ->pluck('venues.veedel')
+            ->all();
+
+        return ['categories' => $categories, 'areas' => $areas];
+    }
+
+    /**
+     * The person's own last appointment today that has an end (recorded in
+     * Paperwork, or planned in their day), for the details' "For you" (how an
+     * event sits after it). Only what they recorded; nothing when none.
+     *
+     * @return array{title: string, end: string}|null
+     */
+    private function appointment(Request $request, CarbonImmutable $today): ?array
+    {
+        $user = $request->user();
+        $recorded = collect(app(RecordedAppointments::class)->between($user, $today->startOfDay(), $today->endOfDay()))
+            ->filter(fn ($item) => $item->endAt !== null)
+            ->map(fn ($item) => ['title' => $item->title, 'end' => $item->endAt]);
+        // An official appointment the person planned their day around (as
+        // DayProjection reads plans): it carries its end.
+        $planned = collect(ComposerWorkspace::query()->where('user_id', $user->id)->first()?->state['plans'][$today->toDateString()]['slots'] ?? [])
+            ->filter(fn (array $slot) => ($slot['type'] ?? null) === 'appointment' && is_string($slot['end_at'] ?? null) && is_string($slot['name'] ?? null))
+            ->map(fn (array $slot) => ['title' => $slot['name'], 'end' => CarbonImmutable::parse($slot['end_at'])]);
+        $last = $recorded->merge($planned)->sortBy(fn (array $a) => $a['end'])->last();
+
+        return $last === null ? null : [
+            'title' => $last['title'],
+            'end' => $last['end']->setTimezone('Europe/Berlin')->format('H:i'),
+        ];
+    }
+
+    /**
+     * The venue's recorded setting (indoor/outdoor) and step-free access,
+     * from place_features, in one query for the day: what the street's rain
+     * warning and the poster's Accessibility read. Unknown stays null.
+     *
+     * @param  list<array<string, mixed>>  $listings
+     * @return list<array<string, mixed>>
+     */
+    private function withVenueFacts(array $listings): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map(fn (array $l) => $l['venue']['place_id'] ?? null, $listings))));
+        $facts = $ids === [] ? collect() : DB::table('place_features')->whereIn('spot_id', $ids)->get(['spot_id', 'setting', 'wheelchair'])->keyBy('spot_id');
+
+        return array_map(function (array $listing) use ($facts): array {
+            $fact = $facts->get($listing['venue']['place_id'] ?? 0);
+            $listing['venue']['setting'] = $fact?->setting;
+            $listing['venue']['wheelchair'] = $fact?->wheelchair;
+
+            return $listing;
+        }, $listings);
     }
 
     /**

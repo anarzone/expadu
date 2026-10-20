@@ -2,6 +2,7 @@
    desktop street, fits it to the screen, picks the hour its sky shows,
    and hangs the day's posters on it. */
 
+import { usePage } from '@inertiajs/react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
     useEffect,
@@ -13,9 +14,15 @@ import {
 import type { PosterEvent } from '@/components/posters/poster-model';
 import { berlinClock, berlinDate } from '@/components/posters/poster-model';
 import type { StreetLayoutName } from './street-layout';
-import { STREET, streetFit } from './street-layout';
-import StreetScene from './street-scene';
+import { phonePages, STREET, streetFit } from './street-layout';
+import { MotionLab, readMotion } from './street-motion-lab';
+import StreetScene, { forgetPasted } from './street-scene';
+import type { StreetMotion } from './street-scene';
 import { streetSky } from './street-sky';
+import type { Story } from './street-stories';
+import { HourRings, StoryViewer, storyHours } from './street-stories';
+import type { DayForecast } from './street-weather';
+import { WeatherChip, weatherFor, weatherWords } from './street-weather';
 
 const PHONE = '(max-width: 700px)';
 // One spacing (owner, 16 Oct 2026): a desktop's street ends 16px above the
@@ -36,7 +43,7 @@ function useLayoutName(): StreetLayoutName {
 }
 
 /** Cologne's clock as a decimal hour, ticking each minute. */
-function useNowHour(): number {
+export function useNowHour(): number {
     const read = () => {
         const [h, m] = berlinClock(new Date().toISOString()).split(':');
 
@@ -61,19 +68,44 @@ export function EventsStreet({
     wall,
     column,
     poster,
+    forecast,
+    waiting = false,
 }: {
+    /** A details page is open over the street: stories and the column wait. */
+    waiting?: boolean;
     date: string;
     today: string;
+    /** The day's forecast (EventController's deferred weather). */
+    forecast?: DayForecast | null;
     /** The day's listings on the wall (after the page's filters). */
     wall: StreetListing[];
     /** The column holds the whole day and stays put while you filter. */
     column: StreetListing[];
     poster: (
         listing: StreetListing,
-        where: 'wall' | 'column',
+        where: 'wall' | 'column' | 'story',
         style?: CSSProperties,
     ) => ReactNode;
 }) {
+    const [story, setStory] = useState<Story | null>(null);
+    const [seen, setSeen] = useState<Set<number>>(() => new Set());
+    const [ringsRight, setRingsRight] = useState(12);
+    const opener = useRef<HTMLElement | null>(null);
+    // How much moves: the mock's street unless the owner's motion lab
+    // (QA tooling, with ?motion=lab) picks otherwise. Replay starts it over.
+    const { qaSwitcher } = usePage<{ qaSwitcher: unknown }>().props;
+    // Read after hydration (the server renders without it).
+    const lab = useSyncExternalStore(
+        () => () => {},
+        () =>
+            !!qaSwitcher &&
+            new URLSearchParams(window.location.search).get('motion') === 'lab',
+        () => false,
+    );
+    const [chosen, setChosen] = useState<StreetMotion | null>(null);
+    const motion: StreetMotion = lab ? (chosen ?? readMotion()) : 'full';
+    const [take, setTake] = useState(0);
+    const columnHeld = useRef(false);
     const layout = useLayoutName();
     const host = useRef<HTMLDivElement>(null);
     const [box, setBox] = useState<{
@@ -122,13 +154,82 @@ export function EventsStreet({
         };
     }, []);
 
+    // A phone's rings scroll sideways up to the weather, stopping 12px
+    // short of it.
+    useEffect(() => {
+        const node = host.current;
+        const chip = node?.querySelector('.st-weather');
+
+        if (!node || !chip || layout !== 'phone') {
+            return;
+        }
+
+        const measure = () =>
+            setRingsRight(
+                Math.round(
+                    node.getBoundingClientRect().right -
+                        chip.getBoundingClientRect().left +
+                        12,
+                ),
+            );
+        const resized = new ResizeObserver(measure);
+        resized.observe(chip);
+        resized.observe(node);
+
+        return () => resized.disconnect();
+    }, [layout, forecast, box]);
+
+    // The column turns to its next poster every 6s (the mock's tick), but
+    // not while you point at it, while a story or details are open, or
+    // with reduced motion.
+    const turning =
+        motion !== 'still' && column.length > 1 && !story && !waiting;
+
+    useEffect(() => {
+        if (
+            !turning ||
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+            return;
+        }
+
+        const timer = window.setInterval(() => {
+            if (!columnHeld.current && !document.hidden) {
+                setColumnPos((p) => p + 1);
+            }
+        }, 6000);
+
+        return () => window.clearInterval(timer);
+    }, [turning]);
+
     const isToday = date === today && berlinDate() === today;
     const timed = wall.filter((l) => l.poster.start);
-    // Today's sky is now; another day's opens on its first listing's hour.
-    const firstHour = timed.length
-        ? parseInt(timed[0].poster.start!, 10) + 0.5
-        : 12;
-    const skyHour = isToday ? nowHour : firstHour;
+    // The sky follows the hour you look at (the mock's street): the wall's
+    // first hour on a desktop, the page's hour on a phone, half past; the
+    // current hour shows now. A day with nothing timed shows now, or noon.
+    const slotted = timed.map((l) => parseInt(l.poster.start!, 10));
+    const lookedAt = !slotted.length
+        ? null
+        : layout === 'phone'
+          ? (() => {
+                const pages = phonePages(
+                    slotted.map((hour) => ({ item: null, hour })),
+                    isToday ? Math.floor(nowHour) : null,
+                );
+
+                return slotted[
+                    Math.min(phonePage ?? pages.page, slotted.length - 1)
+                ];
+            })()
+          : Math.min(...slotted);
+    const skyHour =
+        lookedAt === null
+            ? isToday
+                ? nowHour
+                : 12
+            : isToday && lookedAt === Math.floor(nowHour)
+              ? nowHour
+              : lookedAt + 0.5;
     const fit = box
         ? streetFit(layout, { hostWidth: box.width, room: box.room })
         : null;
@@ -148,7 +249,37 @@ export function EventsStreet({
         width: fit?.width ?? STREET[layout].size[0],
         skyHeight: STREET[layout].sky,
         phone: layout === 'phone',
+        weather: weatherFor(forecast),
     });
+
+    // Stories: the wall's hours as rings in the sky, from now on today.
+    const hours = storyHours(timed, isToday ? Math.floor(nowHour) : null);
+    // Closing returns focus to the ring (or "+N more") that opened it.
+    const openStory = (hour: number, from?: HTMLElement) => {
+        opener.current = from ?? (document.activeElement as HTMLElement | null);
+        setSeen((was) => new Set(was).add(hour));
+        setStory({ hour, index: 0 });
+    };
+    const skyAt = (hour: number) =>
+        streetSky(hour, date, {
+            width: STREET[layout].size[0],
+            skyHeight: STREET[layout].sky,
+            phone: layout === 'phone',
+            weather: weatherFor(forecast),
+        });
+    const ringsStyle: CSSProperties | undefined =
+        fit && box
+            ? layout === 'desktop'
+                ? {
+                      left: Math.round(
+                          (box.width - fit.width * fit.zoom) / 2 +
+                              STREET.desktop.size[0] * fit.zoom * 0.3,
+                      ),
+                      top: 16,
+                      maxWidth: Math.round(fit.width * fit.zoom * 0.6),
+                  }
+                : { right: ringsRight }
+            : undefined;
 
     return (
         <div
@@ -160,9 +291,26 @@ export function EventsStreet({
             {fit ? (
                 <div
                     className="ev-street-fit"
-                    style={{ zoom: fit.zoom, width: fit.width, height }}
+                    style={
+                        {
+                            // Applied to four places, as the mock's
+                            // street.js does; the sums keep the exact zoom.
+                            zoom: Number(fit.zoom.toFixed(4)),
+                            width: fit.width,
+                            height,
+                            // The chip sits 20px (12px on a phone) in from
+                            // the corner on screen, at any zoom.
+                            '--chip-inset': `${((layout === 'phone' ? 12 : 20) / fit.zoom).toFixed(2)}px`,
+                        } as CSSProperties
+                    }
                 >
                     <StreetScene
+                        key={take}
+                        motion={motion}
+                        itemKey={(item) => item.key}
+                        onColumnHold={(held) => {
+                            columnHeld.current = held;
+                        }}
                         layout={layout}
                         width={fit.width}
                         density={
@@ -186,8 +334,62 @@ export function EventsStreet({
                         poster={(item, where, style) =>
                             poster(item, where, style)
                         }
+                        onMore={(hour) => openStory(hour)}
+                        chip={
+                            <WeatherChip
+                                forecast={forecast}
+                                hour={skyHour}
+                                daylight={sky.daylight}
+                                date={date}
+                            />
+                        }
                     />
                 </div>
+            ) : null}
+            {fit ? (
+                <HourRings
+                    hours={hours}
+                    listings={timed}
+                    nowHour={isToday ? Math.floor(nowHour) : null}
+                    seen={seen}
+                    onOpen={openStory}
+                    layout={layout}
+                    style={ringsStyle}
+                />
+            ) : null}
+            {story ? (
+                <StoryViewer
+                    waiting={waiting}
+                    story={story}
+                    hours={hours}
+                    listings={timed}
+                    layout={layout}
+                    skyAt={skyAt}
+                    weather={(hour) =>
+                        weatherWords(forecast, hour, skyAt(hour + 0.5).daylight)
+                    }
+                    poster={(item, style) => poster(item, 'story', style)}
+                    onStory={(next) => {
+                        if (next) {
+                            setSeen((was) => new Set(was).add(next.hour));
+                        } else {
+                            opener.current?.focus();
+                        }
+
+                        setStory(next);
+                    }}
+                />
+            ) : null}
+            {lab ? (
+                <MotionLab
+                    motion={motion}
+                    onMotion={setChosen}
+                    onReplay={() => {
+                        forgetPasted();
+                        setColumnPos(0);
+                        setTake((t) => t + 1);
+                    }}
+                />
             ) : null}
             {fit && layout === 'phone' && timed.length > 1 ? (
                 <p className="ev-street-hint">

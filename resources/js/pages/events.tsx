@@ -2,15 +2,15 @@ import { Head, router, usePage } from '@inertiajs/react';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import EventOtherDayController from '@/actions/App/Http/Controllers/Api/EventOtherDayController';
-import GeocodeController from '@/actions/App/Http/Controllers/Api/GeocodeController';
 import TransportModeController from '@/actions/App/Http/Controllers/Api/TransportModeController';
 import { api } from '@/components/composer/types';
 import { occurrenceKey } from '@/components/events/event-presentation';
 import type { EventOccurrence } from '@/components/events/types';
+import { EventDetails } from '@/components/events-details/event-details';
 import type { EventFilters } from '@/components/events-filters/event-filters';
 import {
-    dayAreas,
-    dayCategories,
+    areaChoices,
+    categoryChoices,
     eventsUrl,
     matches,
     narrowed,
@@ -26,8 +26,13 @@ import type {
     StartingPoint,
     TravelMode,
 } from '@/components/events-filters/events-filter-bar';
-import { EventsStreet } from '@/components/events-street/events-street';
+import {
+    EventsStreet,
+    useNowHour,
+} from '@/components/events-street/events-street';
 import type { StreetListing } from '@/components/events-street/events-street';
+import { rainLikely } from '@/components/events-street/street-weather';
+import type { DayForecast } from '@/components/events-street/street-weather';
 import { Poster } from '@/components/posters/poster-art';
 import { posterEvent, posterWeekday } from '@/components/posters/poster-model';
 import { showToast } from '@/components/ui/toast';
@@ -45,7 +50,41 @@ type Props = {
     listings: EventOccurrence[];
     /** From the URL, so a deep link opens the same view. */
     filters: EventFilters;
+    /** The day's forecast, deferred (WeatherService::getDayForecast). */
+    weather?: DayForecast;
+    /** The URL's starting point, when it names a public point or one of
+        the person's saved places (EventStartingPoint). */
+    starting_point: PlacePoint | null;
+    /** The person's own Home and Work, when saved. */
+    saved_places: PlacePoint[];
+    /** Today's last recorded appointment, for the details' "For you". */
+    appointment: { title: string; end: string } | null;
+    /** The categories and areas the listings have on any day, for the
+        filters (the mock's catalogue). */
+    catalogue: { categories: string[]; areas: string[] };
 };
+
+/** The open details, as the URL carries them (?event=&start=). */
+type Detail = { event: number; start: string };
+
+function detailIn(url: string): Detail | null {
+    const query = new URLSearchParams(url.split('?')[1] ?? '');
+    const event = Number(query.get('event'));
+    const start = query.get('start');
+
+    return event && start ? { event, start } : null;
+}
+
+const withDetail = (base: string, d: Detail | null) =>
+    d ? `${base}&event=${d.event}&start=${encodeURIComponent(d.start)}` : base;
+
+type PlacePoint = { key: string; name: string; lat: number; lng: number };
+
+const asStartingPoint = (p: PlacePoint): StartingPoint => ({
+    name: p.name,
+    key: p.key,
+    point: { lat: p.lat, lng: p.lng },
+});
 
 type Listing = StreetListing & {
     occurrence: EventOccurrence;
@@ -79,13 +118,35 @@ function km(
     return 12742 * Math.asin(Math.sqrt(h));
 }
 
+/* What the listing or the venue's record says: the venue's recorded
+   setting, or a listing that says it's outdoors or open-air. Never more. */
+const outdoor = (o: EventOccurrence) =>
+    o.venue.setting === 'outdoor' ||
+    /\b(outdoors?|open[- ]air|im freien)\b/i.test(
+        `${o.title_original ?? ''} ${o.title} ${o.summary ?? ''}`,
+    );
+
 const distanceLabel = (value: number) =>
     value < 1 ? `${Math.round(value * 1000)} m` : `${value.toFixed(1)} km`;
 
 /** Events: the day's listings as posters on a Cologne street (the mock's
     events-next), narrowed by the filters above it. */
-export default function Events({ date, today, listings, filters }: Props) {
-    const { auth } = usePage<{ auth: Auth }>().props;
+export default function Events({
+    date,
+    today,
+    listings,
+    filters,
+    weather,
+    starting_point,
+    saved_places,
+    appointment,
+    catalogue,
+}: Props) {
+    const { props: shared, url } = usePage<{ auth: Auth }>();
+    const { auth } = shared;
+    // The details open over the street live in the URL, so a link (or a
+    // reload) opens the same details.
+    const detail = detailIn(url);
     const saved = useSavedEvents(auth.user.id);
     const f = { ...noFilters, ...filters };
 
@@ -98,7 +159,7 @@ export default function Events({ date, today, listings, filters }: Props) {
 
     const replace = (next: EventFilters) =>
         router.replace({
-            url: eventsUrl(date, next),
+            url: withDetail(eventsUrl(date, next), detail),
             props: (props) => ({ ...props, filters: next }),
             preserveState: true,
             preserveScroll: true,
@@ -137,43 +198,24 @@ export default function Events({ date, today, listings, filters }: Props) {
             },
         );
 
-    // The starting point: its name is in the URL, its place found here
-    // (recognised places only; an unknown name shows no distances).
-    const [from, setFrom] = useState<StartingPoint | null>(null);
+    // The starting point. The URL carries only a public point's name or a
+    // saved place's key, resolved on the server; a typed address stays in
+    // this state, out of the URL, history and server logs.
+    const [chosen, setChosen] = useState<StartingPoint | null>(null);
     const [mode, setMode] = useState<TravelMode>(
         (auth.user.transport_mode as TravelMode | null) ?? 'transit',
     );
-
-    useEffect(() => {
-        if (!f.from || from?.name === f.from) {
-            return;
-        }
-
-        const controller = new AbortController();
-        api<{ name: string; lat: number; lng: number }[]>(
-            GeocodeController.url({ query: { q: f.from } }),
-            undefined,
-            controller.signal,
-        )
-            .then((rows) =>
-                setFrom({
-                    name: f.from!,
-                    point: rows[0]
-                        ? { lat: rows[0].lat, lng: rows[0].lng }
-                        : null,
-                }),
-            )
-            .catch(() => setFrom({ name: f.from!, point: null }));
-
-        return () => controller.abort();
-    }, [f.from, from?.name]);
-
-    const shownFrom = f.from ? (from?.name === f.from ? from : null) : null;
+    const shownFrom =
+        chosen && chosen.key === (f.from ?? null)
+            ? chosen
+            : f.from && starting_point?.key === f.from
+              ? asStartingPoint(starting_point)
+              : null;
 
     const onFrom = (next: StartingPoint | null) => {
-        setFrom(next);
+        setChosen(next);
         onFilters({
-            from: next?.name ?? null,
+            from: next?.key ?? null,
             sort:
                 !next && current.sort === 'closest' ? 'soonest' : current.sort,
         });
@@ -292,24 +334,119 @@ export default function Events({ date, today, listings, filters }: Props) {
         }
     }
 
+    // Today's posters say where they stand now: on (until its listed end),
+    // over, and rain likely at the start for an outdoor venue.
+    const nowHour = useNowHour();
+    const hours = (time: string) =>
+        Number(time.slice(0, 2)) + Number(time.slice(3, 5)) / 60;
+    const todayState = (listing: Listing) => {
+        const p = listing.poster;
+
+        if (date !== today || !p.start) {
+            return { when: null, flags: null };
+        }
+
+        const start = hours(p.start);
+        let end = p.end ? hours(p.end) : null;
+
+        if (end !== null && end <= start) {
+            end += 24;
+        }
+
+        const when =
+            end === null
+                ? null
+                : nowHour >= end
+                  ? ('over' as const)
+                  : nowHour >= start
+                    ? ('now' as const)
+                    : null;
+        const wet =
+            when !== 'over' &&
+            outdoor(listing.occurrence) &&
+            rainLikely(weather, p.start);
+
+        return {
+            when,
+            flags:
+                when || wet ? (
+                    <>
+                        {when === 'now' ? (
+                            <span className="pp-flag pp-flag--now">
+                                <span aria-hidden="true" />
+                                On now · until {p.end}
+                            </span>
+                        ) : when === 'over' ? (
+                            <span className="pp-flag pp-flag--over">Over</span>
+                        ) : null}
+                        {wet ? (
+                            <span className="pp-flag pp-flag--rain">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 3.5c-3.2 4.2-5.6 7.2-5.6 10.2a5.6 5.6 0 0 0 11.2 0c0-3-2.4-6-5.6-10.2Z" />
+                                </svg>
+                                Rain likely · forecast
+                            </span>
+                        ) : null}
+                    </>
+                ) : null,
+        };
+    };
+
+    // A poster opens its details (the mock's "one step"); closing keeps
+    // the street and its filters as they were.
+    const showDetail = (d: Detail | null) =>
+        router.replace({
+            url: withDetail(eventsUrl(date, current), d),
+            preserveState: true,
+            preserveScroll: true,
+        });
+    const opened = detail
+        ? (day.find(
+              (l) =>
+                  l.occurrence.id === detail.event &&
+                  Date.parse(l.occurrence.occurrence_start) ===
+                      Date.parse(detail.start),
+          ) ?? null)
+        : null;
+
     const poster = (
         item: StreetListing,
-        where: 'wall' | 'column',
+        where: 'wall' | 'column' | 'story',
         style?: CSSProperties,
     ) => {
         const listing = item as Listing;
+        const state = todayState(listing);
 
         return (
             <Poster
                 event={listing.poster}
                 today={today}
-                size={where}
+                size={where === 'column' ? 'column' : 'wall'}
                 style={style}
                 distance={
                     listing.km !== null ? distanceLabel(listing.km) : undefined
                 }
+                when={state.when}
+                flags={state.flags}
                 saved={saved.keys.has(listing.key)}
                 onSave={() => toggleSave(listing)}
+                // A story's poster has Add to plan: it opens the details, where
+                // the plan is made (the mock's mxOpen(e, 'plan')).
+                onPlan={
+                    where === 'story'
+                        ? () =>
+                              showDetail({
+                                  event: listing.occurrence.id,
+                                  start: listing.occurrence.occurrence_start,
+                              })
+                        : undefined
+                }
+                onOpen={() =>
+                    showDetail({
+                        event: listing.occurrence.id,
+                        start: listing.occurrence.occurrence_start,
+                    })
+                }
             />
         );
     };
@@ -323,9 +460,13 @@ export default function Events({ date, today, listings, filters }: Props) {
                 filters={current}
                 onFilters={onFilters}
                 onDate={onDate}
-                categories={dayCategories(listings, current.category)}
-                areas={dayAreas(listings, current.area)}
+                categories={categoryChoices(
+                    catalogue.categories,
+                    current.category,
+                )}
+                areas={areaChoices(catalogue.areas, current.area)}
                 from={shownFrom}
+                savedPlaces={saved_places.map(asStartingPoint)}
                 mode={mode}
                 onFrom={onFrom}
                 onMode={onMode}
@@ -381,9 +522,21 @@ export default function Events({ date, today, listings, filters }: Props) {
                         wall={wall}
                         column={day}
                         poster={poster}
+                        forecast={weather}
+                        waiting={!!opened}
                     />
                 )}
             </section>
+            <EventDetails
+                listing={opened}
+                date={date}
+                today={today}
+                from={shownFrom?.point ? shownFrom.name : null}
+                appointment={appointment}
+                saved={opened ? saved.keys.has(opened.key) : false}
+                onSave={() => opened && toggleSave(opened)}
+                onClose={() => showDetail(null)}
+            />
         </AppLayout>
     );
 }

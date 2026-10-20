@@ -1,0 +1,689 @@
+/* An event's details: the mock's event page (events-next wall.css, "The
+   event page: one step, one scroll" and "The event sheet's About tab"),
+   on the shared Sheet. The Sheet's header is the poster; its body the
+   rows; its foot the bar. The mock's own colours for the page, in one
+   place. */
+
+.ui-sheet.ev-details {
+    --evd-line: #e6ddcb;
+    --evd-tile: #f1ead9;
+    --evd-tile-ink: #4b4437;
+    --evd-label: #6b6457;
+    --evd-sub: #4f493d;
+    --evd-body: #2b261d;
+    --evd-where: #e8f0fb;
+    --evd-where-ink: #12305c;
+    --evd-where-soft: #2b4a75;
+    --evd-where-icon: #1d4d8f;
+    --evd-fit: #fff1cc;
+    --evd-fit-ink: #2b2414;
+    --evd-fit-mark: #8a5a00;
+    --evd-on: #f8e1d5;
+    --evd-on-ink: #8a2f10;
+
+    width: min(560px, calc(100vw - 32px));
+    height: min(828px, calc(100vh - 32px));
+    max-height: none;
+    /* Centred in the page beside its scrollbar, as the mock's dialog is
+       (the CSS reset takes the browser's margin away). */
+    inset-inline: 0;
+    margin: auto;
+    border-radius: 24px;
+    background: var(--color-bg-canvas);
+    box-shadow: none;
+}
+
+/* A phone gives the page the whole screen. */
+@media (max-width: 700px) {
+    .ui-sheet.ev-details {
+        width: 100vw;
+        height: 100dvh;
+        max-width: none;
+        margin: 0;
+        border-radius: 0;
+    }
+}
+
+.ev-details :focus-visible {
+    outline-color: var(--evd-where-icon);
+}
+
+/* ---------- The header: the poster ---------- */
+
+.ev-details .ui-sheet-head {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: flex-end;
+    min-height: 200px;
+    padding: 64px 16px 18px;
+    overflow: hidden;
+    background-color: #221d17;
+    color: #fff;
+    container-type: inline-size;
+    touch-action: none;
+}
+
+.ev-details .ui-sheet-head > div {
+    display: grid;
+    flex: none;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        'tape tape'
+        'title time';
+    align-items: end;
+    gap: 8px 16px;
+}
+
+.ev-details .ui-sheet-head p {
+    display: contents;
+}
+
+.ev-details .evd-art {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    /* Its shapes size by the header (as the mock's hero), not by itself. */
+    container-type: normal;
+}
+
+.ev-details .evd-shade {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    background: linear-gradient(180deg, #0000 20%, #000a 100%);
+}
+
+/* A light poster (day, paper) keeps dark type on a light shade. */
+.ev-details:is(.pp--day, .pp--paper) .evd-shade {
+    background: linear-gradient(180deg, #fff8e600 20%, #fff8e6e6 100%);
+}
+
+.ev-details .evd-chip {
+    position: absolute;
+    z-index: 1;
+    top: 20px;
+    left: 24px;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #ffffff59;
+    border-radius: 999px;
+    background: #ffffff2e;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+.ev-details:is(.pp--day, .pp--paper) .evd-chip {
+    border-color: #211d1524;
+    background: #fff8e6cc;
+    color: var(--color-text);
+}
+
+.ev-details .evd-chip svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ev-details .evd-tape {
+    position: relative;
+    z-index: 1;
+    grid-area: tape;
+    justify-self: start;
+    margin: 8px 0 4px;
+    font-size: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transform: rotate(-2deg);
+}
+
+.ev-details .ui-sheet-head h2 {
+    position: relative;
+    z-index: 1;
+    grid-area: title;
+    margin: 0;
+    padding: 0;
+    color: var(--pp-text);
+    font-family: var(--poster-display);
+    font-size: clamp(28px, 7.5cqi, 40px);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+
+.ev-details .evd-time {
+    position: relative;
+    z-index: 1;
+    grid-area: time;
+    color: transparent;
+    font-family: var(--poster-display);
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 0.9;
+    -webkit-text-stroke: 1.5px var(--pp-text);
+}
+
+/* Close floats on the poster. */
+.ev-details .ui-sheet-close {
+    position: absolute;
+    z-index: 2;
+    top: 11px;
+    right: 16px;
+    margin: 0;
+    padding: 1px 6px;
+    border: 1px solid #ffffff59;
+    background: #ffffff2e;
+    color: #fff;
+    backdrop-filter: blur(10px);
+}
+
+.ev-details .ui-sheet-close:hover {
+    background: #ffffff47;
+}
+
+.ev-details:is(.pp--day, .pp--paper) .ui-sheet-close {
+    border-color: var(--evd-line);
+    background: var(--evd-tile);
+    color: var(--color-text);
+    backdrop-filter: none;
+}
+
+/* ---------- The rows: one rhythm, 12 between blocks ---------- */
+
+.ev-details .ui-sheet-body {
+    /* The bar follows the rows, as the mock's sticky bar does; a long page
+       scrolls under it. */
+    flex: 0 1 auto;
+    padding: 16px;
+}
+
+.evd-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.evd-past {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--evd-tile);
+    color: var(--evd-body);
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.evd-past svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+}
+
+.evd-label,
+.evd-row-label {
+    margin: 0;
+    color: var(--evd-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.evd-about .evd-label {
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.evd-translation {
+    display: flex;
+    flex-direction: column;
+    margin: 0 0 6px;
+    color: var(--evd-body);
+    font-size: 15px;
+}
+
+.evd-translation small {
+    color: var(--evd-label);
+    font-size: 12px;
+}
+
+.evd-description {
+    max-width: 62ch;
+    margin: 0;
+    color: var(--evd-body);
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+.evd-description.is-unknown {
+    color: var(--evd-sub);
+}
+
+/* The listing's details: one small line under About. */
+.evd-source {
+    margin: 2px 0 0;
+}
+
+.evd-source summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 36px;
+    color: var(--color-text-soft);
+    font-size: 13px;
+    list-style: none;
+    cursor: pointer;
+}
+
+.evd-source summary::-webkit-details-marker {
+    display: none;
+}
+
+.evd-source summary > span {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.evd-source summary svg {
+    width: 17px;
+    height: 17px;
+}
+
+.evd-source summary > svg {
+    width: 14px;
+    height: 14px;
+    transition: rotate var(--duration-base) var(--ease-settle);
+}
+
+.evd-source[open] summary > svg {
+    rotate: 180deg;
+}
+
+.evd-source small {
+    padding: 3px 6px;
+    border-radius: 8px;
+    background: #eae2f5;
+    font-size: 12px;
+    line-height: 1.1;
+}
+
+.evd-source dl {
+    margin: 0;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.evd-source dl > div {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 12px;
+    padding: 5px 0;
+}
+
+.evd-source dt {
+    color: var(--color-text-soft);
+}
+
+.evd-source dd {
+    margin: 0;
+}
+
+.evd-source dd.is-unknown {
+    color: var(--color-text-soft);
+}
+
+.evd-source a {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.evd-facts {
+    border-top: 1px solid var(--evd-line);
+}
+
+.evd-row {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 0;
+    border: 0;
+    border-bottom: 1px solid var(--evd-line);
+    color: var(--color-text);
+    text-align: left;
+}
+
+.evd-row-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--evd-tile);
+    color: var(--evd-tile-ink);
+}
+
+.evd-row-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.evd-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.evd-row-value {
+    color: var(--color-text);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.evd-row-sub {
+    color: var(--evd-sub);
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+/* What the listing doesn't say reads quieter than what it does. */
+.evd-unlisted .evd-row-value {
+    font-weight: 400;
+}
+
+/* Where: a band across the page, tinted blue. */
+.evd-row.evd-where {
+    --gutter: 20px;
+    width: calc(100% + 2 * var(--gutter));
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 12px var(--gutter);
+    border: 0;
+    background: var(--evd-where);
+    color: var(--evd-where-ink);
+}
+
+@media (max-width: 700px) {
+    .evd-row.evd-where {
+        --gutter: 16px;
+    }
+}
+
+.evd-where .evd-row-icon {
+    background: #fff;
+    color: var(--evd-where-icon);
+}
+
+.evd-where .evd-row-label,
+.evd-where .evd-where-area {
+    color: var(--evd-where-soft);
+}
+
+.evd-where .evd-row-label {
+    font-weight: 600;
+}
+
+.evd-where .evd-where-area {
+    font-weight: 400;
+}
+
+.evd-where .evd-row-value {
+    color: var(--evd-where-ink);
+}
+
+.evd-where .evd-row-sub {
+    display: contents;
+}
+
+.evd-where-go {
+    display: flex;
+    gap: 6px;
+    line-height: 1.5;
+    align-items: center;
+    margin-top: 2px;
+    color: var(--evd-where-icon);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.evd-where-go svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+
+/* For you: how it sits after the person's day, on a warm highlight. */
+.evd-fit {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--evd-fit);
+    color: var(--evd-fit-ink);
+    font-size: 15.5px;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.evd-fit > svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    color: var(--evd-fit-mark);
+}
+
+.evd-fit b {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--evd-fit-mark);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* ---------- The bar: Save, the reminder and Add to plan ---------- */
+
+.ev-details .ui-sheet-foot {
+    display: block;
+    gap: 10px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--evd-line);
+    background: var(--color-bg-canvas);
+}
+
+.evd-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* What just happened shows above the bar for a while (Undo for an add). */
+.evd-notice {
+    display: flex;
+    flex: 1 0 100%;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    margin: 0;
+    padding: 0 6px 0 14px;
+    border-radius: 12px;
+    background: var(--color-text);
+    color: var(--color-bg-canvas);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.evd-notice[data-error] {
+    background: var(--color-danger);
+}
+
+.evd-notice button {
+    min-height: 36px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.evd-bar > :is(button, a) {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    border: 0;
+    border-radius: 14px;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.evd-bar > :is(button, a):disabled {
+    cursor: default;
+}
+
+.evd-save {
+    flex: 1 1 0;
+    padding: 0 16px;
+    background: var(--evd-tile);
+    color: var(--color-text);
+}
+
+.evd-save svg,
+.evd-bell svg {
+    width: 22px;
+    height: 22px;
+}
+
+.evd-save[aria-pressed='true'] svg,
+.evd-bell[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+
+.evd-bell {
+    flex: 0 0 56px;
+    padding: 0;
+    background: var(--evd-tile);
+    color: var(--color-text);
+}
+
+.evd-bell[aria-pressed='true'] {
+    background: var(--evd-on);
+    color: var(--evd-on-ink);
+}
+
+.evd-plan {
+    flex: 2 1 0;
+    padding: 8px 12px;
+    background: var(--color-action);
+    box-shadow: 0 3px 10px #d9340a16;
+    color: #fff;
+}
+
+.evd-plan svg {
+    width: 16px;
+    height: 16px;
+}
+
+.evd-plan:hover:not(:disabled) {
+    background: var(--color-action-hover);
+}
+
+/* In the plan: the button says so, quieter. */
+.evd-plan[data-planned] {
+    background: var(--evd-on);
+    box-shadow: none;
+    color: var(--evd-on-ink);
+}
+
+/* ---------- A shorter phone fits the details in one view too ---------- */
+
+@media (max-width: 700px) and (max-height: 760px) {
+    .ev-details .ui-sheet-head {
+        min-height: 0;
+        padding: 54px 20px 8px;
+    }
+
+    .ev-details .evd-chip {
+        top: 21px;
+        left: 20px;
+        height: 30px;
+    }
+
+    .ev-details .ui-sheet-head > div {
+        gap: 4px 16px;
+    }
+
+    .ev-details .evd-tape {
+        font-size: 14px;
+    }
+
+    .ev-details .ui-sheet-head h2 {
+        font-size: 24px;
+    }
+
+    .ev-details .evd-time {
+        font-size: 34px;
+    }
+
+    .ev-details .ui-sheet-body {
+        padding: 12px 16px 6px;
+    }
+
+    .evd-body {
+        gap: 8px;
+    }
+
+    .evd-description {
+        line-height: 1.45;
+    }
+
+    .evd-row {
+        padding: 6px 0;
+    }
+
+    .evd-row.evd-where {
+        padding-block: 8px;
+    }
+
+    .evd-fit {
+        padding: 10px 12px;
+        font-size: 14.5px;
+        line-height: 1.4;
+    }
+
+    /* For you reads as one sentence after its label. */
+    .evd-fit b {
+        display: inline;
+        margin: 0 6px 0 0;
+    }
+}

@@ -137,7 +137,14 @@ export function wallBays<T>(
 
             if (grow > 1) {
                 const x = Math.round((c.bayW - c.pw * grow) / 2);
-                posters = [{ ...posters[0], x, zoom: c.wallZoom * grow }];
+                // To four places, as the mock's generator writes it.
+                posters = [
+                    {
+                        ...posters[0],
+                        x,
+                        zoom: Number((c.wallZoom * grow).toFixed(4)),
+                    },
+                ];
                 labelX = x - 24;
             }
         }

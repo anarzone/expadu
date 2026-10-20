@@ -137,7 +137,7 @@ function ProcessCard({ process }: { process: Process }) {
             <span className="process-card-copy">
                 <strong>{process.title}</strong>
                 {next ? (
-                    <span className="process-next">Next: {next.title}</span>
+                    <span className="process-next">{`Next: ${next.title}`}</span>
                 ) : null}
                 <small>
                     {note
@@ -992,7 +992,7 @@ export function Overview({ onCoverage }: { onCoverage: () => void }) {
                                 go({ view: 'actions', filter: 'all' })
                             }
                         >
-                            All steps {plan.progress.total}
+                            {`All steps ${plan.progress.total}`}
                             <Icon name="arrow" />
                         </button>
                         <button

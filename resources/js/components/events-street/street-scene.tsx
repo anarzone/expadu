@@ -3,23 +3,100 @@
    by tools/events-street/build.mjs; the hour changes only custom
    properties (colours, opacities, brightness), so nothing is redrawn.
    Posters are the page's own (PosterArt), placed in the wall's hour bays
-   and round the column. Static: nothing moves here (motion is EV2d). */
+   and round the column. What moves (street-motion.css) moves by transform
+   and opacity alone: the drawings' moving parts are pictures of their own,
+   so the compositor moves them and nothing is repainted. */
 
-import type { CSSProperties, ReactNode } from 'react';
+import type {
+    AnimationEvent,
+    CSSProperties,
+    PointerEvent,
+    ReactNode,
+} from 'react';
 import { useId, useRef } from 'react';
 import manifest from './street-layers.json';
 import type { Bay, Slotted, StreetLayoutName } from './street-layout';
 import { drum, hourLabel, phonePages, STREET, wallBays } from './street-layout';
 import type { SkyKeys } from './street-sky';
 import './street.css';
+import './street-motion.css';
+
+type Box = [number, number, number, number];
+
+/** A part of a layer that moves on its own, by the mock's classes. */
+type Part = {
+    id: string;
+    cls: string;
+    box: Box;
+    files: Record<string, string>;
+    vars?: Record<string, string>;
+};
 
 type Layer = {
     id: string;
     kind: 'image' | 'mask' | 'tint' | 'multiply';
-    box: [number, number, number, number];
+    /** Null when the layer is all moving parts. */
+    box: Box | null;
     files: Record<string, string>;
     anchor?: 'right';
+    parts?: Part[];
 };
+
+export type StreetMotion = 'still' | 'calm' | 'full';
+
+// The mock's animation classes, as the page's (street-motion.css).
+const moves = (cls: string) =>
+    cls
+        .split(' ')
+        .map((c) => `m-${c}`)
+        .join(' ');
+
+// Layers that move as a whole: the clouds drift, the flock and the plane
+// fly across, the tree sways.
+const WHOLE: Record<string, string> = {
+    'cloud-a': 'm-drift-a',
+    'cloud-b': 'm-drift-b',
+    'cloud-c': 'm-drift-c',
+    birds: 'm-flock',
+    plane: 'm-plane',
+    tree: 'm-sway',
+};
+
+// Posters pasted up in this tab already don't paste again, after Back or
+// a refresh too (the mock's wall.js keeps them in sessionStorage).
+const PASTED = 'expadu-wall-pasted';
+const pasted = new Set<string>(
+    (() => {
+        try {
+            return JSON.parse(
+                window.sessionStorage.getItem(PASTED) ?? '[]',
+            ) as string[];
+        } catch {
+            return [];
+        }
+    })(),
+);
+
+function remember(key: string) {
+    pasted.add(key);
+
+    try {
+        window.sessionStorage.setItem(PASTED, JSON.stringify([...pasted]));
+    } catch {
+        // Remembering is a nicety; without it a poster pastes again.
+    }
+}
+
+/** Lets every poster paste up again (the motion lab's Replay). */
+export function forgetPasted() {
+    pasted.clear();
+
+    try {
+        window.sessionStorage.removeItem(PASTED);
+    } catch {
+        // As above.
+    }
+}
 
 type Layout = {
     size: [number, number];
@@ -86,6 +163,12 @@ export type StreetSceneProps<T> = {
     chip?: ReactNode;
     /** A bay's "+N more" (EV2c opens the hour's stories). */
     onMore?: (hour: number) => void;
+    /** How much moves (the owner's motion lab); reduced motion stills it all. */
+    motion?: StreetMotion;
+    /** A poster's key, so one pasted up already isn't pasted again. */
+    itemKey?: (item: T) => string;
+    /** Pointing at the column holds its turning. */
+    onColumnHold?: (held: boolean) => void;
 };
 
 export default function StreetScene<T>({
@@ -104,11 +187,18 @@ export default function StreetScene<T>({
     poster,
     chip,
     onMore,
+    motion = 'full',
+    itemKey,
+    onColumnHold,
 }: StreetSceneProps<T>) {
     const uid = useId().replace(/:/g, '');
     const swipe = useRef<{ y: number; at: number } | null>(null);
     const wheelAt = useRef(0);
     const swiped = useRef(false);
+    const tilt = useRef<{ card: HTMLElement | null; frame: number }>({
+        card: null,
+        frame: 0,
+    });
     const art = layouts[layout];
     const c = STREET[layout];
     const desktop = layout === 'desktop';
@@ -119,7 +209,7 @@ export default function StreetScene<T>({
     // Only what the hour shows is fetched: no stars by day, no rain when dry.
     const shown = (id: string, opacity = 1) =>
         opacity > 0.001 && byId[id] ? byId[id] : null;
-    const at = (layer: Layer): CSSProperties =>
+    const at = (layer: { box: Box; anchor?: 'right' }): CSSProperties =>
         layer.anchor === 'right'
             ? {
                   // Drawn against the board's 1361 width: the drainpipe stays
@@ -145,14 +235,14 @@ export default function StreetScene<T>({
 
         const src = layer.files[String(scale)];
 
-        if (layer.kind === 'mask') {
+        if (layer.kind === 'mask' && layer.box) {
             return (
                 <div
                     key={id}
                     className="st-l st-mask"
                     data-layer={id}
                     style={{
-                        ...at(layer),
+                        ...at({ box: layer.box, anchor: layer.anchor }),
                         maskImage: `url(${src})`,
                         WebkitMaskImage: `url(${src})`,
                         opacity: opacity === 1 ? undefined : opacity,
@@ -162,25 +252,94 @@ export default function StreetScene<T>({
             );
         }
 
+        const filter =
+            layer.kind === 'tint'
+                ? `url(#${tintId(uid, id.startsWith('cloud') ? 'cloud' : 'puddle')})`
+                : undefined;
+        const picture = (
+            key: string,
+            from: { box: Box; anchor?: 'right' },
+            file: string | undefined,
+            cls = '',
+            extra: CSSProperties = {},
+        ) =>
+            file ? (
+                <img
+                    key={key}
+                    className={`st-l ${cls}`.trim()}
+                    src={file}
+                    alt=""
+                    decoding="async"
+                    draggable={false}
+                    style={{ ...at(from), filter, ...extra }}
+                />
+            ) : null;
+        const still = layer.box
+            ? picture(
+                  id,
+                  { box: layer.box, anchor: layer.anchor },
+                  src,
+                  id === 'lamp-glow' ? 'm-glow' : '',
+                  style,
+              )
+            : null;
+        const parts = layer.parts ?? [];
+        const whole = WHOLE[id];
+
+        if (!parts.length && !whole) {
+            return still ? (
+                <img
+                    {...still.props}
+                    key={id}
+                    data-layer={id}
+                    style={{
+                        ...still.props.style,
+                        opacity: opacity === 1 ? undefined : opacity,
+                    }}
+                />
+            ) : null;
+        }
+
+        // A pigeon's head pecks while its body walks: the head goes inside.
+        const heads = parts.filter((p) => p.cls.startsWith('pig-head'));
+        const part = (p: Part) =>
+            picture(
+                p.id,
+                p,
+                p.files[String(scale)],
+                moves(p.cls),
+                p.vars as CSSProperties,
+            );
+
         return (
-            <img
+            <div
                 key={id}
-                className="st-l"
+                className={`st-l st-move ${whole ?? ''}`.trim()}
                 data-layer={id}
-                src={src}
-                alt=""
-                decoding="async"
-                draggable={false}
-                style={{
-                    ...at(layer),
-                    opacity: opacity === 1 ? undefined : opacity,
-                    filter:
-                        layer.kind === 'tint'
-                            ? `url(#${tintId(uid, id.startsWith('cloud') ? 'cloud' : 'puddle')})`
-                            : undefined,
-                    ...style,
-                }}
-            />
+                style={{ opacity: opacity === 1 ? undefined : opacity }}
+            >
+                {still}
+                {parts
+                    .filter((p) => !p.cls.startsWith('pig-head'))
+                    .map((p) =>
+                        p.cls.startsWith('pig-walk') ? (
+                            <div
+                                key={p.id}
+                                className={`st-l st-move ${moves(p.cls)}`}
+                            >
+                                {picture(p.id, p, p.files[String(scale)])}
+                                {heads
+                                    .filter(
+                                        (h) =>
+                                            h.id === p.id.replace('pw', 'ph'),
+                                    )
+                                    .map(part)}
+                            </div>
+                        ) : (
+                            part(p)
+                        ),
+                    )}
+            </div>
         );
     }
 
@@ -203,6 +362,9 @@ export default function StreetScene<T>({
     const lampAt = desktop
         ? 'translate(86 936)'
         : 'translate(9 566) scale(0.58)';
+    const lampHead = desktop
+        ? { x: 86, y: 936, s: 1 }
+        : { x: 9, y: 566, s: 0.58 };
     const glow = desktop ? [99.1, 20.1] : [63, 12.8];
     const light = desktop
         ? { top: 250, bottom: 36, lamp: '86px 82px' }
@@ -226,11 +388,99 @@ export default function StreetScene<T>({
     };
     const N = column.length;
     const pos = N ? ((columnPos % N) + N) % N : 0;
-    const strip = drum(column, pos, layout);
+    // The drum turns on from where it is (not back round to the first
+    // poster), so its turn eases from face to face.
+    const strip = drum(column, columnPos, layout);
+    const toPoster = (i: number) => {
+        let step = (((i - pos) % N) + N) % N;
+
+        if (step > N / 2) {
+            step -= N;
+        }
+
+        onColumnPos?.(columnPos + step);
+    };
+
+    // With a mouse, a wall poster leans towards the pointer and catches the
+    // light (the mock's mxTilt), one frame at a time.
+    const untilt = () => {
+        const t = tilt.current;
+        cancelAnimationFrame(t.frame);
+
+        if (t.card) {
+            for (const name of [
+                '--tilt-x',
+                '--tilt-y',
+                '--glare-x',
+                '--glare-y',
+            ]) {
+                t.card.style.removeProperty(name);
+            }
+
+            t.card.classList.remove('is-tilting');
+            t.card = null;
+        }
+    };
+    const onTilt = (e: PointerEvent<HTMLDivElement>) => {
+        if (!desktop || motion === 'still' || e.pointerType !== 'mouse') {
+            return;
+        }
+
+        const card = (e.target as Element)
+            .closest('.st-slot')
+            ?.querySelector<HTMLElement>(':scope > .pp');
+
+        if (card !== tilt.current.card) {
+            untilt();
+        }
+
+        if (!card) {
+            return;
+        }
+
+        const { clientX, clientY } = e;
+        cancelAnimationFrame(tilt.current.frame);
+        tilt.current.frame = requestAnimationFrame(() => {
+            const r = card.getBoundingClientRect();
+            const x = (clientX - r.left) / r.width;
+            const y = (clientY - r.top) / r.height;
+            card.style.setProperty(
+                '--tilt-x',
+                `${((x - 0.5) * 8).toFixed(2)}deg`,
+            );
+            card.style.setProperty(
+                '--tilt-y',
+                `${((0.5 - y) * 8).toFixed(2)}deg`,
+            );
+            card.style.setProperty('--glare-x', `${(x * 100).toFixed(1)}%`);
+            card.style.setProperty('--glare-y', `${(y * 100).toFixed(1)}%`);
+            card.classList.add('is-tilting');
+            tilt.current.card = card;
+        });
+    };
+
+    // A poster is pasted up once in a tab; after that it's simply there.
+    const slot = (item: T, i: number, style: CSSProperties) => {
+        const key = itemKey?.(item);
+
+        return {
+            key: key ?? i,
+            'data-up': key && pasted.has(key) ? true : undefined,
+            style: { ...style, '--i': i } as CSSProperties,
+            onAnimationEnd: (e: AnimationEvent<HTMLDivElement>) => {
+                if (key && e.animationName === 'pp-paste') {
+                    remember(key);
+                }
+            },
+        };
+    };
 
     return (
         <div
             className={`st-scene st-scene--${layout}`}
+            data-motion={motion}
+            onPointerMove={onTilt}
+            onPointerLeave={untilt}
             style={vars}
             data-scale={scale}
         >
@@ -252,6 +502,21 @@ export default function StreetScene<T>({
             {/* The sky, the city and the wall */}
             <div className="st-sky" style={{ height: skyH }} />
             {img('stars', sky.stars)}
+            {/* The sun's glow is its own element, so its pulse is the
+                compositor's (on the sky's SVG it repainted the sky). */}
+            {sky.sunO > 0.001 ? (
+                <div
+                    className="st-l st-sunglow m-pulse"
+                    style={{
+                        left: sky.sunX - glow[0],
+                        top: sky.sunY - glow[0],
+                        width: glow[0] * 2,
+                        height: glow[0] * 2,
+                        opacity: sky.sunO,
+                        background: `radial-gradient(closest-side, color-mix(in srgb, ${sky.sunC} 75%, transparent), color-mix(in srgb, ${sky.sunC} 28%, transparent) 35%, transparent)`,
+                    }}
+                />
+            ) : null}
             <svg
                 className="st-l st-orbs"
                 width={width}
@@ -262,15 +527,6 @@ export default function StreetScene<T>({
                 <defs
                     dangerouslySetInnerHTML={{ __html: art.inline.moonGlow }}
                 />
-                <radialGradient id={`${uid}-sunglow`}>
-                    <stop offset="0" stopColor={sky.sunC} stopOpacity="0.75" />
-                    <stop
-                        offset="0.35"
-                        stopColor={sky.sunC}
-                        stopOpacity="0.28"
-                    />
-                    <stop offset="1" stopColor={sky.sunC} stopOpacity="0" />
-                </radialGradient>
                 {sky.moonO > 0.001 ? (
                     <g
                         transform={`translate(${sky.moonX} ${sky.moonY})`}
@@ -289,7 +545,6 @@ export default function StreetScene<T>({
                         transform={`translate(${sky.sunX} ${sky.sunY})`}
                         opacity={sky.sunO}
                     >
-                        <circle r={glow[0]} fill={`url(#${uid}-sunglow)`} />
                         <circle r={glow[1]} fill={sky.sunC} />
                     </g>
                 ) : null}
@@ -389,9 +644,11 @@ export default function StreetScene<T>({
                                 ) : null}
                                 {b.posters.map((p, i) => (
                                     <div
-                                        key={i}
                                         className="st-slot"
-                                        style={{ left: p.x, top: p.y }}
+                                        {...slot(p.item, i, {
+                                            left: p.x,
+                                            top: p.y,
+                                        })}
                                     >
                                         {poster(p.item, 'wall', {
                                             zoom: p.zoom,
@@ -459,9 +716,11 @@ export default function StreetScene<T>({
                             {pages.posters.map((p, i) =>
                                 Math.abs(i - page) <= 1 ? (
                                     <div
-                                        key={i}
                                         className="st-slot"
-                                        style={{ left: p.x, top: p.y }}
+                                        {...slot(p.item, i, {
+                                            left: p.x,
+                                            top: p.y,
+                                        })}
                                         inert={i !== page}
                                     >
                                         {poster(p.item, 'wall', {
@@ -563,7 +822,11 @@ export default function StreetScene<T>({
                     }}
                 >
                     {img('column', 1, { filter: 'brightness(var(--k-obj-b))' })}
-                    <div className="st-drum">
+                    <div
+                        className="st-drum"
+                        onPointerEnter={() => onColumnHold?.(true)}
+                        onPointerLeave={() => onColumnHold?.(false)}
+                    >
                         <div
                             className="st-drum-turn"
                             style={{ width: c.col.win, transform: strip.style }}
@@ -619,7 +882,7 @@ export default function StreetScene<T>({
                                         aria-current={
                                             i === pos ? 'true' : undefined
                                         }
-                                        onClick={() => onColumnPos?.(i)}
+                                        onClick={() => toPoster(i)}
                                     >
                                         <i />
                                     </button>
@@ -629,13 +892,13 @@ export default function StreetScene<T>({
                                 type="button"
                                 className="st-col-prev"
                                 aria-label="Previous poster"
-                                onClick={() => onColumnPos?.(pos - 1)}
+                                onClick={() => onColumnPos?.(columnPos - 1)}
                             />
                             <button
                                 type="button"
                                 className="st-col-next"
                                 aria-label="Next poster"
-                                onClick={() => onColumnPos?.(pos + 1)}
+                                onClick={() => onColumnPos?.(columnPos + 1)}
                             />
                         </>
                     ) : null}
@@ -647,6 +910,34 @@ export default function StreetScene<T>({
             {img('lamp-pool', sky.lamp)}
             <div className="st-objects">
                 {img('lamp')}
+                {/* The lit glass and flame flicker on their own, so the
+                    flicker is the compositor's. */}
+                {sky.lamp > 0.001 ? (
+                    <svg
+                        className="st-l m-flame"
+                        width={44 * lampHead.s}
+                        height={68 * lampHead.s}
+                        viewBox="-22 -640 44 68"
+                        aria-hidden="true"
+                        style={{
+                            left: lampHead.x - 22 * lampHead.s,
+                            top: lampHead.y - 640 * lampHead.s,
+                        }}
+                    >
+                        <path
+                            d="M-14 -572 L-22 -640 h44 L14 -572 Z"
+                            fill="#ffd27a"
+                            opacity={sky.lamp}
+                        />
+                        <circle
+                            cx="0"
+                            cy="-596"
+                            r="6"
+                            fill="#fff4cf"
+                            opacity={sky.lamp}
+                        />
+                    </svg>
+                ) : null}
                 <svg
                     className="st-l"
                     width={art.size[0]}
@@ -661,22 +952,6 @@ export default function StreetScene<T>({
                             fill="#c8dcd9"
                             opacity={sky.glassDay}
                         />
-                        {sky.lamp > 0.001 ? (
-                            <>
-                                <path
-                                    d="M-14 -572 L-22 -640 h44 L14 -572 Z"
-                                    fill="#ffd27a"
-                                    opacity={sky.lamp}
-                                />
-                                <circle
-                                    cx="0"
-                                    cy="-596"
-                                    r="6"
-                                    fill="#fff4cf"
-                                    opacity={sky.lamp}
-                                />
-                            </>
-                        ) : null}
                         <g
                             dangerouslySetInnerHTML={{
                                 __html: art.inline.lampFrame,

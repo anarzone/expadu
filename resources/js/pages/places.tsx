@@ -19,6 +19,8 @@ import {
 } from '@tabler/icons-react';
 import type { Icon as TablerIcon } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import GeocodeSearchController from '@/actions/App/Http/Controllers/Api/GeocodeSearchController';
+import { api } from '@/components/composer/types';
 import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import { categoryEmoji } from '@/components/places/category-illustration';
@@ -242,7 +244,7 @@ export default function Places() {
     const [fromOverride, setFromOverride] = useState<FromOverride>(null);
     const fromOverrideRef = useRef<FromOverride>(null);
 
-    // Address search inside the From picker (reuses /api/geocode).
+    // Address search inside the From picker (the shared place search).
     const [fromQuery, setFromQuery] = useState('');
     const [fromResults, setFromResults] = useState<
         { name: string; address: string; lat: number; lng: number }[]
@@ -460,30 +462,27 @@ export default function Places() {
         }
 
         fromSearchTimer.current = setTimeout(() => {
-            fetch(`/api/geocode?q=${encodeURIComponent(q.trim())}`, {
-                credentials: 'same-origin',
-            })
-                .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
-                .then(
-                    (
-                        data: {
-                            name: string;
-                            street?: string;
-                            city?: string;
-                            lat: number;
-                            lng: number;
-                        }[],
-                    ) =>
-                        setFromResults(
-                            data.map((r) => ({
-                                name: r.name,
-                                address: [r.street, r.city]
-                                    .filter(Boolean)
-                                    .join(', '),
-                                lat: r.lat,
-                                lng: r.lng,
-                            })),
-                        ),
+            // Posted, so what was typed stays out of URLs and access logs.
+            api<
+                {
+                    name: string;
+                    street?: string;
+                    city?: string;
+                    lat: number;
+                    lng: number;
+                }[]
+            >(GeocodeSearchController.url(), { q: q.trim() })
+                .then((data) =>
+                    setFromResults(
+                        data.map((r) => ({
+                            name: r.name,
+                            address: [r.street, r.city]
+                                .filter(Boolean)
+                                .join(', '),
+                            lat: r.lat,
+                            lng: r.lng,
+                        })),
+                    ),
                 )
                 .catch(() => setFromResults([]));
         }, 300);

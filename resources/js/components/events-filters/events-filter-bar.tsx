@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import GeocodeController from '@/actions/App/Http/Controllers/Api/GeocodeController';
+import EventStartingPointController from '@/actions/App/Http/Controllers/Api/EventStartingPointController';
 import { api } from '@/components/composer/types';
 import {
     AnchoredMenu,
@@ -48,6 +48,18 @@ function Glyph({ name }: { name: keyof typeof glyphs }) {
     );
 }
 
+// The page's width, for the calendar that spans a phone's page.
+const usePageWidth = () =>
+    useSyncExternalStore(
+        (notify) => {
+            window.addEventListener('resize', notify);
+
+            return () => window.removeEventListener('resize', notify);
+        },
+        () => window.innerWidth,
+        () => 0,
+    );
+
 const chevron = (
     <svg
         className="evf-chevron"
@@ -66,6 +78,10 @@ const chevron = (
 export type TravelMode = 'transit' | 'walk' | 'bike';
 export type StartingPoint = {
     name: string;
+    /** What the URL may carry: a district, stop or venue's own name, or a
+        saved place's key (home, work). Null for anything else, a typed
+        address above all, which stays in the page's state. */
+    key: string | null;
     /** Resolved coordinates; null when the place isn't recognised. */
     point: { lat: number; lng: number } | null;
 };
@@ -92,6 +108,7 @@ export function EventsFilterBar({
     categories,
     areas,
     from,
+    savedPlaces,
     mode,
     onFrom,
     onMode,
@@ -103,17 +120,23 @@ export function EventsFilterBar({
     categories: Category[];
     areas: string[];
     from: StartingPoint | null;
+    /** The person's own Home and Work, when saved. */
+    savedPlaces: StartingPoint[];
     mode: TravelMode;
     onFrom: (from: StartingPoint | null) => void;
     onMode: (mode: TravelMode) => void;
 }) {
     const chosenCategory = categories.find((c) => c.value === filters.category);
     const canClosest = !!from?.point;
+    // The pickers line up with the row's edges, as the mock's panels do.
+    const row = useRef<HTMLElement>(null);
+    const rowEdge = () => row.current;
+    const pageWidth = usePageWidth();
 
     const freeButton = (
         <button
             type="button"
-            className="evf-square evf-wide-only"
+            className="evf-square evf-free evf-wide-only"
             aria-pressed={filters.free}
             aria-label="Free only"
             title="Free only"
@@ -139,8 +162,9 @@ export function EventsFilterBar({
         <AnchoredMenu
             label="Sort events"
             sheet="tablet"
-            width={320}
+            width={where === 'phone' ? 320 : 200}
             align={where === 'phone' ? 'start' : 'end'}
+            anchor={where === 'phone' ? undefined : rowEdge}
             trigger={(props) => (
                 <button
                     {...props}
@@ -156,9 +180,11 @@ export function EventsFilterBar({
                 </button>
             )}
         >
-            <MenuOptions>
-                {SORTS.filter((s) => s.value !== 'closest' || canClosest).map(
-                    (s) => (
+            <div className="evf-sorts">
+                <MenuOptions>
+                    {SORTS.filter(
+                        (s) => s.value !== 'closest' || canClosest,
+                    ).map((s) => (
                         <MenuOption
                             key={s.value}
                             selected={filters.sort === s.value}
@@ -166,9 +192,9 @@ export function EventsFilterBar({
                         >
                             {s.label}
                         </MenuOption>
-                    ),
-                )}
-            </MenuOptions>
+                    ))}
+                </MenuOptions>
+            </div>
         </AnchoredMenu>
     );
 
@@ -179,6 +205,7 @@ export function EventsFilterBar({
             sheet="tablet"
             width={320}
             align={where === 'phone' ? 'start' : 'end'}
+            anchor={where === 'phone' ? undefined : rowEdge}
             trigger={(props) => (
                 <button
                     {...props}
@@ -212,6 +239,7 @@ export function EventsFilterBar({
             {({ close }) => (
                 <StartingPointForm
                     from={from}
+                    savedPlaces={savedPlaces}
                     mode={mode}
                     onFrom={onFrom}
                     onMode={onMode}
@@ -222,14 +250,16 @@ export function EventsFilterBar({
     );
 
     return (
-        <section className="evf" aria-label="Find events">
+        <section ref={row} className="evf" aria-label="Find events">
             <div className="evf-search-row">
                 <AnchoredMenu
                     label="Choose an event date"
                     kind="dialog"
                     head={false}
-                    sheet="tablet"
-                    width={340}
+                    anchor={rowEdge}
+                    // On a phone the calendar spans the page, with even
+                    // edges (the mock's wall.css).
+                    width={pageWidth && pageWidth <= 700 ? pageWidth - 32 : 340}
                     trigger={(props) => (
                         <button
                             {...props}
@@ -306,10 +336,14 @@ export function EventsFilterBar({
                             }
                             aria-label={`Event category: ${chosenCategory?.label ?? 'All events'}${filters.free ? ', free only' : ''}${filters.saved ? ', saved only' : ''}`}
                         >
-                            <Icon
-                                name={chosenCategory?.icon ?? 'grid'}
-                                variant="line"
-                            />
+                            {/* Its icon's slot stays on a small phone, as in
+                                the mock, so the name keeps its offset. */}
+                            <span className="evf-category-icon">
+                                <Icon
+                                    name={chosenCategory?.icon ?? 'grid'}
+                                    variant="line"
+                                />
+                            </span>
                             <span>{chosenCategory?.label ?? 'Category'}</span>
                             {filters.free || filters.saved ? (
                                 <i className="evf-dot" aria-hidden="true" />
@@ -374,6 +408,7 @@ export function EventsFilterBar({
                     sheet="tablet"
                     width={320}
                     align="end"
+                    anchor={rowEdge}
                     trigger={(props) => (
                         <button
                             {...props}
@@ -494,24 +529,59 @@ type Suggestion = {
     street: string | null;
     lat: number;
     lng: number;
+    key: string | null;
+};
+
+const SAVED_ICONS: Record<string, IconName> = {
+    home: 'home',
+    work: 'briefcase',
 };
 
 /** Where distances are measured from, and how you travel. */
 function StartingPointForm({
     from,
+    savedPlaces,
     mode,
     onFrom,
     onMode,
     onDone,
 }: {
     from: StartingPoint | null;
+    savedPlaces: StartingPoint[];
     mode: TravelMode;
     onFrom: (from: StartingPoint | null) => void;
     onMode: (mode: TravelMode) => void;
     onDone: () => void;
 }) {
     const [text, setText] = useState(from?.name ?? '');
-    const [found, setFound] = useState<Suggestion[]>([]);
+    // The suggestions, with the text they were found for.
+    const [results, setResults] = useState<{ q: string; rows: Suggestion[] }>({
+        q: '',
+        rows: [],
+    });
+    const field = useRef<HTMLInputElement>(null);
+    const typed = text.trim();
+    const typing = typed !== '' && typed !== from?.name;
+
+    // On a desktop the field takes the focus as the panel opens (after the
+    // menu's own), as the mock's does; a sheet doesn't, so a phone's
+    // keyboard doesn't cover it.
+    useEffect(() => {
+        if (!window.matchMedia('(min-width: 1000px)').matches) {
+            return;
+        }
+
+        const frame = requestAnimationFrame(() => field.current?.focus());
+
+        return () => cancelAnimationFrame(frame);
+    }, []);
+    const found = results.q === typed ? results.rows : [];
+
+    // Suggestions come by POST, so what's typed stays out of URLs and logs.
+    const suggest = (q: string, signal?: AbortSignal) =>
+        api<Suggestion[]>(EventStartingPointController.url(), { q }, signal)
+            .then((rows) => rows.slice(0, 5))
+            .catch(() => [] as Suggestion[]);
 
     useEffect(() => {
         const q = text.trim();
@@ -522,13 +592,11 @@ function StartingPointForm({
 
         const controller = new AbortController();
         const timer = window.setTimeout(() => {
-            api<Suggestion[]>(
-                GeocodeController.url({ query: { q } }),
-                undefined,
-                controller.signal,
-            )
-                .then((rows) => setFound(rows.slice(0, 5)))
-                .catch(() => setFound([]));
+            suggest(q, controller.signal).then((rows) => {
+                if (!controller.signal.aborted) {
+                    setResults({ q, rows });
+                }
+            });
         }, 250);
 
         return () => {
@@ -538,9 +606,40 @@ function StartingPointForm({
     }, [text, from?.name]);
 
     const choose = (s: Suggestion) => {
-        onFrom({ name: s.name, point: { lat: s.lat, lng: s.lng } });
+        onFrom({
+            name: s.name,
+            key: s.key,
+            point: { lat: s.lat, lng: s.lng },
+        });
         setText(s.name);
-        setFound([]);
+    };
+
+    const pick = (place: StartingPoint) => {
+        onFrom(place);
+        setText(place.name);
+    };
+
+    // Done takes the first suggestion, waiting for it if it's on its way;
+    // a place nothing matches is kept by name, with no distances.
+    const submit = async () => {
+        if (!typed) {
+            onFrom(null);
+        } else if (typing) {
+            const rows =
+                results.q === typed
+                    ? results.rows
+                    : typed.length >= 2
+                      ? await suggest(typed)
+                      : [];
+
+            if (rows[0]) {
+                choose(rows[0]);
+            } else {
+                onFrom({ name: typed, key: null, point: null });
+            }
+        }
+
+        onDone();
     };
 
     return (
@@ -548,19 +647,13 @@ function StartingPointForm({
             className="evf-travel-form"
             onSubmit={(e) => {
                 e.preventDefault();
-
-                if (found[0] && text.trim() && text.trim() !== from?.name) {
-                    choose(found[0]);
-                } else if (!text.trim()) {
-                    onFrom(null);
-                }
-
-                onDone();
+                void submit();
             }}
         >
             <label>
                 <span className="sr-only">Address, place or stop</span>
                 <input
+                    ref={field}
                     name="from"
                     value={text}
                     maxLength={120}
@@ -569,7 +662,7 @@ function StartingPointForm({
                     onChange={(e) => setText(e.target.value)}
                 />
             </label>
-            {found.length && text.trim() !== from?.name ? (
+            {found.length && typing ? (
                 <MenuOptions>
                     {found.map((s) => (
                         <MenuOption
@@ -580,6 +673,20 @@ function StartingPointForm({
                             onSelect={() => choose(s)}
                         >
                             {s.name}
+                        </MenuOption>
+                    ))}
+                </MenuOptions>
+            ) : savedPlaces.length && !typing ? (
+                <MenuOptions>
+                    {savedPlaces.map((p) => (
+                        <MenuOption
+                            key={p.key}
+                            icon={SAVED_ICONS[p.key ?? ''] ?? 'pin'}
+                            keepOpen
+                            selected={from?.key === p.key}
+                            onSelect={() => pick(p)}
+                        >
+                            {p.name}
                         </MenuOption>
                     ))}
                 </MenuOptions>
