@@ -1,0 +1,43 @@
+{
+    "name": "events-sky",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-weather"
+    },
+    "app": {
+        "url": "/events",
+        "wait": ".st-weather",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "street",
+            "mock": ".st-fit",
+            "app": ".ev-street-fit",
+            "contentDiffers": true
+        },
+        {
+            "name": "weather chip",
+            "mock": ".st-weather",
+            "app": ".st-weather",
+            "contentDiffers": true
+        },
+        {
+            "name": "weather glyph",
+            "mock": ".st-weather svg",
+            "app": ".st-weather svg",
+            "contentDiffers": true
+        },
+        {
+            "name": "weather words",
+            "mock": ".st-weather strong",
+            "app": ".st-weather strong",
+            "contentDiffers": true
+        }
+    ]
+}
