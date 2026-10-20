@@ -3,7 +3,6 @@
 namespace Database\Seeders\MockSample;
 
 use App\Composer\WorkspaceStore;
-use App\Enums\SpotCategory;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
 use App\Models\Spot;
@@ -11,23 +10,24 @@ use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 /**
- * Local only: the listings Composer's mock plans around on its sample day
+ * Local only: what Composer's mock plans around on its sample day
  * (prototype/dev/design/connected/sample-day.js, Wednesday 30 September 2026), so
- * tools/mock-compare shows Composer's Your day and starters with the same words:
+ * tools/mock-compare shows Composer's Your day and starters with the same words. Each kind
+ * of sample has one source, shared with the other pages' comparisons:
  *
- *  - tonight's two sample events, Street culture night (18:30, Rheinauhafen) and Cinema
- *    under the stars (20:00, Stadtgarten), both labelled as sample programme;
- *  - a pharmacy beside Wiener Platz, near the sample's 14:00 appointment;
+ *  - tonight's two sample events (Street culture night at 18:30, Cinema under the stars at
+ *    20:00) are Events' own sample: MockSample\EventsSeeder, called here;
+ *  - the pharmacy near the sample's 14:00 appointment is Eck-Apotheke by Wiener Platz,
+ *    the same OpenStreetMap row MockSample\PlacesSeeder (#157) adds with the mock's other
+ *    places, keyed alike, so whichever runs first makes it and the other leaves it be;
  *  - that account's conversation history, cleared to one new conversation started at the
  *    sample's moment, so Composer opens on its welcome and History lists it as the mock
  *    does ("New conversation · 30 Sept · 0 messages"); plans stay as they are.
  *
  * The person's own day comes from MockSample\PaperworkSeeder (the appointment) and
- * `mock:sample-day` (plans). These rows are fictional and exist on this machine only;
- * re-running replaces them.
+ * `mock:sample-day` (plans).
  *
  *   php artisan db:seed --class='Database\Seeders\MockSample\ComposerSeeder'
  *
@@ -35,8 +35,6 @@ use Illuminate\Support\Facades\DB;
  */
 class ComposerSeeder extends Seeder
 {
-    private const SOURCE = 'mock-sample';
-
     public function run(): void
     {
         if (! app()->environment('local')) {
@@ -45,37 +43,26 @@ class ComposerSeeder extends Seeder
             return;
         }
 
-        // Listings need an organiser; on this machine the comparison's own account will do.
-        $organiser = User::query()->where('email', (string) env('E2E_EMAIL', 'e2e@expadu.test'))->first();
+        $user = User::query()->where('email', (string) env('E2E_EMAIL', 'e2e@expadu.test'))->first();
 
-        if ($organiser === null) {
+        if ($user === null) {
             $this->command?->error('No E2E account. Run the E2ETestUserSeeder first.');
 
             return;
         }
 
-        $evening = fn (string $time) => CarbonImmutable::parse("2026-09-30 {$time}", 'Europe/Berlin');
+        // Earlier versions of this seeder made their own copies; Events' sample has them.
+        Event::query()->where('source', 'mock-sample')->whereIn('source_uid', ['today-review-culture', 'today-review-cinema'])->delete();
+        Spot::query()->where('source', 'mock-sample')->where('source_id', 'pharmacy-wiener-platz')->delete();
 
-        foreach ([
-            ['today-review-culture', 'Street culture night', '18:30', '21:00', 'Rheinauhafen', 50.92262, 6.96838,
-                'An illustrative evening of music by the Rhine. Sample event for this design preview.'],
-            ['today-review-cinema', 'Cinema under the stars', '20:00', '22:00', 'Stadtgarten', 50.9445, 6.93694,
-                'An illustrative outdoor film night. Sample event for this design preview.'],
-        ] as [$uid, $title, $start, $end, $venue, $lat, $lng, $description]) {
-            $event = Event::query()->updateOrCreate(['source' => self::SOURCE, 'source_uid' => $uid], [
-                'title' => $title, 'title_en' => $title, 'category' => 'culture',
-                'description' => $description, 'description_en' => $description,
-                'starts_at' => $evening($start), 'ends_at' => $evening($end),
-                'location_name' => $venue, 'is_free' => true, 'is_curated' => true,
-                'status' => 'active', 'source_url' => null, 'organiser_id' => $organiser->id,
-            ]);
-            DB::update('UPDATE events SET location = ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography WHERE id = ?', [$lng, $lat, $event->id]);
-        }
+        $this->call(EventsSeeder::class);
 
-        Spot::query()->updateOrCreate(['source' => self::SOURCE, 'source_id' => 'pharmacy-wiener-platz'], [
-            'name' => 'Apotheke am Wiener Platz (sample)', 'category' => SpotCategory::Pharmacy,
-            'address' => 'Wiener Platz, Mülheim', 'veedel' => 'Mülheim',
-            'lat' => 50.96118, 'lng' => 7.00502, 'is_active' => true, 'is_recommendable' => false,
+        // MockSample\PlacesSeeder's row for it, word for word (until #157 is in launch and
+        // this becomes $this->call(PlacesSeeder::class)).
+        Spot::query()->firstOrCreate(['source' => 'osm', 'source_id' => 'node/3354736381'], [
+            'name' => 'Eck-Apotheke', 'category' => 'pharmacy', 'lat' => 50.961116, 'lng' => 7.005841,
+            'veedel' => 'Mülheim', 'tags' => ['opening_hours' => 'Mo-Fr 08:30-18:30; Sa 09:00-14:00'],
+            'is_active' => true, 'public_access_allowed' => true,
         ]);
 
         // The mock's history is one conversation from its sample day; on the sample clock,
@@ -85,13 +72,13 @@ class ComposerSeeder extends Seeder
         CarbonImmutable::setTestNow($moment);
 
         try {
-            $revision = (int) ComposerWorkspace::query()->where('user_id', $organiser->id)->value('revision');
-            app(WorkspaceStore::class)->command($organiser, ['revision' => $revision, 'action' => 'delete_history']);
+            $revision = (int) ComposerWorkspace::query()->where('user_id', $user->id)->value('revision');
+            app(WorkspaceStore::class)->command($user, ['revision' => $revision, 'action' => 'delete_history']);
         } finally {
             Carbon::setTestNow();
             CarbonImmutable::setTestNow();
         }
 
-        $this->command?->info('The Composer sample listings are in place (2 events tonight, 1 pharmacy), with one new conversation.');
+        $this->command?->info('The Composer sample is in place (Events\' sample, the pharmacy by Wiener Platz), with one new conversation.');
     }
 }
