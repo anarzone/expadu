@@ -282,21 +282,46 @@ tasks:
       entry_mode: d_visa
     links:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__30.html
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
       - https://www.stadt-koeln.de/service/produkte/20335/index.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-10-07.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-20.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
+      - {kind: primary, label: '§81 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
       - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
     claims:
       - id: spouse-permit
         states: the joining spouse's own residence application
         source: '§30 AufenthG'
         quote: Dem Ehegatten eines Ausländers ist eine Aufenthaltserlaubnis zu erteilen, wenn
+      - id: before-expiry
+        states: file the joining spouse's own residence application before the national D visa expires
+        source: '§81 AufenthG'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels, gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend.
+      - id: passport-visa
+        states: the passport, visa
+        source: 'Stadt Köln · family reunification'
+        quote: Anerkannter und gültiger Nationalpass Falls erforderlich die Kopie des Einreisevisums
+      - id: marriage
+        states: marriage evidence
+        source: 'Stadt Köln · family reunification'
+        quote: Heiratsurkunde (nur für den Erstantrag)
+      - id: housing
+        states: housing
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen Ihren Mietvetrag zusammen mit einem Nachweis über die aktuelle Miethöhe, zum Beispiel einem aktuellen Kontoauszug, vorlegen.
+      - id: livelihood
+        states: livelihood evidence
+        source: 'Stadt Köln · family reunification'
+        quote: Sie müssen einen Nachweis über die vollständige Lebensunterhaltssicherung aller berufstätigen Familienmitglieder vorlegen.
+      - id: other-documents
+        states: other requested documents
+        source: 'Stadt Köln · family reunification'
+        quote: Es kann sein, dass wir in Einzelfällen weitere Unterlagen bei Ihnen anfragen.
 
   - title: Confirm which sponsor rules apply while the Blue Card is pending
     key: case.family.first_permit.sponsor_pending_review
@@ -320,10 +345,9 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/20335/index.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-20.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
       - {kind: implementation, label: 'Stadt Köln · family reunification', url: 'https://www.stadt-koeln.de/service/produkte/20335/index.html'}
@@ -360,10 +384,9 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/20335/index.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-20.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§30 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__30.html'}
       - {kind: primary, label: '§81 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
@@ -373,6 +396,10 @@ tasks:
         states: Section 30(3) says the permit may be extended while the marital household continues
         source: '§30 AufenthG'
         quote: verlängert werden, solange die eheliche Lebensgemeinschaft fortbesteht.
+      - id: renew-before-expiry
+        states: file it before the current residence title expires
+        source: '§81 AufenthG'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung
       - id: timely-application
         states: subject to §81 and its exceptions
         source: '§81 AufenthG'
@@ -405,16 +432,40 @@ tasks:
       german_level: {in: [b1, b2, c1, c2]}
     links:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__9.html
-      - https://www.make-it-in-germany.com/de/visum-aufenthalt/dauerhaft-in-deutschland/niederlassungserlaubnis
+      - https://www.stadt-koeln.de/service/produkte/20356/index.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-20.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§9(3a) AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9.html'}
-      - {kind: implementation, label: 'Make it in Germany · settlement permit', url: 'https://www.make-it-in-germany.com/de/visum-aufenthalt/dauerhaft-in-deutschland/niederlassungserlaubnis'}
+      - {kind: implementation, label: 'Stadt Köln · general settlement permit', url: 'https://www.stadt-koeln.de/service/produkte/20356/index.html'}
+    claims:
+      - id: title-18c
+        states: spouses of §18c holders
+        source: '§9(3a) AufenthG'
+        quote: Dem Ehegatten eines Ausländers, der eine Niederlassungserlaubnis nach § 18c besitzt
+      - id: route
+        states: Section 9(3a) creates a conditional settlement-permit route for a spouse living in a marital household with a person who holds a settlement permit under §18c
+        source: '§9(3a) AufenthG'
+        quote: Dem Ehegatten eines Ausländers, der eine Niederlassungserlaubnis nach § 18c besitzt, ist eine Niederlassungserlaubnis zu erteilen, wenn 1. er in ehelicher Lebensgemeinschaft mit dem Ausländer lebt
+      - id: three-years
+        states: the three-year residence-permit period
+        source: '§9(3a) AufenthG'
+        quote: er seit drei Jahren die Aufenthaltserlaubnis besitzt
+      - id: twenty-hours
+        states: at least 20 working hours
+        source: '§9(3a) AufenthG'
+        quote: er erwerbstätig im Umfang von mindestens 20 Stunden je Woche ist
+      - id: b1
+        states: B1 German
+        source: 'Stadt Köln · general settlement permit'
+        quote: Ihre Deutschkenntnisse entsprechen dem Niveau B1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
+      - id: other-conditions
+        states: The authority must verify all referenced §9 conditions
+        source: '§9(3a) AufenthG'
+        quote: die Voraussetzungen nach Absatz 2 Satz 1 Nummer 2, 4 bis 9 vorliegen
 
   - title: Track the general five-year settlement route
     key: case.family.settlement.general_coming_up
@@ -438,10 +489,9 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/20356/index.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-20.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§9 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9.html'}
       - {kind: implementation, label: 'Stadt Köln · general settlement permit', url: 'https://www.stadt-koeln.de/service/produkte/20356/index.html'}
@@ -492,11 +542,9 @@ tasks:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__31.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: single_source_approved
-    single_source_approved: true
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-20.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§31 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__31.html'}
     claims:

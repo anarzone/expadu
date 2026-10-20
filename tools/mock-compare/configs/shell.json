@@ -114,7 +114,8 @@
         {
             "name": "account",
             "mock": "header button.account-button",
-            "app": "header button.shell-account"
+            "app": "header button.shell-account",
+            "contentDiffers": true
         },
         {
             "name": "account initial",
@@ -126,7 +127,8 @@
             "name": "phone Composer button",
             "mock": "button.composer-launcher",
             "app": "button[aria-label*='Composer' i]:not(.shell-composer)",
-            "widths": [360, 390]
+            "widths": [360, 390],
+            "contentDiffers": true
         }
     ]
 }
