@@ -1,6 +1,6 @@
 {
     "name": "today-quiet",
-    "seed": "php artisan mock:sample-day quiet --email=<account>",
+    "seed": "php artisan mock:sample-day quiet --email=<account> && PAPERWORK_SAMPLE=quiet E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
@@ -23,40 +23,92 @@
             "name": "Your day",
             "mock": ".day-heading h2",
             "app": ".day-heading h2",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Your day (phone)",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
         },
         {
             "name": "date",
             "mock": ".day-heading small",
             "app": ".day-heading small",
             "contentDiffers": true,
-            "ignore": ["x", "w", "y"]
+            "ignore": ["x", "w"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "date (phone)",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["w", "x", "y"],
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "Your day panel",
             "mock": ".day-panel",
             "app": ".day-panel",
             "pixels": false,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Your day panel (phone)",
+            "mock": ".day-panel",
+            "app": ".day-panel",
+            "pixels": false,
+            "widths": [360, 390],
             "ignore": ["y"]
         },
         {
             "name": "nothing planned",
             "mock": ".day-empty strong",
             "app": ".day-empty strong",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "nothing planned (phone)",
+            "mock": ".day-empty strong",
+            "app": ".day-empty strong",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
         },
         {
             "name": "Add a plan",
             "mock": ".add-plan",
             "app": ".add-plan",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Add a plan (phone)",
+            "mock": ".add-plan",
+            "app": ".add-plan",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
         },
         {
             "name": "Add a plan icon",
             "mock": ".add-plan svg",
             "app": ".add-plan svg",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Add a plan icon (phone)",
+            "mock": ".add-plan svg",
+            "app": ".add-plan svg",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
         }
     ],
-    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land."
+    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared.",
+    "phoneNote": "Phone pairs don't compare pixels: with y set aside until the phone order (TD5), their text sits at other fractions of a pixel.",
+    "panelNote": "Your day panel's pixels take in the date line, whose words differ (see date), so on desktop the panel compares its box and styles only."
 }

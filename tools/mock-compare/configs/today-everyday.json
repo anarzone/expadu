@@ -1,6 +1,6 @@
 {
     "name": "today-everyday",
-    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
@@ -23,69 +23,121 @@
             "name": "Your day",
             "mock": ".day-heading h2",
             "app": ".day-heading h2",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Your day (phone)",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "ignore": ["y"],
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "date",
             "mock": ".day-heading small",
             "app": ".day-heading small",
             "contentDiffers": true,
-            "ignore": ["x", "w", "y"]
+            "ignore": ["x", "w"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "date (phone)",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["x", "w", "y"],
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "plan time",
             "mock": ".agenda-item .appointment-time",
             "app": ".agenda-item .appointment-time",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan time (phone)",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "ignore": ["y"],
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "plan title",
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512],
+            "contentDiffers": true,
+            "ignore": ["h", "w"]
+        },
+        {
+            "name": "plan title (phone)",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "ignore": ["h", "w", "y"],
+            "widths": [360, 390],
+            "pixels": false,
+            "contentDiffers": true
         },
         {
             "name": "plan place",
             "mock": ".agenda-item .appointment-location",
             "app": ".agenda-item .appointment-location",
-            "ignore": ["y"],
-            "widths": [360, 390, 1280, 1440, 1512]
+            "widths": [768, 1280, 1440, 1512]
         },
         {
-            "name": "plan place @768",
+            "name": "plan place (phone)",
             "mock": ".agenda-item .appointment-location",
             "app": ".agenda-item .appointment-location",
             "ignore": ["y"],
-            "widths": [768],
+            "widths": [360, 390],
             "pixels": false
         },
         {
             "name": "plan status",
             "mock": ".agenda-item .status-row",
             "app": ".agenda-item .status-row",
-            "ignore": ["y"],
-            "widths": [360, 390, 1280, 1440, 1512]
+            "widths": [768, 1280, 1440, 1512]
         },
         {
-            "name": "plan status @768",
+            "name": "plan status (phone)",
             "mock": ".agenda-item .status-row",
             "app": ".agenda-item .status-row",
             "ignore": ["y"],
-            "widths": [768],
+            "widths": [360, 390],
             "pixels": false
         },
         {
             "name": "plan options",
             "mock": ".agenda-item .appointment-options summary",
             "app": ".agenda-item button.appointment-options",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "plan options (phone)",
+            "mock": ".agenda-item .appointment-options summary",
+            "app": ".agenda-item button.appointment-options",
+            "ignore": ["y"],
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "Leave now",
             "mock": ".agenda-item .trip-line",
             "app": ".agenda-item .trip-line",
             "contentDiffers": true,
-            "ignore": ["y", "h"]
+            "ignore": ["h"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Leave now (phone)",
+            "mock": ".agenda-item .trip-line",
+            "app": ".agenda-item .trip-line",
+            "contentDiffers": true,
+            "ignore": ["y", "h"],
+            "widths": [360, 390]
         },
         {
             "name": "Add a plan",
@@ -95,7 +147,8 @@
             "pixels": false
         }
     ],
-    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land.",
+    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared everywhere but Add a plan, which sits below Leave now's taller card (see contentNote).",
     "contentNote": "Leave now is Travel's NextTripCard (compact) on the sample route. It says 'Scheduled · not live' in the ride tile's sub-line, the coordinator's call for Travel and Today (20 Oct); the design session is redrawing Today's mock to match, which still shows a chip row. Until then its height and pixels differ and what follows sits a fraction of a pixel off, so Add a plan's pixels are not compared.",
-    "subpixelNote": "At 768 the missing deadline strip (76.8 px) leaves the first plan's place and status a fraction of a pixel off, so their text rasterises differently; boxes and styles are still exact."
+    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel.",
+    "titleNote": "The appointment is Paperwork's record now, titled from the catalogue: 'EU Blue Card appointment' (the mock: 'Blue Card appointment'), so its title is content."
 }

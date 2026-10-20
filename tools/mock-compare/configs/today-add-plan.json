@@ -40,7 +40,6 @@
             "mock": "dialog[open]",
             "app": "dialog[open]",
             "pixels": false,
-            "ignore": ["y"],
             "widths": [768, 1280, 1440, 1512]
         },
         {
@@ -55,27 +54,49 @@
             "name": "sheet title",
             "mock": "dialog[open] .dialog-head h2",
             "app": "dialog[open] .ui-sheet-head h2",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "sheet title (phone)",
+            "mock": "dialog[open] .dialog-head h2",
+            "app": "dialog[open] .ui-sheet-head h2",
+            "ignore": ["y"],
+            "widths": [360, 390]
         },
         {
             "name": "sheet close",
             "mock": "dialog[open] .dialog-head button",
             "app": "dialog[open] .ui-sheet-close",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "sheet close (phone)",
+            "mock": "dialog[open] .dialog-head button",
+            "app": "dialog[open] .ui-sheet-close",
+            "ignore": ["y"],
+            "widths": [360, 390]
         },
         {
             "name": "day line",
             "mock": "#today-add-form .detail-intro",
             "app": ".today-form .detail-intro",
             "contentDiffers": true,
-            "ignore": ["w", "y"]
+            "ignore": ["w"],
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "day line (phone)",
+            "mock": "#today-add-form .detail-intro",
+            "app": ".today-form .detail-intro",
+            "contentDiffers": true,
+            "ignore": ["w", "y"],
+            "widths": [360, 390]
         },
         {
             "name": "what field",
             "mock": "#today-add-form .form-field",
             "app": ".today-form .form-field",
             "index": 0,
-            "ignore": ["y"],
             "phoneNote": "16px input text on phones (iOS zoom)",
             "widths": [768, 1280, 1440, 1512]
         },
@@ -93,7 +114,6 @@
             "mock": "#today-add-form input[name=title]",
             "app": ".today-form input[type=text]",
             "index": 0,
-            "ignore": ["y"],
             "phoneNote": "16px input text on phones (iOS zoom)",
             "widths": [768, 1280, 1440, 1512]
         },
@@ -111,7 +131,6 @@
             "mock": "#today-add-form .form-field",
             "app": ".today-form .form-field",
             "index": 1,
-            "ignore": ["y"],
             "phoneNote": "16px input text on phones (iOS zoom)",
             "widths": [768, 1280, 1440, 1512]
         },
@@ -129,8 +148,17 @@
             "mock": "#today-add-form .selection-times .form-field",
             "app": ".today-form .selection-times .form-field",
             "index": 0,
+            "contentDiffers": true,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "from field (phone)",
+            "mock": "#today-add-form .selection-times .form-field",
+            "app": ".today-form .selection-times .form-field",
+            "index": 0,
             "ignore": ["y"],
-            "contentDiffers": true
+            "contentDiffers": true,
+            "widths": [360, 390]
         },
         {
             "name": "from time",
@@ -138,7 +166,16 @@
             "app": ".today-form .ui-time-input",
             "index": 0,
             "contentDiffers": true,
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "from time (phone)",
+            "mock": "#today-add-form [data-time-input]",
+            "app": ".today-form .ui-time-input",
+            "index": 0,
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "widths": [360, 390]
         },
         {
             "name": "until time",
@@ -146,21 +183,44 @@
             "app": ".today-form .ui-time-input",
             "index": 1,
             "contentDiffers": true,
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "until time (phone)",
+            "mock": "#today-add-form [data-time-input]",
+            "app": ".today-form .ui-time-input",
+            "index": 1,
+            "contentDiffers": true,
+            "ignore": ["y"],
+            "widths": [360, 390]
         },
         {
             "name": "note",
             "mock": "#today-add-form .detail-note",
             "app": ".today-form .detail-note",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "note (phone)",
+            "mock": "#today-add-form .detail-note",
+            "app": ".today-form .detail-note",
+            "ignore": ["y"],
+            "widths": [360, 390]
         },
         {
             "name": "Add to this day",
             "mock": "#today-add-form .outline-action",
             "app": ".today-form .outline-action",
-            "ignore": ["y"]
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Add to this day (phone)",
+            "mock": "#today-add-form .outline-action",
+            "app": ".today-form .outline-action",
+            "ignore": ["y"],
+            "widths": [360, 390]
         }
     ],
-    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land.",
+    "ignoreNote": "Phones (360, 390): the 16px fields make the sheet taller, so its parts sit higher (see contentNote); from 768 px y is compared. The sheet's own pixels take in the start and end times, which differ, so it compares box and styles only.",
     "contentNote": "Phones raise text fields to 16px so iOS doesn't zoom on focus (the mock's are 14px), so the text inputs and the sheet are 2px taller there. The times start at the next quarter hour (13:15 at the mock's 13:10) where the mock always shows 15:00–16:00."
 }

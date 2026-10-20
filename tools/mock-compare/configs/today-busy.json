@@ -1,6 +1,6 @@
 {
     "name": "today-busy",
-    "seed": "php artisan mock:sample-day busy --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "seed": "php artisan mock:sample-day busy --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
@@ -23,63 +23,162 @@
             "name": "Your day",
             "mock": ".day-heading h2",
             "app": ".day-heading h2",
+            "ignore": ["w", "h", "x"],
+            "contentDiffers": true,
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "Your day @768",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "ignore": ["h", "w", "x", "y"],
+            "contentDiffers": true,
+            "widths": [768],
+            "pixels": false
+        },
+        {
+            "name": "Your day (phone)",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
             "ignore": ["y", "w", "h", "x"],
-            "contentDiffers": true
+            "contentDiffers": true,
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "date",
             "mock": ".day-heading small",
             "app": ".day-heading small",
             "contentDiffers": true,
-            "ignore": ["x", "w", "y", "h"]
+            "ignore": ["x", "w", "h"],
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "date @768",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["h", "w", "x", "y"],
+            "widths": [768],
+            "pixels": false
+        },
+        {
+            "name": "date (phone)",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["x", "w", "y", "h"],
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "plan time",
             "mock": ".agenda-item .appointment-time",
             "app": ".agenda-item .appointment-time",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "plan time @768",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "widths": [768],
             "ignore": ["y"]
+        },
+        {
+            "name": "plan time (phone)",
+            "mock": ".agenda-item .appointment-time",
+            "app": ".agenda-item .appointment-time",
+            "ignore": ["y"],
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "plan title",
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
-            "ignore": ["y"]
+            "widths": [1280, 1440, 1512],
+            "contentDiffers": true,
+            "ignore": ["h", "w"]
+        },
+        {
+            "name": "plan title @768",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "widths": [768],
+            "ignore": ["h", "w", "y"],
+            "contentDiffers": true
+        },
+        {
+            "name": "plan title (phone)",
+            "mock": ".agenda-item .appointment-title",
+            "app": ".agenda-item .appointment-title",
+            "ignore": ["h", "w", "y"],
+            "widths": [360, 390],
+            "pixels": false,
+            "contentDiffers": true
         },
         {
             "name": "plan place",
             "mock": ".agenda-item .appointment-location",
             "app": ".agenda-item .appointment-location",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "plan place (phone)",
+            "mock": ".agenda-item .appointment-location",
+            "app": ".agenda-item .appointment-location",
             "ignore": ["y"],
-            "widths": [360, 390, 1280, 1440, 1512]
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "plan place @768",
             "mock": ".agenda-item .appointment-location",
             "app": ".agenda-item .appointment-location",
-            "ignore": ["y"],
             "widths": [768],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "plan status",
             "mock": ".agenda-item .status-row",
             "app": ".agenda-item .status-row",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "plan status (phone)",
+            "mock": ".agenda-item .status-row",
+            "app": ".agenda-item .status-row",
             "ignore": ["y"],
-            "widths": [360, 390, 1280, 1440, 1512]
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "plan status @768",
             "mock": ".agenda-item .status-row",
             "app": ".agenda-item .status-row",
-            "ignore": ["y"],
             "widths": [768],
-            "pixels": false
+            "ignore": ["y"]
         },
         {
             "name": "plan options",
             "mock": ".agenda-item .appointment-options summary",
             "app": ".agenda-item button.appointment-options",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "plan options @768",
+            "mock": ".agenda-item .appointment-options summary",
+            "app": ".agenda-item button.appointment-options",
+            "widths": [768],
             "ignore": ["y"]
+        },
+        {
+            "name": "plan options (phone)",
+            "mock": ".agenda-item .appointment-options summary",
+            "app": ".agenda-item button.appointment-options",
+            "ignore": ["y"],
+            "widths": [360, 390],
+            "pixels": false
         },
         {
             "name": "second plan time",
@@ -178,7 +277,8 @@
             "contentDiffers": true
         }
     ],
-    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land.",
+    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 1280 px the first plan compares y; the second and third plans and the trips between them sit below Leave now's taller card (see today-everyday) and the mock's wrapping trip rows (see contentNote), so their y is aside. At 768 the mock's longer date line ('· Sample day · 3 plans') wraps to two lines and moves the plans down, so y is aside there too.",
     "contentNote": "The mock's sample words are longer ('Wed 30 Sept · Sample day · 3 plans', 'Mülheim → Ehrenfeld · sample estimate') and wrap, so heading and trip rows differ in w/h; the trips between plans are live travel times (here 34 min, only 26 spare: tight), so their icon colour follows that status. Pairs below them sit at other sub-pixel offsets, so their pixels are not compared.",
-    "subpixelNote": "At 768 the missing deadline strip (76.8 px) leaves the first plan's place and status a fraction of a pixel off, so their text rasterises differently; boxes and styles are still exact."
+    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel.",
+    "titleNote": "The appointment is Paperwork's record now, titled from the catalogue: 'EU Blue Card appointment' (the mock: 'Blue Card appointment'), so its title is content."
 }
