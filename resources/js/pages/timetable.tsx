@@ -1,6 +1,5 @@
 import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { LegacyJourney } from '@/components/departures/legacy-journey';
 import { useShellHeaderAside } from '@/components/shell/use-shell-header-aside';
 import { NearbyView } from '@/components/travel/nearby/nearby-view';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
@@ -13,8 +12,11 @@ import { PlanPanel } from '@/components/travel/plan/plan-panel';
 import type {
     PlanStage,
     SavedPlace,
+    ShownWay,
 } from '@/components/travel/plan/plan-panel';
 import { TravelIcon } from '@/components/travel/travel-icon';
+import type { TripFor } from '@/components/travel/trip/trip-model';
+import { TripPage } from '@/components/travel/trip/trip-page';
 import {
     isGoing,
     tripOf,
@@ -24,9 +26,11 @@ import {
     locateErrorText,
     useTravelLocation,
 } from '@/components/travel/use-travel-location';
+import type { ActiveTrip } from '@/hooks/use-active-trip';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import type { DayItem, DayProjection } from '@/types/day';
+import type { Journey } from '@/types/transit';
 import '../../css/travel.css';
 import '../../css/travel-page.css';
 
@@ -160,6 +164,30 @@ function Waiting({ label }: { label: string }) {
     ) : null;
 }
 
+/** The plan a trip you're on is for, as it was stored when it started. */
+function tripForActive(trip: ActiveTrip): TripFor {
+    const target = trip.target;
+
+    return {
+        place: target?.title ?? trip.destination.name,
+        label: target?.label ?? null,
+        start: target
+            ? new Intl.DateTimeFormat('en-GB', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'Europe/Berlin',
+              }).format(new Date(target.start_at))
+            : null,
+        startAt: target?.start_at ?? null,
+        official: target?.official ?? false,
+        kind: target?.kind ?? null,
+    };
+}
+
+/** The same way: it leaves and arrives at the same times. */
+const sameWay = (a: Journey, b: Journey) =>
+    a.depart_at === b.depart_at && a.arrive_at === b.arrive_at;
+
 export default function Timetable() {
     const page = usePage<PageProps>();
     const { station, day, favouriteStops = [], savedPlaces = [] } = page.props;
@@ -225,7 +253,16 @@ export default function Timetable() {
     const trip = today?.next_trip ?? null;
     const starter = useStartTrip();
     const going = !!trip && isGoing(trip, starter.activeTrip);
-    useTripLeadsBack(going);
+    // The trip page: the way Plan a trip showed (before you start), else
+    // the trip you're on.
+    const [shownWay, setShownWay] = useState<ShownWay | null>(null);
+    const active = starter.activeTrip;
+    const before =
+        shownWay && !(active && sameWay(active.journey, shownWay.journey))
+            ? shownWay
+            : null;
+    const tripOpen = view === 'route' && (!!before || !!active);
+    useTripLeadsBack(going || tripOpen);
 
     const pickStop = (name: string | null) => {
         const params = new URLSearchParams();
@@ -328,12 +365,38 @@ export default function Timetable() {
         );
     };
 
-    const startTrip = () => {
+    // "I'm on my way" opens the trip page, started (departures-next).
+    const startTrip = async () => {
         const next = trip ? tripOf(trip) : null;
 
-        if (next) {
-            void starter.begin(next.journey, next.destination, next.origin);
+        if (
+            next &&
+            (await starter.begin(
+                next.journey,
+                next.destination,
+                next.origin,
+                next.plan,
+            ))
+        ) {
+            setShownWay(null);
+            setView('route');
         }
+    };
+
+    const closeTrip = () => {
+        if (before) {
+            setShownWay(null);
+            setView('journey');
+
+            return;
+        }
+
+        setView('stop');
+        router.replace({
+            url: '/timetable',
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
     // The planner's day and clock, in Cologne's time.
@@ -356,6 +419,7 @@ export default function Timetable() {
             <div
                 className={cn(
                     'travel-page',
+                    tripOpen && 'trip-open',
                     planStage.hasDest && 'plan-has-dest',
                     planStage.results && 'has-results',
                     planStage.big && 'plan-big',
@@ -400,116 +464,170 @@ export default function Timetable() {
                         });
                     }}
                     onBoardStop={openBoardingStop}
+                    onShowTheWay={(way) => {
+                        setShownWay(way);
+                        setView('route');
+                    }}
                     onLocate={location.locate}
                     locating={location.locating}
                 />
 
-                {view === 'route' ? (
-                    <section id="legacy-journey" aria-label="Your trip">
-                        <LegacyJourney onClose={() => setView('stop')} />
-                    </section>
-                ) : (
-                    <section
-                        id="departures"
-                        aria-label="Nearby"
-                        hidden={!desktop && view === 'journey'}
-                    >
-                        {boardReturn ? (
-                            <button
-                                type="button"
-                                className="quiet-button board-return"
-                                onClick={returnToJourney}
-                            >
-                                <span data-icon="back">
-                                    <TravelIcon name="back" />
-                                </span>
-                                Back to your journey
-                            </button>
-                        ) : null}
-                        {/* The day arrives deferred; while it reloads, the last one stays. */}
-                        {trip ? (
-                            <>
-                                <NextTripCard
-                                    trip={trip}
-                                    id="nearby-trip"
-                                    going={going}
-                                    onStart={startTrip}
-                                    confirm={starter.confirm}
-                                    starting={starter.busy}
-                                    tripHref={
-                                        starter.activeTrip
-                                            ? activeTripHref(starter.activeTrip)
-                                            : undefined
-                                    }
-                                    onPlan={
-                                        target?.location?.routable
-                                            ? () => planToItem(target)
-                                            : undefined
-                                    }
-                                    onLocate={location.locate}
-                                    icons={{
-                                        clock: <TravelIcon name="clock" />,
-                                        unsure: <TravelIcon name="info" />,
-                                        timer: <TravelIcon name="timer" />,
-                                    }}
-                                />
-                                {starter.error ? (
-                                    <p
-                                        className="nearby-stepnote"
-                                        role="status"
-                                    >
-                                        {starter.error}
-                                    </p>
-                                ) : null}
-                            </>
-                        ) : null}
-                        <Deferred
-                            data="station"
-                            fallback={
-                                <Waiting label="Finding the closest station…" />
+                {tripOpen ? (
+                    <TripPage
+                        journey={before ? before.journey : active!.journey}
+                        trip={before ? before.trip : tripForActive(active!)}
+                        city={today?.next_trip?.city ?? null}
+                        running={!before}
+                        desktop={desktop}
+                        onClose={closeTrip}
+                        onStart={() => {
+                            if (before) {
+                                void starter.begin(
+                                    before.journey,
+                                    before.destination,
+                                    before.origin,
+                                    before.plan,
+                                );
                             }
+                        }}
+                        starting={starter.busy}
+                        confirm={starter.confirm}
+                        error={starter.error}
+                        inPlan={before?.inPlan}
+                        onAddToPlan={
+                            before?.addToPlan
+                                ? async () => {
+                                      if (await before.addToPlan?.()) {
+                                          setShownWay({
+                                              ...before,
+                                              inPlan: true,
+                                          });
+                                      }
+                                  }
+                                : undefined
+                        }
+                        onStop={async () => {
+                            const ok = await starter.end();
+
+                            if (ok) {
+                                closeTrip();
+                            }
+
+                            return ok;
+                        }}
+                        onReplan={() => {
+                            const target = before
+                                ? before.plan?.target_id
+                                : active?.target?.id;
+
+                            if (target) {
+                                router.visit(
+                                    `/timetable?${new URLSearchParams({ view: 'journey', activity: target, compare: '1' })}`,
+                                );
+                            } else {
+                                setShownWay(null);
+                                setView('journey');
+                            }
+                        }}
+                    />
+                ) : null}
+                <section
+                    id="departures"
+                    aria-label="Nearby"
+                    hidden={!desktop && view === 'journey'}
+                >
+                    {boardReturn ? (
+                        <button
+                            type="button"
+                            className="quiet-button board-return"
+                            onClick={returnToJourney}
                         >
-                            {shown ? (
-                                <NearbyView
-                                    station={shown}
-                                    favourites={favouriteStops}
-                                    onPickStop={pickStop}
-                                    onToggleFavourite={toggleFavourite}
-                                    favouriteBusy={favouriteBusy}
-                                />
-                            ) : (
-                                <div className="nearby-empty">
-                                    <strong>Where are you?</strong>
-                                    <span>
-                                        Nearby shows the station closest to you.
-                                        Share your location, or pick a stop.
-                                    </span>
-                                    <button
-                                        type="button"
-                                        className="quiet-button"
-                                        onClick={location.locate}
-                                        disabled={location.locating}
-                                    >
-                                        <TravelIcon name="locate" />
-                                        {location.locating
-                                            ? 'Locating…'
-                                            : 'Use my location'}
-                                    </button>
-                                </div>
-                            )}
-                        </Deferred>
-                        {location.error ? (
-                            <p className="nearby-stepnote" role="status">
-                                {locateErrorText[location.error]}
-                            </p>
-                        ) : null}
-                        {notice ? (
-                            <p className="nearby-stepnote" role="status">
-                                {notice}
-                            </p>
-                        ) : null}
-                    </section>
-                )}
+                            <span data-icon="back">
+                                <TravelIcon name="back" />
+                            </span>
+                            Back to your journey
+                        </button>
+                    ) : null}
+                    {/* The day arrives deferred; while it reloads, the last one stays. */}
+                    {trip ? (
+                        <>
+                            <NextTripCard
+                                trip={trip}
+                                id="nearby-trip"
+                                going={going}
+                                onStart={() => void startTrip()}
+                                confirm={starter.confirm}
+                                starting={starter.busy}
+                                tripHref={
+                                    starter.activeTrip
+                                        ? activeTripHref(starter.activeTrip)
+                                        : undefined
+                                }
+                                onPlan={
+                                    target?.location?.routable
+                                        ? () => planToItem(target)
+                                        : undefined
+                                }
+                                onLocate={location.locate}
+                                icons={{
+                                    clock: <TravelIcon name="clock" />,
+                                    unsure: <TravelIcon name="info" />,
+                                    timer: <TravelIcon name="timer" />,
+                                }}
+                            />
+                            {starter.error ? (
+                                <p className="nearby-stepnote" role="status">
+                                    {starter.error}
+                                </p>
+                            ) : null}
+                        </>
+                    ) : null}
+                    <Deferred
+                        data="station"
+                        fallback={
+                            <Waiting label="Finding the closest station…" />
+                        }
+                    >
+                        {shown ? (
+                            <NearbyView
+                                station={shown}
+                                favourites={favouriteStops}
+                                onPickStop={pickStop}
+                                onToggleFavourite={toggleFavourite}
+                                favouriteBusy={favouriteBusy}
+                            />
+                        ) : (
+                            <div className="nearby-empty">
+                                <strong>Where are you?</strong>
+                                <span>
+                                    Nearby shows the station closest to you.
+                                    Share your location, or pick a stop.
+                                </span>
+                                <button
+                                    type="button"
+                                    className="quiet-button"
+                                    onClick={location.locate}
+                                    disabled={location.locating}
+                                >
+                                    <TravelIcon name="locate" />
+                                    {location.locating
+                                        ? 'Locating…'
+                                        : 'Use my location'}
+                                </button>
+                            </div>
+                        )}
+                    </Deferred>
+                    {location.error ? (
+                        <p className="nearby-stepnote" role="status">
+                            {locateErrorText[location.error]}
+                        </p>
+                    ) : null}
+                    {notice ? (
+                        <p className="nearby-stepnote" role="status">
+                            {notice}
+                        </p>
+                    ) : null}
+                </section>
             </div>
         </AppLayout>
     );

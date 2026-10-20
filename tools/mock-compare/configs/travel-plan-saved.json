@@ -55,7 +55,7 @@
             "app": ".plan-saved",
             "contentDiffers": true,
             "ignore": ["h"],
-            "reason": "The reminder starts on only where notifications are already allowed (the mock starts it on); the \"We keep watching it\" row waits for the watcher (agreed with the coordinator)."
+            "reason": "The reminder starts on only where notifications are already allowed (the mock starts it on), and \"We keep watching it\" says what is watched (see that row): both rows are shorter here."
         },
         {
             "name": "saved mark",
@@ -96,11 +96,35 @@
             "ignore": ["y", "background-color"]
         },
         {
+            "name": "We keep watching it",
+            "mock": ".plan-saved-list .is-note",
+            "app": ".plan-saved-list .is-note",
+            "contentDiffers": true,
+            "ignore": ["h", "y"],
+            "reason": "What is watched, as built: live delays and KVB notices (travel:watch-planned-trips). The mock adds \"the weather\", which the watcher doesn't check, and its own \"This preview doesn't watch\". It follows the reminder row (see Remind me)."
+        },
+        {
+            "name": "watching icon",
+            "mock": ".plan-saved-icon.is-watch",
+            "app": ".plan-saved-icon.is-watch",
+            "ignore": ["y"],
+            "reason": "After the reminder row, which is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
+            "name": "watching title",
+            "mock": ".plan-saved-list .is-note strong",
+            "app": ".plan-saved-list .is-note strong",
+            "ignore": ["y"],
+            "reason": "After the reminder row, which is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "pixels": false
+        },
+        {
             "name": "saved actions",
             "mock": ".plan-saved-actions",
             "app": ".plan-saved-actions",
             "ignore": ["y"],
-            "reason": "Follows the list (the watching row). After the list, whose reminder row is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
+            "reason": "Follows the list (its reminder and watching rows). After the list, whose reminder row is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.",
             "pixels": false
         },
         {

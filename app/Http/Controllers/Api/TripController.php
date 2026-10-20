@@ -50,6 +50,7 @@ class TripController extends Controller
                 'journey' => $request->input('journey'),
                 'destination' => $validated['destination'],
                 'origin' => $validated['origin'] ?? null,
+                'target' => $request->target(),
                 'started_at' => now(),
             ],
         );

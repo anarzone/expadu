@@ -1,9 +1,11 @@
 <?php
 
 use App\Day\DayProjection;
+use App\Models\CityNews;
 use App\Models\ComposerWorkspace;
 use App\Models\PlannedTrip;
 use App\Models\User;
+use App\Notifications\PlannedTripChangeOfPlan;
 use App\Notifications\PlannedTripLeaveReminder;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
@@ -18,7 +20,9 @@ use Illuminate\Support\Facades\Redis;
 // "Add to plan": the way a person picks for one of their own plans. Only
 // their own plans on that day take one, it stays a bounded journey, only
 // they can change or remove it, Leave now leads with it while it leaves the
-// margin, and its reminder goes once, when they asked for it.
+// margin, and its reminder goes once, when they asked for it. "We keep
+// watching it": a Change of plan goes to its owner once per severity, from
+// live data only, by the plan's id only.
 
 const PLANNED_DAY = '2026-10-21';
 
@@ -247,4 +251,139 @@ test('a planned way goes the day after', function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-23 04:00', 'Europe/Berlin'));
     $this->artisan('model:prune', ['--model' => [PlannedTrip::class]])->assertSuccessful();
     expect(PlannedTrip::query()->count())->toBe(0);
+});
+
+/** The ride as the router answers it now: late by $late minutes, or cancelled. */
+function watchedRide(string $board, string $alight, string $leave, string $there, int $late = 0, bool $cancelled = false, bool $live = true): Journey
+{
+    $at = fn (string $t) => CarbonImmutable::parse(PLANNED_DAY." {$t}", 'Europe/Berlin');
+    $start = new Place('', new GeoPoint(50.9361, 6.9473));
+    $stop = new Place('Köln Neumarkt', new GeoPoint(50.9363, 6.9469));
+    $get = new Place('Köln Mülheim Wiener Platz', new GeoPoint(50.9610, 7.0040));
+    $end = new Place('', new GeoPoint(50.96103, 7.0048));
+
+    return new Journey([
+        new Leg('walk', $start, $stop, $at($leave), $at($board), 4),
+        new Leg('tram', $stop, $get, $at($board)->addMinutes($late), $at($alight)->addMinutes($late), 28, '4', 'Schlebusch',
+            scheduledDepartAt: $at($board), scheduledArriveAt: $at($alight), delayMin: $live ? $late : null, realtime: $live, cancelled: $cancelled),
+        new Leg('walk', $get, $end, $at($alight)->addMinutes($late), $at($there)->addMinutes($late), 6),
+    ], $at($leave), $at($there)->addMinutes($late), 38 + $late, 0);
+}
+
+/** A router that answers with whatever the test says the feed has now. */
+function watchedRoutes(): object
+{
+    $routes = new class implements RouteService
+    {
+        /** @var list<Journey> */
+        public array $journeys = [];
+
+        public function withTimeBudget(float $seconds): static
+        {
+            return $this;
+        }
+
+        public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult
+        {
+            return new JourneyResult($this->journeys, 'motis');
+        }
+
+        public function geocode(string $query, ?GeoPoint $bias = null): array
+        {
+            return [];
+        }
+
+        public function reverseGeocode(GeoPoint $point): ?Place
+        {
+            return null;
+        }
+
+        public function travelMatrix(GeoPoint $origin, array $destinations, string $mode = 'BIKE'): array
+        {
+            return [];
+        }
+    };
+    app()->instance(RouteService::class, $routes);
+
+    return $routes;
+}
+
+function watchedTrip(User $user): PlannedTrip
+{
+    return PlannedTrip::query()->create([
+        'user_id' => $user->id, 'date' => PLANNED_DAY, 'target_id' => 'blue-card', 'title' => 'Blue Card appointment',
+        'journey' => plannedTripJourney('13:14', '13:42', '13:10', '13:48'),
+        'depart_at' => CarbonImmutable::parse(PLANNED_DAY.' 13:10', 'Europe/Berlin'),
+        'arrive_at' => CarbonImmutable::parse(PLANNED_DAY.' 13:48', 'Europe/Berlin'),
+        'planned_at' => CarbonImmutable::parse(PLANNED_DAY.' 12:30', 'Europe/Berlin'),
+    ]);
+}
+
+test('a cancelled ride sends its owner one Change of plan, with the way instead, by the plan id only', function () {
+    Notification::fake();
+    $routes = watchedRoutes();
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48', cancelled: true), watchedRide('13:24', '13:52', '13:20', '13:58')];
+    $trip = watchedTrip($this->user);
+    // Someone else's way on the same tram, on a day without that plan: not theirs to hear about.
+    $other = User::factory()->onboarded()->create();
+    watchedTrip($other);
+
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+
+    Notification::assertSentToTimes($this->user, PlannedTripChangeOfPlan::class, 1);
+    Notification::assertNotSentTo($other, PlannedTripChangeOfPlan::class);
+    Notification::assertSentTo($this->user, PlannedTripChangeOfPlan::class, function (PlannedTripChangeOfPlan $change) {
+        $data = $change->toArray($this->user);
+
+        return $data['body'] === 'Your 13:14 tram 4 is cancelled. Instead: leave 13:20 for tram 4 at 13:24, there 13:58, only 2 min before 14:00.'
+            && $data['url'] === '/timetable?view=journey&activity=blue-card';
+    });
+    expect($trip->fresh()->alerted_kind)->toBe('cancelled');
+});
+
+test('lateness counts only from live times eating the margin; a worse change is sent again, a milder one never', function () {
+    Notification::fake();
+    $routes = watchedRoutes();
+    $trip = watchedTrip($this->user);
+
+    // Two minutes late still leaves the official ten; timetable times say nothing.
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48', late: 2)];
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48', late: 9, live: false)];
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    Notification::assertNothingSent();
+
+    // Nine minutes late leaves three of the ten an official appointment wants.
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48', late: 9)];
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    Notification::assertSentToTimes($this->user, PlannedTripChangeOfPlan::class, 1);
+    expect($trip->fresh()->alerted_kind)->toBe('late');
+
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48', cancelled: true)];
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48', late: 9)];
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    Notification::assertSentToTimes($this->user, PlannedTripChangeOfPlan::class, 2);
+    expect($trip->fresh()->alerted_kind)->toBe('cancelled');
+});
+
+test('a KVB notice for its line counts only when published after the way was picked', function () {
+    Notification::fake();
+    $routes = watchedRoutes();
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48')];
+    watchedTrip($this->user);
+    $notice = fn (string $title, string $at) => CityNews::query()->create([
+        'title' => $title, 'summary' => '', 'source' => 'kvb', 'source_url' => 'https://www.kvb.koeln/#'.md5($title), 'category' => 'transit',
+        'affected_lines' => ['4'], 'severity' => 'major', 'published_at' => CarbonImmutable::parse(PLANNED_DAY." {$at}", 'Europe/Berlin'),
+    ]);
+
+    $notice('Linie 4: Bauarbeiten am Ebertplatz', '09:00');
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    Notification::assertNothingSent();
+
+    $notice('Linie 4: Störung zwischen Neumarkt und Wiener Platz', '12:55');
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    Notification::assertSentTo($this->user, PlannedTripChangeOfPlan::class, fn (PlannedTripChangeOfPlan $change) => $change->toArray($this->user)['body'] === 'KVB notice for tram 4: Linie 4: Störung zwischen Neumarkt und Wiener Platz');
 });
