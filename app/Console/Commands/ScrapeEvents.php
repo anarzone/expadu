@@ -94,78 +94,97 @@ class ScrapeEvents extends Command
             } while ($page <= min($totalPages, self::KOELN_MAX_PAGES));
 
             foreach ($this->oneCopyPerOccurrence($fetched) as $ev) {
-                $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
-                if (! $title) {
-                    continue;
-                }
+                // One bad record is logged and skipped, not the rest of the run.
+                try {
+                    $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+                    if (! $title) {
+                        continue;
+                    }
 
-                $startsAt = Carbon::parse($ev['start_date'] ?? now());
-                if ($startsAt->isPast()) {
-                    continue;
-                }
+                    $startsAt = Carbon::parse($ev['start_date'] ?? now());
+                    if ($startsAt->isPast()) {
+                        continue;
+                    }
 
-                // koeln.de deletes and re-creates posts, so the same
-                // occurrence comes back under a new id (and sometimes a new
-                // page): match on the id, then the page, then the title and
-                // venue, all at the same start. A hidden copy is never revived.
-                $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
-                $sourceUrl = is_string($ev['url'] ?? null) ? $ev['url'] : null;
-                $copies = fn () => Event::query()->where('source', 'koeln.de')->where('status', '<>', 'hidden');
-                $existingEvent = ($sourceUid ? $copies()->where('source_uid', $sourceUid)->first() : null)
-                    ?? ($sourceUrl ? $copies()->where('source_url', $sourceUrl)->where('starts_at', $startsAt)->latest('id')->first() : null)
-                    ?? $copies()->whereRaw('lower(title) = ?', [mb_strtolower(mb_substr($title, 0, 255))])->where('starts_at', $startsAt)->latest('id')->get()
-                        ->first(fn (Event $copy) => $this->sameVenue($copy->location_name, is_array($ev['venue'] ?? null) ? ($ev['venue']['venue'] ?? null) : null));
-                $event = $existingEvent ?? new Event(['source' => 'koeln.de']);
-                $event->source_uid = $sourceUid;
-                $isNew = ! $event->exists;
-                $attributes = $this->koelnAttributes($ev, $title, $startsAt, $organiserId);
-                $copyChanged = ! $isNew
-                    && ($event->title !== $attributes['title'] || $event->description !== $attributes['description']);
-                $classifierInputChanged = ! $isNew && ($copyChanged
-                    || ! $event->starts_at?->equalTo($attributes['starts_at'])
-                    || ! $event->ends_at?->equalTo($attributes['ends_at'])
-                    || $event->location_name !== $attributes['location_name']
-                    || $event->address !== $attributes['address']
-                    || $event->price_text !== $attributes['price_text']
-                    || $event->is_free !== $attributes['is_free']);
-                $venueChanged = ! $isNew
-                    && ($event->location_name !== $attributes['location_name'] || $event->address !== $attributes['address']);
+                    // koeln.de deletes and re-creates posts, so the same
+                    // occurrence comes back under a new id (and sometimes a new
+                    // page). (source, source_uid) is unique, so the id decides
+                    // first, hidden copies included; otherwise the page, then
+                    // title and venue, all at the same start, find the live copy.
+                    $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
+                    $sourceUrl = is_string($ev['url'] ?? null) ? $ev['url'] : null;
+                    $venueName = is_array($ev['venue'] ?? null) ? ($ev['venue']['venue'] ?? null) : null;
+                    $byUid = $sourceUid ? Event::query()->where('source', 'koeln.de')->where('source_uid', $sourceUid)->first() : null;
+                    $live = fn () => Event::query()->where('source', 'koeln.de')->where('status', '<>', 'hidden');
+                    $liveCopy = ($byUid === null || $byUid->status === 'hidden')
+                        ? (($sourceUrl ? $live()->where('source_url', $sourceUrl)->where('starts_at', $startsAt)->latest('id')->first() : null)
+                            ?? $live()->whereRaw('lower(title) = ?', [mb_strtolower(mb_substr($title, 0, 255))])->where('starts_at', $startsAt)->latest('id')->get()
+                                ->first(fn (Event $copy) => $this->sameVenue($copy->location_name, $venueName)))
+                        : null;
+                    // A hidden copy's listing updates the live copy it was hidden
+                    // for, which keeps its own id. With no live copy left, the
+                    // hidden one is the event again.
+                    $event = match (true) {
+                        $byUid !== null && $byUid->status !== 'hidden' => $byUid,
+                        $liveCopy !== null => $liveCopy,
+                        $byUid !== null => $byUid,
+                        default => new Event(['source' => 'koeln.de']),
+                    };
+                    if ($byUid === null) {
+                        $event->source_uid = $sourceUid;
+                    }
+                    $isNew = ! $event->exists;
+                    $attributes = $this->koelnAttributes($ev, $title, $startsAt, $organiserId);
+                    $copyChanged = ! $isNew
+                        && ($event->title !== $attributes['title'] || $event->description !== $attributes['description']);
+                    $classifierInputChanged = ! $isNew && ($copyChanged
+                        || ! $event->starts_at?->equalTo($attributes['starts_at'])
+                        || ! $event->ends_at?->equalTo($attributes['ends_at'])
+                        || $event->location_name !== $attributes['location_name']
+                        || $event->address !== $attributes['address']
+                        || $event->price_text !== $attributes['price_text']
+                        || $event->is_free !== $attributes['is_free']);
+                    $venueChanged = ! $isNew
+                        && ($event->location_name !== $attributes['location_name'] || $event->address !== $attributes['address']);
 
-                $event->fill($attributes);
+                    $event->fill($attributes);
 
-                if ($copyChanged) {
-                    $event->fill([
-                        'title_en' => null,
-                        'description_en' => null,
-                        'language' => null,
-                    ]);
-                }
+                    if ($copyChanged) {
+                        $event->fill([
+                            'title_en' => null,
+                            'description_en' => null,
+                            'language' => null,
+                        ]);
+                    }
 
-                if ($classifierInputChanged) {
-                    $event->fill([
-                        'summary_en' => null,
-                        'tip_en' => null,
-                        'chips' => null,
-                        'relevance' => null,
-                        'classification_input_hash' => null,
-                    ]);
-                }
+                    if ($classifierInputChanged) {
+                        $event->fill([
+                            'summary_en' => null,
+                            'tip_en' => null,
+                            'chips' => null,
+                            'relevance' => null,
+                            'classification_input_hash' => null,
+                        ]);
+                    }
 
-                if ($venueChanged) {
-                    $event->venue_id = null;
-                }
+                    if ($venueChanged) {
+                        $event->venue_id = null;
+                    }
 
-                $sourceChanged = $event->isDirty();
-                $event->save();
+                    $sourceChanged = $event->isDirty();
+                    $event->save();
 
-                $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
+                    $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
 
-                if ($isNew || $classifierInputChanged) {
-                    ProcessEventJob::dispatch($event);
-                }
+                    if ($isNew || $classifierInputChanged) {
+                        ProcessEventJob::dispatch($event);
+                    }
 
-                if ($isNew || $sourceChanged) {
-                    $created++;
+                    if ($isNew || $sourceChanged) {
+                        $created++;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('events:scrape — koeln.de event skipped', ['source_uid' => $ev['id'] ?? null, 'error' => $e->getMessage()]);
                 }
             }
         } catch (\Exception $e) {
