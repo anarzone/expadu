@@ -1,0 +1,78 @@
+{
+    "name": "shell-account",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": "header",
+        "before": [
+            {
+                "click": "header button.account-button"
+            },
+            {
+                "wait": 300
+            }
+        ]
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": "header",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            {
+                "click": "header button.shell-account"
+            },
+            {
+                "wait": 300
+            }
+        ]
+    },
+    "contentNote": "The mock's account panel is a preview ('Anar · Preview profile', 'Account settings are available in the main app.'). The app's holds the person's name and email and its links (Your situation, Settings, Alerts: the coordinator's call, 20 Oct), so the panel's height, its lines' words and where Sign out sits are content.",
+    "pairs": [
+        {
+            "name": "account (open)",
+            "mock": "header button.account-button",
+            "app": "header button.shell-account",
+            "contentDiffers": true
+        },
+        {
+            "name": "panel",
+            "mock": "#header-account",
+            "app": ".shell-account-menu",
+            "ignore": ["h"],
+            "contentDiffers": true
+        },
+        {
+            "name": "title",
+            "mock": "#header-account h2",
+            "app": ".shell-account-menu h2"
+        },
+        {
+            "name": "first line",
+            "mock": "#header-account p",
+            "app": ".shell-account-menu p",
+            "index": 0,
+            "ignore": ["w"],
+            "contentDiffers": true
+        },
+        {
+            "name": "second line",
+            "mock": "#header-account p",
+            "app": ".shell-account-menu p",
+            "index": 1,
+            "ignore": ["w", "h"],
+            "contentDiffers": true
+        },
+        {
+            "name": "Sign out",
+            "mock": "#header-account a.header-account-out",
+            "app": ".shell-account-out [role=menuitem]",
+            "ignore": ["y"],
+            "pixels": false
+        }
+    ],
+    "subpixelNote": "Sign out sits below the app's links, at another fraction of a pixel than the mock's, so its divider and words rasterise differently; its box (but y) and styles are compared."
+}

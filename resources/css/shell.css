@@ -422,7 +422,9 @@ html {
 .shell-account-menu h2 {
     margin: 0 0 8px;
     font-size: var(--text-section);
-    font-weight: var(--weight-semibold);
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
+    letter-spacing: -0.7px;
 }
 .shell-account-menu p {
     margin: 6px 0 0;
@@ -434,23 +436,31 @@ html {
 .shell-account-menu [role='menuitem'] {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
     width: 100%;
     min-height: 44px;
-    padding: 0 10px;
-    margin-inline: -10px;
-    box-sizing: content-box;
-    border-radius: var(--radius-md);
+    padding: 0;
+    border: 0;
+    background: none;
     color: var(--color-text);
+    font: inherit;
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
+    text-align: start;
     text-decoration: none;
-    outline: none;
     cursor: pointer;
 }
+/* As the mock's Sign out: the words take the action colour, no fill. */
 .shell-account-menu [role='menuitem'][data-highlighted] {
-    background: var(--color-bg-quiet);
+    color: var(--color-action-text);
+    outline: none;
+}
+.shell-account-menu [role='menuitem']:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.shell-account-links [role='menuitem'] {
+    justify-content: space-between;
+    gap: 8px;
 }
 .shell-account-menu [role='menuitem'] b {
     min-width: 20px;
@@ -467,13 +477,12 @@ html {
     padding-top: 4px;
     border-top: 1px solid var(--color-border);
 }
-.shell-account-out {
-    margin-top: 4px;
+/* The mock's Sign out (today-header.css .header-account-out): a line
+   above it, then the words. */
+.shell-account-out [role='menuitem'] {
+    margin-top: 12px;
     padding-top: 4px;
     border-top: 1px solid var(--color-border);
-}
-.shell-account-out [role='menuitem'][data-highlighted] {
-    color: var(--color-action-text);
 }
 
 /* ── Tablets (701–999): compact sections; the city shows its pin, Composer
