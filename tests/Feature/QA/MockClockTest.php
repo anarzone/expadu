@@ -55,3 +55,9 @@ test('the sample day refuses to write plans outside the local environment', func
 
     $this->assertDatabaseCount('composer_workspaces', 0);
 });
+
+test('the sample day never creates a known-password account outside the local environment', function () {
+    $this->artisan('mock:sample-day', ['view' => 'everyday', '--email' => 'mock-s9@expadu.test'])->assertFailed();
+
+    $this->assertDatabaseMissing('users', ['email' => 'mock-s9@expadu.test']);
+});

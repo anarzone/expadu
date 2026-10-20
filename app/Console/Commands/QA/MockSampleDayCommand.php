@@ -3,11 +3,14 @@
 namespace App\Console\Commands\QA;
 
 use App\Composer\WorkspaceStore;
+use App\Enums\Situation;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * Local only: puts the mock's sample day (Wednesday 30 September 2026,
@@ -28,7 +31,7 @@ class MockSampleDayCommand extends Command
 {
     protected $signature = 'mock:sample-day
         {view=everyday : everyday, busy, quiet or travel}
-        {--email= : The account (default: the E2E account)}';
+        {--email= : The account (default: the E2E account); created when missing}';
 
     protected $description = 'Local only: the mock\'s sample day (30 Sept 2026) in an account\'s plans, for tools/mock-compare';
 
@@ -53,13 +56,7 @@ class MockSampleDayCommand extends Command
         }
 
         $email = (string) ($this->option('email') ?: env('E2E_EMAIL', 'e2e@expadu.test'));
-        $user = User::query()->where('email', $email)->first();
-
-        if ($user === null) {
-            $this->error("No account {$email}. Run the E2ETestUserSeeder first.");
-
-            return self::FAILURE;
-        }
+        $user = User::query()->where('email', $email)->first() ?? $this->account($email);
 
         if (! ComposerWorkspace::query()->where('user_id', $user->id)->exists()) {
             $store->command($user, ['revision' => 0, 'action' => 'fresh']);
@@ -89,6 +86,34 @@ class MockSampleDayCommand extends Command
         $this->info("The sample day ({$view}) is in {$email}'s plans.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Each session compares as its own account (mock-s1@ … mock-s4@expadu.test),
+     * so a missing one is made here as E2ETestUserSeeder makes the E2E account:
+     * verified and onboarded, with the E2E password. Local only (see handle()).
+     */
+    private function account(string $email): User
+    {
+        $user = new User;
+        // forceFill: email_verified_at and onboarded_at are not fillable.
+        $user->forceFill([
+            'email' => $email,
+            'name' => Str::of($email)->before('@')->headline()->toString(),
+            'password' => Hash::make((string) env('E2E_PASSWORD', 'e2e-password')),
+            'email_verified_at' => now(),
+            'onboarded_at' => now(),
+            'situation' => Situation::NonEuEmployee,
+            'veedel' => 'Ehrenfeld',
+            'is_eu' => false,
+            'arrival_date' => now()->subMonths(6)->startOfDay(),
+            'german_level' => null,
+            'city' => 'cologne',
+        ])->save();
+
+        $this->info("Created {$email} (verified and onboarded; the E2E password).");
+
+        return $user;
     }
 
     /** @return array<string, list<array<string, mixed>>> */

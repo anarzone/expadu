@@ -118,8 +118,10 @@ On your machine (`APP_ENV=local` only):
   the mock's plans for 30 Sept, 1 and 3 Oct (other dates stay). A config names the view it needs in
   `seed`; run that first.
 - **Your own account:** sessions share the local database, so compare as your own account rather
-  than the E2E one: `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class=E2ETestUserSeeder`, seed
-  that account, run with `MOCK_COMPARE_EMAIL=<you>@expadu.test`, and delete
+  than the E2E one (session n: `mock-s<n>@expadu.test`). `php artisan mock:sample-day <view>
+--email=mock-s<n>@expadu.test` creates it when it's missing (local only; verified and onboarded,
+  with the E2E password), so no seeder is needed first. Run with
+  `MOCK_COMPARE_EMAIL=mock-s<n>@expadu.test`, and delete
   `storage/mock-compare/.session-<port>-<account>.json` once so it signs in again.
 - **Paperwork's sample record:** `E2E_EMAIL=<you>@expadu.test php artisan db:seed
 --class='Database\Seeders\MockSample\PaperworkSeeder'` (after E2ETestUserSeeder for that account).
