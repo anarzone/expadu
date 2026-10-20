@@ -72,9 +72,18 @@ body.today-next {
 .today-next .skip-link:focus {
     transform: none;
 }
-.today-next :is(a, button, summary, select, input, textarea):focus-visible {
+/* Today's own content; the shell (header and Composer tray) keeps its one
+   ring, the same on every page. */
+.today-next
+    :is(a, button, summary, select, input, textarea):focus-visible:not(
+        :where(#shell, #composer-tray) *
+    ) {
     outline: 2px solid var(--focus);
     outline-offset: 3px;
+}
+.today-next #shell :is(a, button):focus-visible {
+    outline: 2px solid var(--color-focus, #00758c);
+    outline-offset: 2px;
 }
 .today-next svg.modern-icon {
     fill: currentColor;

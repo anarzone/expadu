@@ -9,6 +9,13 @@
     box-shadow: 0 4px 20px #3e352b0d;
     backdrop-filter: none;
 }
+/* The shell's focus ring, the same on every page. */
+:is(.today-c, .department-composer)
+    #composer-tray
+    :is(a, button, input, textarea):focus-visible {
+    outline: 3px solid var(--color-focus, #086981);
+    outline-offset: 3px;
+}
 :is(.today-c, .department-composer) #compose-form {
     display: block;
 }
