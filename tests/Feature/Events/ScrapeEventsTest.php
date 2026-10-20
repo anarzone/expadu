@@ -228,3 +228,41 @@ test('the scraper does not re-enrich an unchanged koeln.de record', function () 
 
     Queue::assertNothingPushed();
 });
+
+test('a listing for a hidden copy updates the live copy without breaking the run', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDay()->setTime(20, 0);
+    $hidden = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'hidden-copy', 'title' => 'Comedy night',
+        'starts_at' => $start, 'location_name' => 'Bürgerhaus Stollwerck', 'status' => 'hidden']);
+    $kept = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'kept-copy', 'title' => 'Comedy night',
+        'starts_at' => $start, 'location_name' => 'Bürgerhaus Stollwerck', 'status' => 'active']);
+    // koeln.de dropped the kept post and lists the hidden one again, then another event.
+    $relisted = koelnEvent('hidden-copy', 'Comedy night', $start->toDateTimeString());
+    $relisted['description'] = 'Neue Beschreibung des Abends.';
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [
+        $relisted, koelnEvent('after-it', 'Later concert', $start->copy()->addDay()->toDateTimeString()),
+    ]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($kept->fresh())->source_uid->toBe('kept-copy')->description->toBe('Neue Beschreibung des Abends.')
+        ->and($hidden->fresh()->status)->toBe('hidden')
+        ->and(Event::where('source_uid', 'after-it')->exists())->toBeTrue();
+});
+
+test('a hidden copy is the event again once no live copy is left', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDay()->setTime(20, 0);
+    $hidden = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'only-copy', 'title' => 'Comedy night',
+        'starts_at' => $start, 'location_name' => 'Bürgerhaus Stollwerck', 'status' => 'hidden']);
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [
+        koelnEvent('only-copy', 'Comedy night', $start->toDateTimeString()),
+    ]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($hidden->fresh()->status)->toBe('active')
+        ->and(Event::where('title', 'Comedy night')->count())->toBe(1);
+});
