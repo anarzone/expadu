@@ -129,8 +129,18 @@
             "mock": "button.composer-launcher",
             "app": "button[aria-label*='Composer' i]:not(.shell-composer)",
             "widths": [360, 390],
-            "contentDiffers": true
+            "contentDiffers": true,
+            "ignore": ["box-shadow"]
+        },
+        {
+            "name": "phone Composer circle",
+            "mock": "#composer-tray",
+            "app": "button[aria-label*='Composer' i]:not(.shell-composer)",
+            "widths": [360, 390],
+            "props": ["box-shadow", "background-color", "border-radius"],
+            "pixels": false
         }
     ],
-    "contentNote": "header and utilities hold the account's initial (the E2E user's 'E', the mock's 'A')."
+    "contentNote": "header and utilities hold the account's initial (the E2E user's 'E', the mock's 'A').",
+    "composerNote": "On phones the mock's round Composer button is a launcher inside its closed tray (#composer-tray), which carries the shadow; the app's is one element. The launcher pair compares all but the shadow, the circle pair the shadow, fill and radius."
 }
