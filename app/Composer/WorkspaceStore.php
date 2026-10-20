@@ -432,11 +432,6 @@ class WorkspaceStore
             'plans' => $state['plans'],
             'changes' => $changes,
             'conversations' => $state['conversations'],
-            // Compatibility for components/today until TD1 replaces them: there
-            // is no draft any more, and every change applies directly.
-            'draft' => null,
-            'approval' => 'routine',
-            'versions' => array_map(fn (array $change): array => ['id' => $change['id'], 'date' => $change['date'], 'undone' => ! $change['undoable']], $changes),
         ];
     }
 

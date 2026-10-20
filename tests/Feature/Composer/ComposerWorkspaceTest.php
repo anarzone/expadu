@@ -66,7 +66,7 @@ test('a proposal goes straight into the plans with its change rows and Undo', fu
     $change = $messages->firstWhere('kind', 'change');
 
     expect($state['plans'][$date]['slots'])->toHaveCount(2)
-        ->and($state['draft'])->toBeNull()
+        ->and($state)->not->toHaveKeys(['draft', 'approval', 'versions'])
         ->and($change['text'])->toBe("{$weekday} is in your plans.")
         ->and(collect($change['rows'])->pluck('kind')->all())->toBe(['added', 'added'])
         ->and($state['changes'][0]['undoable'])->toBeTrue()
