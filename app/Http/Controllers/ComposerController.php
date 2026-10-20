@@ -12,10 +12,12 @@ use App\Composer\Constraints;
 use App\Composer\Contracts\EstimatesTravel;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
+use App\Composer\DayAround;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
 use App\Composer\OpenAiCompatiblePromptParser;
+use App\Composer\PaperworkGlance;
 use App\Composer\Plan;
 use App\Composer\PlanCatalogue;
 use App\Composer\PlanNarrator;
@@ -29,6 +31,7 @@ use App\Composer\Swapper;
 use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
 use App\Composer\WorkspaceStore;
+use App\Day\DayProjection;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Http\Requests\ParseComposerPromptRequest;
@@ -91,6 +94,12 @@ class ComposerController extends Controller
 
         return Inertia::render('composer', [
             'workspace' => app(WorkspaceStore::class)->read($request->user()),
+            // Your day: the shared day projection (plans, appointments, when to leave for
+            // the next) and what the person's Paperwork record has coming up. Deferred
+            // together, so the frame paints first.
+            'day' => DayProjection::deferred($request),
+            'paperwork' => Inertia::defer(fn () => app(PaperworkGlance::class)->for($request->user()), 'day'),
+            'around' => Inertia::defer(fn () => app(DayAround::class)->for($request->user()), 'day'),
             // What a page handed over by POST (see entry()); present once.
             'entry' => $request->session()->get('composer.entry'),
             'prompt' => $request->query('prompt'),

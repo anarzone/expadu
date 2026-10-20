@@ -6,9 +6,7 @@ test.describe('Composer (universal prompt)', () => {
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
         await page.goto('/composer');
-        await expect(
-            page.getByRole('textbox', { name: 'Message Composer' }),
-        ).toBeVisible();
+        await expect(page.locator('#studio-request')).toBeVisible();
         expect(errors).toHaveLength(0);
     });
 
@@ -47,7 +45,7 @@ test.describe('Composer (universal prompt)', () => {
             form.submit();
         });
         await page.waitForURL(/\/composer$/);
-        const box = page.getByRole('textbox', { name: 'Message Composer' });
+        const box = page.locator('#studio-request');
         await expect(box).toHaveValue('Something near my appointment');
         await expect(
             page.getByText('About: Events on Wed 30 Sept · 2 listed'),
@@ -74,7 +72,7 @@ test.describe('Composer (universal prompt)', () => {
             });
         });
         await page.goto('/composer');
-        const input = page.getByRole('textbox', { name: 'Message Composer' });
+        const input = page.locator('#studio-request');
         await input.fill('Keep my unsent thought');
         await page.goto(
             '/composer?prompt=' + encodeURIComponent('Find a quiet park'),
@@ -92,7 +90,7 @@ test.describe('Composer (universal prompt)', () => {
         await expect(context).toHaveCount(0);
         expect(parsed).toBe(0);
         const parsedResponse = page.waitForResponse('**/composer/parse');
-        await page.getByRole('button', { name: 'Send message' }).click();
+        await page.getByRole('button', { name: 'Send request' }).click();
         await parsedResponse;
         await expect.poll(() => parsed).toBe(1);
         await expect(
@@ -127,7 +125,7 @@ test.describe('Composer (universal prompt)', () => {
         await context
             .getByRole('button', { name: 'Use in my message' })
             .click();
-        await page.getByRole('button', { name: 'Send message' }).click();
+        await page.getByRole('button', { name: 'Send request' }).click();
         await expect(page.locator('.composer-guidance').last()).toBeVisible();
         await expect(
             page.getByRole('link', { name: /open my paperwork case/i }).last(),

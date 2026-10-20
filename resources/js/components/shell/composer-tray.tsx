@@ -227,6 +227,14 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         close();
     };
 
+    // On Composer's own page there is no tray: asking Composer means its box.
+    useEffect(() => {
+        if (onComposer && isOpen) {
+            document.getElementById('studio-request')?.focus();
+            setOpen(false);
+        }
+    }, [onComposer, isOpen]);
+
     if (onComposer) {
         return null;
     }

@@ -1,7 +1,5 @@
 import { Head, Link, router, usePage, useRemember } from '@inertiajs/react';
 import {
-    IconArrowUp,
-    IconArrowLeft,
     IconArrowRight,
     IconBookmark,
     IconCalendar,
@@ -9,11 +7,11 @@ import {
     IconChevronDown,
     IconHistory,
     IconPlus,
-    IconShieldCheck,
     IconSparkles,
     IconTrash,
     IconX,
 } from '@tabler/icons-react';
+import { clsx } from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import {
     compose,
@@ -34,6 +32,17 @@ import {
     validDay,
 } from '@/components/composer/entry-context';
 import type { ComposerEntry } from '@/components/composer/entry-context';
+import {
+    BackButton,
+    ComposerActions,
+    ComposerMark,
+    DayRow,
+    Welcome,
+    YourDay,
+    dayFacts,
+    useComposerFrame,
+} from '@/components/composer/frame';
+import type { DayAround, PaperworkGlance } from '@/components/composer/frame';
 import { Guidance } from '@/components/composer/guidance';
 import { ItemPreview } from '@/components/composer/item-preview';
 import type { ItemDetails } from '@/components/composer/item-preview';
@@ -62,24 +71,20 @@ import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import type { SavedPlace } from '@/components/places/from-bar';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
+import { PersonaSwitcher } from '@/components/qa/persona-switcher';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Icon } from '@/components/ui/icon';
 import { useFeedback } from '@/hooks/use-feedback';
 import { useIsMobile } from '@/hooks/use-mobile';
-import AppLayout from '@/layouts/app-layout';
-import { bureaucracy, dashboard, timetable } from '@/routes';
+import { timetable } from '@/routes';
+import type { DayProjection } from '@/types/day';
 import '../../css/composer.css';
+import '../../css/composer-page.css';
 
 type Panel =
     | 'origin'
@@ -90,6 +95,10 @@ type Panel =
     | 'appointment'
     | null;
 type Swap = { slot: Slot; date: string; revision: number };
+const weekday = (date: string) =>
+    new Intl.DateTimeFormat('en-GB', { weekday: 'long' }).format(
+        new Date(`${date}T12:00:00`),
+    );
 const normal = (text: string) =>
     text
         .toLowerCase()
@@ -106,8 +115,17 @@ export default function ComposerPage({
     planDate,
     pins = [],
     savedPlaces = [],
+    day,
+    paperwork,
+    around,
 }: {
     workspace: Workspace;
+    /** Your day: the shared day projection (deferred). */
+    day?: DayProjection;
+    /** What the person's Paperwork record has coming up (deferred). */
+    paperwork?: PaperworkGlance;
+    /** Tonight's listings and what's near today's appointment (deferred). */
+    around?: DayAround;
     /** What a page handed over by POST (the tray's words and the page they came from), once. */
     entry?: { prompt: string; about: string | null } | null;
     prompt?: string;
@@ -158,12 +176,15 @@ export default function ComposerPage({
     const busyRef = useRef(false);
     const [error, setError] = useState('');
     const [retryMessage, setRetryMessage] = useState<string | null>(null);
-    const [panel, setPanel] = useState<Panel>(() =>
-        new URL(page.url, 'http://localhost').searchParams.get('panel') ===
-        'saved'
-            ? 'saved'
-            : null,
-    );
+    const [panel, setPanel] = useState<Panel>(() => {
+        const asked = new URL(page.url, 'http://localhost').searchParams.get(
+            'panel',
+        );
+
+        return asked === 'plans' || asked === 'saved' || asked === 'history'
+            ? asked
+            : null;
+    });
     const [swap, setSwap] = useState<Swap | null>(null);
     const [browseDate, setBrowseDate] = useState(today);
     const [confirm, setConfirm] = useState<'history' | null>(null);
@@ -176,7 +197,6 @@ export default function ComposerPage({
     const [pendingText, setPendingText] = useState('');
     const [newBelow, setNewBelow] = useState(false);
     const root = useRef<HTMLDivElement>(null);
-    const feed = useRef<HTMLDivElement>(null);
     const textarea = useRef<HTMLTextAreaElement>(null);
     const isMobile = useIsMobile();
     const feedback = useFeedback();
@@ -197,48 +217,27 @@ export default function ComposerPage({
     const changeById = (id?: string) =>
         workspace.changes.find((change) => change.id === id);
 
+    useComposerFrame(root);
+    // The box grows with what you write, up to 120px; empty, it keeps its own height.
     useEffect(() => {
-        function resize() {
-            if (!root.current) {
-                return;
-            }
+        const box = textarea.current;
 
-            const viewport = window.visualViewport;
-            root.current.style.setProperty(
-                '--composer-height',
-                `${viewport?.height ?? window.innerHeight}px`,
-            );
-        }
-        resize();
-        window.visualViewport?.addEventListener('resize', resize);
-        window.addEventListener('resize', resize);
-
-        return () => {
-            window.visualViewport?.removeEventListener('resize', resize);
-            window.removeEventListener('resize', resize);
-        };
-    }, []);
-    useEffect(() => {
-        if (textarea.current) {
-            textarea.current.style.height = 'auto';
-            textarea.current.style.height = `${Math.min(160, textarea.current.scrollHeight)}px`;
+        if (box) {
+            box.style.height = 'auto';
+            box.style.height = input
+                ? `${Math.min(120, box.scrollHeight)}px`
+                : '';
         }
     }, [input]);
 
     function scrollBottom(force = false) {
-        const element = feed.current;
-
-        if (!element) {
-            return;
-        }
-
+        const element = document.documentElement;
         const nearEnd =
-            element.scrollHeight - element.scrollTop - element.clientHeight <
-            140;
+            element.scrollHeight - window.scrollY - window.innerHeight < 140;
 
         if (nearEnd || force) {
             requestAnimationFrame(() => {
-                element.scrollTo({
+                window.scrollTo({
                     top: element.scrollHeight,
                     behavior: window.matchMedia(
                         '(prefers-reduced-motion: reduce)',
@@ -608,20 +607,6 @@ export default function ComposerPage({
         receivedUrl.current = url;
         router.replace({ url, preserveState: true, preserveScroll: true });
     }
-    function appendMessage(text: string) {
-        const next = mergeRequest(input, text);
-
-        if (next.length > 500) {
-            setError(
-                'Your message is full. Send or shorten it before adding more.',
-            );
-
-            return;
-        }
-
-        setInput(next);
-        textarea.current?.focus();
-    }
     async function addSelectedEvent() {
         if (entry?.kind !== 'event' || !entryEvent) {
             return;
@@ -658,87 +643,54 @@ export default function ComposerPage({
         textarea.current?.focus();
     }
 
-    return (
-        <AppLayout fullWidth rightPanel={null} hideMobileDock hideQaSwitcher>
-            <Head title="Composer" />
-            <div className="composer-app" ref={root}>
-                <header className="composer-header">
-                    <div>
-                        <Link
-                            href={dashboard()}
-                            aria-label="Back to Today"
-                            className="composer-back"
-                        >
-                            <IconArrowLeft size={18} />
-                        </Link>
-                        <IconSparkles size={19} />
-                        <h1>Composer</h1>
-                    </div>
-                    <span>Your day, connected</span>
-                </header>
-                <div
-                    className="composer-feed"
-                    ref={feed}
-                    onScroll={() => {
-                        const el = feed.current;
+    const facts = dayFacts(day, paperwork, around);
+    const ask = (prompt: string) => void send(prompt);
+    const openDay = (date: string) => {
+        const plan = workspace.plans[date];
 
-                        if (
-                            el &&
-                            el.scrollHeight - el.scrollTop - el.clientHeight <
-                                140
-                        ) {
-                            setNewBelow(false);
+        if (plan) {
+            openPlan(plan);
+        }
+    };
+    const hasDay =
+        !!day &&
+        (facts.length > 0 ||
+            Object.values(workspace.plans).some(
+                (plan) => plan.date > day.date && plan.slots.length > 0,
+            ));
+
+    return (
+        <>
+            <Head title="Composer" />
+            <div
+                id="composer-page"
+                className={clsx('composer-page', hasDay && 'has-composer-day')}
+                ref={root}
+            >
+                <main id="main" tabIndex={-1}>
+                    <YourDay
+                        day={day}
+                        facts={facts}
+                        workspace={workspace}
+                        onAsk={ask}
+                        onOpenPlan={openDay}
+                        onPanel={(next) =>
+                            next === 'saved' ? openBrowse(true) : setPanel(next)
                         }
-                    }}
-                >
-                    <div className="composer-feed-inner">
+                    />
+                    <div className="composer-heading">
+                        <ComposerMark />
+                        <BackButton />
+                    </div>
+                    <DayRow facts={facts} onAsk={ask} onOpenPlan={openDay} />
+                    <div className="chat-feed" aria-label="Conversation">
                         {conversation.messages.length === 0 && !pendingText && (
-                            <section className="composer-welcome">
-                                <IconSparkles size={30} />
-                                <h2>What would make your day better?</h2>
-                                <p>
-                                    Plan a day, find somewhere to go, or get
-                                    help with the next step.
-                                </p>
-                                <div className="composer-starters">
-                                    <button
-                                        onClick={() => {
-                                            appendMessage('Plan my day');
-                                            textarea.current?.focus();
-                                        }}
-                                    >
-                                        <IconCalendar size={19} />
-                                        <span>
-                                            Plan my day
-                                            <small>
-                                                Make room for what matters
-                                            </small>
-                                        </span>
-                                    </button>
-                                    <button onClick={() => openBrowse()}>
-                                        <IconBookmark size={19} />
-                                        <span>
-                                            Find something to do
-                                            <small>
-                                                Places and events around you
-                                            </small>
-                                        </span>
-                                    </button>
-                                    <Link href={bureaucracy()}>
-                                        <IconShieldCheck size={19} />
-                                        <span>
-                                            Help with paperwork
-                                            <small>
-                                                Reviewed, sourced guidance
-                                            </small>
-                                        </span>
-                                    </Link>
-                                </div>
-                                <small>
-                                    Planning tools are connected. Open-ended AI
-                                    conversation is not enabled yet.
-                                </small>
-                            </section>
+                            <Welcome
+                                day={day}
+                                paperwork={paperwork}
+                                around={around}
+                                onAsk={ask}
+                            />
                         )}
                         {conversation.messages.length > 0 && (
                             <p className="composer-conversation-date">
@@ -1002,404 +954,387 @@ export default function ComposerPage({
                             </div>
                         )}
                     </div>
-                </div>
-                <div className="composer-input-area">
-                    {entry && (
-                        <section
-                            className="composer-entry-review"
-                            aria-label="Selected context"
-                        >
-                            <div className="composer-entry-heading">
-                                <strong>
-                                    {entry.kind === 'event'
-                                        ? entryEvent?.title || 'Selected event'
-                                        : entry.kind === 'travel'
-                                          ? entry.context.name
-                                          : entry.kind === 'request'
-                                            ? 'New request'
-                                            : 'Add a personal plan'}
-                                </strong>
-                                <button
-                                    type="button"
-                                    aria-label="Remove selected context"
-                                    onClick={clearEntry}
-                                >
-                                    <IconX size={17} />
-                                </button>
-                            </div>
-                            {entryDate && (
-                                <small>
-                                    {dateLabel(entryDate)} · For review
-                                </small>
-                            )}
-                            {entry.kind === 'event' &&
-                                (entryError ? (
-                                    <p role="alert">
-                                        {entryError}{' '}
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                setEntryRetry((n) => n + 1)
-                                            }
-                                        >
-                                            Retry
-                                        </button>
-                                    </p>
-                                ) : entryEvent ? (
-                                    <>
-                                        <p>
-                                            {eventDateLabel(
-                                                entryEvent.occurrence_start,
-                                            )}{' '}
-                                            · {eventSchedule(entryEvent)}
-                                            {entryEvent.venue.name
-                                                ? ` · ${entryEvent.venue.name}`
-                                                : ''}
-                                        </p>
-                                        {!entryEvent.occurrence_end && (
-                                            <small>
-                                                Check the end time with the
-                                                organiser before adding it to
-                                                your day.
-                                            </small>
-                                        )}
-                                        <div className="composer-entry-actions">
+                </main>
+                <div id="input-area">
+                    <div className="studio-input-wrap">
+                        {entry && (
+                            <section
+                                className="composer-entry-review"
+                                aria-label="Selected context"
+                            >
+                                <div className="composer-entry-heading">
+                                    <strong>
+                                        {entry.kind === 'event'
+                                            ? entryEvent?.title ||
+                                              'Selected event'
+                                            : entry.kind === 'travel'
+                                              ? entry.context.name
+                                              : entry.kind === 'request'
+                                                ? 'New request'
+                                                : 'Add a personal plan'}
+                                    </strong>
+                                    <button
+                                        type="button"
+                                        aria-label="Remove selected context"
+                                        onClick={clearEntry}
+                                    >
+                                        <IconX size={17} />
+                                    </button>
+                                </div>
+                                {entryDate && (
+                                    <small>
+                                        {dateLabel(entryDate)} · For review
+                                    </small>
+                                )}
+                                {entry.kind === 'event' &&
+                                    (entryError ? (
+                                        <p role="alert">
+                                            {entryError}{' '}
                                             <button
                                                 type="button"
                                                 onClick={() =>
-                                                    fullDetails({
-                                                        event: entryEvent,
-                                                    })
+                                                    setEntryRetry((n) => n + 1)
                                                 }
                                             >
-                                                Details
+                                                Retry
                                             </button>
+                                        </p>
+                                    ) : entryEvent ? (
+                                        <>
+                                            <p>
+                                                {eventDateLabel(
+                                                    entryEvent.occurrence_start,
+                                                )}{' '}
+                                                · {eventSchedule(entryEvent)}
+                                                {entryEvent.venue.name
+                                                    ? ` · ${entryEvent.venue.name}`
+                                                    : ''}
+                                            </p>
+                                            {!entryEvent.occurrence_end && (
+                                                <small>
+                                                    Check the end time with the
+                                                    organiser before adding it
+                                                    to your day.
+                                                </small>
+                                            )}
+                                            <div className="composer-entry-actions">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        fullDetails({
+                                                            event: entryEvent,
+                                                        })
+                                                    }
+                                                >
+                                                    Details
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="composer-entry-primary"
+                                                    disabled={
+                                                        !!busy ||
+                                                        !entryEvent.occurrence_end ||
+                                                        Date.parse(
+                                                            entryEvent.occurrence_start,
+                                                        ) <= Date.now()
+                                                    }
+                                                    onClick={addSelectedEvent}
+                                                >
+                                                    <IconPlus size={16} />
+                                                    Add to plan
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <ComposerLoading compact />
+                                    ))}
+                                {entry.kind === 'travel' && (
+                                    <>
+                                        <p>
+                                            {entry.context.origin
+                                                ? `${entry.context.origin.name} → `
+                                                : ''}
+                                            {entry.context.name}
+                                            {entry.context.requestedTime
+                                                ? ` · ${entry.context.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${entry.context.requestedTime}`
+                                                : ''}
+                                        </p>
+                                        {entry.context.route && (
+                                            <p className="composer-entry-route">
+                                                {entry.context.route.lines
+                                                    .length
+                                                    ? `Line ${entry.context.route.lines.join(' · ')} · `
+                                                    : ''}
+                                                {new Date(
+                                                    entry.context.route
+                                                        .departAt,
+                                                ).toLocaleTimeString('en-GB', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    timeZone: 'Europe/Berlin',
+                                                })}
+                                                {' → '}
+                                                {new Date(
+                                                    entry.context.route
+                                                        .arriveAt,
+                                                ).toLocaleTimeString('en-GB', {
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    timeZone: 'Europe/Berlin',
+                                                })}
+                                                {' · '}
+                                                {
+                                                    entry.context.route
+                                                        .durationMinutes
+                                                }{' '}
+                                                min
+                                            </p>
+                                        )}
+                                        <small>
+                                            Journey details for review · check
+                                            current departures
+                                        </small>
+                                        <div className="composer-entry-actions">
+                                            <Link
+                                                href={timetable({
+                                                    query: travelDestinationParams(
+                                                        reviewTravelDestination(
+                                                            entry.context,
+                                                        ),
+                                                    ),
+                                                })}
+                                            >
+                                                Check journey
+                                            </Link>
                                             <button
                                                 type="button"
-                                                className="composer-entry-primary"
-                                                disabled={
-                                                    !!busy ||
-                                                    !entryEvent.occurrence_end ||
-                                                    Date.parse(
-                                                        entryEvent.occurrence_start,
-                                                    ) <= Date.now()
-                                                }
-                                                onClick={addSelectedEvent}
+                                                onClick={useTravelRequest}
                                             >
-                                                <IconPlus size={16} />
-                                                Add to plan
+                                                Use in my message
                                             </button>
                                         </div>
                                     </>
-                                ) : (
-                                    <ComposerLoading compact />
-                                ))}
-                            {entry.kind === 'travel' && (
-                                <>
-                                    <p>
-                                        {entry.context.origin
-                                            ? `${entry.context.origin.name} → `
-                                            : ''}
-                                        {entry.context.name}
-                                        {entry.context.requestedTime
-                                            ? ` · ${entry.context.schedule === 'arrive' ? 'Arrive by' : 'Leave at'} ${entry.context.requestedTime}`
-                                            : ''}
-                                    </p>
-                                    {entry.context.route && (
-                                        <p className="composer-entry-route">
-                                            {entry.context.route.lines.length
-                                                ? `Line ${entry.context.route.lines.join(' · ')} · `
-                                                : ''}
-                                            {new Date(
-                                                entry.context.route.departAt,
-                                            ).toLocaleTimeString('en-GB', {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                timeZone: 'Europe/Berlin',
-                                            })}
-                                            {' → '}
-                                            {new Date(
-                                                entry.context.route.arriveAt,
-                                            ).toLocaleTimeString('en-GB', {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                timeZone: 'Europe/Berlin',
-                                            })}
-                                            {' · '}
-                                            {
-                                                entry.context.route
-                                                    .durationMinutes
-                                            }{' '}
-                                            min
-                                        </p>
-                                    )}
-                                    <small>
-                                        Journey details for review · check
-                                        current departures
-                                    </small>
-                                    <div className="composer-entry-actions">
-                                        <Link
-                                            href={timetable({
-                                                query: travelDestinationParams(
-                                                    reviewTravelDestination(
-                                                        entry.context,
-                                                    ),
-                                                ),
-                                            })}
-                                        >
-                                            Check journey
-                                        </Link>
+                                )}
+                                {entry.kind === 'request' && (
+                                    <>
+                                        <p>{entry.text}</p>
                                         <button
                                             type="button"
-                                            onClick={useTravelRequest}
+                                            className="composer-text-button"
+                                            onClick={() => {
+                                                const next = mergeRequest(
+                                                    input,
+                                                    entry.text,
+                                                );
+
+                                                if (next.length > 500) {
+                                                    setError(
+                                                        'Your message is full. Send or shorten it first.',
+                                                    );
+
+                                                    return;
+                                                }
+
+                                                setInput(next);
+                                                clearEntry();
+                                                textarea.current?.focus();
+                                            }}
                                         >
                                             Use in my message
                                         </button>
-                                    </div>
-                                </>
-                            )}
-                            {entry.kind === 'request' && (
-                                <>
-                                    <p>{entry.text}</p>
+                                    </>
+                                )}
+                                {entry.kind === 'appointment' && (
                                     <button
                                         type="button"
                                         className="composer-text-button"
                                         onClick={() => {
-                                            const next = mergeRequest(
-                                                input,
-                                                entry.text,
-                                            );
-
-                                            if (next.length > 500) {
-                                                setError(
-                                                    'Your message is full. Send or shorten it first.',
-                                                );
-
-                                                return;
-                                            }
-
-                                            setInput(next);
-                                            clearEntry();
-                                            textarea.current?.focus();
+                                            setBrowseDate(entry.date);
+                                            setPanel('appointment');
                                         }}
                                     >
-                                        Use in my message
+                                        Add details
                                     </button>
-                                </>
-                            )}
-                            {entry.kind === 'appointment' && (
+                                )}
+                            </section>
+                        )}
+
+                        {about && (
+                            <div className="composer-about">
+                                <span>About: {about}</span>
                                 <button
                                     type="button"
-                                    className="composer-text-button"
-                                    onClick={() => {
-                                        setBrowseDate(entry.date);
-                                        setPanel('appointment');
-                                    }}
+                                    aria-label="Leave this out"
+                                    onClick={() => setAbout(null)}
                                 >
-                                    Add details
-                                </button>
-                            )}
-                        </section>
-                    )}
-
-                    {about && (
-                        <div className="composer-about">
-                            <span>About: {about}</span>
-                            <button
-                                type="button"
-                                aria-label="Leave this out"
-                                onClick={() => setAbout(null)}
-                            >
-                                <IconX size={15} />
-                            </button>
-                        </div>
-                    )}
-
-                    {newBelow && (
-                        <button
-                            className="composer-new-messages"
-                            onClick={() => {
-                                scrollBottom(true);
-                                setNewBelow(false);
-                            }}
-                        >
-                            Latest messages
-                            <IconChevronDown size={16} />
-                        </button>
-                    )}
-                    {error && (
-                        <div className="composer-error" role="alert">
-                            <span>{error}</span>
-                            {retryMessage && (
-                                <button
-                                    onClick={() => send(retryMessage)}
-                                    disabled={!!busy}
-                                >
-                                    Retry
-                                </button>
-                            )}
-                            <button
-                                aria-label="Dismiss error"
-                                onClick={() => setError('')}
-                            >
-                                <IconX size={17} />
-                            </button>
-                        </div>
-                    )}
-                    <form
-                        className="composer-input-box"
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            void send(input.trim());
-                        }}
-                    >
-                        {activePlan && (
-                            <div className="composer-context">
-                                <button
-                                    type="button"
-                                    disabled={!!busy}
-                                    onClick={() => openPlan(activePlan)}
-                                >
-                                    <IconCalendar size={15} />
-                                    {dateLabel(activePlan.date)}
-                                    <span>In your plans</span>
+                                    <IconX size={15} />
                                 </button>
                             </div>
                         )}
-                        <textarea
-                            ref={textarea}
-                            value={input}
-                            maxLength={500}
-                            rows={1}
-                            aria-label="Message Composer"
-                            placeholder="Ask or add a detail…"
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (
-                                    e.key === 'Enter' &&
-                                    !e.shiftKey &&
-                                    !e.nativeEvent.isComposing &&
-                                    !isMobile
-                                ) {
-                                    e.preventDefault();
-                                    void send(input.trim());
-                                }
+
+                        {newBelow && (
+                            <button
+                                className="composer-new-messages"
+                                onClick={() => {
+                                    scrollBottom(true);
+                                    setNewBelow(false);
+                                }}
+                            >
+                                Latest messages
+                                <IconChevronDown size={16} />
+                            </button>
+                        )}
+                        {error && (
+                            <div className="composer-error" role="alert">
+                                <span>{error}</span>
+                                {retryMessage && (
+                                    <button
+                                        onClick={() => send(retryMessage)}
+                                        disabled={!!busy}
+                                    >
+                                        Retry
+                                    </button>
+                                )}
+                                <button
+                                    aria-label="Dismiss error"
+                                    onClick={() => setError('')}
+                                >
+                                    <IconX size={17} />
+                                </button>
+                            </div>
+                        )}
+                        <form
+                            id="studio-form"
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                void send(input.trim());
                             }}
-                        />
-                        <div className="composer-input-toolbar">
-                            <div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
+                        >
+                            <div data-planning-context="">
+                                {activePlan && (
+                                    <div className="input-context">
+                                        <Icon name="calendar" variant="line" />
+                                        <span>
+                                            <strong>
+                                                {dateLabel(activePlan.date)}
+                                            </strong>
+                                            <small>In your plans</small>
+                                        </span>
                                         <button
                                             type="button"
-                                            className="composer-icon-button"
-                                            aria-label="Composer actions"
                                             disabled={!!busy}
+                                            onClick={() => openPlan(activePlan)}
                                         >
-                                            <IconPlus size={22} />
+                                            View plan
                                         </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        side="top"
-                                        align="start"
-                                        className="composer-menu"
-                                    >
-                                        <DropdownMenuItem
-                                            onSelect={() => setPanel('plans')}
-                                        >
-                                            <IconCalendar size={17} />
-                                            My Plans
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onSelect={() => {
-                                                setSwap(null);
-                                                openBrowse(true);
-                                            }}
-                                        >
-                                            <IconBookmark size={17} />
-                                            Saved
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onSelect={() => {
-                                                setSwap(null);
-                                                openBrowse();
-                                            }}
-                                        >
-                                            <IconPlus size={17} />
-                                            Add a place or event
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onSelect={() => {
-                                                setBrowseDate(
-                                                    activePlan?.date ?? today(),
-                                                );
-                                                setPanel('appointment');
-                                            }}
-                                        >
-                                            <IconCalendar size={17} />
-                                            Add an appointment
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onSelect={() => setPanel('origin')}
-                                        >
-                                            <IconArrowRight size={17} />
-                                            Starting point
-                                            {origin ? ` · ${origin.label}` : ''}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem
-                                            onSelect={() => setPanel('history')}
-                                        >
-                                            <IconHistory size={17} />
-                                            History
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                            onSelect={async () => {
-                                                const previousInput = input;
-                                                setInput('');
-
-                                                if (
-                                                    await command({
-                                                        action: 'fresh',
-                                                    })
-                                                ) {
-                                                    setSwap(null);
-                                                    feed.current?.scrollTo({
-                                                        top: 0,
-                                                    });
-                                                } else {
-                                                    setInput(
-                                                        (current) =>
-                                                            current ||
-                                                            previousInput,
-                                                    );
-                                                }
-                                            }}
-                                        >
-                                            <IconPlus size={17} />
-                                            Start fresh
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                            <button
-                                type="submit"
-                                className="composer-send"
-                                aria-label="Send message"
-                                disabled={!input.trim() || !!busy}
-                            >
-                                {busy ? (
-                                    <ComposerLoading compact />
-                                ) : (
-                                    <IconArrowUp size={21} />
+                                    </div>
                                 )}
-                            </button>
-                        </div>
-                    </form>
-                    <div className="composer-input-note">
-                        Plans are saved to your account · Times in Europe/Berlin
+                            </div>
+                            <div className="studio-field">
+                                <label
+                                    className="sr-only"
+                                    htmlFor="studio-request"
+                                >
+                                    {conversation.messages.length === 0
+                                        ? 'What can I help you with?'
+                                        : 'Continue with Composer'}
+                                </label>
+                                <textarea
+                                    id="studio-request"
+                                    ref={textarea}
+                                    value={input}
+                                    maxLength={500}
+                                    rows={1}
+                                    placeholder={
+                                        conversation.messages.length === 0
+                                            ? 'Ask, discover, or plan…'
+                                            : activePlan
+                                              ? `Ask or change ${weekday(activePlan.date)}…`
+                                              : 'Ask or add a detail…'
+                                    }
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (
+                                            e.key === 'Enter' &&
+                                            !e.shiftKey &&
+                                            !e.nativeEvent.isComposing &&
+                                            !isMobile
+                                        ) {
+                                            e.preventDefault();
+                                            void send(input.trim());
+                                        }
+                                    }}
+                                />
+                            </div>
+                            <div className="composer-tools">
+                                <ComposerActions
+                                    disabled={!!busy}
+                                    origin={origin?.label ?? null}
+                                    onPanel={(next) =>
+                                        next === 'saved'
+                                            ? (setSwap(null), openBrowse(true))
+                                            : setPanel(next)
+                                    }
+                                    onBrowse={() => {
+                                        setSwap(null);
+                                        openBrowse();
+                                    }}
+                                    onAppointment={() => {
+                                        setBrowseDate(
+                                            activePlan?.date ?? today(),
+                                        );
+                                        setPanel('appointment');
+                                    }}
+                                    onOrigin={() => setPanel('origin')}
+                                    onFresh={async () => {
+                                        const previousInput = input;
+                                        setInput('');
+
+                                        if (
+                                            await command({ action: 'fresh' })
+                                        ) {
+                                            setSwap(null);
+                                            window.scrollTo({ top: 0 });
+                                        } else {
+                                            setInput(
+                                                (current) =>
+                                                    current || previousInput,
+                                            );
+                                        }
+                                    }}
+                                />
+                                <button
+                                    className="send"
+                                    type="submit"
+                                    aria-label="Send request"
+                                    disabled={!input.trim() || !!busy}
+                                >
+                                    {busy ? (
+                                        <ComposerLoading compact />
+                                    ) : (
+                                        <svg
+                                            viewBox="0 0 24 24"
+                                            aria-hidden="true"
+                                        >
+                                            <path d="M12 19V5m-7 7 7-7 7 7" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
+                {/* Phones: Composer's round button, where you are (focuses the box). */}
+                <button
+                    type="button"
+                    className="composer-here"
+                    aria-current="page"
+                    aria-label="Composer, where you are. Write your request"
+                    title="Composer"
+                    onClick={() => textarea.current?.focus()}
+                >
+                    <Icon name="spark" variant="line" />
+                </button>
             </div>
             <Dialog
                 open={panel !== null}
@@ -1769,6 +1704,7 @@ export default function ComposerPage({
                     {feedback.toast}
                 </div>
             )}
-        </AppLayout>
+            <PersonaSwitcher />
+        </>
     );
 }
