@@ -213,6 +213,7 @@ function ComingUp() {
             {rows.map((row) => {
                 const key = anchoredTo(plan, row);
                 const process = processByKey(key);
+                const day = rowDate(row);
                 const expiry = row.kind === 'document_expiry';
                 const urgent =
                     row.kind !== 'appointment' && row.days_remaining <= 1;
@@ -242,13 +243,12 @@ function ComingUp() {
                     >
                         <span className="coming-when">
                             <strong>
-                                {relative(row.date)?.label ||
-                                    formatDate(row.date)}
+                                {relative(day)?.label || formatDate(day)}
                             </strong>
                             <small>
                                 {row.kind === 'appointment'
                                     ? clock(row)
-                                    : formatDate(row.date)}
+                                    : formatDate(day)}
                             </small>
                         </span>
                         <span className="coming-what">

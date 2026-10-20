@@ -178,8 +178,11 @@ export function onDay(days: number, d: string, by = false): string {
 export const clock = (row: { starts_at?: string }): string =>
     row.starts_at?.slice(11, 16) ?? '';
 
-export const rowDate = (row: TimelineRow): string | null =>
-    row.date ?? row.starts_at?.slice(0, 10) ?? null;
+/** A row's calendar day. An appointment carries its start ("2026-09-30T14:00:00+02:00") instead. */
+export const rowDate = (row: {
+    date?: string | null;
+    starts_at?: string;
+}): string | null => (row.date ?? row.starts_at)?.slice(0, 10) ?? null;
 
 export function durationText(minutes: number | null | undefined): string {
     if (minutes === null || minutes === undefined) {
