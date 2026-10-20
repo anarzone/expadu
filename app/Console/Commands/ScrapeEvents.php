@@ -7,6 +7,7 @@ use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\User;
+use App\Support\EventCancellation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -180,7 +181,7 @@ class ScrapeEvents extends Command
 
                     $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
 
-                    if ($isNew || $classifierInputChanged) {
+                    if (($isNew || $classifierInputChanged) && $event->status === 'active') {
                         ProcessEventJob::dispatch($event);
                     }
 
@@ -349,7 +350,9 @@ class ScrapeEvents extends Command
                 'source_url' => is_string($sourceUrl) ? $sourceUrl : null,
                 'price_known' => $isFree !== null,
             ]),
-            'status' => 'active',
+            // Off the listings when the listing itself says it's off; back to
+            // active when the source drops the wording again.
+            'status' => EventCancellation::said($title, $description) ? 'cancelled' : 'active',
             'verified_at' => now(),
         ];
     }

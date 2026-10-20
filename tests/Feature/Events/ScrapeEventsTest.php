@@ -271,13 +271,13 @@ test('after a complete scrape an event koeln.de stopped listing is set aside, an
     User::factory()->create(['email' => 'system@expadu.com']);
     Queue::fake();
     $start = now()->addDays(3)->setTime(20, 0);
-    $gone = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'gone', 'title' => 'Cancelled show',
+    $gone = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'gone', 'title' => 'Dropped show',
         'starts_at' => $start, 'status' => 'active', 'verified_at' => now()->subDays(3)]);
     $recent = Event::factory()->create(['source' => 'koeln.de', 'source_uid' => 'recent', 'title' => 'Missed once',
         'starts_at' => $start, 'status' => 'active', 'verified_at' => now()->subHours(6)]);
     Http::fake(['www.koeln.de/*' => Http::sequence()
         ->push(['total_pages' => 1, 'events' => [koelnEvent('listed', 'Listed show', $start->toDateTimeString())]])
-        ->push(['total_pages' => 1, 'events' => [koelnEvent('gone', 'Cancelled show', $start->toDateTimeString())]])]);
+        ->push(['total_pages' => 1, 'events' => [koelnEvent('gone', 'Dropped show', $start->toDateTimeString())]])]);
 
     $this->artisan('events:scrape')->assertSuccessful();
 
@@ -302,4 +302,25 @@ test('a scrape with a failed page sets nothing aside', function () {
     $this->artisan('events:scrape')->assertSuccessful();
 
     expect($stale->fresh()->status)->toBe('active');
+});
+
+test('a koeln.de listing that says it is cancelled leaves Events, and comes back when the wording goes', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDays(2)->setTime(20, 0)->toDateTimeString();
+    $cancelled = koelnEvent('du-maroc', 'Dú Maroc – Block Bladi Gangster Tour', $start);
+    $cancelled['description'] = 'Im Oktober 2026 geht er auf Tournee. Diese Veranstaltung wurde abgesagt. Umtausch-Informationen sind eventuell hier zu finden.';
+    $back = koelnEvent('du-maroc', 'Dú Maroc – Block Bladi Gangster Tour', $start);
+    Http::fake(['www.koeln.de/*' => Http::sequence()
+        ->push(['total_pages' => 1, 'events' => [$cancelled]])
+        ->push(['total_pages' => 1, 'events' => [$back]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect(Event::where('source_uid', 'du-maroc')->value('status'))->toBe('cancelled');
+    Queue::assertNotPushed(ProcessEventJob::class); // nobody sees it, so nothing to translate
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect(Event::where('source_uid', 'du-maroc')->value('status'))->toBe('active');
 });
