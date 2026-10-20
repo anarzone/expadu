@@ -1,3 +1,12 @@
+/* The prototype leaves a button's padding to the browser (1px 6px), and the app's base
+   reset zeroes it. Give it back in the base layer: every rule below and every utility
+   class still wins. */
+@layer base {
+    .paperwork-page button {
+        padding: 1px 6px;
+    }
+}
+
 /* Paperwork — ported from the approved prototype (prototype/dev/design/bureaucracy-next),
    scoped to .paperwork-page so it cannot affect other pages. Tokens come from
    resources/css/app.css (F1, ported 1:1 from connected/tokens.css); the aliases below
@@ -340,6 +349,36 @@
         width: 17px;
         height: 17px;
         margin-top: 1px;
+    }
+    /* The prototype's body text and shared controls at phone width (connected/style.css). */
+    @media (max-width: 700px) {
+        font-size: var(--text-body);
+
+        h1 {
+            font-size: var(--text-display);
+            letter-spacing: -1.5px;
+        }
+        .toast {
+            bottom: 112px;
+            font-size: var(--text-small);
+        }
+        .detail-dialog {
+            padding: 22px;
+            border-radius: var(--radius-xl);
+            width: calc(100vw - 20px);
+            max-height: calc(100dvh - 24px);
+        }
+        .dialog-head h2 {
+            font-size: var(--text-title);
+        }
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        .facts > div {
+            gap: 14px;
+            font-size: var(--text-small);
+        }
     }
     .detail-dialog:has(.place-preview) {
         width: min(540px, calc(100vw - 32px));
@@ -4992,6 +5031,338 @@
         height: 18px;
         flex: none;
         margin-top: 2px;
+    }
+
+    /* ── today-palette.css (prototype/dev/design/connected) ── */
+    /* Approved Today brief palette. Opt-in, colour-only; historical previews stay intact. */
+    div&.paperwork-page {
+        --paper: var(--color-bg-canvas);
+        --surface: var(--color-bg-surface);
+        --surface-quiet: var(--color-bg-quiet);
+        --surface-inset: var(--color-bg-inset);
+        --surface-hover: var(--color-bg-hover);
+        --ink: var(--color-text);
+        --ink-soft: var(--color-text-soft);
+        --muted: var(--color-text-muted);
+        --line: var(--color-border);
+        --blue: var(--color-select-bg);
+        --teal: var(--color-select-text);
+        --cyan-hover: var(--color-select-bg-hover);
+        --focus: var(--color-focus);
+        --action: var(--color-action);
+        --action-ink: var(--color-action-text);
+        --action-hover: var(--color-action-hover);
+        --info-ink: var(--color-select-text);
+        --warning-surface: #fff0d5;
+        --warning-ink: #7b5721;
+        --event-control-rail: var(--surface-quiet);
+        --palette-header: var(--color-bg-header);
+        background-color: var(--paper);
+    }
+
+    div&.paperwork-page .scroll-header,
+    div&.paperwork-page.studio #shell {
+        background-color: var(--palette-header);
+    }
+
+    /* Neutral surfaces only. Photos, frosted Save buttons and semantic accents retain
+       their existing treatment. Low specificity preserves selected/hover states. */
+    &
+        :is(
+            .search-bar,
+            .empty,
+            .detail-dialog,
+            .date-strip,
+            .service-choice,
+            .service-workspace,
+            .service-card,
+            .request-surface,
+            .plan-workspace,
+            .inline-origin-field,
+            .event-search,
+            .events-popover,
+            .event-empty,
+            .person-menu,
+            .next-actions,
+            .process-grid,
+            .detail-steps,
+            .process-records,
+            .paperwork-group,
+            .case-inline,
+            .action-list,
+            .history-list,
+            .honest-empty,
+            .access-blank,
+            .case-day,
+            .case-plan-feedback,
+            .family-next,
+            .family-preview,
+            .family-locked,
+            .family-document,
+            .orientation,
+            .situation-welcome,
+            .situation-summary,
+            .journey-desk,
+            .suggestions,
+            .journey-summary,
+            .route-option,
+            .route-detail,
+            .result-empty,
+            .timetable-list,
+            .journey-popover,
+            .toast,
+            .discovery-card,
+            .timeline-paper,
+            .answer-plan,
+            .inline-confirmed-plan,
+            .replacement-search,
+            .replacement-categories,
+            .replacement-card,
+            .history-section,
+            .chat-updates,
+            .shared-calendar
+        ) {
+        background-color: var(--surface);
+    }
+
+    & #event-calendar-panel,
+    & dialog#sheet,
+    &.studio #studio-form,
+    & .date-picker form,
+    & .situation-topic-grid article,
+    & .form-field :is(input, select, textarea),
+    & .case-time-fields input,
+    & .shared-date .shared-date-toggle {
+        background-color: var(--surface);
+    }
+
+    /* Services' scoped rules need the same scope for its workspace and tabs. */
+    div&:where(.paperwork-page)[data-page='services'] .service-workspace,
+    div&:where(.paperwork-page)[data-page='services']
+        .service-choice[aria-pressed='true'] {
+        background-color: var(--surface);
+    }
+    div&:where(.paperwork-page)[data-page='services'] .service-choices,
+    & .service-form .form-field :is(input, select, textarea),
+    & .service-appointment-entry {
+        background-color: var(--surface-quiet);
+    }
+
+    /* Inset controls use the softer ivory; active cyan and lavender stay distinct. */
+    & :is(.case-tabs, .segmented, .event-calendar-views, .journey-fields) {
+        background-color: var(--surface-quiet);
+    }
+    & .case-tabs [aria-pressed='true'],
+    & .segmented [aria-pressed='true'],
+    & .event-calendar-views button[aria-pressed='true'] {
+        background-color: var(--surface);
+    }
+
+    /* Fade a Travel sheet into its own surface instead of a stark white footer. */
+    & .detail-footer {
+        background: linear-gradient(
+            to bottom,
+            transparent,
+            color-mix(in srgb, var(--surface) 92%, transparent) 22px,
+            var(--surface) 70%
+        );
+    }
+
+    /* Toasts sit on the light surface like Travel's, so their text is ink. */
+    div&.paperwork-page .toast {
+        color: var(--ink);
+        box-shadow: var(--shadow-menu);
+    }
+    div&.paperwork-page .toast button {
+        color: var(--action-ink);
+    }
+    /* While the Composer bar is open, the toast sits above it. */
+    div&.paperwork-page:has(#composer-tray.is-active) .toast {
+        bottom: 160px;
+    }
+
+    /* Composer retains its layout and cyan/purple meaning; only the base is shared. */
+    & #workspace-panel,
+    & .replacement-footer {
+        background-color: var(--paper);
+    }
+    &.studio .composer-actions-menu,
+    &.studio .studio-detail-dialog,
+    &.shell-review :is(.dock-field, .composer-entry) {
+        background-color: var(--surface);
+    }
+    &.studio .studio-toolbar {
+        background-color: color-mix(
+            in srgb,
+            var(--color-bg-canvas) 96%,
+            transparent
+        );
+    }
+    & .studio-input-wrap {
+        background: linear-gradient(
+            transparent,
+            color-mix(in srgb, var(--color-bg-canvas) 92%, transparent) 38%,
+            var(--color-bg-canvas) 70%
+        );
+    }
+
+    /* Text roles are shared too: ordinary descriptions are neutral, while teal
+       identifies travel symbols and selected controls. Avoid page-specific blue-gray
+       text on the warm canvas. Keep photographic overlays and status meanings intact. */
+    div&.paperwork-page :is(input, textarea)::placeholder {
+        color: var(--muted);
+        opacity: 1;
+    }
+    div&.paperwork-page
+        :is(
+            .sample-tag,
+            .sample-route-names > span:first-child,
+            .sample-node small,
+            .sample-route-bottom small,
+            .leg-piece:not(.transit),
+            .journey-timeband small,
+            .route-step time,
+            .departure-stop-route small,
+            .sample-note,
+            .studio-welcome > p,
+            .empty-day p,
+            .saved-empty p
+        ) {
+        color: var(--muted);
+    }
+    div&.paperwork-page
+        :is(
+            .sample-route-names svg,
+            .sample-node svg,
+            .time-connector,
+            .timeband-connection svg,
+            .step-node,
+            .line-badge svg,
+            .paper-process-link > svg:first-child,
+            .document-symbol.confirmed,
+            .welcome-symbol
+        ) {
+        color: var(--teal);
+    }
+    /* Arrival and transport labels retain their stronger semantic distinction. */
+    div&.paperwork-page .route-step.arrive .step-node {
+        color: var(--action-ink);
+    }
+    div&.paperwork-page .route-step.transit .step-node {
+        color: var(--ink);
+    }
+
+    /* A small action on a pale surface needs darker orange than a filled button. */
+    div&.paperwork-page
+        :is(
+            .text-action,
+            .round-arrow,
+            .timetable-more,
+            .board-bottom .quiet-button
+        ) {
+        color: var(--action-ink);
+    }
+    div&.paperwork-page
+        :is(
+            .saved-trigger,
+            .sample-node.transit,
+            .round-arrow,
+            .secondary,
+            .nav-topbar,
+            .nav-panel,
+            .nav-footer
+        ) {
+        background-color: var(--surface);
+    }
+    div&.paperwork-page
+        :is(
+            .swap,
+            .leg-piece:not(.transit, .bike),
+            .detail-footer .save-route,
+            .paperwork-select select,
+            .state-badge.not_started,
+            .nav-topbar .nav-icon-button
+        ) {
+        background-color: var(--surface-quiet);
+    }
+    div&.paperwork-page .field:focus-within,
+    div&.paperwork-page .nav-options button[aria-pressed='true'] {
+        background-color: var(--blue);
+    }
+    div&.paperwork-page :is(.origin-dot, .sample-connection),
+    div&.paperwork-page .route-step::before {
+        border-color: var(--teal);
+    }
+    div&.paperwork-page
+        :is(
+            .journey-popover,
+            .timetable-row + .timetable-row,
+            .overview-action + .overview-action,
+            .process-summary + .process-summary,
+            .document-row + .document-row,
+            .plan-states,
+            .starter-grid button
+        ) {
+        border-color: var(--line);
+    }
+    div&.paperwork-page .status-tag:not(.warning),
+    div&.paperwork-page
+        .state-badge:not(.blocked, .waiting, .completed, .not_started) {
+        color: var(--info-ink);
+        background-color: var(--blue);
+    }
+    div&.paperwork-page :is(.status-tag.warning, .route-notice) {
+        color: var(--warning-ink);
+        background-color: var(--warning-surface);
+    }
+    div&.paperwork-page .journey-popover .toggle-row input {
+        background-color: var(--muted);
+    }
+    div&.paperwork-page .journey-popover .toggle-row input:checked {
+        background-color: var(--teal);
+    }
+    div&.paperwork-page
+        :is(a, button, input, select, textarea, summary):focus-visible {
+        outline-color: var(--focus);
+    }
+    div&.paperwork-page #journey-navigation button:focus-visible {
+        outline-color: var(--focus);
+    }
+    div&.paperwork-page .nav-footer::before {
+        background: linear-gradient(transparent, var(--surface));
+    }
+    div&.paperwork-page .event-search:focus-within,
+    div&.paperwork-page
+        .journey-popover
+        :is(input[type='text'], input[type='search']):focus {
+        border-color: var(--focus);
+        box-shadow: inset 0 0 0 1px var(--focus);
+    }
+
+    @media (hover: hover) {
+        div&.paperwork-page.departures-page
+            :is(.icon-button, .quiet-button):hover {
+            background-color: var(--surface-quiet);
+        }
+        div&.paperwork-page .primary:hover {
+            background-color: var(--action-hover);
+        }
+        div&.paperwork-page .sample-journey:hover,
+        div&.paperwork-page .timetable-row:hover {
+            background-color: var(--cyan-hover);
+        }
+        div&.paperwork-page .segmented button:not([aria-pressed='true']):hover {
+            background-color: var(--surface);
+        }
+    }
+
+    @media (max-width: 700px) {
+        div&.paperwork-page .nav-topbar {
+            background: linear-gradient(
+                color-mix(in srgb, var(--color-bg-canvas) 96%, transparent) 68%,
+                transparent
+            );
+        }
     }
 }
 

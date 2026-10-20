@@ -255,7 +255,7 @@ test.describe('Paperwork', () => {
         await page.getByRole('button', { name: 'Which ones' }).click();
         const sheet = page.locator('dialog.detail-dialog');
         await expect(
-            sheet.getByRole('heading', { name: 'Sources and coverage' }),
+            sheet.getByRole('heading', { name: 'Source and coverage' }),
         ).toBeVisible();
         await expect(sheet.locator('.source-record').first()).toBeVisible();
         await sheet.getByRole('button', { name: 'Close' }).click();

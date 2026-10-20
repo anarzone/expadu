@@ -121,7 +121,7 @@ function Workspace({ people }: { people: Person[] }) {
         searchable.includes(location.view) &&
         plan.processes.some((p) => !p.is_closed);
     const coverage = () =>
-        openSheet({ title: 'Sources and coverage', body: <SourcesBody /> });
+        openSheet({ title: 'Source and coverage', body: <SourcesBody /> });
 
     usePageContext({
         page: 'paperwork',

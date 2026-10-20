@@ -349,8 +349,17 @@ function ChooseAppointmentTask() {
 
 /** Dates still unknown stay listed with what they need. */
 function Dates() {
-    const { plan, go, processByKey, stepById, openEditor, canEdit, location } =
-        usePaperwork();
+    const {
+        plan,
+        go,
+        processByKey,
+        stepById,
+        openEditor,
+        openSituation,
+        canEdit,
+        location,
+    } = usePaperwork();
+    const situationAllowed = plan.scopes.includes('view_facts');
     const rows = dateRows(plan, location.q, processByKey, stepById);
 
     if (location.q.trim() && !rows.length) {
@@ -383,18 +392,28 @@ function Dates() {
                         const key = anchoredTo(plan, row);
                         const date = rowDate(row);
                         const r = soon(date);
-                        // Your own records are edited in place; a step's date leads to its task.
+                        // Your own records are edited in place (a document's expiry is one of
+                        // your answers); a step's date leads to its task.
+                        const expiryFact =
+                            row.kind === 'document_expiry' &&
+                            situationAllowed &&
+                            row.fact_key
+                                ? row.fact_key
+                                : null;
                         const editable =
                             canEdit &&
                             key !== null &&
                             (row.kind === 'appointment' ||
-                                row.kind === 'submission_recorded');
+                                row.kind === 'submission_recorded' ||
+                                expiryFact !== null);
                         const open = () => {
                             if (!key) {
                                 return;
                             }
 
-                            if (row.kind === 'appointment') {
+                            if (expiryFact) {
+                                openSituation({ key: expiryFact });
+                            } else if (row.kind === 'appointment') {
                                 openEditor({
                                     title: 'Record an appointment',
                                     body: (
