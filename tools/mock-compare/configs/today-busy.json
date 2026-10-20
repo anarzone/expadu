@@ -96,26 +96,22 @@
             "name": "plan title",
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
-            "widths": [1280, 1440, 1512],
-            "contentDiffers": true,
-            "ignore": ["h", "w"]
+            "widths": [1280, 1440, 1512]
         },
         {
             "name": "plan title @768",
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
             "widths": [768],
-            "ignore": ["h", "w", "y"],
-            "contentDiffers": true
+            "ignore": ["y"]
         },
         {
             "name": "plan title (phone)",
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
-            "ignore": ["h", "w", "y"],
+            "ignore": ["y"],
             "widths": [360, 390],
-            "pixels": false,
-            "contentDiffers": true
+            "pixels": false
         },
         {
             "name": "plan place",
@@ -277,8 +273,7 @@
             "contentDiffers": true
         }
     ],
-    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 1280 px the first plan compares y; the second and third plans and the trips between them sit below Leave now's taller card (see today-everyday) and the mock's wrapping trip rows (see contentNote), so their y is aside. At 768 the mock's longer date line ('· Sample day · 3 plans') wraps to two lines and moves the plans down, so y is aside there too.",
+    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 1280 px the first plan compares y; the second and third plans and the trips between them sit below Leave now (2px shorter: see today-everyday's chipNote) and the mock's wrapping trip rows (see contentNote), so their y is aside. At 768 the mock's longer date line ('· Sample day · 3 plans') wraps to two lines and moves the plans down, so y is aside there too.",
     "contentNote": "The mock's sample words are longer ('Wed 30 Sept · Sample day · 3 plans', 'Mülheim → Ehrenfeld · sample estimate') and wrap, so heading and trip rows differ in w/h; the trips between plans are live travel times (here 34 min, only 26 spare: tight), so their icon colour follows that status. Pairs below them sit at other sub-pixel offsets, so their pixels are not compared.",
-    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel.",
-    "titleNote": "The appointment is Paperwork's record now, titled from the catalogue: 'EU Blue Card appointment' (the mock: 'Blue Card appointment'), so its title is content."
+    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel."
 }

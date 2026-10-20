@@ -58,9 +58,8 @@
             "name": "sheet title",
             "mock": "dialog[open] .dialog-head h2",
             "app": "dialog[open] .ui-sheet-head h2",
-            "ignore": ["h", "w", "y"],
-            "pixels": false,
-            "contentDiffers": true
+            "ignore": ["y"],
+            "pixels": false
         },
         {
             "name": "sheet close",
@@ -103,5 +102,5 @@
         }
     ],
     "ignoreNote": "y: the sheet is centred on wider screens and rests on the bottom edge on phones, so where its parts sit follows its height, and its height is content (no Edit or Remove: see contentNote). Its pixels are not compared where that offset falls at another fraction of a pixel.",
-    "contentNote": "The appointment is Paperwork's record now, titled from the catalogue: 'EU Blue Card appointment' (the mock: 'Blue Card appointment'), so its title is content. Its booking is recorded by you in Paperwork ('Recorded by you'; the mock's sample: 'Not recorded in Expadu'), and an official appointment is changed in Paperwork, not here, so the sheet offers no Edit or Remove (the mock's sample plan does)."
+    "contentNote": "Its booking is recorded by you in Paperwork ('Recorded by you'; the mock's sample: 'Not recorded in Expadu'), and an official appointment is changed in Paperwork, not here, so the sheet offers no Edit or Remove (the mock's sample plan does)."
 }

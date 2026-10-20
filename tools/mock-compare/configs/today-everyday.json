@@ -68,18 +68,15 @@
             "name": "plan title",
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
-            "widths": [768, 1280, 1440, 1512],
-            "contentDiffers": true,
-            "ignore": ["h", "w"]
+            "widths": [768, 1280, 1440, 1512]
         },
         {
             "name": "plan title (phone)",
             "mock": ".agenda-item .appointment-title",
             "app": ".agenda-item .appointment-title",
-            "ignore": ["h", "w", "y"],
+            "ignore": ["y"],
             "widths": [360, 390],
-            "pixels": false,
-            "contentDiffers": true
+            "pixels": false
         },
         {
             "name": "plan place",
@@ -127,28 +124,35 @@
             "name": "Leave now",
             "mock": ".agenda-item .trip-line",
             "app": ".agenda-item .trip-line",
-            "contentDiffers": true,
+            "widths": [768, 1280, 1440, 1512],
             "ignore": ["h"],
-            "widths": [768, 1280, 1440, 1512]
+            "pixels": false
         },
         {
             "name": "Leave now (phone)",
             "mock": ".agenda-item .trip-line",
             "app": ".agenda-item .trip-line",
-            "contentDiffers": true,
+            "widths": [360, 390],
             "ignore": ["y", "h"],
-            "widths": [360, 390]
+            "pixels": false
         },
         {
             "name": "Add a plan",
             "mock": ".add-plan",
             "app": ".add-plan",
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["y"]
+        },
+        {
+            "name": "Add a plan (phone)",
+            "mock": ".add-plan",
+            "app": ".add-plan",
+            "widths": [360, 390],
             "ignore": ["y"],
             "pixels": false
         }
     ],
-    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared everywhere but Add a plan, which sits below Leave now's taller card (see contentNote).",
-    "contentNote": "Leave now is Travel's NextTripCard (compact) on the sample route. It says 'Scheduled · not live' in the ride tile's sub-line, the coordinator's call for Travel and Today (20 Oct); the design session is redrawing Today's mock to match, which still shows a chip row. Until then its height and pixels differ and what follows sits a fraction of a pixel off, so Add a plan's pixels are not compared.",
+    "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared everywhere but Add a plan, which sits below Leave now (see chipNote).",
     "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel.",
-    "titleNote": "The appointment is Paperwork's record now, titled from the catalogue: 'EU Blue Card appointment' (the mock: 'Blue Card appointment'), so its title is content."
+    "chipNote": "Leave now's 'Scheduled · not live' label is drawn at the default chip size in the mock (24px) and at Travel's small size in NextTripCard (22px), so the card is 2px shorter and Add a plan sits 2px higher. Session 3 is dropping the small size; then both exceptions go."
 }
