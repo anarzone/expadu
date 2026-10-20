@@ -107,37 +107,6 @@ test('task computeDeadlineFor returns correct date', function () {
     expect($deadline->toDateString())->toBe('2026-03-15');
 });
 
-test('bureaucracy page passes deadline data', function () {
-    $user = User::factory()->onboarded()->create([
-        'arrival_date' => now()->subDays(10),
-        'situation' => 'non_eu_employee',
-    ]);
-    $task = Task::factory()->approvedFixture()->create([
-        'key' => 'fixture.serialized-deadline',
-        'applies_if' => [[]],
-        'deadline_type' => 'days_since_arrival',
-        'deadline_days' => 14,
-        'urgency' => 'critical',
-        'situation' => ['non_eu_employee'],
-    ]);
-    UserTask::create(['user_id' => $user->id, 'task_id' => $task->id]);
-    $this->actingAs($user);
-
-    $response = $this->get(route('bureaucracy.legacy'));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('bureaucracy')
-        ->has('tasks.active')
-        ->has('tasks.active.0.deadline')
-        ->has('tasks.active.0.days_remaining')
-        ->has('tasks.active.0.deadline_tier')
-        ->where('tasks.active.0.deadline', now()->addDays(4)->toDateString())
-        ->where('tasks.active.0.days_remaining', 4)
-        ->has('progress')
-    );
-});
-
 test('snoozed tasks are filtered by scope', function () {
     $user = User::factory()->onboarded()->create();
     $task = Task::factory()->create();

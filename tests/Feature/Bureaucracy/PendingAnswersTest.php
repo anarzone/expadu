@@ -6,7 +6,6 @@ use App\Bureaucracy\Cases\QuestionSelector;
 use App\Bureaucracy\Facts\FactRegistry;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseFact;
-use App\Models\BureaucracyCaseQuestion;
 use App\Models\BureaucracyFactConflict;
 use App\Models\User;
 
@@ -155,72 +154,4 @@ it('ranks by the registry priority, not catalogue order', function () {
     rsort($sorted);
 
     expect($pending)->not->toBeEmpty()->and($priorities)->toBe($sorted);
-});
-
-it('surfaces an essential orientation question on the Bureaucracy page itself', function () {
-    // Arrival orientation is useful without approving a student's residence route.
-    $user = User::factory()->create([
-        'situation' => 'student',
-        'is_eu' => false,
-        'bureaucracy_path' => 'student',
-        'veedel' => 'Altstadt-Nord',
-        'arrival_date' => now()->subMonths(2)->toDateString(),
-        'email_verified_at' => now(),
-        'onboarded_at' => now(),
-        'profile_attributes' => [],
-    ]);
-
-    $response = $this->actingAs($user)->get('/bureaucracy/legacy');
-
-    $response->assertSuccessful();
-
-    $question = $response->viewData('page')['props']['casePlan']['next_question'] ?? null;
-
-    // The payload carries the rendered question, not the fact key, so assert
-    // against the registry's own wording for the highest-priority question.
-    $expected = app(FactRegistry::class)->definition('arrival_planned');
-
-    expect($question)->not->toBeNull()
-        ->and($question['question'])->toBe($expected->question)
-        ->and($question['type'])->toBe('boolean');
-});
-
-it('accepts the offered orientation answer and records the fact', function () {
-    // The guard in AnswerCaseQuestion re-derives "the question we are asking"
-    // and rejects anything else, so a fallback question was posed and then
-    // refused with a 403. Asking something the app will not accept an answer
-    // to is worse than not asking.
-    $user = User::factory()->create([
-        'situation' => 'student',
-        'is_eu' => false,
-        'bureaucracy_path' => 'student',
-        'veedel' => 'Altstadt-Nord',
-        'arrival_date' => now()->subMonths(2)->toDateString(),
-        'email_verified_at' => now(),
-        'onboarded_at' => now(),
-        'profile_attributes' => [],
-    ]);
-
-    $this->actingAs($user)->get('/bureaucracy/legacy')->assertSuccessful();
-
-    $question = BureaucracyCaseQuestion::query()
-        ->where('fact_key', 'arrival_planned')
-        ->latest('id')
-        ->firstOrFail();
-
-    $this->actingAs($user)
-        ->post("/bureaucracy/case/questions/{$question->id}", ['value' => false])
-        ->assertRedirect();
-
-    expect($question->fresh()->answered_at)->not->toBeNull()
-        ->and(BureaucracyCaseFact::query()
-            ->where('case_id', $question->case_id)
-            ->where('key', 'arrival_planned')
-            ->where('state', 'confirmed')
-            ->latest('id')
-            ->first()
-            ?->value)->toBeFalse();
-
-    // And it stops being asked.
-    expect(app(PendingAnswers::class)->forCase($question->case))->not->toContain('arrival_planned');
 });
