@@ -125,6 +125,8 @@
     place-items: center;
     width: 44px;
     height: 44px;
+    /* The shell's 48px submit minimum would stretch the circle. */
+    min-width: 44px;
     min-height: 44px;
     padding: 4px;
     gap: 0;
