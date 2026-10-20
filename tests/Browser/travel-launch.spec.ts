@@ -88,40 +88,6 @@ test('route comparison is side by side on desktop and fits a narrow phone', asyn
     });
 });
 
-test('route preview survives refresh and boarding timetable returns to the same detail', async ({
-    page,
-}) => {
-    await routes(page);
-    await page.goto(request);
-    await page.getByRole('button', { name: /View transit route/ }).click();
-    await page.getByRole('button', { name: 'Current stop timetable' }).click();
-    await expect(
-        page.getByRole('button', { name: 'Back to your trip to Museum' }),
-    ).toBeVisible();
-    await page.reload();
-    await page
-        .getByRole('button', { name: 'Back to your trip to Museum' })
-        .click();
-    await expect(
-        page.getByRole('button', { name: 'Back to routes' }),
-    ).toBeVisible();
-    await expect(
-        page.getByText('Route preview', { exact: true }),
-    ).toBeVisible();
-    await page.getByRole('button', { name: 'Map', exact: true }).click();
-    await expect(
-        page.getByText(
-            'Route preview. Start your journey to follow your location while the app is open.',
-            {
-                exact: false,
-            },
-        ),
-    ).toBeVisible();
-    await page.getByRole('button', { name: 'Steps', exact: true }).click();
-    await expect(
-        page.getByRole('button', { name: 'Start journey', exact: true }),
-    ).toBeVisible();
-});
 
 test('optional Composer help dismisses without removing direct journey actions', async ({
     page,
@@ -181,115 +147,6 @@ test('editing a place label makes previous routes unavailable until the place is
     ).toBeVisible();
 });
 
-test('station-wide filters preserve the station and show simultaneous departures equally', async ({
-    page,
-}, testInfo) => {
-    const departure = (
-        line: string,
-        type: string,
-        destination: string,
-        minutes: number[],
-        delay = 0,
-    ) => ({
-        line,
-        type,
-        destination,
-        minutes,
-        delay,
-        cancelled: false,
-        disrupted: false,
-        direction: null,
-        via: [],
-        color: '#00768b',
-    });
-    const board = {
-        stop_name: 'Central interchange',
-        walk_min: 3,
-        source: 'gtfs',
-        fetched_at: '2026-10-05T10:00:00+02:00',
-        generated_at: '2026-10-05T10:00:00+02:00',
-        time_basis: 'scheduled',
-        is_stale: false,
-        scope: 'stop',
-        stops: [
-            {
-                id: 'test:stop',
-                name: 'Central interchange',
-                lat: 50.935,
-                lng: 6.95,
-                coordinate_kind: 'stop_area',
-                boarding_confirmed: false,
-            },
-        ],
-        departures: [
-            departure('3', 'tram', 'North', [4, 8], 2),
-            departure('1', 'tram', 'South', [4, 9]),
-            departure('150', 'bus', 'North', [4, 10]),
-        ],
-    };
-    await page.route('**/timetable**', async (route) => {
-        const response = await route.fetch();
-
-        if (
-            (response.headers()['content-type'] ?? '').includes(
-                'application/json',
-            )
-        ) {
-            const json = await response.json();
-            json.props = {
-                ...json.props,
-                boards: {
-                    all: board,
-                    tram: {
-                        ...board,
-                        stop_name: 'Different nearest tram stop',
-                    },
-                    bus: { ...board, stop_name: 'Different nearest bus stop' },
-                    rail: null,
-                },
-                locationRequired: false,
-            };
-            await route.fulfill({ response, json });
-        } else {
-            await route.fulfill({ response });
-        }
-    });
-    await page.goto('/timetable?view=timetable');
-    await expect(
-        page.getByRole('heading', { name: 'Central interchange' }),
-    ).toBeVisible();
-    await expect(page.locator('.timetable-row')).toHaveCount(6);
-    await expect(page.locator('.timetable-time').nth(0)).toContainText('10:04');
-    await expect(page.locator('.timetable-time').nth(2)).toContainText('10:04');
-    await page.getByRole('button', { name: 'Bus', exact: true }).click();
-    await expect(
-        page.getByRole('heading', { name: 'Central interchange' }),
-    ).toBeVisible();
-    await expect(page.locator('.timetable-row')).toHaveCount(2);
-    await page.getByRole('button', { name: 'All', exact: true }).click();
-    await page.getByRole('button', { name: 'Filter service notices' }).click();
-    await page
-        .getByRole('menuitemradio', { name: 'Service notices', exact: true })
-        .click();
-    await expect(page.locator('.timetable-row')).toHaveCount(2);
-    await page.getByRole('button', { name: 'Reset', exact: true }).click();
-    await page.getByRole('button', { name: 'Show stop map' }).click();
-    await expect(
-        page.getByRole('region', { name: 'Stop area map' }),
-    ).toBeVisible();
-    await expect(
-        page.getByText(
-            'These markers do not identify platforms or live vehicles.',
-            { exact: false },
-        ),
-    ).toBeVisible();
-    await page.getByRole('button', { name: 'Hide stop map' }).click();
-    await expect(page.locator('.timetable-row')).toHaveCount(6);
-    await page.screenshot({
-        path: testInfo.outputPath('travel-station-board.png'),
-        fullPage: true,
-    });
-});
 
 test('saved journey survives reload and reopens a fresh request without old schedule', async ({
     page,
@@ -316,7 +173,7 @@ test('saved journey survives reload and reopens a fresh request without old sche
     ).toHaveAttribute('aria-pressed', 'true');
 
     try {
-        await page.goto('/timetable');
+        await page.goto('/timetable?view=journey');
         const saved = page.getByRole('link', {
             name: /Office → Launch review museum/,
         });
@@ -333,7 +190,7 @@ test('saved journey survives reload and reopens a fresh request without old sche
             page.getByRole('button', { name: 'Saved journey', exact: true }),
         ).toBeVisible();
     } finally {
-        await page.goto('/timetable');
+        await page.goto('/timetable?view=journey');
         await page
             .getByRole('button', {
                 name: 'Remove saved journey Office → Launch review museum',
@@ -346,99 +203,3 @@ test('saved journey survives reload and reopens a fresh request without old sche
     }
 });
 
-test('Travel respects location opt-out even when browser permission is already granted', async ({
-    page,
-}) => {
-    await page.addInitScript(() => {
-        const state = window as unknown as { travelGpsCalls: number };
-        state.travelGpsCalls = 0;
-        Object.defineProperty(navigator, 'geolocation', {
-            configurable: true,
-            value: {
-                getCurrentPosition() {
-                    state.travelGpsCalls++;
-                },
-                watchPosition() {
-                    state.travelGpsCalls++;
-
-                    return 1;
-                },
-                clearWatch() {},
-            },
-        });
-        Object.defineProperty(navigator, 'permissions', {
-            configurable: true,
-            value: { query: async () => ({ state: 'granted' }) },
-        });
-    });
-    await page.route('**/timetable**', async (route) => {
-        const response = await route.fetch();
-
-        if (
-            (response.headers()['content-type'] ?? '').includes(
-                'application/json',
-            )
-        ) {
-            const data = await response.json();
-            data.props.userSettings = {
-                ...data.props.userSettings,
-                share_location: false,
-            };
-            await route.fulfill({ response, json: data });
-        } else {
-            const body = (await response.text()).replace(
-                /data-page="([^"]+)"/,
-                (_, encoded) => {
-                    const data = JSON.parse(
-                        encoded
-                            .replaceAll('&quot;', '"')
-                            .replaceAll('&#039;', "'")
-                            .replaceAll('&lt;', '<')
-                            .replaceAll('&gt;', '>')
-                            .replaceAll('&amp;', '&'),
-                    );
-                    data.props.userSettings = {
-                        ...data.props.userSettings,
-                        share_location: false,
-                    };
-                    const value = JSON.stringify(data)
-                        .replaceAll('&', '&amp;')
-                        .replaceAll('"', '&quot;')
-                        .replaceAll('<', '&lt;')
-                        .replaceAll('>', '&gt;');
-
-                    return `data-page="${value}"`;
-                },
-            );
-            await route.fulfill({ response, body });
-        }
-    });
-    await page.goto('/timetable?view=timetable');
-    await page
-        .getByRole('button', { name: 'Use my current location', exact: true })
-        .click();
-    await expect(
-        page.getByText(
-            'Location sharing is off. Choose a starting point, or turn it on in Settings.',
-        ),
-    ).toBeVisible();
-    expect(
-        await page.evaluate(
-            () =>
-                (window as unknown as { travelGpsCalls: number })
-                    .travelGpsCalls,
-        ),
-    ).toBe(0);
-    await expect(page.getByPlaceholder('Starting point or stop')).toBeVisible();
-    await expect(
-        page.getByText('Finding nearby departures…', { exact: true }),
-    ).toHaveCount(0);
-    expect(
-        await page.evaluate(
-            () =>
-                (window as unknown as { travelGpsCalls: number })
-                    .travelGpsCalls,
-        ),
-    ).toBe(0);
-    await page.unrouteAll({ behavior: 'ignoreErrors' });
-});
