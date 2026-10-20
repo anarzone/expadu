@@ -109,7 +109,9 @@ with relevant data or a screenshot. A successful push alone does not prove it is
 
 - Cache scalars in Redis and hydrate PHP objects afterward. Cached objects have
   caused failures on warm reads when deserialization precedes autoloading.
-- Dark mode toggles `html.dark`; a nested wrapper does not switch root color tokens.
+- The app is light only at launch (no dark mode). The mock's tokens live in
+  `resources/css/app.css`; breakpoints are Tailwind's `sm` 360, `md` 701 (tablet),
+  `lg` 1000 (desktop) and `xl` 1500, so `max-md:` is a phone.
 - QA persona switching uses `ResetPersonaState` and starts from a clean slate.
 - Local and production datasets differ. Check the affected environment's data when
   investigating a data issue; local counts do not establish production behavior.

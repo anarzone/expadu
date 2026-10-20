@@ -70,7 +70,7 @@ export default function TwoFactorRecoveryCodes({
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-col gap-3 select-none sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 select-none md:flex-row md:items-center md:justify-between">
                     <Button
                         onClick={toggleCodesVisibility}
                         className="w-fit"

@@ -170,7 +170,7 @@ export function EventRichDetail({
     const main = (
         <div>
             {occurrence.photo_url && failedPhoto !== occurrence.photo_url && (
-                <div className="relative h-[150px] overflow-hidden rounded-[16px] sm:h-[200px]">
+                <div className="relative h-[150px] overflow-hidden rounded-[16px] md:h-[200px]">
                     <img
                         src={occurrence.photo_url}
                         alt=""
@@ -189,7 +189,7 @@ export function EventRichDetail({
                 {occurrence.emoji} {occurrence.category_label}
                 {occurrence.is_recurring ? ' · recurring' : ''}
             </div>
-            <h1 className="mt-2 max-w-[650px] font-display text-[36px] leading-[0.98] font-medium tracking-[-0.04em] sm:text-[46px]">
+            <h1 className="mt-2 max-w-[650px] font-display text-[36px] leading-[0.98] font-medium tracking-[-0.04em] md:text-[46px]">
                 {occurrence.title}
             </h1>
             <p className="mt-3 text-[14px] leading-relaxed text-text-2">
@@ -237,7 +237,7 @@ export function EventRichDetail({
                 <h2 className="font-display text-[24px] font-medium tracking-[-0.02em]">
                     Plan your visit
                 </h2>
-                <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <div className="mt-3 grid grid-cols-1 gap-2.5 md:grid-cols-2">
                     <DetailCard label="When">{when}</DetailCard>
                     <DetailCard label="Where">
                         {[venue.name, venue.veedel]
@@ -278,7 +278,7 @@ export function EventRichDetail({
             )}
 
             {occurrence.source_url && (
-                <div className="flex flex-col gap-2 rounded-[12px] bg-success-soft px-4 py-3 text-[12px] font-semibold text-success sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 rounded-[12px] bg-success-soft px-4 py-3 text-[12px] font-semibold text-success md:flex-row md:items-center md:justify-between">
                     <span className="inline-flex items-center gap-2">
                         <IconCircleCheck size={16} stroke={ICON_STROKE} />
                         {occurrence.verified
@@ -302,7 +302,7 @@ export function EventRichDetail({
 
     const rail = (
         <>
-            <div className="shrink-0 px-5 pt-6 pb-5 sm:px-6">
+            <div className="shrink-0 px-5 pt-6 pb-5 md:px-6">
                 <div className="font-mono text-[10px] font-semibold tracking-[0.1em] text-cyan-h uppercase">
                     Your next move
                 </div>
@@ -320,17 +320,17 @@ export function EventRichDetail({
             </div>
 
             {hasCoordinates && (
-                <div className="shrink-0 px-5 sm:px-6">
+                <div className="shrink-0 px-5 md:px-6">
                     <MiniMap
                         lat={venue.lat!}
                         lng={venue.lng!}
-                        className="h-40 w-full sm:h-48"
+                        className="h-40 w-full md:h-48"
                         onActivate={onNavigate}
                     />
                 </div>
             )}
 
-            <div className="mx-5 mt-4 shrink-0 overflow-hidden rounded-[15px] border border-border bg-card sm:mx-6">
+            <div className="mx-5 mt-4 shrink-0 overflow-hidden rounded-[15px] border border-border bg-card md:mx-6">
                 <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
                     <b className="text-[13px]">Journey target</b>
                     <span className="font-mono text-[10.5px] font-semibold text-cyan-h uppercase">
@@ -352,7 +352,7 @@ export function EventRichDetail({
                 </div>
             </div>
 
-            <div className="mx-5 mt-4 shrink-0 rounded-[12px] bg-cyan-soft px-4 py-3 text-[12.5px] leading-relaxed text-cyan-h sm:mx-6">
+            <div className="mx-5 mt-4 shrink-0 rounded-[12px] bg-cyan-soft px-4 py-3 text-[12.5px] leading-relaxed text-cyan-h md:mx-6">
                 <b className="block text-foreground">Before you go</b>
                 {occurrence.occurrence_end
                     ? 'The listed schedule stays fixed. Check entry requirements with the organiser.'
@@ -360,7 +360,7 @@ export function EventRichDetail({
             </div>
 
             {occurrence.recurrence_text && (
-                <div className="mx-5 mt-4 flex shrink-0 items-start gap-2 border-t border-border py-3 text-[12.5px] text-text-2 sm:mx-6">
+                <div className="mx-5 mt-4 flex shrink-0 items-start gap-2 border-t border-border py-3 text-[12.5px] text-text-2 md:mx-6">
                     <IconCalendarRepeat
                         size={16}
                         stroke={ICON_STROKE}
@@ -370,7 +370,7 @@ export function EventRichDetail({
                 </div>
             )}
 
-            <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-secondary/95 p-5 backdrop-blur sm:p-6">
+            <div className="sticky bottom-0 z-10 mt-auto shrink-0 border-t border-border bg-secondary/95 p-5 backdrop-blur md:p-6">
                 {onPlan && !selected && (
                     <button
                         type="button"

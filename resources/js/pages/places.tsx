@@ -848,7 +848,7 @@ export default function Places() {
                 </div>
 
                 {/* v4 filter toolbar — area picker (where) · From + Sort (measure) */}
-                <div className="relative z-20 mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="relative z-20 mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     {/* Searching in {area} ▾ */}
                     <div className="relative">
                         <button
@@ -858,7 +858,7 @@ export default function Places() {
                                 setSortOpen(false);
                             }}
                             aria-expanded={areaPickOpen}
-                            className="flex w-full items-center gap-2 rounded-full border border-border bg-card px-[15px] py-[9px] text-[13.5px] font-semibold text-foreground shadow-card transition-colors hover:border-primary sm:w-auto"
+                            className="flex w-full items-center gap-2 rounded-full border border-border bg-card px-[15px] py-[9px] text-[13.5px] font-semibold text-foreground shadow-card transition-colors hover:border-primary md:w-auto"
                         >
                             <IconFilter size={15} stroke={ICON_STROKE} />
                             <span className="font-medium text-text-2">
@@ -868,7 +868,7 @@ export default function Places() {
                             <IconChevronDown
                                 size={13}
                                 stroke={ICON_STROKE}
-                                className="ml-auto sm:ml-0"
+                                className="ml-auto md:ml-0"
                             />
                         </button>
 

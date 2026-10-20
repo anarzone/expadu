@@ -64,7 +64,7 @@ export function ServiceRequestStart() {
     return (
         <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(260px,.7fr)]">
             <section
-                className="min-w-0 rounded-[20px] border border-border bg-card p-4 sm:p-5"
+                className="min-w-0 rounded-[20px] border border-border bg-card p-4 md:p-5"
                 aria-labelledby="service-request-title"
             >
                 <h2
@@ -92,7 +92,7 @@ export function ServiceRequestStart() {
                         </button>
                     ))}
                 </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
                     <label className="text-[13px] font-medium">
                         <span className="flex items-center gap-1.5">
                             <IconMapPin size={16} className="text-cyan-h" />
@@ -202,7 +202,7 @@ export function ServiceRequestStart() {
                 </p>
             </section>
             {showAppointmentTip && (
-                <aside className="relative rounded-[20px] border border-border bg-card p-4 sm:p-5">
+                <aside className="relative rounded-[20px] border border-border bg-card p-4 md:p-5">
                     <button
                         type="button"
                         aria-label="Dismiss appointment tip"
