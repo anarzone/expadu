@@ -1733,6 +1733,23 @@
 }
 
 /* ---------- App additions (not in the mock) ---------- */
+/* The mock has no reset: where its rules say nothing, the browser's own
+   defaults show (borders none in the text colour, a button's 1px 6px
+   padding). The app's base layer changes those, so Travel's own regions
+   get them back, at no weight: any rule still wins. */
+:where(#departures, #journey-view, .travel-phone-bar),
+:where(#departures, #journey-view, .travel-phone-bar) :where(*) {
+    border-style: none;
+    border-color: currentColor;
+}
+:where(#departures, #journey-view, .travel-phone-bar) :where(button) {
+    padding: 1px 6px;
+}
+/* The mock's headings are bold by the browser's own style; the app's reset
+   makes headings inherit, so Travel gives them back. */
+:where(.travel-page) :is(h1, h2, h3, h4) {
+    font-weight: 700;
+}
 /* The stop picker searches every KVB stop: a field over the list, in the
    list's own box. */
 :where(.travel-page) .nearby-stops-box {

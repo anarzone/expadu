@@ -117,10 +117,9 @@ final class QuestionSelector
     /**
      * Ask from a ranking this class did not produce.
      *
-     * PendingAnswers sees published rules the plan is not allowed to read, so
-     * it finds questions `select()` cannot. The budget and retry ceilings are
-     * shared deliberately: a fallback question still costs the user the same
-     * attention, so it draws on the same twelve.
+     * PendingAnswers adds explicitly reviewed basic orientation to approved
+     * rule dependencies. The legacy budget is shared until question sessions
+     * replace it; unapproved rules cannot trigger a question here.
      *
      * @param  list<string>  $rankedKeys
      */

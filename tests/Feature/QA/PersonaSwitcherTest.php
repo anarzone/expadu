@@ -3,50 +3,34 @@
 use App\Models\User;
 use App\Models\UserTask;
 
-test('an admin can become a persona with real writes', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
-
+test('an admin can preview a persona without changing their account', function () {
     $admin = User::factory()->onboarded()->create(['is_admin' => true]);
     $this->actingAs($admin);
 
-    $this->post(route('qa.become', ['persona' => 'neu-student']))
-        ->assertRedirect();
-
-    $admin->refresh();
-
-    expect($admin->situation->value)->toBe('student')
-        ->and($admin->is_eu)->toBeFalse()
-        ->and($admin->profile_attributes['qa_persona'] ?? null)->toBe('neu-student')
-        ->and($admin->onboarded_at)->not->toBeNull();
+    $before = $admin->fresh()->getRawOriginal();
+    $this->getJson('/bureaucracy/v2/preview/neu-student?jurisdiction=de-nrw-cologne')
+        ->assertSuccessful()->assertJsonPath('read_only', true)->assertJsonPath('facts.values.purpose', 'study');
+    expect($admin->fresh()->getRawOriginal())->toBe($before);
 });
 
-test('becoming a planning persona leaves the arrival date empty', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
-
+test('a planning preview leaves actual arrival unknown', function () {
     $admin = User::factory()->onboarded()->create(['is_admin' => true]);
     $this->actingAs($admin);
 
-    $this->post(route('qa.become', ['persona' => 'planning']))
-        ->assertRedirect();
-
-    expect($admin->refresh()->arrival_date)->toBeNull();
+    $preview = $this->getJson('/bureaucracy/v2/preview/planning?jurisdiction=de-nrw-cologne')
+        ->assertSuccessful()->assertJsonPath('facts.values.arrival_planned', true)->json();
+    expect($preview['facts']['values'])->not->toHaveKey('arrival_date');
 });
 
-test('becoming a case persona synchronizes confirmed facts and switching away retires them', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
-
+test('switching case previews does not leave saved scenario answers behind', function () {
     $admin = User::factory()->onboarded()->create(['is_admin' => true]);
     $this->actingAs($admin);
 
-    $this->post(route('qa.become', ['persona' => 'case-family-renewal-four-years']))->assertRedirect();
-
-    $case = $admin->refresh()->bureaucracyCase;
-    expect($case)->not->toBeNull()
-        ->and($case->facts()->where('state', 'confirmed')->where('source', 'qa_scenario:case-family-renewal-four-years')->exists())->toBeTrue();
-
-    $this->post(route('qa.become', ['persona' => 'neu-student']))->assertRedirect();
-
-    expect($case->facts()->where('state', 'confirmed')->where('source', 'like', 'qa_scenario:%')->exists())->toBeFalse();
+    $this->getJson('/bureaucracy/v2/preview/case-family-renewal-four-years?jurisdiction=de-nrw-cologne')
+        ->assertSuccessful()->assertJsonPath('facts.values.current_residence_title', 'family_reunification');
+    $student = $this->getJson('/bureaucracy/v2/preview/neu-student?jurisdiction=de-nrw-cologne')->assertSuccessful()->json();
+    expect($student['facts']['values'])->not->toHaveKey('family_residence_permit_held_since')
+        ->and($admin->bureaucracyCase()->count())->toBe(0);
 });
 
 test('a non-admin cannot become a persona', function () {
@@ -65,18 +49,14 @@ test('becoming an unknown persona 404s', function () {
         ->assertNotFound();
 });
 
-test('an admin can reset their task progress', function () {
-    $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
-
+test('the old QA reset cannot discard saved task progress', function () {
     $admin = User::factory()->onboarded()->create(['is_admin' => true]);
     $this->actingAs($admin);
 
-    $this->post(route('qa.become', ['persona' => 'neu-student']))->assertRedirect();
-    expect(UserTask::where('user_id', $admin->id)->count())->toBeGreaterThan(0);
-
-    $this->post(route('qa.reset-tasks'))->assertRedirect();
-
-    expect(UserTask::where('user_id', $admin->id)->count())->toBe(0);
+    $task = UserTask::factory()->completed()->create(['user_id' => $admin->id]);
+    $before = $task->fresh()->getRawOriginal();
+    $this->postJson(route('qa.reset-tasks'))->assertGone();
+    expect($task->fresh()->getRawOriginal())->toBe($before);
 });
 
 test('a non-admin cannot reset task progress', function () {

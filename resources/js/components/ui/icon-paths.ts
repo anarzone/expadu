@@ -46,6 +46,8 @@ export const lineIcons = {
     book: '<path d="M12 5C9 3 5 3 2 4v16c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Zm0 0v16"/>',
     water: '<path d="M2 8c3-5 5 5 9 0s6 5 11 0M2 14c3-5 5 5 9 0s6 5 11 0M2 20c3-5 5 5 9 0s6 5 11 0"/>',
     search: '<circle cx="10" cy="10" r="7"/><path d="m15 15 6 6"/>',
+    /** The city picker's search, as the mock draws it. */
+    find: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
     leaf: '<path d="M20 3c1 12-5 18-12 16C0 16 4 4 20 3Z"/><path d="m4 21 11-11"/>',
     ball: '<circle cx="12" cy="12" r="9"/><path d="m12 8 4 3-2 5h-4l-2-5 4-3Zm0-5v5M3 10l5 1m2 5-3 4m7-4 3 4m-1-9 5-1"/>',
     'table-tennis':

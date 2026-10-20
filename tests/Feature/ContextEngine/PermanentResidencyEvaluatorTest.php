@@ -6,7 +6,6 @@ use App\ContextEngine\Evaluators\PermanentResidencyEvaluator;
 use App\Models\Alert;
 use App\Models\User;
 use App\Profile\ProfileEngine;
-use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redis;
@@ -35,39 +34,42 @@ beforeEach(function () {
     // Inserting fires ScoredActionPushDispatcher too (push_via_bus defaults on);
     // fake notifications so its send stays inert and no NotificationSent fires.
     Notification::fake();
+    config(['context_engine.push_via_bus' => true]);
 });
 
-/**
- * A non-EU skilled worker four years in — comfortably past the 36-month
- * Niederlassungserlaubnis threshold.
- */
-function eligibleResident(): User
+// Permit age is legacy profile data, not a reviewed eligibility assessment.
+function residentWithLongHeldPermit(int $years = 4): User
 {
     return User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
-        'profile_attributes' => ['permit_held_since' => now()->subYears(4)->toDateString()],
+        'profile_attributes' => ['permit_held_since' => now()->subYears($years)->toDateString()],
     ]);
 }
 
-test('legacy elapsed-time estimates cannot publish an eligibility action', function () {
-    $user = eligibleResident();
+test('long permit age alone produces neither an eligibility claim nor an action', function (int $years) {
+    $user = residentWithLongHeldPermit($years);
+    $profile = app(ProfileEngine::class)->build($user);
+
+    expect(app(PermanentResidencyEligibility::class)->for($profile))->toBeNull();
+
+    app(PermanentResidencyEvaluator::class)->evaluate($user, $profile);
+
+    expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty()
+        ->and(Alert::where('user_id', $user->id)->count())->toBe(0);
+    Notification::assertNothingSent();
+})->with(['four years' => 4, 'ten years' => 10]);
+
+test('long permit age does not create a good-news alert or notification', function () {
+    $user = residentWithLongHeldPermit();
 
     app(PermanentResidencyEvaluator::class)->evaluate($user);
 
-    expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty();
+    expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty()
+        ->and(Alert::where('user_id', $user->id)->count())->toBe(0);
     Notification::assertNothingSent();
 });
 
-test('legacy residency dates do not produce an unreviewed Good news alert', function () {
-    $user = eligibleResident();
-
-    app(PermanentResidencyEvaluator::class)->evaluate($user);
-
-    expect(Alert::where('user_id', $user->id)->count())->toBe(0);
-    expect(app(PermanentResidencyEligibility::class)->for(app(ProfileEngine::class)->build($user)))->toBeNull();
-});
-
-test('a resident below the track threshold gets nothing', function () {
+test('a recently issued permit alone produces no eligibility claim', function () {
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
         'profile_attributes' => ['permit_held_since' => now()->subYear()->toDateString()],
@@ -77,6 +79,7 @@ test('a resident below the track threshold gets nothing', function () {
 
     expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty()
         ->and(Alert::where('user_id', $user->id)->count())->toBe(0);
+    Notification::assertNothingSent();
 });
 
 test('an EU citizen never gets the hint even past five years', function () {
@@ -87,14 +90,21 @@ test('an EU citizen never gets the hint even past five years', function () {
 
     app(PermanentResidencyEvaluator::class)->evaluate($user);
 
-    expect(Alert::where('user_id', $user->id)->count())->toBe(0);
+    expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty()
+        ->and(Alert::where('user_id', $user->id)->count())->toBe(0);
+    Notification::assertNothingSent();
 });
 
-test('daily repeats cannot re-enable legacy eligibility publication', function () {
-    $user = eligibleResident();
+test('retries and expiry of the old announcement window never announce duration-only eligibility', function () {
+    $user = residentWithLongHeldPermit();
+    $evaluator = app(PermanentResidencyEvaluator::class);
 
-    app(PermanentResidencyEvaluator::class)->evaluate($user);
-    app(PermanentResidencyEvaluator::class)->evaluate($user);
+    foreach ([0, 0, 1, 181] as $days) {
+        $this->travel($days)->days();
+        $evaluator->evaluate($user);
 
-    expect(Alert::where('user_id', $user->id)->count())->toBe(0);
+        expect(app(ActionBus::class)->topK($user->id, 10))->toBeEmpty()
+            ->and(Alert::where('user_id', $user->id)->count())->toBe(0);
+        Notification::assertNothingSent();
+    }
 });

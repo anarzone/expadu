@@ -7,6 +7,7 @@
 
 use App\Http\Controllers\ComposerController;
 use App\Http\Controllers\ComposerWorkspaceController;
+use App\Http\Controllers\ProcessingNoticeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('composer', [ComposerController::class, 'page'])->name('composer');
@@ -22,6 +23,11 @@ Route::get('composer/catalogue', [ComposerWorkspaceController::class, 'catalogue
 Route::post('composer/parse', [ComposerController::class, 'parse'])
     ->middleware('throttle:composer-parse')
     ->name('composer.parse');
+// What each external processing purpose sends and to whom; withdrawing ends it.
+Route::get('privacy/processing/{purpose}', ProcessingNoticeController::class)
+    ->middleware('throttle:privacy-processing')->name('privacy.processing.show');
+Route::delete('privacy/processing/{purpose}', [ProcessingNoticeController::class, 'withdraw'])
+    ->middleware('throttle:privacy-processing')->name('privacy.processing.withdraw');
 Route::post('composer/compose', [ComposerController::class, 'compose'])
     ->middleware('throttle:composer-compose')
     ->name('composer.compose');

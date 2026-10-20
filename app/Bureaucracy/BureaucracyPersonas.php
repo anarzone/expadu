@@ -12,8 +12,9 @@ use App\Models\User;
  *   - CoverageCommand / BureaucracyCoverageTest (the invariant sweep);
  *   - BureaucracyDemoController (the in-app, read-only "view as any expat"
  *     switcher — an in-memory User, nothing written);
- *   - SeedPersonasCommand / QA\PersonaController (provisioning + the live
- *     "become this persona" QA switcher — REAL writes via persistableProfile()).
+ *   - ScenarioAssessmentPreview (canonical, synthetic-only QA decisions);
+ *   - SeedPersonasCommand (legacy explicit provisioning via persistableProfile()).
+ * The old HTTP become/reset commands are retired; they never persist a persona.
  *
  * Each persona is a flat spec. userFor() reads it through an in-memory User
  * and never persists anything; persistableProfile() derives the same shape
@@ -115,6 +116,7 @@ class BureaucracyPersonas
                     'current_residence_title' => 'national_d_visa',
                     'case_goal' => 'family_reunification_permit',
                     'sponsor_current_title' => 'blue_card_pending',
+                    'sponsor' => 'non_eu',
                     'entry_mode' => 'd_visa',
                     'visa_expires_at' => $monthsAhead(2),
                     'marital_household_continues' => true,
@@ -152,6 +154,7 @@ class BureaucracyPersonas
                     'current_residence_title' => 'family_reunification',
                     'case_goal' => 'settlement_permit',
                     'sponsor_current_title' => 'settlement_permit_18c',
+                    'sponsor' => 'non_eu',
                     'family_residence_permit_held_since' => $monthsAgo(36),
                     'marital_household_continues' => true,
                     'weekly_work_hours' => 25,
@@ -175,6 +178,7 @@ class BureaucracyPersonas
                     'current_residence_title' => 'family_reunification',
                     'case_goal' => 'renew_current_title',
                     'sponsor_current_title' => 'settlement_permit_18c',
+                    'sponsor' => 'non_eu',
                     'family_residence_permit_held_since' => $monthsAgo(47),
                     'marital_household_continues' => true,
                     'weekly_work_hours' => 25,
@@ -228,7 +232,24 @@ class BureaucracyPersonas
                 ],
             ],
             [
-                // The remaining unexercised title. A standard §18a/§18b holder
+                // The user knows the title is unlimited but cannot identify its section.
+                // Do not turn prior Blue Card employment into a claimed §18c title.
+                'key' => 'case-settlement-unknown-holder',
+                'label' => 'Case · Permanent residence · section unknown',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => null,
+                'entry_mode' => 'has_permit',
+                'arrived_months_ago' => 72,
+                'facts' => [
+                    'current_residence_title' => 'settlement_permit_unknown',
+                    'case_goal' => 'understand_options',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
+                ],
+            ],
+            [
+                // A standard §18a/§18b holder
                 // renewing is the most common non-Blue-Card employment case.
                 'key' => 'case-work-permit-renewal',
                 'label' => 'Case · Standard work permit · renewal',
@@ -259,6 +280,22 @@ class BureaucracyPersonas
                     'citizenship_group' => 'non_eu',
                     'purpose' => 'employment',
                     'permit_track' => 'blue_card',
+                ],
+            ],
+            [
+                // Entered visa-free, so no German visa or residence title is held yet.
+                'key' => 'case-visa-free-no-title',
+                'label' => 'Case · Entered visa-free · no residence title yet',
+                'situation' => Situation::NonEuEmployee,
+                'is_eu' => false,
+                'path' => 'non_eu_employee_blue_card',
+                'entry_mode' => 'visa_free',
+                'facts' => [
+                    'current_residence_title' => 'none',
+                    'case_goal' => 'blue_card',
+                    'entry_mode' => 'visa_free',
+                    'citizenship_group' => 'non_eu',
+                    'purpose' => 'employment',
                 ],
             ],
         ];
@@ -319,9 +356,8 @@ class BureaucracyPersonas
 
     /**
      * The profile columns to persist onto a REAL user row for this persona —
-     * the single source both SeedPersonasCommand (provisioning) and
-     * PersonaController (the live "become this persona" QA switcher) write,
-     * so the two can never drift. Deliberately narrower than userFor(): it
+     * shape retained for the legacy SeedPersonasCommand. The canonical QA
+     * preview never persists it. Deliberately narrower than userFor(): it
      * never touches identity columns (name, email, password, onboarded_at),
      * only the situation/profile fields the bureaucracy + profile engines
      * read. profile_attributes also records which persona is currently

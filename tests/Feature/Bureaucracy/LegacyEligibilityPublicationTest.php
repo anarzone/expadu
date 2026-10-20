@@ -15,7 +15,7 @@ test('paperwork does not publish an eligibility estimate from legacy permit date
         'profile_attributes' => ['permit_held_since' => now()->subYears(8)->toDateString()],
     ]);
 
-    $this->actingAs($user)->get('/bureaucracy')->assertOk()
+    $this->actingAs($user)->get('/bureaucracy/legacy')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('bureaucracy')->where('eligibility', null)->has('casePlan'));
 });
 

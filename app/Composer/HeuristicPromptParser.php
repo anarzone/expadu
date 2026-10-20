@@ -4,6 +4,7 @@ namespace App\Composer;
 
 use App\Composer\Concerns\NormalisesConstraints;
 use App\Composer\Contracts\ParsesPrompt;
+use App\Privacy\ProcessingPermit;
 use App\Profile\Profile;
 use Carbon\CarbonImmutable;
 
@@ -195,7 +196,7 @@ class HeuristicPromptParser implements ParsesPrompt
 
     ];
 
-    public function parse(string $text, Profile $profile, CarbonImmutable $now): ParsedPrompt
+    public function parse(string $text, Profile $profile, CarbonImmutable $now, ?ProcessingPermit $permit = null): ParsedPrompt
     {
         $raw = trim($text);
         $t = mb_strtolower($raw);

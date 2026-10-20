@@ -16,7 +16,7 @@ const ACTIONS = [
     {
         href: '/bureaucracy',
         Icon: IconFileText,
-        title: 'Bureaucracy',
+        title: 'Paperwork',
         sub: 'Your settling-in checklist',
     },
     {

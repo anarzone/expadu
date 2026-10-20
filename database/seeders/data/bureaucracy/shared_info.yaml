@@ -107,14 +107,49 @@ tasks:
     coverage_scope: universal
     type: info
     depends_on: []
+    applies_if_mode: explicit
+    applies_if: {}
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§68 AufenthG — Haftung für Lebensunterhalt', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__68.html'}
+      - {kind: implementation, label: 'Stadt Köln · Verpflichtungserklärung', url: 'https://www.stadt-koeln.de/service/produkte/00962/index.html'}
+    claims:
+      - id: liability-period
+        states: for five years from their entry
+        source: '§68 AufenthG — Haftung für Lebensunterhalt'
+        quote: hat für einen Zeitraum von fünf Jahren sämtliche öffentlichen Mittel zu erstatten
+      - id: fee
+        states: €29 per declaration
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: Die Verwaltungsgebühr pro Verpflichtungserklärung beträgt 29 Euro.
+      - id: lead-time
+        states: at least three months before their visa appointment
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: mindestens drei Monate vor dem Termin zur Visumserteilung bei der deutschen Auslandsvertretung
+      - id: recognition-period
+        states: up to six months after issue
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: Die Verpflichtungserklärung wird in der Regel für bis zu sechs Monate nach ihrer Ausstellung von der deutschen Auslandsvertretung anerkannt.
+      - id: payslips
+        states: payslips for the last three months
+        source: 'Stadt Köln · Verpflichtungserklärung'
+        quote: Gehaltsbescheinigungen der letzten drei Monate über monatliches Nettoeinkommen
     description: |
-      If you invite visa-required family or friends for a Schengen visit, the consulate
-      usually wants a Verpflichtungserklärung — a formal financial sponsorship you file
-      at the Ausländeramt (€29 per declaration). You vouch for their costs during the
-      stay. File it at least 3 months before their visa appointment (by post, online
-      contact form, or in person Tue/Thu mornings); it's recognized for up to 6 months
-      after issue. Income proof: last 3 payslips + bank statements (self-employed: tax
-      assessment or Steuerberater certification instead).
+      If you invite visa-required family or friends to visit, they can use a
+      Verpflichtungserklärung to show the German embassy or consulate that their costs
+      are covered. You file it at the Ausländeramt (€29 per declaration; the fee is
+      charged even if your income is not sufficient). You commit to covering public
+      costs of their stay, for five years from their entry. You need your main
+      residence in Cologne. File it at least three months before their visa appointment
+      (by post, online contact form, or in person on Tuesday and Thursday mornings);
+      the embassy usually recognises it for up to six months after issue. Employees
+      bring payslips for the last three months and a bank statement showing the salary;
+      self-employed people bring a Steuerberater certificate or their last tax
+      assessment instead.
     phase: ongoing
     urgency: low
     deadline_type: none
@@ -126,97 +161,258 @@ tasks:
     key: shared.fiktionsbescheinigung
     coverage_scope: universal
     type: info
-    eu_filter: non_eu_only
     depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§81 AufenthG — Beantragung des Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: implementation, label: 'Stadt Köln · Fiktionsbescheinigungen', url: 'https://www.stadt-koeln.de/artikel/71447/index.html'}
+    claims:
+      - id: two-forms
+        states: depends on which of its two forms you hold
+        source: 'Stadt Köln · Fiktionsbescheinigungen'
+        quote: Es gibt zwei Formen der Fiktionsbescheinigung
+      - id: continuation
+        states: The continuation form (§81 Abs. 4) keeps your current permit in force
+        source: '§81 AufenthG — Beantragung des Aufenthaltstitels'
+        quote: gilt der bisherige Aufenthaltstitel vom Zeitpunkt seines Ablaufs bis zur Entscheidung der Ausländerbehörde als fortbestehend
+      - id: first-application
+        states: The form for a first application without a visa (§81 Abs. 3)
+        source: 'Stadt Köln · Fiktionsbescheinigungen'
+        quote: 'Fiktionsbescheinigung nach § 81 Absatz 3 Aufenthaltsgesetz Diese Bescheinigung erhalten Sie, wenn: Sie ohne Visum eingereist sind.'
+      - id: no-reentry
+        states: you may not leave Germany and re-enter on it
+        source: 'Stadt Köln · Fiktionsbescheinigungen'
+        quote: 'Reisen: Mit dieser Fiktionsbescheinigung dürfen Sie Deutschland nicht verlassen und dann wiedereinreisen.'
     description: |
       While a permit application is processing you may get a Fiktionsbescheinigung —
-      and what it allows depends on WHICH of its three variants you hold. The
-      continuation variant (§81 Abs. 4) keeps your old permit's rights alive, including
-      work and travel. The first-application variants generally do NOT allow re-entry
-      after leaving Germany. People misread this, fly home, and get stranded — check
-      which box is ticked on yours before booking any flight.
+      and what it allows depends on which of its two forms you hold. The continuation
+      form (§81 Abs. 4) keeps your current permit in force until the decision: you may
+      keep working if your permit allowed it, and you may travel and return while it is
+      valid. The form for a first application without a visa (§81 Abs. 3) does not
+      allow work, and you may not leave Germany and re-enter on it. Check which form
+      yours is before booking any flight.
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
     links:
+      - https://www.stadt-koeln.de/artikel/71447/index.html
       - https://www.gesetze-im-internet.de/aufenthg_2004/__81.html
 
   - title: 'New passport? Transfer your permit (Übertrag)'
     key: shared.passport_transfer
     coverage_scope: universal
     type: info
-    eu_filter: non_eu_only
     depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§51 AufenthG — Beendigung der Rechtmäßigkeit des Aufenthalts', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__51.html'}
+      - {kind: implementation, label: 'Stadt Köln · Antworten auf Fragen zum Aufenthalt', url: 'https://www.stadt-koeln.de/artikel/73721/index.html'}
+      - {kind: implementation, label: 'Stadt Köln · Niederlassungserlaubnis', url: 'https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis'}
+    claims:
+      - id: title-stays-valid
+        states: Your residence title stays valid when you get a new national passport
+        source: 'Stadt Köln · Antworten auf Fragen zum Aufenthalt'
+        quote: Ihr Aufenthaltstitel bleibt weiterhin gültig.
+      - id: contact-form
+        states: If the old passport number is printed on your residence title, contact the Ausländeramt through its contact form
+        source: 'Stadt Köln · Antworten auf Fragen zum Aufenthalt'
+        quote: Wenn die alte Passnummer auf Ihrem Aufenthaltstitel vermerkt ist, kontaktieren Sie uns bitte über unser Kontaktformular.
+      - id: settlement-transfer
+        states: bring your old passport, your new passport and a digital biometric photo
+        source: 'Stadt Köln · Niederlassungserlaubnis'
+        quote: Bitte bringen Sie Ihren alten Nationalpass, Ihren neuen Nationalpass und ein digitales biometrisches Passfoto zum Termin mit.
+      - id: six-months-abroad
+        states: stay abroad for longer than six months
+        source: '§51 AufenthG — Beendigung der Rechtmäßigkeit des Aufenthalts'
+        quote: wenn der Ausländer ausgereist und nicht innerhalb von sechs Monaten oder einer von der Ausländerbehörde bestimmten längeren Frist wieder eingereist ist
     description: |
-      When you renew your passport at your home consulate, your German residence
-      document must follow it. If the old passport number is printed on your card,
-      send a copy of the new passport via the Ausländeramt contact form — you'll get
-      an appointment invitation; bring the old passport, the new passport, and a
-      digital biometric photo. Also worth knowing: a permanent permit generally
-      expires on permanent departure or after more than 6 months abroad without an
-      approved longer window — plan long home-country stays accordingly.
+      Your residence title stays valid when you get a new national passport. Carry
+      both the old and the new passport if you kept the old one. If the old passport
+      number is printed on your residence title, contact the Ausländeramt through its
+      contact form and it will tell you the next steps; if it is not printed there,
+      you do not need to do anything. Settlement permit holders whose card shows the
+      passport number book an appointment at their Bezirksausländeramt and bring your
+      old passport, your new passport and a digital biometric photo. Also worth
+      knowing: a residence title generally expires if you leave Germany for a reason
+      that is not temporary, or if you stay abroad for longer than six months without
+      a longer period set by the Ausländerbehörde. Some exceptions apply, so ask
+      before planning long stays away.
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
     links:
-      - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/index.html
+      - https://www.stadt-koeln.de/artikel/73721/index.html
+      - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis
 
   - title: 'The long game: permanent residency'
     key: shared.long_game
     coverage_scope: universal
     type: info
-    eu_filter: non_eu_only
     # Do not offer permanent residency to someone who already holds it. Without
     # this the card appeared as "you could apply next" for a user who had told
     # onboarding they hold a settlement permit — while another lane said they
-    # were not eligible. Same rule, two contradictory places.
-    applies_if:
-      settled_at: { present: false }
+    # were not eligible. Same rule, two contradictory places. The old
+    # `settled_at` gate is not a registered fact; the audience is now the
+    # non-settled titles of current_residence_title (`other` is left out
+    # because it may be a permanent title such as Daueraufenthalt-EU).
     depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+      current_residence_title: [national_d_visa, standard_work_permit, blue_card, family_reunification]
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§9 AufenthG — Niederlassungserlaubnis', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9.html'}
+      - {kind: primary, label: '§18c AufenthG — Niederlassungserlaubnis für Fachkräfte', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
+      - {kind: primary, label: '§28 AufenthG — Familiennachzug zu Deutschen', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__28.html'}
+      - {kind: primary, label: '§9a AufenthG — Erlaubnis zum Daueraufenthalt-EU', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__9a.html'}
+      - {kind: implementation, label: 'Stadt Köln · Allgemeine Niederlassungserlaubnis', url: 'https://www.stadt-koeln.de/service/produkt/allgemeine-niederlassungserlaubnis'}
+    claims:
+      - id: five-years
+        states: usually after holding a residence permit for five years
+        source: '§9 AufenthG — Niederlassungserlaubnis'
+        quote: er seit fünf Jahren die Aufenthaltserlaubnis besitzt
+      - id: pension
+        states: at least 60 months of pension contributions
+        source: '§9 AufenthG — Niederlassungserlaubnis'
+        quote: er mindestens 60 Monate Pflichtbeiträge oder freiwillige Beiträge zur gesetzlichen Rentenversicherung geleistet hat
+      - id: spouse-pension
+        states: the contributions of one spouse can count for both
+        source: '§9 AufenthG — Niederlassungserlaubnis'
+        quote: Bei Ehegatten, die in ehelicher Lebensgemeinschaft leben, genügt es, wenn die Voraussetzungen nach Absatz 2 Satz 1 Nr. 3, 5 und 6 durch einen Ehegatten erfüllt werden.
+      - id: b1
+        states: German at level B1
+        source: 'Stadt Köln · Allgemeine Niederlassungserlaubnis'
+        quote: Ihre Deutschkenntnisse entsprechen dem Niveau B1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
+      - id: lid-test
+        states: usually shown with the "Leben in Deutschland" test
+        source: 'Stadt Köln · Allgemeine Niederlassungserlaubnis'
+        quote: Der Nachweis erfolgt in der Regel über den Test "Leben in Deutschland"
+      - id: fee
+        states: The Cologne fee is €113
+        source: 'Stadt Köln · Allgemeine Niederlassungserlaubnis'
+        quote: Für die Erteilung einer Niederlassungserlaubnis müssen Sie eine Gebühr in Höhe von 113 Euro bezahlen.
+      - id: skilled-worker
+        states: three years on a skilled-worker permit
+        source: '§18c AufenthG — Niederlassungserlaubnis für Fachkräfte'
+        quote: sie seit drei Jahren im Besitz eines Aufenthaltstitels nach den §§ 18a, 18b, 18d oder § 18g ist
+      - id: skilled-worker-domestic
+        states: two years with a German degree or vocational training
+        source: '§18c AufenthG — Niederlassungserlaubnis für Fachkräfte'
+        quote: Die Frist nach Satz 1 Nummer 1 verkürzt sich auf zwei Jahre
+      - id: skilled-worker-section
+        states: under §18c
+        source: '§18c AufenthG — Niederlassungserlaubnis für Fachkräfte'
+        quote: Einer Fachkraft ist ohne Zustimmung der Bundesagentur für Arbeit eine Niederlassungserlaubnis zu erteilen
+      - id: blue-card
+        states: 27 months on a Blue Card
+        source: '§18c AufenthG — Niederlassungserlaubnis für Fachkräfte'
+        quote: wenn er mindestens 27 Monate eine Beschäftigung nach § 18g ausgeübt hat
+      - id: blue-card-german
+        states: 21 months with sufficient German
+        source: '§18c AufenthG — Niederlassungserlaubnis für Fachkräfte'
+        quote: Die Frist nach Satz 1 verkürzt sich auf 21 Monate, wenn der Ausländer über ausreichende Kenntnisse der deutschen Sprache verfügt.
+      - id: family-of-germans
+        states: three years for family members of Germans (§28)
+        source: '§28 AufenthG — Familiennachzug zu Deutschen'
+        quote: wenn er drei Jahre im Besitz einer Aufenthaltserlaubnis ist, die familiäre Lebensgemeinschaft mit dem Deutschen im Bundesgebiet fortbesteht
+      - id: eu-variant
+        states: The EU variant (Daueraufenthalt-EU, §9a) also generally needs five years
+        source: '§9a AufenthG — Erlaubnis zum Daueraufenthalt-EU'
+        quote: er sich seit fünf Jahren mit Aufenthaltstitel im Bundesgebiet aufhält
     description: |
-      Germany rewards staying. Niederlassungserlaubnis (permanent residency): usually
-      after 5 years — 60 months of pension contributions (in a marriage, the working
-      spouse's contributions can fulfil this for both), secured livelihood, B1 German,
-      the "Leben in Deutschland" test, and sufficient housing (12 m² per person 6+,
-      10 m² per child under 6). Faster tracks: 3 years on a skilled-worker permit (2
-      with a German degree), Blue Card 21–27 months, family of Germans 3 years. The
-      EU variant (Daueraufenthalt-EU) has the same bar but adds EU mobility — if you
-      might leave Germany one day, ask for that one. And when any renewal comes due:
-      check whether you already qualify for permanent residency instead of paying for
-      a renewal.
+      Germany rewards staying. A Niederlassungserlaubnis (permanent residency) is
+      usually after holding a residence permit for five years, with secured
+      livelihood, at least 60 months of pension contributions (in a marriage, the
+      contributions of one spouse can count for both), German at level B1, basic
+      knowledge of the legal and social order (usually shown with the "Leben in
+      Deutschland" test) and sufficient housing for your household. The Cologne fee is
+      €113. Faster routes exist: three years on a skilled-worker permit (two years with
+      a German degree or vocational training) under §18c; 27 months on a Blue Card, or
+      21 months with sufficient German; three years for family members of Germans (§28). The EU
+      variant (Daueraufenthalt-EU, §9a) also generally needs five years. When a renewal
+      comes due, check whether you already meet these conditions.
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
     links:
       - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis
+      - https://www.stadt-koeln.de/service/produkt/allgemeine-niederlassungserlaubnis
 
   # Split out of shared.long_game, which was gated on NOT already being settled.
   # That gate is right for the permanent-residency half and wrong for this one:
   # it hid citizenship from the only people for whom it is the next question.
   # Citizenship counts years of residence, not years since permanent residency,
-  # so it carries no settled_at gate at all. The sentence below is the one that
-  # was already in the long-game card, moved unchanged — no figure, deadline or
-  # § here is new, and none has been re-reviewed.
+  # so it carries no settled_at gate at all. Re-sourced 2026-10-08: every figure
+  # is quoted from StAG or the Stadt Köln naturalisation page; the unsourced
+  # "3-year fast track abolished in October 2025" remark was removed.
   - title: 'German citizenship'
     key: shared.citizenship
     coverage_scope: universal
     type: info
-    eu_filter: non_eu_only
     depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§10 StAG — Einbürgerung', url: 'https://www.gesetze-im-internet.de/stag/__10.html'}
+      - {kind: primary, label: '§38 StAG — Gebühren', url: 'https://www.gesetze-im-internet.de/stag/__38.html'}
+      - {kind: implementation, label: 'Stadt Köln · Einbürgerung', url: 'https://www.stadt-koeln.de/service/produkt/einbuergerung-den-deutschen-staatsverband'}
+    claims:
+      - id: five-years
+        states: usually after five years of lawful residence in Germany
+        source: '§10 StAG — Einbürgerung'
+        quote: Ein Ausländer, der seit fünf Jahren rechtmäßig seinen gewöhnlichen Aufenthalt im Inland hat
+      - id: b1
+        states: German at level B1
+        source: 'Stadt Köln · Einbürgerung'
+        quote: ein Deutsch-Zertifikat mit mindestens Niveau B1
+      - id: test
+        states: a passed naturalisation test (Einbürgerungstest)
+        source: 'Stadt Köln · Einbürgerung'
+        quote: durch einen erfolgreich abgeschlossenen Einbürgerungstest
+      - id: fee
+        states: The fee is €255
+        source: '§38 StAG — Gebühren'
+        quote: die Einbürgerung in Höhe von 255 Euro
     description: |
-      Citizenship: 5 years + B1 + Einbürgerungstest, €255 (the 3-year fast track was
-      abolished in October 2025 — many blogs still advertise it).
+      German citizenship is usually after five years of lawful residence in Germany,
+      with German at level B1 (or a German school, study or vocational qualification)
+      and proof of knowledge of the legal and social order, for example a passed
+      naturalisation test (Einbürgerungstest). The fee is €255. Other conditions, such
+      as your residence title and secured livelihood, also apply.
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
-    # Deliberately empty: the long-game card's link is the Niederlassungserlaubnis
-    # page, which is the wrong destination for this, and guessing a citizenship
-    # URL is exactly what the trust rules forbid. Owner to supply one.
-    links: []
+    links:
+      - https://www.stadt-koeln.de/service/produkt/einbuergerung-den-deutschen-staatsverband
 
   - title: 'Foreign professional qualification? Get it recognized'
     key: shared.recognition
@@ -288,25 +484,64 @@ tasks:
     key: shared.other_permits
     coverage_scope: universal
     type: info
-    eu_filter: non_eu_only
     depends_on: []
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§16a AufenthG — Berufsausbildung', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__16a.html'}
+      - {kind: primary, label: '§18d AufenthG — Forschung', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18d.html'}
+      - {kind: primary, label: '§19 AufenthG — ICT-Karte', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__19.html'}
+      - {kind: primary, label: '§16f AufenthG — Sprachkurse und Schulbesuch', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__16f.html'}
+      - {kind: primary, label: '§17 AufenthG — Suche eines Ausbildungs- oder Studienplatzes', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__17.html'}
+      - {kind: primary, label: '§38a AufenthG — Langfristig Aufenthaltsberechtigte anderer EU-Staaten', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__38a.html'}
+    claims:
+      - id: training
+        states: 'Vocational training in a company (§16a)'
+        source: '§16a AufenthG — Berufsausbildung'
+        quote: Eine Aufenthaltserlaubnis zum Zweck der betrieblichen Aus- und Weiterbildung soll erteilt werden
+      - id: research
+        states: 'Researchers (§18d)'
+        source: '§18d AufenthG — Forschung'
+        quote: eine wirksame Aufnahmevereinbarung oder einen entsprechenden Vertrag zur Durchführung eines Forschungsvorhabens mit einer Forschungseinrichtung abgeschlossen hat
+      - id: ict
+        states: 'intra-corporate transfers (§19)'
+        source: '§19 AufenthG — ICT-Karte'
+        quote: Eine ICT-Karte ist ein Aufenthaltstitel zum Zweck eines unternehmensinternen Transfers eines Ausländers.
+      - id: language-courses
+        states: 'Language courses (§16f)'
+        source: '§16f AufenthG — Sprachkurse und Schulbesuch'
+        quote: Einem Ausländer kann eine Aufenthaltserlaubnis zur Teilnahme an Sprachkursen, die nicht der Studienvorbereitung dienen
+      - id: training-search
+        states: 'searching for a training place (§17)'
+        source: '§17 AufenthG — Suche eines Ausbildungs- oder Studienplatzes'
+        quote: Einem Ausländer kann zum Zweck der Suche nach einem Ausbildungsplatz zur Durchführung einer qualifizierten Berufsausbildung eine Aufenthaltserlaubnis erteilt werden
+      - id: eu-long-term
+        states: 'Long-term residents of another EU country (§38a)'
+        source: '§38a AufenthG — Langfristig Aufenthaltsberechtigte anderer EU-Staaten'
+        quote: Einem Ausländer, der in einem anderen Mitgliedstaat der Europäischen Union die Rechtsstellung eines langfristig Aufenthaltsberechtigten innehat, wird eine Aufenthaltserlaubnis erteilt
+      - id: eu-long-term-period
+        states: want to stay in Germany for more than 90 days
+        source: '§38a AufenthG — Langfristig Aufenthaltsberechtigte anderer EU-Staaten'
+        quote: wenn er sich länger als 90 Tage im Bundesgebiet aufhalten will
     description: |
-      Some paths we don't model in full — here's the routing. Ausbildung (vocational
-      training, §16a): like the student permit with a signed, IHK/HWK-registered
-      training contract instead of enrollment. Researchers (§18d) and intra-corporate
-      transfers (§19): your institute's welcome office or HR department owns the
-      paperwork — Cologne even runs a dedicated service desk for academics. Au pair,
-      Working Holiday, language courses (§16f) and training-place search (§17): short-
-      horizon permits, usually issued by the consulate — check Make it in Germany. UK
-      citizens resident before 2021 hold Article-50 rights (Aufenthaltsdokument-GB);
-      post-Brexit arrivals follow the normal third-country paths. Long-term residents
-      of another EU country (§38a): if you already hold that country's "Daueraufenthalt-EU"
-      card, you can relocate to Germany and apply at the Ausländeramt soon after arriving —
-      bring that existing card.
+      Some paths we don't model in full. Here is where the law puts them.
+      Vocational training in a company (§16a) has its own residence permit for
+      training. Researchers (§18d) need a hosting agreement or contract with a research
+      institution; intra-corporate transfers (§19) use the ICT Card for a temporary
+      posting within the company group. Language courses (§16f) and searching for a
+      training place (§17) have their own residence permits. Long-term residents of
+      another EU country (§38a) who hold that status there can get a residence permit
+      if they want to stay in Germany for more than 90 days. Ask the Ausländeramt which
+      route applies to you.
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
     links:
-      - https://www.make-it-in-germany.com/en/
       - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/index.html

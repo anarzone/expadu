@@ -14,10 +14,10 @@ function settledResident(): User
     ]);
 }
 
-test('the settle action marks arrival basics done and retires PR-journey content', function () {
+test('a general settled declaration does not complete tasks or establish permanent status', function () {
     $user = settledResident();
 
-    // Arrival basics are matched by key SUFFIX, so a branch-prefixed key counts.
+    // Neither a task key suffix nor a general declaration proves completion.
     $anmeldung = Task::factory()->create(['key' => 'nee.anmeldung', 'is_published' => true]);
     $bank = Task::factory()->create(['key' => 'core.bank_account', 'is_published' => true]);
     $longGame = Task::factory()->create(['key' => 'shared.long_game', 'type' => 'info', 'is_published' => true]);
@@ -31,16 +31,17 @@ test('the settle action marks arrival basics done and retires PR-journey content
 
     $row = fn (Task $t) => $user->userTasks()->where('task_id', $t->id)->first();
 
-    // Arrival basics → Done.
-    expect($row($anmeldung)->status)->toBe(TaskStatus::Done)
-        ->and($row($bank)->status)->toBe(TaskStatus::Done);
-    // PR-journey content → not applicable (wrong once you already hold PR).
-    expect($row($longGame)->is_applicable)->toBeFalse();
+    expect($row($anmeldung)->status)->toBe(TaskStatus::NotStarted)
+        ->and($row($bank)->status)->toBe(TaskStatus::NotStarted)
+        ->and($row($anmeldung)->completed_at)->toBeNull()
+        ->and($row($bank)->completed_at)->toBeNull();
+    expect($row($longGame)->is_applicable)->toBeTrue();
     // Evergreen reference (Schufa) → left untouched.
     expect($row($schufa)->is_applicable)->toBeTrue()
         ->and($row($schufa)->status)->toBe(TaskStatus::NotStarted);
-    // The declaration is recorded.
-    expect($user->fresh()->profile_attributes['settled_at'] ?? null)->not->toBeNull();
+    // The product declaration is retained without inventing a legal-title fact.
+    expect($user->fresh()->profile_attributes['arrival_setup_declared_at'] ?? null)->toBe(now()->toDateString())
+        ->and($user->fresh()->profile_attributes['settled_at'] ?? null)->toBeNull();
 });
 
 test('the settle action only touches the calling user', function () {
@@ -55,21 +56,21 @@ test('the settle action only touches the calling user', function () {
     expect($theirs->fresh()->status)->toBe(TaskStatus::NotStarted);
 });
 
-test('the settled suggestion shows for a settled-tenure resident and clears after settling', function () {
+test('tenure and a general declaration never produce a permanent-residence suggestion or status', function () {
     $user = settledResident();
     $anmeldung = Task::factory()->create(['key' => 'nee.anmeldung', 'is_published' => true]);
     UserTask::create(['user_id' => $user->id, 'task_id' => $anmeldung->id]);
 
-    $this->actingAs($user)->get(route('bureaucracy'))
-        ->assertInertia(fn ($page) => $page->where('settledSuggestion', true));
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))
+        ->assertInertia(fn ($page) => $page->where('settledSuggestion', false)->where('settled', false));
 
     $this->actingAs($user)->post(route('bureaucracy.settle'));
 
-    $this->actingAs($user)->get(route('bureaucracy'))
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))
         ->assertInertia(fn ($page) => $page
             ->where('settledSuggestion', false)
-            ->where('settled', true)
-            ->where('phases.current', 'permanent'));
+            ->where('settled', false)
+            ->where('phases.current', fn ($phase) => $phase !== 'permanent'));
 });
 
 test('a recent arrival never sees the settled suggestion', function () {
@@ -81,7 +82,7 @@ test('a recent arrival never sees the settled suggestion', function () {
     $anmeldung = Task::factory()->create(['key' => 'nee.anmeldung', 'is_published' => true]);
     UserTask::create(['user_id' => $user->id, 'task_id' => $anmeldung->id]);
 
-    $this->actingAs($user)->get(route('bureaucracy'))
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))
         ->assertInertia(fn ($page) => $page->where('settledSuggestion', false));
 });
 
@@ -93,24 +94,24 @@ test('an opted-out info card moves to Not applicable, not the info lane', functi
         'profile_attributes' => ['housing_status' => 'long_term'],
     ]);
     // An info-type card that genuinely applies (so it reaches a lane), then opted out.
-    $info = Task::factory()->create([
-        'key' => 'shared.long_game',
+    $info = Task::factory()->approvedFixture()->create([
+        'key' => 'fixture.opted-out-info',
         'type' => 'info',
         'is_published' => true,
-        'applies_if' => [['housing_status' => ['long_term']]],
+        'applies_if' => [[]],
     ]);
     UserTask::create(['user_id' => $user->id, 'task_id' => $info->id, 'is_applicable' => false]);
 
-    $this->actingAs($user)->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $props = $page->toArray()['props'];
-        expect(collect($props['tasks']['not_applicable'])->pluck('key'))->toContain('shared.long_game');
-        expect(collect($props['tasks']['info'])->pluck('key'))->not->toContain('shared.long_game');
+        expect(collect($props['tasks']['not_applicable'])->pluck('key'))->toContain('fixture.opted-out-info');
+        expect(collect($props['tasks']['info'])->pluck('key'))->not->toContain('fixture.opted-out-info');
 
         return true;
     });
 });
 
-test('a long-lapsed deadline reads as lapsed on the bureaucracy page', function () {
+test('an unresolved old deadline remains overdue rather than being softened by age', function () {
     $user = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
         'is_eu' => false,
@@ -118,20 +119,20 @@ test('a long-lapsed deadline reads as lapsed on the bureaucracy page', function 
         'profile_attributes' => ['housing_status' => 'long_term'],
     ]);
     // Due 14 days after a 3-year-old arrival → ~1080 days overdue.
-    $lapsed = Task::factory()->create([
+    $lapsed = Task::factory()->approvedFixture()->create([
         'key' => 'x.lapsed',
         'title' => 'Long Lapsed Task',
         'is_published' => true,
-        'applies_if' => [['housing_status' => ['long_term']]],
+        'applies_if' => [[]],
         'deadline_type' => 'days_since_arrival',
         'deadline_days' => 14,
     ]);
     UserTask::create(['user_id' => $user->id, 'task_id' => $lapsed->id]);
 
-    $this->actingAs($user)->get(route('bureaucracy'))->assertInertia(function ($page) {
+    $this->actingAs($user)->get(route('bureaucracy.legacy'))->assertInertia(function ($page) {
         $card = collect($page->toArray()['props']['tasks']['active'])->firstWhere('key', 'x.lapsed');
         expect($card)->not->toBeNull()
-            ->and($card['deadline_tier'])->toBe('lapsed'); // softened, not "overdue"
+            ->and($card['deadline_tier'])->toBe('overdue');
 
         return true;
     });

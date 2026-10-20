@@ -60,33 +60,21 @@ test('Services keeps optional preferences by category and opens an unsent reques
     expect(commands).toEqual([]);
 });
 
-test('Paperwork has one page heading and optional Composer orientation', async ({
+test('Paperwork has one page heading and an Overview / Documents switch', async ({
     page,
 }) => {
     await page.goto('/bureaucracy');
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(
-        page.getByRole('heading', { name: 'Paperwork', exact: true }),
+        page.getByRole('heading', { level: 1, name: 'Paperwork' }),
     ).toBeVisible();
     await expect(
-        page.getByRole('button', { name: 'Checklist', exact: true }),
+        page.getByRole('button', { name: 'Overview', exact: true }),
     ).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('button', { name: 'Documents', exact: true }).click();
     await expect(
-        page.getByText('Documents in your tasks', { exact: true }),
+        page.getByRole('heading', { name: 'Your paperwork', exact: true }),
     ).toBeVisible();
-    const href = await page
-        .getByRole('link', { name: 'Help me get oriented' })
-        .getAttribute('href');
-    const query = new URL(href!, 'https://expadu.test').searchParams;
-    expect(query.has('prompt')).toBe(true);
-    expect(query.has('plan')).toBe(false);
-    await page
-        .getByRole('button', { name: 'Dismiss orientation help', exact: true })
-        .click();
-    await expect(
-        page.getByRole('link', { name: 'Help me get oriented' }),
-    ).toHaveCount(0);
 });
 
 test('Services provides a reviewable message and an optional closable helper', async ({

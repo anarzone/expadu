@@ -11,6 +11,7 @@ use App\Profile\CategoryAffinity;
 use App\Profile\ProfileEngine;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\ReviewedHomePlan;
 
 /**
  * Events store coordinates in a PostGIS `location` column (lat/lng are
@@ -131,7 +132,7 @@ test('an empty spot catalogue does not blow up the feed', function () {
     expect(app(DiscoveryFeed::class)->for(homeContext(feedUser())))->toBeArray();
 });
 
-test('prompt suggestions surface Anmeldung for a recent arrival, capped at four', function () {
+test('prompt suggestions surface an approved applicable task, capped at four', function () {
     $user = User::factory()->onboarded()->create([
         'arrival_date' => now()->subDays(5),
         'veedel' => 'Ehrenfeld',
@@ -139,11 +140,14 @@ test('prompt suggestions surface Anmeldung for a recent arrival, capped at four'
         'is_eu' => true,
     ]);
 
-    $chips = app(PromptSuggestions::class)->for(homeContext($user));
+    $fixture = ReviewedHomePlan::activate($user,
+        ['fixture.home.suggestion' => ['title' => 'Synthetic address preparation']],
+        ['arrival_date' => now()->subDays(5)->toDateString()]);
+    $chips = app(PromptSuggestions::class)->for(homeContext($user, ['bureaucracyPlan' => $fixture['plan']]));
 
     expect(count($chips))->toBeGreaterThan(0)->toBeLessThanOrEqual(4);
 
-    $anmeldung = collect($chips)->first(fn ($c) => str_contains($c['label'], 'Anmeldung'));
+    $anmeldung = collect($chips)->firstWhere('label', 'Synthetic address preparation');
     expect($anmeldung)->not->toBeNull();
     // It deep-links to the verified checklist rather than the composer.
     expect($anmeldung['href'] ?? null)->toBe('/bureaucracy');

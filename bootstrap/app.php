@@ -2,10 +2,12 @@
 
 use App\Http\Middleware\CanonicalRedirects;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\LocalMockClock;
 use App\Http\Middleware\PerfTrackMiddleware;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCacheHeaders;
+use App\Support\MockClock;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -50,9 +52,19 @@ return Application::configure(basePath: dirname(__DIR__))
             // Web-wide per-user/IP ceiling (see AppServiceProvider limiters);
             // sits after StartSession so the authenticated user is resolvable.
             'throttle:global',
+            // Local only: the mock's sample moment for tools/mock-compare.
+            // Innermost, so session and CSRF cookies keep the real clock.
+            LocalMockClock::class,
         ]);
+        $middleware->encryptCookies(except: [MockClock::COOKIE]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // These are JSON commands even when Accept is missing/spoofed. A
+        // validation redirect must not flash personal prompts into a session.
+        $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $error): bool => $request->is('composer/parse', 'composer/compose', 'bureaucracy/case/messages', 'bureaucracy/case/ai-consent', 'bureaucracy/v2/*', 'privacy/processing/*')
+            || $request->expectsJson());
+        $exceptions->dontFlash(['text', 'message', 'answer', 'answers', 'payload', 'value', 'facts', 'processing', 'token', 'label', 'evidence_reference']);
+
         // Report every unhandled exception to Sentry (Laravel 11 needs this
         // wired explicitly). The scrub + user-id attribution happen in
         // config/sentry.php `before_send`. 404s and validation aren't bugs, so

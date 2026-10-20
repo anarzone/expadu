@@ -68,6 +68,9 @@ class NextTrip
             'from' => $origin?->toArray(),
             'margin_min' => $margin,
             'checked_at' => $now->setTimezone('Europe/Berlin')->toIso8601String(),
+            // Stop names carry the city ("Köln Neumarkt"); the card shows
+            // them as the stop signs do.
+            'city' => config('geocoding.search_default.city'),
         ];
 
         if ($target->startAt === null || ! $target->startAt->greaterThan($now)) {

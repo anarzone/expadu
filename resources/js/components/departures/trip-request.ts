@@ -1,5 +1,17 @@
 export class TripRequestError extends Error {}
 
+/** Another trip is running and the request didn't say to replace it (409). */
+export type TripConflict = {
+    destination: string | null;
+    arrive_time: string | null;
+};
+
+export class TripConflictError extends TripRequestError {
+    constructor(public readonly trip: TripConflict) {
+        super('You’re already on a trip. Replace it?');
+    }
+}
+
 /** A persisted trip is only confirmed after the shared app state refreshes. */
 export async function persistTrip(
     url: string,
@@ -17,6 +29,16 @@ export async function persistTrip(
         },
         body: body ? JSON.stringify(body) : undefined,
     });
+
+    if (response.status === 409) {
+        const data = (await response.json().catch(() => null)) as {
+            trip?: TripConflict;
+        } | null;
+
+        throw new TripConflictError(
+            data?.trip ?? { destination: null, arrive_time: null },
+        );
+    }
 
     if (!response.ok) {
         throw new TripRequestError(
