@@ -105,7 +105,11 @@ test('conversation, a plan that goes straight in, time editing, Undo, history an
         current.getByRole('button', { name: 'From time 10:01' }),
     ).toBeVisible();
     await page.keyboard.press('Escape');
+    // Keeping the new time puts it straight in; the reply says it as it is now.
     await current.getByRole('button', { name: 'Keep time' }).click();
+    await expect(
+        page.getByText(`${name} is now 10:01–11:00.`, { exact: true }),
+    ).toBeVisible();
     await expect(
         current.getByRole('button', { name: 'Apply changes' }),
     ).toHaveCount(0);
@@ -128,7 +132,14 @@ test('conversation, a plan that goes straight in, time editing, Undo, history an
         .last()
         .click();
     await expect(page.locator('#composer-current-plan')).toBeVisible();
-    // Undo takes the new day out again, which also leaves the account as it was.
+    // Undo goes newest first: the move, then the new day, which also leaves
+    // the account as it was.
+    await page.getByRole('button', { name: 'Undo last change' }).click();
+    await expect(
+        page
+            .locator('#composer-current-plan')
+            .getByText('10:00', { exact: true }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Undo last change' }).click();
     await expect(page.locator('#composer-current-plan')).toHaveCount(0);
     await page.screenshot({
