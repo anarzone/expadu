@@ -98,7 +98,9 @@ final class PlanReadModel
             foreach ($assessment['processes'] as $decision) {
                 foreach ($decision['variants'] as $variant) {
                     $guidance[] = [...$this->guidance->for($variant, $facts, $input->at),
-                        'definition_id' => $decision['definition_id'], 'topic' => $decision['topic']];
+                        'definition_id' => $decision['definition_id'], 'topic' => $decision['topic'],
+                        // The route or process the card belongs to, for grouping ("Permanent residence with a Blue Card").
+                        'definition_title' => $order->processTitle($decision['definition_id'])];
                 }
             }
             $next = $this->nextActions($processes, $timeline, $progress);
