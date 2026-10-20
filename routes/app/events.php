@@ -6,12 +6,14 @@
 */
 
 use App\Http\Controllers\Api\EventBookmarkController;
+use App\Http\Controllers\Api\EventOtherDayController;
 use App\Http\Controllers\Api\EventReminderController;
 use App\Http\Controllers\Api\EventsController;
 use App\Http\Controllers\EventController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('api/events', [EventsController::class, 'index'])->name('api.events');
+Route::get('api/events/other-day', EventOtherDayController::class)->middleware('throttle:60,1')->name('api.events.other-day');
 Route::get('api/event-bookmarks', [EventBookmarkController::class, 'index'])->name('api.event-bookmarks.index');
 Route::post('api/event-bookmarks', [EventBookmarkController::class, 'store'])->middleware('throttle:60,1')->name('api.event-bookmarks.store');
 Route::get('api/reminders', [EventReminderController::class, 'index'])->name('api.reminders.index');

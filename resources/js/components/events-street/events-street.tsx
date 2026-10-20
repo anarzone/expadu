@@ -76,9 +76,12 @@ export function EventsStreet({
 }) {
     const layout = useLayoutName();
     const host = useRef<HTMLDivElement>(null);
-    const [box, setBox] = useState<{ width: number; room: number } | null>(
-        null,
-    );
+    const [box, setBox] = useState<{
+        width: number;
+        room: number;
+        menuTop: number | null;
+        top: number;
+    } | null>(null);
     const [columnPos, setColumnPos] = useState(0);
     const [phonePage, setPhonePage] = useState<number | undefined>();
     const nowHour = useNowHour();
@@ -93,9 +96,18 @@ export function EventsStreet({
 
         const measure = () => {
             const top = node.getBoundingClientRect().top + window.scrollY;
+            // A phone's street ends 16px above the floating menu.
+            const menu = document
+                .querySelector('.shell-nav')
+                ?.getBoundingClientRect();
             setBox({
                 width: node.clientWidth,
                 room: window.innerHeight - top - GAP,
+                menuTop:
+                    menu && menu.top > window.innerHeight / 2
+                        ? menu.top + window.scrollY
+                        : null,
+                top,
             });
         };
 
@@ -120,6 +132,18 @@ export function EventsStreet({
     const fit = box
         ? streetFit(layout, { hostWidth: box.width, room: box.room })
         : null;
+    // Up to 48px of a phone's pavement gives way to the floating menu;
+    // with more (a small phone) the street runs on under it.
+    let height = fit?.height ?? 0;
+
+    if (fit && box && layout === 'phone' && box.menuTop !== null) {
+        const over = box.top + fit.height * fit.zoom - (box.menuTop - GAP);
+
+        if (over > 0 && over <= 48) {
+            height = fit.height - over / fit.zoom;
+        }
+    }
+
     const sky = streetSky(skyHour, date, {
         width: fit?.width ?? STREET[layout].size[0],
         skyHeight: STREET[layout].sky,
@@ -131,12 +155,12 @@ export function EventsStreet({
             ref={host}
             className="ev-street"
             data-layout={layout}
-            style={{ height: fit ? fit.height * fit.zoom : undefined }}
+            style={{ height: fit ? height * fit.zoom : undefined }}
         >
             {fit ? (
                 <div
                     className="ev-street-fit"
-                    style={{ zoom: fit.zoom, width: fit.width }}
+                    style={{ zoom: fit.zoom, width: fit.width, height }}
                 >
                     <StreetScene
                         layout={layout}

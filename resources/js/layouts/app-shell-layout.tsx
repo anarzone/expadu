@@ -6,6 +6,7 @@ import {
     openComposerTray,
 } from '@/components/shell/composer-tray';
 import { ShellHeader } from '@/components/shell/shell-header';
+import { OnYourWayBar } from '@/components/travel/on-your-way-bar';
 import { Toaster } from '@/components/ui/toast';
 import { useBackgroundLocation } from '@/hooks/use-background-location';
 import { useShellScroll } from '@/hooks/use-shell-scroll';
@@ -67,8 +68,8 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
                 Skip to content
             </a>
             {!bare && <ShellHeader />}
-            {/* The On your way bar (Travel's OnYourWayBar, session 3 F6)
-                mounts here. */}
+            {/* The trip you're on, on every page (Travel's own bar). */}
+            {!bare && <OnYourWayBar />}
             {children}
             <ComposerTray onComposer={bare} />
             <Toaster />

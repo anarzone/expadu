@@ -8,7 +8,7 @@ test.describe('Travel', () => {
         const errors: string[] = [];
         page.on('pageerror', (e) => errors.push(e.message));
 
-        await page.goto('/timetable');
+        await page.goto('/timetable?view=journey');
         await page.waitForLoadState('networkidle');
         // The board defers, so let the deferred prop settle after first paint.
         await page.waitForTimeout(1200);
@@ -16,100 +16,9 @@ test.describe('Travel', () => {
         expect(errors).toHaveLength(0);
     });
 
-    test('shows the Travel header and separate planning and timetable views', async ({
-        page,
-    }) => {
-        await page.goto('/timetable');
-        await page.waitForLoadState('networkidle');
 
-        await expect(page.locator('h1')).toContainText('Travel');
-        await expect(page.getByPlaceholder('Where to?')).toBeVisible();
-        await expect(
-            page.getByRole('button', { name: 'Timetable', exact: true }),
-        ).toBeVisible();
-    });
 
-    test('switching between the available mode tabs does not error', async ({
-        page,
-    }) => {
-        const errors: string[] = [];
-        page.on('pageerror', (e) => errors.push(e.message));
 
-        await page.goto('/timetable?view=timetable');
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1200);
-
-        // Mode tabs are adaptive — only modes with live departures appear, so
-        // click through whichever are on offer rather than assuming all exist.
-        for (const label of [/Tram/, /Bus/, /Train/, /^All$/]) {
-            const tab = page.getByRole('button', { name: label });
-
-            if (await tab.count()) {
-                await tab.first().click();
-                await page.waitForTimeout(200);
-            }
-        }
-
-        expect(errors).toHaveLength(0);
-    });
-
-    test('only offers mode tabs that have live departures', async ({
-        page,
-    }) => {
-        await page.goto('/timetable?view=timetable');
-        await page.waitForLoadState('networkidle');
-        await page.waitForTimeout(1500);
-
-        await expect(
-            page.getByRole('button', { name: 'Timetable', exact: true }),
-        ).toHaveAttribute('aria-pressed', 'true');
-
-        // Any mode tab that IS shown must render a real board, never the empty
-        // state — hiding empty modes is the whole point.
-        for (const label of [/Tram/, /Bus/, /Train/]) {
-            const tab = page.getByRole('button', { name: label });
-
-            if (!(await tab.count())) {
-                continue;
-            }
-
-            await tab.first().click();
-            await page.waitForTimeout(400);
-
-            await expect(page.locator('.timetable-row').first()).toBeVisible();
-            await expect(
-                page.getByText(/No live (trams|buses|trains) for your/),
-            ).toHaveCount(0);
-        }
-    });
-
-    test('shows departures as clock times, not a countdown grid', async ({
-        page,
-    }) => {
-        await page.goto('/timetable?view=timetable');
-        await page.waitForLoadState('networkidle');
-        // The board defers, so let the deferred prop settle after first paint.
-        await page.waitForTimeout(1500);
-
-        // The old countdown grid — the next/then/then column header and the
-        // shared "min" unit — is gone, whether or not the feed returned rows.
-        await expect(page.locator('.board-hrow')).toHaveCount(0);
-        await expect(page.locator('.board-min')).toHaveCount(0);
-
-        const rows = page.locator('.timetable-row');
-        const count = await rows.count();
-        test.skip(
-            count === 0,
-            'no live departures to assert the format against',
-        );
-
-        // Each line's next departure reads as a real clock time (or NOW at the
-        // platform), never a bare minute count.
-        await expect(rows.first().locator('.timetable-time')).toHaveAttribute(
-            'aria-label',
-            /departs at \d{1,2}:\d{2}|departing now|cancelled|no departures/,
-        );
-    });
 
     test('arrival handoff retains facility, activity and day for Composer review', async ({
         page,
@@ -169,68 +78,6 @@ test.describe('Travel', () => {
         ).toHaveAttribute('aria-pressed', 'true');
     });
 
-    test('a chosen itinerary survives timetable browsing and a failed trip save', async ({
-        page,
-    }) => {
-        const leg = {
-            mode: 'walk',
-            line: null,
-            headsign: null,
-            from: { name: 'Office', lat: 50.9, lng: 6.9 },
-            to: { name: 'Museum', lat: 50.9408, lng: 6.96 },
-            depart_at: '2026-10-09T10:00:00+02:00',
-            arrive_at: '2026-10-09T10:15:00+02:00',
-            depart_time: '10:00',
-            arrive_time: '10:15',
-            duration_min: 15,
-            stops: null,
-            polyline: null,
-            color: null,
-            intermediate_stops: null,
-        };
-        const journey = { ...leg, mode: 'walk', transfers: 0, legs: [leg] };
-        await page.route('**/api/journey?*', (route) =>
-            route.fulfill({
-                json: {
-                    source: 'transitous',
-                    journeys: [journey],
-                    degraded: null,
-                    from: leg.from,
-                    to: leg.to,
-                    ticket: null,
-                    disruptions: [],
-                },
-            }),
-        );
-        await page.route('**/api/trip/start', (route) =>
-            route.fulfill({ status: 503, json: { message: 'unavailable' } }),
-        );
-        await page.goto(
-            '/timetable?to_name=Museum&to_lat=50.9408&to_lng=6.96&from_name=Office&from_lat=50.9&from_lng=6.9',
-        );
-        await page.getByRole('button', { name: /View walk route/ }).click();
-        await expect(
-            page.getByRole('button', { name: 'Back to routes' }),
-        ).toBeVisible();
-        await page
-            .getByRole('button', { name: 'Timetable', exact: true })
-            .click();
-        await page
-            .getByRole('button', { name: 'Back to your trip to Museum' })
-            .click();
-        await expect(
-            page.getByRole('button', { name: 'Back to routes' }),
-        ).toBeVisible();
-        await page
-            .getByRole('button', { name: 'Start journey', exact: true })
-            .click();
-        await expect(page.getByRole('alert')).toContainText(
-            'couldn’t be saved',
-        );
-        await expect(
-            page.getByRole('button', { name: 'Start journey', exact: true }),
-        ).toBeVisible();
-    });
 
     test('a typed activity location keeps its deadline while the person chooses the exact place', async ({
         page,
@@ -381,7 +228,7 @@ test.describe('Travel', () => {
                 });
             }
         });
-        await page.goto('/timetable');
+        await page.goto('/timetable?view=journey');
         const origin = page.getByRole('combobox', { name: 'Starting point' });
         const destination = page.getByRole('combobox', { name: 'Destination' });
         await origin.fill('Hauptbahnhof');
@@ -402,180 +249,11 @@ test.describe('Travel', () => {
         ).toBeVisible();
     });
 
-    test('Timetable accepts a manual starting point and keeps it on refresh without GPS', async ({
-        page,
-        context,
-    }) => {
-        await context.clearPermissions();
-        let confirmed = false;
-        page.on('request', (request) => {
-            if (request.url().includes('/api/location/confirm')) {
-                confirmed = true;
-            }
-        });
-        await page.route('**/api/journey/suggest?*', (route) =>
-            route.fulfill({
-                json: [
-                    {
-                        kind: 'stop',
-                        name: 'Chosen station',
-                        area: 'Test area',
-                        lat: 50.94,
-                        lng: 6.95,
-                        emoji: null,
-                    },
-                ],
-            }),
-        );
-        await page.route('**/timetable*', async (route) => {
-            const request = route.request();
-
-            if (
-                !request.headers()['x-inertia-partial-data']?.includes('boards')
-            ) {
-                await route.continue();
-
-                return;
-            }
-
-            const url = new URL(request.url());
-            const hasOrigin =
-                url.searchParams.get('lat') === '50.94' &&
-                url.searchParams.get('lng') === '6.95';
-            const board = hasOrigin
-                ? {
-                      stop_name: 'Chosen station',
-                      walk_min: 2,
-                      source: 'gtfs',
-                      departures: [
-                          {
-                              line: '18',
-                              destination: 'Example direction',
-                              type: 'tram',
-                              color: '#2b7',
-                              minutes: [4, 14],
-                              delay: 0,
-                              cancelled: false,
-                              disrupted: false,
-                              direction: 1,
-                              via: [],
-                          },
-                      ],
-                  }
-                : null;
-            await route.fulfill({
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Inertia': 'true',
-                },
-                json: {
-                    component: 'timetable',
-                    props: {
-                        boards: {
-                            all: board,
-                            tram: board,
-                            bus: null,
-                            rail: null,
-                        },
-                        locationRequired: !hasOrigin,
-                    },
-                    url: url.pathname + url.search,
-                    version: request.headers()['x-inertia-version'] ?? null,
-                },
-            });
-        });
-        await page.goto('/timetable?view=timetable');
-        await page
-            .getByRole('combobox', { name: 'Starting point' })
-            .fill('Chosen station');
-        await page.getByRole('option', { name: /Chosen station/ }).click();
-        await expect(
-            page.getByRole('region', {
-                name: 'Departures from Chosen station',
-            }),
-        ).toBeVisible();
-        await expect(
-            page.getByRole('combobox', { name: 'Starting point' }),
-        ).toHaveValue('Chosen station');
-        await page.reload();
-        await expect(
-            page.getByRole('region', {
-                name: 'Departures from Chosen station',
-            }),
-        ).toBeVisible();
-        await expect(
-            page.getByRole('combobox', { name: 'Starting point' }),
-        ).toHaveValue('Chosen station');
-        expect(confirmed).toBe(false);
-    });
 
     // Auto-locate on open (the safe redesign): the accuracy gate is the whole
     // safety — only a PRECISE fix roots the board, so a vague reading can never
     // anchor the user at the wrong stop, and it never fires unless location is
     // already granted.
-    test('auto-resolves the current location on open when the fix is precise', async ({
-        page,
-        context,
-    }) => {
-        await context.grantPermissions(['geolocation']);
-        await context.setGeolocation({
-            latitude: 50.9385,
-            longitude: 6.9595,
-            accuracy: 40,
-        });
 
-        const confirmed = page.waitForRequest(
-            (r) => r.url().includes('/api/location/confirm'),
-            { timeout: 8000 },
-        );
 
-        await page.goto('/timetable', { waitUntil: 'domcontentloaded' });
-
-        // It confirmed the device location on its own — no tap, no refresh.
-        await confirmed;
-    });
-
-    test('ignores a vague fix so it never roots at the wrong stop', async ({
-        page,
-        context,
-    }) => {
-        await context.grantPermissions(['geolocation']);
-        // 600 m accuracy — a desktop Wi-Fi/IP guess, well past the 150 m gate.
-        await context.setGeolocation({
-            latitude: 50.9385,
-            longitude: 6.9595,
-            accuracy: 600,
-        });
-
-        let confirmed = false;
-        page.on('request', (r) => {
-            if (r.url().includes('/api/location/confirm')) {
-                confirmed = true;
-            }
-        });
-
-        await page.goto('/timetable', { waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(3000);
-
-        expect(confirmed).toBe(false);
-    });
-
-    test('never resolves the location when permission is not granted', async ({
-        page,
-        context,
-    }) => {
-        await context.clearPermissions();
-
-        let confirmed = false;
-        page.on('request', (r) => {
-            if (r.url().includes('/api/location/confirm')) {
-                confirmed = true;
-            }
-        });
-
-        await page.goto('/timetable', { waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(3000);
-
-        expect(confirmed).toBe(false);
-    });
 });

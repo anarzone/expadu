@@ -25,9 +25,19 @@ class ComposerWorkspaceController extends Controller
         return response()->json($store->read($request->user()));
     }
 
+    /**
+     * A change that can't go in answers 422 with its reason and the workspace,
+     * unchanged, so the reply can say why without a reload.
+     */
     public function update(WorkspaceCommandRequest $request, WorkspaceStore $store): JsonResponse
     {
-        return response()->json($store->command($request->user(), $request->validated()));
+        $workspace = $store->command($request->user(), $request->validated());
+        $refusal = $workspace['refusal'];
+        unset($workspace['refusal']);
+
+        return $refusal === null
+            ? response()->json($workspace)
+            : response()->json(['message' => $refusal['message'], 'errors' => ['action' => [$refusal['message']]], 'refusal' => $refusal, 'workspace' => $workspace], 422);
     }
 
     public function event(Request $request, EventOccurrencePresenter $presenter): JsonResponse

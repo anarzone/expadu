@@ -101,3 +101,27 @@ test('composer handoffs are encrypted at rest and readable only by their owner',
     app(PrivatePlanCache::class)->forgetHandoff($owner, 'token-a');
     expect(app(PrivatePlanCache::class)->handoff($owner, 'token-a'))->toBeNull();
 });
+
+test('derived cleanup also clears appointment names from change rows, labels and replies', function () {
+    $actor = User::factory()->onboarded()->create();
+    $appointment = ['id' => 'appointment:x', 'type' => 'appointment', 'is_appointment' => true, 'name' => 'Synthetic office visit', 'start_time' => '10:00', 'end_time' => '10:30'];
+    $personal = ['id' => 'personal:y', 'type' => 'personal', 'name' => 'Dentist', 'start_time' => '12:00', 'end_time' => '13:00'];
+    $plan = ['date' => '2026-10-20', 'slots' => [$appointment, $personal]];
+    $rows = [['kind' => 'added', 'id' => 'appointment:x', 'title' => 'Synthetic office visit', 'type' => 'appointment', 'to' => '10:00–10:30'],
+        ['kind' => 'added', 'id' => 'personal:y', 'title' => 'Dentist', 'type' => 'personal', 'to' => '12:00–13:00']];
+    $state = ['schema' => 2, 'active' => 'c', 'focus' => '2026-10-20', 'plans' => ['2026-10-20' => $plan],
+        'changes' => [['id' => 'c1', 'date' => '2026-10-20', 'label' => 'Added Synthetic office visit', 'before' => null, 'after' => $plan,
+            'rows' => $rows, 'created_at' => now()->toIso8601String(), 'undone_at' => null]],
+        'conversations' => [['id' => 'c', 'title' => 'x', 'created_at' => now()->toIso8601String(), 'messages' => [
+            ['id' => 'm1', 'role' => 'assistant', 'text' => 'Synthetic office visit is in your plan, 10:00–10:30.', 'created_at' => now()->toIso8601String(), 'kind' => 'change', 'change_id' => 'c1', 'date' => '2026-10-20', 'rows' => $rows],
+            ['id' => 'm2', 'role' => 'assistant', 'text' => '', 'created_at' => now()->toIso8601String(), 'kind' => 'plan', 'date' => '2026-10-20'],
+        ]]]];
+    ComposerWorkspace::query()->create(['user_id' => $actor->id, 'state' => $state, 'revision' => 2]);
+
+    app(PurgePersonCopies::class)->purge(['subject_user_id' => $actor->id]);
+
+    $stored = ComposerWorkspace::query()->where('user_id', $actor->id)->sole()->state;
+    expect(json_encode($stored))->not->toContain('Synthetic office visit')->toContain('Dentist')
+        ->and($stored['changes'][0]['rows'])->toHaveCount(1)
+        ->and($stored['conversations'][0]['messages'][0]['text'])->toBe('Your plan changed.');
+});

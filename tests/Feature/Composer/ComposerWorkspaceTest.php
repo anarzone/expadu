@@ -4,6 +4,7 @@ use App\Composer\AppointmentRepository;
 use App\Composer\Constraints;
 use App\Composer\PrivatePlanCache;
 use App\Composer\TodayPlanStore;
+use App\Composer\WorkspaceUpgrade;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
 use App\Models\Spot;
@@ -11,6 +12,7 @@ use App\Models\Task;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 function workspacePlan(): array
 {
@@ -50,50 +52,205 @@ test('workspace rejects stale writes and untrusted fields without losing message
     $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'message', 'text' => 'First'])->assertOk();
     $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'message', 'text' => 'Stale'])->assertConflict();
     $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'message', 'text' => 'Forged', 'plans' => []])->assertUnprocessable();
-    $this->getJson('/composer/workspace')->assertSee('First')->assertDontSee('Stale')->assertDontSee('Forged');
+    // Commands that no longer exist are refused outright.
+    foreach (['approve', 'discard', 'approval', 'date'] as $retired) {
+        $this->postJson('/composer/workspace', ['revision' => 1, 'action' => $retired])->assertUnprocessable()->assertJsonValidationErrors('action');
+    }
+    $this->getJson('/composer/workspace')->assertSee('First')->assertDontSee('Stale')->assertDontSee('Forged')->assertJsonPath('revision', 1);
 });
 
-test('proposal requires approval and survives fresh conversations and reload', function () {
+test('a proposal goes straight into the plans with its change rows and Undo', function () {
     $user = User::factory()->onboarded()->create();
     $state = seedWorkspaceProposal($this, $user);
-    expect($state['plans'])->toBeEmpty();
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'approve'])->assertOk()->assertJsonCount(1, 'plans');
-    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'fresh'])->assertOk()->assertJsonCount(2, 'conversations');
-    $this->getJson('/composer/workspace')->assertJsonCount(1, 'plans')->assertJsonCount(1, 'versions');
+    $date = array_key_first($state['plans']);
+    $weekday = CarbonImmutable::parse($date, 'Europe/Berlin')->isoFormat('dddd');
+    $messages = collect($state['conversations'][0]['messages']);
+    $change = $messages->firstWhere('kind', 'change');
+
+    expect($state['plans'][$date]['slots'])->toHaveCount(2)
+        ->and($state['draft'])->toBeNull()
+        ->and($change['text'])->toBe("{$weekday} is in your plans.")
+        ->and(collect($change['rows'])->pluck('kind')->all())->toBe(['added', 'added'])
+        ->and($state['changes'][0]['undoable'])->toBeTrue()
+        ->and($messages->firstWhere('kind', 'plan')['plan']['slots'])->toHaveCount(2);
+
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'fresh'])->assertOk()->assertJsonCount(2, 'conversations');
+    $this->getJson('/composer/workspace')->assertJsonCount(1, 'plans')->assertJsonCount(1, 'changes');
+    // Undo needs no confirmation and removes the new day again.
+    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'undo', 'change' => $change['change_id']])->assertOk()
+        ->assertJsonCount(0, 'plans')->assertJsonPath('changes.0.undoable', false);
 });
 
-test('overlapping edits and fixed event time changes never mutate the draft', function () {
+test('a moved item is said as it is now, old to new', function () {
     seedWorkspaceProposal($this, User::factory()->onboarded()->create());
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '15:30', 'end' => '16:30'])->assertUnprocessable();
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'event:2', 'start' => '18:00', 'end' => '19:00'])->assertUnprocessable();
-    $this->getJson('/composer/workspace')->assertJsonPath('revision', 1)->assertJsonPath('draft.slots.0.start_time', '13:00');
+    $state = $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '14:00', 'end' => '15:00'])->assertOk()->json();
+    $change = collect($state['conversations'][0]['messages'])->where('kind', 'change')->last();
+
+    expect($change['text'])->toBe('Park is now 14:00–15:00.')
+        ->and($change['rows'])->toBe([['kind' => 'moved', 'id' => 'spot:1', 'title' => 'Park', 'type' => 'spot', 'from' => '13:00–14:00', 'to' => '14:00–15:00']])
+        // One plan card for the day; it shows the day as it is.
+        ->and(collect($state['conversations'][0]['messages'])->where('kind', 'plan'))->toHaveCount(1)
+        ->and(collect($state['conversations'][0]['messages'])->firstWhere('kind', 'plan')['plan']['slots'][0]['start_time'])->toBe('14:00');
 });
 
-test('routine approval is opt in and cancellation requires explicit confirmation with undo', function () {
-    seedWorkspaceProposal($this, User::factory()->onboarded()->create());
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'approve'])->assertOk();
-    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'approval', 'mode' => 'routine'])->assertOk();
-    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'edit', 'id' => 'spot:1', 'start' => '12:00', 'end' => '13:00'])->assertOk()->assertJsonPath('draft', null);
-    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'remove', 'id' => 'spot:1'])->assertOk();
-    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'remove', 'id' => 'event:2'])->assertOk()->assertJsonCount(1, 'plans')->assertJsonCount(0, 'draft.slots');
-    $this->postJson('/composer/workspace', ['revision' => 6, 'action' => 'approve'])->assertUnprocessable();
-    $this->postJson('/composer/workspace', ['revision' => 6, 'action' => 'approve', 'cancel' => true])->assertOk()->assertJsonCount(0, 'plans');
-    $this->postJson('/composer/workspace', ['revision' => 7, 'action' => 'undo'])->assertOk()->assertJsonCount(1, 'plans');
-});
-
-test('appointment overlap is blocked and history deletion leaves plans intact', function () {
-    seedWorkspaceProposal($this, User::factory()->onboarded()->create());
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'appointment', 'name' => 'Dentist', 'start' => '13:30', 'end' => '14:30'])->assertUnprocessable();
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'approve'])->assertOk();
-    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'delete_history'])->assertOk()->assertJsonCount(1, 'plans')->assertJsonCount(1, 'conversations')->assertJsonCount(0, 'conversations.0.messages');
-});
-
-test('adding a place finds a free interval after opening instead of a dead end', function () {
+test('a clash or a fixed time changes nothing and says why', function () {
     $user = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $user);
+    $date = array_key_first($state['plans']);
+    $before = ComposerWorkspace::query()->where('user_id', $user->id)->sole()->state['plans'];
+
+    $clash = $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '15:30', 'end' => '16:30'])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'clash')->assertJsonPath('workspace.revision', 1)
+        ->assertJsonPath("workspace.plans.{$date}.slots.0.start_time", '13:00');
+    expect($clash->json('message'))->toBe('Park overlaps Concert.');
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'event:2', 'start' => '18:00', 'end' => '19:00'])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'fixed_time');
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'appointment', 'date' => $date, 'name' => 'Dentist', 'start' => '13:30', 'end' => '14:30'])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'clash');
+
+    // Nothing is written: not the plan, not the conversation, not the revision.
+    $row = ComposerWorkspace::query()->where('user_id', $user->id)->sole();
+    expect($row->state['plans'])->toBe($before)
+        ->and($row->state['changes'])->toHaveCount(1)
+        ->and($row->revision)->toBe(1)
+        ->and(collect($row->state['conversations'][0]['messages'])->where('kind', 'refusal'))->toBeEmpty();
+});
+
+test('a time outside the listed hours changes nothing', function () {
     $day = now('Europe/Berlin')->addDay();
     $spot = Spot::factory()->create(['name' => 'Lunch Cafe', 'category' => 'cafe', 'lat' => 50.94, 'lng' => 6.95, 'opening_hours' => [strtolower($day->format('D')) => [['12:00', '18:00']]]]);
-    $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'appointment', 'date' => $day->format('Y-m-d'), 'name' => 'Lunch meeting', 'start' => '12:00', 'end' => '13:00'])->assertOk();
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'add', 'candidate' => "spot:{$spot->id}"])->assertOk()->assertJsonPath('draft.slots.1.start_time', '13:00')->assertJsonPath('draft.slots.1.end_time', '14:00');
+    $this->actingAs(User::factory()->onboarded()->create())->postJson('/composer/workspace', [
+        'revision' => 0, 'action' => 'add', 'date' => $day->format('Y-m-d'), 'candidate' => "spot:{$spot->id}", 'start' => '19:00', 'end' => '20:00',
+    ])->assertUnprocessable()->assertJsonPath('refusal.code', 'outside_hours')->assertJsonPath('workspace.plans', []);
+});
+
+test('text never changes a plan by itself', function () {
+    $user = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $user);
+    $plans = ComposerWorkspace::query()->where('user_id', $user->id)->sole()->state['plans'];
+    foreach (['Remove the park', 'Cancel my day', 'undo', 'Move the concert to 20:00'] as $i => $text) {
+        $this->postJson('/composer/workspace', ['revision' => 1 + $i, 'action' => 'message', 'text' => $text])->assertOk();
+    }
+    $stored = ComposerWorkspace::query()->where('user_id', $user->id)->sole()->state;
+    expect($stored['plans'])->toBe($plans)->and($stored['changes'])->toHaveCount(1)
+        ->and(collect($stored['changes'])->whereNotNull('undone_at'))->toBeEmpty()
+        ->and($state['changes'])->toHaveCount(1);
+});
+
+test('each change has its own Undo, newest first per day', function () {
+    $user = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $user);
+    $day = array_key_first($state['plans']);
+    $other = CarbonImmutable::parse($day)->addDay()->format('Y-m-d');
+    $state = $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '14:00', 'end' => '15:00'])->assertOk()->json();
+    $state = $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'appointment', 'date' => $other, 'name' => 'Coffee', 'start' => '10:00', 'end' => '11:00'])->assertOk()->json();
+    [$planned, $moved, $coffee] = array_column($state['changes'], 'id');
+
+    // The first day's older change waits for its newer one; the other day is independent.
+    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'undo', 'change' => $planned])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'changed_since');
+    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'undo', 'change' => $moved])->assertOk()
+        ->assertJsonPath("plans.{$day}.slots.0.start_time", '13:00')->assertJsonPath("plans.{$other}.slots.0.name", 'Coffee');
+    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'undo', 'change' => $planned])->assertOk()
+        ->assertJsonMissingPath("plans.{$day}")->assertJsonPath("plans.{$other}.slots.0.name", 'Coffee');
+    // An undone change can't be undone twice; without an id, the newest change goes.
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'undo', 'change' => $moved])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'nothing_to_undo');
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'undo'])->assertOk()->assertJsonCount(0, 'plans');
+    expect($coffee)->toBeString();
+});
+
+test('an Undo belongs to the person who made the change', function () {
+    $owner = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $owner);
+    $change = $state['changes'][0]['id'];
+    $stranger = User::factory()->onboarded()->create();
+    $this->actingAs($stranger)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'undo', 'change' => $change])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'nothing_to_undo');
+
+    expect(ComposerWorkspace::query()->where('user_id', $owner->id)->sole()->state['plans'])->toHaveCount(1)
+        ->and(ComposerWorkspace::query()->where('user_id', $owner->id)->sole()->state['changes'][0]['undone_at'])->toBeNull();
+});
+
+test('undo and changes reject a stale revision without touching the plan', function () {
+    $user = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $user);
+    $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'undo', 'change' => $state['changes'][0]['id']])->assertConflict();
+    $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'remove', 'id' => 'spot:1'])->assertConflict();
+    expect(ComposerWorkspace::query()->where('user_id', $user->id)->sole()->state['plans'][array_key_first($state['plans'])]['slots'])->toHaveCount(2);
+});
+
+test('ticking an item off does not block its Undo', function () {
+    $user = User::factory()->onboarded()->create();
+    $state = seedWorkspaceProposal($this, $user);
+    $date = array_key_first($state['plans']);
+    $row = ComposerWorkspace::query()->where('user_id', $user->id)->sole();
+    $stored = $row->state;
+    $stored['plans'][$date]['slots'][0]['completed_at'] = now('Europe/Berlin')->toIso8601String();
+    $row->update(['state' => $stored]);
+
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'undo'])->assertOk()->assertJsonCount(0, 'plans');
+});
+
+test('cancelling a day happens at once and its Undo brings it back', function () {
+    $state = seedWorkspaceProposal($this, User::factory()->onboarded()->create());
+    $date = array_key_first($state['plans']);
+    $cancelled = $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'cancel_day', 'date' => $date])->assertOk()->assertJsonCount(0, 'plans')->json();
+    $weekday = CarbonImmutable::parse($date, 'Europe/Berlin')->isoFormat('dddd');
+    expect(collect($cancelled['conversations'][0]['messages'])->where('kind', 'change')->last()['text'])->toBe("{$weekday}’s plan is cancelled.");
+    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'undo'])->assertOk()->assertJsonCount(2, "plans.{$date}.slots");
+    // Removing the last item cancels the day the same way.
+    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'remove', 'id' => 'spot:1'])->assertOk();
+    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'remove', 'id' => 'event:2'])->assertOk()->assertJsonCount(0, 'plans');
+});
+
+test('history deletion leaves plans intact', function () {
+    seedWorkspaceProposal($this, User::factory()->onboarded()->create());
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'delete_history'])->assertOk()->assertJsonCount(1, 'plans')->assertJsonCount(1, 'conversations')->assertJsonCount(0, 'conversations.0.messages');
+});
+
+test('an unfinished draft from before is kept to reapply, never applied by itself', function () {
+    $user = User::factory()->onboarded()->create();
+    $plan = workspacePlan();
+    $date = $plan['date'];
+    $earlier = ['date' => $date, 'slots' => [$plan['slots'][1]], 'constraints' => $plan['constraints']];
+    $legacy = ['approval' => 'ask', 'active' => 'initial', 'focus' => $date, 'draft' => $plan,
+        'plans' => [$date => $earlier],
+        'versions' => [['id' => (string) Str::uuid(), 'date' => $date, 'before' => null, 'after' => $earlier, 'created_at' => now()->subHour()->toIso8601String(), 'undone' => false]],
+        'conversations' => [['id' => 'initial', 'title' => 'Earlier', 'created_at' => now()->subHour()->toIso8601String(), 'messages' => [
+            ['id' => 'm1', 'role' => 'assistant', 'text' => '', 'created_at' => now()->subHour()->toIso8601String(), 'kind' => 'plan', 'plan' => $earlier],
+        ]]]];
+    ComposerWorkspace::query()->create(['user_id' => $user->id, 'state' => $legacy, 'revision' => 4]);
+
+    $state = $this->actingAs($user)->getJson('/composer/workspace')->assertOk()->json();
+    $draft = collect($state['conversations'][0]['messages'])->firstWhere('kind', 'earlier_draft');
+    expect($state['plans'][$date]['slots'])->toHaveCount(1)
+        ->and($draft['plan']['slots'])->toHaveCount(2)
+        ->and($draft['text'])->toContain('It isn’t in your plans')
+        ->and($state['changes'][0]['undoable'])->toBeTrue()
+        ->and(collect($state['conversations'][0]['messages'])->firstWhere('kind', 'plan')['plan']['slots'])->toHaveCount(1);
+
+    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'reapply', 'id' => $draft['draft_id']])->assertOk()
+        ->assertJsonCount(2, "plans.{$date}.slots")->assertJsonCount(2, 'changes');
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'reapply', 'id' => $draft['draft_id']])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'already_reapplied');
+    // Its Undo takes the day back to what it was before the reapply.
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'undo'])->assertOk()->assertJsonCount(1, "plans.{$date}.slots");
+});
+
+test('the upgrade migration moves stored workspaces once and makes open tabs reload', function () {
+    $user = User::factory()->onboarded()->create();
+    $legacy = ['approval' => 'routine', 'active' => 'initial', 'focus' => null, 'draft' => null, 'plans' => [], 'versions' => [],
+        'conversations' => [['id' => 'initial', 'title' => 'New conversation', 'created_at' => now()->toIso8601String(), 'messages' => []]]];
+    ComposerWorkspace::query()->create(['user_id' => $user->id, 'state' => $legacy, 'revision' => 7]);
+    $migration = require database_path('migrations/2026_10_20_100000_upgrade_composer_workspaces_to_direct_apply.php');
+
+    $migration->up();
+    $row = ComposerWorkspace::query()->where('user_id', $user->id)->sole();
+    expect($row->state['schema'])->toBe(WorkspaceUpgrade::SCHEMA)->and($row->revision)->toBe(8)
+        ->and($row->state)->not->toHaveKeys(['approval', 'draft', 'versions']);
+    $migration->up();
+    expect(ComposerWorkspace::query()->where('user_id', $user->id)->sole()->revision)->toBe(8);
 });
 
 test('today reads current revisions and dismissing its summary preserves saved plans', function () {
@@ -102,7 +259,6 @@ test('today reads current revisions and dismissing its summary preserves saved p
     $plan['appointment_revision'] = app(AppointmentRepository::class)->revision($user, Constraints::fromArray($plan['constraints']));
     app(TodayPlanStore::class)->save($user, $plan, 'Tomorrow');
     $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '12:00', 'end' => '13:00'])->assertOk();
-    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'approve'])->assertOk();
     expect(app(TodayPlanStore::class)->get($user)['slots'][0]['start_time'])->toBe('12:00');
     app(TodayPlanStore::class)->forget($user);
     expect(app(TodayPlanStore::class)->get($user))->toBeNull();
@@ -112,7 +268,22 @@ test('today reads current revisions and dismissing its summary preserves saved p
 test('catalogue handoffs cannot be taken from another user', function () {
     $owner = User::factory()->onboarded()->create();
     app(PrivatePlanCache::class)->putHandoff($owner, 'private-token', workspacePlan());
-    $this->actingAs(User::factory()->onboarded()->create())->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'private-token'])->assertUnprocessable();
+    $this->actingAs(User::factory()->onboarded()->create())->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'private-token'])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'expired')->assertJsonPath('workspace.plans', []);
+});
+
+test('a page hands Composer its request by POST, once, never in the URL', function () {
+    $this->post('/composer/entry', ['prompt' => 'x'])->assertRedirect('/login');
+    $this->actingAs(User::factory()->onboarded()->create());
+    $response = $this->post('/composer/entry', ['prompt' => '  Plan my Saturday near my appointment  ', 'about' => 'Events on Wed 30 Sept · 2 listed', 'panel' => 'plans']);
+    $response->assertRedirect('/composer?panel=plans');
+    expect($response->headers->get('Location'))->not->toContain('Saturday');
+
+    $this->get('/composer?panel=plans')->assertInertia(fn ($page) => $page->component('composer')
+        ->where('entry', ['prompt' => 'Plan my Saturday near my appointment', 'about' => 'Events on Wed 30 Sept · 2 listed']));
+    $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry', null));
+    $this->post('/composer/entry', ['prompt' => str_repeat('a', 501)])->assertSessionHasErrors('prompt');
+    $this->post('/composer/entry', ['prompt' => 'Hi', 'panel' => 'settings'])->assertSessionHasErrors('panel');
 });
 
 test('composer guidance excludes unpublished expired and unverified sources', function () {
@@ -136,37 +307,39 @@ test('composer guidance excludes unpublished expired and unverified sources', fu
 });
 
 test('explicit day entry never adds a personal plan to the previously focused day', function () {
-    seedWorkspaceProposal($this, User::factory()->onboarded()->create());
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'approve'])->assertSuccessful();
+    $state = seedWorkspaceProposal($this, User::factory()->onboarded()->create());
+    $first = array_key_first($state['plans']);
     $date = now('Europe/Berlin')->addDays(2)->format('Y-m-d');
-    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'appointment', 'date' => $date, 'name' => 'Coffee', 'location' => 'Ehrenfeld', 'start' => '15:00', 'end' => '16:00'])
-        ->assertSuccessful()->assertJsonPath('draft.date', $date)->assertJsonPath('draft.slots.0.location', 'Ehrenfeld');
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'appointment', 'date' => $date, 'name' => 'Coffee', 'location' => 'Ehrenfeld', 'start' => '15:00', 'end' => '16:00'])
+        ->assertSuccessful()->assertJsonPath("plans.{$date}.slots.0.location", 'Ehrenfeld')->assertJsonCount(2, "plans.{$first}.slots");
 });
 
 test('personal location and time are editable while fixed catalogue events stay protected', function () {
     $date = now('Europe/Berlin')->addDay()->format('Y-m-d');
     $this->actingAs(User::factory()->onboarded()->create());
     $state = $this->postJson('/composer/workspace', ['revision' => 0, 'action' => 'appointment', 'date' => $date, 'name' => 'Coffee', 'location' => 'Mülheim', 'start' => '15:00', 'end' => '16:00'])->assertSuccessful()->json();
-    $id = $state['draft']['slots'][0]['id'];
+    $id = $state['plans'][$date]['slots'][0]['id'];
     $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => $id, 'location' => 'Ehrenfeld', 'start' => '16:00', 'end' => '17:00'])->assertSuccessful()
-        ->assertJsonPath('draft.slots.0.location', 'Ehrenfeld')->assertJsonPath('draft.slots.0.start_time', '16:00')->assertJsonPath('draft.feasibility_checked', false);
+        ->assertJsonPath("plans.{$date}.slots.0.location", 'Ehrenfeld')->assertJsonPath("plans.{$date}.slots.0.start_time", '16:00')->assertJsonPath("plans.{$date}.feasibility_checked", false);
 });
 
-test('approval rechecks a new catalogue selection without losing the draft or revision', function () {
+test('adding a place finds a free interval after opening instead of a dead end', function () {
     $user = User::factory()->onboarded()->create();
-    $place = Spot::factory()->create(['category' => 'park', 'lat' => 50.94, 'lng' => 6.95]);
+    $day = now('Europe/Berlin')->addDay();
+    $date = $day->format('Y-m-d');
+    $spot = Spot::factory()->create(['name' => 'Lunch Cafe', 'category' => 'cafe', 'lat' => 50.94, 'lng' => 6.95, 'opening_hours' => [strtolower($day->format('D')) => [['12:00', '18:00']]]]);
+    $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'appointment', 'date' => $date, 'name' => 'Lunch meeting', 'start' => '12:00', 'end' => '13:00'])->assertOk();
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'add', 'candidate' => "spot:{$spot->id}"])->assertOk()
+        ->assertJsonPath("plans.{$date}.slots.1.start_time", '13:00')->assertJsonPath("plans.{$date}.slots.1.end_time", '14:00');
+});
+
+test('a selection that is no longer available is refused and the plan stays', function () {
+    $user = User::factory()->onboarded()->create();
+    $place = Spot::factory()->create(['category' => 'park', 'lat' => 50.94, 'lng' => 6.95, 'is_recommendable' => false]);
     $date = now('Europe/Berlin')->addDay()->format('Y-m-d');
     $this->actingAs($user)->postJson('/composer/workspace', [
         'revision' => 0, 'action' => 'add', 'date' => $date, 'candidate' => 'spot:'.$place->id,
-    ])->assertSuccessful();
-    $place->update(['is_recommendable' => false]);
-
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'approve'])->assertUnprocessable();
-    $state = $this->getJson('/composer/workspace')->assertSuccessful()->json();
-    expect($state['revision'])->toBe(1)
-        ->and($state['plans'])->toBeEmpty()
-        ->and($state['draft']['slots'][0]['id'])->toBe('spot:'.$place->id)
-        ->and($state['draft']['slots'][0]['recommendation_status'])->toBe('unavailable');
+    ])->assertUnprocessable()->assertJsonPath('workspace.plans', [])->assertJsonPath('workspace.revision', 0);
 });
 
 test('saved unavailable places retain history and permit unrelated personal plan edits', function () {
@@ -177,7 +350,6 @@ test('saved unavailable places retain history and permit unrelated personal plan
         'revision' => 0, 'action' => 'add', 'date' => $date, 'candidate' => 'spot:'.$place->id,
         'start' => '13:00', 'end' => '14:00',
     ])->assertSuccessful();
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'approve'])->assertSuccessful();
     $saved = ComposerWorkspace::query()->where('user_id', $user->id)->firstOrFail()->state;
     $place->update(['is_recommendable' => false]);
 
@@ -187,10 +359,9 @@ test('saved unavailable places retain history and permit unrelated personal plan
         ->and($read['plans'][$date]['slots'][0]['cost_tier'])->toBe('unknown')
         ->and(ComposerWorkspace::query()->where('user_id', $user->id)->firstOrFail()->state)->toBe($saved);
     $this->postJson('/composer/workspace', [
-        'revision' => 2, 'action' => 'appointment', 'date' => $date,
+        'revision' => 1, 'action' => 'appointment', 'date' => $date,
         'name' => 'Meet a friend', 'start' => '16:00', 'end' => '17:00',
-    ])->assertSuccessful();
-    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'approve'])->assertSuccessful()
+    ])->assertSuccessful()
         ->assertJsonCount(2, "plans.{$date}.slots")
         ->assertJsonPath("plans.{$date}.slots.0.recommendation_status", 'unavailable');
 });
@@ -203,15 +374,15 @@ test('canonical saved aliases cannot be added twice and still support removal', 
     $date = now('Europe/Berlin')->addDay()->format('Y-m-d');
     $this->actingAs($user)->postJson('/composer/workspace', [
         'revision' => 0, 'action' => 'add', 'date' => $date, 'candidate' => 'spot:'.$alias->id,
-    ])->assertSuccessful()->assertJsonPath('draft.slots.0.id', 'spot:'.$canonical->id);
+    ])->assertSuccessful()->assertJsonPath("plans.{$date}.slots.0.id", 'spot:'.$canonical->id);
     $this->postJson('/composer/workspace', [
         'revision' => 1, 'action' => 'add', 'date' => $date, 'candidate' => 'spot:'.$canonical->id,
-    ])->assertUnprocessable();
+    ])->assertUnprocessable()->assertJsonPath('refusal.code', 'duplicate');
     $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'remove', 'id' => 'spot:'.$alias->id])
-        ->assertSuccessful()->assertJsonCount(0, 'draft.slots');
+        ->assertSuccessful()->assertJsonCount(0, 'plans');
 });
 
-test('new saved selections must respect category companions and time constraints', function (string $category, array $constraints, string $start, string $end) {
+test('composed selections must respect category companions and time constraints', function (string $category, array $constraints, string $start, string $end) {
     $user = User::factory()->onboarded()->create();
     $plan = workspacePlan();
     $plan['slots'] = [array_replace($plan['slots'][0], [
@@ -222,12 +393,8 @@ test('new saved selections must respect category companions and time constraints
     $plan['constraints'] = array_replace($plan['constraints'], $constraints);
     Spot::query()->whereKey(1)->update(['category' => $category]);
     app(PrivatePlanCache::class)->putHandoff($user, 'constrained-token', $plan);
-    $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'constrained-token'])->assertSuccessful();
-
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'approve'])->assertUnprocessable();
-    $this->getJson('/composer/workspace')->assertSuccessful()
-        ->assertJsonPath('revision', 1)->assertJsonCount(0, 'plans')
-        ->assertJsonPath('draft.slots.0.recommendation_status', 'unavailable');
+    $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'constrained-token'])
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'unavailable')->assertJsonPath('workspace.plans', []);
 })->with([
     'children cannot be routed through a bar' => ['bar', ['companions' => 'kids'], '13:00', '14:00'],
     'the selected category still applies' => ['cafe', ['categories' => ['park']], '13:00', '14:00'],
@@ -242,9 +409,7 @@ test('an explicitly shortened visit may fit a window shorter than the default du
     $plan['constraints']['window_start'] = $plan['slots'][0]['start_at'];
     $plan['constraints']['window_end'] = $plan['slots'][0]['end_at'];
     app(PrivatePlanCache::class)->putHandoff($user, 'shortened-token', $plan);
-    $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'shortened-token'])->assertSuccessful();
-
-    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'approve'])->assertSuccessful()
+    $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'shortened-token'])->assertSuccessful()
         ->assertJsonPath("plans.{$plan['date']}.slots.0.recommendation_status", 'available');
 });
 
@@ -262,10 +427,10 @@ test('manual additions measure the radius from the saved plan origin', function 
 
     $this->postJson('/composer/workspace', [
         'revision' => 1, 'action' => 'add', 'candidate' => 'spot:'.$far->id, 'start' => '15:00', 'end' => '16:00',
-    ])->assertUnprocessable();
+    ])->assertUnprocessable()->assertJsonPath('refusal.code', 'outside_hours');
     $this->postJson('/composer/workspace', [
         'revision' => 1, 'action' => 'add', 'candidate' => 'spot:'.$near->id, 'start' => '15:00', 'end' => '16:00',
-    ])->assertSuccessful()->assertJsonPath('draft.slots.1.recommendation_status', 'available');
+    ])->assertSuccessful()->assertJsonPath("plans.{$plan['date']}.slots.1.recommendation_status", 'available');
 });
 
 test('automatic place timing for today never starts in the past', function () {
@@ -275,24 +440,27 @@ test('automatic place timing for today never starts in the past', function () {
 
     $this->postJson('/composer/workspace', [
         'revision' => 0, 'action' => 'add', 'date' => '2026-10-05', 'candidate' => 'spot:1',
-    ])->assertSuccessful()->assertJsonPath('draft.slots.0.start_time', '16:01');
+    ])->assertSuccessful()->assertJsonPath('plans.2026-10-05.slots.0.start_time', '16:01');
 });
 
-test('automatic place timing uses the selected plan window', function (string $start, string $end) {
+test('automatic place timing uses the selected plan window', function (string $start, string $end, string $busy) {
     $this->travelTo(CarbonImmutable::parse('2026-10-05 16:00:30', 'Europe/Berlin'));
     $plan = workspacePlan();
-    $plan['slots'] = [];
-    $plan['constraints']['window_start'] = $plan['date'].'T'.$start.':00+02:00';
-    $plan['constraints']['window_end'] = $plan['date'].'T'.$end.':00+02:00';
+    $date = $plan['date'];
+    // Something already ends the window, so the free time starts with it.
+    $plan['slots'] = [['id' => 'personal:busy', 'type' => 'personal', 'name' => 'Busy', 'swappable' => false,
+        'start_at' => "{$date}T{$busy}:00+02:00", 'end_at' => "{$date}T{$end}:00+02:00", 'start_time' => $busy, 'end_time' => $end]];
+    $plan['constraints']['window_start'] = $date.'T'.$start.':00+02:00';
+    $plan['constraints']['window_end'] = $date.'T'.$end.':00+02:00';
     $user = User::factory()->onboarded()->create();
     app(PrivatePlanCache::class)->putHandoff($user, 'window-token', $plan);
     $this->actingAs($user)->postJson('/composer/workspace', ['revision' => 0, 'action' => 'proposal', 'token' => 'window-token'])->assertSuccessful();
 
     $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'add', 'candidate' => 'spot:1'])
-        ->assertSuccessful()->assertJsonPath('draft.slots.0.start_time', $start);
+        ->assertSuccessful()->assertJsonPath("plans.{$date}.slots.0.start_time", $start);
 })->with([
-    'afternoon' => ['14:00', '18:00'],
-    'early morning' => ['08:00', '09:30'],
+    'afternoon' => ['14:00', '18:00', '17:00'],
+    'early morning' => ['08:00', '09:30', '09:15'],
 ]);
 
 test('automatic timing refuses a visit that cannot fit the remaining day', function () {
@@ -302,6 +470,5 @@ test('automatic timing refuses a visit that cannot fit the remaining day', funct
 
     $this->postJson('/composer/workspace', [
         'revision' => 0, 'action' => 'add', 'date' => '2026-10-05', 'candidate' => 'spot:1',
-    ])->assertUnprocessable();
-    $this->getJson('/composer/workspace')->assertOk()->assertJsonPath('draft', null)->assertJsonPath('revision', 0);
+    ])->assertUnprocessable()->assertJsonPath('refusal.code', 'no_free_time')->assertJsonPath('workspace.plans', []);
 });
