@@ -65,7 +65,6 @@ class HandleInertiaRequests extends Middleware
                         ->values()->all(),
                 ]
                 : null,
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             // One-shot flash messages — surfaced globally as a toast so no
             // redirect (e.g. "you're already signed in") is ever silent.
             'flash' => [

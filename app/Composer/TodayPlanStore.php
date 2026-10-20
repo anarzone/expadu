@@ -95,7 +95,8 @@ class TodayPlanStore
                     'schedule_feasible' => $plan['schedule_feasible'] ?? true, 'notices' => $this->notices($plan),
                     'prompt' => $plan['prompt'] ?? null, 'slots' => $plan['slots']];
             }
-            if (collect($workspace->state['versions'])->contains('date', $date)) {
+            // A day that had a plan and was cancelled stays cancelled; the older cached pin doesn't return.
+            if (collect(app(WorkspaceUpgrade::class)->toCurrent($workspace->state)['changes'])->contains('date', $date)) {
                 return null;
             }
         }

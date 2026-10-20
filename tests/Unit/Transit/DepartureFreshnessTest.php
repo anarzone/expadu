@@ -1,7 +1,6 @@
 <?php
 
 use App\Services\GtfsDepartureService;
-use App\Services\KvbApiService;
 use App\Services\TimetableService;
 use App\Services\VrsRealtimeService;
 use App\Services\VrsTriasService;
@@ -40,12 +39,8 @@ test('last good departures remain stale even immediately after the provider fail
 test('nested board caches preserve observed time and exact service times', function () {
     $observed = now()->subMinutes(2)->startOfSecond();
     $departureAt = $observed->copy()->addMinutes(5)->toIso8601String();
-    $kvb = Mockery::mock(KvbApiService::class);
-    $kvb->shouldReceive('getStops')->andReturn([
-        ['name' => 'Neumarkt', 'area' => 'STRAB', 'lat' => 50.94, 'lng' => 6.94],
-    ]);
     $gtfs = Mockery::mock(GtfsDepartureService::class);
-    $gtfs->shouldReceive('getDepartures', 'getDeparturesNearby')->andReturn([
+    $gtfs->shouldReceive('getDeparturesNearby')->andReturn([
         'source' => 'trias_rt', 'observed_at' => $observed->toIso8601String(),
         'countdown_at' => $observed->timestamp,
         'departures' => [[
@@ -58,7 +53,7 @@ test('nested board caches preserve observed time and exact service times', funct
         ]],
     ]);
     $gtfs->shouldReceive('routeContext')->andReturn(['direction' => null, 'via' => []]);
-    $board = (new TimetableService($kvb, $gtfs))->boards(50.94, 6.94)['tram'];
+    $board = (new TimetableService($gtfs))->pointBoard(['name' => 'Neumarkt', 'lat' => 50.94, 'lng' => 6.94]);
 
     expect($board['fetched_at'])->toBe($observed->toIso8601String())
         ->and($board['time_basis'])->toBe('stale')
@@ -69,36 +64,17 @@ test('nested board caches preserve observed time and exact service times', funct
 });
 
 test('a cancelled service without minutes remains visible on the board', function () {
-    $service = new TimetableService(Mockery::mock(KvbApiService::class), Mockery::mock(GtfsDepartureService::class));
+    $service = new TimetableService(Mockery::mock(GtfsDepartureService::class));
     $method = new ReflectionMethod($service, 'mapDepartures');
     $rows = $method->invoke($service, ['departures' => [[
         'line' => '4', 'direction' => 'Mülheim', 'type' => 'tram', 'departures' => [], 'cancelled' => true,
-    ]]], null, ['name' => 'Neumarkt'], 120);
+    ]]], ['name' => 'Neumarkt'], 120);
 
     expect($rows)->toHaveCount(1)->and($rows[0]['cancelled'])->toBeTrue();
 });
 
-test('the all board keeps separate services with the same line and direction and exposes stale inputs', function () {
-    $service = new TimetableService(Mockery::mock(KvbApiService::class), Mockery::mock(GtfsDepartureService::class));
-    $method = new ReflectionMethod($service, 'mergeAll');
-    $makeBoard = fn ($id, $at, $stale = false) => [
-        'stop_name' => 'Neumarkt', 'source' => 'trias_rt', 'fetched_at' => now()->subSeconds($stale ? 120 : 10)->toIso8601String(),
-        'is_stale' => $stale, 'time_basis' => $stale ? 'stale' : 'realtime',
-        'departures' => [[
-            'line' => '1', 'destination' => 'Bensberg', 'type' => 'tram', 'minutes' => [$at],
-            'services' => [['id' => $id, 'departure_at' => now()->addMinutes($at)->toIso8601String()]],
-        ]],
-    ];
-    $all = $method->invoke($service, $makeBoard('one', 1), $makeBoard('two', 2, true), null);
-
-    expect(array_column($all['departures'][0]['services'], 'id'))->toBe(['one', 'two'])
-        ->and($all['departures'][0]['minutes'])->toBe([1, 2])
-        ->and($all['is_stale'])->toBeTrue()
-        ->and($all['time_basis'])->toBe('stale');
-});
-
 test('date-bearing departure services outside the board window cannot bypass the horizon', function () {
-    $service = new TimetableService(Mockery::mock(KvbApiService::class), Mockery::mock(GtfsDepartureService::class));
+    $service = new TimetableService(Mockery::mock(GtfsDepartureService::class));
     $method = new ReflectionMethod($service, 'mapDepartures');
     $rows = $method->invoke($service, ['departures' => [[
         'line' => '4', 'direction' => 'Mülheim', 'type' => 'tram', 'departures' => [3],
@@ -110,7 +86,7 @@ test('date-bearing departure services outside the board window cannot bypass the
             ['id' => 'empty', 'departure_at' => ''],
             ['id' => 'invalid-date', 'departure_at' => '2026-02-30T12:00:00+01:00'],
         ],
-    ]]], null, ['name' => 'Neumarkt'], 120);
+    ]]], ['name' => 'Neumarkt'], 120);
     expect(array_column($rows[0]['services'], 'id'))->toBe(['soon']);
 });
 
@@ -138,7 +114,7 @@ test('a feed without an estimated service time is scheduled rather than live', f
 });
 
 test('expired exact services cannot reappear through rounded countdown fallback', function () {
-    $service = new TimetableService(Mockery::mock(KvbApiService::class), Mockery::mock(GtfsDepartureService::class));
+    $service = new TimetableService(Mockery::mock(GtfsDepartureService::class));
     $method = new ReflectionMethod($service, 'adjustForAge');
     $board = $method->invoke($service, [
         'source' => 'trias_rt', 'fetched_at' => now()->subSeconds(40)->timestamp,
@@ -148,42 +124,4 @@ test('expired exact services cannot reappear through rounded countdown fallback'
         ]],
     ]);
     expect($board['departures'])->toBe([]);
-});
-
-test('a later snapshot replaces an old service estimate when station boards overlap', function () {
-    $service = new TimetableService(Mockery::mock(KvbApiService::class), Mockery::mock(GtfsDepartureService::class));
-    $method = new ReflectionMethod($service, 'mergeAll');
-    $makeBoard = fn ($age, $delay, $cancelled) => [
-        'source' => 'trias_rt', 'fetched_at' => now()->subSeconds($age)->toIso8601String(),
-        'departures' => [[
-            'line' => '1', 'destination' => 'Bensberg', 'type' => 'tram', 'minutes' => [2 + $delay],
-            'services' => [['id' => 'same', 'departure_at' => now()->addMinutes(2 + $delay)->toIso8601String(), 'cancelled' => $cancelled]],
-        ]],
-    ];
-    $merged = $method->invoke($service, $makeBoard(30, 0, false), $makeBoard(5, 2, true), null);
-    expect($merged['departures'][0]['services'])->toHaveCount(1)
-        ->and($merged['departures'][0]['services'][0]['cancelled'])->toBeTrue()
-        ->and($merged['departures'][0]['minutes'])->toBe([]);
-});
-
-test('different nearby stop areas are identified instead of being presented as one station', function () {
-    $kvb = Mockery::mock(KvbApiService::class);
-    $kvb->shouldReceive('getStops')->andReturn([
-        ['id' => 1, 'name' => 'Tram Square', 'area' => 'STRAB', 'lat' => 50.94, 'lng' => 6.94],
-        ['id' => 2, 'name' => 'Bus Street', 'area' => 'BUS', 'lat' => 50.9402, 'lng' => 6.9402],
-    ]);
-    $gtfs = Mockery::mock(GtfsDepartureService::class);
-    $gtfs->shouldReceive('getDepartures')->andReturn(['source' => 'gtfs_static', 'departures' => []]);
-    $gtfs->shouldReceive('getDeparturesNearby')->andReturnUsing(fn ($lat) => [
-        'source' => 'gtfs_static', 'departures' => [[
-            'line' => '1', 'direction' => 'Destination', 'type' => $lat === 50.94 ? 'tram' : 'bus', 'departures' => [5],
-        ]],
-    ]);
-    $gtfs->shouldReceive('routeContext')->andReturn(['direction' => null, 'via' => []]);
-    $board = (new TimetableService($kvb, $gtfs))->boards(50.94, 6.94)['all'];
-    expect($board['scope'])->toBe('nearby')
-        ->and(array_column($board['stops'], 'name'))->toBe(['Tram Square', 'Bus Street'])
-        ->and($board['stop']['coordinate_kind'])->toBe('stop_area')
-        ->and($board['stop']['boarding_confirmed'])->toBeFalse()
-        ->and(array_column($board['departures'], 'stop_name'))->toBe(['Tram Square', 'Bus Street']);
 });
