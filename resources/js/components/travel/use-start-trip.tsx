@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { TripPlace } from '@/hooks/use-active-trip';
+import type { TripPlace, TripPlan } from '@/hooks/use-active-trip';
 import { useActiveTrip } from '@/hooks/use-active-trip';
 import type { NextTrip } from '@/types/day';
 import type { Journey } from '@/types/transit';
@@ -9,6 +9,7 @@ type Pending = {
     journey: Journey;
     destination: TripPlace;
     origin: TripPlace | null;
+    plan: TripPlan | null;
 };
 
 /**
@@ -18,7 +19,7 @@ type Pending = {
  * silent replace (409), so a stale tab can't swap the trip by surprise.
  */
 export function useStartTrip() {
-    const { activeTrip, start, busy, error, conflict, clearConflict } =
+    const { activeTrip, start, end, busy, error, conflict, clearConflict } =
         useActiveTrip();
     const [pending, setPending] = useState<Pending | null>(null);
 
@@ -27,13 +28,15 @@ export function useStartTrip() {
             journey: Journey,
             destination: TripPlace,
             origin: TripPlace | null,
+            plan: TripPlan | null = null,
         ) => {
             const ok = await start(journey, destination, origin, {
                 replace: false,
+                plan,
             });
 
             if (!ok) {
-                setPending({ journey, destination, origin });
+                setPending({ journey, destination, origin, plan });
             }
 
             return ok;
@@ -50,7 +53,7 @@ export function useStartTrip() {
             pending.journey,
             pending.destination,
             pending.origin,
-            { replace: true },
+            { replace: true, plan: pending.plan },
         );
 
         if (ok) {
@@ -102,6 +105,7 @@ export function useStartTrip() {
     return {
         activeTrip,
         begin,
+        end,
         busy,
         // A conflict isn't an error: it's a question.
         error: conflict ? null : error,
@@ -127,6 +131,13 @@ export function tripOf(trip: NextTrip): Pending | null {
         },
         origin: trip.from
             ? { name: trip.from.label, lat: trip.from.lat, lng: trip.from.lng }
+            : null,
+        // Its start is Cologne time ("2026-09-30T14:00:00+02:00"): the day is its first ten.
+        plan: trip.target.start_at
+            ? {
+                  date: trip.target.start_at.slice(0, 10),
+                  target_id: trip.target.id,
+              }
             : null,
     };
 }

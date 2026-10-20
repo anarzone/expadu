@@ -46,6 +46,19 @@
             docs: [],
             reports: [],
         },
+        // The catalogue's income tax return serves every employee
+        // (nee.tax_return), so the sample person has it too.
+        {
+            id: 'tax',
+            name: 'Income tax return',
+            record: 26,
+            icon: 'document',
+            tone: 'violet',
+            initial: 'not_started',
+            note: '',
+            docs: ['unknown', 'unknown'],
+            reports: [],
+        },
         // Joining a spouse (not part of the sample day's plan): the family
         // permit's two steps, then the integration course.
         {

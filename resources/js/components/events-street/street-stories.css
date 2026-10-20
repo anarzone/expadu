@@ -134,8 +134,10 @@
     font-size: 15px;
 }
 
-/* The mock's story buttons keep the browser's own padding. */
-.st-story button,
+/* The mock's story buttons keep the browser's own padding (its own
+   buttons only: a poster's buttons keep theirs). */
+.st-story-head button,
+.st-story-tap,
 .st-story-arrow {
     padding: 1px 6px;
 }

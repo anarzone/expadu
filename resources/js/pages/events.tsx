@@ -9,8 +9,8 @@ import type { EventOccurrence } from '@/components/events/types';
 import { EventDetails } from '@/components/events-details/event-details';
 import type { EventFilters } from '@/components/events-filters/event-filters';
 import {
-    dayAreas,
-    dayCategories,
+    areaChoices,
+    categoryChoices,
     eventsUrl,
     matches,
     narrowed,
@@ -59,6 +59,9 @@ type Props = {
     saved_places: PlacePoint[];
     /** Today's last recorded appointment, for the details' "For you". */
     appointment: { title: string; end: string } | null;
+    /** The categories and areas the listings have on any day, for the
+        filters (the mock's catalogue). */
+    catalogue: { categories: string[]; areas: string[] };
 };
 
 /** The open details, as the URL carries them (?event=&start=). */
@@ -123,16 +126,6 @@ const outdoor = (o: EventOccurrence) =>
         `${o.title_original ?? ''} ${o.title} ${o.summary ?? ''}`,
     );
 
-/** The venue's recorded step-free access, in words; nothing when unknown. */
-const stepFree = (value: string | null | undefined) =>
-    value === 'yes'
-        ? 'Wheelchair accessible'
-        : value === 'limited'
-          ? 'Partly wheelchair accessible'
-          : value === 'no'
-            ? 'Not wheelchair accessible'
-            : undefined;
-
 const distanceLabel = (value: number) =>
     value < 1 ? `${Math.round(value * 1000)} m` : `${value.toFixed(1)} km`;
 
@@ -147,6 +140,7 @@ export default function Events({
     starting_point,
     saved_places,
     appointment,
+    catalogue,
 }: Props) {
     const { props: shared, url } = usePage<{ auth: Auth }>();
     const { auth } = shared;
@@ -417,7 +411,7 @@ export default function Events({
 
     const poster = (
         item: StreetListing,
-        where: 'wall' | 'column',
+        where: 'wall' | 'column' | 'story',
         style?: CSSProperties,
     ) => {
         const listing = item as Listing;
@@ -427,16 +421,26 @@ export default function Events({
             <Poster
                 event={listing.poster}
                 today={today}
-                size={where}
+                size={where === 'column' ? 'column' : 'wall'}
                 style={style}
                 distance={
                     listing.km !== null ? distanceLabel(listing.km) : undefined
                 }
-                access={stepFree(listing.occurrence.venue.wheelchair)}
                 when={state.when}
                 flags={state.flags}
                 saved={saved.keys.has(listing.key)}
                 onSave={() => toggleSave(listing)}
+                // A story's poster has Add to plan: it opens the details, where
+                // the plan is made (the mock's mxOpen(e, 'plan')).
+                onPlan={
+                    where === 'story'
+                        ? () =>
+                              showDetail({
+                                  event: listing.occurrence.id,
+                                  start: listing.occurrence.occurrence_start,
+                              })
+                        : undefined
+                }
                 onOpen={() =>
                     showDetail({
                         event: listing.occurrence.id,
@@ -456,8 +460,11 @@ export default function Events({
                 filters={current}
                 onFilters={onFilters}
                 onDate={onDate}
-                categories={dayCategories(listings, current.category)}
-                areas={dayAreas(listings, current.area)}
+                categories={categoryChoices(
+                    catalogue.categories,
+                    current.category,
+                )}
+                areas={areaChoices(catalogue.areas, current.area)}
                 from={shownFrom}
                 savedPlaces={saved_places.map(asStartingPoint)}
                 mode={mode}

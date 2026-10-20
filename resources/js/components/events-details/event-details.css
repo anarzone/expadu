@@ -24,7 +24,9 @@
     width: min(560px, calc(100vw - 32px));
     height: min(828px, calc(100vh - 32px));
     max-height: none;
-    /* Centred (the CSS reset takes the browser's margin away). */
+    /* Centred in the page beside its scrollbar, as the mock's dialog is
+       (the CSS reset takes the browser's margin away). */
+    inset-inline: 0;
     margin: auto;
     border-radius: 24px;
     background: var(--color-bg-canvas);
@@ -64,6 +66,7 @@
 
 .ev-details .ui-sheet-head > div {
     display: grid;
+    flex: none;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
         'tape tape'
@@ -80,6 +83,8 @@
     position: absolute;
     z-index: 0;
     inset: 0;
+    /* Its shapes size by the header (as the mock's hero), not by itself. */
+    container-type: normal;
 }
 
 .ev-details .evd-shade {
@@ -129,7 +134,7 @@
     z-index: 1;
     grid-area: tape;
     justify-self: start;
-    margin: 0 0 4px;
+    margin: 8px 0 4px;
     font-size: 16px;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -144,7 +149,7 @@
     margin: 0;
     padding: 0;
     color: var(--pp-text);
-    font-family: var(--font-poster);
+    font-family: var(--poster-display);
     font-size: clamp(28px, 7.5cqi, 40px);
     font-weight: 800;
     line-height: 0.92;
@@ -158,7 +163,7 @@
     z-index: 1;
     grid-area: time;
     color: transparent;
-    font-family: var(--font-poster);
+    font-family: var(--poster-display);
     font-size: 44px;
     font-weight: 800;
     line-height: 0.9;
@@ -287,7 +292,7 @@
 
 .evd-source summary > span {
     display: inline-flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
 }
 
@@ -311,6 +316,7 @@
     border-radius: 8px;
     background: #eae2f5;
     font-size: 12px;
+    line-height: 1.1;
 }
 
 .evd-source dl {
@@ -355,6 +361,7 @@
     align-items: center;
     min-height: 44px;
     padding: 10px 0;
+    border: 0;
     border-bottom: 1px solid var(--evd-line);
     color: var(--color-text);
     text-align: left;
@@ -439,9 +446,14 @@
     color: var(--evd-where-ink);
 }
 
+.evd-where .evd-row-sub {
+    display: contents;
+}
+
 .evd-where-go {
     display: flex;
     gap: 6px;
+    line-height: 1.5;
     align-items: center;
     margin-top: 2px;
     color: var(--evd-where-icon);

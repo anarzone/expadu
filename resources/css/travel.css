@@ -1370,6 +1370,8 @@
     background: var(--color-action);
     color: var(--color-text-on-action);
     font-size: var(--text-caption);
+    /* The button reset above takes the weight with font: inherit; the action keeps it. */
+    font-weight: var(--weight-semibold);
 }
 /* On a trip card it takes the button's place; on the one-row card it gets
    a row of its own under the facts, so they keep their room. */
@@ -1391,4 +1393,24 @@
     .trip-line-row:has(> .nav-confirm) > .nav-confirm {
         justify-self: stretch;
     }
+}
+
+/* ---------- Plan a trip's When menu (portalled out of the page) ---------- */
+.plan-schedule {
+    display: grid;
+    gap: var(--space-12);
+}
+.plan-schedule-done {
+    min-height: var(--touch-target);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.plan-schedule-done:active {
+    transform: scale(0.98);
+    background: var(--color-action-hover);
 }

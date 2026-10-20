@@ -1,11 +1,11 @@
 <?php
 
-use App\Home\HomeFeed;
+use App\Day\DayProjection;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
-const WIDGET_PROPS = ['weather', 'forecast', 'rhineLevel', 'featuredEvent', 'activeDisruptions'];
+const WIDGET_PROPS = ['weather', 'forecast'];
 
 function widgetUser(): User
 {
@@ -62,13 +62,13 @@ it('shares no widgets with guests, so nulls are not kept past login', function (
 
 it('a partial reload builds only the props it returns', function () {
     $user = widgetUser();
-    $this->mock(HomeFeed::class, fn ($mock) => $mock->shouldReceive('chips')->never());
+    $this->mock(DayProjection::class, fn ($mock) => $mock->shouldReceive('for')->never());
 
-    // Today's savedPlan refresh (router.reload({ only: ['savedPlan'] })).
+    // A partial reload of the shared widgets alone never works out the day.
     $this->actingAs($user)
         ->withHeaders(inertiaVisit([
             'X-Inertia-Partial-Component' => 'dashboard',
-            'X-Inertia-Partial-Data' => 'savedPlan',
+            'X-Inertia-Partial-Data' => 'weather',
         ]))
         ->get('/dashboard')
         ->assertOk()

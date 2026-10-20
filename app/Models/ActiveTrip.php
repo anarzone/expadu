@@ -28,7 +28,7 @@ class ActiveTrip extends Model
     public const PRUNE_AFTER_HOURS = 24;
 
     protected $fillable = [
-        'user_id', 'journey', 'origin', 'destination', 'started_at',
+        'user_id', 'journey', 'origin', 'destination', 'target', 'started_at',
     ];
 
     /**
@@ -40,6 +40,7 @@ class ActiveTrip extends Model
             'journey' => 'array',
             'origin' => 'array',
             'destination' => 'array',
+            'target' => 'array',
             'started_at' => 'datetime',
         ];
     }
@@ -56,7 +57,7 @@ class ActiveTrip extends Model
      * The shape shared with the frontend (the app-wide banner + the planner's
      * live view read this).
      *
-     * @return array{journey: mixed, origin: mixed, destination: mixed, started_at: ?string}
+     * @return array{journey: mixed, origin: mixed, destination: mixed, target: mixed, started_at: ?string}
      */
     public function toShared(): array
     {
@@ -64,6 +65,8 @@ class ActiveTrip extends Model
             'journey' => $this->journey,
             'origin' => $this->origin,
             'destination' => $this->destination,
+            // The plan it's for, when it was started for one (its start, for "12 min spare").
+            'target' => $this->target,
             'started_at' => $this->started_at?->toIso8601String(),
         ];
     }

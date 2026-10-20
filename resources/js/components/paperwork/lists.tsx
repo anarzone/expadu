@@ -185,6 +185,7 @@ function SourceRecord({ unit }: { unit: CoverageUnit }) {
                 {unit.verified_at
                     ? ` · checked against official sources ${formatDate(unit.verified_at)}`
                     : ''}
+                {unit.content_version ? ` · ${unit.content_version}` : ''}
             </small>
             <div className="source-links">
                 {unit.source_urls.official.map((url) => (

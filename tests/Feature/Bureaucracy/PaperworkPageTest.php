@@ -28,8 +28,3 @@ it('asks a person without a record to set up first', function () {
     $this->actingAs($user)->get('/bureaucracy')->assertOk()->assertInertia(fn (AssertableInertia $page) => $page
         ->component('paperwork')->where('entry.state', 'setup_required')->where('entry.plan', null));
 });
-
-it('keeps the retired page reachable for its engine while it is phased out', function () {
-    $this->actingAs(User::factory()->onboarded()->create())->get('/bureaucracy/legacy')->assertOk()
-        ->assertInertia(fn (AssertableInertia $page) => $page->component('bureaucracy'));
-});

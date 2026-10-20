@@ -14,7 +14,7 @@ import {
 import type { PosterEvent } from '@/components/posters/poster-model';
 import { berlinClock, berlinDate } from '@/components/posters/poster-model';
 import type { StreetLayoutName } from './street-layout';
-import { STREET, streetFit } from './street-layout';
+import { phonePages, STREET, streetFit } from './street-layout';
 import { MotionLab, readMotion } from './street-motion-lab';
 import StreetScene, { forgetPasted } from './street-scene';
 import type { StreetMotion } from './street-scene';
@@ -83,7 +83,7 @@ export function EventsStreet({
     column: StreetListing[];
     poster: (
         listing: StreetListing,
-        where: 'wall' | 'column',
+        where: 'wall' | 'column' | 'story',
         style?: CSSProperties,
     ) => ReactNode;
 }) {
@@ -180,8 +180,8 @@ export function EventsStreet({
     }, [layout, forecast, box]);
 
     // The column turns to its next poster every 6s (the mock's tick), but
-    // not while you point at it, while one of its posters is turned over,
-    // while a story is open, or with reduced motion.
+    // not while you point at it, while a story or details are open, or
+    // with reduced motion.
     const turning =
         motion !== 'still' && column.length > 1 && !story && !waiting;
 
@@ -194,11 +194,7 @@ export function EventsStreet({
         }
 
         const timer = window.setInterval(() => {
-            const turned = host.current?.querySelector(
-                '.st-drum .pp.is-turned',
-            );
-
-            if (!columnHeld.current && !turned && !document.hidden) {
+            if (!columnHeld.current && !document.hidden) {
                 setColumnPos((p) => p + 1);
             }
         }, 6000);
@@ -208,11 +204,32 @@ export function EventsStreet({
 
     const isToday = date === today && berlinDate() === today;
     const timed = wall.filter((l) => l.poster.start);
-    // Today's sky is now; another day's opens on its first listing's hour.
-    const firstHour = timed.length
-        ? Math.min(...timed.map((l) => parseInt(l.poster.start!, 10))) + 0.5
-        : 12;
-    const skyHour = isToday ? nowHour : firstHour;
+    // The sky follows the hour you look at (the mock's street): the wall's
+    // first hour on a desktop, the page's hour on a phone, half past; the
+    // current hour shows now. A day with nothing timed shows now, or noon.
+    const slotted = timed.map((l) => parseInt(l.poster.start!, 10));
+    const lookedAt = !slotted.length
+        ? null
+        : layout === 'phone'
+          ? (() => {
+                const pages = phonePages(
+                    slotted.map((hour) => ({ item: null, hour })),
+                    isToday ? Math.floor(nowHour) : null,
+                );
+
+                return slotted[
+                    Math.min(phonePage ?? pages.page, slotted.length - 1)
+                ];
+            })()
+          : Math.min(...slotted);
+    const skyHour =
+        lookedAt === null
+            ? isToday
+                ? nowHour
+                : 12
+            : isToday && lookedAt === Math.floor(nowHour)
+              ? nowHour
+              : lookedAt + 0.5;
     const fit = box
         ? streetFit(layout, { hostWidth: box.width, room: box.room })
         : null;
@@ -276,7 +293,9 @@ export function EventsStreet({
                     className="ev-street-fit"
                     style={
                         {
-                            zoom: fit.zoom,
+                            // Applied to four places, as the mock's
+                            // street.js does; the sums keep the exact zoom.
+                            zoom: Number(fit.zoom.toFixed(4)),
                             width: fit.width,
                             height,
                             // The chip sits 20px (12px on a phone) in from
@@ -349,7 +368,7 @@ export function EventsStreet({
                     weather={(hour) =>
                         weatherWords(forecast, hour, skyAt(hour + 0.5).daylight)
                     }
-                    poster={(item, style) => poster(item, 'wall', style)}
+                    poster={(item, style) => poster(item, 'story', style)}
                     onStory={(next) => {
                         if (next) {
                             setSeen((was) => new Set(was).add(next.hour));

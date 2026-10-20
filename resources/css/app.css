@@ -181,9 +181,10 @@ input[type='time']::-webkit-calendar-picker-indicator {
     -webkit-appearance: none;
 }
 
-/* Prevent iOS auto-zoom on input focus (triggers when font-size < 16px) */
+/* Prevent iOS auto-zoom on input focus (triggers when font-size < 16px);
+   the time fields are larger already. */
 @media screen and (max-width: 700px) {
-    input,
+    input:not(:where(.ui-time-input)),
     select,
     textarea {
         font-size: 16px !important;
@@ -238,6 +239,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-select-bg-hover: #cceef3;
     --color-select-text: #00768b; /* teal: travel icons, line ink */
     --color-focus: #00768b;
+    --color-field-focus: #05badd; /* a field that owns its focus (the mock's --cyan) */
 
     /* ── Colour · paperwork ────────────────────────────────────────────── */
     --color-paper-bg: #efe7fb;
@@ -425,6 +427,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-select-bg-hover: var(--color-select-bg-hover);
     --color-select-text: var(--color-select-text);
     --color-focus: var(--color-focus);
+    --color-field-focus: var(--color-field-focus);
     --color-paper-bg: var(--color-paper-bg);
     --color-paper-bg-quiet: var(--color-paper-bg-quiet);
     --color-paper-text: var(--color-paper-text);
@@ -614,6 +617,11 @@ input[type='time']::-webkit-calendar-picker-indicator {
 
     body {
         @apply bg-background text-foreground;
+    }
+
+    /* Hints in fields keep the browser's own grey, as the mock's do. */
+    ::placeholder {
+        color: revert;
     }
 
     /* The mock's phones read body text one step smaller. */

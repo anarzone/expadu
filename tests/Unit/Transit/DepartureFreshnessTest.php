@@ -37,6 +37,8 @@ test('last good departures remain stale even immediately after the provider fail
 });
 
 test('nested board caches preserve observed time and exact service times', function () {
+    // One clock for the whole board: a slow run can't cross a second.
+    $this->freezeTime();
     $observed = now()->subMinutes(2)->startOfSecond();
     $departureAt = $observed->copy()->addMinutes(5)->toIso8601String();
     $gtfs = Mockery::mock(GtfsDepartureService::class);

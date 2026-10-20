@@ -20,10 +20,25 @@ export type TripPlace = {
  * The user's live trip, mirrored from the server (App\Models\ActiveTrip). Shared
  * on every page so the banner + Departures can reopen it. Null when no trip.
  */
+/** The plan a trip is for, as the server checked it against your day. */
+export type TripTarget = {
+    id: string;
+    title: string;
+    /** Where it is, as the plan says ("Mülheim"). */
+    label: string | null;
+    kind: 'appointment' | 'plan' | 'event';
+    official: boolean;
+    start_at: string;
+};
+
+/** Which plan on your day a trip is for (`date` is its Cologne day). */
+export type TripPlan = { date: string; target_id: string };
+
 export type ActiveTrip = {
     journey: Journey;
     origin: TripPlace | null;
     destination: TripPlace;
+    target: TripTarget | null;
     started_at: string | null;
 };
 
@@ -104,8 +119,18 @@ export function useActiveTrip() {
             journey: Journey,
             destination: TripPlace,
             origin: TripPlace | null,
-            { replace = true }: { replace?: boolean } = {},
-        ) => post('/api/trip/start', { journey, destination, origin, replace }),
+            {
+                replace = true,
+                plan = null,
+            }: { replace?: boolean; plan?: TripPlan | null } = {},
+        ) =>
+            post('/api/trip/start', {
+                journey,
+                destination,
+                origin,
+                replace,
+                ...(plan ? { plan } : {}),
+            }),
         [post],
     );
 

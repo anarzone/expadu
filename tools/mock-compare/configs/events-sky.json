@@ -7,11 +7,14 @@
         "wait": ".st-weather"
     },
     "app": {
-        "url": "/events",
+        "url": "/events?date=2026-09-30",
         "wait": ".st-weather",
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
         }
     },
     "pairs": [
@@ -19,24 +22,31 @@
             "name": "street",
             "mock": ".st-fit",
             "app": ".ev-street-fit",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "The app draws the street as pictures (EV2a's agreed budget: 31 SVG nodes against the mock's 3,937), the mock as live SVG; edges and thin strokes (the rain, the clouds' rims) anti-alias a pixel apart."
         },
         {
             "name": "weather chip",
             "mock": ".st-weather",
             "app": ".st-weather",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "The chip names where the weather comes from: the mock's 'Sample weather' (its sample data), the app's 'Forecast'. The hour, sky, temperature and words are the same.",
+            "ignore": ["x", "w"]
         },
         {
             "name": "weather glyph",
             "mock": ".st-weather svg",
             "app": ".st-weather svg",
+            "ignore": ["x"],
+            "reason": "In the chip, which is anchored right and narrower by its shorter source label, so it sits at another sub-pixel. The chip names where the weather comes from: the mock's 'Sample weather' (its sample data), the app's 'Forecast'. The hour, sky, temperature and words are the same.",
             "contentDiffers": true
         },
         {
             "name": "weather words",
             "mock": ".st-weather strong",
             "app": ".st-weather strong",
+            "ignore": ["x"],
+            "reason": "In the chip, which is anchored right and narrower by its shorter source label, so it sits at another sub-pixel. The chip names where the weather comes from: the mock's 'Sample weather' (its sample data), the app's 'Forecast'. The hour, sky, temperature and words are the same.",
             "contentDiffers": true
         }
     ]

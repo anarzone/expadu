@@ -217,7 +217,7 @@ it('does not publish known stale bureaucracy links or figures', function () {
  * which is right for cross-cutting rules and wrong for anything conditional.
  *
  * `shared.*` qualifies: every rule applies in all branches and none is
- * trigger-gated. `le.*` must NOT, because CaseMatcher and CasePlanComposer do
+ * trigger-gated. `le.*` must NOT, because CaseMatcher does
  * not read `trigger_event` — a universal life-event rule would surface "reserve
  * a Kita place" to users who never recorded a birth, losing the dormancy
  * PathGenerator guarantees. `core.*` stays case-scoped too: it is the digital

@@ -12,7 +12,9 @@
     background: #e7dbc4;
     touch-action: pan-y;
     user-select: none;
-    contain: layout paint;
+    /* Layout only: paint containment snaps the wall's posters to whole
+       pixels, a pixel off the mock's (its overflow already clips). */
+    contain: layout;
 }
 .st-scene--phone {
     border-radius: 24px;
@@ -315,7 +317,8 @@
     top: 250px;
     width: 40px;
     height: 80px;
-    padding: 0;
+    /* The browser's own button padding, as the mock leaves it. */
+    padding: 1px 6px;
     border: 0;
     background: none;
     cursor: pointer;
@@ -468,4 +471,19 @@
 .st-scene--phone .st-weather svg {
     width: 20px;
     height: 20px;
+}
+
+/* Below 1000px the wall's posters sit as the mock's wall.css sets them
+   (2px down, inline). */
+@media (max-width: 999px) {
+    .st-slot > .pp {
+        display: inline-block;
+        margin: 2px 14px 22px 0;
+        vertical-align: top;
+    }
+}
+@media (max-width: 700px) {
+    .st-slot > .pp {
+        margin-right: 10px;
+    }
 }

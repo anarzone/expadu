@@ -2,13 +2,39 @@
    hour picks the ink (day yellow, evening purple, night navy, paper without
    a time) and the category picks the shape. Ported from the mock's
    connected/poster-art.css and the poster rules of events-next/wall.css.
-   Inks and the poster face (--font-poster) are tokens from app.css. */
+   Inks are tokens from app.css. The faces carry the mock's own names
+   (events-next/festival.css and wall.css) on the app's font files:
+   'Festival Marker' is Permanent Marker, 'Poster Grotesque' Bricolage
+   Grotesque (app.css's --font-poster, the same files). */
 
 @font-face {
-    font-family: 'Permanent Marker';
+    font-family: 'Festival Marker';
     font-weight: 400;
     font-display: swap;
     src: url('/fonts/permanent-marker-400.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Poster Grotesque';
+    font-weight: 600 800;
+    font-display: swap;
+    src: url('/fonts/bricolage-grotesque-latin.woff2') format('woff2');
+    unicode-range:
+        U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+        U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+    font-family: 'Poster Grotesque';
+    font-weight: 600 800;
+    font-display: swap;
+    src: url('/fonts/bricolage-grotesque-latin-ext.woff2') format('woff2');
+    unicode-range:
+        U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+        U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+        U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+:root {
+    --poster-display: 'Poster Grotesque', var(--font-poster);
 }
 
 /* ---------- Inks ---------- */
@@ -188,6 +214,21 @@
     width: 300px;
     height: 420px;
 }
+/* A wall poster is a size smaller on a phone, and on the street's wall
+   between 1000 and 1399px (the mock's wall.css); a size set on the poster
+   itself still wins. */
+@media (max-width: 700px) {
+    .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+}
+@media (min-width: 1000px) and (max-width: 1399px) {
+    .st-slot > .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+}
 .pp--size-column {
     width: 364px;
     height: 560px;
@@ -196,9 +237,6 @@
 .pp-face {
     position: absolute;
     inset: 0;
-}
-.pp-face[hidden] {
-    display: none;
 }
 .pp svg {
     width: 20px;
@@ -265,7 +303,7 @@
     padding: 3px 12px 1px;
     background: var(--poster-yellow);
     color: var(--color-text);
-    font-family: 'Permanent Marker', var(--font-sans);
+    font-family: 'Festival Marker', var(--font-sans);
     font-size: 17px;
     line-height: 1.3;
     transform: rotate(-3deg);
@@ -276,7 +314,7 @@
 }
 .pp-title {
     margin-top: 14px;
-    font-family: var(--font-poster);
+    font-family: var(--poster-display);
     font-weight: 800;
     font-size: clamp(22px, 13.5cqi, 60px);
     line-height: 0.92;
@@ -318,7 +356,7 @@
     box-sizing: border-box;
 }
 .pp-time {
-    font-family: var(--font-poster);
+    font-family: var(--poster-display);
     font-weight: 800;
     font-size: clamp(32px, 17cqi, 64px);
     line-height: 0.9;
@@ -369,19 +407,16 @@
     border-color: #211d1526;
     background: #ffffff59;
 }
-.pp-save svg,
-.pp-back-save svg {
+.pp-save svg {
     width: 19px;
     height: 19px;
 }
-.pp-save[aria-pressed='true'],
-.pp-back-save[aria-pressed='true'] {
+.pp-save[aria-pressed='true'] {
     border-color: transparent;
     background: var(--color-select-bg);
     color: var(--color-select-text);
 }
-.pp-save[aria-pressed='true'] svg,
-.pp-back-save[aria-pressed='true'] svg {
+.pp-save[aria-pressed='true'] svg {
     fill: currentColor;
 }
 .pp-plan {
@@ -397,8 +432,7 @@
 .pp-plan:hover {
     background: var(--color-action-hover);
 }
-.pp-plan svg,
-.pp-back-plan svg {
+.pp-plan svg {
     width: 23px;
     height: 23px;
     stroke-width: 2;
@@ -634,191 +668,6 @@
     background: transparent;
     color: inherit;
     border: 2px solid currentColor;
-}
-
-/* ---------- The back: the listing's facts and the actions ---------- */
-.pp-back {
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    background: var(--poster-paper);
-    color: var(--color-text);
-    box-shadow: inset 0 0 0 1px #211d1514;
-}
-.pp-back-head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 6px 6px 14px;
-    background: var(--pp-ground);
-    color: var(--pp-soft);
-}
-.pp-back-head .pp-tape {
-    margin: 0;
-    font-size: 14px;
-}
-.pp-back-note {
-    flex: 1;
-    font-size: var(--text-small);
-}
-.pp-turn-back {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: #ffffff29;
-    color: inherit;
-    cursor: pointer;
-}
-.pp--day .pp-turn-back,
-.pp--paper .pp-turn-back {
-    background: #211d1514;
-}
-.pp-turn-back svg {
-    width: 19px;
-    height: 19px;
-    stroke-width: 2;
-}
-.pp-back-body {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 12px 16px 8px;
-    font-size: var(--text-small);
-}
-.pp-back-title {
-    font-size: var(--text-section);
-    font-weight: var(--weight-bold);
-    line-height: 1.2;
-}
-.pp-back-body .pp-translation {
-    margin: 0;
-    color: var(--color-text-soft);
-}
-.pp-back-body p {
-    margin: 0;
-}
-.pp-back-body .pp-back-when {
-    margin-top: 4px;
-}
-.pp-back-where,
-.pp-back-past {
-    color: var(--color-text-soft);
-}
-.pp-facts {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 3px 12px;
-    margin: 8px 0 0;
-}
-.pp-facts > div {
-    display: contents;
-}
-.pp-facts dt {
-    color: var(--color-text-soft);
-}
-.pp-facts dd {
-    margin: 0;
-}
-.pp-facts dd.is-unknown {
-    color: var(--color-text-muted);
-    opacity: 0.85;
-}
-.pp-back-body .pp-fit {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-}
-.pp-fit > span {
-    flex: none;
-    width: 9px;
-    height: 9px;
-    margin-top: 4px;
-    border-radius: 50%;
-    background: var(--color-select-text);
-}
-.pp-back-actions {
-    display: flex;
-    gap: 8px;
-    padding: 8px 12px 12px;
-}
-.pp-back-plan,
-.pp-back-save,
-.pp-back-more {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 44px;
-    border: 0;
-    border-radius: var(--radius-md);
-    font-size: var(--text-control);
-    font-weight: var(--weight-semibold);
-    text-decoration: none;
-    cursor: pointer;
-}
-.pp-back-plan {
-    flex: 1;
-    background: var(--color-action);
-    color: var(--color-text-on-action);
-}
-.pp-back-save {
-    width: 44px;
-    padding: 0;
-    background: var(--color-bg-quiet);
-    color: var(--color-text);
-}
-.pp-back-more {
-    padding: 0 12px;
-    background: var(--color-bg-quiet);
-    color: var(--color-text);
-}
-.pp.is-listing .pp-back-more,
-.pp.is-past .pp-back-more {
-    flex: 1;
-}
-.pp-back-more svg {
-    width: 16px;
-    height: 16px;
-}
-.pp-back-actions > * {
-    white-space: nowrap;
-}
-/* A narrow poster (the wall's are 272–300px) keeps one row: Add to plan
-   and Save as icons, as on the poster's front, and More about it in words.
-   Each icon keeps its name for screen readers and as a tooltip. The head
-   keeps its date and the way back. */
-@container (max-width: 330px) {
-    .pp-back-note {
-        display: none;
-    }
-    .pp-back-head .pp-tape {
-        margin-right: auto;
-    }
-    .pp-back-plan {
-        flex: none;
-        width: 48px;
-        padding: 0;
-    }
-    .pp-back-plan span {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-    }
-    .pp-back-save {
-        width: 48px;
-    }
-    .pp-back-actions .pp-back-more {
-        flex: 1;
-    }
 }
 
 /* ---------- Your choices on the posters ---------- */

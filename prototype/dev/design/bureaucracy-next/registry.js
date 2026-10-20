@@ -523,6 +523,15 @@
             dates: [],
             phase: 'first_30_days',
         },
+        // nee.tax_return: every employee (applies_if purpose employment).
+        {
+            id: 'tax',
+            definition: 'tax.income_tax_return',
+            urgency: 'medium',
+            when: { purpose: 'employment' },
+            dates: [],
+            phase: 'ongoing',
+        },
         // Joining a spouse: case.family.first_permit.prepare and the
         // appointment (family reunification, a sponsor of any listed title;
         // its situation needs purpose family), and the integration course.
@@ -566,8 +575,25 @@
     ];
     // The cards' urgency (QuestionProtocol ranks by it); a task's own date
     // question gets a little more (AnchorBonus).
-    const urgency = { critical: 3, high: 2, normal: 1, low: 0 };
+    const urgency = { critical: 3, high: 2, medium: 1, normal: 1, low: 0 };
     const anchorBonus = 0.5;
+    // Work "already applies" when its orientation answers say so, as the
+    // backend's relevance does (AssessPerson::OrientationKeys): a task
+    // still waiting on one of them, the tax return on purpose, doesn't
+    // move that question ahead.
+    const orientationKeys = [
+        'citizenship_group',
+        'purpose',
+        'current_residence_title',
+        'entry_mode',
+        'sponsor',
+        'permit_track',
+        'business_kind',
+    ];
+    const relevantFor = (facts, t) =>
+        Object.entries(t.when)
+            .filter(([k]) => orientationKeys.includes(k))
+            .every(([k, v]) => meets(said(facts, k), v));
     // A task applies when every condition is answered as it asks.
     // A condition is a value or a list of values (applies_if `in`).
     const meets = (value, wanted) =>
@@ -646,15 +672,7 @@
         for (const t of tasks)
             if (possible(facts, t) && !waits(facts, t)) {
                 for (const k of Object.keys(t.when))
-                    add(
-                        k,
-                        urgency[t.urgency],
-                        Object.entries(t.when).every(
-                            ([other, v]) =>
-                                other === k || meets(said(facts, other), v),
-                        ),
-                        t,
-                    );
+                    add(k, urgency[t.urgency], relevantFor(facts, t), t);
                 if (applies(facts, t))
                     for (const k of t.dates)
                         add(k, urgency[t.urgency] + anchorBonus, true, t);
