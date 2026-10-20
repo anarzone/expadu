@@ -1370,6 +1370,8 @@
     background: var(--color-action);
     color: var(--color-text-on-action);
     font-size: var(--text-caption);
+    /* The button reset above takes the weight with font: inherit; the action keeps it. */
+    font-weight: var(--weight-semibold);
 }
 /* On a trip card it takes the button's place; on the one-row card it gets
    a row of its own under the facts, so they keep their room. */

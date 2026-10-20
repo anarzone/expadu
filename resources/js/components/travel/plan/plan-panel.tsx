@@ -4,12 +4,15 @@ import { AnchoredMenu, MenuOption } from '@/components/ui/anchored-menu';
 import { Calendar, berlinToday } from '@/components/ui/date-control';
 import { TimeField } from '@/components/ui/time-field';
 import { showToast } from '@/components/ui/toast';
+import type { TripPlace, TripPlan } from '@/hooks/use-active-trip';
 import { usePushSubscription } from '@/hooks/use-push-subscription';
 import { cn } from '@/lib/utils';
 import type { DayItem, DayProjection, PlannedTrip } from '@/types/day';
+import type { Journey } from '@/types/transit';
 import type { FavouriteStop } from '../nearby/types';
 import { stopName } from '../stop-name';
 import { TravelIcon } from '../travel-icon';
+import type { TripFor } from '../trip/trip-model';
 import { PlanFields, findPlace } from './plan-fields';
 import type { FieldValue } from './plan-fields';
 import {
@@ -64,6 +67,18 @@ type Picked = {
     title: string;
     detail: string | null;
     target: PlanTarget | null;
+};
+
+/** The way "Show the way" hands to the trip page, before you start. */
+export type ShownWay = {
+    journey: Journey;
+    destination: TripPlace;
+    origin: TripPlace | null;
+    plan: TripPlan | null;
+    trip: TripFor;
+    inPlan: boolean;
+    /** True once it's in your plan. */
+    addToPlan: (() => Promise<boolean>) | null;
 };
 
 type Status =
@@ -129,6 +144,8 @@ type PlanPanelProps = {
     onFold: () => void;
     /** A boarding stop's timetable in Nearby, with a way back here. */
     onBoardStop: (name: string) => void;
+    /** "Show the way": the trip page, before you start. */
+    onShowTheWay: (way: ShownWay) => void;
     onLocate: () => void;
     locating: boolean;
 };
@@ -145,6 +162,7 @@ export function PlanPanel({
     onStage,
     onFold,
     onBoardStop,
+    onShowTheWay,
     onLocate,
     locating,
 }: PlanPanelProps) {
@@ -650,15 +668,58 @@ export function PlanPanel({
         option.journey.depart_time === plannedNow.depart_time &&
         option.journey.arrive_time === plannedNow.arrive_time;
 
-    const addToPlan = async () => {
-        if (!chosen || !target || saving) {
+    // "Show the way": the trip page with this way, before you start.
+    const showTheWay = (option: PlanOption) => {
+        const journey = option.journey;
+        const first = journey.legs[0];
+        const last = journey.legs.at(-1);
+        const place = picked?.title ?? to.place?.name ?? to.text;
+
+        if (!last) {
             return;
+        }
+
+        onShowTheWay({
+            journey,
+            destination: { name: place, lat: last.to.lat, lng: last.to.lng },
+            origin: first
+                ? {
+                      name: first.from.name,
+                      lat: first.from.lat,
+                      lng: first.from.lng,
+                  }
+                : null,
+            plan: target
+                ? {
+                      date: berlinNow(new Date(target.start_at)).date,
+                      target_id: target.id,
+                  }
+                : null,
+            trip: {
+                place,
+                label: target
+                    ? (day?.items.find((item) => item.id === target.id)
+                          ?.location?.label ?? null)
+                    : null,
+                start: target?.start_time ?? null,
+                startAt: target?.start_at ?? null,
+                official: target?.official ?? false,
+                kind: target?.kind ?? null,
+            },
+            inPlan: isPlanned(option),
+            addToPlan: target ? addToPlan : null,
+        });
+    };
+
+    const addToPlan = async (): Promise<boolean> => {
+        if (!chosen || !target || saving) {
+            return false;
         }
 
         if (isPlanned(chosen) && plannedNow) {
             setSaved(plannedNow);
 
-            return;
+            return true;
         }
 
         setSaving(true);
@@ -688,7 +749,7 @@ export function PlanPanel({
                     true,
                 );
 
-                return;
+                return false;
             }
 
             const kept = data.planned;
@@ -715,6 +776,8 @@ export function PlanPanel({
                     }
                 },
             });
+
+            return true;
         } finally {
             setSaving(false);
         }
@@ -1466,33 +1529,11 @@ export function PlanPanel({
                                                         <button
                                                             type="button"
                                                             className="primary plan-go"
-                                                            onClick={() => {
-                                                                setTouched(
-                                                                    true,
-                                                                );
-                                                                setExpanded(
-                                                                    new Set([
-                                                                        ...open,
-                                                                        chosen.id,
-                                                                    ]),
-                                                                );
-                                                                window.setTimeout(
-                                                                    () => {
-                                                                        document
-                                                                            .getElementById(
-                                                                                `route-disclosure-${chosen.id}`,
-                                                                            )
-                                                                            ?.scrollIntoView(
-                                                                                {
-                                                                                    block: 'nearest',
-                                                                                    behavior:
-                                                                                        'smooth',
-                                                                                },
-                                                                            );
-                                                                    },
-                                                                    50,
-                                                                );
-                                                            }}
+                                                            onClick={() =>
+                                                                showTheWay(
+                                                                    chosen,
+                                                                )
+                                                            }
                                                         >
                                                             <TravelIcon name="route" />
                                                             Show the way

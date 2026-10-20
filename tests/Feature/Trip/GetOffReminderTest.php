@@ -161,13 +161,13 @@ test('the reminder job stays silent after the trip was switched', function () {
     Notification::assertNothingSent();
 });
 
-test('the push message deep-links to the timetable with the right copy', function () {
+test('the push message deep-links to the trip page with the right copy', function () {
     $final = (new GetOffReminderNotification('Exit Stop', true))
         ->toWebPush($this->user)
         ->toArray();
 
     expect($final['title'])->toBe('Get off next · Exit Stop');
-    expect($final['data'])->toBe(['url' => '/timetable']);
+    expect($final['data'])->toBe(['url' => '/timetable?view=route']);
     expect($final['tag'])->toBe('trip-get-off');
 
     $change = (new GetOffReminderNotification('Change Stop', false))

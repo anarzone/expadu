@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\MockSample;
 
+use App\Models\ActiveTrip;
 use App\Models\FavouriteStop;
 use App\Models\PlannedTrip;
 use App\Models\User;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Redis;
  *
  * E2E_EMAIL=s3-compare@expadu.test php artisan db:seed --class="Database\Seeders\MockSample\TravelSeeder"
  * (each session compares as its own account; the default is the E2E one).
+ * No trip is running afterwards; MOCK_TRIP=started starts the sample's 13:14
+ * (the trip page's started moments, travel-trip-*.json).
  */
 class TravelSeeder extends Seeder
 {
@@ -71,5 +74,24 @@ class TravelSeeder extends Seeder
                 'reminded_at' => null,
             ],
         );
+
+        // The trip page: nothing running, or (MOCK_TRIP=started) the sample's
+        // 13:14 to the Blue Card appointment, started at 13:10.
+        ActiveTrip::query()->where('user_id', $user->id)->delete();
+        if (env('MOCK_TRIP') === 'started') {
+            $way = SampleRoutes::ways(self::DATE)[0];
+            $end = $way->legs[array_key_last($way->legs)]->to->point;
+            ActiveTrip::query()->create([
+                'user_id' => $user->id,
+                'journey' => $way->toArray(),
+                'destination' => ['name' => 'Blue Card appointment', 'lat' => $end->lat, 'lng' => $end->lng],
+                'origin' => null,
+                'target' => [
+                    'id' => 'mock:blue-card-appointment', 'title' => 'Blue Card appointment', 'label' => 'Mülheim',
+                    'kind' => 'appointment', 'official' => true, 'start_at' => self::DATE.'T14:00:00+02:00',
+                ],
+                'started_at' => self::DATE.' 13:10:00+02:00',
+            ]);
+        }
     }
 }
