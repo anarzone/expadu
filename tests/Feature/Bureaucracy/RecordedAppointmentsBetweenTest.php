@@ -70,7 +70,7 @@ test('the account holder\'s recorded appointments in the window, oldest first, w
             fn ($location) => $location->label->toBe('Kalk'),
             fn ($location) => $location->label->toBe('Mülheim'),
         )
-        ->and($rows[0])->process_id->toBe($process->id)->process_title->toBe('EU Blue Card')
+        ->and($rows[0])->process_id->toBe($process->id)->occurrence_key->toBe($process->occurrence_key)->process_title->toBe('EU Blue Card')
         ->duration_minutes->toBe(30)->timezone->toBe('Europe/Berlin');
 });
 

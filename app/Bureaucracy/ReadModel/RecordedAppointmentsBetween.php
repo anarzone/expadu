@@ -32,7 +32,9 @@ final class RecordedAppointmentsBetween
     /**
      * Appointments starting in [$from, $to), oldest first.
      *
-     * @return list<array{appointment_id: string, process_id: int, process_title: ?string, starts_at: string, timezone: string, duration_minutes: ?int, location: ?array<string, mixed>}>
+     * occurrence_key is the key Paperwork opens the process by (?process=).
+     *
+     * @return list<array{appointment_id: string, process_id: int, occurrence_key: string, process_title: ?string, starts_at: string, timezone: string, duration_minutes: ?int, location: ?array<string, mixed>}>
      */
     public function for(User $user, CarbonImmutable $from, CarbonImmutable $to): array
     {
@@ -45,7 +47,7 @@ final class RecordedAppointmentsBetween
             return [];
         }
         $jurisdiction = $this->plans->jurisdiction($user);
-        $processes = BureaucracyProcess::query()->where('case_id', $case->id)->orderBy('id')->get(['id', 'definition_id', 'jurisdiction', 'state'])
+        $processes = BureaucracyProcess::query()->where('case_id', $case->id)->orderBy('id')->get(['id', 'definition_id', 'occurrence_key', 'jurisdiction', 'state'])
             ->reject(fn (BureaucracyProcess $process): bool => $process->jurisdiction === $jurisdiction && ($process->state['workflow'] ?? null) === 'untracked')
             ->keyBy('id');
         if ($processes->isEmpty()) {
@@ -67,6 +69,7 @@ final class RecordedAppointmentsBetween
                 }
                 $titles ??= $this->catalogue->processTitles();
                 $rows[] = ['appointment_id' => $appointment['appointment_id'], 'process_id' => $processId,
+                    'occurrence_key' => $processes[$processId]->occurrence_key,
                     'process_title' => $titles[$processes[$processId]->definition_id] ?? null,
                     'starts_at' => $appointment['starts_at'], 'timezone' => $appointment['timezone'],
                     'duration_minutes' => $appointment['duration_minutes'], 'location' => $appointment['location']];
