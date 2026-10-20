@@ -29,11 +29,35 @@ type Command =
           end: string;
           location?: string;
       }
-    | { action: 'edit'; id: string; date: string; start: string; end: string }
+    | {
+          action: 'edit';
+          id: string;
+          date: string;
+          name?: string;
+          start?: string;
+          end?: string;
+          location?: string | null;
+      }
     | { action: 'complete' | 'uncomplete'; id: string; date: string }
     | { action: 'undo'; change: string };
 
 const reread = () => router.reload({ only: ['day'], preserveUrl: true });
+
+/*
+ * The newest revision this tab has written. An Undo tapped before the day
+ * re-reads still holds the revision from before its own change.
+ */
+let written = 0;
+
+const send = async (revision: number, command: Command) => {
+    const workspace = await api<Workspace>(update.url(), {
+        revision,
+        ...command,
+    });
+    written = workspace.revision;
+
+    return workspace.changes?.at(-1) ?? null;
+};
 
 /**
  * Sends one change. Returns the change it made (for Undo), if any. A stale
@@ -45,21 +69,12 @@ export async function changeDay(
     command: Command,
 ): Promise<Change | null> {
     try {
-        const workspace = await api<Workspace>(update.url(), {
-            revision,
-            ...command,
-        });
-
-        return workspace.changes?.at(-1) ?? null;
+        return await send(Math.max(revision, written), command);
     } catch (reason) {
         if (reason instanceof ApiError && reason.status === 409) {
             const current = await api<Workspace>(show.url());
-            const workspace = await api<Workspace>(update.url(), {
-                revision: current.revision,
-                ...command,
-            });
 
-            return workspace.changes?.at(-1) ?? null;
+            return await send(current.revision, command);
         }
 
         throw reason;

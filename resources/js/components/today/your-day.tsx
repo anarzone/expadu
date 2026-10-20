@@ -3,9 +3,9 @@ import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
 import { changeDay, failure } from '@/components/today/day-commands';
 import {
-    AddPlanSheet,
-    EditTimeSheet,
+    ItemStatus,
     PlanDetailsSheet,
+    PlanSheet,
 } from '@/components/today/plan-sheets';
 import {
     AnchoredMenu,
@@ -13,8 +13,8 @@ import {
     MenuOptions,
 } from '@/components/ui/anchored-menu';
 import { Icon } from '@/components/ui/icon';
-import { Pill } from '@/components/ui/pill';
 import { showToast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils';
 import { timetable } from '@/routes';
 import type { DayItem, DayLink, DayProjection } from '@/types/day';
 
@@ -45,7 +45,9 @@ type YourDayProps = {
 export function YourDay({ day, leaveNow }: YourDayProps) {
     const [adding, setAdding] = useState(false);
     const [details, setDetails] = useState<DayItem | null>(null);
+    // Kept after closing so Edit plan can slide away with its words in it.
     const [editing, setEditing] = useState<DayItem | null>(null);
+    const [editOpen, setEditOpen] = useState(false);
     const active = day.items.filter((item) => !isDone(item));
     const earlier = day.items.filter(isDone);
     const linkAfter = new Map(day.links.map((link) => [link.from_id, link]));
@@ -101,11 +103,19 @@ export function YourDay({ day, leaveNow }: YourDayProps) {
             );
         });
 
+    const edit = (item: DayItem) => {
+        setEditing(item);
+        setEditOpen(true);
+    };
+
     return (
         <section className="day-panel" aria-labelledby="your-day-title">
             <div className="day-heading">
                 <h2 id="your-day-title">Your day</h2>
-                <small>{dateLine(day)}</small>
+                <small>
+                    {dateLine(day)}
+                    {active.length > 1 && ` · ${active.length} plans`}
+                </small>
             </div>
             {active.length === 0 ? (
                 <p className="day-empty">
@@ -125,7 +135,7 @@ export function YourDay({ day, leaveNow }: YourDayProps) {
                                     item={item}
                                     primary={index === 0}
                                     onDetails={() => setDetails(item)}
-                                    onEdit={() => setEditing(item)}
+                                    onEdit={() => edit(item)}
                                     onDone={() => void markDone(item, true)}
                                     onRemove={() => void remove(item)}
                                 >
@@ -150,7 +160,10 @@ export function YourDay({ day, leaveNow }: YourDayProps) {
                     {earlier.map((item) => (
                         <div
                             key={item.id}
-                            className={`earlier-item${item.completed ? 'is-done' : ''}`}
+                            className={cn(
+                                'earlier-item',
+                                item.completed && 'is-done',
+                            )}
                         >
                             <time>{item.start_time}</time>
                             <span>{item.title}</span>
@@ -190,16 +203,32 @@ export function YourDay({ day, leaveNow }: YourDayProps) {
                     </button>
                 </div>
             )}
-            <AddPlanSheet
+            <PlanSheet
                 open={adding}
                 day={day}
                 onClose={() => setAdding(false)}
             />
-            <PlanDetailsSheet item={details} onClose={() => setDetails(null)} />
-            <EditTimeSheet
-                item={editing}
+            {editing && (
+                <PlanSheet
+                    key={editing.id}
+                    open={editOpen}
+                    day={day}
+                    item={editing}
+                    onClose={() => setEditOpen(false)}
+                />
+            )}
+            <PlanDetailsSheet
+                item={details}
                 day={day}
-                onClose={() => setEditing(null)}
+                onClose={() => setDetails(null)}
+                onEdit={(item) => {
+                    setDetails(null);
+                    edit(item);
+                }}
+                onRemove={(item) => {
+                    setDetails(null);
+                    void remove(item);
+                }}
             />
         </section>
     );
@@ -228,7 +257,7 @@ function AgendaItem({
 
     return (
         <article
-            className={`agenda-item${primary ? '' : 'is-secondary'}`}
+            className={cn('agenda-item', !primary && 'is-secondary')}
             aria-labelledby={`plan-${item.id}`}
         >
             <div className="agenda-identity">
@@ -247,17 +276,7 @@ function AgendaItem({
                     </p>
                 )}
                 <div className="status-row">
-                    {item.state === 'ongoing' ? (
-                        <Pill tone="select">Now</Pill>
-                    ) : item.state === 'started' ? (
-                        <Pill>Started · end not recorded</Pill>
-                    ) : (
-                        <Pill>
-                            {item.source === 'paperwork'
-                                ? 'From Paperwork'
-                                : 'In your plan'}
-                        </Pill>
-                    )}
+                    <ItemStatus item={item} />
                 </div>
                 <AnchoredMenu
                     label={`${item.title}: options`}
@@ -277,7 +296,7 @@ function AgendaItem({
                     <MenuOptions>
                         <MenuOption onSelect={onDetails}>Details</MenuOption>
                         {workspace && !item.fixed && (
-                            <MenuOption onSelect={onEdit}>Edit time</MenuOption>
+                            <MenuOption onSelect={onEdit}>Edit plan</MenuOption>
                         )}
                         {item.completable && !item.completed && (
                             <MenuOption onSelect={onDone}>

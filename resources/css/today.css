@@ -148,9 +148,7 @@
     background: var(--color-bg-surface);
 }
 .appointment-time {
-    display: block;
-    margin-top: -4px;
-    font-size: 52px;
+    font-size: var(--text-display-fluid);
     font-weight: var(--weight-bold);
     line-height: 1;
     letter-spacing: -1.8px;
@@ -169,7 +167,6 @@
     line-height: 1.5;
 }
 .agenda-item.is-secondary .appointment-time {
-    margin-top: -2px;
     font-size: var(--text-title);
     letter-spacing: -0.7px;
 }
@@ -377,55 +374,63 @@ a.plan-link:hover {
 
 /* ── Sheets on Today: the add/details forms ──────────────────────────── */
 .today-form {
-    display: grid;
-    gap: 14px;
+    display: flow-root;
 }
 .today-form .detail-intro {
-    color: var(--color-text-soft);
+    margin: 0 0 14px;
+    color: var(--color-text-muted);
     font-size: var(--text-body);
 }
 .form-field {
-    display: grid;
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    margin-bottom: 18px;
     font-size: var(--text-control);
-    font-weight: var(--weight-medium);
 }
 .form-field small {
     color: var(--color-text-muted);
     font-size: var(--text-caption);
-    font-weight: var(--weight-regular);
 }
-.form-field input[type='text'],
-.form-field input:not([type]) {
+.form-field input[type='text']:not(.ui-time-input) {
+    width: 100%;
     min-height: 48px;
-    padding: 10px 14px;
+    padding: 12px;
+    box-sizing: border-box;
     border: 1px solid var(--color-border-strong);
-    border-radius: 14px;
-    background: var(--color-bg-surface);
+    border-radius: var(--radius-md);
+    background: #fff;
     color: var(--color-text);
     font: inherit;
-    font-size: var(--text-body);
 }
-.form-field input:focus {
+.form-field input[type='text']:not(.ui-time-input):focus {
     outline: none;
     border-color: var(--color-focus);
     box-shadow: 0 0 0 3px #00758c26;
 }
+/* From – Until: the time fields are Travel's large tabular ones. */
 .selection-times {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: end;
-    gap: 12px;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+}
+.selection-times .form-field {
+    margin-bottom: 0;
 }
 .selection-times > span {
-    padding-bottom: 12px;
+    padding-top: 24px;
     color: var(--color-text-soft);
 }
 .detail-note {
-    color: var(--color-text-soft);
+    margin: 16px 0;
+    color: var(--color-text-muted);
     font-size: var(--text-small);
 }
 .form-error {
+    margin: 0 0 12px;
     color: var(--color-conflict-text);
     font-size: var(--text-small);
 }
@@ -456,22 +461,101 @@ a.plan-link:hover {
     width: 20px;
     height: 20px;
 }
-.detail-facts {
+/* Plan details (the mock's .today-sheet): when and where, its status, the
+   trip there, what is recorded, then Edit and Remove. */
+.today-sheet .detail-intro {
+    margin: 0 0 14px;
+    color: var(--color-text-muted);
+}
+.today-sheet .status-row {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 14px;
+}
+.detail-grid {
     display: grid;
-    gap: 8px;
+    gap: 14px;
     margin: 0;
 }
-.detail-facts div {
-    display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
-    gap: 12px;
-    font-size: var(--text-control);
+.detail-grid div {
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
 }
-.detail-facts dt {
+.detail-grid dt {
+    color: var(--color-text-muted);
+    font-size: var(--text-small);
+}
+.detail-grid dd {
+    margin: 2px 0 0;
+    font-weight: var(--weight-semibold);
+}
+.detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 18px;
+    margin-top: 18px;
+}
+/* One orange action per sheet; the others are ink. */
+.today-sheet .text-action {
+    color: var(--color-text);
+}
+
+/* A tappable summary row inside a sheet: the trip to a plan. */
+.sheet-row {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) 16px;
+    gap: 12px;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-lg);
+    background: var(--color-select-bg);
+    color: var(--color-text);
+    text-align: left;
+    text-decoration: none;
+}
+.sheet-row:hover {
+    background: var(--color-select-bg-hover);
+}
+.sheet-row:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.sheet-row > svg {
+    width: 20px;
+    height: 20px;
+    color: var(--color-select-text);
+}
+.sheet-row > svg:last-child {
+    width: 16px;
+    height: 16px;
     color: var(--color-text-soft);
 }
-.detail-facts dd {
-    margin: 0;
+.sheet-row > span:not(.tl-line) {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+}
+.sheet-row strong {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+}
+.sheet-row small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+/* The trip as Travel draws it: its line badge on the card's own surface. */
+.sheet-row.is-trip {
+    grid-template-columns: auto minmax(0, 1fr) 16px;
+    border: 1.5px solid var(--color-border);
+    background: var(--color-bg-surface);
+}
+.sheet-row.is-trip:hover {
+    background: var(--color-bg-hover);
 }
 
 /* ── Coming up: later days in a fold ─────────────────────────────────── */
@@ -609,7 +693,18 @@ a.plan-link:hover {
         padding-left: 21px;
     }
     .appointment-time {
-        font-size: 44px;
+        font-size: var(--text-display);
+        letter-spacing: -1.5px;
+    }
+    .appointment-title {
+        margin-right: 35px;
+        font-size: var(--text-title-sm);
+    }
+    .appointment-location {
+        font-size: var(--text-small);
+    }
+    .status-row .ui-pill {
+        font-size: var(--text-micro);
     }
 }
 
