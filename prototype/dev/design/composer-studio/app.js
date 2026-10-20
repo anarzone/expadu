@@ -477,7 +477,7 @@
                 )
                 .join(
                     '',
-                )}<p class="history-intro">History stays in your account. Earlier conversations are not used as automatic AI memory.</p></div>`;
+                )}<p class="history-intro">History stays in your account. Earlier conversations are not used as automatic AI memory.</p><button type="button" class="plain-button" data-action="delete-history">${I('trash')}Delete conversation history</button></div>`;
             return;
         }
         const scroll = drawer?.querySelector('.panel-body')?.scrollTop || 0;
@@ -2873,6 +2873,22 @@
         if (action === 'undo') {
             undo?.();
             document.querySelector('#studio-toast').hidden = true;
+        }
+        // Deleting history happens straight away, with its Undo, as Cancel
+        // day does (owner, 18 Oct 2026); plans and saved ideas stay.
+        if (action === 'delete-history') {
+            const kept = JSON.parse(JSON.stringify(state.conversation));
+            C.deleteHistory(state);
+            state.response = null;
+            store();
+            closePanel();
+            render();
+            notify('Conversation history deleted.', () => {
+                state.conversation = kept;
+                C.ensure(state);
+                store();
+                render();
+            });
         }
         if (action === 'new') {
             C.startFresh(state);
