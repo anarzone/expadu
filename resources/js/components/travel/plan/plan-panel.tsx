@@ -15,6 +15,7 @@ import {
     berlinInstant,
     berlinNow,
     checksFor,
+    isPublicPlace,
     marginOf,
     rankOptions,
     scheduleSummary,
@@ -81,8 +82,15 @@ const targetOf = (item: DayItem): PlanTarget | null =>
           }
         : null;
 
-function csrfHeaders() {
-    return { Accept: 'application/json' };
+function jsonHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-TOKEN':
+            document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content') ?? '',
+    };
 }
 
 /** A deep link's time: an ISO instant, or HH:MM today. */
@@ -253,19 +261,32 @@ export function PlanPanel({
                 }
             }
 
-            // The page's address keeps the request, so a reload or a link
-            // shows the same options.
-            const shown = new URLSearchParams({
-                view: 'journey',
-                to_name: toPlace.name,
-                to_lat: String(toPlace.lat),
-                to_lng: String(toPlace.lng),
-            });
+            // The page's address keeps the request where that's safe to
+            // share: a stop or public place, Home/Work by name, or the plan
+            // on your day by its id. A typed address or a start you typed
+            // stays out of the address (history, links, access logs).
+            const activity =
+                overrides?.activity !== undefined
+                    ? overrides.activity
+                    : (target?.id ?? null);
+            const shown = new URLSearchParams({ view: 'journey' });
 
-            if (fromPlace) {
-                shown.set('from_name', fromPlace.name);
-                shown.set('from_lat', String(fromPlace.lat));
-                shown.set('from_lng', String(fromPlace.lng));
+            if (activity) {
+                shown.set('activity', activity);
+            } else if (toPlace.key) {
+                shown.set('to', toPlace.key);
+            } else if (isPublicPlace(toPlace)) {
+                shown.set('to_name', toPlace.name);
+                shown.set('to_lat', String(toPlace.lat));
+                shown.set('to_lng', String(toPlace.lng));
+            }
+
+            if (fromPlace?.key) {
+                shown.set('from', fromPlace.key);
+            } else if (isPublicPlace(fromPlace)) {
+                shown.set('from_name', fromPlace!.name);
+                shown.set('from_lat', String(fromPlace!.lat));
+                shown.set('from_lng', String(fromPlace!.lng));
             }
 
             if (instant) {
@@ -273,15 +294,6 @@ export function PlanPanel({
                     whenMode === 'arrive' ? 'arrive_by' : 'depart_at',
                     instant,
                 );
-            }
-
-            const activity =
-                overrides?.activity !== undefined
-                    ? overrides.activity
-                    : (target?.id ?? null);
-
-            if (activity) {
-                shown.set('activity', activity);
             }
 
             shown.set('compare', '1');
@@ -303,9 +315,12 @@ export function PlanPanel({
             setTouched(false);
 
             try {
-                const response = await fetch(`/api/journey?${params}`, {
-                    headers: csrfHeaders(),
+                // In the body: where you go and start never sit in a URL.
+                const response = await fetch('/api/journey/plan', {
+                    method: 'POST',
+                    headers: jsonHeaders(),
                     credentials: 'same-origin',
+                    body: JSON.stringify(Object.fromEntries(params)),
                     signal: controller.signal,
                 });
                 const data = (await response.json().catch(() => null)) as
@@ -346,7 +361,9 @@ export function PlanPanel({
         [to, from, schedule, date, time, target],
     );
 
-    // A hand-off opens on its options.
+    // A hand-off opens on its options: the plan on your day (activity=),
+    // Home or Work by name (to=home), a public place (to_name & to_lat &
+    // to_lng) or a name to look up (to=…), with &from… and a time.
     const opened = useRef(false);
 
     useEffect(() => {
@@ -354,46 +371,101 @@ export function PlanPanel({
             return;
         }
 
-        opened.current = true;
         const q = new URLSearchParams(url.split('?')[1] ?? '');
-        const name = (q.get('to_name') ?? q.get('to'))?.trim().slice(0, 120);
+        const activity = q.get('activity');
+        const toKey = q.get('to');
+        const name = (q.get('to_name') ?? toKey)?.trim().slice(0, 120);
 
-        if (!name) {
+        if (!activity && !name) {
+            opened.current = true;
+
             return;
         }
 
-        const lat = Number(q.get('to_lat'));
-        const lng = Number(q.get('to_lng'));
-        const fromName = (q.get('from_name') ?? q.get('from'))
-            ?.trim()
-            .slice(0, 120);
-        const fromLat = Number(q.get('from_lat'));
-        const fromLng = Number(q.get('from_lng'));
-        const arrive = clockOf(q.get('arrive_by'));
-        const leave = clockOf(q.get('depart_at') ?? q.get('at'));
-        const activity = q.get('activity');
+        // The plan's place comes with your day, which arrives deferred.
+        if (activity && day === undefined) {
+            return;
+        }
 
-        void (async () => {
-            const toPlace =
-                q.get('to_lat') &&
-                q.get('to_lng') &&
+        opened.current = true;
+        const saved = (key: string | null) =>
+            key === 'home' || key === 'work'
+                ? savedPlaces.find((p) => p.category === key)
+                : undefined;
+        const item = activity
+            ? day?.items.find((entry) => entry.id === activity)
+            : undefined;
+        const point = (prefix: 'to' | 'from') => {
+            const lat = Number(q.get(`${prefix}_lat`));
+            const lng = Number(q.get(`${prefix}_lng`));
+
+            return q.get(`${prefix}_lat`) &&
+                q.get(`${prefix}_lng`) &&
                 Number.isFinite(lat) &&
                 Number.isFinite(lng)
-                    ? { name, lat, lng }
-                    : await findPlace(name, 'destination');
-            const fromPlace =
-                fromName &&
-                q.get('from_lat') &&
-                Number.isFinite(fromLat) &&
-                Number.isFinite(fromLng)
-                    ? { name: fromName, lat: fromLat, lng: fromLng }
-                    : fromName
-                      ? await findPlace(fromName, 'origin')
-                      : null;
-            const when: Schedule = arrive ? 'arrive' : leave ? 'depart' : 'now';
-            const at = arrive ?? leave;
+                ? { lat, lng }
+                : null;
+        };
+        const arrive = clockOf(q.get('arrive_by'));
+        const leave = clockOf(q.get('depart_at') ?? q.get('at'));
+        const target = item ? targetOf(item) : null;
 
-            setTo({ text: toPlace?.name ?? name, place: toPlace });
+        void (async () => {
+            const home = saved(toKey);
+            const toPoint = point('to');
+            const toPlace: PlanPlace | null =
+                item?.location?.lat != null && item.location.lng != null
+                    ? {
+                          name: item.location.label ?? item.title,
+                          lat: item.location.lat,
+                          lng: item.location.lng,
+                      }
+                    : home
+                      ? {
+                            name: home.name,
+                            lat: home.lat,
+                            lng: home.lng,
+                            key: toKey as 'home' | 'work',
+                        }
+                      : toPoint && name
+                        ? { name, ...toPoint, kind: 'place' }
+                        : name
+                          ? await findPlace(name, 'destination')
+                          : null;
+            const fromKey = q.get('from');
+            const fromHome = saved(fromKey);
+            const fromName = (q.get('from_name') ?? fromKey)
+                ?.trim()
+                .slice(0, 120);
+            const fromPoint = point('from');
+            const fromPlace: PlanPlace | null = fromHome
+                ? {
+                      name: fromHome.name,
+                      lat: fromHome.lat,
+                      lng: fromHome.lng,
+                      key: fromKey as 'home' | 'work',
+                  }
+                : fromPoint && fromName
+                  ? { name: fromName, ...fromPoint, kind: 'place' }
+                  : fromName
+                    ? await findPlace(fromName, 'origin')
+                    : null;
+            // A plan on your day is there by its start.
+            const when: Schedule =
+                target || arrive ? 'arrive' : leave ? 'depart' : 'now';
+            const at = target
+                ? { date: berlinToday(), time: target.start_time }
+                : (arrive ?? leave);
+
+            if (item) {
+                setPicked({
+                    title: item.title,
+                    detail: item.location?.label ?? null,
+                    target,
+                });
+            }
+
+            setTo({ text: toPlace?.name ?? name ?? '', place: toPlace });
             setFrom(
                 fromPlace ? { text: fromPlace.name, place: fromPlace } : EMPTY,
             );
@@ -406,7 +478,9 @@ export function PlanPanel({
 
             if (!toPlace) {
                 setError(
-                    `“${name}” isn’t a place we can find. Pick one from the list.`,
+                    name
+                        ? `“${name}” isn’t a place we can find. Pick one from the list.`
+                        : 'That plan has no place to go to.',
                 );
 
                 return;
@@ -418,30 +492,12 @@ export function PlanPanel({
                 schedule: when,
                 date: at?.date,
                 time: at?.time,
-                activity,
+                activity: item ? item.id : null,
             });
         })();
-        // Once, on the page's first address.
+        // Once, when the address and (for a plan) your day are in.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // A hand-off for one of today's plans keeps it as the trip's target.
-    useEffect(() => {
-        const activity = new URLSearchParams(url.split('?')[1] ?? '').get(
-            'activity',
-        );
-        const item = activity
-            ? day?.items.find((entry) => entry.id === activity)
-            : null;
-
-        if (item && !picked) {
-            setPicked({
-                title: item.title,
-                detail: item.location?.label ?? null,
-                target: targetOf(item),
-            });
-        }
-    }, [day, url, picked]);
+    }, [day, savedPlaces]);
 
     // While the options show, a new day or time asks again, once it settles.
     const asked = useRef<string | null>(null);
@@ -891,6 +947,7 @@ export function PlanPanel({
                                                     name: stop.name,
                                                     lat: stop.lat as number,
                                                     lng: stop.lng as number,
+                                                    kind: 'stop',
                                                 })
                                             }
                                         >
@@ -928,6 +985,7 @@ export function PlanPanel({
                                                     name: place.name,
                                                     lat: place.lat,
                                                     lng: place.lng,
+                                                    key: kind,
                                                 },
                                                 {
                                                     title: label,

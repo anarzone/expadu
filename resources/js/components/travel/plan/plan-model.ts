@@ -1,5 +1,6 @@
 import type { DayItem, DayProjection } from '@/types/day';
 import type { Journey, JourneyLeg } from '@/types/transit';
+import { stopName } from '../stop-name';
 import type { TravelIconName } from '../travel-icon';
 
 /**
@@ -15,7 +16,19 @@ export type PlanPlace = {
     detail?: string | null;
     lat: number;
     lng: number;
+    /** What the search called it: stop, place, address, saved, recent. */
+    kind?: string | null;
+    /** Home or Work: resolved from the account, so only the key is shared. */
+    key?: 'home' | 'work' | null;
 };
+
+/**
+ * Whether a place may stand in the page's address: a stop or a named public
+ * place may; a typed address, a saved place or a recent one never does (it
+ * would sit in history, links and access logs).
+ */
+export const isPublicPlace = (place: PlanPlace | null | undefined) =>
+    !!place && (place.kind === 'stop' || place.kind === 'place');
 
 export type Schedule = 'now' | 'depart' | 'arrive';
 export type Pref = 'fewer' | 'lessWalk' | 'avoidDelays' | 'stepfree';
@@ -468,13 +481,6 @@ export function checksFor(
     );
 
     return checks;
-}
-
-/** "Köln Neumarkt" → "Neumarkt", as the stop signs say. */
-export function stopName(name: string, city?: string | null): string {
-    return city && name.startsWith(`${city} `)
-        ? name.slice(city.length + 1)
-        : name;
 }
 
 export type Step = {

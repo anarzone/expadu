@@ -1,7 +1,7 @@
 import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LegacyJourney } from '@/components/departures/legacy-journey';
-import { travelDestinationParams } from '@/components/departures/travel-request';
+import { useShellHeaderAside } from '@/components/shell/use-shell-header-aside';
 import { NearbyView } from '@/components/travel/nearby/nearby-view';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { NextTripCard } from '@/components/travel/next-trip-card';
@@ -183,6 +183,9 @@ export default function Timetable() {
         [],
     );
     const desktop = useDesktop();
+    // A phone's Plan a trip is a focused screen: the shell's header row
+    // steps aside (the section capsule stays), as the mock does.
+    useShellHeaderAside(view === 'journey');
     const now = useMinute();
     const [favouriteBusy, setFavouriteBusy] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
@@ -279,18 +282,9 @@ export default function Timetable() {
             return;
         }
 
+        // By the plan's id: its place comes from your day, never the URL.
         router.visit(
-            `/timetable?${new URLSearchParams({
-                view: 'journey',
-                ...travelDestinationParams({
-                    name: item.location.label ?? item.title,
-                    lat: item.location.lat,
-                    lng: item.location.lng,
-                    arriveBy: item.start_at ?? undefined,
-                    activityId: item.id,
-                }),
-                compare: '1',
-            })}`,
+            `/timetable?${new URLSearchParams({ view: 'journey', activity: item.id, compare: '1' })}`,
             { preserveScroll: false },
         );
     };

@@ -8,7 +8,10 @@
 use App\Http\Controllers\Api\DayController;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Http\Controllers\Api\GeocodeController;
+use App\Http\Controllers\Api\GeocodeSearchController;
+use App\Http\Controllers\Api\JourneyPlanController;
 use App\Http\Controllers\Api\JourneySuggestController;
+use App\Http\Controllers\Api\JourneySuggestSearchController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
 use App\Http\Controllers\Api\ReverseGeocodeController;
 use App\Http\Controllers\Api\SavedJourneyController;
@@ -22,11 +25,16 @@ use Illuminate\Support\Facades\Route;
 // Typeahead/geocoding lookups hit MOTIS/Photon per request, so they carry
 // their own per-user budget on top.
 Route::get('api/geocode', GeocodeController::class)->middleware('throttle:search')->name('api.geocode');
+// What a person types (a home address, a friend's street) goes in the body,
+// never in a URL or an access log; the GET forms go once nothing calls them.
+Route::post('api/geocode/search', GeocodeSearchController::class)->middleware('throttle:search')->name('api.geocode.search');
 Route::get('api/reverse-geocode', ReverseGeocodeController::class)->middleware('throttle:search')->name('api.reverse-geocode');
 Route::get('api/stops', StopSearchController::class)->middleware('throttle:search')->name('api.stops');
 Route::get('api/nearby-departures', NearbyDeparturesController::class)->name('api.nearby-departures');
 Route::get('api/journey', TakeMeThereController::class)->middleware('throttle:journey')->name('api.journey');
+Route::post('api/journey/plan', JourneyPlanController::class)->middleware('throttle:journey')->name('api.journey.plan');
 Route::get('api/journey/suggest', JourneySuggestController::class)->middleware('throttle:search')->name('api.journey.suggest');
+Route::post('api/journey/suggest/search', JourneySuggestSearchController::class)->middleware('throttle:search')->name('api.journey.suggest.search');
 Route::get('api/saved-journeys', [SavedJourneyController::class, 'index'])->name('api.saved-journeys.index');
 Route::post('api/saved-journeys', [SavedJourneyController::class, 'store'])->name('api.saved-journeys.store');
 Route::delete('api/saved-journeys/{savedJourney}', [SavedJourneyController::class, 'destroy'])->whereNumber('savedJourney')->name('api.saved-journeys.destroy');

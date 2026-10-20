@@ -30,16 +30,43 @@ const iconOf = (kind: string): TravelIconName =>
             ? 'train'
             : 'pin';
 
+/** What was typed goes in the body, never a URL or an access log. */
+function suggest(
+    q: string,
+    role: 'origin' | 'destination',
+    signal?: AbortSignal,
+): Promise<Response> {
+    return fetch('/api/journey/suggest/search', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-CSRF-TOKEN':
+                document
+                    .querySelector('meta[name="csrf-token"]')
+                    ?.getAttribute('content') ?? '',
+        },
+        body: JSON.stringify({ ...(q ? { q: q.slice(0, 100) } : {}), role }),
+        signal,
+    });
+}
+
+const placeOf = (hit: Suggestion): PlanPlace => ({
+    name: hit.name,
+    detail: hit.area,
+    lat: hit.lat,
+    lng: hit.lng,
+    kind: hit.kind,
+});
+
 /** The first place that matches a typed name, for a deep link or Plan it. */
 export async function findPlace(
     text: string,
     role: 'origin' | 'destination',
 ): Promise<PlanPlace | null> {
     try {
-        const response = await fetch(
-            `/api/journey/suggest?${new URLSearchParams({ q: text.slice(0, 100), role })}`,
-            { headers: { Accept: 'application/json' } },
-        );
+        const response = await suggest(text, role);
 
         if (!response.ok) {
             return null;
@@ -47,9 +74,7 @@ export async function findPlace(
 
         const hit = ((await response.json()) as Suggestion[])[0];
 
-        return hit
-            ? { name: hit.name, detail: hit.area, lat: hit.lat, lng: hit.lng }
-            : null;
+        return hit ? placeOf(hit) : null;
     } catch {
         return null;
     }
@@ -102,15 +127,10 @@ export function PlanFields({
         const timer = window.setTimeout(
             async () => {
                 try {
-                    const response = await fetch(
-                        `/api/journey/suggest?${new URLSearchParams({
-                            ...(q ? { q: q.slice(0, 100) } : {}),
-                            role: open === 'from' ? 'origin' : 'destination',
-                        })}`,
-                        {
-                            headers: { Accept: 'application/json' },
-                            signal: controller.signal,
-                        },
+                    const response = await suggest(
+                        q,
+                        open === 'from' ? 'origin' : 'destination',
+                        controller.signal,
                     );
 
                     if (response.ok) {
@@ -147,15 +167,7 @@ export function PlanFields({
     }, [open]);
 
     const choose = (item: Suggestion) => {
-        const value: FieldValue = {
-            text: item.name,
-            place: {
-                name: item.name,
-                detail: item.area,
-                lat: item.lat,
-                lng: item.lng,
-            },
-        };
+        const value: FieldValue = { text: item.name, place: placeOf(item) };
 
         if (open === 'from') {
             onFrom(value);
