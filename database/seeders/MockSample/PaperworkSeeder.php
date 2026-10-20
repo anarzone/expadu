@@ -33,7 +33,9 @@ use RuntimeException;
  *  - EU Blue Card: preparing, one document ready, the appointment today at 14:00 in Mülheim;
  *  - Address registration: blocked, "A document is not ready", one document reported;
  *  - Health insurance: submitted on 24 September, waiting for a response;
- *  - Bank account: suggested, not started.
+ *  - Bank account: suggested, not started;
+ *  - Income tax return: suggested, not started. Nothing seeds it: the catalogue's
+ *    nee.tax_return applies to every employee, so the engine offers it, as the mock shows.
  *
  * Everything goes through the v2 commands, at the mock's moment, so the plan is the engine's own.
  * It needs nothing else run first: it imports this checkout's catalogue, publishes its checked
