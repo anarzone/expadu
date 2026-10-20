@@ -50,6 +50,8 @@ export function LeaveNow({
             <NextTripCard
                 trip={trip}
                 id="today-trip"
+                // The plan it's for is right above it.
+                compact
                 going={going}
                 onStart={start}
                 confirm={starter.confirm}

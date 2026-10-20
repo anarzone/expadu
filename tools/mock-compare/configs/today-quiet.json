@@ -1,6 +1,6 @@
 {
     "name": "today-quiet",
-    "seed": "php artisan mock:sample-day quiet",
+    "seed": "php artisan mock:sample-day quiet --email=<account>",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
