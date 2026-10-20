@@ -27,6 +27,20 @@ class TripController extends Controller
             return response()->json(['trip' => $request->resumableTrip()->toShared()]);
         }
 
+        // Never replace a running trip by surprise (another tab, a stale page):
+        // the person confirms "Replace the trip you're on?" first.
+        $running = $request->replacesTrip();
+        if ($running !== null && ! $request->boolean('replace')) {
+            return response()->json([
+                'code' => 'trip_in_progress',
+                'message' => 'You’re on a trip to '.($running->destination['name'] ?? 'somewhere').'. Replace it?',
+                'trip' => [
+                    'destination' => $running->destination['name'] ?? null,
+                    'arrive_time' => $running->journey['arrive_time'] ?? null,
+                ],
+            ], 409);
+        }
+
         // Persist the WHOLE journey — validating journey.legs makes Laravel
         // return only that sub-key, but the live timeline needs every field
         // (times, colours, intermediate-stop coordinates for GPS matching).

@@ -9,14 +9,26 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import type { SavedPlace } from '@/components/departures/journey-planner';
 import { LegacyJourney } from '@/components/departures/legacy-journey';
+import { travelDestinationParams } from '@/components/departures/travel-request';
 import { NearbyView } from '@/components/travel/nearby/nearby-view';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
+import { NextTripCard } from '@/components/travel/next-trip-card';
+import {
+    activeTripHref,
+    useTripLeadsBack,
+} from '@/components/travel/on-your-way-bar';
 import { TravelIcon } from '@/components/travel/travel-icon';
+import {
+    isGoing,
+    tripOf,
+    useStartTrip,
+} from '@/components/travel/use-start-trip';
 import {
     locateErrorText,
     useTravelLocation,
 } from '@/components/travel/use-travel-location';
 import AppLayout from '@/layouts/app-layout';
+import type { DayItem, DayProjection } from '@/types/day';
 import '../../css/travel.css';
 import '../../css/travel-page.css';
 
@@ -34,6 +46,7 @@ type PageProps = {
     stop?: string | null;
     favouriteStops?: FavouriteStop[];
     savedPlaces?: SavedPlace[];
+    day?: DayProjection | null;
 };
 
 function csrfToken(): string {
@@ -88,6 +101,55 @@ function useMinute(): Date {
     return now;
 }
 
+/**
+ * The next trip moves on its own (the time to leave, a start, midnight) and
+ * with live times: re-read it then, or two minutes after the last answer,
+ * while the page is in view; back in view, a missed re-read happens at once.
+ */
+function useDayRefresh(day: DayProjection | null | undefined) {
+    const refreshAt = day?.refresh_at;
+    const answeredAt = day?.now;
+
+    useEffect(() => {
+        if (answeredAt === undefined) {
+            return;
+        }
+
+        const at = refreshAt ? Date.parse(refreshAt) : NaN;
+        const wait = Number.isFinite(at)
+            ? Math.min(Math.max(at - Date.now(), 15_000), 120_000)
+            : 120_000;
+        const due = Date.now() + wait;
+        const reload = () => router.reload({ only: ['day'] });
+        const timer = window.setTimeout(() => {
+            if (!document.hidden) {
+                reload();
+            }
+        }, wait);
+        const onVisible = () => {
+            if (!document.hidden && Date.now() >= due) {
+                reload();
+            }
+        };
+        document.addEventListener('visibilitychange', onVisible);
+
+        return () => {
+            window.clearTimeout(timer);
+            document.removeEventListener('visibilitychange', onVisible);
+        };
+    }, [refreshAt, answeredAt]);
+}
+
+/** Today's places that have a place to go to, still ahead. */
+function dayPlaces(day: DayProjection | null | undefined): DayItem[] {
+    return (day?.items ?? []).filter(
+        (item) =>
+            item.state === 'upcoming' &&
+            !item.completed &&
+            item.location?.routable === true,
+    );
+}
+
 /** The 140 ms rule: no placeholder for a load that's nearly instant. */
 function Waiting({ label }: { label: string }) {
     const [show, setShow] = useState(false);
@@ -107,7 +169,7 @@ function Waiting({ label }: { label: string }) {
 
 export default function Timetable() {
     const page = usePage<PageProps>();
-    const { station, favouriteStops = [], savedPlaces = [] } = page.props;
+    const { station, day, favouriteStops = [], savedPlaces = [] } = page.props;
     const [view, setView] = useState<View>(() =>
         wantsJourney(page.url) ? 'journey' : 'stop',
     );
@@ -125,18 +187,33 @@ export default function Timetable() {
     }
 
     const shown = station ?? lastStation.current;
+    const lastDay = useRef<DayProjection | null | undefined>(day);
+
+    if (day !== undefined) {
+        lastDay.current = day;
+    }
+
+    const today = day ?? lastDay.current;
 
     const location = useTravelLocation({
         onAnchored: () => {
             // A picked stop stays picked; otherwise Nearby re-roots here.
             if (!new URLSearchParams(window.location.search).has('stop')) {
-                router.reload({ only: ['station'] });
+                router.reload({ only: ['station', 'day'] });
+            } else {
+                router.reload({ only: ['day'] });
             }
         },
     });
 
     // Live times move: re-read the station every 30 s (the server's cache).
     usePoll(30_000, { only: ['station'], async: true });
+    useDayRefresh(today);
+
+    const trip = today?.next_trip ?? null;
+    const starter = useStartTrip();
+    const going = !!trip && isGoing(trip, starter.activeTrip);
+    useTripLeadsBack(going);
 
     const pickStop = (name: string | null) => {
         const params = new URLSearchParams();
@@ -190,19 +267,40 @@ export default function Timetable() {
         name: string;
         lat: number | null;
         lng: number | null;
+        arriveBy?: string | null;
     }) => {
         if (place.lat == null || place.lng == null) {
             return;
         }
 
         router.visit(
-            `/timetable?${new URLSearchParams({
-                to_name: place.name,
-                to_lat: String(place.lat),
-                to_lng: String(place.lng),
-            })}`,
+            `/timetable?${new URLSearchParams(
+                travelDestinationParams({
+                    name: place.name,
+                    lat: place.lat,
+                    lng: place.lng,
+                    arriveBy: place.arriveBy ?? undefined,
+                }),
+            )}`,
             { preserveScroll: false },
         );
+    };
+
+    // Go to one of today's places, there by its start.
+    const planToItem = (item: DayItem) =>
+        planTo({
+            name: item.location?.label ?? item.title,
+            lat: item.location?.lat ?? null,
+            lng: item.location?.lng ?? null,
+            arriveBy: item.start_at,
+        });
+
+    const startTrip = () => {
+        const next = trip ? tripOf(trip) : null;
+
+        if (next) {
+            void starter.begin(next.journey, next.destination, next.origin);
+        }
     };
 
     // The planner's day and clock, in Cologne's time.
@@ -216,6 +314,10 @@ export default function Timetable() {
     }).format(now);
     const home = savedPlaces.find((p) => p.category === 'home');
     const work = savedPlaces.find((p) => p.category === 'work');
+    const places = dayPlaces(today);
+    const target = trip
+        ? today?.items.find((item) => item.id === trip.target.id)
+        : undefined;
 
     return (
         <AppLayout>
@@ -376,6 +478,57 @@ export default function Timetable() {
                                         ),
                                     )}
                                 </div>
+                                {places.length ? (
+                                    <>
+                                        <div className="section-heading">
+                                            <h2 id="places-title">
+                                                Today’s places
+                                            </h2>
+                                            <span className="section-note">
+                                                From My day
+                                            </span>
+                                        </div>
+                                        <div
+                                            id="day-places"
+                                            className="day-places"
+                                        >
+                                            {places.map((item) => (
+                                                <button
+                                                    key={item.id}
+                                                    type="button"
+                                                    aria-pressed={false}
+                                                    onClick={() =>
+                                                        planToItem(item)
+                                                    }
+                                                >
+                                                    <time
+                                                        dateTime={
+                                                            item.start_at ??
+                                                            undefined
+                                                        }
+                                                    >
+                                                        {item.start_time}
+                                                    </time>
+                                                    <span>
+                                                        <strong>
+                                                            {item.title}
+                                                        </strong>
+                                                        <small>
+                                                            {
+                                                                item.location
+                                                                    ?.label
+                                                            }
+                                                        </small>
+                                                    </span>
+                                                    <span className="day-place-pick">
+                                                        Go here
+                                                    </span>
+                                                    <TravelIcon name="chevron" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : null}
                             </section>
                         </div>
                     </div>
@@ -387,6 +540,43 @@ export default function Timetable() {
                     </section>
                 ) : (
                     <section id="departures" aria-label="Nearby">
+                        {/* The day arrives deferred; while it reloads, the last one stays. */}
+                        {trip ? (
+                            <>
+                                <NextTripCard
+                                    trip={trip}
+                                    id="nearby-trip"
+                                    going={going}
+                                    onStart={startTrip}
+                                    confirm={starter.confirm}
+                                    starting={starter.busy}
+                                    tripHref={
+                                        starter.activeTrip
+                                            ? activeTripHref(starter.activeTrip)
+                                            : undefined
+                                    }
+                                    onPlan={
+                                        target?.location?.routable
+                                            ? () => planToItem(target)
+                                            : undefined
+                                    }
+                                    onLocate={location.locate}
+                                    icons={{
+                                        clock: <TravelIcon name="clock" />,
+                                        unsure: <TravelIcon name="info" />,
+                                        timer: <TravelIcon name="timer" />,
+                                    }}
+                                />
+                                {starter.error ? (
+                                    <p
+                                        className="nearby-stepnote"
+                                        role="status"
+                                    >
+                                        {starter.error}
+                                    </p>
+                                ) : null}
+                            </>
+                        ) : null}
                         <Deferred
                             data="station"
                             fallback={
