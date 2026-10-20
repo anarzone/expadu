@@ -28,6 +28,25 @@ test('events page shows the chosen day, earlier hours included', function () {
             ->where('listings.0.title_original', 'Next day'));
 });
 
+test('the filters come from the URL, and unknown values are dropped', function () {
+    $this->actingAs(User::factory()->onboarded()->create());
+
+    $this->get(route('events', ['q' => ' chess ', 'category' => 'culture', 'area' => 'Ehrenfeld', 'free' => 1, 'saved' => 1, 'sort' => 'closest', 'from' => 'Neumarkt']))
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.q', 'chess')
+            ->where('filters.category', 'culture')
+            ->where('filters.area', 'Ehrenfeld')
+            ->where('filters.free', true)
+            ->where('filters.saved', true)
+            ->where('filters.sort', 'closest')
+            ->where('filters.from', 'Neumarkt'));
+
+    $this->get(route('events', ['category' => 'nonsense', 'sort' => 'random']))
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.category', null)
+            ->where('filters.sort', 'soonest'));
+});
+
 test('an invalid date is refused', function () {
     $this->actingAs(User::factory()->onboarded()->create());
 

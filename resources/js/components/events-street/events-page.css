@@ -3,6 +3,7 @@
 .ev-board {
     display: flex;
     flex-direction: column;
+    margin-top: 16px;
 }
 .ev-street {
     position: relative;
