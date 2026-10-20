@@ -10,6 +10,10 @@ use App\Http\Controllers\ComposerWorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('composer', [ComposerController::class, 'page'])->name('composer');
+// A page's request handed to Composer by POST, so its words stay out of URLs.
+Route::post('composer/entry', [ComposerController::class, 'entry'])
+    ->middleware('throttle:composer-parse')
+    ->name('composer.entry.store');
 Route::get('composer/workspace', [ComposerWorkspaceController::class, 'show'])->name('composer.workspace.show');
 Route::post('composer/workspace', [ComposerWorkspaceController::class, 'update'])->name('composer.workspace.update');
 Route::get('composer/event', [ComposerWorkspaceController::class, 'event'])->name('composer.event');
