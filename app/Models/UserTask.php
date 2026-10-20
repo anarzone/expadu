@@ -112,9 +112,8 @@ class UserTask extends Model
             $daysOverdue = abs($daysRemaining);
 
             // Lapsed: months past the deadline — the window has clearly closed.
-            // Stop the alarming countdown and drop it out of the urgent hero
-            // (TileComposer only tiles overdue/critical/urgent); it stays on the
-            // checklist as a loose end, just no longer "right now".
+            // Stop the alarming countdown; it stays on the checklist as a
+            // loose end, just no longer "right now".
             if ($daysOverdue > self::STALE_OVERDUE_DAYS) {
                 return [
                     'days_remaining' => $daysRemaining,
