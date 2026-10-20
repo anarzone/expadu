@@ -1,0 +1,105 @@
+{
+    "name": "today-details",
+    "seed": "php artisan mock:sample-day everyday",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".day-panel",
+        "before": [
+            {
+                "click": ".appointment-options summary"
+            },
+            {
+                "wait": 200
+            },
+            {
+                "click": "[data-today-details]"
+            },
+            {
+                "wait": 500
+            }
+        ]
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            {
+                "click": "button.appointment-options"
+            },
+            {
+                "wait": 200
+            },
+            {
+                "click": "role=menuitem[name=\"Details\"]"
+            },
+            {
+                "wait": 500
+            }
+        ]
+    },
+    "pairs": [
+        {
+            "name": "sheet",
+            "mock": "dialog[open]",
+            "app": "dialog[open]",
+            "pixels": false,
+            "ignore": ["y", "h"]
+        },
+        {
+            "name": "sheet title",
+            "mock": "dialog[open] .dialog-head h2",
+            "app": "dialog[open] .ui-sheet-head h2",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "sheet close",
+            "mock": "dialog[open] .dialog-head button",
+            "app": "dialog[open] .ui-sheet-close",
+            "ignore": ["y"]
+        },
+        {
+            "name": "when and where",
+            "mock": "dialog[open] .detail-intro",
+            "app": "dialog[open] .detail-intro",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "status",
+            "mock": "dialog[open] .status-row",
+            "app": "dialog[open] .status-row",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "booking",
+            "mock": "dialog[open] .detail-grid > div",
+            "app": "dialog[open] .detail-grid > div",
+            "ignore": ["y"]
+        },
+        {
+            "name": "booking note",
+            "mock": "dialog[open] .detail-note",
+            "app": "dialog[open] .detail-note",
+            "ignore": ["y"]
+        },
+        {
+            "name": "Remove",
+            "mock": "dialog[open] .detail-actions [data-today-reveal]",
+            "app": "dialog[open] .detail-actions .text-action:last-child",
+            "ignore": ["y", "x"]
+        }
+    ],
+    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land.",
+    "contentNote": "The sample's Blue Card appointment is an official (Paperwork) appointment; the app keeps official appointments at their fixed time, so its details offer Remove without Edit. What to bring (the Paperwork link) arrives with Paperwork v2, so the sheet is shorter and what follows sits higher."
+}

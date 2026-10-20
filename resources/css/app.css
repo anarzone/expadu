@@ -617,6 +617,11 @@ input[type='time']::-webkit-calendar-picker-indicator {
         @apply bg-background text-foreground;
     }
 
+    /* Hints in fields keep the browser's own grey, as the mock's do. */
+    ::placeholder {
+        color: revert;
+    }
+
     /* The mock's phones read body text one step smaller. */
     @media (max-width: 700px) {
         body {

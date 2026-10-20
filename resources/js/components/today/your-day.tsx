@@ -104,7 +104,10 @@ export function YourDay({ day }: { day: DayProjection }) {
     };
 
     return (
-        <section className="day-panel" aria-labelledby="your-day-title">
+        <section
+            className={cn('day-panel', active.length === 0 && 'has-no-plans')}
+            aria-labelledby="your-day-title"
+        >
             <div className="day-heading">
                 <h2 id="your-day-title">Your day</h2>
                 <small>
@@ -113,11 +116,13 @@ export function YourDay({ day }: { day: DayProjection }) {
                 </small>
             </div>
             {active.length === 0 ? (
-                <p className="day-empty">
-                    {earlier.length
-                        ? 'Nothing else planned for today'
-                        : 'No plans added for today'}
-                </p>
+                <div className="day-empty">
+                    <strong>
+                        {earlier.length
+                            ? 'No more plans added for today'
+                            : 'No plans added for today'}
+                    </strong>
+                </div>
             ) : (
                 <div className="agenda">
                     {active.map((item, index) => {
@@ -154,41 +159,44 @@ export function YourDay({ day }: { day: DayProjection }) {
                 </div>
             )}
             {earlier.length > 0 && (
-                <div className="earlier-today">
-                    <h3>Earlier today</h3>
-                    {earlier.map((item) => (
-                        <div
-                            key={item.id}
-                            className={cn(
-                                'earlier-item',
-                                item.completed && 'is-done',
-                            )}
-                        >
-                            <time>{item.start_time}</time>
-                            <span>{item.title}</span>
-                            {item.completable &&
-                                (item.completed ? (
+                <details className="earlier-plans">
+                    <summary>
+                        Earlier today <small>{earlier.length}</small>
+                        <Icon name="down" variant="line" />
+                    </summary>
+                    <div>
+                        {earlier.map((item) => (
+                            <div key={item.id} className="earlier-plan">
+                                <button
+                                    type="button"
+                                    onClick={() => setDetails(item)}
+                                >
+                                    <time>{item.start_time}</time>
+                                    <span>
+                                        {item.title}
+                                        <small>
+                                            {item.completed
+                                                ? 'Marked done'
+                                                : 'Past scheduled time'}
+                                        </small>
+                                    </span>
+                                </button>
+                                {item.completed && (
                                     <button
                                         type="button"
+                                        className="text-action"
+                                        aria-label={`Restore ${item.title}`}
                                         onClick={() =>
                                             void markDone(item, false)
                                         }
                                     >
-                                        Not done
+                                        Restore
                                     </button>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            void markDone(item, true)
-                                        }
-                                    >
-                                        Mark as done
-                                    </button>
-                                ))}
-                        </div>
-                    ))}
-                </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </details>
             )}
             {day.relation !== 'past' && (
                 <div className="day-actions">

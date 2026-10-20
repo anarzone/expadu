@@ -99,3 +99,16 @@ Pixel and wrapping checks only mean something with the same words. Freeze the cl
 sample time and load the mock's sample day through a **local-only** fixture (a seeder or QA persona
 that never runs in production). Where content must stay live, mark the pair `contentDiffers` and
 still match its box and styles.
+
+On your machine (`APP_ENV=local` only):
+
+- **Clock:** the server reads the plain `mock_clock` cookie (`App\Support\MockClock`). Set it from
+  the app side's `init`, with the same moment as `clock`:
+  `"init": ["document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"]`
+- **Sample day:** `php artisan mock:sample-day {everyday|busy|quiet|travel} --email=<account>` writes
+  the mock's plans for 30 Sept, 1 and 3 Oct (other dates stay). A config names the view it needs in
+  `seed`; run that first.
+- **Your own account:** sessions share the local database, so compare as your own account rather
+  than the E2E one: `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class=E2ETestUserSeeder`, seed
+  that account, run with `MOCK_COMPARE_EMAIL=<you>@expadu.test`, and delete
+  `storage/mock-compare/.session-<port>.json` once so it signs in again.

@@ -238,13 +238,13 @@ export function PlanSheet({
                         {error}
                     </p>
                 )}
-                <div className="flex justify-end">
+                <div className="detail-actions">
                     <button
                         className="outline-action"
                         type="submit"
                         disabled={saving}
                     >
-                        <Icon name={item ? 'check' : 'plus'} variant="line" />
+                        <Icon name={item ? 'check' : 'plus'} />
                         {item ? 'Save changes' : 'Add to this day'}
                     </button>
                 </div>
