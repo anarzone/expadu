@@ -319,6 +319,30 @@ export interface ProgressBucket {
     ids: string[];
 }
 
+/** A reviewed card that isn't a task: something good to know, an option, or what waits for arrival. */
+export interface PlanGuidance {
+    id: string;
+    definition_id: string;
+    /** The route or process the card belongs to; null when the release has no name for it. */
+    definition_title: string | null;
+    title: string;
+    description: string | null;
+    kind: string;
+    topic: string;
+    applies: boolean;
+    after_arrival: boolean;
+    actions: { url: string; purpose?: string; channel?: string }[];
+    review: { verified_at: string | null };
+}
+
+/** Someone whose plan this account may see: themselves, or a person who shared theirs. */
+export interface Person {
+    id: number;
+    label: string;
+    kind: string;
+    is_self: boolean;
+}
+
 export interface Plan {
     person_id: number;
     jurisdiction: string;
@@ -359,6 +383,7 @@ export interface Plan {
         completed: ProgressBucket;
     };
     timeline: TimelineRow[];
+    guidance: PlanGuidance[];
     coverage: { state: string; units: CoverageUnit[] };
     paperwork:
         | { available: false; reason: string }

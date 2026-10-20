@@ -160,7 +160,7 @@ test('unresolved high impact branches keep safe matches visible without claiming
             'fact_key' => 'sponsor_current_title',
             'questions' => [[
                 'question' => 'Which German residence status does your spouse currently have?',
-                'why' => "Family-reunification and settlement options depend on the sponsor's current title.",
+                'why' => 'Family-reunification and settlement options depend on the sponsor’s current title.',
             ]],
             'unlocks' => ['Rule case.sponsor-dependent'],
         ]]);
