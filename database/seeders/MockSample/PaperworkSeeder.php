@@ -44,6 +44,9 @@ use RuntimeException;
  *   E2E_EMAIL=you@expadu.test php artisan db:seed --class=E2ETestUserSeeder
  *   E2E_EMAIL=you@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\PaperworkSeeder'
  *
+ * PAPERWORK_SAMPLE=quiet seeds the same record without the day's appointment, as the mock's
+ * quiet day shows it (today-next/brief/?view=quiet); the default is everyday.
+ *
  * IMPORTANT: never registered in DatabaseSeeder; it refuses to run outside local.
  */
 class PaperworkSeeder extends Seeder
@@ -51,6 +54,8 @@ class PaperworkSeeder extends Seeder
     private const MOMENT = '2026-09-30 13:10:00';
 
     private const JURISDICTION = 'de-nrw-cologne';
+
+    private const VARIANTS = ['everyday', 'quiet'];
 
     private const FACTS = [
         'arrival_planned' => false,
@@ -74,6 +79,14 @@ class PaperworkSeeder extends Seeder
             return;
         }
 
+        $variant = (string) env('PAPERWORK_SAMPLE', 'everyday');
+
+        if (! in_array($variant, self::VARIANTS, true)) {
+            $this->command?->error('PAPERWORK_SAMPLE is one of: '.implode(', ', self::VARIANTS).'.');
+
+            return;
+        }
+
         $user = User::query()->where('email', (string) env('E2E_EMAIL', 'e2e@expadu.test'))->first();
 
         if ($user === null) {
@@ -89,13 +102,13 @@ class PaperworkSeeder extends Seeder
         try {
             $this->artisan('bureaucracy:import-tasks');
             $this->publish();
-            $this->seed($user);
+            $this->seed($user, withAppointment: $variant === 'everyday');
         } finally {
             Carbon::setTestNow();
             CarbonImmutable::setTestNow();
         }
 
-        $this->command?->info("The Paperwork sample is in {$user->email}'s record.");
+        $this->command?->info("The Paperwork sample ({$variant}) is in {$user->email}'s record.");
     }
 
     /** The browser has no network to the official pages: a checked card counts when its quotes pass offline. */
@@ -121,7 +134,7 @@ class PaperworkSeeder extends Seeder
         }
     }
 
-    private function seed(User $user): void
+    private function seed(User $user, bool $withAppointment): void
     {
         // A fresh record: the person, their dossier, answers, processes and documents.
         BureaucracyPerson::query()->where('account_user_id', $user->id)->delete();
@@ -138,13 +151,16 @@ class PaperworkSeeder extends Seeder
         $health = $this->start($user, $person, 'health.coverage');
 
         $this->event($user, $blueCard, 'preparation_started', []);
-        $this->event($user, $blueCard, 'appointment_recorded', [
-            'appointment_id' => (string) Str::uuid(),
-            'starts_at' => '2026-09-30T14:00:00+02:00',
-            'timezone' => 'Europe/Berlin',
-            'duration_minutes' => 30,
-            'location' => ['label' => 'Mülheim', 'lat' => 50.96103, 'lng' => 7.0048],
-        ]);
+
+        if ($withAppointment) {
+            $this->event($user, $blueCard, 'appointment_recorded', [
+                'appointment_id' => (string) Str::uuid(),
+                'starts_at' => '2026-09-30T14:00:00+02:00',
+                'timezone' => 'Europe/Berlin',
+                'duration_minutes' => 30,
+                'location' => ['label' => 'Mülheim', 'lat' => 50.96103, 'lng' => 7.0048],
+            ]);
+        }
 
         $this->event($user, $address, 'preparation_started', []);
         $this->event($user, $address, 'blocked_reported', ['note' => 'A document is not ready']);
