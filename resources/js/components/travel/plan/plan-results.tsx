@@ -1,0 +1,390 @@
+import { useState } from 'react';
+import { PLATFORM_NOT_KNOWN, sourceLabel } from '@/components/ui/state-notice';
+import { cn } from '@/lib/utils';
+import type { JourneyLeg } from '@/types/transit';
+import { TravelChip } from '../labels';
+import { LineBadge } from '../line-badge';
+import { lineLook, vehicleOf, vehicleWord } from '../line-look';
+import { TravelIcon } from '../travel-icon';
+import type { TravelIconName } from '../travel-icon';
+import { marginOf, reasonsFor, rides, spareMin, stepsOf } from './plan-model';
+import type { Check, PlanAnswer, PlanOption, PlanTarget } from './plan-model';
+
+/**
+ * Plan a trip's answer (departures-next app.js: renderResults, checksMarkup,
+ * planOption, stepsMarkup): what was checked, then the options as one
+ * choice, best for you first, each with why and its Journey details.
+ */
+
+const word = (leg: JourneyLeg) =>
+    `${vehicleWord(vehicleOf(leg.mode))} ${leg.line ?? ''}`.trim();
+
+export function PlanChecks({ checks }: { checks: Check[] }) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <section className="plan-checks" aria-label="What we checked">
+            <button
+                type="button"
+                className="plan-checks-toggle"
+                aria-expanded={open}
+                aria-controls="plan-checks-detail"
+                onClick={() => setOpen((value) => !value)}
+            >
+                <strong>We checked today’s conditions</strong>
+                <span className="plan-check-chips tl-chips">
+                    {checks.map((check) => (
+                        <TravelChip
+                            key={check.title}
+                            kind={check.tone}
+                            icon={<TravelIcon name={check.icon} />}
+                        >
+                            {check.short}
+                        </TravelChip>
+                    ))}
+                </span>
+                <span className="plan-checks-more">
+                    {open ? 'Hide' : 'Details'}
+                    <TravelIcon name="down" />
+                </span>
+            </button>
+            <div
+                id="plan-checks-detail"
+                className="plan-checks-detail"
+                hidden={!open}
+            >
+                {checks.map((check) => (
+                    <p key={check.title}>
+                        <strong>{check.title}</strong>
+                        <span>{check.text}</span>
+                    </p>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+function spareChip(option: PlanOption, target: PlanTarget | null) {
+    const { journey } = option;
+
+    if (!target) {
+        return (
+            <TravelChip kind="calm" icon={<TravelIcon name="clock" />}>
+                {journey.duration_min} min
+            </TravelChip>
+        );
+    }
+
+    const spare = spareMin(journey, target);
+
+    if (spare < 0) {
+        return (
+            <TravelChip kind="attention" icon={<TravelIcon name="timer" />}>
+                {-spare} min late
+            </TravelChip>
+        );
+    }
+
+    if (spare < marginOf(target)) {
+        return (
+            <TravelChip kind="attention" icon={<TravelIcon name="timer" />}>
+                Only {spare} min spare
+            </TravelChip>
+        );
+    }
+
+    return spare >= 90 ? (
+        <TravelChip kind="calm" icon={<TravelIcon name="clock" />}>
+            {Math.floor(spare / 60)} h{spare % 60 ? ` ${spare % 60} min` : ''}{' '}
+            early
+        </TravelChip>
+    ) : (
+        <TravelChip kind="calm" icon={<TravelIcon name="check" />}>
+            {spare} min spare
+        </TravelChip>
+    );
+}
+
+function OptionTitle({ option }: { option: PlanOption }) {
+    const { journey } = option;
+    const legs = rides(journey);
+
+    if (!legs.length) {
+        return (
+            <span className="plan-option-title">
+                <span className="tl-line is-mode">
+                    <TravelIcon
+                        name={journey.mode === 'bike' ? 'bike' : 'walk'}
+                    />
+                    <span>
+                        {journey.mode === 'bike' ? 'By bike' : 'On foot'}
+                    </span>
+                </span>
+            </span>
+        );
+    }
+
+    return (
+        <span className="plan-option-title">
+            {legs.map((leg, index) => (
+                <span key={`${leg.line}-${leg.depart_at}`} className="contents">
+                    {index > 0 ? (
+                        <span className="plan-then">
+                            <TravelIcon name="arrow" />
+                        </span>
+                    ) : null}
+                    <LineBadge
+                        line={leg.line ?? vehicleWord(vehicleOf(leg.mode))}
+                        kind={vehicleOf(leg.mode)}
+                        look={lineLook(leg.line, vehicleOf(leg.mode))}
+                        word={index === 0}
+                    />
+                </span>
+            ))}
+            <span className="plan-option-at">at {legs[0].depart_time}</span>
+        </span>
+    );
+}
+
+export function optionLabel(option: PlanOption): string {
+    const legs = rides(option.journey);
+
+    if (!legs.length) {
+        return option.journey.mode === 'bike' ? 'By bike' : 'On foot';
+    }
+
+    return `${word(legs[0])}${
+        legs.length > 1
+            ? `, then ${legs
+                  .slice(1)
+                  .map((leg) => leg.line ?? '')
+                  .filter(Boolean)
+                  .join(', ')}`
+            : ', no change'
+    }`;
+}
+
+const stepIcon: Record<string, TravelIconName> = {
+    walk: 'walk',
+    bike: 'bike',
+    transit: 'train',
+    alight: 'train',
+    arrive: 'pin',
+};
+
+function JourneySteps({
+    option,
+    destination,
+    answer,
+    target,
+}: {
+    option: PlanOption;
+    destination: string;
+    answer: PlanAnswer;
+    target: PlanTarget | null;
+}) {
+    const steps = stepsOf(
+        option.journey,
+        destination,
+        answer.city,
+        target,
+        word,
+    );
+    const legs = rides(option.journey);
+    const live = legs.some((leg) => leg.realtime);
+
+    return (
+        <div className="plan-option-way">
+            <ol className="route-steps">
+                {steps.map((step, index) => (
+                    <li
+                        key={`${step.kind}-${index}`}
+                        className={cn('route-step', step.kind)}
+                    >
+                        <time>{step.time}</time>
+                        <span className="step-node">
+                            <TravelIcon name={stepIcon[step.kind]} />
+                        </span>
+                        <div>
+                            <strong>{step.title}</strong>
+                            <small>{step.detail}</small>
+                            {step.kind === 'transit' ? (
+                                <TravelChip
+                                    kind="unsure"
+                                    size="sm"
+                                    icon={<TravelIcon name="pin" />}
+                                >
+                                    {PLATFORM_NOT_KNOWN}
+                                </TravelChip>
+                            ) : null}
+                        </div>
+                    </li>
+                ))}
+            </ol>
+            <div className="plan-option-side">
+                <p className="route-note">
+                    {legs.length
+                        ? live
+                            ? 'Live times where the feed has them'
+                            : sourceLabel({ source: 'scheduled' })
+                        : 'Street directions aren’t shown here'}
+                </p>
+            </div>
+        </div>
+    );
+}
+
+type PlanOptionsProps = {
+    options: PlanOption[];
+    answer: PlanAnswer;
+    target: PlanTarget | null;
+    destination: string;
+    selected: string | null;
+    onSelect: (id: string) => void;
+    expanded: Set<string>;
+    onToggle: (id: string) => void;
+};
+
+/** The options as one choice; "Best for you" names the first when there's a choice. */
+export function PlanOptions({
+    options,
+    answer,
+    target,
+    destination,
+    selected,
+    onSelect,
+    expanded,
+    onToggle,
+}: PlanOptionsProps) {
+    return (
+        <div
+            className="plan-options"
+            role="radiogroup"
+            aria-label="Your options"
+        >
+            {options.map((option, index) => {
+                const on = option.id === selected;
+                const open = expanded.has(option.id);
+                const best = index === 0 && options.length > 1;
+                const reasons = reasonsFor(option, answer, target);
+                const disclosure = `route-disclosure-${option.id}`;
+
+                return (
+                    <article
+                        key={option.id}
+                        className={cn('plan-option', on && 'is-on')}
+                        aria-label={`${optionLabel(option)}, leave ${option.journey.depart_time}, there ${option.journey.arrive_time}`}
+                    >
+                        <button
+                            type="button"
+                            className="plan-option-pick"
+                            role="radio"
+                            aria-checked={on}
+                            tabIndex={on ? 0 : -1}
+                            onClick={() => onSelect(option.id)}
+                            onKeyDown={(event) => {
+                                if (
+                                    event.key !== 'ArrowDown' &&
+                                    event.key !== 'ArrowUp'
+                                ) {
+                                    return;
+                                }
+
+                                event.preventDefault();
+                                const next =
+                                    options[
+                                        (index +
+                                            (event.key === 'ArrowDown'
+                                                ? 1
+                                                : -1) +
+                                            options.length) %
+                                            options.length
+                                    ];
+                                onSelect(next.id);
+                                (
+                                    event.currentTarget.closest(
+                                        '.plan-options',
+                                    ) as HTMLElement | null
+                                )
+                                    ?.querySelector<HTMLButtonElement>(
+                                        `[data-option="${next.id}"]`,
+                                    )
+                                    ?.focus();
+                            }}
+                            data-option={option.id}
+                        >
+                            <span className="plan-radio" aria-hidden="true" />
+                            <span className="plan-option-body">
+                                <span className="plan-option-head">
+                                    {best ? (
+                                        <TravelChip
+                                            kind="best"
+                                            icon={<TravelIcon name="star" />}
+                                        >
+                                            Best for you
+                                        </TravelChip>
+                                    ) : (
+                                        <OptionTitle option={option} />
+                                    )}
+                                    {spareChip(option, target)}
+                                </span>
+                                {best ? <OptionTitle option={option} /> : null}
+                                <span className="plan-option-times">
+                                    Leave{' '}
+                                    <strong>
+                                        {option.journey.depart_time}
+                                    </strong>{' '}
+                                    → there{' '}
+                                    <strong>
+                                        {option.journey.arrive_time}
+                                    </strong>
+                                </span>
+                                <span className="plan-option-reasons">
+                                    {reasons.map((reason) => (
+                                        <span
+                                            key={reason.text}
+                                            className={`is-${reason.kind}`}
+                                        >
+                                            <span className="plan-reason-icon">
+                                                <TravelIcon
+                                                    name={reason.icon}
+                                                />
+                                            </span>
+                                            {reason.text}
+                                        </span>
+                                    ))}
+                                </span>
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            className="details-toggle"
+                            aria-expanded={open}
+                            aria-controls={disclosure}
+                            onClick={() => onToggle(option.id)}
+                        >
+                            Journey details <TravelIcon name="down" />
+                        </button>
+                        <div
+                            id={disclosure}
+                            className="route-disclosure"
+                            aria-hidden={!open}
+                            inert={!open}
+                        >
+                            <div className="route-disclosure-inner">
+                                {open ? (
+                                    <JourneySteps
+                                        option={option}
+                                        destination={destination}
+                                        answer={answer}
+                                        target={target}
+                                    />
+                                ) : null}
+                            </div>
+                        </div>
+                    </article>
+                );
+            })}
+        </div>
+    );
+}

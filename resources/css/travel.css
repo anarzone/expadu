@@ -1387,3 +1387,23 @@
         justify-self: stretch;
     }
 }
+
+/* ---------- Plan a trip's When menu (portalled out of the page) ---------- */
+.plan-schedule {
+    display: grid;
+    gap: var(--space-12);
+}
+.plan-schedule-done {
+    min-height: var(--touch-target);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-action);
+    color: var(--color-text-on-action);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+.plan-schedule-done:active {
+    transform: scale(0.98);
+    background: var(--color-action-hover);
+}

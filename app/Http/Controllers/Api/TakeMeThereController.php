@@ -11,6 +11,7 @@ use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
 use App\Transit\FareAdvisor;
+use App\Transit\TripConditions;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -61,6 +62,7 @@ class TakeMeThereController extends Controller
         RouteService $routes,
         FareAdvisor $fareAdvisor,
         DisruptionService $disruptions,
+        TripConditions $conditions,
     ): JsonResponse {
         $validated = $request->validate([
             'to_lat' => ['required', 'numeric', 'between:-90,90'],
@@ -203,6 +205,11 @@ class TakeMeThereController extends Controller
             'to' => ['name' => $validated['to_name'] ?? '', 'lat' => $to->lat, 'lng' => $to->lng],
             'ticket' => $ticket,
             'disruptions' => $relevantDisruptions,
+            // Plan a trip's "We checked": the weather on the way, lifts out.
+            'conditions' => $conditions->for($journeys),
+            // Stop names carry the city ("Köln Neumarkt"); Plan a trip shows
+            // them as the stop signs do.
+            'city' => config('geocoding.search_default.city'),
         ]);
     }
 
