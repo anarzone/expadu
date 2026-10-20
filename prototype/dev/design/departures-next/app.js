@@ -1074,9 +1074,16 @@ function tripLine(key, trip = J.day) {
               : now.leaveIn <= 0
                 ? 'Leave now'
                 : `Leave at ${route.depart}`;
-    // What changed, as a label over the facts.
+    // A trip with only the timetable's times says so first (the app has
+    // live times for some trips, not all; review, 20 Oct 2026), in Travel's
+    // own not-live label; then what changed, as a label over the facts.
+    const scheduled =
+        state.scenario === 'scheduled'
+            ? L.chip('unsure', 'offline', 'Scheduled · not live')
+            : '';
     const flag =
-        now.kind === 'cancelled'
+        scheduled +
+        (now.kind === 'cancelled'
             ? L.chip('conflict', 'alert', `${goneTime} cancelled`)
             : now.kind === 'missed'
               ? L.chip('attention', 'clock', `Missed the ${goneTime}`)
@@ -1084,7 +1091,7 @@ function tripLine(key, trip = J.day) {
                 ? L.chip('conflict', 'lift', 'Lift out of order')
                 : weather?.wet
                   ? L.chip('attention', 'cloud', `${weather.sky} likely at ${trip.start} · sample`)
-                  : '';
+                  : '');
     const badge = L.line(route.line, look, { kind: look.bus ? 'bus' : 'tram' });
     const facts =
         now.kind === 'lift'
@@ -1878,6 +1885,7 @@ const scenarios = {
     missed: { label: 'You didn’t set off in time' },
     longwait: { label: 'Late at night: a long wait', stop: 'mitte' },
     lift: { label: 'A lift is out of order', stop: 'neumarkt' },
+    scheduled: { label: 'Only timetable times' },
     stale: { label: 'Live times paused', stop: 'neumarkt' },
 };
 // What Nearby shows for the current situation.

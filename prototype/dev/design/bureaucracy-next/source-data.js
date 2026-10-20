@@ -502,4 +502,21 @@ window.BureaucracySource = [
             'https://www.stadt-koeln.de/service/produkte/20321/index.html',
         ],
     },
+    // nee.tax_return (codex/bureaucracy-backend-v2, 2026-10-08.1): serves
+    // every employee, so the sample person's plan has it (the app build,
+    // 20 Oct 2026). Copy exactly as the card writes it.
+    {
+        key: 'nee.tax_return',
+        title: 'File your annual income tax return (Einkommensteuererklärung)',
+        description:
+            'As an employee, wage tax is deducted from your salary. A tax return is\nmandatory in the cases listed in §46 EStG — for example if you were paid by\nseveral employers at the same time. If none of those cases applies, you can\nstill file a return to have the wage tax already withheld credited against\nyour income tax. If you are required to file and do it yourself, the return\nis due seven months after the end of the calendar year; a different deadline\napplies when a tax adviser prepares it.',
+        documents: [
+            'Lohnsteuerbescheinigung (wage tax certificate) from each employer',
+            'Receipts for expenses you want to claim',
+        ],
+        verifiedAt: '2026-09-30',
+        version: '2026-10-08.1',
+        source: 'https://www.elster.de/eportal/start',
+        law: 'https://www.gesetze-im-internet.de/estg/__46.html',
+    },
 ];
