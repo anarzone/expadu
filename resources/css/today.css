@@ -1632,3 +1632,18 @@ a.plan-link:hover {
         gap: 8px;
     }
 }
+
+/* Leave now is Travel's card; on Today it takes Today's page look, as the
+   mock's page gives it (connected/style.css): every small line in the
+   soft text colour, the start button at the page's 16px, and its line
+   icons at the page's 1.7px stroke. */
+.today-workspace .trip-line small:not(.trip-ring *) {
+    color: var(--color-text-soft);
+}
+.today-workspace .next-trip-go {
+    font-size: 16px;
+    line-height: 1.25;
+}
+.today-workspace :is(.trip-plan, .next-trip-go) svg {
+    stroke-width: 1.7px;
+}

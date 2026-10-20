@@ -124,8 +124,7 @@
             "name": "Leave now",
             "mock": ".agenda-item .trip-line",
             "app": ".agenda-item .trip-line",
-            "widths": [768, 1280, 1440, 1512],
-            "pixels": false
+            "widths": [768, 1280, 1440, 1512]
         },
         {
             "name": "Leave now (phone)",
@@ -151,6 +150,5 @@
         }
     ],
     "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared everywhere.",
-    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel.",
-    "cardNote": "Leave now is Travel's NextTripCard. Its box and Add a plan below it now match (#152's default-size label). Two things inside it differ from Today's mock, reported to session 3: the tiles' second lines (Neumarkt, Mülheim, before 14:00) are rgb(33, 29, 21) where the mock has rgb(110, 102, 87), and 'I'm on my way' is 14px/19.6px where the mock has 16px/20px. Until then its pixels are set aside."
+    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel."
 }
