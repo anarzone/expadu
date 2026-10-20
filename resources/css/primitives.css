@@ -13,6 +13,8 @@
     width: min(520px, calc(100vw - 32px));
     max-width: none;
     max-height: min(760px, calc(100dvh - 48px));
+    /* Centred: Tailwind's reset takes away the browser's dialog margin. */
+    margin: auto;
     padding: 0;
     border: 0;
     border-radius: var(--radius-xl);
@@ -775,6 +777,7 @@
     box-sizing: border-box;
     width: min(420px, calc(100% - 32px));
     max-width: none;
+    margin: auto;
     padding: 20px 20px 24px;
     border: 0;
     border-radius: var(--radius-xl);
