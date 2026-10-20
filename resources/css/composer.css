@@ -401,6 +401,22 @@
 .composer-plan-reference .composer-plan {
     margin: 7px 0;
 }
+/* A change's rows, old → new, under its reply. */
+.composer-change-rows {
+    display: grid;
+    gap: 4px;
+    margin: 6px 0 2px;
+    font-size: 12px;
+    color: var(--composer-muted);
+}
+.composer-change-rows strong {
+    font-weight: 500;
+    color: var(--foreground);
+}
+.composer-plan-gone {
+    font-size: 12px;
+    color: var(--composer-muted);
+}
 .composer-service-link {
     display: flex;
     align-items: center;
@@ -488,20 +504,6 @@
 .composer-icon-button:hover,
 .composer-icon-button.is-soft {
     background: var(--composer-soft, #e5f1f4);
-}
-.composer-approval {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 40px;
-    font-size: 11px;
-    color: var(--composer-muted);
-    border-radius: 8px;
-}
-.composer-approval > span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 .composer-send {
     display: grid;
@@ -598,32 +600,6 @@
     border-radius: 9px;
     font-size: 13px;
 }
-.composer-approval-menu {
-    width: 290px;
-}
-.composer-approval-menu [role='menuitem'] > div {
-    flex: 1;
-}
-.composer-approval-menu strong {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-}
-.composer-approval-menu small {
-    font-size: 11px;
-    color: var(--muted-foreground);
-    display: block;
-    margin-top: 4px;
-    line-height: 1.5;
-}
-.composer-approval-menu > p {
-    font-size: 10px;
-    color: var(--muted-foreground);
-    line-height: 1.6;
-    padding: 7px 9px;
-    border-top: 1px solid var(--border);
-    margin-top: 4px;
-}
 .composer-panel {
     --composer-blue: #356774;
     --composer-muted: #647c84;
@@ -693,22 +669,6 @@
     line-height: 1.7;
     padding: 18px 0;
 }
-.composer-version {
-    border-bottom: 1px solid var(--border);
-    padding: 14px 0;
-}
-.composer-version summary {
-    cursor: pointer;
-    font-size: 13px;
-    min-height: 36px;
-}
-.composer-version summary small {
-    display: block;
-    color: var(--muted-foreground);
-    font-size: 11px;
-    margin-top: 4px;
-}
-.composer-date-edit,
 .composer-browse-date {
     display: flex;
     align-items: center;
@@ -718,10 +678,6 @@
     padding: 8px 0 15px;
     flex-wrap: wrap;
 }
-.composer-date-edit {
-    padding: 12px 20px;
-}
-.composer-date-edit input,
 .composer-browse-date input {
     background: var(--card);
     border: 1px solid var(--border);
