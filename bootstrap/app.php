@@ -2,10 +2,12 @@
 
 use App\Http\Middleware\CanonicalRedirects;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\LocalMockClock;
 use App\Http\Middleware\PerfTrackMiddleware;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCacheHeaders;
+use App\Support\MockClock;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -50,7 +52,11 @@ return Application::configure(basePath: dirname(__DIR__))
             // Web-wide per-user/IP ceiling (see AppServiceProvider limiters);
             // sits after StartSession so the authenticated user is resolvable.
             'throttle:global',
+            // Local only: the mock's sample moment for tools/mock-compare.
+            // Innermost, so session and CSRF cookies keep the real clock.
+            LocalMockClock::class,
         ]);
+        $middleware->encryptCookies(except: [MockClock::COOKIE]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // These are JSON commands even when Accept is missing/spoofed. A

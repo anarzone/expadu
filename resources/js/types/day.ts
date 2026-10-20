@@ -142,6 +142,8 @@ export type NextTrip = {
         not_before: string | null;
     } | null;
     margin_min: 5 | 10;
+    /** The router's stop names start with it ("Köln Neumarkt"). */
+    city?: string | null;
     checked_at: string;
     leave_at: string | null;
     leave_time: string | null;

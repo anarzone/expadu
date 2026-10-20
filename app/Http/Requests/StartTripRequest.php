@@ -5,11 +5,22 @@ namespace App\Http\Requests;
 use App\Models\ActiveTrip;
 use App\Transit\DepartureTime;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StartTripRequest extends FormRequest
 {
+    /** The modes a journey leg can have (as the App\Transit adapters map them). */
+    public const MODES = ['walk', 'bike', 'bus', 'tram', 'subway', 'rail', 'ferry'];
+
+    /** The stored journey stays a journey: big enough for a long multi-leg trip with its shapes. */
+    private const MAX_JOURNEY_BYTES = 262144;
+
+    private const MAX_STOPS_PER_LEG = 200;
+
     private ?ActiveTrip $resume = null;
+
+    private ?ActiveTrip $other = null;
 
     public function authorize(): bool
     {
@@ -24,7 +35,9 @@ class StartTripRequest extends FormRequest
             'journey.arrive_at' => ['required', 'string', 'max:40'],
             'journey.legs' => ['required', 'array', 'min:1', 'max:40'],
             'journey.legs.*' => ['required', 'array'],
-            'journey.legs.*.mode' => ['required', 'string', 'max:40'],
+            'journey.legs.*.mode' => ['required', 'string', Rule::in(self::MODES)],
+            'journey.legs.*.intermediate_stops' => ['sometimes', 'nullable', 'array', 'max:'.self::MAX_STOPS_PER_LEG],
+            'journey.legs.*.polyline' => ['sometimes', 'nullable', 'string', 'max:100000'],
             'journey.legs.*.depart_at' => ['required', 'string', 'max:40'],
             'journey.legs.*.arrive_at' => ['required', 'string', 'max:40'],
             'journey.legs.*.to.name' => ['sometimes', 'nullable', 'string', 'max:300'],
@@ -37,6 +50,9 @@ class StartTripRequest extends FormRequest
             'origin.name' => ['nullable', 'string', 'max:200'],
             'origin.lat' => ['nullable', 'numeric', 'between:-90,90'],
             'origin.lng' => ['nullable', 'numeric', 'between:-180,180'],
+            // Starting this trip while another runs replaces it only when the
+            // person said so ("Replace the trip you're on?").
+            'replace' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -47,6 +63,11 @@ class StartTripRequest extends FormRequest
                 return;
             }
             $journey = $this->input('journey');
+            if (strlen((string) json_encode($journey)) > self::MAX_JOURNEY_BYTES) {
+                $validator->errors()->add('journey', 'This route is too large to start. Find a fresh route.');
+
+                return;
+            }
             $depart = DepartureTime::parse($journey['depart_at']);
             $arrive = DepartureTime::parse($journey['arrive_at']);
             if ($depart === null || $arrive === null || $arrive->lessThanOrEqualTo($depart)) {
@@ -85,7 +106,14 @@ class StartTripRequest extends FormRequest
                 $previous = $legArrive;
             }
             $this->resume = $same ? $active : null;
+            $this->other = ! $same && $active !== null && ! $active->isOver() ? $active : null;
         }];
+    }
+
+    /** Another trip is running and this one would replace it. */
+    public function replacesTrip(): ?ActiveTrip
+    {
+        return $this->other;
     }
 
     public function resumableTrip(): ?ActiveTrip
