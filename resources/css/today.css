@@ -1177,3 +1177,458 @@ a.plan-link:hover {
         transition: none;
     }
 }
+
+/* ── Discovery (the mock's .discovery: today-next/style.css, brief/
+   enhancements.css, hierarchy.css, cohesion.css): tonight's events as
+   posters, then compact listings. ─────────────────────────────────────── */
+.discovery {
+    position: relative;
+    margin: 0;
+    padding: 16px;
+}
+.discovery::before {
+    content: '';
+    position: absolute;
+    inset: 0 22px auto;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-border) 16%,
+        var(--color-border) 84%,
+        transparent
+    );
+}
+.discovery-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.discovery-heading h2 {
+    font-size: var(--text-title-sm);
+    font-weight: var(--weight-bold);
+    line-height: 1.3;
+    letter-spacing: -0.4px;
+}
+.discovery-heading > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 44px;
+    color: var(--color-text);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+}
+.discovery-heading > a::after {
+    content: '→';
+    font-weight: var(--weight-regular);
+}
+/* A free day: "Ideas for this afternoon" and the weather under it. */
+.discovery-heading:has(.discovery-title-group) {
+    align-items: flex-start;
+}
+.discovery-heading:has(.discovery-title-group) > a {
+    flex: none;
+    white-space: nowrap;
+}
+.discovery-title-group {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+.discovery-title-group p {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    line-height: 1.4;
+}
+.discovery-title-group p svg {
+    flex: none;
+    width: 17px;
+    height: 17px;
+    margin-top: 1px;
+    color: var(--color-sun);
+}
+.discovery-title-group p small {
+    color: var(--color-text-muted);
+    font-size: var(--text-micro);
+    white-space: nowrap;
+}
+.discovery-empty {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.event-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding-bottom: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    touch-action: pan-x pan-y;
+}
+.event-card {
+    position: relative;
+    isolation: isolate;
+    min-width: 0;
+    height: clamp(260px, 23vw, 320px);
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    background: var(--pp-ground);
+    scroll-snap-align: start;
+}
+.event-open {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    padding: 0;
+    text-align: left;
+}
+.event-copy {
+    position: absolute;
+    right: 78px;
+    bottom: 21px;
+    left: 22px;
+    z-index: 1;
+    color: var(--pp-text);
+}
+.event-copy strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: clamp(var(--text-title-sm), 2vw, var(--text-title-lg));
+    font-weight: var(--weight-bold);
+    line-height: 1.1;
+    letter-spacing: -0.6px;
+}
+.event-copy small {
+    display: block;
+    color: var(--pp-soft);
+    font-size: var(--text-small);
+    line-height: 1.6;
+}
+.event-save,
+.event-plan {
+    position: absolute;
+    right: 16px;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    /* The mock's are plain buttons, with a button's own padding. */
+    padding: 1px 6px;
+    border-radius: var(--radius-round);
+    color: #fff;
+}
+.event-save {
+    top: 16px;
+    border: 1px solid var(--color-poster-glass-edge);
+    background: var(--color-poster-glass);
+    backdrop-filter: blur(14px);
+}
+.event-plan {
+    bottom: 17px;
+    background: var(--color-action);
+}
+:is(
+        .event-save,
+        .event-plan,
+        .compact-event .icon-button,
+        .around-item > .icon-button
+    )
+    svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* A thumb in the poster's ink with the category's icon. */
+.event-thumb {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    color: var(--pp-text);
+}
+.event-thumb > svg {
+    position: relative;
+    width: 20px;
+    height: 20px;
+}
+.compact-events {
+    margin-top: 4px;
+}
+.compact-event {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+}
+.compact-event + .compact-event::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    inset-inline: 60px 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--color-border), transparent);
+}
+.compact-event-open {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    border-radius: var(--radius-md);
+    text-align: left;
+    text-decoration: none;
+}
+.compact-event-open > span {
+    min-width: 0;
+}
+.compact-event-open > .event-thumb {
+    width: 50px;
+    height: 50px;
+}
+.compact-event-open strong {
+    display: block;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+}
+.compact-event-open small {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.compact-category {
+    margin-left: auto;
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--color-event-chip-bg);
+    color: var(--color-event-chip-text);
+    font-size: var(--text-micro);
+}
+:is(.compact-event, .around-item) > .icon-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    border-radius: var(--radius-round);
+}
+:is(.compact-plan, .around-item > .icon-button) {
+    color: var(--color-action-text);
+}
+
+/* ── Around the next plan (the mock's .around-plan: brief/enhancements.css,
+   cohesion.css, connected/place-card.css): an event in the plan's area and
+   the everyday places open there, with the listings' credit. ─────────── */
+.around-plan {
+    margin: 0 16px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(100deg, var(--color-around-wash), transparent);
+}
+.around-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+.around-heading h3 {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.25;
+    letter-spacing: -0.4px;
+}
+.around-heading small,
+.around-places-title small {
+    color: var(--color-text-muted);
+    font-size: var(--text-micro);
+    font-weight: var(--weight-regular);
+}
+.around-context {
+    margin-top: 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.around-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+}
+.around-open {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 64px;
+    border-radius: var(--radius-md);
+    text-align: left;
+    text-decoration: none;
+}
+.around-open > span:last-child {
+    min-width: 0;
+}
+.around-open strong {
+    display: block;
+    font-size: var(--text-control);
+    line-height: 1.3;
+}
+.around-open small {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.around-places {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+}
+.around-places-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 2px;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.nearby-place--line {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+}
+.nearby-place-open {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 4px 2px;
+    text-align: left;
+}
+.nearby-place-icon {
+    display: grid;
+    flex: 0 0 36px;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+.nearby-place-icon .place-icon {
+    width: 18px;
+    height: 18px;
+}
+.nearby-place-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+.nearby-place-copy strong {
+    overflow: hidden;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.nearby-place-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.place-hours.is-open {
+    color: var(--color-select-text);
+    font-weight: var(--weight-medium);
+}
+.around-places-source {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: var(--text-micro);
+}
+
+@media (min-width: 701px) and (max-width: 999px) {
+    .discovery {
+        padding-inline: 18px;
+    }
+    .event-rail {
+        grid-auto-columns: 88%;
+    }
+    .compact-category {
+        display: none;
+    }
+}
+@media (max-width: 700px) {
+    .discovery::before {
+        inset-inline: 16px;
+    }
+    .discovery-heading h2 {
+        font-size: var(--text-section);
+    }
+    .event-rail {
+        grid-auto-columns: 86%;
+    }
+    .event-card {
+        height: 260px;
+    }
+    .event-copy {
+        right: 67px;
+        bottom: 20px;
+        left: 18px;
+    }
+    .event-save,
+    .event-plan {
+        right: 12px;
+    }
+    .compact-event {
+        gap: 0;
+    }
+    .compact-event-open {
+        gap: 9px;
+    }
+    .compact-event-open > .event-thumb {
+        width: 42px;
+        height: 46px;
+        border-radius: var(--radius-sm);
+    }
+    .compact-event-open strong {
+        font-size: var(--text-small);
+    }
+    .compact-event-open small {
+        font-size: var(--text-micro);
+    }
+    .compact-category {
+        display: none;
+    }
+    .around-heading {
+        flex-wrap: wrap;
+        gap: 3px 8px;
+    }
+    .around-open {
+        gap: 8px;
+    }
+}
