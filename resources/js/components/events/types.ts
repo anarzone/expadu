@@ -3,6 +3,12 @@ export type EventOccurrence = {
     occurrence_start: string;
     occurrence_end: string | null;
     title: string;
+    /** The title as listed, and its language; `title` is its English meaning when there is one. */
+    title_original?: string;
+    title_lang?: string | null;
+    /** False for a listing that gives a date but no time. */
+    time_listed?: boolean;
+    language?: string | null;
     category: string;
     category_label: string;
     emoji: string;
