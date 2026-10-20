@@ -1,6 +1,6 @@
 {
     "name": "today-details",
-    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
@@ -91,21 +91,16 @@
             "name": "booking",
             "mock": "dialog[open] .detail-grid > div",
             "app": "dialog[open] .detail-grid > div",
-            "ignore": ["y"]
+            "ignore": ["y"],
+            "contentDiffers": true
         },
         {
             "name": "booking note",
             "mock": "dialog[open] .detail-note",
             "app": "dialog[open] .detail-note",
             "ignore": ["y"]
-        },
-        {
-            "name": "Remove",
-            "mock": "dialog[open] .detail-actions [data-today-reveal]",
-            "app": "dialog[open] .detail-actions .text-action:last-child",
-            "ignore": ["y", "x"]
         }
     ],
-    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land.",
-    "contentNote": "The sample's Blue Card appointment is an official (Paperwork) appointment; the app keeps official appointments at their fixed time, so its details offer Remove without Edit. What to bring (the Paperwork link) arrives with Paperwork v2, so the sheet is shorter and what follows sits higher."
+    "ignoreNote": "y: the sheet is centred on wider screens and rests on the bottom edge on phones, so where its parts sit follows its height, and its height is content (no Edit or Remove: see contentNote). Its pixels are not compared where that offset falls at another fraction of a pixel.",
+    "contentNote": "Its booking is recorded by you in Paperwork ('Recorded by you'; the mock's sample: 'Not recorded in Expadu'), and an official appointment is changed in Paperwork, not here, so the sheet offers no Edit or Remove (the mock's sample plan does)."
 }

@@ -65,11 +65,8 @@ export function ItemStatus({ item }: { item: DayItem }) {
         return <Pill>Started · end not recorded</Pill>;
     }
 
-    return (
-        <Pill>
-            {item.source === 'paperwork' ? 'From Paperwork' : 'In your plan'}
-        </Pill>
-    );
+    // A recorded Paperwork appointment is in your plan too, as the mock has it.
+    return <Pill>In your plan</Pill>;
 }
 
 /**

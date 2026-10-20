@@ -3,11 +3,14 @@
 namespace App\Console\Commands\QA;
 
 use App\Composer\WorkspaceStore;
+use App\Enums\Situation;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * Local only: puts the mock's sample day (Wednesday 30 September 2026,
@@ -15,10 +18,11 @@ use Illuminate\Support\Facades\DB;
  * so tools/mock-compare shows the app and the mock with the same words.
  * Run it before a comparison, with the mock's view:
  *
- *   everyday  the Blue Card appointment at 14:00
+ *   everyday  nothing of its own: the Blue Card appointment at 14:00 is
+ *             Paperwork's record (seed MockSample\PaperworkSeeder too)
  *   busy      and a language class and Meet Maya after it
- *   quiet     nothing on the day
- *   travel    everyday plus the two evening events as plans (Travel's mock)
+ *   quiet     nothing on the day (and no Paperwork seed)
+ *   travel    the two evening events as plans (Travel's mock)
  *
  * Every view also keeps Coming up (1 and 3 October). It replaces only those
  * three dates; the account's other plans stay. Pair it with the
@@ -28,7 +32,7 @@ class MockSampleDayCommand extends Command
 {
     protected $signature = 'mock:sample-day
         {view=everyday : everyday, busy, quiet or travel}
-        {--email= : The account (default: the E2E account)}';
+        {--email= : The account (default: the E2E account); created when missing}';
 
     protected $description = 'Local only: the mock\'s sample day (30 Sept 2026) in an account\'s plans, for tools/mock-compare';
 
@@ -53,13 +57,7 @@ class MockSampleDayCommand extends Command
         }
 
         $email = (string) ($this->option('email') ?: env('E2E_EMAIL', 'e2e@expadu.test'));
-        $user = User::query()->where('email', $email)->first();
-
-        if ($user === null) {
-            $this->error("No account {$email}. Run the E2ETestUserSeeder first.");
-
-            return self::FAILURE;
-        }
+        $user = User::query()->where('email', $email)->first() ?? $this->account($email);
 
         if (! ComposerWorkspace::query()->where('user_id', $user->id)->exists()) {
             $store->command($user, ['revision' => 0, 'action' => 'fresh']);
@@ -91,6 +89,34 @@ class MockSampleDayCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * Each session compares as its own account (mock-s1@ … mock-s4@expadu.test),
+     * so a missing one is made here as E2ETestUserSeeder makes the E2E account:
+     * verified and onboarded, with the E2E password. Local only (see handle()).
+     */
+    private function account(string $email): User
+    {
+        $user = new User;
+        // forceFill: email_verified_at and onboarded_at are not fillable.
+        $user->forceFill([
+            'email' => $email,
+            'name' => Str::of($email)->before('@')->headline()->toString(),
+            'password' => Hash::make((string) env('E2E_PASSWORD', 'e2e-password')),
+            'email_verified_at' => now(),
+            'onboarded_at' => now(),
+            'situation' => Situation::NonEuEmployee,
+            'veedel' => 'Ehrenfeld',
+            'is_eu' => false,
+            'arrival_date' => now()->subMonths(6)->startOfDay(),
+            'german_level' => null,
+            'city' => 'cologne',
+        ])->save();
+
+        $this->info("Created {$email} (verified and onboarded; the E2E password).");
+
+        return $user;
+    }
+
     /** @return array<string, list<array<string, mixed>>> */
     private function plans(string $view): array
     {
@@ -104,18 +130,9 @@ class MockSampleDayCommand extends Command
             return $plans;
         }
 
-        // Recorded from Paperwork in the mock: an official appointment at
-        // Wiener Platz, with its fixed time.
-        $slots = [$this->slot([
-            'id' => 'mock:blue-card-appointment',
-            'type' => 'appointment',
-            'category' => 'appointment',
-            'name' => 'Blue Card appointment',
-            'location' => 'Mülheim',
-            'lat' => 50.96103,
-            'lng' => 7.0048,
-            'swappable' => false,
-        ], $day, '14:00', '14:30')];
+        // The Blue Card appointment is Paperwork's record (MockSample\PaperworkSeeder);
+        // the day projection reads it from there.
+        $slots = [];
 
         if ($view === 'busy') {
             $slots[] = $this->personal('mock:class', 'Language class', 'Ehrenfeld', 50.9497, 6.9187, $day, '15:30', '16:30');
@@ -127,7 +144,7 @@ class MockSampleDayCommand extends Command
             $slots[] = $this->event('mock:cinema', 'Cinema under the stars', 'Stadtgarten', 'Neustadt-Nord', 50.9445, 6.93694, $day, '20:00', '22:00');
         }
 
-        return [$day => $slots] + $plans;
+        return ($slots === [] ? [] : [$day => $slots]) + $plans;
     }
 
     /** @return array<string, mixed> */

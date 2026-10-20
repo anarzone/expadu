@@ -27,13 +27,12 @@
         ]
     },
     "app": {
-        "url": "/up",
+        "url": "/timetable?view=route",
         "cookies": {
             "mock_clock": "2026-09-30T13:41:00%2B02:00"
         },
         "wait": "#journey-navigation .nav-step-card",
         "init": [
-            "if (location.pathname === '/up') location.replace('/timetable?view=route');",
             "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '[title=\"Open the QA persona switcher\"] { display: none !important; }'; document.head.append(s); })"
         ],
         "before": [
@@ -49,7 +48,7 @@
             "password": "e2e-password"
         }
     },
-    "note": "A minute before getting off (the mock picks the moment in its Sample tools). Seed: php artisan mock:sample-day travel --email=<you>; E2E_EMAIL=<you> MOCK_TRIP=started php artisan db:seed --class=\"Database\\\\Seeders\\\\MockSample\\\\TravelSeeder\". The mock resumes the sample's 13:14 at the same step (its own ?journey=resume); the app shows the seeded trip at the moment's clock. Measuring aids, on both sides alike: a viewport tall enough that the phone's full-screen trip page never scrolls inside itself, and the mock's dashed Sample chip (its own sample tools) taken out of the row and made invisible (still there to pick a moment).",
+    "note": "A minute before getting off (the mock picks the moment in its Sample tools). Seed: php artisan mock:sample-day travel --email=<you>; E2E_EMAIL=<you> MOCK_TRIP=started php artisan db:seed --class=\"Database\\\\Seeders\\\\MockSample\\\\TravelSeeder\". The mock resumes the sample's 13:14 at the same step (its own ?journey=resume); the app shows the seeded trip at the moment's clock (cookies.mock_clock). Measuring aids, on both sides alike: a viewport tall enough that the phone's full-screen trip page never scrolls inside itself, and the mock's dashed Sample chip (its own sample tools) taken out of the row and made invisible (still there to pick a moment).",
     "pairs": [
         {
             "name": "trip top bar",

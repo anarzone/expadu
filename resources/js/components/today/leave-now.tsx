@@ -67,6 +67,7 @@ export function LeaveNow({
                     clock: <TravelIcon name="clock" />,
                     unsure: <TravelIcon name="info" />,
                     timer: <TravelIcon name="timer" />,
+                    offline: <TravelIcon name="offline" />,
                 }}
             />
             {starter.error && (

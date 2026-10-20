@@ -101,6 +101,11 @@ switcher; boxes and styles are measured without it).
 `node tools/mock-compare/dump.mjs <url> <root selector> <width> [login]` prints the element tree with
 boxes and text, so the mock's and the app's structures can be matched side by side. Cover every
 visible component of the slice, including open states (menus, sheets, focus) via `before`.
+The shell's open states have a config each: `shell-city`, `shell-account`, `shell-composer` (the
+tray and its + menu, on Paperwork, where both trays name the page), `shell-focus` (each pair tabs
+once more and compares the ring on `:focus`) and `shell-scroll` (phones: `PageDown` / `PageUp` steps;
+a pair is measured before its shot scrolls back to the top). A config's `pixelThreshold` lets that
+share of a shot differ, with its reason in a note.
 
 ## Same content
 
@@ -120,14 +125,18 @@ On your machine (`APP_ENV=local` only):
   the mock's plans for 30 Sept, 1 and 3 Oct (other dates stay). A config names the view it needs in
   `seed`; run that first.
 - **Your own account:** sessions share the local database, so compare as your own account rather
-  than the E2E one: `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class=E2ETestUserSeeder`, seed
-  that account, run with `MOCK_COMPARE_EMAIL=<you>@expadu.test`, and delete
+  than the E2E one (session n: `mock-s<n>@expadu.test`). `php artisan mock:sample-day <view>
+--email=mock-s<n>@expadu.test` creates it when it's missing (local only; verified and onboarded,
+  with the E2E password), so no seeder is needed first. Run with
+  `MOCK_COMPARE_EMAIL=mock-s<n>@expadu.test`, and delete
   `storage/mock-compare/.session-<port>-<account>.json` once so it signs in again.
 - **Paperwork's sample record:** `E2E_EMAIL=<you>@expadu.test php artisan db:seed
 --class='Database\Seeders\MockSample\PaperworkSeeder'` (after E2ETestUserSeeder for that account).
   It imports this checkout's catalogue, publishes its checked cards as the browser tests do and
   compiles the release itself, so it needs nothing else first, then replaces that account's
-  Paperwork record through the v2 commands. `configs/paperwork.json` expects it.
+  Paperwork record through the v2 commands. `configs/paperwork.json` and the Today configs expect it
+  (`PAPERWORK_SAMPLE=quiet` for `today-quiet`): the Blue Card appointment on the sample day is that
+  record, not a plan of `mock:sample-day`'s.
 - **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
 --seed` (create it with the postgis and vector extensions first), and start the compare app server
   with the same `DB_DATABASE`. Never `migrate:fresh` the shared one. Put `DB_DATABASE` (and your

@@ -239,11 +239,18 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-select-bg-hover: #cceef3;
     --color-select-text: #00768b; /* teal: travel icons, line ink */
     --color-focus: #00768b;
+    --color-field-focus: #05badd; /* a field that owns its focus (the mock's --cyan) */
 
     /* ── Colour · paperwork ────────────────────────────────────────────── */
     --color-paper-bg: #efe7fb;
     --color-paper-bg-quiet: #f3eefb;
     --color-paper-text: #67409a;
+    /* Paperwork's document ring on Today (today-next/style.css). */
+    --color-paper-progress: #8255b9;
+    --color-paper-track: #dfd1ef;
+    --color-paper-inset: #f7f1fc;
+    --color-paper-ink: #533270;
+    --color-paper-ink-soft: #745989;
 
     /* ── Colour · attention (deadlines, tight timings, delays) ─────────── */
     --color-attention-bg: #fff1d6;
@@ -426,9 +433,15 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-select-bg-hover: var(--color-select-bg-hover);
     --color-select-text: var(--color-select-text);
     --color-focus: var(--color-focus);
+    --color-field-focus: var(--color-field-focus);
     --color-paper-bg: var(--color-paper-bg);
     --color-paper-bg-quiet: var(--color-paper-bg-quiet);
     --color-paper-text: var(--color-paper-text);
+    --color-paper-progress: var(--color-paper-progress);
+    --color-paper-track: var(--color-paper-track);
+    --color-paper-inset: var(--color-paper-inset);
+    --color-paper-ink: var(--color-paper-ink);
+    --color-paper-ink-soft: var(--color-paper-ink-soft);
     --color-attention-bg: var(--color-attention-bg);
     --color-attention: var(--color-attention);
     --color-attention-border: var(--color-attention-border);
