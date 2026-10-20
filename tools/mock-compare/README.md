@@ -84,8 +84,13 @@ login rate limit.
 
 Per pair: `index` (or `mockIndex` / `appIndex`), `widths`, `props` (replaces the default list),
 `ignore` (props or `x`/`y`/`w`/`h` to skip, each with a reason in the PR), `pixels: false`,
-`contentDiffers: true`. Per side: `wait`, `init` (scripts run before the page), `before`
-(`[{ "click": "selector" }, { "wait": 300 }]` to open a menu or sheet first).
+`contentDiffers: true`, `before` (steps run on both pages just before this pair, and left done for
+the pairs after it, so open states go last; `mockBefore` / `appBefore` when the selectors differ).
+Per side: `wait`, `init` (scripts run before the page), `before` (`[{ "click": "selector" },
+{ "key": "Escape" }, { "wait": 300 }]` to open a menu or sheet first), `cookies` (`{ "name": "value" }`
+on that side's origin, e.g. the app's `mock_clock`; PHP decodes cookie values, so write `+` as `%2B`),
+`screenshotStyle` (CSS applied only while element screenshots are taken, e.g. to hide that side's
+sticky header where the tool has scrolled it over the element; boxes and styles are measured without it).
 
 ## Finding the pairs
 
