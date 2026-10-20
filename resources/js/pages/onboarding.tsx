@@ -1,11 +1,11 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { FlashToast } from '@/components/flash-toast';
 import { OnboardingProgress } from '@/components/onboarding/onboarding-progress';
 import { OptionalStep } from '@/components/onboarding/optional-step';
 import { SituationStep } from '@/components/onboarding/situation-step';
 import { VeedelStep } from '@/components/onboarding/veedel-step';
 import { WelcomeStep } from '@/components/onboarding/welcome-step';
+import { Toaster } from '@/components/ui/toast';
 import { useTracker } from '@/hooks/use-tracker';
 import { ARRIVAL_BOUNDS } from '@/lib/date-bounds';
 
@@ -406,7 +406,7 @@ export default function Onboarding() {
     return (
         <>
             <Head title="Welcome to Expadu" />
-            <FlashToast />
+            <Toaster />
             <div className="flex min-h-svh flex-col bg-background">
                 <OnboardingProgress
                     step={step}
