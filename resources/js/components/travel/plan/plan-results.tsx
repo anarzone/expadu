@@ -7,8 +7,21 @@ import { LineBadge } from '../line-badge';
 import { lineLook, vehicleOf, vehicleWord } from '../line-look';
 import { TravelIcon } from '../travel-icon';
 import type { TravelIconName } from '../travel-icon';
-import { marginOf, reasonsFor, rides, spareMin, stepsOf } from './plan-model';
-import type { Check, PlanAnswer, PlanOption, PlanTarget } from './plan-model';
+import {
+    berlinNow,
+    marginOf,
+    reasonsFor,
+    rides,
+    spareMin,
+    stepsOf,
+} from './plan-model';
+import type {
+    Check,
+    PlanAnswer,
+    PlanOption,
+    PlanTarget,
+    Step,
+} from './plan-model';
 
 /**
  * Plan a trip's answer (departures-next app.js: renderResults, checksMarkup,
@@ -18,6 +31,24 @@ import type { Check, PlanAnswer, PlanOption, PlanTarget } from './plan-model';
 
 const word = (leg: JourneyLeg) =>
     `${vehicleWord(vehicleOf(leg.mode))} ${leg.line ?? ''}`.trim();
+
+/**
+ * Around here at a stop you get off at: the stop is public, and the time
+ * (today only) says what's open when you're there. The page keeps none of it.
+ */
+function aroundHereHref(stop: NonNullable<Step['stop']>) {
+    const there = berlinNow(new Date(stop.at));
+    const params = new URLSearchParams({
+        near: `${stop.lat.toFixed(5)},${stop.lng.toFixed(5)}`,
+        name: stop.name,
+    });
+
+    if (there.date === berlinNow().date) {
+        params.set('time', there.time);
+    }
+
+    return `/explore?${params}`;
+}
 
 export function PlanChecks({ checks }: { checks: Check[] }) {
     const [open, setOpen] = useState(false);
@@ -177,11 +208,13 @@ function JourneySteps({
     destination,
     answer,
     target,
+    onBoardStop,
 }: {
     option: PlanOption;
     destination: string;
     answer: PlanAnswer;
     target: PlanTarget | null;
+    onBoardStop?: (name: string) => void;
 }) {
     const steps = stepsOf(
         option.journey,
@@ -217,6 +250,29 @@ function JourneySteps({
                                     {PLATFORM_NOT_KNOWN}
                                 </TravelChip>
                             ) : null}
+                            {step.stop ? (
+                                <a
+                                    className="step-nearby"
+                                    href={aroundHereHref(step.stop)}
+                                >
+                                    <TravelIcon name="pin" />
+                                    Places nearby
+                                    <TravelIcon name="arrow" />
+                                </a>
+                            ) : null}
+                            {step.board && onBoardStop ? (
+                                <button
+                                    type="button"
+                                    className="boarding-stop-link"
+                                    aria-label={`Timetable at ${step.board}`}
+                                    onClick={() =>
+                                        step.board && onBoardStop(step.board)
+                                    }
+                                >
+                                    {step.board}
+                                    <TravelIcon name="chevron" />
+                                </button>
+                            ) : null}
                         </div>
                     </li>
                 ))}
@@ -245,6 +301,8 @@ type PlanOptionsProps = {
     onToggle: (id: string) => void;
     /** Whether an option is the way in your plan ("In your plan"). */
     planned?: (option: PlanOption) => boolean;
+    /** A boarding stop's timetable, in Nearby. */
+    onBoardStop?: (name: string) => void;
 };
 
 /** The options as one choice; "Best for you" names the first when there's a choice. */
@@ -258,6 +316,7 @@ export function PlanOptions({
     expanded,
     onToggle,
     planned,
+    onBoardStop,
 }: PlanOptionsProps) {
     return (
         <div
@@ -386,6 +445,7 @@ export function PlanOptions({
                                         destination={destination}
                                         answer={answer}
                                         target={target}
+                                        onBoardStop={onBoardStop}
                                     />
                                 ) : null}
                             </div>

@@ -241,6 +241,45 @@ export default function Timetable() {
         });
     };
 
+    // "Neumarkt ›" in a way's details: that stop's timetable in Nearby, and
+    // "Back to your journey" returns to the plan as it was, where it was
+    // (departures-next app.js: openBoardingStop, returnFromTimetable).
+    const [boardReturn, setBoardReturn] = useState<{
+        url: string;
+        top: number;
+    } | null>(null);
+    const openBoardingStop = (name: string) => {
+        setBoardReturn({
+            url: `${window.location.pathname}${window.location.search}`,
+            top: window.scrollY,
+        });
+        setView('stop');
+
+        if (!desktop) {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+
+        pickStop(name);
+    };
+    const returnToJourney = () => {
+        const back = boardReturn;
+        setBoardReturn(null);
+        setView('journey');
+
+        if (!back) {
+            return;
+        }
+
+        router.replace({
+            url: back.url,
+            preserveState: true,
+            preserveScroll: true,
+        });
+        window.requestAnimationFrame(() =>
+            window.scrollTo({ top: back.top, behavior: 'instant' }),
+        );
+    };
+
     const toggleFavourite = async (name: string, on: boolean) => {
         setFavouriteBusy(true);
 
@@ -328,7 +367,10 @@ export default function Timetable() {
                     <button
                         type="button"
                         className="where-to"
-                        onClick={() => setView('journey')}
+                        onClick={() => {
+                            setBoardReturn(null);
+                            setView('journey');
+                        }}
                     >
                         <span data-icon="search">
                             <TravelIcon name="search" />
@@ -357,6 +399,7 @@ export default function Timetable() {
                             preserveScroll: true,
                         });
                     }}
+                    onBoardStop={openBoardingStop}
                     onLocate={location.locate}
                     locating={location.locating}
                 />
@@ -371,6 +414,18 @@ export default function Timetable() {
                         aria-label="Nearby"
                         hidden={!desktop && view === 'journey'}
                     >
+                        {boardReturn ? (
+                            <button
+                                type="button"
+                                className="quiet-button board-return"
+                                onClick={returnToJourney}
+                            >
+                                <span data-icon="back">
+                                    <TravelIcon name="back" />
+                                </span>
+                                Back to your journey
+                            </button>
+                        ) : null}
                         {/* The day arrives deferred; while it reloads, the last one stays. */}
                         {trip ? (
                             <>

@@ -80,6 +80,7 @@ const targetOf = (item: DayItem): PlanTarget | null =>
         ? {
               id: item.id,
               title: item.title,
+              kind: item.kind,
               start_at: item.start_at,
               start_time: item.start_time,
               official: item.official,
@@ -126,6 +127,8 @@ type PlanPanelProps = {
     onStage: (stage: PlanStage) => void;
     /** Fold the planner away (phones): back to Nearby. */
     onFold: () => void;
+    /** A boarding stop's timetable in Nearby, with a way back here. */
+    onBoardStop: (name: string) => void;
     onLocate: () => void;
     locating: boolean;
 };
@@ -141,6 +144,7 @@ export function PlanPanel({
     hidden,
     onStage,
     onFold,
+    onBoardStop,
     onLocate,
     locating,
 }: PlanPanelProps) {
@@ -593,15 +597,20 @@ export function PlanPanel({
     const alight = nextTrip?.journey?.legs
         .filter((leg) => leg.mode !== 'walk' && leg.mode !== 'bike')
         .at(-1)?.to.name;
-    const placeDetail = (item: DayItem) =>
-        [
-            item.location?.label,
+    const placeDetail = (item: DayItem) => {
+        const label = item.location?.label ?? null;
+        let stop =
             nextTrip?.target.id === item.id && alight
                 ? stopName(alight, nextTrip.city)
-                : null,
-        ]
-            .filter(Boolean)
-            .join(' · ');
+                : null;
+
+        // "Mülheim Wiener Platz" under "Mülheim": the stop's own name.
+        if (stop && label && stop.startsWith(`${label} `)) {
+            stop = stop.slice(label.length + 1);
+        }
+
+        return [label, stop].filter(Boolean).join(' · ');
+    };
     const home = savedPlaces.find((p) => p.category === 'home');
     const work = savedPlaces.find((p) => p.category === 'work');
     const compact = results && !editing && !desktop;
@@ -1415,6 +1424,7 @@ export function PlanPanel({
                                                         chosen?.id ?? null
                                                     }
                                                     planned={isPlanned}
+                                                    onBoardStop={onBoardStop}
                                                     onSelect={setSelected}
                                                     expanded={open}
                                                     onToggle={(id) => {

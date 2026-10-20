@@ -532,6 +532,27 @@
     gap: 10px;
     flex-wrap: wrap;
 }
+:where(.travel-page) .board-return {
+    padding-inline: 0px;
+    margin-bottom: 6px;
+    color: var(--teal);
+}
+:where(.travel-page) .boarding-stop-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-align: left;
+    color: var(--teal);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-medium);
+    min-height: 44px;
+    margin-top: 2px;
+}
+:where(.travel-page) .boarding-stop-link svg {
+    width: 13px;
+    height: 13px;
+    flex: 0 0 auto;
+}
 @media (hover: hover) {
     :where(.travel-page) .icon-button:hover,
     :where(.travel-page) .quiet-button:hover {
@@ -1147,6 +1168,9 @@
     .travel-page :is(.route-disclosure, .details-toggle svg) {
         transition: none;
     }
+}
+.travel-page .step-nearby {
+    min-height: 36px;
 }
 
 /* ── departures-next/station-context.css ── */
@@ -2562,6 +2586,17 @@
     min-height: 0px;
     padding: 6px 0px 10px;
 }
+:where(.travel-page) .plan-option-way .step-nearby {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-target);
+}
+:where(.travel-page) .plan-option-way .step-nearby svg {
+    display: inline;
+    width: 14px;
+    height: 14px;
+}
 :where(.travel-page) .plan-actions {
     display: flex;
     flex-direction: column;
@@ -2795,6 +2830,9 @@
 }
 .travel-page .results-heading .icon-button {
     min-width: var(--touch-target);
+    min-height: var(--touch-target);
+}
+.travel-page .plan-option-way .step-nearby {
     min-height: var(--touch-target);
 }
 
@@ -3218,7 +3256,7 @@
 /* ---------- App additions (not in the mock) ---------- */
 /* The mock has no reset: where its rules say nothing, the browser's own
    defaults show (borders none in the text colour, a button's 1px 6px
-   padding). The app's base layer changes those, so Travel's own regions
+   padding, small text a size smaller). The app's base layer changes those, so Travel's own regions
    get them back, at no weight: any rule still wins. */
 :where(#departures, #journey-view, .travel-phone-bar),
 :where(#departures, #journey-view, .travel-phone-bar) :where(*) {
@@ -3227,6 +3265,9 @@
 }
 :where(#departures, #journey-view, .travel-phone-bar) :where(button) {
     padding: 1px 6px;
+}
+:where(#departures, #journey-view, .travel-phone-bar) :where(small) {
+    font-size: smaller;
 }
 /* The mock's headings are bold by the browser's own style; the app's reset
    makes headings inherit, so Travel gives them back. */
@@ -3281,6 +3322,12 @@
     font-size: var(--text-small);
 }
 
+/* The mock loads labels.css (Travel's shared parts, travel.css here) after
+   plan.css, so on "We checked" the label row's 6px gap wins over plan.css's
+   5px; here the shared parts load first, so it's said again. */
+:where(.travel-page) .plan-check-chips.tl-chips {
+    gap: 6px;
+}
 /* Where to board isn't known yet (call #9): the shared quiet label. */
 .travel-page .route-step .tl-chip {
     margin-top: var(--space-6);

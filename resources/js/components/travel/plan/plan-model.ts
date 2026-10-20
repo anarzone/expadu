@@ -1,5 +1,6 @@
 import type { DayItem, DayProjection } from '@/types/day';
 import type { Journey, JourneyLeg } from '@/types/transit';
+import { vehicleOf } from '../line-look';
 import { stopName } from '../stop-name';
 import type { TravelIconName } from '../travel-icon';
 
@@ -38,6 +39,7 @@ export type SortKey = 'arrival' | 'duration' | 'walking' | 'changes';
 export type PlanTarget = {
     id: string;
     title: string;
+    kind: DayItem['kind'];
     start_at: string;
     start_time: string;
     official: boolean;
@@ -494,6 +496,10 @@ export type Step = {
     title: string;
     detail: string;
     leg?: JourneyLeg;
+    /** Where a KVB ride boards: its timetable is a tap away in Nearby. */
+    board?: string;
+    /** Where a ride gets off, and when: what's around it is a tap away. */
+    stop?: { name: string; lat: number; lng: number; at: string };
 };
 
 /** A way's steps in the trip page's words ("Tram 4 to Wiener Platz"). */
@@ -511,7 +517,11 @@ export function stepsOf(
         const last = index === legs.length - 1;
 
         if (!isRide(leg)) {
-            const to = last ? destination : stopName(leg.to.name, city);
+            const to = !last
+                ? stopName(leg.to.name, city)
+                : target?.kind === 'appointment'
+                  ? 'your appointment'
+                  : destination;
 
             steps.push({
                 time: leg.depart_time,
@@ -534,12 +544,23 @@ export function stepsOf(
                 .filter(Boolean)
                 .join(' · '),
             leg,
+            // A train's station isn't on KVB's boards.
+            board:
+                vehicleOf(leg.mode) === 'rail'
+                    ? undefined
+                    : stopName(leg.from.name, city),
         });
         steps.push({
             time: leg.arrive_time,
             kind: 'alight',
             title: `Get off at ${stopName(leg.to.name, city)}`,
             detail: last ? 'You’re there' : 'Your stop',
+            stop: {
+                name: stopName(leg.to.name, city),
+                lat: leg.to.lat,
+                lng: leg.to.lng,
+                at: leg.arrive_at,
+            },
         });
     });
 
