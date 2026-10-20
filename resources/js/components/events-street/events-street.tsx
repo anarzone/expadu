@@ -91,15 +91,16 @@ export function EventsStreet({
     // How much moves: the mock's street unless the owner's motion lab
     // (QA tooling, with ?motion=lab) picks otherwise. Replay starts it over.
     const { qaSwitcher } = usePage<{ qaSwitcher: unknown }>().props;
-    const [lab] = useState(
+    // Read after hydration (the server renders without it).
+    const lab = useSyncExternalStore(
+        () => () => {},
         () =>
             !!qaSwitcher &&
-            typeof window !== 'undefined' &&
             new URLSearchParams(window.location.search).get('motion') === 'lab',
+        () => false,
     );
-    const [motion, setMotion] = useState<StreetMotion>(() =>
-        lab ? readMotion() : 'full',
-    );
+    const [chosen, setChosen] = useState<StreetMotion | null>(null);
+    const motion: StreetMotion = lab ? (chosen ?? readMotion()) : 'full';
     const [take, setTake] = useState(0);
     const columnHeld = useRef(false);
     const layout = useLayoutName();
@@ -358,7 +359,7 @@ export function EventsStreet({
             {lab ? (
                 <MotionLab
                     motion={motion}
-                    onMotion={setMotion}
+                    onMotion={setChosen}
                     onReplay={() => {
                         forgetPasted();
                         setColumnPos(0);

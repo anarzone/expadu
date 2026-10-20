@@ -62,12 +62,40 @@ const WHOLE: Record<string, string> = {
     tree: 'm-sway',
 };
 
-// Posters pasted up in this tab already: they don't paste again.
-const pasted = new Set<string>();
+// Posters pasted up in this tab already don't paste again, after Back or
+// a refresh too (the mock's wall.js keeps them in sessionStorage).
+const PASTED = 'expadu-wall-pasted';
+const pasted = new Set<string>(
+    (() => {
+        try {
+            return JSON.parse(
+                window.sessionStorage.getItem(PASTED) ?? '[]',
+            ) as string[];
+        } catch {
+            return [];
+        }
+    })(),
+);
+
+function remember(key: string) {
+    pasted.add(key);
+
+    try {
+        window.sessionStorage.setItem(PASTED, JSON.stringify([...pasted]));
+    } catch {
+        // Remembering is a nicety; without it a poster pastes again.
+    }
+}
 
 /** Lets every poster paste up again (the motion lab's Replay). */
 export function forgetPasted() {
     pasted.clear();
+
+    try {
+        window.sessionStorage.removeItem(PASTED);
+    } catch {
+        // As above.
+    }
 }
 
 type Layout = {
@@ -441,7 +469,7 @@ export default function StreetScene<T>({
             style: { ...style, '--i': i } as CSSProperties,
             onAnimationEnd: (e: AnimationEvent<HTMLDivElement>) => {
                 if (key && e.animationName === 'pp-paste') {
-                    pasted.add(key);
+                    remember(key);
                 }
             },
         };
