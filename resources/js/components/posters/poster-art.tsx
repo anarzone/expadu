@@ -1,7 +1,7 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { PosterIcon } from './poster-icon';
+import { Icon } from '@/components/ui/icon';
 import type { PosterEvent } from './poster-model';
 import {
     isPast,
@@ -260,7 +260,7 @@ export function Poster({
                 title={saved ? 'Saved' : 'Save for later'}
                 onClick={onSave}
             >
-                <PosterIcon name="bookmark" />
+                <Icon name="bookmark" variant="line" />
             </button>
         ) : null;
 
@@ -301,7 +301,7 @@ export function Poster({
                 >
                     <span className="pp-top">
                         <span className="pp-category">
-                            <PosterIcon name={category.icon} />
+                            <Icon name={category.icon} variant="line" />
                             <span>{category.label}</span>
                         </span>
                         {flags ? (
@@ -330,7 +330,7 @@ export function Poster({
                         title="Add to plan"
                         onClick={onPlan}
                     >
-                        <PosterIcon name="calendar-add" />
+                        <Icon name="calendar-add" variant="line" />
                     </button>
                 ) : null}
             </div>
@@ -345,7 +345,7 @@ export function Poster({
                             aria-label="Turn the poster back over"
                             onClick={turn}
                         >
-                            <PosterIcon name="turn" />
+                            <Icon name="turn" variant="line" />
                         </button>
                     </div>
                     <div className="pp-back-body">
@@ -400,7 +400,7 @@ export function Poster({
                                 title="Add to plan"
                                 onClick={onPlan}
                             >
-                                <PosterIcon name="calendar-add" />
+                                <Icon name="calendar-add" variant="line" />
                                 <span>Add to plan</span>
                             </button>
                         ) : null}
@@ -414,7 +414,7 @@ export function Poster({
                                     rel="noopener"
                                 >
                                     City listing
-                                    <PosterIcon name="arrow" />
+                                    <Icon name="arrow" variant="line" />
                                 </a>
                             ) : null
                         ) : onMore ? (

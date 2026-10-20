@@ -3,7 +3,7 @@
    without usable media still gets a recognisable, honest picture.
    Ported from the mock's events-next/poster-art.js. */
 
-import type { PosterIconName } from './poster-icon';
+import type { IconName } from '@/components/ui/icon';
 
 export type PosterInk = 'day' | 'evening' | 'night' | 'paper';
 export type PosterFamily = 'rings' | 'checks' | 'waves' | 'bubbles' | 'dots';
@@ -162,7 +162,7 @@ export function posterFamily(
 
 /* One icon and one name per category on cards, chips and the sheet.
    "Other" reads as plain "Event". */
-const categories: Record<string, { label: string; icon: PosterIconName }> = {
+const categories: Record<string, { label: string; icon: IconName }> = {
     culture: { label: 'Culture', icon: 'museum' },
     party: { label: 'Party', icon: 'spark' },
     sports: { label: 'Sports', icon: 'ball' },
@@ -173,7 +173,7 @@ const categories: Record<string, { label: string; icon: PosterIconName }> = {
 
 export function posterCategory(category: string | null | undefined): {
     label: string;
-    icon: PosterIconName;
+    icon: IconName;
 } {
     return (
         (category && categories[category]) || {
