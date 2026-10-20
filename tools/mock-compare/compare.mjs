@@ -92,6 +92,20 @@ const norm = (prop, v) => {
     return s.replace(/\s+/g, ' ');
 };
 
+// A side's own cookies, e.g. the app's mock_clock, so the server works out the mock's day too.
+// Sign-in sends them as well: a page loaded without the mock's clock can change what the
+// comparison then shows (a sample trip in the past ends).
+async function addSideCookies(context, side) {
+    if (!side.cookies) return;
+    await context.addCookies(
+        Object.entries(side.cookies).map(([name, value]) => ({
+            name,
+            value,
+            url: new URL(side.url).origin,
+        })),
+    );
+}
+
 async function login(browser, side) {
     const l = side.login;
     if (!l) return undefined;
@@ -109,6 +123,7 @@ async function login(browser, side) {
             storageState: cache,
             serviceWorkers: 'block',
         });
+        await addSideCookies(context, side);
         const page = await context.newPage();
         await page.goto(side.url, { waitUntil: 'commit' });
         const ok = !new URL(page.url()).pathname.startsWith('/login');
@@ -119,6 +134,7 @@ async function login(browser, side) {
         viewport: { width: 1280, height: 900 },
         serviceWorkers: 'block',
     });
+    await addSideCookies(context, side);
     const page = await context.newPage();
     await page.goto(origin + (l.path ?? '/login'), {
         waitUntil: 'domcontentloaded',
@@ -149,6 +165,10 @@ async function login(browser, side) {
             `Sign-in to ${origin} failed${error ? `: ${error}` : ''}`,
         );
     }
+    // The saved session is shared by every config on this port, so it keeps none of this
+    // config's own cookies.
+    for (const name of Object.keys(side.cookies ?? {}))
+        await context.clearCookies({ name });
     fs.mkdirSync(path.dirname(cache), { recursive: true });
     await context.storageState({ path: cache });
     await context.close();
@@ -182,15 +202,7 @@ async function open(browser, sideName, width) {
                 ? side.storage
                 : undefined),
     });
-    // A side's own cookies, e.g. the app's mock_clock, so the server works out the mock's day too.
-    if (side.cookies)
-        await context.addCookies(
-            Object.entries(side.cookies).map(([name, value]) => ({
-                name,
-                value,
-                url: new URL(side.url).origin,
-            })),
-        );
+    await addSideCookies(context, side);
     const page = await context.newPage();
     if (cfg.clock) await page.clock.setFixedTime(new Date(cfg.clock));
     for (const s of side.init ?? []) await page.addInitScript(s);
@@ -443,7 +455,8 @@ for (const width of widths) {
                     if (c.same) {
                         row.diffShare = c.diffPixels / c.total;
                         if (
-                            row.diffShare > pixelThreshold &&
+                            row.diffShare >
+                                (pair.pixelThreshold ?? pixelThreshold) &&
                             !pair.contentDiffers
                         )
                             row.problems.push(

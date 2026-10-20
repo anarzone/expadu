@@ -13,7 +13,7 @@ export function Icon({ name }: { name: IconName }) {
 const topics: Record<string, { icon: IconName; tone: string }> = {
     residence: { icon: 'document', tone: '' },
     address: { icon: 'pin', tone: 'peach' },
-    tax: { icon: 'document', tone: 'yellow' },
+    tax: { icon: 'document', tone: 'violet' },
     health: { icon: 'health', tone: 'green' },
     money: { icon: 'bank', tone: 'blue' },
     family: { icon: 'people', tone: 'violet' },

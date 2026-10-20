@@ -239,6 +239,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-select-bg-hover: #cceef3;
     --color-select-text: #00768b; /* teal: travel icons, line ink */
     --color-focus: #00768b;
+    --color-field-focus: #05badd; /* a field that owns its focus (the mock's --cyan) */
 
     /* ── Colour · paperwork ────────────────────────────────────────────── */
     --color-paper-bg: #efe7fb;
@@ -441,6 +442,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
     --color-select-bg-hover: var(--color-select-bg-hover);
     --color-select-text: var(--color-select-text);
     --color-focus: var(--color-focus);
+    --color-field-focus: var(--color-field-focus);
     --color-paper-bg: var(--color-paper-bg);
     --color-paper-bg-quiet: var(--color-paper-bg-quiet);
     --color-paper-text: var(--color-paper-text);
