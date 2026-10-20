@@ -2,6 +2,7 @@
    desktop street, fits it to the screen, picks the hour its sky shows,
    and hangs the day's posters on it. */
 
+import { usePage } from '@inertiajs/react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
     useEffect,
@@ -14,7 +15,9 @@ import type { PosterEvent } from '@/components/posters/poster-model';
 import { berlinClock, berlinDate } from '@/components/posters/poster-model';
 import type { StreetLayoutName } from './street-layout';
 import { STREET, streetFit } from './street-layout';
-import StreetScene from './street-scene';
+import { MotionLab, readMotion } from './street-motion-lab';
+import StreetScene, { forgetPasted } from './street-scene';
+import type { StreetMotion } from './street-scene';
 import { streetSky } from './street-sky';
 import type { Story } from './street-stories';
 import { HourRings, StoryViewer, storyHours } from './street-stories';
@@ -85,6 +88,20 @@ export function EventsStreet({
     const [seen, setSeen] = useState<Set<number>>(() => new Set());
     const [ringsRight, setRingsRight] = useState(12);
     const opener = useRef<HTMLElement | null>(null);
+    // How much moves: the mock's street unless the owner's motion lab
+    // (QA tooling, with ?motion=lab) picks otherwise. Replay starts it over.
+    const { qaSwitcher } = usePage<{ qaSwitcher: unknown }>().props;
+    const [lab] = useState(
+        () =>
+            !!qaSwitcher &&
+            typeof window !== 'undefined' &&
+            new URLSearchParams(window.location.search).get('motion') === 'lab',
+    );
+    const [motion, setMotion] = useState<StreetMotion>(() =>
+        lab ? readMotion() : 'full',
+    );
+    const [take, setTake] = useState(0);
+    const columnHeld = useRef(false);
     const layout = useLayoutName();
     const host = useRef<HTMLDivElement>(null);
     const [box, setBox] = useState<{
@@ -157,6 +174,32 @@ export function EventsStreet({
 
         return () => resized.disconnect();
     }, [layout, forecast, box]);
+
+    // The column turns to its next poster every 6s (the mock's tick), but
+    // not while you point at it, while one of its posters is turned over,
+    // while a story is open, or with reduced motion.
+    const turning = motion !== 'still' && column.length > 1 && !story;
+
+    useEffect(() => {
+        if (
+            !turning ||
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ) {
+            return;
+        }
+
+        const timer = window.setInterval(() => {
+            const turned = host.current?.querySelector(
+                '.st-drum .pp.is-turned',
+            );
+
+            if (!columnHeld.current && !turned && !document.hidden) {
+                setColumnPos((p) => p + 1);
+            }
+        }, 6000);
+
+        return () => window.clearInterval(timer);
+    }, [turning]);
 
     const isToday = date === today && berlinDate() === today;
     const timed = wall.filter((l) => l.poster.start);
@@ -238,6 +281,12 @@ export function EventsStreet({
                     }
                 >
                     <StreetScene
+                        key={take}
+                        motion={motion}
+                        itemKey={(item) => item.key}
+                        onColumnHold={(held) => {
+                            columnHeld.current = held;
+                        }}
                         layout={layout}
                         width={fit.width}
                         density={
@@ -303,6 +352,17 @@ export function EventsStreet({
                         }
 
                         setStory(next);
+                    }}
+                />
+            ) : null}
+            {lab ? (
+                <MotionLab
+                    motion={motion}
+                    onMotion={setMotion}
+                    onReplay={() => {
+                        forgetPasted();
+                        setColumnPos(0);
+                        setTake((t) => t + 1);
                     }}
                 />
             ) : null}

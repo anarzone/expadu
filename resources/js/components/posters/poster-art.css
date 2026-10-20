@@ -462,22 +462,62 @@
     color: var(--poster-cream);
 }
 .pp-flag--now > span {
+    position: relative;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: var(--poster-yellow);
 }
+/* The live dot's ring spreads 8px and fades (the mock's box-shadow pulse),
+   drawn as a scaling disc so the compositor runs it, not each frame's
+   paint. */
 @media (prefers-reduced-motion: no-preference) {
-    .pp-flag--now > span {
-        animation: pp-live 1.6s ease-out infinite;
+    .pp-flag--now > span::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: #ffe363b3;
+        animation: pp-live 6.4s linear infinite;
     }
 }
+/* Four pulses a run: each repeat wakes the page. */
 @keyframes pp-live {
-    from {
-        box-shadow: 0 0 0 0 #ffe363b3;
+    0% {
+        opacity: 1;
+        transform: scale(1);
+        animation-timing-function: ease-out;
     }
-    to {
-        box-shadow: 0 0 0 8px #ffe36300;
+    24.999% {
+        opacity: 0;
+        transform: scale(3);
+    }
+    25% {
+        opacity: 1;
+        transform: scale(1);
+        animation-timing-function: ease-out;
+    }
+    49.999% {
+        opacity: 0;
+        transform: scale(3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+        animation-timing-function: ease-out;
+    }
+    74.999% {
+        opacity: 0;
+        transform: scale(3);
+    }
+    75% {
+        opacity: 1;
+        transform: scale(1);
+        animation-timing-function: ease-out;
+    }
+    100% {
+        opacity: 0;
+        transform: scale(3);
     }
 }
 .pp-flag--over {
