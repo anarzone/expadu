@@ -120,7 +120,7 @@ function usePicks(date: string) {
 
 type Way =
     | { state: 'loading' }
-    /** The planner gave ways, but none there by the start with the margin. */
+    /** The planner gave ways, but none there by the start. */
     | { state: 'none' }
     /** The planner didn't answer: not checked, never a guess. */
     | { state: 'unchecked' }
@@ -144,9 +144,10 @@ function jsonHeaders() {
 }
 
 /**
- * The way to a later plan from the one before it: the latest scheduled or
- * live option that's there by its start with the margin to spare, asked
- * once in the body (never the URL). A way you added to your plan is that one.
+ * The way to a later plan from the one before it: of the ways there by its
+ * start, the one that arrives first (the mock's arrive-by list, by arrival),
+ * asked once in the body (never the URL). A way you added to your plan is
+ * that one.
  */
 function useWayTo(to: DayItem | null, from: DayItem | null): Way | null {
     const [way, setWay] = useState<{ key: string; way: Way } | null>(null);
@@ -168,7 +169,6 @@ function useWayTo(to: DayItem | null, from: DayItem | null): Way | null {
             depart_at: to.start_at,
             arrive_by: '1',
         };
-        const margin = (to.official ? 10 : 5) * 60_000;
         const by = new Date(to.start_at).getTime();
         setWay({ key, way: { state: 'loading' } });
 
@@ -188,12 +188,12 @@ function useWayTo(to: DayItem | null, from: DayItem | null): Way | null {
                 }
 
                 const there = data.journeys.filter(
-                    (j) => new Date(j.arrive_at).getTime() <= by - margin,
+                    (j) => new Date(j.arrive_at).getTime() <= by,
                 );
                 there.sort(
                     (a, b) =>
-                        new Date(b.depart_at).getTime() -
-                        new Date(a.depart_at).getTime(),
+                        new Date(a.arrive_at).getTime() -
+                        new Date(b.arrive_at).getTime(),
                 );
                 const best = there[0];
                 setWay({
@@ -385,7 +385,7 @@ export function MyDay({ day, weather, trip, onPlan, onWayBack }: MyDayProps) {
                 : way?.state === 'loading'
                   ? 'Finding the way…'
                   : way?.state === 'none'
-                    ? `No way gets there by ${item.start_time} with time to spare.`
+                    ? `No way gets there by ${item.start_time}.`
                     : 'Not checked: route times aren’t available right now.';
 
         return (
