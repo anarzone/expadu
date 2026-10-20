@@ -49,13 +49,19 @@ return [
 
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
-        'model' => env('ANTHROPIC_MODEL', 'claude-haiku-4-5-20251001'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-haiku-5-5'),
+        // low | medium | high. The classifier forces its tool, so this
+        // mostly trims output spend rather than thinking.
+        'effort' => env('ANTHROPIC_EFFORT', 'low'),
     ],
 
     'composer_llm' => [
         'enabled' => env('COMPOSER_LLM_ENABLED', false),
         'key' => env('COMPOSER_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
-        'model' => env('COMPOSER_LLM_MODEL', 'claude-sonnet-5'),
+        'model' => env('COMPOSER_LLM_MODEL', 'claude-haiku-5-5'),
+        // Thinking is disabled for latency, which Haiku 5.5 accepts only at
+        // effort high or below; xhigh/max would 400 and fall back.
+        'effort' => env('COMPOSER_LLM_EFFORT', 'low'),
         'timeout' => env('COMPOSER_LLM_TIMEOUT', 8),
     ],
 

@@ -4,12 +4,14 @@ namespace App\Jobs;
 
 use App\Enums\EventCategory;
 use App\Models\Event;
+use App\Services\ClassificationRefused;
 use App\Services\ClassifiesEvents;
 use App\Services\EventEnrichmentService;
 use App\Services\VenueResolver;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -60,7 +62,25 @@ class ProcessEventJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $result = $classifier->classify($event);
+        // A refusal repeats on the same input, and the hourly backfill would
+        // re-queue (and re-bill) it forever; skip until the source changes.
+        $refusalKey = 'events:classification-refused:'.$event->id;
+        if (Cache::get($refusalKey) === $inputHash) {
+            return;
+        }
+
+        try {
+            $result = $classifier->classify($event);
+        } catch (ClassificationRefused $exception) {
+            Cache::put($refusalKey, $inputHash, now()->addDays(30));
+            $event->update(['needs_review' => true]);
+            Log::warning('event classification refused', [
+                'event_id' => $event->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return;
+        }
 
         // Below the confidence floor: keep the translation but DROP the
         // chips (a missing chip is annoying, a wrong one destroys trust)

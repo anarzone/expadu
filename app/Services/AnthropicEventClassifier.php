@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\EventCategory;
 use App\Models\Event;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -73,7 +74,9 @@ class AnthropicEventClassifier implements ClassifiesEvents
         $classificationDescription = $requiresChunkedTranslation
             ? mb_substr((string) $event->description, 0, self::INLINE_DESCRIPTION_LIMIT)
             : $event->description;
-        $maxTokens = min(4096, max(1200, 700 + (int) ceil(mb_strlen((string) $classificationDescription) / 3)));
+        // Haiku 5.5 counts the same text as ~30% more tokens than 4.5, and
+        // description_en echoes the whole source back in English.
+        $maxTokens = min(6144, max(1600, 900 + (int) ceil(mb_strlen((string) $classificationDescription) / 2.3)));
 
         $response = Http::baseUrl('https://api.anthropic.com')
             ->timeout(20)
@@ -85,6 +88,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
             ->post('/v1/messages', [
                 'model' => config('services.anthropic.model'),
                 'max_tokens' => $maxTokens,
+                'output_config' => ['effort' => config('services.anthropic.effort', 'low')],
                 'tool_choice' => ['type' => 'tool', 'name' => 'classify_event'],
                 'tools' => [[
                     'name' => 'classify_event',
@@ -108,6 +112,8 @@ class AnthropicEventClassifier implements ClassifiesEvents
                 ]],
             ])
             ->throw();
+
+        $this->assertCompleted($response);
 
         $input = collect($response->json('content', []))
             ->firstWhere('type', 'tool_use')['input'] ?? null;
@@ -152,6 +158,7 @@ class AnthropicEventClassifier implements ClassifiesEvents
                     ->post('/v1/messages', [
                         'model' => config('services.anthropic.model'),
                         'max_tokens' => 4096,
+                        'output_config' => ['effort' => config('services.anthropic.effort', 'low')],
                         'tool_choice' => ['type' => 'tool', 'name' => 'translate_description_chunk'],
                         'tools' => [[
                             'name' => 'translate_description_chunk',
@@ -172,6 +179,8 @@ class AnthropicEventClassifier implements ClassifiesEvents
                     ])
                     ->throw();
 
+                $this->assertCompleted($response);
+
                 $translation = collect($response->json('content', []))
                     ->firstWhere('type', 'tool_use')['input']['translation'] ?? null;
 
@@ -182,6 +191,21 @@ class AnthropicEventClassifier implements ClassifiesEvents
                 return $translation;
             })
             ->implode("\n\n");
+    }
+
+    /**
+     * Haiku 5.5 can decline a request (HTTP 200, stop_reason "refusal") and
+     * has no server-side fallback; surface it apart from malformed output.
+     */
+    private function assertCompleted(Response $response): void
+    {
+        match ($response->json('stop_reason')) {
+            'refusal' => throw new ClassificationRefused(
+                'Classifier declined: '.($response->json('stop_details.category') ?? 'uncategorised'),
+            ),
+            'max_tokens' => throw new RuntimeException('Classifier output hit max_tokens'),
+            default => null,
+        };
     }
 
     private function escapeSourceText(string $value): string
