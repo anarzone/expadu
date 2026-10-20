@@ -132,7 +132,7 @@ export function EventsStreet({
             const menu = document
                 .querySelector('.shell-nav')
                 ?.getBoundingClientRect();
-            setBox({
+            const next = {
                 width: node.clientWidth,
                 room: window.innerHeight - top - GAP,
                 menuTop:
@@ -140,12 +140,28 @@ export function EventsStreet({
                         ? menu.top + window.scrollY
                         : null,
                 top,
-            });
+            };
+            setBox((prev) =>
+                prev &&
+                prev.width === next.width &&
+                prev.room === next.room &&
+                prev.menuTop === next.menuTop &&
+                prev.top === next.top
+                    ? prev
+                    : next,
+            );
         };
 
         measure();
         const resized = new ResizeObserver(measure);
         resized.observe(node);
+
+        // A note above it (a past day's, whose way on arrives later) moves
+        // the street down without resizing it: the board around it grows.
+        if (node.parentElement) {
+            resized.observe(node.parentElement);
+        }
+
         window.addEventListener('resize', measure);
 
         return () => {

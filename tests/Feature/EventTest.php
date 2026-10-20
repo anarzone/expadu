@@ -140,23 +140,3 @@ test('user can leave an event', function () {
 
     expect($user->attendingEvents()->where('events.id', $event->id)->exists())->toBeFalse();
 });
-
-test('a repeating event lists its next dates; a one-off or hidden listing shows none', function () {
-    $this->actingAs(User::factory()->onboarded()->create());
-    $weekly = Event::factory()->create(['starts_at' => '2026-10-08 19:00:00', 'ends_at' => '2026-10-08 21:00:00', 'recurrence' => 'FREQ=WEEKLY;BYDAY=TH']);
-    $once = Event::factory()->create(['starts_at' => '2026-10-08 19:00:00']);
-    $hidden = Event::factory()->create(['starts_at' => '2026-10-08 19:00:00', 'recurrence' => 'FREQ=WEEKLY;BYDAY=TH', 'status' => 'hidden']);
-
-    $this->getJson(route('api.events.later', ['event' => $weekly, 'after' => '2026-10-08T19:00:00+02:00']))
-        ->assertOk()
-        ->assertJsonCount(3, 'dates')
-        ->assertJsonPath('dates.0.start', '2026-10-15T19:00:00+02:00');
-
-    $this->getJson(route('api.events.later', ['event' => $once, 'after' => '2026-10-08T19:00:00+02:00']))
-        ->assertOk()
-        ->assertJsonCount(0, 'dates');
-
-    // A hidden listing's dates aren't exposed.
-    $this->getJson(route('api.events.later', ['event' => $hidden, 'after' => '2026-10-08T19:00:00+02:00']))
-        ->assertNotFound();
-});
