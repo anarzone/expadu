@@ -60,8 +60,7 @@ export function PlanSaved({
                 Added to your plan
             </h2>
             <p className="plan-saved-summary">
-                {title} · leave {planned.depart_time} · there{' '}
-                {planned.arrive_time}
+                {`${title} · leave ${planned.depart_time} · there ${planned.arrive_time}`}
             </p>
             <ul className="plan-saved-list">
                 <li>

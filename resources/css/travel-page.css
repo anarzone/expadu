@@ -1594,11 +1594,6 @@
     width: 15px;
     height: 15px;
 }
-@media (max-width: 999px) {
-    .travel-page {
-        overflow-x: clip;
-    }
-}
 @media (max-width: 359px) {
     :where(.travel-page) .nearby-cards {
         grid-template-columns: minmax(0px, 1fr);
@@ -3256,8 +3251,9 @@
 /* ---------- App additions (not in the mock) ---------- */
 /* The mock has no reset: where its rules say nothing, the browser's own
    defaults show (borders none in the text colour, a button's 1px 6px
-   padding, small text a size smaller). The app's base layer changes those, so Travel's own regions
-   get them back, at no weight: any rule still wins. */
+   padding, small text a size smaller). The app's base layer changes
+   those, so Travel's own regions get them back, at no weight: any rule
+   still wins. */
 :where(#departures, #journey-view, .travel-phone-bar),
 :where(#departures, #journey-view, .travel-phone-bar) :where(*) {
     border-style: none;

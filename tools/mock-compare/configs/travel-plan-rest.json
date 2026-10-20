@@ -1,0 +1,51 @@
+{
+    "name": "travel-plan-rest",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        1280,
+        1440,
+        1512
+    ],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/",
+        "wait": "#day-places button"
+    },
+    "app": {
+        "url": "/timetable",
+        "wait": "#day-places button",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {"name": "Plan a trip panel", "mock": "#journey-view", "app": "#journey-view", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured). The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.", "contentDiffers": true},
+        {"name": "panel head", "mock": ".plan-panel-head", "app": ".plan-panel-head", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured). The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.", "contentDiffers": true},
+        {"name": "panel title", "mock": ".plan-panel-title strong", "app": ".plan-panel-title strong", "ignore": ["w", "y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured). Its width follows the clock line under it: The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it."},
+        {"name": "panel clock", "mock": ".plan-panel-title small", "app": ".plan-panel-title small", "contentDiffers": true, "ignore": ["w", "y"], "reason": "The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it. The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "fields", "mock": "#journey-form .journey-fields", "app": "#journey-form .journey-fields", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "To field", "mock": ".to-field", "app": ".to-field", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "To input", "mock": "#to", "app": "#to", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "favourites heading", "mock": "#journey-start .plan-subhead", "app": "#journey-start .plan-subhead", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "favourite stop", "mock": "#favourite-stops button", "app": "#favourite-stops button", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "favourite stop name", "mock": "#favourite-stops button strong", "app": "#favourite-stops button strong", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "Home / Work", "mock": "#favourite-places", "app": "#favourite-places", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "Home", "mock": "#favourite-places > *", "app": "#favourite-places > *", "index": 0, "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "Today's places heading", "mock": "#journey-start .section-heading", "app": "#journey-start .section-heading", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured). The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.", "contentDiffers": true},
+        {"name": "Today's places title", "mock": "#places-title", "app": "#places-title", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "Today's places note", "mock": "#journey-start .section-note", "app": "#journey-start .section-note", "contentDiffers": true, "ignore": ["w", "x", "y"], "reason": "The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it. The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "today's place: the appointment", "mock": "#day-places button", "app": "#day-places button", "index": 0, "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "today's place time", "mock": "#day-places button time", "app": "#day-places button time", "index": 0, "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "today's place title", "mock": "#day-places button strong", "app": "#day-places button strong", "index": 0, "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "today's place detail", "mock": "#day-places button small", "app": "#day-places button small", "index": 0, "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "today's place: the evening", "mock": "#day-places button", "app": "#day-places button", "index": 1, "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "Go here", "mock": "#day-places .day-place-pick", "app": "#day-places .day-place-pick", "index": 1, "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."},
+        {"name": "explainer", "mock": ".plan-explainer", "app": ".plan-explainer", "contentDiffers": true, "reason": "The explainer's last line: the mock says \"This preview says which of them it has\", the app \"Each answer says which of them it had\". The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured).", "ignore": ["y"]},
+        {"name": "explainer title", "mock": ".plan-explainer strong", "app": ".plan-explainer strong", "ignore": ["y"], "reason": "The panel is sticky (top 96px). At the sample moment the live Nearby column beside it is empty (no live departures for 30 Sept), so the page is too short for it to sit 8px lower; with departures it sits at 96 like the mock (measured)."}
+    ]
+}

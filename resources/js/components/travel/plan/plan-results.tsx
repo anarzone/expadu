@@ -172,7 +172,8 @@ function OptionTitle({ option }: { option: PlanOption }) {
                     />
                 </span>
             ))}
-            <span className="plan-option-at">at {legs[0].depart_time}</span>
+            {/* One text node, shaped as the mock's is. */}
+            <span className="plan-option-at">{`at ${legs[0].depart_time}`}</span>
         </span>
     );
 }

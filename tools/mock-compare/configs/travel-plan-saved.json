@@ -1,0 +1,67 @@
+{
+    "name": "travel-plan-saved",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        1280,
+        1440,
+        1512
+    ],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/",
+        "wait": "#day-places button",
+        "before": [
+            {
+                "click": "#day-places button"
+            },
+            {
+                "wait": 600
+            },
+            {
+                "click": "[data-action=\"save-plan\"]"
+            },
+            {
+                "wait": 500
+            }
+        ],
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { position: static !important; max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })",
+            "document.addEventListener('click', (event) => { if (event.target.closest('[data-action=\"save-plan\"], .plan-save')) setTimeout(() => window.scrollTo(0, 0), 300); }, true)"
+        ]
+    },
+    "app": {
+        "url": "/timetable?view=journey&activity=mock%3Ablue-card-appointment&compare=1",
+        "wait": ".plan-option",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'",
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.dataset.compare = 'static'; s.textContent = '#journey-view { position: static !important; max-height: none !important; overflow: visible !important; } .plan-back-row, .plan-actions { position: static !important; }'; document.head.append(s); })",
+            "document.addEventListener('click', (event) => { if (event.target.closest('[data-action=\"save-plan\"], .plan-save')) setTimeout(() => window.scrollTo(0, 0), 300); }, true)"
+        ],
+        "before": [
+            {
+                "click": ".plan-save"
+            },
+            {
+                "wait": 800
+            }
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "note": "Measuring aid, on both sides alike: the planner's own scrolling, the planner itself and its sticky bars (back row, Show the way / Add to plan) are made static (beside the mock's long sample board the sticky planner is pushed 8px lower than beside the app's empty past-day board), so an element scrolled into view for its screenshot isn't covered by a sticky bar or measured at a different scroll; layout and styles are otherwise untouched. After Add to plan both pages scroll back to the top: the click scrolls the page to reach the button, and only the mock's long sample Nearby board keeps it scrolled, with the sticky planner beside it.",
+    "pairs": [
+        {"name": "saved view", "mock": ".plan-saved", "app": ".plan-saved", "contentDiffers": true, "ignore": ["h"], "reason": "The reminder starts on only where notifications are already allowed (the mock starts it on); the \"We keep watching it\" row waits for the watcher (agreed with the coordinator)."},
+        {"name": "saved mark", "mock": ".plan-saved-mark", "app": ".plan-saved-mark"},
+        {"name": "saved title", "mock": "#plan-saved-title", "app": "#plan-saved-title"},
+        {"name": "saved summary", "mock": ".plan-saved-summary", "app": ".plan-saved-summary"},
+        {"name": "It's on My day", "mock": ".plan-saved-list li", "app": ".plan-saved-list li", "index": 0},
+        {"name": "Remind me", "mock": ".plan-saved-list li", "app": ".plan-saved-list li", "index": 1, "contentDiffers": true, "ignore": ["h"], "reason": "The reminder starts off without notifications allowed (the mock starts it on)."},
+        {"name": "switch", "mock": ".plan-saved-list [role=\"switch\"] .plan-switch", "app": ".plan-saved-list [role=\"switch\"] .plan-switch", "contentDiffers": true, "reason": "Off here, on in the mock (see Remind me): its colour, and it sits mid-row in a row of another height.", "ignore": ["y", "background-color"]},
+        {"name": "saved actions", "mock": ".plan-saved-actions", "app": ".plan-saved-actions", "ignore": ["y"], "reason": "Follows the list (the watching row). After the list, whose reminder row is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.", "pixels": false},
+        {"name": "Change the plan", "mock": ".plan-saved-actions .quiet-button", "app": ".plan-saved-actions .quiet-button", "ignore": ["y"], "reason": "Follows the list. After the list, whose reminder row is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.", "pixels": false},
+        {"name": "Done", "mock": ".plan-saved-actions .primary", "app": ".plan-saved-actions .primary", "ignore": ["y"], "reason": "Follows the list. After the list, whose reminder row is taller in the mock (its reminder is on), it lands on a different sub-pixel y, so its edges and glyphs rasterise differently. Box and styles match.", "pixels": false}
+    ]
+}
