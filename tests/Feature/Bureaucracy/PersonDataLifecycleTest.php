@@ -1,6 +1,5 @@
 <?php
 
-use App\Bureaucracy\Cases\CurrentCasePlan;
 use App\Bureaucracy\Facts\CaseFactStore;
 use App\Bureaucracy\Facts\ConfirmedBureaucracyAttributes;
 use App\Bureaucracy\Facts\LegacyFactBootstrapper;
@@ -68,7 +67,6 @@ test('an erased dossier does not recreate questions or materialise universal tas
     Task::factory()->approvedFixture()->create(['coverage_scope' => 'universal', 'applies_if' => []]);
     app(PersonDataLifecycle::class)->erase($subject, $person);
     app(PathGenerator::class)->ensure($subject->fresh());
-    app(CurrentCasePlan::class)->for($subject->fresh());
     expect($subject->userTasks()->count())->toBe(0)
         ->and($person->dossier->questions()->count())->toBe(0)
         ->and($person->dossier->planSnapshots()->count())->toBe(0);

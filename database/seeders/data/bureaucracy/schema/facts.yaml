@@ -41,7 +41,7 @@ sponsor_current_title:
   type: enum
   options: [national_d_visa, standard_work_permit, blue_card_pending, blue_card, settlement_permit_9, settlement_permit_18c, settlement_permit_unknown, other]
   question: Which German residence status does your spouse currently have?
-  why: Family-reunification and settlement options depend on the sponsor's current title.
+  why: Family-reunification and settlement options depend on the sponsor’s current title.
   sensitivity: high
   priority: 95
   reconfirm_after_days: 180
@@ -100,7 +100,7 @@ housing_sufficient:
 legal_social_knowledge_proved:
   type: enum
   options: ['yes', 'no', unsure]
-  question: Can you prove basic knowledge of Germany's legal and social system, for example with Leben in Deutschland?
+  question: Can you prove basic knowledge of Germany’s legal and social system, for example with Leben in Deutschland?
   why: This is one of the statutory settlement-permit checks.
   sensitivity: normal
   priority: 55
@@ -181,7 +181,7 @@ moved_in_at:
   type: date
   date_semantics: historical
   question: When did you actually move into your current home?
-  why: Moving in and having the housing provider's confirmation are different facts.
+  why: Moving in and having the housing provider’s confirmation are different facts.
   sensitivity: high
   priority: 100
   reconfirm_after_days: 180
@@ -189,7 +189,7 @@ moved_in_at:
 housing_provider_confirmation:
   type: enum
   options: [available, requested, not_available]
-  question: Do you have the housing provider's confirmation for this home?
+  question: Do you have the housing provider’s confirmation for this home?
   why: We keep document availability separate from whether you already live there.
   sensitivity: normal
   priority: 80
@@ -208,7 +208,7 @@ residence_card_expires_at:
   type: date
   date_semantics: expiry
   question: What expiry date is printed on your physical residence card?
-  why: The card's validity is recorded separately from your legal residence status.
+  why: The card’s validity is recorded separately from your legal residence status.
   sensitivity: high
   priority: 80
   reconfirm_after_days: 180

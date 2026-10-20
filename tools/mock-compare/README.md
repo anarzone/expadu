@@ -84,8 +84,14 @@ login rate limit.
 
 Per pair: `index` (or `mockIndex` / `appIndex`), `widths`, `props` (replaces the default list),
 `ignore` (props or `x`/`y`/`w`/`h` to skip, each with a reason in the PR), `pixels: false`,
-`contentDiffers: true`. Per side: `wait`, `init` (scripts run before the page), `before`
-(`[{ "click": "selector" }, { "wait": 300 }]` to open a menu or sheet first).
+`contentDiffers: true`, `before` (steps run on both pages just before this pair, and left done for
+the pairs after it, so open states go last; `mockBefore` / `appBefore` when the selectors differ).
+Per side: `wait`, `init` (scripts run before the page), `before` (`[{ "click": "selector" },
+{ "key": "Escape" }, { "wait": 300 }]` to open a menu or sheet first), `cookies` (`{ "name": "value" }`
+on that side's origin, e.g. the app's `mock_clock`; PHP decodes cookie values, so write `+` as `%2B`),
+`screenshotStyle` (CSS applied only while element screenshots are taken, to hide that side's own
+chrome that can sit over an element: a sticky header, the floating Composer button, the local QA
+switcher; boxes and styles are measured without it).
 
 ## Finding the pairs
 
@@ -105,6 +111,8 @@ On your machine (`APP_ENV=local` only):
 - **Clock:** the server reads the plain `mock_clock` cookie (`App\Support\MockClock`). Set it from
   the app side's `init`, with the same moment as `clock`:
   `"init": ["document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"]`
+  or, so the very first request carries it too, from the side's `cookies`:
+  `"cookies": { "mock_clock": "2026-09-30T13:10:00%2B02:00" }`.
 - **Sample day:** `php artisan mock:sample-day {everyday|busy|quiet|travel} --email=<account>` writes
   the mock's plans for 30 Sept, 1 and 3 Oct (other dates stay). A config names the view it needs in
   `seed`; run that first.
@@ -112,3 +120,13 @@ On your machine (`APP_ENV=local` only):
   than the E2E one: `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class=E2ETestUserSeeder`, seed
   that account, run with `MOCK_COMPARE_EMAIL=<you>@expadu.test`, and delete
   `storage/mock-compare/.session-<port>.json` once so it signs in again.
+- **Paperwork's sample record:** `E2E_EMAIL=<you>@expadu.test php artisan db:seed
+--class='Database\Seeders\MockSample\PaperworkSeeder'` (after E2ETestUserSeeder for that account).
+  It imports this checkout's catalogue, publishes its checked cards as the browser tests do and
+  compiles the release itself, so it needs nothing else first, then replaces that account's
+  Paperwork record through the v2 commands. `configs/paperwork.json` expects it.
+- **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
+--seed` (create it with the postgis and vector extensions first), and start the compare app server
+  with the same `DB_DATABASE`. Never `migrate:fresh` the shared one. Put `DB_DATABASE` (and your
+  own `REDIS_PREFIX`) in the worktree's `.env`: a variable set on the command line doesn't reach
+  Laravel under `php -S` on every setup, so the server can quietly read the shared database.

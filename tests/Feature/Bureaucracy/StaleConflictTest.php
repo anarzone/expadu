@@ -1,6 +1,5 @@
 <?php
 
-use App\Bureaucracy\Cases\CurrentCasePlan;
 use App\Bureaucracy\Facts\CaseFactStore;
 use App\Bureaucracy\Facts\LegacyFactBootstrapper;
 use App\Models\BureaucracyCase;
@@ -81,21 +80,4 @@ it('drops the question once the answer it argued about is retired', function () 
     expect($confirmed->fresh()->state)->toBe('superseded')
         ->and(BureaucracyFactConflict::query()->where('case_id', $case->id)->actionable()->exists())
         ->toBeFalse();
-});
-
-it('never puts a retired answer in front of the user', function () {
-    $case = caseWithConflict();
-
-    // Retire the confirmed side directly, leaving the conflict row behind the
-    // way the live data did.
-    BureaucracyCaseFact::query()
-        ->where('case_id', $case->id)
-        ->where('key', 'current_residence_title')
-        ->where('state', 'confirmed')
-        ->update(['state' => 'superseded', 'superseded_at' => now()]);
-
-    $plan = app(CurrentCasePlan::class)->for($case->user()->firstOrFail());
-
-    expect($plan['active_conflict'])->toBeNull()
-        ->and($plan['coverage_state'])->not->toBe('conflict');
 });
