@@ -322,7 +322,28 @@ function AgendaItem({
 }
 
 /** What the trip between two plans looks like, honestly. */
-function linkWords(link: DayLink): { line: string; tone: string } {
+const clock = (minutes: number) =>
+    `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+/** When the next plan could start at the earliest: rounded up to five minutes. */
+function earliestStart(link: DayLink, from: DayItem): string | null {
+    const end = from.end_time ?? from.start_time;
+
+    if (link.travel_min === null || !end) {
+        return null;
+    }
+
+    const [h, m] = end.split(':').map(Number);
+    const at = Math.ceil((h * 60 + m + link.travel_min) / 5) * 5;
+
+    return at < 24 * 60 ? clock(at) : null;
+}
+
+function linkWords(
+    link: DayLink,
+    from: DayItem,
+    to: DayItem,
+): { line: string; tone: string } {
     const spare =
         link.gap_min !== null && link.travel_min !== null
             ? link.gap_min - link.travel_min
@@ -344,12 +365,26 @@ function linkWords(link: DayLink): { line: string; tone: string } {
                 tone: 'tight',
             };
         case 'overlap':
-            return { line: 'These overlap', tone: 'conflict' };
-        case 'no_connection_in_time':
+            return { line: 'These plans overlap', tone: 'conflict' };
+        case 'no_connection_in_time': {
+            if (link.travel_min === null || link.gap_min === null) {
+                return {
+                    line: 'No connection gets you there in time',
+                    tone: 'conflict',
+                };
+            }
+
+            const earliest = earliestStart(link, from);
+
             return {
-                line: 'No connection gets you there in time',
+                line:
+                    `Needs about ${link.travel_min} min, you have ${Math.max(0, link.gap_min)}` +
+                    (earliest
+                        ? ` · start ${to.title} at ${earliest} or later`
+                        : ''),
                 tone: 'conflict',
             };
+        }
         case 'end_unknown':
             return {
                 line: 'End time not recorded · travel not checked',
@@ -366,7 +401,13 @@ function linkWords(link: DayLink): { line: string; tone: string } {
                 tone: 'unknown',
             };
         default:
-            return { line: 'Travel not checked', tone: 'unknown' };
+            return {
+                line:
+                    link.gap_min !== null && link.gap_min > 0
+                        ? `${link.gap_min} min between plans · travel time not checked`
+                        : 'Travel not checked',
+                tone: 'unknown',
+            };
     }
 }
 
@@ -379,7 +420,7 @@ function PlanLink({
     from: DayItem;
     to: DayItem;
 }) {
-    const { line, tone } = linkWords(link);
+    const { line, tone } = linkWords(link, from, to);
     const places = [from.location?.label, to.location?.label]
         .filter(Boolean)
         .join(' → ');
@@ -387,16 +428,21 @@ function PlanLink({
     const body = (
         <>
             <span className="plan-link-icon" aria-hidden="true">
-                <Icon
-                    name={link.basis === 'walk' ? 'walk' : 'route'}
-                    variant="travel"
-                />
+                {link.basis === 'walk' ? (
+                    <Icon name="walk" variant="line" />
+                ) : (
+                    <Icon name={tone === 'conflict' ? 'info' : 'train'} />
+                )}
             </span>
             <span>
                 {places && <small>{places}</small>}
                 <strong>{line}</strong>
             </span>
-            {route && <span className="plan-link-action">Route</span>}
+            {route && (
+                <span className="plan-link-action">
+                    {tone === 'ok' ? 'Route' : 'Check route'}
+                </span>
+            )}
         </>
     );
 
