@@ -1,0 +1,329 @@
+/* The Events street, from the mock's street-art.js templates. Drawing
+   units: the scene is the street's own size (desktop 960 high, 1100–2240
+   wide; phone 351 × 590) and the page zooms it to fit (streetFit). */
+
+.st-scene {
+    position: relative;
+    width: var(--st-w);
+    height: var(--st-h);
+    overflow: hidden;
+    border-radius: 28px;
+    /* The plaster, shown before the pictures arrive and if one fails. */
+    background: #e7dbc4;
+    touch-action: pan-y;
+    user-select: none;
+    contain: layout paint;
+}
+.st-scene--phone {
+    border-radius: 24px;
+}
+.st-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+.st-l {
+    position: absolute;
+    display: block;
+    max-width: none;
+    pointer-events: none;
+}
+.st-mask {
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+}
+.st-sky {
+    position: absolute;
+    inset: 0 0 auto;
+    background: linear-gradient(
+        var(--k-s1) 0%,
+        var(--k-s2) 32%,
+        var(--k-s3) 62%,
+        var(--k-s4) 86%,
+        var(--k-s5) 100%
+    );
+}
+.st-orbs {
+    left: 0;
+    top: 0;
+}
+.st-haze,
+.st-mist,
+.st-wet,
+.st-grain {
+    position: absolute;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+}
+.st-haze {
+    background: linear-gradient(
+        color-mix(in srgb, var(--k-s5) 0%, transparent),
+        color-mix(in srgb, var(--k-s5) 55%, transparent)
+    );
+}
+.st-mist {
+    background: var(--k-mist-c);
+    filter: blur(6px);
+}
+/* The plaster's fine grain, a tile laid over it (see build.mjs). */
+.st-grain {
+    background-repeat: repeat;
+    mix-blend-mode: multiply;
+}
+.st-wet {
+    background: linear-gradient(
+        rgb(44 42 58 / 0.32),
+        rgb(44 42 58 / 0.12) 50%,
+        rgb(44 42 58 / 0.26)
+    );
+}
+
+/* ---------- The wall's posters, by the hour ---------- */
+.st-zone {
+    position: absolute;
+    overflow: hidden;
+}
+.st-zone-strip {
+    position: absolute;
+    left: 0;
+    width: 5000px;
+}
+.st-scene--phone .st-zone-strip {
+    width: auto;
+}
+.st-bay {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+.st-bay:hover,
+.st-bay:focus-within {
+    z-index: 3;
+}
+.st-hour,
+.st-now,
+.st-more {
+    position: absolute;
+    top: 262px;
+    display: flex;
+    align-items: center;
+    height: 26px;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.st-hour {
+    padding: 0 10px;
+    border-radius: 6px;
+    background: #211d15;
+    color: #fffdf8;
+}
+.st-now {
+    left: 82px;
+    padding: 0 9px;
+    border-radius: 999px;
+    background: #c23b0e;
+    color: #fff;
+    font-size: 12px;
+}
+.st-more {
+    right: 16px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 999px;
+    background: #fff6c9;
+    color: #211d15;
+    box-shadow: 0 2px 6px -3px #0006;
+    cursor: pointer;
+}
+.st-slot {
+    position: absolute;
+}
+/* The street's posters carry no Add to plan (owner, 13 Oct 2026); a tap
+   opens the details, which has it. */
+.st-scene .pp-plan {
+    display: none;
+}
+
+/* The phone's page dots, beside its column. */
+.st-pages {
+    position: absolute;
+    z-index: 6;
+    left: 170px;
+    top: 303px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.st-pages button {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+.st-pages i {
+    display: block;
+    width: 7px;
+    height: 8px;
+    border-radius: 4px;
+    background: #b9ab90;
+}
+.st-pages [aria-current] i {
+    height: 22px;
+    background: #211d15;
+}
+
+/* ---------- The hour's light over the wall ---------- */
+.st-light {
+    position: absolute;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+}
+.st-light > div {
+    position: absolute;
+    inset: 0;
+}
+.st-light-night {
+    background: #25205a;
+    mix-blend-mode: multiply;
+}
+.st-light-golden {
+    background: linear-gradient(100deg, #ffb36b, #ff8f5a 60%, #ffbf80);
+    mix-blend-mode: soft-light;
+}
+.st-light-sun {
+    background: linear-gradient(
+        155deg,
+        rgba(255, 244, 214, 0.9),
+        rgba(255, 244, 214, 0) 55%
+    );
+    mix-blend-mode: soft-light;
+}
+.st-light-lamp {
+    mix-blend-mode: screen;
+}
+
+/* ---------- The poster column (Litfaßsäule) ---------- */
+.st-column {
+    position: absolute;
+}
+.st-column-body {
+    position: absolute;
+    width: 300px;
+    height: 740px;
+    transform-origin: 0 0;
+}
+.st-drum {
+    position: absolute;
+    left: 18px;
+    top: 124px;
+    width: 264px;
+    height: 518px;
+    overflow: hidden;
+    background: #d8ccb0;
+    filter: brightness(var(--k-poster-b));
+}
+.st-drum-turn {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    transform-style: preserve-3d;
+}
+.st-face {
+    position: absolute;
+    overflow: hidden;
+    backface-visibility: hidden;
+}
+.st-drum-shade,
+.st-drum-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+.st-drum-shade {
+    background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.24) 0%,
+        rgba(0, 0, 0, 0.06) 11%,
+        rgba(255, 255, 255, 0.12) 33%,
+        rgba(255, 255, 255, 0) 47%,
+        rgba(0, 0, 0, 0.03) 74%,
+        rgba(0, 0, 0, 0.22) 100%
+    );
+}
+.st-drum-glow {
+    background: radial-gradient(
+        ellipse at 42% 45%,
+        rgba(255, 226, 170, 0.55),
+        rgba(255, 200, 120, 0.12) 60%,
+        transparent 75%
+    );
+    mix-blend-mode: screen;
+}
+.st-dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 642px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+}
+.st-dots button {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 44px;
+    margin-top: -10px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+.st-dots i {
+    display: block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #6f6a4a;
+}
+.st-dots [aria-current] i {
+    background: #ffd27a;
+    box-shadow: 0 0 6px #ffd27a;
+}
+.st-col-prev,
+.st-col-next {
+    position: absolute;
+    top: 250px;
+    width: 40px;
+    height: 80px;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    opacity: 0;
+}
+.st-col-prev {
+    left: 18px;
+}
+.st-col-next {
+    right: 18px;
+}
+
+/* ---------- The pavement ---------- */
+.st-objects {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    filter: brightness(var(--k-obj-b));
+}
