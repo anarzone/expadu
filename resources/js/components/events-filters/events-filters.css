@@ -603,3 +603,43 @@
     white-space: normal;
     text-align: left;
 }
+
+/* ---------- Notes above the street (the mock's .event-past-note) ---------- */
+
+.event-past-note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    align-items: center;
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    line-height: 1.45;
+}
+
+.event-past-note > svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: var(--color-text-soft);
+}
+
+.event-past-note p {
+    flex: 1 1 220px;
+    margin: 0;
+}
+
+.event-past-note button {
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--color-action-text);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}

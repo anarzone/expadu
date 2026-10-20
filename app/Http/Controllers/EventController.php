@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Day\Contracts\RecordedAppointments;
 use App\Enums\EventCategory;
 use App\Models\Event;
+use App\Services\GermanHolidayService;
 use App\Services\WeatherService;
 use App\Support\EventOccurrencePresenter;
 use App\Support\EventStartingPoint;
@@ -62,7 +63,59 @@ class EventController extends Controller
             // The street's sky and the rain warnings; the page draws a plain
             // sky until it arrives, and says so when there is none.
             'weather' => Inertia::defer(fn () => app(WeatherService::class)->getDayForecast($day->toDateString())),
+            // A public holiday in the week from the day shown, as a note.
+            'holiday' => $this->holidayNear($day),
+            // A past day points on to the next day with listings.
+            'next_listed' => $day->lessThan($today->startOfDay())
+                ? Inertia::defer(fn () => $this->nextListed($today), 'notes')
+                : null,
         ]);
+    }
+
+    /** English names for GermanHolidayService's (German, official) names. */
+    private const HOLIDAYS = [
+        'Neujahrstag' => 'New Year’s Day',
+        'Tag der Arbeit' => 'Labour Day',
+        'Tag der Deutschen Einheit' => 'German Unity Day',
+        '1. Weihnachtstag' => 'Christmas Day',
+        '2. Weihnachtstag' => 'the second day of Christmas',
+        'Allerheiligen' => 'All Saints’ Day',
+        'Karfreitag' => 'Good Friday',
+        'Ostersonntag' => 'Easter Sunday',
+        'Ostermontag' => 'Easter Monday',
+        'Christi Himmelfahrt' => 'Ascension Day',
+        'Pfingstsonntag' => 'Whit Sunday',
+        'Pfingstmontag' => 'Whit Monday',
+        'Fronleichnam' => 'Corpus Christi',
+    ];
+
+    /**
+     * The next holiday from the day shown, when it's within its week.
+     *
+     * @return array{date: string, name: string, local: string}|null
+     */
+    private function holidayNear(CarbonImmutable $day): ?array
+    {
+        $next = app(GermanHolidayService::class)->getNextHoliday($day->toMutable()->startOfDay());
+
+        if ($next === null || $next['date']->toDateString() > $day->addDays(7)->toDateString()) {
+            return null;
+        }
+
+        return [
+            'date' => $next['date']->toDateString(),
+            'name' => self::HOLIDAYS[$next['name']] ?? $next['name'],
+            'local' => $next['name'],
+        ];
+    }
+
+    /** The first day from today with listings, within 60 days. */
+    private function nextListed(CarbonImmutable $today): ?string
+    {
+        $first = Event::occurringBetween($today->startOfDay(), $today->addDays(60)->endOfDay())
+            ->min(fn (array $o) => $o['starts_at']->toDateString());
+
+        return is_string($first) ? $first : null;
     }
 
     /**
