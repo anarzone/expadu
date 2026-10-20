@@ -766,22 +766,6 @@ button.brief-later-row:hover,
     color: var(--action-ink);
     padding-top: 3px;
 }
-.brief-linked-record {
-    min-height: 54px;
-    padding-left: 7px;
-}
-.brief-linked-record > svg {
-    flex-shrink: 0;
-    width: 21px;
-    height: 21px;
-    color: var(--teal);
-}
-.brief-linked-record .brief-row-copy strong {
-    font-size: 12px;
-}
-.brief-linked-record .brief-row-copy small {
-    font-size: 10px;
-}
 .today-brief .preview-foot {
     max-width: 1460px;
     padding-top: 14px;
