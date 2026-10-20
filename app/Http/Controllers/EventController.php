@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EventCategory;
 use App\Models\Event;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
@@ -28,10 +29,35 @@ class EventController extends Controller
         return Inertia::render('events', [
             'date' => $day->toDateString(),
             'today' => $today->toDateString(),
+            'filters' => $this->filters($request),
             'listings' => Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
                 ->values(),
         ]);
+    }
+
+    /**
+     * The page's filters from its URL, so a deep link opens the same view.
+     * Lenient: a value it doesn't know is dropped, not an error.
+     *
+     * @return array{q: string, category: ?string, area: ?string, free: bool, saved: bool, sort: string, from: ?string}
+     */
+    private function filters(Request $request): array
+    {
+        $text = fn (string $key, int $max): ?string => is_string($value = $request->query($key)) && trim($value) !== ''
+            ? mb_substr(trim($value), 0, $max)
+            : null;
+        $category = EventCategory::tryFrom((string) $request->query('category'));
+
+        return [
+            'q' => $text('q', 100) ?? '',
+            'category' => $category?->value,
+            'area' => $text('area', 100),
+            'free' => $request->boolean('free'),
+            'saved' => $request->boolean('saved'),
+            'sort' => in_array($request->query('sort'), ['soonest', 'evening', 'closest'], true) ? $request->query('sort') : 'soonest',
+            'from' => $text('from', 120),
+        ];
     }
 
     /**
