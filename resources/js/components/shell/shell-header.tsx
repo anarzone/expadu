@@ -50,6 +50,9 @@ export function ShellHeader() {
     const { url } = usePage();
     const path = url.split('?')[0];
     const mac = useMac();
+    // On Composer its button says you are here (the mock's selected tint).
+    const onComposer = within(path, composer.url());
+    const shortcut = mac ? '⌘K' : 'Ctrl K';
 
     const again = (event: MouseEvent) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey) {
@@ -94,9 +97,14 @@ export function ShellHeader() {
                     <button
                         type="button"
                         className="shell-composer"
-                        aria-label="Ask Composer"
+                        aria-current={onComposer ? 'page' : undefined}
+                        aria-label={
+                            onComposer
+                                ? 'Composer, where you are. Write your request'
+                                : 'Ask Composer'
+                        }
                         aria-keyshortcuts={mac ? 'Meta+K' : 'Control+K'}
-                        title={`Ask Composer (${mac ? '⌘K' : 'Ctrl K'})`}
+                        title={`${onComposer ? 'Composer' : 'Ask Composer'} (${shortcut})`}
                         data-composer-opener
                         onClick={openComposerTray}
                     >
@@ -106,7 +114,7 @@ export function ShellHeader() {
                         <span className="shell-composer-text">
                             Ask Composer
                         </span>
-                        <kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
+                        <kbd>{shortcut}</kbd>
                     </button>
                     <CityPicker />
                     <Link
