@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Aggregates disruption data from multiple sources:
  * 1. KVB Open Data API — live elevator/escalator disruptions
- * 2. city_news table — scraped line disruptions from KVB aktuelles
+ * 2. city_news table — KVB's live service page and news, scraped
  *
  * Feeds the ContextEngine disruption pipeline and transit fallbacks.
  */
@@ -40,8 +40,10 @@ class DisruptionService
             ->where('category', 'transit')
             ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->where('published_at', '>', now()->subDays(30))
-            ->orderByDesc('published_at')
-            ->limit(15)
+            // Every open notice: a cap left most of KVB's list out, and the
+            // ones that rotated back in were announced again as new.
+            ->orderByRaw("case severity when 'critical' then 4 when 'major' then 3 when 'moderate' then 2 else 1 end desc")
+            ->orderByDesc('created_at')
             ->get()
             ->map(fn (CityNews $n) => [
                 'id' => 'news_'.$n->id,
@@ -50,7 +52,9 @@ class DisruptionService
                 'severity' => $n->severity ?? 'minor',
                 'type' => 'line',
                 'affected_lines' => $n->affected_lines ?? [],
-                'started_at' => $n->published_at->toIso8601String(),
+                // A live KVB notice's published_at is when it was last seen
+                // (every scrape); it started when it was first seen.
+                'started_at' => ($n->source === 'kvb-betriebslage' ? $n->created_at : $n->published_at)->toIso8601String(),
                 'estimated_end' => $n->expires_at?->toIso8601String(),
                 'source' => $n->source,
             ])
