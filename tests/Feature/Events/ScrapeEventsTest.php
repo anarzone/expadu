@@ -138,15 +138,36 @@ test('media capture failures never discard a koeln.de event', function () {
         ->and(MediaAsset::query()->count())->toBe(0);
 });
 
-test('distinct source ids with the same title and date are not globally deduplicated', function () {
+test('the same title and time at different venues stay two events', function () {
     User::factory()->create(['email' => 'system@expadu.com']);
     Queue::fake();
     $start = now()->addDay()->toDateTimeString();
+    $elsewhere = koelnEvent('distinct-2', 'Shared title', $start);
+    $elsewhere['venue'] = ['venue' => 'Gloria', 'address' => 'Apostelnstr. 11'];
     Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [
-        koelnEvent('distinct-1', 'Shared title', $start), koelnEvent('distinct-2', 'Shared title', $start),
+        koelnEvent('distinct-1', 'Shared title', $start), $elsewhere,
     ]])]);
     $this->artisan('events:scrape')->assertSuccessful();
     expect(Event::where('title', 'Shared title')->count())->toBe(2);
+});
+
+test('a re-created koeln.de post is the same event, not a second copy', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    Queue::fake();
+    $start = now()->addDay()->toDateTimeString();
+    Http::fake(['www.koeln.de/*' => Http::sequence()
+        ->push(['total_pages' => 1, 'events' => [koelnEvent('old-post', 'Comedy night', $start)]])
+        // koeln.de re-created the post under a new id and page, and briefly
+        // listed a venue-less copy next to it.
+        ->push(['total_pages' => 1, 'events' => [
+            ['url' => 'https://www.koeln.de/event/comedy-night-2/'] + koelnEvent('new-post', 'Comedy night', $start),
+            ['venue' => ['venue' => 'Siehe Beschreibung']] + koelnEvent('venue-less', 'Comedy night', $start),
+        ]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect(Event::where('title', 'Comedy night')->where('status', 'active')->pluck('source_uid')->all())->toBe(['new-post']);
 });
 
 test('the scraper refreshes changed koeln.de records and queues a new enrichment', function () {
