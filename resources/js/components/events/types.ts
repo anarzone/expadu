@@ -33,6 +33,10 @@ export type EventOccurrence = {
         wheelchair?: string | null;
     };
     source_url: string | null;
+    /** Where the listing came from (e.g. stadt-koeln.de). */
+    source?: string | null;
+    /** When it was last checked there, YYYY-MM-DD. */
+    checked_at?: string | null;
     venue_id?: number | null;
     is_recurring: boolean;
     recurrence_text: string | null;

@@ -6,6 +6,7 @@ import TransportModeController from '@/actions/App/Http/Controllers/Api/Transpor
 import { api } from '@/components/composer/types';
 import { occurrenceKey } from '@/components/events/event-presentation';
 import type { EventOccurrence } from '@/components/events/types';
+import { EventDetails } from '@/components/events-details/event-details';
 import type { EventFilters } from '@/components/events-filters/event-filters';
 import {
     dayAreas,
@@ -56,7 +57,23 @@ type Props = {
     starting_point: PlacePoint | null;
     /** The person's own Home and Work, when saved. */
     saved_places: PlacePoint[];
+    /** Today's last recorded appointment, for the details' "For you". */
+    appointment: { title: string; end: string } | null;
 };
+
+/** The open details, as the URL carries them (?event=&start=). */
+type Detail = { event: number; start: string };
+
+function detailIn(url: string): Detail | null {
+    const query = new URLSearchParams(url.split('?')[1] ?? '');
+    const event = Number(query.get('event'));
+    const start = query.get('start');
+
+    return event && start ? { event, start } : null;
+}
+
+const withDetail = (base: string, d: Detail | null) =>
+    d ? `${base}&event=${d.event}&start=${encodeURIComponent(d.start)}` : base;
 
 type PlacePoint = { key: string; name: string; lat: number; lng: number };
 
@@ -129,8 +146,13 @@ export default function Events({
     weather,
     starting_point,
     saved_places,
+    appointment,
 }: Props) {
-    const { auth } = usePage<{ auth: Auth }>().props;
+    const { props: shared, url } = usePage<{ auth: Auth }>();
+    const { auth } = shared;
+    // The details open over the street live in the URL, so a link (or a
+    // reload) opens the same details.
+    const detail = detailIn(url);
     const saved = useSavedEvents(auth.user.id);
     const f = { ...noFilters, ...filters };
 
@@ -143,7 +165,7 @@ export default function Events({
 
     const replace = (next: EventFilters) =>
         router.replace({
-            url: eventsUrl(date, next),
+            url: withDetail(eventsUrl(date, next), detail),
             props: (props) => ({ ...props, filters: next }),
             preserveState: true,
             preserveScroll: true,
@@ -376,6 +398,23 @@ export default function Events({
         };
     };
 
+    // A poster opens its details (the mock's "one step"); closing keeps
+    // the street and its filters as they were.
+    const showDetail = (d: Detail | null) =>
+        router.replace({
+            url: withDetail(eventsUrl(date, current), d),
+            preserveState: true,
+            preserveScroll: true,
+        });
+    const opened = detail
+        ? (day.find(
+              (l) =>
+                  l.occurrence.id === detail.event &&
+                  Date.parse(l.occurrence.occurrence_start) ===
+                      Date.parse(detail.start),
+          ) ?? null)
+        : null;
+
     const poster = (
         item: StreetListing,
         where: 'wall' | 'column',
@@ -398,6 +437,12 @@ export default function Events({
                 flags={state.flags}
                 saved={saved.keys.has(listing.key)}
                 onSave={() => toggleSave(listing)}
+                onOpen={() =>
+                    showDetail({
+                        event: listing.occurrence.id,
+                        start: listing.occurrence.occurrence_start,
+                    })
+                }
             />
         );
     };
@@ -471,9 +516,20 @@ export default function Events({
                         column={day}
                         poster={poster}
                         forecast={weather}
+                        waiting={!!opened}
                     />
                 )}
             </section>
+            <EventDetails
+                listing={opened}
+                date={date}
+                today={today}
+                from={shownFrom?.point ? shownFrom.name : null}
+                appointment={appointment}
+                saved={opened ? saved.keys.has(opened.key) : false}
+                onSave={() => opened && toggleSave(opened)}
+                onClose={() => showDetail(null)}
+            />
         </AppLayout>
     );
 }

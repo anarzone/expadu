@@ -1,0 +1,144 @@
+{
+    "name": "events-details",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-slot .pp",
+        "before": [{ "click": ".st-slot .pp" }, { "wait": 900 }]
+    },
+    "app": {
+        "url": "/events",
+        "wait": ".st-slot .pp",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [{ "click": ".st-slot .pp" }, { "wait": 1500 }]
+    },
+    "pairs": [
+        {
+            "name": "page",
+            "mock": "#shared-dialog",
+            "app": "dialog.ev-details",
+            "contentDiffers": true
+        },
+        {
+            "name": "poster header",
+            "mock": ".event-hero",
+            "app": ".ev-details .ui-sheet-head",
+            "contentDiffers": true,
+            "ignore": ["h"]
+        },
+        {
+            "name": "category",
+            "mock": ".event-hero-chip",
+            "app": ".evd-chip",
+            "contentDiffers": true
+        },
+        {
+            "name": "date tape",
+            "mock": ".event-hero .pp-tape",
+            "app": ".evd-tape",
+            "contentDiffers": true
+        },
+        {
+            "name": "title",
+            "mock": ".event-hero-title",
+            "app": ".ev-details .ui-sheet-head h2",
+            "contentDiffers": true
+        },
+        {
+            "name": "start",
+            "mock": ".event-hero-time",
+            "app": ".evd-time",
+            "contentDiffers": true
+        },
+        {
+            "name": "close",
+            "mock": "#shared-dialog .dialog-head [data-ui='close']",
+            "app": ".ev-details .ui-sheet-close",
+            "contentDiffers": true
+        },
+        {
+            "name": "About label",
+            "mock": ".event-about .event-row-label",
+            "app": ".evd-about .evd-label",
+            "contentDiffers": true
+        },
+        {
+            "name": "description",
+            "mock": ".event-about .event-description",
+            "app": ".evd-description",
+            "contentDiffers": true
+        },
+        {
+            "name": "listing details",
+            "mock": ".event-about .event-source summary",
+            "app": ".evd-source summary",
+            "contentDiffers": true
+        },
+        {
+            "name": "When row",
+            "mock": ".event-facts .event-row",
+            "app": ".evd-facts .evd-row",
+            "contentDiffers": true
+        },
+        {
+            "name": "row icon",
+            "mock": ".event-facts .event-row .event-row-icon",
+            "app": ".evd-facts .evd-row .evd-row-icon"
+        },
+        {
+            "name": "row label",
+            "mock": ".event-facts .event-row .event-row-label",
+            "app": ".evd-facts .evd-row .evd-row-label",
+            "contentDiffers": true
+        },
+        {
+            "name": "row value",
+            "mock": ".event-facts .event-row .event-row-value",
+            "app": ".evd-facts .evd-row .evd-row-value",
+            "contentDiffers": true
+        },
+        {
+            "name": "row sub",
+            "mock": ".event-facts .event-row .event-row-sub",
+            "app": ".evd-facts .evd-row .evd-row-sub",
+            "contentDiffers": true
+        },
+        {
+            "name": "Where",
+            "mock": ".event-where",
+            "app": ".evd-where",
+            "contentDiffers": true
+        },
+        {
+            "name": "Not listed",
+            "mock": ".event-unlisted",
+            "app": ".evd-unlisted",
+            "contentDiffers": true
+        },
+        {
+            "name": "bar",
+            "mock": ".place-sheet-footer",
+            "app": ".ev-details .ui-sheet-foot",
+            "contentDiffers": true
+        },
+        {
+            "name": "Save",
+            "mock": ".place-sheet-footer [data-save-item]",
+            "app": ".evd-save"
+        },
+        {
+            "name": "reminder",
+            "mock": ".place-sheet-footer .event-bell",
+            "app": ".evd-bell"
+        },
+        {
+            "name": "Add to plan",
+            "mock": ".place-sheet-footer .button.primary",
+            "app": ".evd-plan"
+        }
+    ]
+}

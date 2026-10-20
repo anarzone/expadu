@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Day\Contracts\RecordedAppointments;
 use App\Enums\EventCategory;
 use App\Models\Event;
 use App\Services\WeatherService;
@@ -25,9 +26,18 @@ class EventController extends Controller
 
     public function index(Request $request, EventStartingPoint $points): Response
     {
-        $input = $request->validate(['date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01']]);
+        $input = $request->validate([
+            'date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01'],
+            // A listing's details (?event=&start=) open on that listing's day.
+            'event' => ['nullable', 'integer'],
+            'start' => ['nullable', 'date', 'after_or_equal:2000-01-01', 'before:2100-01-01'],
+        ]);
         $today = CarbonImmutable::now('Europe/Berlin');
-        $day = isset($input['date']) ? CarbonImmutable::parse($input['date'], 'Europe/Berlin') : $today;
+        $day = match (true) {
+            isset($input['date']) => CarbonImmutable::parse($input['date'], 'Europe/Berlin'),
+            isset($input['start']) => CarbonImmutable::parse($input['start'])->setTimezone('Europe/Berlin')->startOfDay(),
+            default => $today,
+        };
         $filters = $this->filters($request);
         // The URL's starting point counts only as a public point or the
         // person's own saved place; anything else is dropped.
@@ -44,6 +54,7 @@ class EventController extends Controller
             'filters' => $filters,
             'starting_point' => $from,
             'saved_places' => $points->savedPlaces($request->user()),
+            'appointment' => $day->isSameDay($today) ? $this->appointment($request, $today) : null,
             'listings' => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
                 ->values()
@@ -52,6 +63,26 @@ class EventController extends Controller
             // sky until it arrives, and says so when there is none.
             'weather' => Inertia::defer(fn () => app(WeatherService::class)->getDayForecast($day->toDateString())),
         ]);
+    }
+
+    /**
+     * The person's own last recorded appointment today that has an end, for
+     * the details' "For you" (how an event sits after it). Only what they
+     * recorded; nothing when there's none.
+     *
+     * @return array{title: string, end: string}|null
+     */
+    private function appointment(Request $request, CarbonImmutable $today): ?array
+    {
+        $last = collect(app(RecordedAppointments::class)->between($request->user(), $today->startOfDay(), $today->endOfDay()))
+            ->filter(fn ($item) => $item->endAt !== null)
+            ->sortBy(fn ($item) => $item->endAt)
+            ->last();
+
+        return $last === null ? null : [
+            'title' => $last->title,
+            'end' => $last->endAt->setTimezone('Europe/Berlin')->format('H:i'),
+        ];
     }
 
     /**

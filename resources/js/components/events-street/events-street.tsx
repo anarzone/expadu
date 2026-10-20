@@ -69,7 +69,10 @@ export function EventsStreet({
     column,
     poster,
     forecast,
+    waiting = false,
 }: {
+    /** A details page is open over the street: stories and the column wait. */
+    waiting?: boolean;
     date: string;
     today: string;
     /** The day's forecast (EventController's deferred weather). */
@@ -179,7 +182,8 @@ export function EventsStreet({
     // The column turns to its next poster every 6s (the mock's tick), but
     // not while you point at it, while one of its posters is turned over,
     // while a story is open, or with reduced motion.
-    const turning = motion !== 'still' && column.length > 1 && !story;
+    const turning =
+        motion !== 'still' && column.length > 1 && !story && !waiting;
 
     useEffect(() => {
         if (
@@ -336,6 +340,7 @@ export function EventsStreet({
             ) : null}
             {story ? (
                 <StoryViewer
+                    waiting={waiting}
                     story={story}
                     hours={hours}
                     listings={timed}
