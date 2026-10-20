@@ -7,6 +7,7 @@ use App\Media\CaptureMediaCandidate;
 use App\Media\MediaCandidate;
 use App\Models\Event;
 use App\Models\User;
+use App\Support\EventCancellation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -54,6 +55,7 @@ class ScrapeEvents extends Command
         $page = 1;
         $totalPages = 1;
         $fetched = [];
+        $complete = false;
 
         // koeln.de returns events chronologically, so the first page of 50 only
         // covers the next couple of days — the weekend never arrived. Page
@@ -91,6 +93,9 @@ class ScrapeEvents extends Command
                 $fetched = [...$fetched, ...$response->json('events', [])];
                 $totalPages = (int) $response->json('total_pages', 1);
                 $page++;
+                // Every page came in; false after a failed page or when the
+                // page cap cut the window short.
+                $complete = $page > $totalPages;
             } while ($page <= min($totalPages, self::KOELN_MAX_PAGES));
 
             foreach ($this->oneCopyPerOccurrence($fetched) as $ev) {
@@ -176,7 +181,7 @@ class ScrapeEvents extends Command
 
                     $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
 
-                    if ($isNew || $classifierInputChanged) {
+                    if (($isNew || $classifierInputChanged) && $event->status === 'active') {
                         ProcessEventJob::dispatch($event);
                     }
 
@@ -187,11 +192,38 @@ class ScrapeEvents extends Command
                     Log::warning('events:scrape — koeln.de event skipped', ['source_uid' => $ev['id'] ?? null, 'error' => $e->getMessage()]);
                 }
             }
+
+            if ($complete) {
+                $this->retireUnlistedKoelnEvents();
+            }
         } catch (\Exception $e) {
             Log::warning('events:scrape — koeln.de API error: '.$e->getMessage());
         }
 
         return $created;
+    }
+
+    /**
+     * After a complete scrape, an upcoming koeln.de event that koeln.de hasn't
+     * listed for two days has gone from the source: cancelled, or re-created
+     * as another post. It is set aside as 'unlisted' (a status of its own, so
+     * the hidden-copy rules never touch it) and comes back the moment koeln.de
+     * lists it again.
+     */
+    private function retireUnlistedKoelnEvents(): void
+    {
+        $retired = Event::query()
+            ->where('source', 'koeln.de')
+            ->where('status', 'active')
+            // The scraped window runs to now + 30 days; stop a day short of
+            // its edge.
+            ->whereBetween('starts_at', [now(), now()->addDays(29)->endOfDay()])
+            ->where(fn ($query) => $query->whereNull('verified_at')->orWhere('verified_at', '<', now()->subDays(2)))
+            ->update(['status' => 'unlisted', 'updated_at' => now()]);
+
+        if ($retired > 0) {
+            Log::info('events:scrape — koeln.de no longer lists events; set aside', ['count' => $retired]);
+        }
     }
 
     /**
@@ -318,7 +350,9 @@ class ScrapeEvents extends Command
                 'source_url' => is_string($sourceUrl) ? $sourceUrl : null,
                 'price_known' => $isFree !== null,
             ]),
-            'status' => 'active',
+            // Off the listings when the listing itself says it's off; back to
+            // active when the source drops the wording again.
+            'status' => EventCancellation::said($title, $description) ? 'cancelled' : 'active',
             'verified_at' => now(),
         ];
     }
