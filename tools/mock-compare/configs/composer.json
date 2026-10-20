@@ -25,7 +25,7 @@
             "email": "e2e@expadu.test",
             "password": "e2e-password"
         },
-        "screenshotStyle": ".shell, .shell * , .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+        "screenshotStyle": ".shell, .shell * { visibility: hidden !important; }"
     },
     "pairs": [
         {

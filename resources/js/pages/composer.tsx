@@ -68,7 +68,6 @@ import { TakeMeThereSheet } from '@/components/journey/take-me-there-sheet';
 import type { Destination } from '@/components/journey/take-me-there-sheet';
 import type { SavedPlace } from '@/components/places/from-bar';
 import { PlaceDetailModal } from '@/components/places/place-detail-modal';
-import { PersonaSwitcher } from '@/components/qa/persona-switcher';
 import {
     Dialog,
     DialogContent,
@@ -1670,7 +1669,6 @@ export default function ComposerPage({
                     {feedback.toast}
                 </div>
             )}
-            <PersonaSwitcher />
         </>
     );
 }
