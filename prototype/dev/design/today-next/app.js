@@ -341,9 +341,15 @@
                 ? C.fact('Late', `${travel.lateMinutes}<span>\u00a0min</span>`, `after ${item.start}`, 'attention')
                 : C.fact('Spare', `${spare ?? '—'}<span>\u00a0min</span>`, `before ${item.start}`, spare != null && spare < margin ? 'attention' : ''),
         ];
-        const flag = delayed
-            ? L.chip('attention', 'clock', `${j.delay} min delay · simulated`)
-            : '';
+        // Timetable times only, in Travel's not-live label (as Travel's
+        // card); a delay after it.
+        const flag =
+            (j.status === 'scheduled'
+                ? L.chip('unsure', 'offline', 'Scheduled · not live')
+                : '') +
+            (delayed
+                ? L.chip('attention', 'clock', `${j.delay} min delay · simulated`)
+                : '');
         // Why this tram and not your plan's, quiet under the facts.
         const note = plan?.tight
             ? `<p class="trip-plan">${C.icon('info')}<span>${plan.earlier ? `Your ${E(travel.departure)} has only ${plan.spare}\u00a0min spare` : `Only ${plan.spare}\u00a0min spare. Allow about ${plan.margin}\u00a0min for finding the room${item.kind === 'official' ? ' and security checks' : ''}`}</span></p>`
