@@ -296,8 +296,11 @@ export function StoryViewer({
     const k = skyAt(story.hour + 0.5);
     const wx = weather(story.hour);
     const desktop = layout === 'desktop';
-    // The mock's story poster: 380 × 532 on a desktop, 300 × 420 on a phone.
-    const size: CSSProperties = desktop ? { zoom: 380 / 300 } : {};
+    // The mock's story poster: the wall's poster zoomed to 380 × 532 on a
+    // desktop, drawn at 300 × 420 on a phone.
+    const size: CSSProperties = desktop
+        ? { zoom: 380 / 300 }
+        : { width: 300, height: 420 };
     // A tap right after a swipe or a hold is theirs; it doesn't step.
     const tap = (dir: number) => () => {
         if (Date.now() - swiped.current > 400) {

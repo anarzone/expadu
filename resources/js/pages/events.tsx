@@ -417,7 +417,7 @@ export default function Events({
 
     const poster = (
         item: StreetListing,
-        where: 'wall' | 'column',
+        where: 'wall' | 'column' | 'story',
         style?: CSSProperties,
     ) => {
         const listing = item as Listing;
@@ -427,7 +427,7 @@ export default function Events({
             <Poster
                 event={listing.poster}
                 today={today}
-                size={where}
+                size={where === 'column' ? 'column' : 'wall'}
                 style={style}
                 distance={
                     listing.km !== null ? distanceLabel(listing.km) : undefined
@@ -437,6 +437,17 @@ export default function Events({
                 flags={state.flags}
                 saved={saved.keys.has(listing.key)}
                 onSave={() => toggleSave(listing)}
+                // A story's poster has Add to plan: it opens the details, where
+                // the plan is made (the mock's mxOpen(e, 'plan')).
+                onPlan={
+                    where === 'story'
+                        ? () =>
+                              showDetail({
+                                  event: listing.occurrence.id,
+                                  start: listing.occurrence.occurrence_start,
+                              })
+                        : undefined
+                }
                 onOpen={() =>
                     showDetail({
                         event: listing.occurrence.id,

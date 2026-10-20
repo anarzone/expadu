@@ -5,84 +5,102 @@
     "mock": {
         "url": "/dev/design/events-next/?date=2026-09-30",
         "wait": ".st-slot .pp",
-        "before": [{ "click": ".st-slot .pp" }, { "wait": 900 }]
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 900
+            }
+        ]
     },
     "app": {
-        "url": "/events",
+        "url": "/events?date=2026-09-30&from=M%C3%BClheim",
         "wait": ".st-slot .pp",
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
         },
-        "before": [{ "click": ".st-slot .pp" }, { "wait": 1500 }]
+        "before": [
+            {
+                "click": ".st-slot .pp"
+            },
+            {
+                "wait": 1500
+            }
+        ],
+        "init": [
+            "if (!document.cookie.split('; ').some((c) => c.startsWith('mock_clock='))) { document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'; location.reload(); }"
+        ]
     },
     "pairs": [
         {
             "name": "page",
             "mock": "#shared-dialog",
             "app": "dialog.ev-details",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "Holds the rows below; the Not listed row is a line longer, which moves the bar. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter. Its rounded corners show the street behind: The app draws the street as pictures (EV2a's agreed budget: 31 SVG nodes against the mock's 3,937), the mock as live SVG; edges and thin strokes (the rain, the clouds' rims) anti-alias a pixel apart."
         },
         {
             "name": "poster header",
             "mock": ".event-hero",
             "app": ".ev-details .ui-sheet-head",
+            "ignore": ["h"],
             "contentDiffers": true,
-            "ignore": ["h"]
+            "reason": "Its rounded top corners show the street behind the open page: The app draws the street as pictures (EV2a's agreed budget: 31 SVG nodes against the mock's 3,937), the mock as live SVG; edges and thin strokes (the rain, the clouds' rims) anti-alias a pixel apart."
         },
         {
             "name": "category",
             "mock": ".event-hero-chip",
-            "app": ".evd-chip",
-            "contentDiffers": true
+            "app": ".evd-chip"
         },
         {
             "name": "date tape",
             "mock": ".event-hero .pp-tape",
             "app": ".evd-tape",
-            "contentDiffers": true
+            "ignore": ["font-family"],
+            "reason": "Same font files under the mock's own names (events-next/fonts: its 'Poster Grotesque' is Bricolage Grotesque, its 'Festival Marker' Permanent Marker); the app uses the shared token names."
         },
         {
             "name": "title",
             "mock": ".event-hero-title",
             "app": ".ev-details .ui-sheet-head h2",
-            "contentDiffers": true
+            "ignore": ["font-family"],
+            "reason": "Same font files under the mock's own names (events-next/fonts: its 'Poster Grotesque' is Bricolage Grotesque, its 'Festival Marker' Permanent Marker); the app uses the shared token names."
         },
         {
             "name": "start",
             "mock": ".event-hero-time",
             "app": ".evd-time",
-            "contentDiffers": true
+            "ignore": ["font-family"],
+            "reason": "Same font files under the mock's own names (events-next/fonts: its 'Poster Grotesque' is Bricolage Grotesque, its 'Festival Marker' Permanent Marker); the app uses the shared token names."
         },
         {
             "name": "close",
             "mock": "#shared-dialog .dialog-head [data-ui='close']",
-            "app": ".ev-details .ui-sheet-close",
-            "contentDiffers": true
+            "app": ".ev-details .ui-sheet-close"
         },
         {
             "name": "About label",
             "mock": ".event-about .event-row-label",
-            "app": ".evd-about .evd-label",
-            "contentDiffers": true
+            "app": ".evd-about .evd-label"
         },
         {
             "name": "description",
             "mock": ".event-about .event-description",
-            "app": ".evd-description",
-            "contentDiffers": true
+            "app": ".evd-description"
         },
         {
             "name": "listing details",
             "mock": ".event-about .event-source summary",
-            "app": ".evd-source summary",
-            "contentDiffers": true
+            "app": ".evd-source summary"
         },
         {
             "name": "When row",
             "mock": ".event-facts .event-row",
             "app": ".evd-facts .evd-row",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter."
         },
         {
             "name": "row icon",
@@ -92,53 +110,66 @@
         {
             "name": "row label",
             "mock": ".event-facts .event-row .event-row-label",
-            "app": ".evd-facts .evd-row .evd-row-label",
-            "contentDiffers": true
+            "app": ".evd-facts .evd-row .evd-row-label"
         },
         {
             "name": "row value",
             "mock": ".event-facts .event-row .event-row-value",
-            "app": ".evd-facts .evd-row .evd-row-value",
-            "contentDiffers": true
+            "app": ".evd-facts .evd-row .evd-row-value"
         },
         {
             "name": "row sub",
             "mock": ".event-facts .event-row .event-row-sub",
             "app": ".evd-facts .evd-row .evd-row-sub",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter."
         },
         {
             "name": "Where",
             "mock": ".event-where",
             "app": ".evd-where",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "The mock's Where ends with an arrow: it opens Get there, which comes with EV4 (Travel's trip cards from TR3, EXP-139, not on launch yet)."
         },
         {
             "name": "Not listed",
             "mock": ".event-unlisted",
             "app": ".evd-unlisted",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
+            "ignore": ["h"]
         },
         {
             "name": "bar",
             "mock": ".place-sheet-footer",
             "app": ".ev-details .ui-sheet-foot",
+            "ignore": ["y"],
+            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
             "contentDiffers": true
         },
         {
             "name": "Save",
             "mock": ".place-sheet-footer [data-save-item]",
-            "app": ".evd-save"
+            "app": ".evd-save",
+            "ignore": ["y"],
+            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
+            "contentDiffers": true
         },
         {
             "name": "reminder",
             "mock": ".place-sheet-footer .event-bell",
-            "app": ".evd-bell"
+            "app": ".evd-bell",
+            "ignore": ["y"],
+            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
+            "contentDiffers": true
         },
         {
             "name": "Add to plan",
             "mock": ".place-sheet-footer .button.primary",
-            "app": ".evd-plan"
+            "app": ".evd-plan",
+            "ignore": ["y"],
+            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
+            "contentDiffers": true
         }
     ]
 }

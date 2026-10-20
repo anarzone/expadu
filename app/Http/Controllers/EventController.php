@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Day\Contracts\RecordedAppointments;
 use App\Enums\EventCategory;
+use App\Models\ComposerWorkspace;
 use App\Models\Event;
 use App\Services\WeatherService;
 use App\Support\EventOccurrencePresenter;
@@ -66,22 +67,28 @@ class EventController extends Controller
     }
 
     /**
-     * The person's own last recorded appointment today that has an end, for
-     * the details' "For you" (how an event sits after it). Only what they
-     * recorded; nothing when there's none.
+     * The person's own last appointment today that has an end (recorded in
+     * Paperwork, or planned in their day), for the details' "For you" (how an
+     * event sits after it). Only what they recorded; nothing when none.
      *
      * @return array{title: string, end: string}|null
      */
     private function appointment(Request $request, CarbonImmutable $today): ?array
     {
-        $last = collect(app(RecordedAppointments::class)->between($request->user(), $today->startOfDay(), $today->endOfDay()))
+        $user = $request->user();
+        $recorded = collect(app(RecordedAppointments::class)->between($user, $today->startOfDay(), $today->endOfDay()))
             ->filter(fn ($item) => $item->endAt !== null)
-            ->sortBy(fn ($item) => $item->endAt)
-            ->last();
+            ->map(fn ($item) => ['title' => $item->title, 'end' => $item->endAt]);
+        // An official appointment the person planned their day around (as
+        // DayProjection reads plans): it carries its end.
+        $planned = collect(ComposerWorkspace::query()->where('user_id', $user->id)->first()?->state['plans'][$today->toDateString()]['slots'] ?? [])
+            ->filter(fn (array $slot) => ($slot['type'] ?? null) === 'appointment' && is_string($slot['end_at'] ?? null) && is_string($slot['name'] ?? null))
+            ->map(fn (array $slot) => ['title' => $slot['name'], 'end' => CarbonImmutable::parse($slot['end_at'])]);
+        $last = $recorded->merge($planned)->sortBy(fn (array $a) => $a['end'])->last();
 
         return $last === null ? null : [
-            'title' => $last->title,
-            'end' => $last->endAt->setTimezone('Europe/Berlin')->format('H:i'),
+            'title' => $last['title'],
+            'end' => $last['end']->setTimezone('Europe/Berlin')->format('H:i'),
         ];
     }
 

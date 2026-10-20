@@ -188,6 +188,21 @@
     width: 300px;
     height: 420px;
 }
+/* A wall poster is a size smaller on a phone, and on the street's wall
+   between 1000 and 1399px (the mock's wall.css); a size set on the poster
+   itself still wins. */
+@media (max-width: 700px) {
+    .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+}
+@media (min-width: 1000px) and (max-width: 1399px) {
+    .st-slot > .pp--size-wall {
+        width: 272px;
+        height: 380px;
+    }
+}
 .pp--size-column {
     width: 364px;
     height: 560px;
