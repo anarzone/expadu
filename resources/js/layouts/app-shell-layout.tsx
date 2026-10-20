@@ -1,13 +1,16 @@
-import { router, usePage } from '@inertiajs/react';
+import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { FlashToast } from '@/components/flash-toast';
+import {
+    ComposerTray,
+    openComposerTray,
+} from '@/components/shell/composer-tray';
 import { ShellHeader } from '@/components/shell/shell-header';
 import { OnYourWayBar } from '@/components/travel/on-your-way-bar';
+import { Toaster } from '@/components/ui/toast';
 import { useBackgroundLocation } from '@/hooks/use-background-location';
 import { useShellScroll } from '@/hooks/use-shell-scroll';
 import { useTracker } from '@/hooks/use-tracker';
-import { composer } from '@/routes';
 
 /**
  * The app's persistent layout: Inertia keeps it mounted across page visits,
@@ -33,8 +36,13 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
         track('page_viewed', { page: window.location.pathname });
     }, [track, url]);
 
-    // ⌘K / Ctrl K opens Composer from anywhere.
+    // ⌘K / Ctrl K opens Composer's tray from anywhere (Composer's own page
+    // has its box already).
     useEffect(() => {
+        if (bare) {
+            return;
+        }
+
         const onKey = (event: KeyboardEvent) => {
             if (
                 !(event.metaKey || event.ctrlKey) ||
@@ -46,13 +54,13 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
             }
 
             event.preventDefault();
-            router.visit(composer());
+            openComposerTray();
         };
 
         document.addEventListener('keydown', onKey);
 
         return () => document.removeEventListener('keydown', onKey);
-    }, []);
+    }, [bare]);
 
     return (
         <>
@@ -63,7 +71,8 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
             {/* The trip you're on, on every page (Travel's own bar). */}
             {!bare && <OnYourWayBar />}
             {children}
-            <FlashToast />
+            <ComposerTray onComposer={bare} />
+            <Toaster />
         </>
     );
 }

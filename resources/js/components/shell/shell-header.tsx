@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react';
 import type { MouseEvent } from 'react';
 import { ExpaduMark } from '@/components/app-logo-icon';
 import { AccountMenu } from '@/components/shell/account-menu';
+import { openComposerTray } from '@/components/shell/composer-tray';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { sectionAgain } from '@/hooks/use-shell-scroll';
@@ -41,12 +42,12 @@ const useMac = () =>
 /**
  * The one header every section shares (the mock's #shell): the logo, the
  * sections as a capsule, and Composer, the city, Saved and the account.
- * On phones the sections float above the page instead (shell.css).
+ * On phones the sections float above the page instead, beside Composer's
+ * round button (composer-tray.tsx; shell.css).
  */
 export function ShellHeader() {
     const { url } = usePage();
     const path = url.split('?')[0];
-    const onComposer = within(path, composer.url());
     const mac = useMac();
 
     const again = (event: MouseEvent) => {
@@ -89,13 +90,14 @@ export function ShellHeader() {
                     })}
                 </nav>
                 <div className="shell-utilities">
-                    <Link
-                        href={composer()}
+                    <button
+                        type="button"
                         className="shell-composer"
                         aria-label="Ask Composer"
-                        aria-current={onComposer ? 'page' : undefined}
                         aria-keyshortcuts={mac ? 'Meta+K' : 'Control+K'}
                         title={`Ask Composer (${mac ? '⌘K' : 'Ctrl K'})`}
+                        data-composer-opener
+                        onClick={openComposerTray}
                     >
                         <span className="shell-composer-mark">
                             <Icon name="spark" variant="line" />
@@ -104,7 +106,7 @@ export function ShellHeader() {
                             Ask Composer
                         </span>
                         <kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
-                    </Link>
+                    </button>
                     {/* A plain label: Expadu covers Cologne only (build plan
                         call #7), so there is no city to choose. */}
                     <span className="shell-city" aria-label="City: Cologne">
@@ -122,15 +124,6 @@ export function ShellHeader() {
                     <AccountMenu />
                 </div>
             </header>
-            {!onComposer && (
-                <Link
-                    href={composer()}
-                    className="shell-composer-round"
-                    aria-label="Open Composer"
-                >
-                    <Icon name="spark" variant="line" />
-                </Link>
-            )}
         </div>
     );
 }

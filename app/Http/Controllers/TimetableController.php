@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Day\DayProjection;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
@@ -52,6 +53,8 @@ class TimetableController extends Controller
             }, 'station'),
             'stop' => $stop,
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
+            // Your next thing and My day: the shared server-side day projection.
+            'day' => DayProjection::deferred($request),
             // Saved places (Home / Work / pins) offered as one-tap journey
             // destinations in the "Where to?" card. Unlike the Places "From"
             // picker, coordinates are sent to the client here because the journey

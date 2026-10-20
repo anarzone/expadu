@@ -21,13 +21,9 @@
             return true;
         });
     };
-    function project({
-        shared = {},
-        workspace = {},
-        journeyModel = {},
-        savedJourneys = [],
-        categories = [],
-    } = {}) {
+    // Saved journeys left with Travel's Favourites (owner, 14 Oct 2026) and
+    // Services' requests wait for Services, hidden at launch (owner, 18 Oct).
+    function project({ shared = {}, workspace = {} } = {}) {
         shared ||= {};
         workspace ||= {};
         const saved = unique(
@@ -41,105 +37,30 @@
             ),
             key,
         );
-        const proposal = workspace.proposal;
-        const proposalItems = list(proposal?.items).filter(
-            (item) => item && text(item.title),
-        );
-        const pending = unique(
-            list(shared.draft).filter(
-                (item) =>
-                    item &&
-                    text(item.title) &&
-                    item.scheduled === true &&
-                    !proposalItems.some(
-                        (other) =>
-                            key(other) === key(item) ||
-                            other.id === item.id ||
-                            other.id === `event:${item.id}`,
-                    ),
-            ),
-            key,
-        );
+        // Composer: an unsent message, or the conversation to go back to.
+        // A plan's changes go straight into it with Undo (owner, 18 Oct
+        // 2026, Composer review board 3), so nothing waits to be confirmed
+        // or reviewed, and things added on other pages are in Your day.
         let composer = null;
-        if (
-            proposal &&
-            validDate(proposal.date) &&
-            (proposalItems.length || proposal.baseId)
-        ) {
-            composer = {
-                kind: 'proposal',
-                date: proposal.date,
-                title: proposal.baseId
-                    ? 'Changes to your plan'
-                    : 'Your next plan',
-                status: 'Awaiting confirmation',
-                items: proposalItems,
-                pending: pending.length,
-                action: 'Continue planning',
-            };
-        } else if (pending.length) {
-            const dates = [
-                ...new Set(pending.map((item) => item.date).filter(validDate)),
-            ];
-            composer = {
-                kind: 'selections',
-                date: dates.length === 1 ? dates[0] : '',
-                title: 'Bring your plans together',
-                status: 'Selections to review',
-                items: pending,
-                pending: 0,
-                action: 'Review in Composer',
-            };
-        } else {
-            const prompt = text(workspace.prompt) || text(shared.prompt);
-            const chapter = list(workspace.conversation?.chapters).find(
-                (item) => item?.id === workspace.conversation?.currentId,
-            );
-            const request = list(chapter?.entries).findLast(
-                (entry) => entry?.role === 'user' && text(entry.text),
-            );
-            if (prompt || request)
-                composer = {
-                    kind: prompt ? 'message' : 'conversation',
-                    date: '',
-                    title: prompt
-                        ? 'Your draft message'
-                        : text(chapter.title) || request.text,
-                    excerpt: prompt || '',
-                    status: prompt ? 'Unsent message' : 'Your conversation',
-                    items: [],
-                    pending: 0,
-                    action: prompt
-                        ? 'Continue writing'
-                        : 'Continue conversation',
-                };
-        }
-        const requests = unique(
-            list(shared.serviceRequests).filter(
-                (item) =>
-                    item?.type === 'service' &&
-                    text(item.title) &&
-                    categories.some(
-                        (category) => category.id === item.category,
-                    ) &&
-                    item.requirements &&
-                    typeof item.requirements === 'object',
-            ),
-            (item) => item.category,
+        const prompt = text(workspace.prompt) || text(shared.prompt);
+        const chapter = list(workspace.conversation?.chapters).find(
+            (item) => item?.id === workspace.conversation?.currentId,
         );
-        const journeys = unique(list(savedJourneys), (id) => id)
-            .map((id) =>
-                list(journeyModel.routes).find((route) => route.id === id),
-            )
-            .filter(Boolean);
-        return {
-            saved,
-            composer,
-            requests,
-            journeys,
-            hasContinuation:
-                !!composer || !!requests.length || !!journeys.length,
-        };
+        const request = list(chapter?.entries).findLast(
+            (entry) => entry?.role === 'user' && text(entry.text),
+        );
+        if (prompt || request)
+            composer = {
+                kind: prompt ? 'message' : 'conversation',
+                date: '',
+                title: prompt
+                    ? 'Your draft message'
+                    : text(chapter.title) || request.text,
+                excerpt: prompt || '',
+                status: prompt ? 'Unsent message' : 'Your conversation',
+                action: prompt ? 'Continue writing' : 'Continue conversation',
+            };
+        return { saved, composer, hasContinuation: !!composer };
     }
     root.TodayContinuity = { project, key, validDate };
 })(globalThis);

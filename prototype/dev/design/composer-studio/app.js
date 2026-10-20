@@ -361,18 +361,6 @@
         };
         timer = setTimeout(hide, 5000);
     }
-    const logo =
-        '<svg viewBox="13 22 74 60" aria-hidden="true"> <g transform="translate(2.45 2.05)"> <circle cx="20.5" cy="50" r="6" fill="#05badd" /> <rect x="30" y="24" width="13" height="52" rx="6" fill="currentColor" /> <rect x="46" y="24" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-7 46 30)" /> <rect x="46" y="43.5" width="25" height="13" rx="6" fill="#ff3902" transform="rotate(-4 46 50)" /> <rect x="46" y="63" width="34" height="13" rx="6" fill="#ff3902" transform="rotate(-2 46 69)" /> </g></svg>';
-    const nav = [
-        ['today-c', 'home', 'Today'],
-        ['events-next', 'calendar', 'Events'],
-        ['bureaucracy-next', 'document', 'Bureaucracy'],
-        ['departures-next', 'train', 'Departures'],
-        ['services-next', 'grid', 'Services'],
-    ];
-    if (!document.querySelector('#shell [data-static-header]'))
-        document.querySelector('#shell').innerHTML =
-            `<header class="app-header"><a href="../today-c/" class="brand" aria-label="Expadu home">${logo}Expadu</a><div class="header-context"><button class="city">${I('pin')}Cologne${I('down')}</button><span class="header-weather" role="img" aria-label="Sample weather, 21 degrees">${I('sun')}<strong>21°</strong></span></div><a class="my-day" href="#saved" data-nav="saved" aria-label="Open saved ideas">${I('bookmark')}<span>Saved</span><b class="header-saved-count" hidden></b></a></header><nav class="service-nav" aria-label="Main navigation">${nav.map(([path, icon, label]) => `<a data-page="${path.replace(/-(next|c)$/, '')}" href="../${path}/">${I(icon)}<span>${label}</span></a>`).join('')}</nav>`;
     // Composer's button is here too, marked as where you are, so the menu
     // has the same width and place on every page: on phones the round one
     // beside the menu, on tablets and desktops the one in the header
@@ -1752,7 +1740,7 @@
         ) {
             state.conversation.activeDate = null;
             reply(
-                'Composer helps with Expadu places, plans, events, journeys, services and reviewed bureaucracy information. I cannot create unrelated content. What would you like help with in your day?',
+                'Composer helps with Expadu places, plans, events, journeys and reviewed bureaucracy information. I cannot create unrelated content. What would you like help with in your day?',
             );
             return;
         }
@@ -1985,10 +1973,9 @@
             const title =
                 ExpaduModel.categories?.find((x) => x.id === r.service)?.title ||
                 'Services';
-            reply(
-                `Expadu doesn’t list ${title.toLowerCase()} yet. On Services you can describe what you need, such as a language, and keep the request until listings arrive.`,
-                { suggestions: [{ label: `Open Services`, href: ExpaduStore.routes.services }] },
-            );
+            // Services, where a request could wait for listings, is out of
+            // the first release (owner, 18 Oct 2026).
+            reply(`Expadu doesn’t list ${title.toLowerCase()} yet.`);
             return;
         }
         if (r.kind === 'event') {

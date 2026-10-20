@@ -26,34 +26,6 @@
 .today-reference .practical-personal .paperwork-focus h3 {
     font-size: clamp(var(--text-title-sm), 2vw, var(--text-title-lg));
 }
-.today-reference .practical-services {
-    margin-top: 16px;
-}
-.today-reference .practical-services h3 {
-    font-size: var(--text-small);
-    color: var(--ink-soft);
-    font-weight: var(--weight-medium);
-}
-.today-reference .practical-service-links {
-    display: grid;
-    margin-top: 6px;
-    gap: 2px;
-}
-.today-reference .practical-service-links a {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    padding: 6px 10px;
-    margin-inline: -10px;
-    font-size: var(--text-control);
-    border-radius: var(--radius-md);
-}
-.today-reference .practical-service-links svg {
-    width: 20px;
-    height: 20px;
-    color: var(--teal);
-}
 .today-reference .city-help {
     padding-left: 20px;
 }
@@ -304,29 +276,6 @@
     color: var(--muted);
     padding-top: 6px;
 }
-.today-reference .composer-next-decision {
-    display: flex;
-    gap: 10px;
-    align-items: baseline;
-    font-size: var(--text-control);
-}
-.today-reference .decision-marker {
-    width: 7px;
-    height: 7px;
-    background: var(--orange);
-    border-radius: var(--radius-round);
-    flex-shrink: 0;
-}
-.today-reference .composer-next-decision strong {
-    font-weight: var(--weight-semibold);
-}
-.today-reference .composer-next-decision small {
-    display: block;
-    font-size: var(--text-caption);
-    line-height: 1.4;
-    color: var(--ink-soft);
-    margin-top: 4px;
-}
 .today-reference .draft-preview {
     min-width: 0;
 }
@@ -424,7 +373,6 @@
 .today-reference
     :is(
         .forecast-strip,
-        .practical-service-links a,
         .compact-event-open,
         .icon-button,
         .around-open,
@@ -437,7 +385,6 @@
 .today-reference
     :is(
         .forecast-strip,
-        .practical-service-links a,
         .compact-event-open,
         .icon-button,
         .around-open,
@@ -448,7 +395,6 @@
 .today-reference
     :is(
         .forecast-strip,
-        .practical-service-links a,
         .compact-event-open,
         .icon-button,
         .around-open
@@ -476,9 +422,6 @@
     .today-reference .city-help {
         padding: 16px 0 0;
     }
-    .today-reference .practical-service-links {
-        grid-template-columns: 1fr 1fr;
-    }
     .today-reference .forecast-strip > small {
         flex-basis: auto;
         margin-left: auto;
@@ -494,16 +437,6 @@
     .today-reference .forecast-strip > small {
         flex-basis: auto;
         margin-left: auto;
-    }
-    .today-reference .practical-service-links {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-    }
-    .today-reference .practical-service-links a {
-        margin-inline: 0;
-        padding: 6px 0;
-        font-size: var(--text-small);
-        gap: 8px;
     }
     .today-reference .practical-personal .record-label {
         max-width: none;
@@ -556,7 +489,6 @@
     .today-reference
         :is(
             .forecast-strip,
-                .practical-service-links a,
             .compact-event-open,
             .icon-button,
             .around-open,

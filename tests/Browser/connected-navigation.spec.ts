@@ -24,14 +24,21 @@ for (const route of [
         ]);
 
         // Composer: the header's "Ask Composer" from 701px, the round button
-        // beside the floating sections on phones.
+        // beside the floating sections on phones; both open the tray.
+        const opener = isMobile
+            ? page.getByRole('button', { name: 'Open Composer', exact: true })
+            : page
+                  .getByRole('banner')
+                  .getByRole('button', { name: 'Ask Composer', exact: true });
+        await expect(opener).toBeVisible();
+        await opener.click();
         await expect(
-            isMobile
-                ? page.getByRole('link', { name: 'Open Composer', exact: true })
-                : page
-                      .getByRole('banner')
-                      .getByRole('link', { name: 'Ask Composer', exact: true }),
-        ).toBeVisible();
+            page.getByRole('textbox', { name: 'Your request to Composer' }),
+        ).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(
+            page.getByRole('dialog', { name: 'Ask Composer' }),
+        ).toHaveCount(0);
         await expect(
             page.getByRole('button', { name: 'Your account', exact: true }),
         ).toBeVisible();

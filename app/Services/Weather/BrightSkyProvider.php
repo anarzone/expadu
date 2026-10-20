@@ -2,6 +2,7 @@
 
 namespace App\Services\Weather;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
@@ -135,8 +136,7 @@ class BrightSkyProvider implements WeatherProvider
         $currentEntry = null;
 
         foreach ($entries as $entry) {
-            $hour = (int) substr((string) ($entry['timestamp'] ?? ''), 11, 2);
-            if ($hour === $currentHour) {
+            if ($this->hourEntry($entry)['hour'] === $currentHour) {
                 $currentEntry = $entry;
                 break;
             }
@@ -145,13 +145,7 @@ class BrightSkyProvider implements WeatherProvider
         $currentEntry ??= $entries[0];
 
         return [
-            'hourly' => array_values(array_map(
-                fn (array $entry) => [
-                    'hour' => (int) substr((string) ($entry['timestamp'] ?? ''), 11, 2),
-                    'precipitation' => (float) ($entry['precipitation'] ?? 0),
-                ],
-                $entries,
-            )),
+            'hourly' => array_values(array_map(fn (array $entry) => $this->hourEntry($entry), $entries)),
             'current_from_hourly' => [
                 'temperature' => (float) ($currentEntry['temperature'] ?? 0),
                 'feels_like' => null,
@@ -164,6 +158,32 @@ class BrightSkyProvider implements WeatherProvider
                     : null,
                 'precipitation' => (float) ($currentEntry['precipitation'] ?? 0),
             ],
+        ];
+    }
+
+    /**
+     * Bright Sky stamps entries with an offset (UTC unless asked), so the
+     * hour is read in Europe/Berlin from the instant, not from the string.
+     *
+     * @param  array<string, mixed>  $entry
+     * @return array<string, mixed>
+     */
+    private function hourEntry(array $entry): array
+    {
+        $stamp = (string) ($entry['timestamp'] ?? '');
+        $local = $stamp === '' ? null : CarbonImmutable::parse($stamp)->setTimezone('Europe/Berlin');
+        $number = fn (string $key) => is_numeric($entry[$key] ?? null) ? (int) round((float) $entry[$key]) : null;
+
+        return [
+            'hour' => $local?->hour ?? 0,
+            'time' => $local?->toIso8601String(),
+            'precipitation' => (float) ($entry['precipitation'] ?? 0),
+            'precipitation_probability' => $number('precipitation_probability'),
+            'temperature' => is_numeric($entry['temperature'] ?? null) ? round((float) $entry['temperature'], 1) : null,
+            'cloud_cover' => $number('cloud_cover'),
+            'visibility' => $number('visibility'),
+            // Bright Sky's icon names are the same set this app uses.
+            'icon' => is_string($entry['icon'] ?? null) ? $entry['icon'] : null,
         ];
     }
 }

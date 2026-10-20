@@ -138,12 +138,6 @@
 .today-reference.today-flow .day-area > .practical-surface .city-help::before {
     content: none;
 }
-.today-reference.today-flow
-    .day-area
-    > .practical-surface
-    .practical-service-links {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 .today-flow
     :is(
         .departure-board > summary,
@@ -280,18 +274,6 @@
     }
     .today-reference.today-flow .document-progress > span {
         font-size: var(--text-micro);
-    }
-    .today-reference.today-flow .practical-services {
-        margin-top: 4px;
-    }
-    .today-reference.today-flow .practical-services h3 {
-        display: none;
-    }
-    .today-reference.today-flow .practical-service-links {
-        margin-top: 0;
-    }
-    .today-reference.today-flow .practical-service-links a {
-        min-height: 44px;
     }
     .today-reference.today-flow .has-no-plans {
         padding-block: 14px 6px;

@@ -5,6 +5,7 @@
 | group in routes/web.php.
 */
 
+use App\Http\Controllers\Api\DayController;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\JourneySuggestController;
@@ -35,6 +36,9 @@ Route::get('api/travel/stations', StationSearchController::class)->middleware('t
 Route::get('api/travel/favourite-stops', [FavouriteStopController::class, 'index'])->name('api.travel.favourite-stops.index');
 Route::post('api/travel/favourite-stops', [FavouriteStopController::class, 'store'])->name('api.travel.favourite-stops.store');
 Route::delete('api/travel/favourite-stops', [FavouriteStopController::class, 'destroy'])->name('api.travel.favourite-stops.destroy');
+// The signed-in person's day (DayProjection); plans the next trip, so it
+// shares the journey planner's rate limit.
+Route::get('api/day', DayController::class)->middleware('throttle:journey')->name('api.day');
 // Live trip session — persists the chosen journey across screens/closes.
 Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.start');
 Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
