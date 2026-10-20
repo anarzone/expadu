@@ -434,7 +434,7 @@ export default function StreetScene<T>({
             untilt();
         }
 
-        if (!card || card.classList.contains('is-turned')) {
+        if (!card) {
             return;
         }
 
