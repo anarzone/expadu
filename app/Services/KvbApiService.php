@@ -151,6 +151,45 @@ class KvbApiService
     }
 
     /**
+     * A KVB point's station number. Point ids are the station's number
+     * ("Haltestellenbereich", which the lift feed names) followed by a mode
+     * digit and a point digit: Neumarkt is 2, its points 211…218 and 221/222.
+     */
+    public static function stationNumber(int|string $pointId): int
+    {
+        return intdiv((int) $pointId, 100);
+    }
+
+    /**
+     * Every KVB point of the station with this name, as KVB lists it.
+     *
+     * @return list<array{id: int, name: string, short: string, area: string, lines: string[], lat: float, lng: float}>
+     */
+    public function stationPoints(string $name): array
+    {
+        return array_values(array_filter($this->getStops(), fn (array $stop) => $stop['name'] === $name));
+    }
+
+    /**
+     * The lift disruptions as last fetched, without fetching: null when they
+     * aren't known (nothing cached yet). A miss queues a refresh, so a page
+     * never waits on KVB for them.
+     *
+     * @return list<array{id: string, label: string, stop_area: string, info: string, lat: float, lng: float, timestamp: string}>|null
+     */
+    public function knownElevatorDisruptions(): ?array
+    {
+        $known = Cache::get('kvb:elevator_disruptions');
+        if (is_array($known)) {
+            return $known;
+        }
+
+        dispatch(fn () => app(self::class)->getElevatorDisruptions())->afterResponse();
+
+        return null;
+    }
+
+    /**
      * Current elevator disruptions (live, updated every few minutes).
      *
      * @return array<int, array{id: string, label: string, stop_area: string, lat: float, lng: float, timestamp: string}>
@@ -215,20 +254,22 @@ class KvbApiService
      */
     public function getAccessibilityDisruptions(): array
     {
-        $stops = collect($this->getStops())->keyBy('id');
+        // The feeds name the station number, not a point id (see stationNumber).
+        $stations = collect($this->getStops())
+            ->mapWithKeys(fn (array $stop) => [self::stationNumber($stop['id']) => $stop['name']]);
 
         $elevators = collect($this->getElevatorDisruptions())
             ->map(fn (array $d) => [
                 ...$d,
                 'type' => 'elevator',
-                'stop_name' => $stops[$d['stop_area']]['name'] ?? "Stop #{$d['stop_area']}",
+                'stop_name' => $stations[(int) $d['stop_area']] ?? "Stop #{$d['stop_area']}",
             ]);
 
         $escalators = collect($this->getEscalatorDisruptions())
             ->map(fn (array $d) => [
                 ...$d,
                 'type' => 'escalator',
-                'stop_name' => $stops[$d['stop_area']]['name'] ?? "Stop #{$d['stop_area']}",
+                'stop_name' => $stations[(int) $d['stop_area']] ?? "Stop #{$d['stop_area']}",
             ]);
 
         return $elevators->merge($escalators)->values()->all();

@@ -72,7 +72,6 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -89,7 +88,6 @@ type Panel =
     | 'history'
     | 'browse'
     | 'appointment'
-    | 'versions'
     | null;
 type Swap = { slot: Slot; date: string; revision: number };
 const normal = (text: string) =>
@@ -156,7 +154,7 @@ export default function ComposerPage({
     );
     const [swap, setSwap] = useState<Swap | null>(null);
     const [browseDate, setBrowseDate] = useState(today);
-    const [confirm, setConfirm] = useState<'cancel' | 'history' | null>(null);
+    const [confirm, setConfirm] = useState<'history' | null>(null);
     const [detail, setDetail] = useState<ItemDetails | null>(null);
     const [destination, setDestination] = useState<Destination | null>(null);
     const [appointmentName, setAppointmentName] = useState('');
@@ -174,17 +172,18 @@ export default function ComposerPage({
         (item) => item.id === workspace.active,
     )!;
     const focused = workspace.focus
-        ? workspace.draft?.date === workspace.focus
-            ? workspace.draft
-            : workspace.plans[workspace.focus]
+        ? (workspace.plans[workspace.focus] ?? null)
         : null;
-    const activePlan = focused ?? workspace.draft;
+    const activePlan = focused;
     const latestPlanMessage = [...conversation.messages]
         .reverse()
-        .find(
-            (item) =>
-                item.kind === 'plan' && item.plan?.date === workspace.focus,
-        );
+        .find((item) => item.kind === 'plan' && item.date === workspace.focus);
+    // Undo goes newest first for the day you're looking at.
+    const latestUndo = workspace.changes
+        .filter((change) => change.date === focused?.date && change.undoable)
+        .at(-1);
+    const changeById = (id?: string) =>
+        workspace.changes.find((change) => change.id === id);
 
     useEffect(() => {
         function resize() {
@@ -258,6 +257,16 @@ export default function ComposerPage({
             if (err instanceof ApiError && err.status === 409) {
                 setState(await api<Workspace>(show.url()));
                 setSwap(null);
+            }
+
+            // A change that couldn't go in left the plan as it was; the reply
+            // saying why is in the workspace that came back.
+            if (
+                err instanceof ApiError &&
+                err.status === 422 &&
+                err.data.workspace
+            ) {
+                setState(err.data.workspace as Workspace);
             }
 
             throw err;
@@ -352,18 +361,14 @@ export default function ComposerPage({
             setPendingText('');
             const state = stateRef.current;
             const current = state.focus
-                ? state.draft?.date === state.focus
-                    ? state.draft
-                    : state.plans[state.focus]
+                ? (state.plans[state.focus] ?? null)
                 : null;
             const clean = normal(text);
 
             if (/^(show|view|open)( me)?( my| the)? plan\b/.test(clean)) {
                 const dates = Object.keys(state.plans);
                 const date =
-                    state.focus ??
-                    state.draft?.date ??
-                    (dates.length === 1 ? dates[0] : null);
+                    state.focus ?? (dates.length === 1 ? dates[0] : null);
 
                 if (date) {
                     await sendCommand({ action: 'open', date });
@@ -394,7 +399,11 @@ export default function ComposerPage({
                         revision: stateRef.current.revision,
                     });
                 } else if (clean.startsWith('remove')) {
-                    await sendCommand({ action: 'remove', id: slot.id });
+                    await sendCommand({
+                        action: 'remove',
+                        id: slot.id,
+                        date: current.date,
+                    });
                 } else if (
                     /^(rename|change.*name)/.test(clean) &&
                     /\s+to\s+/i.test(text)
@@ -402,6 +411,7 @@ export default function ComposerPage({
                     await sendCommand({
                         action: 'edit',
                         id: slot.id,
+                        date: current.date,
                         name: text
                             .split(/\s+to\s+/i)
                             .slice(1)
@@ -411,6 +421,7 @@ export default function ComposerPage({
                     await sendCommand({
                         action: 'edit',
                         id: slot.id,
+                        date: current.date,
                         start: times[0].padStart(5, '0'),
                         end: times[1].padStart(5, '0'),
                     });
@@ -428,12 +439,6 @@ export default function ComposerPage({
                 }>(parse.url(), { text });
 
                 if (parsed.intent === 'plan_day' && parsed.constraints) {
-                    if (state.draft) {
-                        throw new Error(
-                            'Apply or discard your unfinished changes before creating another plan.',
-                        );
-                    }
-
                     setBusy('Putting your day together…');
                     const result = await api<{
                         handoff_token: string;
@@ -507,7 +512,6 @@ export default function ComposerPage({
             {children}
         </ItemPreview>
     );
-    const lastVersion = workspace.versions.at(-1);
     const entryCommand = useRef(command);
     useEffect(() => {
         entryCommand.current = command;
@@ -538,18 +542,11 @@ export default function ComposerPage({
 
         if (next?.kind === 'appointment') {
             setBrowseDate(next.date);
-
-            if (
-                !stateRef.current.draft ||
-                stateRef.current.draft.date === next.date
-            ) {
-                setPanel('appointment');
-            }
+            setPanel('appointment');
         } else if (
             planDate &&
             validDay(planDate) &&
-            (stateRef.current.plans[planDate] ||
-                stateRef.current.draft?.date === planDate)
+            stateRef.current.plans[planDate]
         ) {
             void entryCommand.current({ action: 'open', date: planDate });
         }
@@ -592,8 +589,6 @@ export default function ComposerPage({
             : entry && 'date' in entry
               ? entry.date
               : undefined;
-    const otherDraft =
-        !!workspace.draft && !!entryDate && workspace.draft.date !== entryDate;
     function clearEntry() {
         setEntry(null);
         setEntryEvent(null);
@@ -616,7 +611,7 @@ export default function ComposerPage({
         textarea.current?.focus();
     }
     async function addSelectedEvent() {
-        if (entry?.kind !== 'event' || !entryEvent || otherDraft) {
+        if (entry?.kind !== 'event' || !entryEvent) {
             return;
         }
 
@@ -768,16 +763,10 @@ export default function ComposerPage({
                                     </div>
                                     {message.text && <p>{message.text}</p>}
                                     {message.kind === 'plan' &&
-                                        message.plan &&
                                         (live ? (
                                             <>
                                                 <PlanCard
                                                     plan={focused!}
-                                                    draft={
-                                                        workspace.draft
-                                                            ?.date ===
-                                                        focused!.date
-                                                    }
                                                     busy={!!busy}
                                                     command={command}
                                                     swap={startSwap}
@@ -786,48 +775,107 @@ export default function ComposerPage({
                                                         setSwap(null);
                                                         openBrowse();
                                                     }}
-                                                    onCancel={() =>
-                                                        setConfirm('cancel')
-                                                    }
                                                 />
-                                                <div className="composer-plan-links">
-                                                    <button
-                                                        onClick={() =>
-                                                            setPanel('versions')
-                                                        }
-                                                    >
-                                                        <IconHistory
-                                                            size={16}
-                                                        />
-                                                        Version history ·{' '}
-                                                        {
-                                                            workspace.versions.filter(
-                                                                (version) =>
-                                                                    version.date ===
-                                                                    focused!
-                                                                        .date,
-                                                            ).length
-                                                        }
-                                                    </button>
-                                                    {lastVersion &&
-                                                        !lastVersion.undone &&
-                                                        !workspace.draft && (
-                                                            <button
-                                                                disabled={
-                                                                    !!busy
-                                                                }
-                                                                onClick={() =>
-                                                                    command({
-                                                                        action: 'undo',
-                                                                    })
-                                                                }
-                                                            >
-                                                                Undo last change
-                                                            </button>
-                                                        )}
-                                                </div>
+                                                {latestUndo && (
+                                                    <div className="composer-plan-links">
+                                                        <button
+                                                            disabled={!!busy}
+                                                            onClick={() =>
+                                                                command({
+                                                                    action: 'undo',
+                                                                    change: latestUndo.id,
+                                                                })
+                                                            }
+                                                        >
+                                                            Undo last change
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </>
+                                        ) : message.plan ? (
+                                            <details className="composer-plan-reference">
+                                                <summary>
+                                                    <IconCalendar size={16} />
+                                                    {dateLabel(
+                                                        message.plan.date,
+                                                    )}{' '}
+                                                    ·{' '}
+                                                    {message.plan.slots.length}{' '}
+                                                    {message.plan.slots
+                                                        .length === 1
+                                                        ? 'activity'
+                                                        : 'activities'}
+                                                    <span>In your plans</span>
+                                                </summary>
+                                                <PlanCard
+                                                    plan={message.plan}
+                                                    readonly
+                                                />
+                                                <button
+                                                    className="composer-text-button"
+                                                    disabled={!!busy}
+                                                    onClick={() =>
+                                                        openPlan(message.plan!)
+                                                    }
+                                                >
+                                                    Open this day
+                                                    <IconArrowRight size={16} />
+                                                </button>
+                                            </details>
                                         ) : (
+                                            <p className="composer-plan-gone">
+                                                {message.date
+                                                    ? `${dateLabel(message.date)} is no longer in your plans.`
+                                                    : 'This day is no longer in your plans.'}
+                                            </p>
+                                        ))}
+                                    {message.kind === 'change' && (
+                                        <>
+                                            {(message.rows?.length ?? 0) >
+                                                0 && (
+                                                <ul className="composer-change-rows">
+                                                    {message.rows!.map(
+                                                        (row) => (
+                                                            <li
+                                                                key={`${row.kind}-${row.id}`}
+                                                            >
+                                                                <strong>
+                                                                    {row.title}
+                                                                </strong>{' '}
+                                                                {row.kind ===
+                                                                'removed'
+                                                                    ? `${row.from} · removed`
+                                                                    : row.kind ===
+                                                                        'moved'
+                                                                      ? `${row.from} → ${row.to}`
+                                                                      : row.kind ===
+                                                                          'replaced'
+                                                                        ? `${row.to} · in place of ${row.was}`
+                                                                        : `${row.to} · added`}
+                                                            </li>
+                                                        ),
+                                                    )}
+                                                </ul>
+                                            )}
+                                            {changeById(message.change_id)
+                                                ?.undoable && (
+                                                <button
+                                                    className="composer-text-button"
+                                                    disabled={!!busy}
+                                                    onClick={() =>
+                                                        command({
+                                                            action: 'undo',
+                                                            change: message.change_id,
+                                                        })
+                                                    }
+                                                >
+                                                    Undo
+                                                </button>
+                                            )}
+                                        </>
+                                    )}
+                                    {message.kind === 'earlier_draft' &&
+                                        message.plan && (
                                             <details className="composer-plan-reference">
                                                 <summary>
                                                     <IconCalendar size={16} />
@@ -841,33 +889,29 @@ export default function ComposerPage({
                                                         ? 'activity'
                                                         : 'activities'}
                                                     <span>
-                                                        Earlier reference
+                                                        Not in your plans
                                                     </span>
                                                 </summary>
                                                 <PlanCard
                                                     plan={message.plan}
                                                     readonly
                                                 />
-                                                {workspace.plans[
-                                                    message.plan.date
-                                                ] && (
+                                                {!message.reapplied_change && (
                                                     <button
                                                         className="composer-text-button"
                                                         disabled={!!busy}
                                                         onClick={() =>
-                                                            openPlan(
-                                                                message.plan!,
-                                                            )
+                                                            command({
+                                                                action: 'reapply',
+                                                                id: message.draft_id,
+                                                            })
                                                         }
                                                     >
-                                                        Open current plan
-                                                        <IconArrowRight
-                                                            size={16}
-                                                        />
+                                                        Reapply this proposal
                                                     </button>
                                                 )}
                                             </details>
-                                        ))}
+                                        )}
                                     {message.kind === 'bureaucracy' && (
                                         <Guidance query={message.query ?? ''} />
                                     )}
@@ -1023,7 +1067,6 @@ export default function ComposerPage({
                                                 className="composer-entry-primary"
                                                 disabled={
                                                     !!busy ||
-                                                    otherDraft ||
                                                     !entryEvent.occurrence_end ||
                                                     Date.parse(
                                                         entryEvent.occurrence_start,
@@ -1032,10 +1075,7 @@ export default function ComposerPage({
                                                 onClick={addSelectedEvent}
                                             >
                                                 <IconPlus size={16} />
-                                                {workspace.approval ===
-                                                'routine'
-                                                    ? 'Add to saved plan'
-                                                    : 'Add to proposal'}
+                                                Add to plan
                                             </button>
                                         </div>
                                     </>
@@ -1135,7 +1175,7 @@ export default function ComposerPage({
                                     </button>
                                 </>
                             )}
-                            {entry.kind === 'appointment' && !otherDraft && (
+                            {entry.kind === 'appointment' && (
                                 <button
                                     type="button"
                                     className="composer-text-button"
@@ -1146,20 +1186,6 @@ export default function ComposerPage({
                                 >
                                     Add details
                                 </button>
-                            )}
-                            {otherDraft && (
-                                <p className="composer-entry-conflict">
-                                    You have changes for{' '}
-                                    {dateLabel(workspace.draft!.date)}.{' '}
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            openPlan(workspace.draft!)
-                                        }
-                                    >
-                                        Review them first
-                                    </button>
-                                </p>
                             )}
                         </section>
                     )}
@@ -1211,12 +1237,7 @@ export default function ComposerPage({
                                 >
                                     <IconCalendar size={15} />
                                     {dateLabel(activePlan.date)}
-                                    <span>
-                                        {workspace.draft?.date ===
-                                        activePlan.date
-                                            ? 'Draft'
-                                            : 'Current plan'}
-                                    </span>
+                                    <span>In your plans</span>
                                 </button>
                             </div>
                         )}
@@ -1335,67 +1356,6 @@ export default function ComposerPage({
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button
-                                            type="button"
-                                            className="composer-approval"
-                                            disabled={!!busy}
-                                            aria-label="Change approval setting"
-                                        >
-                                            <IconShieldCheck size={16} />
-                                            <span>
-                                                {workspace.approval === 'ask'
-                                                    ? 'Ask before changes'
-                                                    : 'Routine changes allowed'}
-                                            </span>
-                                            <IconChevronDown size={12} />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        side="top"
-                                        align="start"
-                                        className="composer-menu composer-approval-menu"
-                                    >
-                                        <DropdownMenuLabel>
-                                            Plan changes
-                                        </DropdownMenuLabel>
-                                        {(['ask', 'routine'] as const).map(
-                                            (mode) => (
-                                                <DropdownMenuItem
-                                                    key={mode}
-                                                    onSelect={() =>
-                                                        command({
-                                                            action: 'approval',
-                                                            mode,
-                                                        })
-                                                    }
-                                                >
-                                                    <div>
-                                                        <strong>
-                                                            {mode === 'ask'
-                                                                ? 'Ask before changes'
-                                                                : 'Allow routine plan changes'}
-                                                        </strong>
-                                                        <small>
-                                                            {mode === 'ask'
-                                                                ? 'Review a proposal before it is saved.'
-                                                                : 'Save reversible edits automatically. Undo stays available.'}
-                                                        </small>
-                                                    </div>
-                                                    {workspace.approval ===
-                                                        mode && (
-                                                        <IconCheck size={17} />
-                                                    )}
-                                                </DropdownMenuItem>
-                                            ),
-                                        )}
-                                        <p>
-                                            Bookings, payments and submissions
-                                            always need separate confirmation.
-                                        </p>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
                             </div>
                             <button
                                 type="submit"
@@ -1437,13 +1397,11 @@ export default function ComposerPage({
                                 ? 'Saved'
                                 : panel === 'history'
                                   ? 'Conversations'
-                                  : panel === 'versions'
-                                    ? 'Version history'
-                                    : panel === 'appointment'
-                                      ? 'Add an appointment'
-                                      : swap
-                                        ? 'Replace a place'
-                                        : 'Add to your plan'}
+                                  : panel === 'appointment'
+                                    ? 'Add an appointment'
+                                    : swap
+                                      ? 'Replace a place'
+                                      : 'Add to your plan'}
                     </DialogTitle>
                     <DialogDescription className="sr-only">
                         Your conversation stays here while you explore.
@@ -1466,31 +1424,6 @@ export default function ComposerPage({
 
                         {panel === 'plans' && (
                             <>
-                                {workspace.draft && (
-                                    <button
-                                        className="composer-collection-item"
-                                        disabled={!!busy}
-                                        onClick={() =>
-                                            openPlan(workspace.draft!)
-                                        }
-                                    >
-                                        <IconPencilFallback />
-                                        <span>
-                                            Unfinished changes
-                                            <small>
-                                                {dateLabel(
-                                                    workspace.draft.date,
-                                                )}{' '}
-                                                · {workspace.draft.slots.length}{' '}
-                                                {workspace.draft.slots
-                                                    .length === 1
-                                                    ? 'activity'
-                                                    : 'activities'}
-                                            </small>
-                                        </span>
-                                        <IconArrowRight size={18} />
-                                    </button>
-                                )}
                                 {Object.values(workspace.plans)
                                     .sort((a, b) =>
                                         a.date.localeCompare(b.date),
@@ -1516,14 +1449,12 @@ export default function ComposerPage({
                                             <IconArrowRight size={18} />
                                         </button>
                                     ))}
-                                {Object.keys(workspace.plans).length === 0 &&
-                                    !workspace.draft && (
-                                        <p className="composer-empty">
-                                            Your confirmed days will appear
-                                            here. Start with a request in
-                                            Composer.
-                                        </p>
-                                    )}
+                                {Object.keys(workspace.plans).length === 0 && (
+                                    <p className="composer-empty">
+                                        Your days will appear here. Start with a
+                                        request in Composer.
+                                    </p>
+                                )}
                             </>
                         )}
                         {panel === 'history' && (
@@ -1576,75 +1507,6 @@ export default function ComposerPage({
                                     <IconTrash size={16} />
                                     Delete conversation history
                                 </button>
-                            </>
-                        )}
-                        {panel === 'versions' && (
-                            <>
-                                {workspace.versions
-                                    .filter(
-                                        (version) =>
-                                            !workspace.focus ||
-                                            version.date === workspace.focus,
-                                    )
-                                    .toReversed()
-                                    .map((version) => (
-                                        <details
-                                            className="composer-version"
-                                            key={version.id}
-                                        >
-                                            <summary>
-                                                {dateLabel(version.date)}
-                                                <small>
-                                                    {new Date(
-                                                        version.created_at,
-                                                    ).toLocaleTimeString([], {
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
-                                                    {version.undone
-                                                        ? ' · Undone'
-                                                        : version.after
-                                                          ? ' · Saved'
-                                                          : ' · Cancelled'}
-                                                </small>
-                                            </summary>
-                                            {version.after ? (
-                                                <PlanCard
-                                                    plan={version.after}
-                                                    readonly
-                                                />
-                                            ) : (
-                                                <p>This day was cancelled.</p>
-                                            )}
-                                            {version.before && (
-                                                <details>
-                                                    <summary>
-                                                        Before this change
-                                                    </summary>
-                                                    <PlanCard
-                                                        plan={version.before}
-                                                        readonly
-                                                    />
-                                                </details>
-                                            )}
-                                        </details>
-                                    ))}
-                                {workspace.versions.length === 0 && (
-                                    <p className="composer-empty">
-                                        Applied changes will appear here.
-                                    </p>
-                                )}
-                                {lastVersion && !lastVersion.undone && (
-                                    <button
-                                        className="composer-text-button"
-                                        disabled={!!busy || !!workspace.draft}
-                                        onClick={() =>
-                                            command({ action: 'undo' })
-                                        }
-                                    >
-                                        Undo latest applied change
-                                    </button>
-                                )}
                             </>
                         )}
                         {(panel === 'browse' || panel === 'saved') && (
@@ -1742,7 +1604,6 @@ export default function ComposerPage({
                                         type="date"
                                         required
                                         value={browseDate}
-                                        disabled={!!workspace.draft}
                                         onChange={(e) =>
                                             setBrowseDate(e.target.value)
                                         }
@@ -1775,9 +1636,7 @@ export default function ComposerPage({
                                     ) : (
                                         <IconPlus size={17} />
                                     )}
-                                    {workspace.approval === 'routine'
-                                        ? 'Add to saved plan'
-                                        : 'Add to proposal'}
+                                    Add to plan
                                 </button>
                             </form>
                         )}
@@ -1793,15 +1652,10 @@ export default function ComposerPage({
                 }}
             >
                 <DialogContent className="composer-confirm">
-                    <DialogTitle>
-                        {confirm === 'cancel'
-                            ? 'Cancel this day?'
-                            : 'Delete conversation history?'}
-                    </DialogTitle>
+                    <DialogTitle>Delete conversation history?</DialogTitle>
                     <DialogDescription>
-                        {confirm === 'cancel'
-                            ? 'The day will be removed from My Plans. You can undo this change.'
-                            : 'Your messages will be permanently deleted. Saved, plans and plan versions will remain.'}
+                        Your messages will be permanently deleted. Saved places
+                        and your plans will remain.
                     </DialogDescription>
                     <div>
                         <button
@@ -1815,23 +1669,14 @@ export default function ComposerPage({
                             disabled={!!busy}
                             onClick={async () => {
                                 if (
-                                    await command(
-                                        confirm === 'cancel'
-                                            ? {
-                                                  action: 'approve',
-                                                  cancel: true,
-                                              }
-                                            : { action: 'delete_history' },
-                                    )
+                                    await command({ action: 'delete_history' })
                                 ) {
                                     setConfirm(null);
                                     setPanel(null);
                                 }
                             }}
                         >
-                            {confirm === 'cancel'
-                                ? 'Cancel day'
-                                : 'Delete history'}
+                            Delete history
                         </button>
                     </div>
                 </DialogContent>
@@ -1901,8 +1746,4 @@ export default function ComposerPage({
             )}
         </AppLayout>
     );
-}
-
-function IconPencilFallback() {
-    return <IconSparkles size={20} />;
 }

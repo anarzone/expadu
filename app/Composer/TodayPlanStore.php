@@ -32,8 +32,6 @@ class TodayPlanStore
             return;
         }
         $plan = app(PlaceIdentity::class)->normalizePlan($plan);
-
-        $plan = app(PlaceIdentity::class)->normalizePlan($plan);
         app(WorkspaceStore::class)->saveConfirmed($user, $plan + ['prompt' => $prompt]);
 
         Cache::forget($this->key($user).':hidden');
@@ -81,7 +79,8 @@ class TodayPlanStore
 
                 return ['date' => $date, 'weekday' => CarbonImmutable::parse($date)->isoFormat('dddd'), 'prompt' => $plan['prompt'] ?? null, 'slots' => $plan['slots']];
             }
-            if (collect($workspace->state['versions'])->contains('date', $date)) {
+            // A day that had a plan and was cancelled stays cancelled; the older cached pin doesn't return.
+            if (collect(app(WorkspaceUpgrade::class)->toCurrent($workspace->state)['changes'])->contains('date', $date)) {
                 return null;
             }
         }

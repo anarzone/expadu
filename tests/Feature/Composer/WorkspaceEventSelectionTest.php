@@ -18,10 +18,10 @@ test('selected occurrences resolve independently of the nearest fifty discovery 
     DB::statement('UPDATE events SET location = ST_SetSRID(ST_MakePoint(6.99, 50.99), 4326)::geography WHERE id = ?', [$selected->id]);
     $result = app(CandidateRepository::class)->byIds(["event:{$selected->id}"], $day);
     expect($result)->toHaveCount(1)->and($result[0]->id)->toBe("event:{$selected->id}");
-    $this->actingAs(User::factory()->onboarded()->create())->postJson('/composer/workspace', ['revision' => 0, 'action' => 'add', 'date' => $day->format('Y-m-d'), 'candidate' => "event:{$selected->id}"])->assertOk()->assertJsonPath('draft.slots.0.start_time', '15:00');
+    $this->actingAs(User::factory()->onboarded()->create())->postJson('/composer/workspace', ['revision' => 0, 'action' => 'add', 'date' => $day->format('Y-m-d'), 'candidate' => "event:{$selected->id}"])->assertOk()->assertJsonPath("plans.{$day->format('Y-m-d')}.slots.0.start_time", '15:00');
 });
 
-test('selected fifteen minute events keep their listed end time in a proposal', function () {
+test('selected fifteen minute events keep their listed end time in the plan', function () {
     config(['events.geocoding.expected_polygon_count' => 1]);
     DB::table('veedels')->insert(['name' => 'Workspace Boundary', 'bezirk' => 'Test', 'created_at' => now(), 'updated_at' => now()]);
     DB::statement("UPDATE veedels SET boundary = ST_Multi(ST_GeomFromText('POLYGON((6.90 50.90, 7.00 50.90, 7.00 51.00, 6.90 51.00, 6.90 50.90))', 4326)) WHERE name = 'Workspace Boundary'");
@@ -44,7 +44,7 @@ test('selected fifteen minute events keep their listed end time in a proposal', 
             'candidate' => "event:{$event->id}",
         ])
         ->assertSuccessful()
-        ->assertJsonPath('draft.date', $day->format('Y-m-d'))
-        ->assertJsonPath('draft.slots.0.start_time', '18:00')
-        ->assertJsonPath('draft.slots.0.end_time', '18:15');
+        ->assertJsonPath("plans.{$day->format('Y-m-d')}.date", $day->format('Y-m-d'))
+        ->assertJsonPath("plans.{$day->format('Y-m-d')}.slots.0.start_time", '18:00')
+        ->assertJsonPath("plans.{$day->format('Y-m-d')}.slots.0.end_time", '18:15');
 });

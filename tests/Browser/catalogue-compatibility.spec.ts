@@ -72,17 +72,28 @@ test('saved unavailable items keep their name and time with a review note in Tod
     await page.clock.setFixedTime(new Date(`${date}T10:00:00+02:00`));
     const workspace: Workspace = {
         revision: 1,
-        approval: 'ask',
+        schema: 2,
         active: 'initial',
         focus: date,
+        changes: [],
         draft: null,
+        approval: 'routine',
         versions: [],
         conversations: [
             {
                 id: 'initial',
                 title: 'Saved day',
                 created_at: `${date}T09:00:00+02:00`,
-                messages: [],
+                messages: [
+                    {
+                        id: 'card',
+                        role: 'assistant',
+                        text: '',
+                        created_at: `${date}T09:00:00+02:00`,
+                        kind: 'plan',
+                        date,
+                    },
+                ],
             },
         ],
         plans: {
