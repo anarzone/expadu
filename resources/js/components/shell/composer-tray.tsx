@@ -242,7 +242,9 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     data-composer-opener
                     onClick={() => setOpen(true)}
                 >
-                    <Icon name="spark" variant="line" />
+                    <span className="shell-composer-round-icon">
+                        <Icon name="spark" variant="line" />
+                    </span>
                 </button>
             )}
             {isOpen && (

@@ -161,8 +161,12 @@ html {
     cursor: pointer;
 }
 .shell-icon-button svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
+}
+/* Saved spaces its children as the mock's .my-day does. */
+.shell-saved {
+    gap: 8px;
 }
 .shell-icon-button:hover {
     background: var(--color-bg-quiet);
@@ -352,9 +356,7 @@ html {
 @media (min-width: 701px) and (max-width: 779px) {
     .shell-brand {
         gap: 0;
-    }
-    .shell-brand > span {
-        display: none;
+        font-size: 0;
     }
 }
 /* Below 1280px the sections share the header's one row, so Composer keeps
@@ -394,6 +396,19 @@ html {
     .shell:focus-within {
         top: 0;
     }
+    /* A page's own top bar takes the header's place (useShellHeaderAside):
+       the row steps aside, the floating sections stay. */
+    :root[data-shell-header='aside'] .shell {
+        background: none;
+        box-shadow: none;
+    }
+    :root[data-shell-header='aside'] .shell-header {
+        min-height: 0;
+        padding: 0;
+    }
+    :root[data-shell-header='aside'] .shell-header > :not(.shell-nav) {
+        display: none;
+    }
     .shell-header {
         grid-template-columns: 1fr auto;
         gap: 2px 7px;
@@ -420,7 +435,7 @@ html {
     .shell-city svg {
         display: none;
     }
-    .shell-icon-button {
+    .shell-icon-button:not(.shell-account) {
         padding: 10px 8px;
     }
     .shell-composer {
@@ -475,12 +490,11 @@ html {
         place-items: center;
         width: var(--menu-height);
         height: var(--menu-height);
-        padding: 0;
+        padding: 12px;
         border: 0;
         border-radius: var(--radius-round);
         background: var(--color-select-text);
         color: #fff;
-        box-shadow: 0 4px 14px #183f4426;
         cursor: pointer;
         transition:
             translate var(--duration-base) ease,
@@ -505,9 +519,12 @@ html {
         opacity: 0;
         transition: opacity 160ms ease;
     }
+    /* The mark rests on the line, as the mock's inline icon does. */
     .shell-composer-round svg {
-        width: 24px;
-        height: 24px;
+        display: inline;
+        vertical-align: baseline;
+        width: 20px;
+        height: 20px;
         transition:
             transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
             color 220ms ease;

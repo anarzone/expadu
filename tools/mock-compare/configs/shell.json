@@ -1,0 +1,134 @@
+{
+    "name": "shell",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": "header"
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": "header",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "header",
+            "mock": "header.app-header",
+            "app": "header.shell-header",
+            "contentDiffers": false
+        },
+        {
+            "name": "brand",
+            "mock": "header a.brand",
+            "app": "header a.shell-brand"
+        },
+        {
+            "name": "sections",
+            "mock": "nav.service-nav",
+            "app": "nav.shell-nav"
+        },
+        {
+            "name": "section Today",
+            "mock": "nav.service-nav a",
+            "app": "nav.shell-nav a",
+            "index": 0
+        },
+        {
+            "name": "section Events (current)",
+            "mock": "nav.service-nav a",
+            "app": "nav.shell-nav a",
+            "index": 1
+        },
+        {
+            "name": "section Paperwork",
+            "mock": "nav.service-nav a",
+            "app": "nav.shell-nav a",
+            "index": 2
+        },
+        {
+            "name": "section Travel",
+            "mock": "nav.service-nav a",
+            "app": "nav.shell-nav a",
+            "index": 3
+        },
+        {
+            "name": "section icon",
+            "mock": "nav.service-nav a svg",
+            "app": "nav.shell-nav a svg",
+            "index": 0
+        },
+        {
+            "name": "section label",
+            "mock": "nav.service-nav a span",
+            "app": "nav.shell-nav a span",
+            "index": 0
+        },
+        {
+            "name": "utilities",
+            "mock": "header .header-utilities",
+            "app": "header .shell-utilities"
+        },
+        {
+            "name": "Ask Composer",
+            "mock": "button.composer-header",
+            "app": "button.shell-composer",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Ask Composer mark",
+            "mock": ".composer-header-mark",
+            "app": ".shell-composer-mark",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Ask Composer text",
+            "mock": ".composer-header-text",
+            "app": ".shell-composer-text",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Ask Composer key",
+            "mock": "button.composer-header kbd",
+            "app": "button.shell-composer kbd",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "city",
+            "mock": "header button.city",
+            "app": "header .shell-city"
+        },
+        {
+            "name": "saved",
+            "mock": "header a.my-day",
+            "app": "header a.shell-icon-button"
+        },
+        {
+            "name": "saved icon",
+            "mock": "header a.my-day svg",
+            "app": "header a.shell-icon-button svg"
+        },
+        {
+            "name": "account",
+            "mock": "header button.account-button",
+            "app": "header button.shell-account",
+            "contentDiffers": true
+        },
+        {
+            "name": "account initial",
+            "mock": "header button.account-button span",
+            "app": "header button.shell-account span",
+            "contentDiffers": true
+        },
+        {
+            "name": "phone Composer button",
+            "mock": "button.composer-launcher",
+            "app": "button[aria-label*='Composer' i]:not(.shell-composer)",
+            "widths": [360, 390],
+            "contentDiffers": true
+        }
+    ]
+}

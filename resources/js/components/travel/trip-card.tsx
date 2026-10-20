@@ -38,7 +38,7 @@ const SHAPES = {
             <path d="M6 7v6a3 3 0 0 0 3 3h6a3 3 0 0 0 0-6H9" />
         </>
     ),
-    down: <path d="m6 9 6 6 6-6" />,
+    down: <path d="m7 10 5 5 5-5" />,
 };
 
 export function TripIcon({ name }: { name: keyof typeof SHAPES }) {

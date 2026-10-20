@@ -1305,13 +1305,18 @@
 
 /* The mock's pages set 14px / 1.45 on the body; the parts carry it
    themselves (after the ported rules, which reset buttons' font) so they
-   look the same on any page. */
+   look the same on any page. The card (leading-snug) and the banner (1.3)
+   keep their own line height. */
 .trip-line,
 .nearby-strip,
 .tl-banner,
 .nav-way,
 .journey-resume {
     font-size: var(--text-control);
+}
+.nearby-strip,
+.nav-way,
+.journey-resume {
     line-height: 1.45;
 }
 
