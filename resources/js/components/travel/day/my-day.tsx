@@ -144,10 +144,44 @@ function jsonHeaders() {
 }
 
 /**
- * The way to a later plan from the one before it: of the ways there by its
- * start, the one that arrives first (the mock's arrive-by list, by arrival),
- * asked once in the body (never the URL). A way you added to your plan is
- * that one.
+ * Of the ways there by a plan's start, the one Leave now would take
+ * (App\Day\NextTrip, owner decision 9 Oct 2026): the latest leave that keeps
+ * the margin, the earliest arrival breaking a tie; else the one with the
+ * most room. So My day and Leave now never name different ways for a plan.
+ */
+function wayFor(
+    journeys: Journey[],
+    start: string,
+    margin: number,
+): Journey | null {
+    const by = new Date(start).getTime();
+    const spare = (j: Journey) =>
+        Math.floor((by - new Date(j.arrive_at).getTime()) / 60_000);
+    const at = (iso: string) => new Date(iso).getTime();
+    const fitting = journeys
+        .filter((j) => spare(j) >= margin)
+        .sort(
+            (a, b) =>
+                at(b.depart_at) - at(a.depart_at) ||
+                at(a.arrive_at) - at(b.arrive_at),
+        );
+
+    if (fitting.length) {
+        return fitting[0];
+    }
+
+    const tight = journeys
+        .filter((j) => spare(j) >= 0)
+        .sort(
+            (a, b) => spare(b) - spare(a) || at(b.depart_at) - at(a.depart_at),
+        );
+
+    return tight[0] ?? null;
+}
+
+/**
+ * The way to a later plan from the one before it (wayFor), asked once in
+ * the body (never the URL). A way you added to your plan is that one.
  */
 function useWayTo(to: DayItem | null, from: DayItem | null): Way | null {
     const [way, setWay] = useState<{ key: string; way: Way } | null>(null);
@@ -169,7 +203,7 @@ function useWayTo(to: DayItem | null, from: DayItem | null): Way | null {
             depart_at: to.start_at,
             arrive_by: '1',
         };
-        const by = new Date(to.start_at).getTime();
+        const margin = to.official ? 10 : 5;
         setWay({ key, way: { state: 'loading' } });
 
         void fetch('/api/journey/plan', {
@@ -187,15 +221,7 @@ function useWayTo(to: DayItem | null, from: DayItem | null): Way | null {
                     return;
                 }
 
-                const there = data.journeys.filter(
-                    (j) => new Date(j.arrive_at).getTime() <= by,
-                );
-                there.sort(
-                    (a, b) =>
-                        new Date(a.arrive_at).getTime() -
-                        new Date(b.arrive_at).getTime(),
-                );
-                const best = there[0];
+                const best = wayFor(data.journeys, to.start_at!, margin);
                 setWay({
                     key,
                     way: best
