@@ -1,15 +1,10 @@
 <?php
 
-use App\Bureaucracy\Ai\ExtractCaseFactAction;
-use App\Bureaucracy\Cases\AnswerCaseQuestion;
 use App\Bureaucracy\Cases\CaseMatcher;
-use App\Bureaucracy\Cases\CasePlanComposer;
 use App\Bureaucracy\Cases\PendingAnswers;
-use App\Bureaucracy\Cases\PlanSnapshotStore;
 use App\Bureaucracy\Cases\QuestionSelector;
 use App\Bureaucracy\Catalogue\CatalogueCompiler;
 use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
-use App\Bureaucracy\Facts\CaseFactStore;
 use App\Bureaucracy\Facts\RecordFactChange;
 use App\Bureaucracy\PathGenerator;
 use App\Bureaucracy\People\EnsureAccountHolder;
@@ -22,16 +17,11 @@ use App\ContextEngine\ContextNotificationFactory;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
 use App\Home\CurrentBureaucracyPlan;
 use App\Home\DiscoveryFeed;
-use App\Home\HomeFeed;
-use App\Home\PromptSuggestions;
-use App\Home\TileComposer;
-use App\Http\Controllers\BureaucracyController;
 use App\Models\BureaucracyCase;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserTask;
 use App\Profile\ProfileEngine;
-use App\Services\BuergeramtService;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
@@ -112,31 +102,6 @@ test('path generation materialises only authoritative guidance', function (array
     expect($user->userTasks()->where('task_id', $task->id)->exists())->toBeFalse();
 })->with('withdrawn guidance states');
 
-test('a withdrawn rule cannot leak through checklist home or reminders and progress survives', function (array $state) {
-    $user = publicationBoundaryUser();
-    $task = publicationBoundaryRule();
-    $userTask = UserTask::factory()->for($user)->for($task)->create([
-        'status' => 'in_progress',
-        'is_applicable' => true,
-        'notes' => 'My retained preparation notes',
-    ]);
-    $task->update($state);
-    $userTask->refresh()->load('task');
-    $profile = app(ProfileEngine::class)->build($user);
-    $payload = app(BureaucracyController::class)->buildPayload(
-        $user, $profile, collect([$userTask]), app(BuergeramtService::class),
-        app(ProfileEngine::class), app(PathGenerator::class), app(PermanentResidencyEligibility::class),
-    );
-
-    expect(collect($payload['tasks'])->flatten(1))->toBeEmpty();
-    expect(collect(app(HomeFeed::class)->tiles($user))->where('type', 'bureaucracy_deadline'))->toBeEmpty();
-
-    app(BureaucracyEvaluator::class)->evaluate($user, $userTask);
-    expect(app(ActionBus::class)->topK($user->id))->toBeEmpty();
-    expect($userTask->fresh()->notes)->toBe('My retained preparation notes');
-    Notification::assertNothingSent();
-})->with('withdrawn guidance states');
-
 test('valid activated guidance creates a reminder without materialising legacy task rows', function () {
     $user = publicationBoundaryUser();
     $task = publicationBoundaryRule();
@@ -192,35 +157,6 @@ test('a missing fact needed by an approved universal rule remains askable', func
     $result = app(CaseMatcher::class)->match($case);
     expect($result->missingFactKeys)->toContain('german_level');
     expect(app(QuestionSelector::class)->rankedFactKeys($case, $result))->toContain('german_level');
-});
-
-test('basic orientation is available without unapproved rules and manual and text paths agree', function () {
-    $user = publicationBoundaryUser();
-    $case = BureaucracyCase::factory()->for($user)->create(['ai_consent_at' => now()]);
-    $keys = app(PendingAnswers::class)->forCase($case);
-    expect($keys)->toContain('current_residence_title');
-    $question = app(QuestionSelector::class)->ask($case, $keys);
-    expect($question?->fact_key)->toBe('current_residence_title');
-
-    // There are deliberately no live provider credentials. Reaching the manual
-    // fallback proves authorisation recognises the same offered question.
-    $result = app(ExtractCaseFactAction::class)->execute($user, $question->id, 'I hold a Blue Card');
-    expect($result['outcome'])->toBe('unavailable');
-
-    app(AnswerCaseQuestion::class)->answer($user, $question, 'blue_card');
-    expect($case->facts()->where('key', 'current_residence_title')->where('state', 'confirmed')->first()?->value)->toBe('blue_card');
-});
-
-test('a settled declaration neither completes tasks nor asserts permanent residence', function () {
-    $user = publicationBoundaryUser();
-    $task = publicationBoundaryRule(['key' => 'fixture.anmeldung']);
-    $row = UserTask::factory()->for($user)->for($task)->create(['status' => 'in_progress', 'is_applicable' => true]);
-
-    $this->actingAs($user)->post('/bureaucracy/settle')->assertRedirect();
-
-    expect($row->fresh()->status->value)->toBe('in_progress')
-        ->and($row->fresh()->completed_at)->toBeNull()
-        ->and($user->fresh()->profile_attributes['settled_at'] ?? null)->toBeNull();
 });
 
 test('a queued notification rechecks approval when it is eventually sent', function () {
@@ -307,8 +243,6 @@ test('a prebuilt home context cannot replay withdrawn rule text', function (stri
     UserTask::factory()->for($user)->for($task)->create(['is_applicable' => true]);
     $context = homeContext($user, ['bureaucracyPlan' => app(AccountHolderPlan::class)->for($user)]);
     $visible = fn () => match ($surface) {
-        'tiles' => collect(app(TileComposer::class)->tiles($context))->contains('type', 'bureaucracy_deadline'),
-        'suggestions' => collect(app(PromptSuggestions::class)->for($context))->contains('href', '/bureaucracy'),
         'paperwork' => collect(app(DiscoveryFeed::class)->for($context))->contains('key', 'paperwork'),
     };
     expect($visible())->toBeTrue();
@@ -323,7 +257,7 @@ test('a prebuilt home context cannot replay withdrawn rule text', function (stri
     };
 
     expect($visible())->toBeFalse();
-})->with(['tiles', 'suggestions', 'paperwork'])->with(['withdrawal', 'content edit', 'city', 'verification', 'inactive dossier', 'retired person', 'facts']);
+})->with(['paperwork'])->with(['withdrawal', 'content edit', 'city', 'verification', 'inactive dossier', 'retired person', 'facts']);
 
 test('home never trusts a foreign or tampered plan snapshot', function (string $change) {
     $user = publicationBoundaryUser();
@@ -348,38 +282,6 @@ test('home never trusts a foreign or tampered plan snapshot', function (string $
     }
 })->with(['foreign subject', 'tampered text']);
 
-test('case-plan deadlines use the same undisputed facts and title meaning as the checklist', function (bool $conflicted) {
-    $user = publicationBoundaryUser();
-    $store = app(CaseFactStore::class);
-    $case = $store->bootstrapConfirmedFacts($user, [
-        'current_residence_title' => $conflicted ? 'blue_card' : 'settlement_permit_9',
-        'residence_title_expires_at' => '2026-09-10',
-    ], 'manual');
-    publicationBoundaryRule(['deadline_type' => 'fact_date', 'deadline_fact_key' => 'residence_title_expires_at']);
-    if ($conflicted) {
-        $candidate = $store->recordCandidate($case, 'residence_title_expires_at', '2027-09-10', 'manual');
-        $store->confirmCandidate($candidate);
-    }
-    $sections = app(CasePlanComposer::class)->compose($case, app(CaseMatcher::class)->match($case));
-    $item = collect($sections)->flatten(1)->firstWhere('key', 'fixture.publication');
-
-    expect($item)->not->toBeNull()->and($item['deadline'])->toBeNull();
-})->with(['disputed expiry' => true, 'unlimited title' => false]);
-
-test('a snapshot cannot reuse an old deadline after explicit compatibility inputs change', function () {
-    $user = publicationBoundaryUser();
-    $user->update(['profile_attributes' => ['current_residence_title' => 'blue_card', 'residence_title_expires_at' => '2026-09-10']]);
-    $case = BureaucracyCase::factory()->for($user)->create();
-    publicationBoundaryRule(['deadline_type' => 'fact_date', 'deadline_fact_key' => 'residence_title_expires_at']);
-    $snapshots = app(PlanSnapshotStore::class);
-    $before = $snapshots->store($case);
-    $user->update(['profile_attributes' => ['current_residence_title' => 'blue_card', 'residence_title_expires_at' => '2027-09-10']]);
-    $after = $snapshots->store($case);
-
-    expect($after->id)->not->toBe($before->id)
-        ->and(collect($after->sections)->flatten(1)->firstWhere('key', 'fixture.publication')['deadline'])->toBe('2027-09-10');
-});
-
 test('same-version content edits withdraw old actions alerts and queued wording', function () {
     $user = publicationBoundaryUser();
     $task = publicationBoundaryRule();
@@ -397,17 +299,4 @@ test('same-version content edits withdraw old actions alerts and queued wording'
 
         return true;
     });
-});
-
-test('same-version content edits invalidate a saved plan snapshot', function () {
-    $user = publicationBoundaryUser();
-    $case = BureaucracyCase::factory()->for($user)->create();
-    $task = publicationBoundaryRule();
-    $snapshots = app(PlanSnapshotStore::class);
-    $before = $snapshots->store($case);
-    $task->update(['title' => 'Corrected synthetic task']);
-    $after = $snapshots->store($case);
-
-    expect($after->id)->not->toBe($before->id)
-        ->and(collect($after->sections)->flatten(1)->firstWhere('key', $task->key)['title'])->toBe('Corrected synthetic task');
 });

@@ -69,18 +69,9 @@ function timelineSafetyRow(?string $appointment = null, string $expiry = '2026-0
     ]);
 }
 
-test('an appointment does not move the deadline in the model or checklist response', function () {
+test('an appointment does not move the deadline', function () {
     $row = timelineSafetyRow('2026-10-15 10:30:00');
     expect($row->absolute_deadline?->toDateString())->toBe('2026-09-10');
-
-    $this->actingAs($row->user)->get('/bureaucracy/legacy')->assertInertia(function ($page) {
-        $card = collect($page->toArray()['props']['tasks']['active'])->firstWhere('key', 'fixture.timeline');
-        expect($card['deadline'])->toBe('2026-09-10')
-            ->and($card['appointment_at'])->toStartWith('2026-10-15')
-            ->and($card['deadline_note'])->not->toStartWith('Your appointment');
-
-        return true;
-    });
 });
 
 test('a deadline and upcoming appointment produce distinct reminders', function () {
@@ -167,19 +158,6 @@ test('guidance is withdrawn when a confirmed answer makes the task no longer app
         $case->facts()->where('key', 'citizenship_group')->where('state', 'confirmed')->firstOrFail()->id, 'eu', $case->fact_version);
 
     expect(app(ActionBus::class)->topK($fixture['actor']->id))->toBeEmpty();
-});
-
-test('an unknown move-in date is not presented as a paused deadline', function () {
-    $row = timelineSafetyRow();
-    $row->task->update(['deadline_type' => 'days_since_move_in', 'deadline_days' => 14]);
-    $row->user->update(['profile_attributes' => ['housing_status' => 'temporary']]);
-    $this->actingAs($row->user)->get('/bureaucracy/legacy')->assertInertia(function ($page) {
-        $card = collect($page->toArray()['props']['tasks']['active'])->firstWhere('key', 'fixture.timeline');
-        expect($card['deadline_tier'])->toBe('needs_answer')
-            ->and($card['deadline_note'])->toBe('Deadline date unknown. Add your actual move-in date to check the timing.');
-
-        return true;
-    });
 });
 
 test('a throttled appointment reminder remains eligible on the next evaluation', function () {

@@ -237,21 +237,6 @@ class AppServiceProvider extends ServiceProvider
             ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
         RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
-        RateLimiter::for('bureaucracy-ai-burst', function (Request $request): array {
-            $response = fn (Request $_request, array $headers) => response()->json([
-                'outcome' => 'limited',
-                'message' => 'Please wait a moment before trying again. You can still use the choices below.',
-            ], 429, $headers);
-
-            return [
-                Limit::perMinute(5)
-                    ->by('bureaucracy-ai-user:'.$request->user()?->getAuthIdentifier())
-                    ->response($response),
-                Limit::perMinute(5)
-                    ->by('bureaucracy-ai-ip:'.$request->ip())
-                    ->response($response),
-            ];
-        });
         // Bureaucracy v2 limiters are named so each budget keeps its own key: unnamed
         // `throttle:N,M` middleware shares one per-user signature, so a stacked group
         // limit's shorter decay would reset the hourly caps on the routes below.

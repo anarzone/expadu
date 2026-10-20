@@ -10,13 +10,9 @@ use App\Bureaucracy\Processes\RecordProcessEvent;
 use App\Bureaucracy\ReadModel\AccountHolderPlan;
 use App\Bureaucracy\ReadModel\PlanAttention;
 use App\Bureaucracy\ReadModel\PlanReadModel;
-use App\Home\HomeContext;
-use App\Home\TileComposer;
 use App\Models\BureaucracyPerson;
 use App\Models\Task;
 use App\Models\User;
-use App\Profile\ProfileEngine;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
@@ -35,18 +31,12 @@ beforeEach(function () {
     $store->activate($release->id, null);
 });
 
-test('the account adapter sidebar and Today consume the same reviewed plan without a legacy task row', function () {
+test('the account adapter and the sidebar consume the same reviewed plan without a legacy task row', function () {
     $plan = app(PlanReadModel::class)->for($this->actor, $this->case->person, 'de-nrw-cologne');
     expect(app(AccountHolderPlan::class)->for($this->actor)['assessment_revision'])->toBe($plan['assessment_revision']);
     $attention = app(PlanAttention::class)->for($plan);
     expect($attention)->toHaveCount(1)->and($attention[0]['kind'])->toBe('preparation_target')
         ->and($attention[0]['action']['type'])->toBe('open_process')->and(app(OpenTaskCount::class)->forUser($this->actor))->toBe(1);
-    $context = new HomeContext(userId: $this->actor->id, profile: app(ProfileEngine::class)->build($this->actor),
-        now: CarbonImmutable::now(), rainExpected: false, rainSummary: null, intentWeights: [], isWeekendWindow: false,
-        isEvening: false, openTasks: collect(), tonightEvents: collect(), bureaucracyPlan: $plan);
-    $tile = collect(app(TileComposer::class)->tiles($context))->firstWhere('type', 'bureaucracy_deadline');
-    expect($tile['meta']['assessment_revision'])->toBe($plan['assessment_revision'])
-        ->and($tile['meta']['temporal_kind'])->toBe('preparation_target')->and($tile['meta']['action']['type'])->toBe('open_process');
     expect($this->actor->userTasks()->count())->toBe(0);
 });
 

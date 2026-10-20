@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 /**
  * A compute-once snapshot of every signal the home-feed surfaces read. Built a
- * single time per request by HomeFeed and shared by the chips, tiles and rails
+ * single time per request and shared by the discovery rails
  * so they stay consistent — and can dedupe against each other — instead of each
  * re-fetching weather/weights and racing to surface the same thing.
  */

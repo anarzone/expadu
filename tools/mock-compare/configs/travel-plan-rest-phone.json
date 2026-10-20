@@ -1,0 +1,213 @@
+{
+    "name": "travel-plan-rest-phone",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/",
+        "wait": ".travel-phone-bar button",
+        "before": [
+            {
+                "click": ".travel-phone-bar button"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "app": {
+        "url": "/timetable",
+        "wait": ".travel-phone-bar button",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "before": [
+            {
+                "click": ".travel-phone-bar button"
+            },
+            {
+                "wait": 400
+            }
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "Plan a trip panel",
+            "mock": "#journey-view",
+            "app": "#journey-view",
+            "ignore": ["y"],
+            "reason": "Pixels: The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.",
+            "contentDiffers": true
+        },
+        {
+            "name": "panel head",
+            "mock": ".plan-panel-head",
+            "app": ".plan-panel-head",
+            "ignore": ["y"]
+        },
+        {
+            "name": "panel title",
+            "mock": ".plan-panel-title strong",
+            "app": ".plan-panel-title strong",
+            "ignore": ["y"]
+        },
+        {
+            "name": "panel clock",
+            "mock": ".plan-panel-title small",
+            "app": ".plan-panel-title small",
+            "contentDiffers": true,
+            "ignore": ["w", "y"],
+            "reason": "The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it."
+        },
+        {
+            "name": "fields",
+            "mock": "#journey-form .journey-fields",
+            "app": "#journey-form .journey-fields",
+            "ignore": ["y"],
+            "reason": "Pixels: The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.",
+            "contentDiffers": true
+        },
+        {
+            "name": "To field",
+            "mock": ".to-field",
+            "app": ".to-field",
+            "ignore": ["y"],
+            "reason": "Pixels: The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.",
+            "contentDiffers": true
+        },
+        {
+            "name": "To input",
+            "mock": "#to",
+            "app": "#to",
+            "ignore": ["y"],
+            "reason": "Pixels: The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.",
+            "contentDiffers": true
+        },
+        {
+            "name": "favourites heading",
+            "mock": "#journey-start .plan-subhead",
+            "app": "#journey-start .plan-subhead",
+            "ignore": ["y"]
+        },
+        {
+            "name": "favourite stop",
+            "mock": "#favourite-stops button",
+            "app": "#favourite-stops button",
+            "ignore": ["y"]
+        },
+        {
+            "name": "favourite stop name",
+            "mock": "#favourite-stops button strong",
+            "app": "#favourite-stops button strong",
+            "ignore": ["y"]
+        },
+        {
+            "name": "Home / Work",
+            "mock": "#favourite-places",
+            "app": "#favourite-places",
+            "ignore": ["y"]
+        },
+        {
+            "name": "Home",
+            "mock": "#favourite-places > *",
+            "app": "#favourite-places > *",
+            "index": 0,
+            "ignore": ["y"]
+        },
+        {
+            "name": "Today's places heading",
+            "mock": "#journey-start .section-heading",
+            "app": "#journey-start .section-heading",
+            "ignore": ["y"],
+            "reason": "Pixels: The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.",
+            "contentDiffers": true
+        },
+        {
+            "name": "Today's places title",
+            "mock": "#places-title",
+            "app": "#places-title",
+            "ignore": ["y"]
+        },
+        {
+            "name": "Today's places note",
+            "mock": "#journey-start .section-note",
+            "app": "#journey-start .section-note",
+            "contentDiffers": true,
+            "ignore": ["w", "x", "y"],
+            "reason": "The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it."
+        },
+        {
+            "name": "today's place: the appointment",
+            "mock": "#day-places button",
+            "app": "#day-places button",
+            "index": 0,
+            "ignore": ["y"]
+        },
+        {
+            "name": "today's place time",
+            "mock": "#day-places button time",
+            "app": "#day-places button time",
+            "index": 0,
+            "ignore": ["y"]
+        },
+        {
+            "name": "today's place title",
+            "mock": "#day-places button strong",
+            "app": "#day-places button strong",
+            "index": 0,
+            "ignore": ["y"]
+        },
+        {
+            "name": "today's place detail",
+            "mock": "#day-places button small",
+            "app": "#day-places button small",
+            "index": 0,
+            "ignore": ["y"]
+        },
+        {
+            "name": "today's place: the evening",
+            "mock": "#day-places button",
+            "app": "#day-places button",
+            "index": 1,
+            "ignore": ["y"]
+        },
+        {
+            "name": "Go here",
+            "mock": "#day-places .day-place-pick",
+            "app": "#day-places .day-place-pick",
+            "index": 1,
+            "ignore": ["y"]
+        },
+        {
+            "name": "explainer",
+            "mock": ".plan-explainer",
+            "app": ".plan-explainer",
+            "contentDiffers": true,
+            "reason": "The explainer's last line: the mock says \"This preview says which of them it has\", the app \"Each answer says which of them it had\".",
+            "ignore": ["y"]
+        },
+        {
+            "name": "explainer title",
+            "mock": ".plan-explainer strong",
+            "app": ".plan-explainer strong",
+            "ignore": ["y"]
+        },
+        {
+            "name": "back row",
+            "mock": ".plan-back-row",
+            "app": ".plan-back-row",
+            "reason": "Pixels: The mock's own sample wording (\"Sample day\", \"· sample\", \"(sample)\"); the app says the same without it.",
+            "contentDiffers": true
+        },
+        {
+            "name": "bar title",
+            "mock": "#plan-bar-title",
+            "app": "#plan-bar-title"
+        }
+    ]
+}
