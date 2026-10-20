@@ -22,9 +22,6 @@ use App\ContextEngine\ContextNotificationFactory;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
 use App\Home\CurrentBureaucracyPlan;
 use App\Home\DiscoveryFeed;
-use App\Home\HomeFeed;
-use App\Home\PromptSuggestions;
-use App\Home\TileComposer;
 use App\Http\Controllers\BureaucracyController;
 use App\Models\BureaucracyCase;
 use App\Models\Task;
@@ -129,7 +126,6 @@ test('a withdrawn rule cannot leak through checklist home or reminders and progr
     );
 
     expect(collect($payload['tasks'])->flatten(1))->toBeEmpty();
-    expect(collect(app(HomeFeed::class)->tiles($user))->where('type', 'bureaucracy_deadline'))->toBeEmpty();
 
     app(BureaucracyEvaluator::class)->evaluate($user, $userTask);
     expect(app(ActionBus::class)->topK($user->id))->toBeEmpty();
@@ -307,8 +303,6 @@ test('a prebuilt home context cannot replay withdrawn rule text', function (stri
     UserTask::factory()->for($user)->for($task)->create(['is_applicable' => true]);
     $context = homeContext($user, ['bureaucracyPlan' => app(AccountHolderPlan::class)->for($user)]);
     $visible = fn () => match ($surface) {
-        'tiles' => collect(app(TileComposer::class)->tiles($context))->contains('type', 'bureaucracy_deadline'),
-        'suggestions' => collect(app(PromptSuggestions::class)->for($context))->contains('href', '/bureaucracy'),
         'paperwork' => collect(app(DiscoveryFeed::class)->for($context))->contains('key', 'paperwork'),
     };
     expect($visible())->toBeTrue();
@@ -323,7 +317,7 @@ test('a prebuilt home context cannot replay withdrawn rule text', function (stri
     };
 
     expect($visible())->toBeFalse();
-})->with(['tiles', 'suggestions', 'paperwork'])->with(['withdrawal', 'content edit', 'city', 'verification', 'inactive dossier', 'retired person', 'facts']);
+})->with(['paperwork'])->with(['withdrawal', 'content edit', 'city', 'verification', 'inactive dossier', 'retired person', 'facts']);
 
 test('home never trusts a foreign or tampered plan snapshot', function (string $change) {
     $user = publicationBoundaryUser();

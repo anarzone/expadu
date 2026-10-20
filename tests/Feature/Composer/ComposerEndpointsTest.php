@@ -237,13 +237,6 @@ test('save pins the composed plan to Today, surfaces it on the home feed, and cl
     expect($saved['prompt'])->toBe('something this afternoon');
     expect($saved['slots'])->not->toBeEmpty();
 
-    // The home feed now carries it as a prop.
-    $this->get('/dashboard')->assertInertia(fn ($page) => $page
-        ->component('dashboard')
-        ->where('savedPlan.prompt', 'something this afternoon')
-        ->has('savedPlan.slots'),
-    );
-
     $this->deleteJson('/composer/today')->assertOk();
     expect(app(TodayPlanStore::class)->get($user))->toBeNull();
 });

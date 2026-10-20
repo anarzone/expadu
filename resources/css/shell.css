@@ -53,6 +53,8 @@ html {
     gap: 16px;
     min-height: 72px;
     padding: 10px 0;
+    /* As the mock's header: what Geist lacks (the ⌘) falls back to Arial. */
+    font-family: Geist, 'Geist Fallback', Arial, sans-serif;
     view-transition-name: app-header;
 }
 .shell-brand {
@@ -136,16 +138,172 @@ html {
     display: flex;
     align-items: center;
     gap: 5px;
+    min-width: 44px;
     min-height: 44px;
-    padding: 5px 10px 5px 5px;
+    padding: 5px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
+    background: transparent;
     color: var(--color-text-soft);
+    font: inherit;
     font-size: var(--text-control);
+    cursor: pointer;
 }
 .shell-city svg {
     width: 18px;
     height: 22px;
+}
+.shell-city:hover {
+    background: var(--color-bg-quiet);
+}
+
+/* The city panel (the mock's location-popover): search the cities Expadu
+   covers. */
+.location-popover {
+    position: fixed;
+    z-index: 80;
+    box-sizing: border-box;
+    width: 232px;
+    padding: 8px;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    outline: none;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    box-shadow: 0 12px 32px #27241f1a;
+    animation: location-arrive 150ms ease-out;
+}
+.location-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text-muted);
+}
+.location-search svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+}
+.location-search input {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-section);
+}
+.location-search:focus-within {
+    box-shadow: 0 0 0 2px var(--color-focus);
+}
+.location-search input::placeholder {
+    color: var(--color-text-soft);
+}
+.location-results {
+    margin-top: 6px;
+}
+.location-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.location-option[aria-pressed='true'] {
+    background: var(--color-select-bg);
+}
+.location-option:hover {
+    background: var(--color-bg-quiet);
+}
+.location-option:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+.location-mark {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 20px;
+    height: 24px;
+    color: var(--color-select-text);
+}
+.location-mark svg {
+    width: 17px;
+    height: 17px;
+}
+.location-copy {
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+    gap: 6px;
+}
+.location-copy strong {
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 18px;
+}
+.location-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+    line-height: 16px;
+}
+.location-selected {
+    color: var(--color-select-text);
+}
+/* The check rests on the line, as the mock's inline icon does. */
+.location-selected svg {
+    display: inline;
+    width: 19px;
+    height: 19px;
+    vertical-align: baseline;
+}
+.location-note {
+    margin: 8px 6px 2px;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 1.4;
+}
+.location-empty {
+    margin: 20px 4px;
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+}
+@media screen and (max-width: 700px) {
+    /* Already larger than the 16px that keeps iOS from zooming. */
+    .location-search input {
+        font-size: var(--text-section) !important;
+    }
+}
+@keyframes location-arrive {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .location-popover {
+        animation: none;
+    }
 }
 .shell-icon-button {
     position: relative;
@@ -343,12 +501,12 @@ html {
     }
 }
 @media (min-width: 701px) and (max-width: 999px) {
+    /* Tablets: the pin alone. */
     .shell-city {
         justify-content: center;
-        min-width: 44px;
         padding: 0;
     }
-    .shell-city > span {
+    .shell-city > :not(:first-child) {
         display: none;
     }
 }
@@ -402,9 +560,9 @@ html {
         background: none;
         box-shadow: none;
     }
+    /* The row keeps its own 8px, as the mock's header does. */
     :root[data-shell-header='aside'] .shell-header {
         min-height: 0;
-        padding: 0;
     }
     :root[data-shell-header='aside'] .shell-header > :not(.shell-nav) {
         display: none;
@@ -426,14 +584,17 @@ html {
         grid-column: 2;
         gap: 0;
     }
+    /* Phones: the name and a small chevron. */
     .shell-city {
         gap: 2px;
-        padding: 5px;
         border: 0;
         font-size: var(--text-caption);
     }
-    .shell-city svg {
+    .shell-city > svg:first-child {
         display: none;
+    }
+    .shell-city > svg:last-child {
+        width: 14px;
     }
     .shell-icon-button:not(.shell-account) {
         padding: 10px 8px;

@@ -88,10 +88,6 @@ export type Workspace = {
     plans: Record<string, Plan>;
     changes: Change[];
     conversations: Conversation[];
-    /** Compatibility for components/today until TD1: always null, always 'routine'. */
-    draft: Plan | null;
-    approval: 'routine';
-    versions: { id: string; date: string; undone: boolean }[];
 };
 export type Command = {
     action: string;
