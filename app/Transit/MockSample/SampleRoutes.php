@@ -49,9 +49,22 @@ final class SampleRoutes implements RouteService
         }
 
         $day = (MockClock::at() ?? CarbonImmutable::now())->setTimezone('Europe/Berlin')->format('Y-m-d');
-        $journeys = array_map(fn (array $way) => $this->way($day, $from, $to, ...$way), self::WAYS);
 
-        return new JourneyResult($journeys, 'transitous');
+        return new JourneyResult(self::ways($day, $from, $to), 'transitous');
+    }
+
+    /**
+     * The sample's ways on a day (also what MockSample\TravelSeeder keeps as
+     * the planned 13:24).
+     *
+     * @return list<Journey>
+     */
+    public static function ways(string $day, ?GeoPoint $from = null, ?GeoPoint $to = null): array
+    {
+        $from ??= new GeoPoint(50.9361, 6.9473);
+        $to ??= new GeoPoint(...self::TO);
+
+        return array_map(fn (array $way) => self::way($day, $from, $to, ...$way), self::WAYS);
     }
 
     public function geocode(string $query, ?GeoPoint $bias = null): array
@@ -69,7 +82,7 @@ final class SampleRoutes implements RouteService
         return $this->routes->travelMatrix($origin, $destinations, $mode);
     }
 
-    private function way(string $day, GeoPoint $from, GeoPoint $to, string $leave, string $board, string $alight, string $there): Journey
+    private static function way(string $day, GeoPoint $from, GeoPoint $to, string $leave, string $board, string $alight, string $there): Journey
     {
         $at = fn (string $time) => CarbonImmutable::parse("{$day} {$time}", 'Europe/Berlin');
         $start = new Place('', $from);
