@@ -1,0 +1,57 @@
+{
+    "name": "events-rings",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-rings button"
+    },
+    "app": {
+        "url": "/events",
+        "wait": ".st-rings button",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "rings row",
+            "mock": ".st-rings > div",
+            "app": ".st-rings > div",
+            "contentDiffers": true,
+            "ignore": ["w"]
+        },
+        {
+            "name": "first ring",
+            "mock": ".st-rings button",
+            "app": ".st-rings button",
+            "contentDiffers": true
+        },
+        {
+            "name": "second ring",
+            "mock": ".st-rings button",
+            "app": ".st-rings button",
+            "index": 1,
+            "contentDiffers": true
+        },
+        {
+            "name": "ring circle",
+            "mock": ".st-root > .st-rings button:first-child > span:first-child",
+            "app": ".st-ring",
+            "contentDiffers": true
+        },
+        {
+            "name": "ring picture",
+            "mock": ".st-art",
+            "app": ".st-art",
+            "contentDiffers": true
+        },
+        {
+            "name": "ring label",
+            "mock": ".st-rings button > span:last-child",
+            "app": ".st-ring-label",
+            "contentDiffers": true
+        }
+    ]
+}

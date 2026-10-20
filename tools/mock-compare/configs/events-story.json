@@ -1,0 +1,118 @@
+{
+    "name": "events-story",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-rings button",
+        "before": [
+            { "click": ".st-rings button" },
+            { "wait": 500 },
+            { "click": "[aria-label='Pause story']" },
+            { "wait": 300 }
+        ]
+    },
+    "app": {
+        "url": "/events",
+        "wait": ".st-rings button",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "before": [
+            { "click": ".st-rings button" },
+            { "wait": 500 },
+            { "click": "[aria-label='Pause story']" },
+            { "wait": 300 }
+        ]
+    },
+    "pairs": [
+        {
+            "name": "viewer",
+            "mock": ".st-story [role='dialog']",
+            "app": ".st-story[role='dialog']",
+            "contentDiffers": true
+        },
+        {
+            "name": "bars",
+            "mock": ".st-story [role='dialog'] > div:first-child",
+            "app": ".st-story-bars",
+            "contentDiffers": true
+        },
+        {
+            "name": "bar",
+            "mock": ".st-story [role='dialog'] > div:first-child > span",
+            "app": ".st-story-bars > span",
+            "contentDiffers": true
+        },
+        {
+            "name": "head",
+            "mock": ".st-story [role='dialog'] > div:nth-child(2)",
+            "app": ".st-story-head",
+            "contentDiffers": true
+        },
+        {
+            "name": "hour",
+            "mock": ".st-story [role='dialog'] > div:nth-child(2) > span:first-child",
+            "app": ".st-story-hour",
+            "contentDiffers": true
+        },
+        {
+            "name": "count and weather",
+            "mock": ".st-story [role='dialog'] > div:nth-child(2) > span:nth-child(2)",
+            "app": ".st-story-count",
+            "contentDiffers": true
+        },
+        {
+            "name": "play",
+            "mock": ".st-story [aria-label='Play story']",
+            "app": ".st-story [aria-label='Play story']"
+        },
+        {
+            "name": "close",
+            "mock": ".st-story [aria-label='Close stories']",
+            "app": ".st-story [aria-label='Close stories']"
+        },
+        {
+            "name": "stage",
+            "mock": ".st-story [role='dialog'] > div:nth-child(3)",
+            "app": ".st-story-stage",
+            "contentDiffers": true
+        },
+        {
+            "name": "poster",
+            "mock": ".st-story-poster",
+            "app": ".st-story-poster",
+            "contentDiffers": true
+        },
+        {
+            "name": "previous tap",
+            "mock": ".st-story [aria-label='Previous poster']",
+            "app": ".st-story [aria-label='Previous poster']"
+        },
+        {
+            "name": "next tap",
+            "mock": ".st-story [aria-label='Next poster']",
+            "app": ".st-story [aria-label='Next poster']"
+        },
+        {
+            "name": "scrim",
+            "mock": ".st-story > div:first-child",
+            "app": ".st-story-scrim",
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
+            "name": "previous arrow",
+            "mock": ".st-story > button[aria-label='Previous']",
+            "app": "button.st-story-arrow--prev",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "next arrow",
+            "mock": ".st-story > button[aria-label='Next']",
+            "app": "button.st-story-arrow--next",
+            "widths": [768, 1280, 1440, 1512]
+        }
+    ]
+}
