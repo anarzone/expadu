@@ -951,9 +951,17 @@
                   ),
               )
             : null;
+        // A new plan starts at the next quarter hour after now and lasts an
+        // hour, as the app does (build, 20 Oct 2026); now is the sample
+        // day's clock. It stays within the day.
+        const after = Math.floor(M.minutes(day.time) / 15) * 15 + 15;
+        const from = Math.min(after, 22 * 60 + 45);
+        const hhmm = (m) =>
+            `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        const fresh = [hhmm(from), hhmm(Math.min(from + 60, 23 * 60 + 45))];
         U.open(
             item ? 'Edit plan' : 'Add a plan',
-            sheet(`<form id="today-add-form"><p class="detail-intro">${E(shortDate(day.date))} · Sample day</p><label class="form-field">What’s the plan?<input name="title" value="${E(item?.title || '')}" maxlength="80" required placeholder="Appointment, lunch, a little time outside" autocomplete="off"></label><label class="form-field">Where? <small>Optional</small><input name="location" value="${E(item?.location || '')}" maxlength="100" placeholder="Place or neighbourhood" autocomplete="off"></label><div class="selection-times"><label class="form-field">From<input name="start" data-time-input role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="time-options" inputmode="numeric" maxlength="5" required value="${item?.start || '15:00'}" aria-label="Start time"></label><span aria-hidden="true">–</span><label class="form-field">Until<input name="end" data-time-input role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="time-options" inputmode="numeric" maxlength="5" required value="${item?.end || '16:00'}" aria-label="End time"></label></div><p class="detail-note">A personal plan, not a booking.</p><p id="add-error" role="alert" hidden></p><div class="detail-actions"><button class="outline-action" type="submit">${I(item ? 'check' : 'plus')}${item ? 'Save changes' : 'Add to this day'}</button></div></form>`),
+            sheet(`<form id="today-add-form"><p class="detail-intro">${E(shortDate(day.date))} · Sample day</p><label class="form-field">What’s the plan?<input name="title" value="${E(item?.title || '')}" maxlength="80" required placeholder="Appointment, lunch, a little time outside" autocomplete="off"></label><label class="form-field">Where? <small>Optional</small><input name="location" value="${E(item?.location || '')}" maxlength="100" placeholder="Place or neighbourhood" autocomplete="off"></label><div class="selection-times"><label class="form-field">From<input name="start" data-time-input role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="time-options" inputmode="numeric" maxlength="5" required value="${item?.start || fresh[0]}" aria-label="Start time"></label><span aria-hidden="true">–</span><label class="form-field">Until<input name="end" data-time-input role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-controls="time-options" inputmode="numeric" maxlength="5" required value="${item?.end || fresh[1]}" aria-label="End time"></label></div><p class="detail-note">A personal plan, not a booking.</p><p id="add-error" role="alert" hidden></p><div class="detail-actions"><button class="outline-action" type="submit">${I(item ? 'check' : 'plus')}${item ? 'Save changes' : 'Add to this day'}</button></div></form>`),
         );
     }
     document.addEventListener('submit', (event) => {
