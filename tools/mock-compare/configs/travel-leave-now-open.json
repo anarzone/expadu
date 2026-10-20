@@ -5,7 +5,7 @@
     "height": 900,
     "tolerance": 0.5,
     "mock": {
-        "url": "/dev/design/departures-next/",
+        "url": "/dev/design/departures-next/?scenario=scheduled",
         "wait": "#next-trip .trip-line-row",
         "before": [
             {
@@ -35,14 +35,13 @@
             }
         ]
     },
+    "note": "The mock opens its timetable-only state (?scenario=scheduled), as the app is at the sample moment: \"Scheduled · not live\" over the facts.",
     "pairs": [
         {
             "name": "the way (open)",
             "mock": "#departures > .trip-line .way-strip",
             "app": "#departures > .trip-line .way-strip",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "other ways (open)",
@@ -50,7 +49,7 @@
             "app": "#departures > .trip-line .trip-line-others",
             "contentDiffers": true,
             "ignore": ["y", "h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows. Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
+            "reason": "Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
         },
         {
             "name": "compare link (open)",
@@ -58,48 +57,38 @@
             "app": "#departures > .trip-line .trip-line-others .text-action",
             "contentDiffers": true,
             "ignore": ["y", "h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows. Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
+            "reason": "Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
         },
         {
             "name": "way: start",
             "mock": "#departures > .trip-line .way-node.is-start",
             "app": "#departures > .trip-line .way-node.is-start",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "way: boarding stop",
             "mock": "#departures > .trip-line .way-node.is-stop",
             "app": "#departures > .trip-line .way-node.is-stop",
             "index": 0,
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "way: ride",
             "mock": "#departures > .trip-line .way-ride",
             "app": "#departures > .trip-line .way-ride",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "way: there",
             "mock": "#departures > .trip-line .way-node.is-there",
             "app": "#departures > .trip-line .way-node.is-there",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "other ways heading",
             "mock": "#departures > .trip-line .trip-line-others h3",
             "app": "#departures > .trip-line .trip-line-others h3",
-            "contentDiffers": true,
-            "ignore": ["y"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows."
+            "contentDiffers": true
         },
         {
             "name": "other way",
@@ -108,7 +97,7 @@
             "index": 0,
             "contentDiffers": true,
             "ignore": ["y", "h"],
-            "reason": "Timetable-only times: \"Scheduled · not live\" is in the ride tile's line (coordinator's call (b), 20 Oct 2026; the mock draws that variant next). The line is longer, wraps where the tiles are narrow and moves what follows. Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
+            "reason": "Other ways: \"In your plan\" needs the planned trips in TR3 (EXP-139); the mock's \"Bike or walk · Times aren't in the sample\" row is the sample's own note, not app copy."
         }
     ]
 }

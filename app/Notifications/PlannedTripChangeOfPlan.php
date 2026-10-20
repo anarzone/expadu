@@ -10,8 +10,8 @@ use NotificationChannels\WebPush\WebPushMessage;
 
 /**
  * "Change of plan" (Plan a trip's "We keep watching it"): the planned way
- * was cancelled, runs late into the margin, or has a new KVB notice; with
- * the way to take instead when there is one. It opens Plan a trip for that
+ * was cancelled, runs late into the margin, has a new KVB notice, or rain
+ * is forecast on its walk; with the way to take instead when there is one. It opens Plan a trip for that
  * plan, by the plan's id only.
  */
 class PlannedTripChangeOfPlan extends Notification
@@ -78,6 +78,11 @@ class PlannedTripChangeOfPlan extends Notification
         };
 
         $instead = $change['instead'] ?? null;
+        if ($change['kind'] === 'weather' && $instead !== null) {
+            $by = $instead['ride'] === null ? '' : ' for '.mb_strtolower(PlannedTrip::rideName($instead['ride']))." at {$instead['ride']['time']}";
+
+            return "Rain on your {$change['walk_min']}-min walk · this way walks {$instead['walk_min']}: leave {$instead['leave_time']}{$by}, there {$instead['arrive_time']}.";
+        }
         if ($instead === null) {
             return $change['kind'] === 'cancelled' ? "{$what} Plan a trip has the other ways." : $what;
         }
