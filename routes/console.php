@@ -29,6 +29,8 @@ Schedule::command('events:send-occurrence-reminders')->everyFiveMinutes()->witho
 Schedule::command('events:send-reminders')->dailyAt('18:00')->withoutOverlapping(60);
 // Plan a trip's "Remind me when to leave": five minutes before the planned way.
 Schedule::command('travel:send-leave-reminders')->everyMinute()->withoutOverlapping(2);
+// Its "We keep watching it": a Change of plan when the planned way changes.
+Schedule::command('travel:watch-planned-trips')->everyTwoMinutes()->withoutOverlapping(5);
 
 // Weather alerts — every 2 hours, only during commute windows (time-critical)
 Schedule::command('weather:check-alerts')->cron('0 */2 * * *')->withoutOverlapping(30);

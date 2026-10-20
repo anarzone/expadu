@@ -59,7 +59,7 @@
         ],
         appointment: {
             id: 'today-review-appointment',
-            title: 'Blue Card appointment',
+            title: 'EU Blue Card appointment',
             location: 'Mülheim',
             start: '14:00',
             end: '14:30',

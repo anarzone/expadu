@@ -15,12 +15,12 @@ const fresh = () => P.hydrate(B.fresh());
 test('overview shows up to three actionable steps and retains blocked and waiting work in the full list', () => {
     const s = fresh(),
         p = P.projection(s);
-    assert.equal(p.processes.length, 4);
+    assert.equal(p.processes.length, 5);
     assert.equal(p.next.length, 3);
     assert.ok(p.next.every((a) => a.status === 'todo'));
-    assert.equal(new Set(p.next.map((a) => a.process)).size, 2);
-    assert.equal(p.actions.length, 6);
-    assert.equal(p.remaining, 3);
+    assert.equal(new Set(p.next.map((a) => a.process)).size, 3);
+    assert.equal(p.actions.length, 7);
+    assert.equal(p.remaining, 4);
     assert.equal(
         Object.values(p.counts).reduce((a, b) => a + b, 0),
         p.total,
@@ -154,7 +154,7 @@ test('unknown facts leave other processes, historical records and actions reacha
     const s = fresh();
     B.confirmExpiry(s, null);
     const p = P.projection(s);
-    assert.equal(p.actions.length, 6);
+    assert.equal(p.actions.length, 7);
     assert.equal(p.history.length, 1);
     assert.equal(P.timeline(s).find((t) => t.id === 'expiry').date, null);
 });
@@ -210,7 +210,7 @@ test('cancelled processes move to retained history and leave current action coun
         p.actions.some((a) => a.process === 'address'),
         false,
     );
-    assert.equal(p.total, 5);
+    assert.equal(p.total, 6);
     assert.equal(
         p.history.find((h) => h.id === 'address').workflow,
         'cancelled',
@@ -223,7 +223,7 @@ test('free-text requests never become tasks', () => {
     s.otherProcesses = ['Family question'];
     s.custom = [{ id: 'request-0', name: 'Kita place' }];
     P.hydrate(s);
-    assert.equal(P.projection(s).processes.length, 4);
+    assert.equal(P.projection(s).processes.length, 5);
     assert.equal(P.process(s, 'request-0'), undefined);
     assert.equal(P.process(s, 'unknown-id'), undefined);
 });

@@ -1,14 +1,17 @@
 /* Travel's page (pages/timetable.tsx): Nearby, the phone's "Where to?" and
-   Nearby | My day bar, and Plan a trip's panel. Generated from the mock's own
-   rules (prototype/dev/design/departures-next: style.css, workspace.css,
-   soft-palette.css, nearby.css, plan.css, day.css, press.css, hub.css and
-   connected/today-palette.css) in their order, for the elements Travel draws
-   (Nearby, and Plan a trip in its states: typing, a picked place, When and
-   What matters, the options, We checked, Journey details), scoped to
+   Nearby | My day bar, Plan a trip's panel and the trip page. Generated from
+   the mock's own rules (prototype/dev/design/departures-next: style.css,
+   workspace.css, soft-palette.css, nearby.css, plan.css, day.css, press.css,
+   hub.css, navigation.css, trip.css and connected/today-palette.css) in their
+   order, for the elements Travel draws (Nearby; Plan a trip in its states:
+   typing, a picked place, When and What matters, the options, We checked,
+   Journey details; the trip page before and after "I'm on my way", at each
+   moment, with Not right? and Stop), scoped to
    .travel-page so nothing reaches another page. The page's root stands for
    the mock's <body> and <main>; the shell's page frame keeps the column. The
-   map and where to stand are deferred (plan call #9) and popovers are the
-   shared ones (components/ui), so their rules aren't here. App additions are
+   map and where to stand are deferred (plan call #9), popovers are the
+   shared ones (components/ui) and the trip page's Sample tools are the
+   mock's own, so their rules aren't here. App additions are
    at the end. Shared parts: travel.css. */
 /* ── departures-next/style.css ── */
 :where(.travel-page) * {
@@ -727,6 +730,955 @@
     }
 }
 
+/* ── departures-next/navigation.css ── */
+:where(.travel-page) #journey-navigation {
+    inset: 0px;
+    margin: auto;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: 100dvh;
+    padding: 0px;
+    border: 0px;
+    overflow: hidden;
+    color: var(--ink);
+    background: var(--paper);
+}
+:where(.travel-page) #journey-navigation:focus {
+    outline: none;
+}
+:where(.travel-page) #journey-navigation button {
+    touch-action: manipulation;
+}
+:where(.travel-page) #journey-navigation button:focus-visible {
+    outline: rgb(8, 105, 129) solid 2px;
+    outline-offset: -4px;
+}
+:where(.travel-page) #journey-navigation svg {
+    width: 20px;
+    height: 20px;
+}
+:where(.travel-page) .nav-workspace {
+    position: relative;
+    display: grid;
+    grid-template: auto minmax(0px, 1fr) / minmax(0px, 1fr);
+    height: 100%;
+}
+:where(.travel-page) .nav-topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    z-index: 4;
+    background: white;
+}
+:where(.travel-page) .nav-topbar > div {
+    flex: 1 1 0%;
+    min-width: 0px;
+}
+:where(.travel-page) .nav-topbar small {
+    display: block;
+    color: var(--muted);
+    font-size: var(--text-caption);
+    margin-bottom: 2px;
+}
+:where(.travel-page) .nav-topbar h1 {
+    font-size: var(--text-section);
+    letter-spacing: -0.4px;
+    margin: 0px;
+    line-height: 1.2;
+}
+:where(.travel-page) .nav-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0px;
+    border-radius: var(--radius-lg);
+    flex: 0 0 44px;
+}
+:where(.travel-page) .nav-icon-button:active {
+    background: rgb(222, 243, 247);
+    transform: scale(0.97);
+}
+:where(.travel-page) .nav-topbar .nav-icon-button {
+    background: rgb(242, 247, 248);
+}
+:where(.travel-page) .nav-panel {
+    grid-column: 1 / -1;
+    min-height: 0px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    z-index: 3;
+}
+:where(.travel-page) .nav-panel-content {
+    min-height: 0px;
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+:where(.travel-page) .nav-summary {
+    flex-shrink: 0;
+    padding: 20px 22px 14px;
+}
+:where(.travel-page) .nav-summary h2 {
+    font-size: var(--text-title);
+    line-height: 1.18;
+    letter-spacing: -0.7px;
+    margin: 0px 0px 6px;
+}
+:where(.travel-page) .nav-expanded {
+    display: flex;
+    min-height: 0px;
+    flex: 1 1 0%;
+}
+:where(.travel-page) .nav-detail-scroll {
+    width: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 14px 14px 24px;
+}
+:where(.travel-page) .nav-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px 18px;
+    position: relative;
+    background: white;
+}
+:where(.travel-page) .nav-footer::before {
+    content: '';
+    position: absolute;
+    height: 20px;
+    left: 0px;
+    right: 0px;
+    top: -20px;
+    background: linear-gradient(transparent, white);
+    pointer-events: none;
+}
+:where(.travel-page) .nav-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 46px;
+    border-radius: var(--radius-lg);
+    padding: 10px 16px;
+    background: var(--action);
+    color: white;
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-control);
+    flex: 1 1 0%;
+    transition:
+        transform 150ms ease-out,
+        background 150ms ease-out;
+}
+:where(.travel-page) .nav-primary:active {
+    transform: scale(0.98);
+    background: rgb(191, 46, 10);
+}
+:where(.travel-page) .nav-confirm {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+    align-items: center;
+    font-size: var(--text-caption);
+}
+:where(.travel-page) .nav-confirm > span {
+    flex: 1 1 0%;
+}
+:where(.travel-page) .nav-confirm > button {
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+}
+:where(.travel-page) .nav-confirm > .nav-primary {
+    flex: 0 1 0%;
+    font-size: var(--text-caption);
+}
+@media (max-width: 999px) {
+    :where(.travel-page) .nav-panel-content {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) .nav-expanded {
+        flex: 0 0 auto;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) .nav-detail-scroll {
+        overflow: visible;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) .nav-footer {
+        position: sticky;
+        bottom: 0px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-topbar {
+        position: relative;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-panel {
+        position: relative;
+        overflow: hidden;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-topbar h1 {
+        font-size: var(--text-section);
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-topbar small {
+        font-size: var(--text-micro);
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-topbar > div {
+        padding: 4px 0px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-summary {
+        padding: 12px 18px 14px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-footer {
+        padding: 10px 16px max(env(safe-area-inset-bottom), 14px);
+        margin-top: auto;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-footer::before {
+        height: 12px;
+        top: -12px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) .nav-detail-scroll {
+        padding: 14px 12px 24px;
+    }
+}
+@media (hover: hover) {
+    :where(.travel-page) .nav-icon-button:hover {
+        background: rgb(233, 244, 247);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    :where(.travel-page) #journey-navigation * {
+        transition: none !important;
+        animation: auto ease 0s 1 normal none running none !important;
+    }
+}
+
+/* ── departures-next/trip.css ── */
+:where(.travel-page) .moment-sub {
+    margin: 0px;
+    font-size: var(--text-body);
+    line-height: var(--leading-snug);
+}
+:where(.travel-page) .nav-topbar h1 {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-topbar {
+        display: flex;
+        align-items: center;
+        gap: var(--space-8);
+        padding: max(env(safe-area-inset-top), 8px) 12px 8px;
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-bg-canvas);
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-topbar h1 {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        white-space: normal;
+        font-size: var(--text-control);
+        line-height: 1.2;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation,
+    :where(.travel-page) #journey-navigation :is(.nav-panel, .nav-footer) {
+        background: var(--color-bg-canvas);
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-footer {
+        margin-top: 0px;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-footer::before {
+        background: linear-gradient(transparent, var(--color-bg-canvas));
+    }
+}
+@media (min-width: 701px) and (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-workspace {
+        grid-template: auto minmax(0px, 1fr) / minmax(0px, 720px);
+        justify-content: center;
+    }
+}
+@media (min-width: 1000px) {
+    .travel-page.trip-open
+        :is(#departures, #journey-view, #day-view, .journey-resume) {
+        display: none !important;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal)[open] {
+        position: static;
+        display: block;
+        width: 100%;
+        height: auto;
+        margin: 0 0 var(--space-24);
+        overflow: visible;
+        background: transparent;
+        color: var(--color-text);
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-workspace {
+        height: auto;
+        grid-template: auto auto / minmax(0px, 1fr);
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-topbar {
+        gap: var(--space-16);
+        margin-bottom: var(--space-20);
+        padding: 0 0 var(--space-14);
+        border-bottom: 1px solid var(--color-border);
+        background: transparent;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page)
+        #journey-navigation:not(:modal)
+        .nav-topbar
+        .nav-icon-button {
+        background: var(--color-bg-quiet);
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-panel {
+        background: transparent;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-panel-content {
+        overflow: visible;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-summary {
+        padding: 0px;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-footer {
+        padding: var(--space-16) 0 0;
+        background: transparent;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-footer::before {
+        display: none;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-detail-scroll {
+        overflow: visible;
+        padding: 4px 0px 0px;
+    }
+}
+:where(.travel-page) #journey-navigation .nav-footer {
+    flex-wrap: wrap;
+    gap: var(--space-4) var(--space-8);
+}
+:where(.travel-page) #journey-navigation .nav-text-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-6);
+    min-height: var(--touch-target);
+    padding: 0 var(--space-4);
+    border: 0px;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text-soft);
+    font-style: inherit;
+    font-variant: inherit;
+    font-stretch: inherit;
+    line-height: inherit;
+    font-family: inherit;
+    font-optical-sizing: inherit;
+    font-size-adjust: inherit;
+    font-kerning: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    font-language-override: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+}
+:where(.travel-page) #journey-navigation .nav-text-button svg {
+    width: 16px;
+    height: 16px;
+}
+:where(.travel-page) #journey-navigation .nav-text-button:active {
+    background: var(--color-bg-quiet);
+}
+:where(.travel-page) #journey-navigation {
+    --trip-amber: #b07800;
+    --trip-amber-edge: #e8c77a;
+    --trip-ink: color-mix(
+        in srgb,
+        var(--color-text) 78%,
+        var(--color-bg-surface)
+    );
+}
+:where(.travel-page) #journey-navigation .nav-step-card {
+    --trip-tone: var(--color-text-soft);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+    padding: 22px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 26px;
+    background: var(--color-bg-surface);
+    transition: border-color 300ms var(--ease-standard);
+}
+:where(.travel-page) #journey-navigation .nav-step-card.is-attention {
+    --trip-tone: var(--trip-amber);
+    border-color: var(--trip-amber-edge);
+}
+:where(.travel-page) #journey-navigation .nav-step-lead {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    animation: nav-step-in 320ms var(--ease-standard) both;
+}
+:where(.travel-page) #journey-navigation .nav-step-lead > div {
+    min-width: 0px;
+}
+:where(.travel-page) #journey-navigation .nav-step-card h2 {
+    margin: 0px 0px 4px;
+    font-size: 30px;
+    letter-spacing: -0.6px;
+    line-height: 1.1;
+}
+:where(.travel-page) #journey-navigation .nav-step-card .moment-sub {
+    margin: 0px;
+    color: var(--trip-ink);
+    font-size: 15px;
+    line-height: 1.4;
+}
+:where(.travel-page) #journey-navigation .nav-why {
+    font-weight: var(--weight-bold);
+}
+:where(.travel-page) #journey-navigation .is-attention .nav-why {
+    color: var(--color-attention-text);
+}
+:where(.travel-page) #journey-navigation .nav-ring {
+    position: relative;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    color: var(--trip-tone);
+}
+:where(.travel-page) #journey-navigation .nav-ring svg {
+    position: absolute;
+    inset: 0px;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    fill: none;
+    stroke-width: 2.6;
+}
+:where(.travel-page) #journey-navigation .nav-ring circle:first-child {
+    stroke: var(--color-border);
+}
+:where(.travel-page) #journey-navigation .nav-ring circle + circle {
+    stroke: currentcolor;
+    stroke-linecap: round;
+    transition:
+        stroke-dasharray 500ms var(--ease-standard),
+        stroke 300ms var(--ease-standard);
+}
+:where(.travel-page) #journey-navigation .nav-ring > span {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+}
+:where(.travel-page) #journey-navigation .nav-ring strong {
+    font-size: 24px;
+    font-variant-numeric: tabular-nums;
+}
+:where(.travel-page) #journey-navigation .nav-ring small {
+    font-size: 11px;
+    font-weight: var(--weight-semibold);
+}
+:where(.travel-page) #journey-navigation .nav-ring.is-done > svg:last-child {
+    position: relative;
+    inset: auto;
+    width: 32px;
+    height: 32px;
+    transform: none;
+    stroke: currentcolor;
+    stroke-width: 2.4;
+}
+:where(.travel-page) #journey-navigation .nav-follow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-12);
+    padding-top: 4px;
+    border-top: 1px solid var(--color-border);
+}
+:where(.travel-page) #journey-navigation .nav-follow > span {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: var(--touch-target);
+    color: var(--color-text-soft);
+    font-size: 13.5px;
+    line-height: 1.35;
+}
+:where(.travel-page) #journey-navigation .nav-follow > span svg {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+}
+:where(.travel-page) #journey-navigation .nav-follow > button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-target);
+    padding: 0px 4px;
+    color: var(--color-text);
+    font-weight: var(--weight-semibold);
+}
+:where(.travel-page) #journey-navigation .nav-follow > button svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 240ms var(--ease-standard);
+}
+:where(.travel-page)
+    #journey-navigation
+    .nav-follow
+    > button[aria-expanded='true']
+    svg {
+    transform: rotate(180deg);
+}
+:where(.travel-page) #journey-navigation .nav-not-right {
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    background: var(--color-bg-surface);
+    box-shadow: rgba(33, 29, 21, 0.5) 0px 16px 34px -22px;
+    animation: nav-step-in 240ms var(--ease-standard) both;
+}
+:where(.travel-page) #journey-navigation .nav-not-right button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-10);
+    min-height: var(--touch-target);
+    padding: 0px 12px;
+    border-radius: 10px;
+    text-align: left;
+}
+:where(.travel-page) #journey-navigation .nav-not-right button:hover {
+    background: var(--color-bg-quiet);
+}
+:where(.travel-page) #journey-navigation .nav-not-right button[data-nav='end'] {
+    color: var(--color-text-soft);
+}
+:where(.travel-page) #journey-navigation .nav-not-right svg {
+    width: 16px;
+    height: 16px;
+}
+:where(.travel-page) #journey-navigation .nav-start {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    padding-top: var(--space-14);
+    border-top: 1px solid var(--color-border);
+}
+:where(.travel-page) #journey-navigation .nav-start .nav-primary {
+    min-height: 52px;
+    border-radius: 16px;
+    font-size: var(--text-body);
+}
+:where(.travel-page) #journey-navigation .nav-start .nav-primary svg {
+    width: 16px;
+    height: 16px;
+    fill: currentcolor;
+}
+:where(.travel-page) #journey-navigation .nav-start > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-12);
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+:where(.travel-page) #journey-navigation .nav-start .nav-text-button,
+:where(.travel-page) #journey-navigation .nav-in-plan {
+    flex: 0 0 auto;
+    color: var(--color-text);
+}
+:where(.travel-page) #journey-navigation .nav-trip-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+}
+:where(.travel-page) #journey-navigation .nav-bars {
+    display: flex;
+    gap: 4px;
+    width: 220px;
+}
+:where(.travel-page) #journey-navigation .nav-bars i {
+    flex: 1 1 0%;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--color-border);
+    transition: background-color 300ms var(--ease-standard);
+}
+:where(.travel-page) #journey-navigation .nav-bars i.is-done {
+    background: var(--color-text);
+}
+:where(.travel-page) #journey-navigation .nav-bars i.is-now {
+    background: color-mix(in srgb, var(--color-text) 40%, transparent);
+}
+:where(.travel-page) #journey-navigation .nav-count {
+    color: var(--color-text-soft);
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+:where(.travel-page) #journey-navigation .nav-mapcard-box {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+    padding: 48px 10px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    background: var(--color-bg-canvas);
+}
+:where(.travel-page) #journey-navigation .nav-map-note {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    max-width: calc(100% - 24px);
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+    color: var(--color-bg-surface);
+    font-size: 13px;
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-mapcard {
+        padding: 0px 16px 8px;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-mapcard .nav-way-title {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-panel-content {
+        display: grid;
+        grid-template-columns: minmax(0px, 500px) minmax(0px, 1fr) 380px;
+        column-gap: var(--space-32);
+        align-items: start;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-summary {
+        grid-area: 2 / 1;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-expanded {
+        grid-area: 2 / 2;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-footer {
+        grid-area: 3 / 1;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-mapcard {
+        grid-area: 2 / 3;
+    }
+}
+@media (min-width: 1000px) {
+    :where(.travel-page)
+        #journey-navigation:not(:modal)
+        .nav-mapcard
+        .nav-way-title {
+        margin: 4px 0 var(--space-12);
+    }
+}
+@media (min-width: 1000px) and (max-width: 1279px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-panel-content {
+        grid-template-columns: minmax(0px, 1fr) 320px;
+    }
+}
+@media (min-width: 1000px) and (max-width: 1279px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-mapcard {
+        grid-area: 2 / 2 / 5;
+    }
+}
+@media (min-width: 1000px) and (max-width: 1279px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-expanded {
+        grid-area: 3 / 1;
+        margin-top: var(--space-24);
+    }
+}
+@media (min-width: 1000px) and (max-width: 1279px) {
+    :where(.travel-page) #journey-navigation:not(:modal) .nav-footer {
+        grid-area: 4 / 1;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-topbar {
+        flex-wrap: wrap;
+        row-gap: var(--space-10);
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-topbar > .nav-trip-progress {
+        order: 9;
+        flex: 1 1 100%;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-bars {
+        flex: 1 1 0%;
+        width: auto;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-summary {
+        padding: 16px 16px 8px;
+    }
+}
+@media (max-width: 999px) {
+    :where(.travel-page) #journey-navigation .nav-detail-scroll {
+        padding: 16px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-step-card {
+        gap: var(--space-14);
+        padding: 16px;
+        border-radius: 22px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-step-lead {
+        gap: 14px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-ring {
+        width: 64px;
+        height: 64px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-ring strong {
+        font-size: 18px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-ring small {
+        font-size: 9.5px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-step-card h2 {
+        font-size: 22px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-step-card .moment-sub {
+        font-size: 14px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    :where(.travel-page)
+        #journey-navigation
+        :is(.nav-step-lead, .nav-not-right) {
+        animation: auto ease 0s 1 normal none running none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    :where(.travel-page)
+        #journey-navigation
+        :is(.nav-ring circle + circle, .nav-bars i, .nav-step-card) {
+        transition: none;
+    }
+}
+:where(.travel-page) #journey-navigation .nav-step-lead {
+    min-height: 92px;
+}
+:where(.travel-page) #journey-navigation .nav-look {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 72px;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: 18px;
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+    text-decoration: none;
+    animation: nav-step-in 320ms var(--ease-standard) both;
+}
+:where(.travel-page) #journey-navigation a.nav-look:hover {
+    background: var(--color-bg-quiet);
+}
+:where(.travel-page) #journey-navigation .nav-look > svg {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+}
+:where(.travel-page) #journey-navigation .nav-look-text {
+    flex: 1 1 0%;
+    min-width: 0px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+:where(.travel-page) #journey-navigation .nav-look-text strong {
+    font-size: 14.5px;
+}
+:where(.travel-page) #journey-navigation .nav-look-text small {
+    color: var(--color-text-soft);
+    font-size: 13px;
+    line-height: 1.35;
+}
+:where(.travel-page) #journey-navigation .nav-look-tile {
+    flex: 0 0 auto;
+    display: inline-grid;
+    place-items: center;
+    min-width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+:where(.travel-page) #journey-navigation .nav-look-tile svg {
+    width: 20px;
+    height: 20px;
+}
+:where(.travel-page) #journey-navigation .nav-look-tile.is-badge {
+    background: var(--line);
+    color: rgb(255, 255, 255);
+    font-size: 17px;
+    font-weight: var(--weight-bold);
+}
+:where(.travel-page) #journey-navigation .nav-look-tile.is-sign {
+    display: inline-flex;
+    gap: 8px;
+    padding: 0px 12px 0px 6px;
+    background: rgb(31, 28, 23);
+    color: rgb(255, 181, 71);
+    font-size: 16px;
+    font-weight: var(--weight-bold);
+    white-space: nowrap;
+}
+:where(.travel-page) #journey-navigation .nav-look-tile.is-sign > span {
+    display: inline-grid;
+    place-items: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--line);
+    color: rgb(255, 255, 255);
+    font-size: 14px;
+}
+:where(.travel-page) #journey-navigation .nav-look-tile.is-quote {
+    font-size: 24px;
+    font-weight: var(--weight-bold);
+    line-height: 1;
+}
+:where(.travel-page) #journey-navigation .nav-look-tile.is-exit {
+    padding: 0px 10px;
+    background: rgb(31, 107, 58);
+    color: rgb(255, 255, 255);
+    font-size: 13px;
+    font-weight: var(--weight-bold);
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-step-lead {
+        min-height: 64px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-look {
+        gap: 12px;
+        padding: 10px 12px;
+    }
+}
+@media (max-width: 700px) {
+    :where(.travel-page) #journey-navigation .nav-look-tile.is-sign {
+        font-size: 14px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    :where(.travel-page) #journey-navigation .nav-look {
+        animation: auto ease 0s 1 normal none running none;
+    }
+}
+:where(.travel-page) #journey-navigation .nav-look-tile.is-sign {
+    max-width: 55%;
+}
+:where(.travel-page) #journey-navigation .nav-look-tile.is-sign > b {
+    min-width: 0px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* ── connected/today-palette.css ── */
 .travel-page {
     --paper: var(--color-bg-canvas);
@@ -807,6 +1759,18 @@
 }
 .travel-page
     :is(
+        .saved-trigger,
+        .sample-node.transit,
+        .round-arrow,
+        .secondary,
+        .nav-topbar,
+        .nav-panel,
+        .nav-footer
+    ) {
+    background-color: var(--surface);
+}
+.travel-page
+    :is(
         .swap,
         :where(.travel-page) .leg-piece:not(.transit, .bike),
         .detail-footer .save-route,
@@ -816,8 +1780,7 @@
     ) {
     background-color: var(--surface-quiet);
 }
-.travel-page .field:focus-within,
-.travel-page .nav-options button[aria-pressed='true'] {
+.travel-page .field:focus-within {
     background-color: var(--blue);
 }
 .travel-page :is(.origin-dot, .sample-connection),
@@ -826,6 +1789,12 @@
 }
 .travel-page :is(a, button, input, select, textarea, summary):focus-visible {
     outline-color: var(--focus);
+}
+.travel-page #journey-navigation button:focus-visible {
+    outline-color: var(--focus);
+}
+.travel-page .nav-footer::before {
+    background: linear-gradient(transparent, var(--surface));
 }
 @media (hover: hover) {
     .travel-page :is(.icon-button, .quiet-button):hover {
@@ -840,6 +1809,14 @@
 @media (hover: hover) {
     .travel-page .segmented button:not([aria-pressed='true']):hover {
         background-color: var(--surface);
+    }
+}
+@media (max-width: 700px) {
+    .travel-page .nav-topbar {
+        background: linear-gradient(
+            color-mix(in srgb, var(--color-bg-canvas) 96%, transparent) 68%,
+            transparent
+        );
     }
 }
 
@@ -885,6 +1862,17 @@
 .travel-page :is(.icon-button, .quiet-button):active,
 .travel-page .segmented button:not([aria-pressed='true']):active {
     background-color: var(--surface-hover);
+}
+.travel-page .nav-topbar {
+    background-color: var(--surface);
+}
+@media (max-width: 700px) {
+    .travel-page .nav-topbar {
+        background: linear-gradient(
+            color-mix(in srgb, var(--surface) 96%, transparent) 68%,
+            transparent
+        );
+    }
 }
 
 /* ── departures-next/workspace.css ── */
@@ -1096,6 +2084,9 @@
 }
 .travel-page #departures {
     display: block;
+}
+.travel-page #departures[hidden] {
+    display: none;
 }
 @media (min-width: 1000px) {
     .travel-page .journey-intro-grid {
@@ -3020,6 +4011,12 @@
     }
 }
 @media (min-width: 1000px) {
+    .travel-page > :is(#active-trip, #day-view),
+    .travel-page.trip-open > :not(#journey-view) {
+        grid-column: 1 / -1;
+    }
+}
+@media (min-width: 1000px) {
     .travel-page #journey-view {
         grid-area: 1 / 1 / span 6;
         position: sticky;
@@ -3036,6 +4033,11 @@
         border-radius: 28px;
         background: var(--color-bg-surface);
         box-shadow: rgba(33, 29, 21, 0.35) 0px 18px 50px -36px;
+    }
+}
+@media (min-width: 1000px) {
+    .travel-page.trip-open #journey-view {
+        display: none;
     }
 }
 @media (min-width: 1000px) {
@@ -3247,6 +4249,12 @@
         white-space: nowrap;
     }
 }
+@keyframes nav-step-in {
+    0% {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
 
 /* ---------- App additions (not in the mock) ---------- */
 /* The mock has no reset: where its rules say nothing, the browser's own
@@ -3254,15 +4262,18 @@
    padding, small text a size smaller). The app's base layer changes
    those, so Travel's own regions get them back, at no weight: any rule
    still wins. */
-:where(#departures, #journey-view, .travel-phone-bar),
-:where(#departures, #journey-view, .travel-phone-bar) :where(*) {
+:where(#departures, #journey-view, #journey-navigation, .travel-phone-bar),
+:where(#departures, #journey-view, #journey-navigation, .travel-phone-bar)
+    :where(*) {
     border-style: none;
     border-color: currentColor;
 }
-:where(#departures, #journey-view, .travel-phone-bar) :where(button) {
+:where(#departures, #journey-view, #journey-navigation, .travel-phone-bar)
+    :where(button) {
     padding: 1px 6px;
 }
-:where(#departures, #journey-view, .travel-phone-bar) :where(small) {
+:where(#departures, #journey-view, #journey-navigation, .travel-phone-bar)
+    :where(small) {
     font-size: smaller;
 }
 /* The mock's headings are bold by the browser's own style; the app's reset
@@ -3327,4 +4338,21 @@
 /* Where to board isn't known yet (call #9): the shared quiet label. */
 .travel-page .route-step .tl-chip {
     margin-top: var(--space-6);
+}
+/* The trip page's map card: the way on the map, in the frame the mock's
+   stop close-up takes (where to stand and the drawn way are deferred, plan
+   call #9). */
+:where(.travel-page) .nav-mapcard-box .trip-map {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 358 / 274;
+    border-radius: 10px;
+    overflow: hidden;
+}
+/* The trip page on phones and tablets is the whole screen: the page behind
+   it holds still and gives up its scrollbar's room (navigation.css; a rule
+   on <html>, outside what the extraction reads). */
+html:has(#journey-navigation:modal) {
+    overflow: hidden;
+    scrollbar-gutter: auto;
 }

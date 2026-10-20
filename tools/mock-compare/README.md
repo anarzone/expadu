@@ -38,8 +38,9 @@ The report lands in `storage/mock-compare/<name>/report.md` with one image per p
 (mock · app · diff). Exit code 1 means something differs.
 
 Sign-in uses the E2E account (`MOCK_COMPARE_EMAIL` / `MOCK_COMPARE_PASSWORD` override the config) and
-the session is cached in `storage/mock-compare/.session-<port>.json`, so repeated runs don't trip the
-login rate limit.
+the session is cached per port and account in `storage/mock-compare/.session-<port>-<account>.json`, so
+repeated runs don't trip the login rate limit. Sign-in sends the side's `cookies` too, so a page loaded
+while signing in already has the mock's clock; the cached session keeps none of them.
 
 ## Config
 
@@ -84,7 +85,9 @@ login rate limit.
 
 Per pair: `index` (or `mockIndex` / `appIndex`), `widths`, `props` (replaces the default list),
 `ignore` (props or `x`/`y`/`w`/`h` to skip, each with a reason in the PR), `pixels: false`,
-`contentDiffers: true`, `before` (steps run on both pages just before this pair, and left done for
+`contentDiffers: true`, `pixelThreshold` (the share of differing pixels this pair may have, e.g. `0.03`
+for a tilted, zoomed part that anti-aliases differently while its box and styles match; the config-wide
+`pixelThreshold` applies otherwise, default 0), `before` (steps run on both pages just before this pair, and left done for
 the pairs after it, so open states go last; `mockBefore` / `appBefore` when the selectors differ).
 Per side: `wait`, `init` (scripts run before the page), `before` (`[{ "click": "selector" },
 { "key": "Escape" }, { "wait": 300 }]` to open a menu or sheet first), `cookies` (`{ "name": "value" }`
@@ -119,7 +122,7 @@ On your machine (`APP_ENV=local` only):
 - **Your own account:** sessions share the local database, so compare as your own account rather
   than the E2E one: `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class=E2ETestUserSeeder`, seed
   that account, run with `MOCK_COMPARE_EMAIL=<you>@expadu.test`, and delete
-  `storage/mock-compare/.session-<port>.json` once so it signs in again.
+  `storage/mock-compare/.session-<port>-<account>.json` once so it signs in again.
 - **Paperwork's sample record:** `E2E_EMAIL=<you>@expadu.test php artisan db:seed
 --class='Database\Seeders\MockSample\PaperworkSeeder'` (after E2ETestUserSeeder for that account).
   It imports this checkout's catalogue, publishes its checked cards as the browser tests do and

@@ -55,13 +55,7 @@ class PlannedTripLeaveReminder extends Notification
     {
         $shared = $this->trip->toShared();
         $ride = $shared['ride'];
-        $word = match ($ride['mode'] ?? null) {
-            'bus' => 'Bus',
-            'rail', 'subway' => 'Train',
-            null => null,
-            default => 'Tram',
-        };
 
-        return "Leave at {$shared['depart_time']}".($ride !== null ? " · {$word} {$ride['line']} at {$ride['time']}" : '');
+        return "Leave at {$shared['depart_time']}".($ride !== null ? ' · '.PlannedTrip::rideName($ride)." at {$ride['time']}" : '');
     }
 }

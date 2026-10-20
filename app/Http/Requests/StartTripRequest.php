@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Day\DayItem;
+use App\Day\DayProjection;
 use App\Http\Requests\Concerns\StoredJourney;
 use App\Models\ActiveTrip;
 use App\Transit\DepartureTime;
@@ -13,6 +15,8 @@ class StartTripRequest extends FormRequest
     private ?ActiveTrip $resume = null;
 
     private ?ActiveTrip $other = null;
+
+    private ?DayItem $plan = null;
 
     public function authorize(): bool
     {
@@ -35,6 +39,11 @@ class StartTripRequest extends FormRequest
             // Starting this trip while another runs replaces it only when the
             // person said so ("Replace the trip you're on?").
             'replace' => ['sometimes', 'boolean'],
+            // The plan on the person's own day this trip is for (Leave now,
+            // Plan a trip): checked against their day, never taken as sent.
+            'plan' => ['sometimes', 'nullable', 'array'],
+            'plan.date' => ['required_with:plan', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01'],
+            'plan.target_id' => ['required_with:plan', 'string', 'max:120'],
         ];
     }
 
@@ -87,6 +96,15 @@ class StartTripRequest extends FormRequest
                 }
                 $previous = $legArrive;
             }
+            if ($this->filled('plan')) {
+                $this->plan = collect(app(DayProjection::class)->itemsOn($this->user(), $this->input('plan.date')))
+                    ->first(fn (DayItem $item) => $item->id === $this->input('plan.target_id') && $item->startAt !== null);
+                if ($this->plan === null) {
+                    $validator->errors()->add('plan', 'That plan isn’t on your day.');
+
+                    return;
+                }
+            }
             $this->resume = $same ? $active : null;
             $this->other = ! $same && $active !== null && ! $active->isOver() ? $active : null;
         }];
@@ -101,5 +119,22 @@ class StartTripRequest extends FormRequest
     public function resumableTrip(): ?ActiveTrip
     {
         return $this->resume;
+    }
+
+    /**
+     * The plan as the server knows it, stored with the trip.
+     *
+     * @return array{id: string, title: string, label: ?string, kind: string, official: bool, start_at: string}|null
+     */
+    public function target(): ?array
+    {
+        return $this->plan === null ? null : [
+            'id' => $this->plan->id,
+            'title' => mb_substr($this->plan->title, 0, 200),
+            'label' => $this->plan->locationLabel === null ? null : mb_substr($this->plan->locationLabel, 0, 200),
+            'kind' => $this->plan->kind,
+            'official' => $this->plan->official,
+            'start_at' => $this->plan->startAt->setTimezone('Europe/Berlin')->toIso8601String(),
+        ];
     }
 }
