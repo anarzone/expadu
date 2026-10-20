@@ -94,6 +94,14 @@
 .st-scene--phone .st-zone-strip {
     width: auto;
 }
+.st-zone--pages {
+    touch-action: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .st-zone--pages .st-zone-strip {
+        transition: translate 380ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+}
 .st-bay {
     position: absolute;
     top: 0;
@@ -326,4 +334,100 @@
     inset: 0;
     pointer-events: none;
     filter: brightness(var(--k-obj-b));
+}
+
+/* ---------- Compact posters on a phone's street ----------
+   The same poster, set for about 150px (the mock's wall.css, phones). */
+.st-scene--phone .pp-open {
+    padding: 9px 10px 10px;
+}
+.st-scene--phone .pp-top {
+    min-height: 30px;
+}
+.st-scene--phone .pp-top:has(.pp-flags) {
+    gap: 4px;
+}
+.st-scene--phone .pp-top + * {
+    margin-top: 6px;
+}
+.st-scene--phone .pp-category {
+    height: 22px;
+    gap: 4px;
+    padding: 0 8px;
+    font-size: var(--text-micro);
+}
+.st-scene--phone .pp-category svg {
+    width: 12px;
+    height: 12px;
+}
+.st-scene--phone .pp-flag {
+    min-height: 20px;
+    gap: 4px;
+    padding: 2px 7px;
+    font-size: var(--text-micro);
+    line-height: 1.1;
+}
+.st-scene--phone .pp-tape {
+    flex: none;
+    padding: 2px 7px 0;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.st-scene--phone .pp .pp-title {
+    margin-top: 6px;
+    font-size: clamp(14px, 12cqi, 26px);
+}
+.st-scene--phone .pp:has(.pp-flags) .pp-title {
+    font-size: clamp(13px, 10.5cqi, 24px);
+}
+/* Long real titles step down from the compact size too. */
+.st-scene--phone .pp[data-title='long'] .pp-title {
+    font-size: clamp(12px, 10cqi, 22px);
+}
+.st-scene--phone .pp[data-title='longer'] .pp-title {
+    font-size: clamp(11px, 9cqi, 18px);
+}
+/* A past poster can't be planned; its long title keeps the room. */
+.st-scene--phone .pp.is-past .pp-translation {
+    display: none;
+}
+.st-scene--phone .pp-translation,
+.st-scene--phone .pp-meta,
+.st-scene--phone .pp-price {
+    font-size: var(--text-micro);
+}
+/* The lines use the poster's width; only the last one, the price,
+   keeps clear of the corner. */
+.st-scene--phone .pp-bottom {
+    gap: 2px;
+    padding-top: 8px;
+    padding-right: 0;
+}
+.st-scene--phone .pp-price {
+    min-height: 30px;
+    padding-right: 40px;
+}
+.st-scene--phone .pp-time {
+    font-size: clamp(20px, 16cqi, 32px);
+    -webkit-text-stroke-width: 1.5px;
+}
+.st-scene--phone .pp--paper .pp-time {
+    font-size: var(--text-caption);
+    -webkit-text-stroke-width: 0;
+}
+/* Smaller buttons, with the full touch target round them. */
+.st-scene--phone .pp-save {
+    top: 8px;
+    right: 8px;
+    width: 30px;
+    height: 30px;
+}
+.st-scene--phone .pp-save svg {
+    width: 15px;
+    height: 15px;
+}
+.st-scene--phone .pp-save::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
 }

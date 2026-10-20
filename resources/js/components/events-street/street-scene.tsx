@@ -6,7 +6,7 @@
    and round the column. Static: nothing moves here (motion is EV2d). */
 
 import type { CSSProperties, ReactNode } from 'react';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import manifest from './street-layers.json';
 import type { Bay, Slotted, StreetLayoutName } from './street-layout';
 import { drum, hourLabel, phonePages, STREET, wallBays } from './street-layout';
@@ -67,6 +67,8 @@ export type StreetSceneProps<T> = {
     sky: SkyKeys;
     /** The hour of "Now" when the day shown is today, else null. */
     nowHour: number | null;
+    /** "13:10", shown on the Now pill. */
+    nowLabel?: string;
     /** The day's posters on the wall, by hour. */
     wall: Slotted<T>[];
     /** The column's posters; the first faces you. */
@@ -92,6 +94,7 @@ export default function StreetScene<T>({
     density,
     sky,
     nowHour,
+    nowLabel,
     wall,
     column,
     columnPos = 0,
@@ -103,6 +106,9 @@ export default function StreetScene<T>({
     onMore,
 }: StreetSceneProps<T>) {
     const uid = useId().replace(/:/g, '');
+    const swipe = useRef<{ y: number; at: number } | null>(null);
+    const wheelAt = useRef(0);
+    const swiped = useRef(false);
     const art = layouts[layout];
     const c = STREET[layout];
     const desktop = layout === 'desktop';
@@ -211,6 +217,13 @@ export default function StreetScene<T>({
               Math.max(0, pages.posters.length - 1),
           )
         : 0;
+    const turnPage = (dir: number) => {
+        if (pages) {
+            onPhonePage?.(
+                Math.max(0, Math.min(pages.posters.length - 1, page + dir)),
+            );
+        }
+    };
     const N = column.length;
     const pos = N ? ((columnPos % N) + N) % N : 0;
     const strip = drum(column, pos, layout);
@@ -361,7 +374,9 @@ export default function StreetScene<T>({
                                     {hourLabel(b.hour)}
                                 </span>
                                 {b.isNow ? (
-                                    <span className="st-now">Now</span>
+                                    <span className="st-now">
+                                        Now {nowLabel}
+                                    </span>
                                 ) : null}
                                 {b.more > 0 ? (
                                     <button
@@ -391,8 +406,45 @@ export default function StreetScene<T>({
             ) : pages ? (
                 <>
                     <div
-                        className="st-zone"
+                        className="st-zone st-zone--pages"
                         style={{ left: 192, width: 154, top: 162, height: 372 }}
+                        // Swipe up for later, down for earlier; a wheel
+                        // or trackpad pages too.
+                        onPointerDown={(e) => {
+                            swiped.current = false;
+                            swipe.current = { y: e.clientY, at: e.timeStamp };
+                        }}
+                        onPointerUp={(e) => {
+                            const start = swipe.current;
+                            swipe.current = null;
+
+                            if (start && Math.abs(e.clientY - start.y) > 40) {
+                                swiped.current = true;
+                                turnPage(e.clientY < start.y ? 1 : -1);
+                            }
+                        }}
+                        // A swipe that began on a poster doesn't also tap it.
+                        onClickCapture={(e) => {
+                            if (swiped.current) {
+                                swiped.current = false;
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
+                        }}
+                        onPointerCancel={() => {
+                            swipe.current = null;
+                        }}
+                        onWheel={(e) => {
+                            if (
+                                Math.abs(e.deltaY) < 20 ||
+                                e.timeStamp - wheelAt.current < 450
+                            ) {
+                                return;
+                            }
+
+                            wheelAt.current = e.timeStamp;
+                            turnPage(e.deltaY > 0 ? 1 : -1);
+                        }}
                     >
                         <div
                             className="st-zone-strip"
