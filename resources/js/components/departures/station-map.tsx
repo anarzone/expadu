@@ -108,7 +108,7 @@ export function StationMap({ stops }: { stops: StopArea[] }) {
             aria-label="Stop area map"
             className="overflow-hidden rounded-2xl border border-border bg-card"
         >
-            <div className="relative h-64 sm:h-80 [&_.maplibregl-ctrl-group_button]:size-11">
+            <div className="relative h-64 md:h-80 [&_.maplibregl-ctrl-group_button]:size-11">
                 <div ref={container} className="size-full" />
                 {status !== 'ready' && (
                     <div

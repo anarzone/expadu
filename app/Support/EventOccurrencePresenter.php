@@ -32,6 +32,10 @@ class EventOccurrencePresenter
             'occurrence_start' => $startsAt->toIso8601String(),
             'occurrence_end' => $endsAt?->toIso8601String(),
             'title' => $event->title_en ?: $event->title,
+            'title_original' => $event->title,
+            'title_lang' => $event->source_lang,
+            'time_listed' => $this->timeListed($startsAt, $endsAt),
+            'language' => $event->language,
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
@@ -109,6 +113,17 @@ class EventOccurrencePresenter
             $venueName,
             $veedel,
         ]));
+    }
+
+    /**
+     * A listing without a time is stored as its whole day (the official
+     * importer writes start of day to end of day), so posters print
+     * "Time not listed yet" instead of 00:00.
+     */
+    public function timeListed(CarbonImmutable $startsAt, ?CarbonImmutable $endsAt): bool
+    {
+        return ! ($startsAt->format('H:i:s') === '00:00:00'
+            && $endsAt?->format('H:i:s') === '23:59:59');
     }
 
     /**
