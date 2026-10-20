@@ -19,7 +19,7 @@
             "name": "header",
             "mock": "header.app-header",
             "app": "header.shell-header",
-            "contentDiffers": false
+            "contentDiffers": true
         },
         {
             "name": "brand",
@@ -70,7 +70,8 @@
         {
             "name": "utilities",
             "mock": "header .header-utilities",
-            "app": "header .shell-utilities"
+            "app": "header .shell-utilities",
+            "contentDiffers": true
         },
         {
             "name": "Ask Composer",
@@ -130,5 +131,6 @@
             "widths": [360, 390],
             "contentDiffers": true
         }
-    ]
+    ],
+    "contentNote": "header and utilities hold the account's initial (the E2E user's 'E', the mock's 'A')."
 }
