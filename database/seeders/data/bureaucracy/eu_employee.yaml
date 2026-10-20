@@ -1,8 +1,10 @@
 situation: eu_employee
 
 tasks:
+  # Retired 2026-10-08: covered by core.anmeldung.
   - title: Register your address (Anmeldung)
     key: eue.anmeldung
+    is_published: false
     depends_on: []
     verified_at: 2026-06-11
     description: |
@@ -32,10 +34,12 @@ tasks:
       - title: Make digital copies of the Meldebescheinigung
         body: Photograph it and back it up. You'll need it for almost everything else on this list.
 
+  # Retired 2026-10-08: covered by core.steuer_id.
   - title: Wait for your Steuer-ID (tax identification number)
     key: eue.steuer_id
+    is_published: false
     type: wait
-    depends_on: [eue.anmeldung]
+    depends_on: []
     description: |
       The Bundeszentralamt für Steuern automatically sends your 11-digit tax ID by post
       within 2–4 weeks of Anmeldung — no application needed. Your employer needs it to
@@ -56,9 +60,11 @@ tasks:
       - title: Give it to your employer immediately
         body: Without your Steuer-ID, payroll defaults to the highest tax class — you'll be over-taxed every payslip until you fix it.
 
+  # Retired 2026-10-08: covered by core.health_insurance.
   - title: Sign up for German health insurance
     key: eue.health_insurance
-    depends_on: [eue.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Your EHIC card from home is only for temporary stays — once you live and work in
       Germany, you must be insured here. As an employee you'll be enrolled in statutory
@@ -84,9 +90,11 @@ tasks:
       - title: Apply online and name your insurer to HR
         body: Most insurers let you sign up online with ID + Meldebescheinigung. They confirm membership to your employer, who then registers you for social insurance. The card arrives by post 2–3 weeks later.
 
+  # Retired 2026-10-08: covered by core.bank_account.
   - title: Open a German bank account
     key: eue.bank_account
-    depends_on: [eue.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Strictly speaking, any EU IBAN works for salary — under the EU SEPA Regulation,
       employers may not insist the account be in a specific country. In practice some
@@ -115,9 +123,11 @@ tasks:
       - title: Share the IBAN with employer + landlord
         body: Get your IBAN into the HR portal before the payroll cut-off, and set up the rent transfer or direct debit.
 
+  # Retired 2026-10-08: covered by core.rundfunkbeitrag.
   - title: Settle your Rundfunkbeitrag (broadcasting fee)
     key: eue.rundfunkbeitrag
-    depends_on: [eue.anmeldung]
+    is_published: false
+    depends_on: []
     description: |
       Every household in Germany pays €18.36/month for public broadcasting — one fee per
       dwelling, regardless of how many people live there or whether anyone owns a TV.
@@ -138,9 +148,11 @@ tasks:
       - title: Apply for exemption or reduction if eligible
         body: Recipients of BAföG or Bürgergeld can be exempted; people with an RF disability code pay a reduced €6.12/month. Details and forms are on the official site.
 
+  # Retired 2026-10-08: covered by core.liability_insurance.
   - title: Get private liability insurance (Haftpflichtversicherung)
     key: eue.liability_insurance
-    depends_on: [eue.bank_account]
+    is_published: false
+    depends_on: []
     description: |
       Not legally required, but most Germans have it and landlords increasingly expect
       it — it covers damage you accidentally cause to other people or their property.
@@ -159,9 +171,11 @@ tasks:
       - title: Note your policy number
         body: You'll need it the day you break something — a friend's laptop, a rented e-scooter, a neighbour's window.
 
+  # Retired 2026-10-08: covered by the fixed retire list (no replacement card).
   - title: File your annual tax return (Einkommensteuererklärung)
     key: eue.tax_return
-    depends_on: [eue.steuer_id]
+    is_published: false
+    depends_on: []
     description: |
       Mandatory if you had multiple employers in a year, received unemployment benefits,
       or want to claim deductions (commute, work-from-home, professional fees, etc.).

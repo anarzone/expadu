@@ -4,10 +4,10 @@ use App\Bureaucracy\Ai\CaseFactExtractionRequest;
 use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
 use App\Bureaucracy\Ai\DeepSeekCaseFactExtractor;
 use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
-use App\Bureaucracy\Facts\FactRegistry;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Tests\Support\ExternalProcessingFixtures;
 
 beforeEach(function () {
     config()->set('services.bureaucracy_llm', [
@@ -38,6 +38,8 @@ test('the provider binding stays unavailable unless every provider and disclosur
     'missing processor name' => [['processor_name' => '']],
     'missing privacy url' => [['processor_privacy_url' => '']],
     'invalid privacy url' => [['processor_privacy_url' => 'not-a-url']],
+    'unencrypted provider endpoint' => [['base_url' => 'http://processor.example.test']],
+    'unencrypted privacy link' => [['processor_privacy_url' => 'http://processor.example.test/privacy']],
     'missing prompt version' => [['prompt_version' => '']],
     'zero timeout' => [['timeout' => 0]],
     'zero daily limit' => [['daily_limit' => 0]],
@@ -51,14 +53,7 @@ test('the provider binding selects DeepSeek only when configuration and disclosu
 
 function extractionRequest(string $factKey, string $message = 'My answer'): CaseFactExtractionRequest
 {
-    $definition = app(FactRegistry::class)->definition($factKey);
-
-    return new CaseFactExtractionRequest(
-        factKey: $factKey,
-        question: $definition->question,
-        why: $definition->why,
-        message: $message,
-    );
+    return ExternalProcessingFixtures::factRequest($factKey, $message);
 }
 
 function extractionToolResponse(array|string $arguments, string $toolName = 'extract_authorized_fact', mixed $content = null): array
@@ -207,6 +202,7 @@ test('it rejects invalid candidate values without coercion', function (string $f
     'legacy enum alias' => ['current_residence_title', 'bluecard'],
     'invalid date format' => ['residence_title_expires_at', '28-02-2027'],
     'invalid calendar date' => ['residence_title_expires_at', '2027-02-30'],
+    'future historical start' => ['family_residence_permit_held_since', '2099-01-01'],
     'numeric string' => ['weekly_work_hours', '12'],
     'negative integer' => ['weekly_work_hours', -1],
     'boolean string' => ['marital_household_continues', 'false'],
@@ -269,7 +265,7 @@ test('provider failures return unavailable without exposing sensitive log contex
     Log::shouldHaveReceived('warning')->withArgs(function (string $messageText, array $context) use ($message): bool {
         $serialized = json_encode([$messageText, $context], JSON_THROW_ON_ERROR);
 
-        return ($context['outcome'] ?? null) === 'unavailable'
+        return ($context['purpose'] ?? null) === 'extract_case_fact'
             && ! str_contains($serialized, $message)
             && ! str_contains($serialized, 'SECRET-123')
             && ! array_key_exists('response', $context)
@@ -294,7 +290,7 @@ test('connection and timeout failures return unavailable without logging excepti
     Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context): bool {
         $serialized = json_encode([$message, $context], JSON_THROW_ON_ERROR);
 
-        return ($context['outcome'] ?? null) === 'unavailable'
+        return ($context['purpose'] ?? null) === 'extract_case_fact'
             && ! str_contains($serialized, 'SECRET-123')
             && ! array_key_exists('exception', $context);
     })->once();

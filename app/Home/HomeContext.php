@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 /**
  * A compute-once snapshot of every signal the home-feed surfaces read. Built a
- * single time per request by HomeFeed and shared by the chips, tiles and rails
+ * single time per request and shared by the discovery rails
  * so they stay consistent — and can dedupe against each other — instead of each
  * re-fetching weather/weights and racing to surface the same thing.
  */
@@ -50,6 +50,8 @@ class HomeContext
         public readonly array $leaveByAnchors = [],
         /** @var list<int> ids of today's events the user has a reminder or attendance for */
         public readonly array $intendedEventIds = [],
+        /** Explicit self-plan projection; family plans are selected separately. */
+        public readonly ?array $bureaucracyPlan = null,
     ) {}
 
     public function hasOrigin(): bool

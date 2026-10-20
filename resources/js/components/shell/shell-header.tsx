@@ -3,6 +3,7 @@ import { useSyncExternalStore } from 'react';
 import type { MouseEvent } from 'react';
 import { ExpaduMark } from '@/components/app-logo-icon';
 import { AccountMenu } from '@/components/shell/account-menu';
+import { CityPicker } from '@/components/shell/city-picker';
 import { openComposerTray } from '@/components/shell/composer-tray';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
@@ -107,15 +108,10 @@ export function ShellHeader() {
                         </span>
                         <kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
                     </button>
-                    {/* A plain label: Expadu covers Cologne only (build plan
-                        call #7), so there is no city to choose. */}
-                    <span className="shell-city" aria-label="City: Cologne">
-                        <Icon name="pin" />
-                        <span>Cologne</span>
-                    </span>
+                    <CityPicker />
                     <Link
                         href={composer({ query: { panel: 'saved' } })}
-                        className="shell-icon-button"
+                        className="shell-icon-button shell-saved"
                         aria-label="Saved"
                         title="Saved"
                     >

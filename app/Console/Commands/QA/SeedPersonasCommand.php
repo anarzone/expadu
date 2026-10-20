@@ -19,8 +19,8 @@ use Throwable;
  * fresh account or hand-crafting profile attributes for each one.
  *
  * Every account is upserted by email (safe to re-run), pre-verified and
- * pre-onboarded, so it lands straight on the dashboard; `user:reset-journey
- * <email>` sends any one of them back through onboarding on demand.
+ * pre-onboarded, so it lands straight on the dashboard. Use read-only persona
+ * preview for testing without replacing an account's answers.
  *
  * SAFETY: this writes real rows, so it refuses to run unless config('app.url')
  * resolves to a known local/staging host, or --force is passed. Staging runs
@@ -74,7 +74,7 @@ class SeedPersonasCommand extends Command
         $this->newLine();
         $this->table(['Email', 'Persona', 'Password', 'Role'], $rows);
 
-        $this->info("To replay ONBOARDING as any account: php artisan user:reset-journey <email> (then log in — you'll land on onboarding).");
+        $this->info('Use the read-only persona preview to inspect cases without resetting an account.');
 
         return self::SUCCESS;
     }

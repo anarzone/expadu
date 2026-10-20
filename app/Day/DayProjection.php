@@ -5,6 +5,7 @@ namespace App\Day;
 use App\Composer\PlanCatalogue;
 use App\Day\Contracts\RecordedAppointments;
 use App\Models\ComposerWorkspace;
+use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Models\UserPlace;
 use App\Services\UserLocationService;
@@ -65,13 +66,24 @@ class DayProjection
         $workspace = ComposerWorkspace::query()->where('user_id', $user->id)->first();
         $plans = $workspace?->state['plans'] ?? [];
         $items = $this->items($user, $plans, $day, $next);
+        // The ways picked for these plans ("Add to plan"), by plan.
+        $planned = PlannedTrip::query()->where('user_id', $user->id)
+            ->whereIn('date', [$day->toDateString(), $next->toDateString()])
+            ->get()
+            ->keyBy(fn (PlannedTrip $trip) => $trip->date->format('Y-m-d').'|'.$trip->target_id);
+        $plannedFor = fn (DayItem $item) => $planned->get($item->startAt->setTimezone(self::TIMEZONE)->format('Y-m-d').'|'.$item->id);
 
         $nextTrip = null;
         if ($relation === 'today') {
             $overnight = $this->items($user, $plans, $next, $next->addDay());
             $target = $this->target([...$items, ...$overnight], $now);
             if ($target !== null) {
-                $nextTrip = $this->nextTrip->for($target, $this->origin($user, $request, $items, $target, $now), $now);
+                $nextTrip = $this->nextTrip->for(
+                    $target,
+                    $this->origin($user, $request, $items, $target, $now),
+                    $now,
+                    $plannedFor($target)?->toJourney(),
+                );
             }
         }
 
@@ -88,13 +100,30 @@ class DayProjection
             'hours_in_day' => intdiv($next->getTimestamp() - $day->getTimestamp(), 3600),
             // The workspace revision a Mark as done command must send.
             'revision' => $workspace?->revision ?? 0,
-            'items' => array_map(fn (DayItem $item) => $item->toArray($now), $items),
+            'items' => array_map(fn (DayItem $item) => [
+                ...$item->toArray($now),
+                'planned' => $plannedFor($item)?->toShared(),
+            ], $items),
             'links' => $relation === 'past' ? [] : $this->links->between($items, $now),
             'next_trip' => $nextTrip,
             'active_trip' => $user->activeTrip?->toShared(),
             'home' => $home === null ? null : $this->home($home),
             'refresh_at' => $this->refreshAt($items, $nextTrip, $now, $relation),
         ];
+    }
+
+    /**
+     * The person's plans on a day, without working out any trip: what
+     * "Add to plan" checks a planned way against.
+     *
+     * @return list<DayItem>
+     */
+    public function itemsOn(User $user, string $date): array
+    {
+        $day = CarbonImmutable::createFromFormat('!Y-m-d', $date, self::TIMEZONE);
+        $plans = ComposerWorkspace::query()->where('user_id', $user->id)->first()?->state['plans'] ?? [];
+
+        return $this->items($user, $plans, $day, $day->addDay());
     }
 
     /**

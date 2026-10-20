@@ -170,10 +170,14 @@ test('a new user’s tasks arrive from their answers, as proposals', () => {
     J.begin(s);
     for (const v of [false, 'employment', 'd_visa']) answer(s, v);
     assert.ok(!J.questions(s).includes('sponsor_current_title'));
-    assert.deepEqual([...P.openedBy(s)], ['address', 'health']);
+    // Employment opens the income tax return (every employee).
+    assert.deepEqual([...P.openedBy(s)], ['address', 'health', 'tax']);
     J.begin(s);
     answer(s, 'blue_card');
-    assert.deepEqual([...P.openedBy(s)], ['blue-card', 'address', 'health']);
+    assert.deepEqual(
+        [...P.openedBy(s)],
+        ['blue-card', 'address', 'health', 'tax'],
+    );
 });
 
 test('the move-in date dates the registration target with the card’s days', () => {
@@ -226,7 +230,10 @@ test('Your situation lists answers, what was left for later and the current ques
     // question (a skipped one doesn't hold the next up).
     assert.deepEqual(
         [...D.listed(r).map((f) => f.key)],
-        ['citizenship_group', 'arrival_planned', 'health_coverage_confirmed'],
+        // Registration ranks first, as on the backend: the move being left
+        // for later isn't an orientation answer, so the address work
+        // already applies (AssessPerson's relevance).
+        ['citizenship_group', 'arrival_planned', 'registration_status'],
     );
     // Nothing it guesses might apply: the permit question isn't listed.
     assert.ok(!D.listed(r).some((f) => f.key === 'current_residence_title'));

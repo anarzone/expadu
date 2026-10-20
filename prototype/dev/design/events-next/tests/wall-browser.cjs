@@ -444,7 +444,7 @@ const inside = (box, viewport) =>
             assert.equal(await sheet.locator('.event-hero-time').innerText(), '20:00');
             assert.match(await sheet.locator('[data-panel="about"] .place-sheet-footer .button.primary').innerText(), /^Add to plan$/);
             assert.match(await sheet.locator('.event-today .pp-flag--rain').innerText(), /Rain likely at 20:00 · sample forecast/);
-            assert.match(await sheet.locator('.event-today .pp-fit').innerText(), /after your Blue Card appointment ends/);
+            assert.match(await sheet.locator('.event-today .pp-fit').innerText(), /after your EU Blue Card appointment ends/);
             assert.equal(await sheet.locator('.event-know dd.is-unknown').count(), 0);
             // The details in order: what it is, when, where, then the rest.
             assert.match(await sheet.locator('.event-unlisted').innerText(), /^Not listed\s+Admission, language/i);

@@ -17,10 +17,10 @@ return [
         ],
         // The persona's visa expiry is now relative (two months out) rather
         // than a literal, so it cannot quietly fall into the past. The suite
-        // freezes the clock at 2026-08-03, which makes it exactly this date.
+        // freezes the clock at 2026-09-08, which makes it exactly this date.
         'deadlines' => [
-            'case.bc.first_application.prepare' => '2026-10-03',
-            'case.bc.first_application.submit' => '2026-10-03',
+            'case.bc.first_application.prepare' => '2026-11-08',
+            'case.bc.first_application.submit' => '2026-11-08',
         ],
     ],
     'joining spouse while the sponsor Blue Card is pending' => [
@@ -28,14 +28,12 @@ return [
         'coverage' => 'needs_information',
         'matched' => [
             'case.family.first_permit.prepare',
-            'case.family.register_address',
         ],
         'unknown' => ['case.family.first_permit.sponsor_pending_review'],
         'missing' => ['livelihood_secured'],
         'sections' => [
             'do_now' => [
                 'case.family.first_permit.prepare',
-                'case.family.register_address',
             ],
         ],
         'information_needed' => [[
@@ -44,7 +42,7 @@ return [
         ]],
         // Relative visa expiry, resolved against the suite's frozen clock.
         'deadlines' => [
-            'case.family.first_permit.prepare' => '2026-10-03',
+            'case.family.first_permit.prepare' => '2026-11-08',
         ],
         'forbidden_phrases' => ['will be issued', 'is guaranteed', 'automatically qualifies'],
     ],
@@ -56,12 +54,12 @@ return [
         'sections' => [
             'coming_up' => ['case.bc.settlement.track_21_months'],
         ],
-        'required_phrase' => 'not yet eligible',
+        'required_phrase' => 'not yet met',
     ],
     'spouse of an 18c holder after three years' => [
         'persona' => 'case-spouse-18c-three-years',
         'coverage' => 'matched',
-        'matched' => ['case.family.settlement.spouse_18c_option'],
+        'matched' => ['case.family.renew.continuing_household', 'case.family.settlement.general_coming_up', 'case.family.settlement.spouse_18c_option'],
         'unknown' => [],
         'sections' => [
             'options' => ['case.family.settlement.spouse_18c_option'],
@@ -84,7 +82,7 @@ return [
         ],
         // Relative title expiry (one month out), against the frozen clock.
         'deadlines' => [
-            'case.family.renew.continuing_household' => '2026-09-03',
+            'case.family.renew.continuing_household' => '2026-10-08',
         ],
         'absent' => ['case.family.independent_after_separation'],
     ],

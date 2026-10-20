@@ -64,7 +64,9 @@ run_check "Format staged files (Pint + Prettier)" "npx lint-staged"
 # PHP Tests: Run only if PHP files were changed — exclude slow integration tests
 STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACMR | grep '\.php$' || true)
 if [ -n "$STAGED_PHP" ]; then
-    run_check "PHP Tests (fast)" "php artisan test --compact --parallel --stop-on-failure --exclude-group=slow"
+    # PEST_PROCESSES caps the parallel workers when several worktrees commit
+    # on one machine (default: Pest's own choice, one per CPU core).
+    run_check "PHP Tests (fast)" "php artisan test --compact --parallel ${PEST_PROCESSES:+--processes=$PEST_PROCESSES} --stop-on-failure --exclude-group=slow"
 fi
 
 echo -e "${GREEN}✅ All checks passed!${NC}"

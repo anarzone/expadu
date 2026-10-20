@@ -3,124 +3,270 @@
 situation: non_eu_employee_blue_card
 
 tasks:
-  # Book-before-ready: the online application goes in on day one — the
-  # appointment wait only starts when you submit.
-  - title: Submit your Blue Card application online — today (§18g)
+  # Visa-free route only (§41 AufenthV nationals): D-visa holders are served by
+  # case.bc.first_application.prepare / .submit.
+  - title: Entered visa-free? Submit your Blue Card application within 90 days
     key: bc.submit_application
-    depends_on: [nee.anmeldung]
-    verified_at: 2026-06-11
+    depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
+      - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+    claims:
+      - id: ninety-days
+        states: within 90 days
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: filing-deadline
+        covers: deadline
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: visa-free-countries
+        states: Citizens of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK and the USA may enter Germany visa-free and obtain the residence permit here
+        source: '§41 AufenthV — Vergünstigung für Angehörige bestimmter Staaten'
+        quote: können auch für einen Aufenthalt, der kein Kurzaufenthalt ist, visumfrei in das Bundesgebiet einreisen und sich darin aufhalten. Ein erforderlicher Aufenthaltstitel kann im Bundesgebiet eingeholt werden.
+      - id: six-months
+        states: for at least six months
+        source: '§18g AufenthG'
+        quote: eine Beschäftigungsdauer von mindestens sechs Monaten vorsieht
+      - id: recent-graduates
+        states: graduates whose degree is no more than three years old
+        source: '§18g AufenthG'
+        quote: einen Hochschulabschluss nicht mehr als drei Jahre vor der Beantragung der Blauen Karte EU erworben haben
+      - id: it-experience
+        states: three years of IT experience within the last seven
+        source: 'Stadt Köln · EU Blue Card'
+        quote: drei Jahre Berufserfahrung als IT -Fachkraft innerhalb der letzten sieben
+      - id: variable-pay
+        states: Success bonuses and other fully variable payments do not count
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Erfolgsprämien und andere voll variable Sonderzahlungen rechnen wir nicht an.
+      - id: establishment
+        states: an employer that has a Betriebsstätte in Germany
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Ihr*e Arbeitgeber*in muss eine Betriebsstätte in Deutschland haben.
+      - id: visa-normally-needed
+        states: a Blue Card normally requires entry with the matching visa
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Für den Erhalt einer Blauen Karte EU müssen Sie in der Regel mit einem entsprechenden Visum einreisen.
     description: |
-      The Blue Card is the privileged permit for qualified employees: faster permanent
-      residency (21 months with B1 German, 27 with A1), easy EU mobility, and privileged
-      family reunification (your spouse needs no German certificate and can work
-      immediately). Requirements: a job offer or contract of at least 6 months with an
-      employer that has a Betriebsstätte in Germany, and a salary of {{figure:blue_card_salary}} — or {{figure:blue_card_salary_shortage}} for shortage occupations,
-      recent graduates, and IT specialists with 3 years' experience in the last 7 (no
-      degree needed for the IT route). Success bonuses and fully variable pay do NOT
-      count towards the threshold. File the online Erstantrag now — the appointment
-      wait starts at submission, not when your folder is complete. Your filing
-      window: visa-free entrants must apply within 90 days of arrival; if you entered
-      on a D visa, the real deadline is your visa's expiry date.
+      Citizens of Australia, Israel, Japan, Canada, South Korea, New Zealand, the UK and the USA may enter Germany visa-free and obtain the residence permit here
+      — but they must apply within 90 days of arrival. Cologne accepts first Blue Card
+      applications online. The Blue Card needs a German or comparable degree, a
+      recognised equivalent qualification, or three years of IT experience within the last seven;
+      a job offer or contract for at least six months with an employer that has a Betriebsstätte in Germany; and a salary of
+      at least {{figure:blue_card_salary}} — or {{figure:blue_card_salary_shortage}}
+      in shortage occupations, for graduates whose degree is no more than three years old, and for IT
+      specialists without a formal qualification. Success bonuses and other fully variable payments do not count
+      towards the threshold. Other visa-free entrants: Cologne notes that a Blue Card normally requires entry with the matching visa — check
+      your route with the Ausländeramt before relying on it.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
     deadline_days: 90
+    applies_if_mode: explicit
     applies_if:
-      entry_mode: [d_visa, visa_free]
+      citizenship_group: non_eu
+      purpose: employment
+      case_goal: blue_card
+      entry_mode: visa_free
     documents_required:
-      - label: Online application form (Erstantrag 33-F07; renewals 33-F06)
+      - label: Cologne's online first application for the EU Blue Card
         note: Upload scans of the documents listed on the appointment task.
-      - label: BA form "Erklärung zum Beschäftigungsverhältnis", if available
-        note: Your employer fills this for the Bundesagentur approval — handing it in up front shortens processing. Tell HR on day one.
+      - label: BA advance approval or the completed form "Erklärung zum Beschäftigungsverhältnis", if available
+        note: Cologne lists it as optional. Ask your employer about it early.
         tone: warn
     links:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
       - https://anabin.kmk.org/anabin.html
     how_to_steps:
-      - title: Check Anabin on day one if your degree is foreign
-        body: Look your university and degree up in the Anabin database. If it's not listed as equivalent (H+), order a ZAB Zeugnisbewertung immediately — it takes weeks and the Blue Card waits for it. There's a dedicated ZAB assessment track for Blue Card applications.
+      - title: Foreign degree? Prepare the recognition evidence
+        body: For a foreign degree, Cologne asks for a certified German or English translation plus an Anabin extract or a statement of comparability from the Zentralstelle für ausländisches Bildungswesen (ZAB).
         link: https://anabin.kmk.org/anabin.html
-      - title: Submit the online Erstantrag
-        body: Cologne's online form 33-F07 — the same form as other permits, with Blue Card uploads. It lands at the Bezirksausländeramt of your Stadtteil.
+      - title: Submit the online first application
+        body: Cologne accepts first Blue Card applications online and contacts you once it has reviewed your application.
         link: https://www.stadt-koeln.de/service/produkte/20321/index.html
 
-  - title: Attend your Blue Card appointment with the originals (§18g)
+  - title: Attend your Blue Card appointment with the originals
     key: bc.blue_card
-    depends_on: [bc.submit_application, nee.health_insurance]
-    verified_at: 2026-06-11
+    depends_on: []
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.2
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+    claims:
+      - id: invitation
+        states: sends you an appointment invitation if it can issue the Blue Card
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Können wir Ihnen die Blaue Karte EU ausstellen, erhalten Sie eine Termineinladung zur Vorsprache.
+      - id: further-documents
+        states: In individual cases the office may ask for further documents
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Im Einzelfall kann es vorkommen, dass wir weitere Unterlagen bei Ihnen anfragen.
+      - id: photo-age
+        states: not older than three months
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Das Foto darf nicht älter als drei Monate sein.
+      - id: six-months
+        states: at least six months
+        source: '§18g AufenthG'
+        quote: eine Beschäftigungsdauer von mindestens sechs Monaten vorsieht
+      - id: level-six
+        states: level 6 qualification recognised in Germany
+        source: 'Stadt Köln · EU Blue Card'
+        quote: In Deutschland anerkannter Bildungsabschluss der Stufe 6 des ISCED 2011 oder des EQR
+      - id: it-route-proof
+        states: at least three years of IT experience within the last seven years
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Nachweise über mindestens drei Jahre Berufserfahrung innerhalb der letzten sieben Jahre im IT -Bereich sowie einen Lebenslauf
+      - id: fees
+        states: First issue €100, renewal €93
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'Ersterteilung: 100 Euro Verlängerung: 93 Euro'
+      - id: turkish-fees
+        states: €22.80 up to 24 years of age, €37 from 24 years
+        source: 'Stadt Köln · EU Blue Card'
+        quote: 'bis 24 Jahre: 22,80 Euro ab 24 Jahren: 37 Euro'
+      - id: job-change-window
+        states: first 12 months
+        source: '§18g AufenthG'
+        quote: In den ersten zwölf Monaten der Beschäftigung kann die zuständige Ausländerbehörde den Arbeitsplatzwechsel des Inhabers einer Blauen Karte EU für 30 Tage aussetzen
+      - id: suspension
+        states: suspend the change for 30 days
+        source: '§18g AufenthG'
+        quote: In den ersten zwölf Monaten der Beschäftigung kann die zuständige Ausländerbehörde den Arbeitsplatzwechsel des Inhabers einer Blauen Karte EU für 30 Tage aussetzen
+      - id: no-permission
+        states: You need no permission for the change
+        source: '§18g AufenthG'
+        quote: ist für den Arbeitsplatzwechsel eines Inhabers einer Blauen Karte EU keine Erlaubnis der Ausländerbehörde erforderlich
     description: |
-      After your online application, the Bezirksausländeramt invites you to an
-      appointment. Bring the originals of everything you uploaded — assemble them with
-      the checklist below while you wait. Fingerprints are taken for the eAT card.
+      Cologne reviews your online application and sends you an appointment invitation if it can issue the Blue Card.
+      Bring the originals of the documents listed below. In individual cases the office may ask for further documents.
     phase: first_30_days
     urgency: critical
     deadline_type: none
+    applies_if_mode: explicit
     applies_if:
+      citizenship_group: non_eu
+      purpose: employment
+      case_goal: blue_card
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Valid national passport
-      - label: Entry visa, if you needed one
-      - label: Biometric photo, less than 3 months old
-        note: Bring it to the appointment — the ABH can also take a digital photo on site.
-      - label: Employment contract or binding job offer (≥ 6 months)
+      - label: Valid passport or passport substitute
+      - label: Entry visa for qualified employment, where your entry required one
+        optional: true
+      - label: Biometric passport photo, not older than three months
+        note: Bring it to the appointment.
+      - label: Employment contract or binding job offer for at least six months
       - label: Qualification proof (first application only)
-        note: 'German degree certificate; OR foreign degree + certified German or English translation + Anabin extract or ZAB Zeugnisbewertung; OR a recognized level-6 qualification (Meister, Techniker — min. 3-year training); OR for the IT route: proofs of 3-in-7-years professional experience + CV.'
-      - label: BA form "Erklärung zum Beschäftigungsverhältnis", if available
-        note: The original of the form your employer filled for the online application.
+        note: 'German degree certificate; OR foreign degree + certified German or English translation + Anabin extract or ZAB statement; OR a level 6 qualification recognised in Germany (for example Meister, Techniker) with its recognition; OR for IT specialists without a formal qualification: proof of at least three years of IT experience within the last seven years + CV.'
+      - label: BA advance approval or the completed form "Erklärung zum Beschäftigungsverhältnis", if available
+        optional: true
       - label: Mietvertrag + bank statement showing your current rent payment
-        note: Owners instead bring the Grundbuchauszug + monthly interest/amortization/Nebenkosten proofs.
-      - label: Proof of health insurance — only if not statutory (GKV)
+        note: Owners instead bring the land register extract (Grundbuchauszug) + proof of monthly interest, repayment and service charges.
+      - label: Proof of full health insurance — only if you are not statutorily insured
+        optional: true
+        from: core.health_insurance
       - label: Berufsausübungserlaubnis, for regulated professions
-        note: Medicine and similar regulated fields need the professional licence on top of the degree.
+        optional: true
+        note: Some professions, for example human medicine, need a professional licence. Ask your employer if you are unsure.
     links:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
     how_to_steps:
       - title: Pay the fee at the appointment
-        body: First issue €100, renewal €93. Turkish nationals with association rights pay €22.80 (under 24) / €37 (24+).
+        body: First issue €100, renewal €93. Turkish nationals with association rights pay €22.80 up to 24 years of age, €37 from 24 years.
       - title: Know the job-change rule for your first 12 months
-        body: Changing employer in the first year must be reported via the Ausländeramt contact form with the old job's termination + the new contract. No permission needed — you can start immediately — but the ABH can suspend the change for 30 days.
+        body: In the first 12 months you must report every change of employer through Cologne's contact form, with the termination of the old job and the new contract. You need no permission for the change and can start immediately, but the office can suspend the change for 30 days and refuse it if the Blue Card conditions are not met.
 
-  - title: 'Blue Card fast track: permanent residency in 21–27 months'
+  - title: 'Blue Card fast track: permanent residence after 21 or 27 months'
     key: bc.ne_fast_track
     depends_on: []
-    verified_at: 2026-07-18
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
+      - {kind: primary, label: '§2 AufenthG — Begriffsbestimmungen', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__2.html'}
+      - {kind: primary, label: '§44 AufenthV — Gebühren für die Niederlassungserlaubnis', url: 'https://www.gesetze-im-internet.de/aufenthv/__44.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+    claims:
+      - id: route-lengths
+        states: 21 or 27 months
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Nach 21 beziehungsweise 27 Monaten statt nach drei beziehungsweise fünf Jahren.
+      - id: instead-of
+        states: 21 or 27 months instead of three or five years
+        source: 'Stadt Köln · EU Blue Card'
+        quote: Nach 21 beziehungsweise 27 Monaten statt nach drei beziehungsweise fünf Jahren.
+      - id: twenty-seven-months
+        states: after 27 months of Blue Card employment with pension or equivalent contributions
+        source: '§18c AufenthG'
+        quote: wenn er mindestens 27 Monate eine Beschäftigung nach § 18g ausgeübt hat und für diesen Zeitraum Pflichtbeiträge oder freiwillige Beiträge zur gesetzlichen Rentenversicherung geleistet hat
+      - id: a1
+        states: A1 German
+        source: '§2 AufenthG — Begriffsbestimmungen'
+        quote: Einfache deutsche Sprachkenntnisse entsprechen dem Niveau A 1
+      - id: twenty-one-months
+        states: after 21 months
+        source: '§18c AufenthG'
+        quote: Die Frist nach Satz 1 verkürzt sich auf 21 Monate, wenn der Ausländer über ausreichende Kenntnisse der deutschen Sprache verfügt.
+      - id: b1
+        states: B1 German
+        source: '§2 AufenthG — Begriffsbestimmungen'
+        quote: Ausreichende deutsche Sprachkenntnisse entsprechen dem Niveau B 1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
+      - id: other-conditions
+        states: further conditions referenced in §18c
+        source: '§18c AufenthG'
+        quote: die Voraussetzungen des § 9 Absatz 2 Satz 1 Nummer 2 und 4 bis 6, 8 und 9 vorliegen
+      - id: fee
+        states: fee is €113
+        source: '§44 AufenthV — Gebühren für die Niederlassungserlaubnis'
+        quote: für die Erteilung einer Niederlassungserlaubnis in allen übrigen Fällen 113 Euro
     description: |
-      Blue Card holders qualify for the Niederlassungserlaubnis (permanent residency)
-      after just 21 months with B1 German — or 27 months with A1. That's years earlier
-      than any other path. Keep your pension contributions running and book a German
-      course early; the language certificate is usually the only missing piece when the
-      window opens. Applying works like your other permits: submit digitally, then the
-      Ausländeramt sends a Termineinladung (appointment invitation) once it can issue
-      the permit — the invitation letter states the final document list. The
-      Niederlassungserlaubnis fee on Cologne's skilled-worker and general NE pages is
-      €113.
+      Blue Card holders can get the Niederlassungserlaubnis (permanent residence)
+      after 27 months of Blue Card employment with pension or equivalent contributions and A1 German — or
+      after 21 months with B1 German. Cologne puts it as 21 or 27 months instead of three or five years.
+      The authority still checks the further conditions referenced in §18c, so keep
+      your contributions running and book a German course early. The Niederlassungserlaubnis
+      fee is €113.
     phase: ongoing
     urgency: low
     deadline_type: none
+    applies_if_mode: explicit
+    applies_if:
+      citizenship_group: non_eu
+      current_residence_title: blue_card
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: Valid national passport + digital biometric photo
-      - label: German certificate — B1 for the 21-month track, A1 for 27 months
+      - label: Valid national passport + biometric photo
+      - label: German language certificate for your route
       - label: Current pension record (Versicherungsverlauf)
-        note: Request it from the Deutsche Rentenversicherung early — it proves your contribution months.
+        note: Request it from the Deutsche Rentenversicherung early — it shows your contribution months.
       - label: Employment contract + recent payslips
-      - label: Mietvertrag + proof of current housing costs
     links:
-      - https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-fachkraefte
-      - https://www.stadt-koeln.de/leben-in-koeln/soziales/auslaenderamt/niederlassungserlaubnis
+      - https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
     how_to_steps:
-      - title: Submit digitally when your window opens
-        body: File the online application; the invitation to appear follows once the office can issue the permit. Bring the originals then.
-      - title: Ask about Daueraufenthalt-EU at the appointment
-        body: Same requirements, adds EU-wide mobility — if you might leave Germany one day, request that variant instead.
+      - title: Apply when your window opens
+        body: Submit the application to the Ausländeramt once you meet the conditions; the authority checks every requirement before issuing the permit.
 
   - title: Prepare the evidence for your first Blue Card application
     key: case.bc.first_application.prepare
     description: |
-      You currently hold a national D visa and want to change to an EU Blue Card.
-      Prepare the passport, employment contract or binding offer, qualification
+      If you hold a national D visa and plan to apply for an EU Blue Card,
+      prepare the passport, employment contract or binding offer, qualification
       evidence, health-insurance evidence, and any professional licence the Cologne
       authority requests. The job offer must cover at least six months and the
       statutory Blue Card conditions still have to be checked. This is preparation,
@@ -129,41 +275,47 @@ tasks:
     urgency: critical
     deadline_type: fact_date
     deadline_fact_key: visa_expires_at
+    applies_if_mode: explicit
     applies_if:
+      citizenship_group: non_eu
+      purpose: employment
       current_residence_title: national_d_visa
       case_goal: blue_card
       entry_mode: d_visa
-    documents_required:
-      - Valid passport and national D visa
-      - Employment contract or binding job offer covering at least six months
-      - Qualification evidence and recognition evidence where required
-      - Health-insurance evidence
-      - Professional licence for a regulated profession, where applicable
+    # The documents to bring are listed once, on the appointment step (bc.blue_card).
+    documents_required: []
     links:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.2
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+    claims:
+      - id: six-month-offer
+        states: at least six months
+        source: '§18g AufenthG'
+        quote: eine Beschäftigungsdauer von mindestens sechs Monaten vorsieht
 
   - title: Submit the Blue Card application before your D visa expires
     key: case.bc.first_application.submit
     description: |
-      File the Cologne online residence application before the expiry date shown on
-      your national D visa. Keep the submission confirmation and continue checking
+      If you are pursuing an EU Blue Card from a national D visa, file the Cologne
+      residence application before the visa expires. Keep the submission confirmation and continue checking
       official messages for requests or an appointment. The authority decides whether
       every requirement in §18g is met; Expadu does not decide eligibility.
     phase: first_30_days
     urgency: critical
     deadline_type: fact_date
     deadline_fact_key: visa_expires_at
+    applies_if_mode: explicit
     applies_if:
+      citizenship_group: non_eu
+      purpose: employment
       current_residence_title: national_d_visa
       case_goal: blue_card
       entry_mode: d_visa
@@ -172,27 +324,38 @@ tasks:
       - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-09-08.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
+      - {kind: primary, label: '§81 AufenthG — Applying for a residence title', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+    claims:
+      - id: blue-card-requirements
+        states: every requirement in §18g is met
+        source: '§18g AufenthG'
+        quote: Einer Fachkraft mit akademischer Ausbildung wird ohne Zustimmung der Bundesagentur für Arbeit eine Blaue Karte EU
+      - id: apply-before-expiry
+        states: file the Cologne residence application before the visa expires
+        source: '§81 AufenthG — Applying for a residence title'
+        quote: Beantragt ein Ausländer vor Ablauf seines Aufenthaltstitels dessen Verlängerung oder die Erteilung eines anderen Aufenthaltstitels
 
   - title: Track the 21-month Blue Card settlement route
     key: case.bc.settlement.track_21_months
     type: info
     description: |
-      With B1 German and 12 documented qualifying months, you are not yet eligible
-      under the 21-month Blue Card route. Keep tracking complete months of qualifying
+      With B1 German and fewer than 21 documented qualifying months, the time
+      requirement for the 21-month Blue Card route is not yet met. Track qualifying
       employment and pension or equivalent contributions. At 21 months, the authority
       must still verify the remaining conditions referenced by §18c(2), including the
       applicable §9 checks. Time in Germany alone is not the statutory counter.
     phase: ongoing
     urgency: medium
     deadline_type: none
+    applies_if_mode: explicit
     applies_if:
+      citizenship_group: non_eu
       current_residence_title: blue_card
       case_goal: settlement_permit
       blue_card_qualifying_months: {in: [12, 13, 14, 15, 16, 17, 18, 19, 20]}
@@ -202,18 +365,45 @@ tasks:
       - https://www.stadt-koeln.de/service/produkte/20321/index.html
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-07.1
+    source_verification: quote_checked
     legal_sources:
       - {kind: primary, label: '§18c AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18c.html'}
       - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+      - {kind: primary, label: '§2 AufenthG — Begriffsbestimmungen', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__2.html'}
+    claims:
+      - id: route-length
+        states: 21-month Blue Card
+        source: '§18c AufenthG'
+        quote: Die Frist nach Satz 1 verkürzt sich auf 21 Monate, wenn der Ausländer über ausreichende Kenntnisse der deutschen Sprache verfügt.
+      - id: language-level
+        states: With B1 German
+        source: '§2 AufenthG — Begriffsbestimmungen'
+        quote: Ausreichende deutsche Sprachkenntnisse entsprechen dem Niveau B 1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
+      - id: months-so-far
+        states: fewer than 21 documented qualifying months
+        source: '§18c AufenthG'
+        quote: Die Frist nach Satz 1 verkürzt sich auf 21 Monate, wenn der Ausländer über ausreichende Kenntnisse der deutschen Sprache verfügt.
+      - id: at-21-months
+        states: At 21 months
+        source: '§18c AufenthG'
+        quote: Die Frist nach Satz 1 verkürzt sich auf 21 Monate, wenn der Ausländer über ausreichende Kenntnisse der deutschen Sprache verfügt.
+      - id: remaining-conditions
+        states: §18c(2), including the applicable §9 checks
+        source: '§18c AufenthG'
+        quote: die Voraussetzungen des § 9 Absatz 2 Satz 1 Nummer 2 und 4 bis 6, 8 und 9 vorliegen und er über einfache Kenntnisse der deutschen Sprache verfügt
 
   - title: Verify an unrecognized title against the official source
     key: case.bc.verify_status_source
     type: info
     coverage_scope: universal
+    applies_if_mode: explicit
+    # Only for a title Expadu has no reviewed rule for: another title, or a settlement permit
+    # whose section the person doesn't know (owner decision, 8 October 2026).
+    applies_if:
+      citizenship_group: non_eu
+      current_residence_title: {in: [other, settlement_permit_unknown]}
     description: |
       Expadu does not have a reviewed case rule for every residence title. Check the
       exact legal basis printed on the card or visa and confirm the route with the
@@ -223,14 +413,17 @@ tasks:
     urgency: high
     deadline_type: none
     links:
-      - https://www.stadt-koeln.de/service/produkte/20321/index.html
-      - https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html
+      - https://www.stadt-koeln.de/service/adressen/auslaenderamt
     review_status: approved
     jurisdiction: de-nrw-cologne
-    reviewed_by: expadu_content_owner
-    content_version: 2026-08-03.1
-    source_verification: dual_source
-    verified_at: '2026-08-03'
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
     legal_sources:
-      - {kind: primary, label: '§18g AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__18g.html'}
-      - {kind: implementation, label: 'Stadt Köln · EU Blue Card', url: 'https://www.stadt-koeln.de/service/produkte/20321/index.html'}
+      - {kind: primary, label: '§4 AufenthG — Erfordernis eines Aufenthaltstitels', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__4.html'}
+      - {kind: implementation, label: 'Stadt Köln · Ausländeramt contact', url: 'https://www.stadt-koeln.de/service/adressen/auslaenderamt'}
+    claims:
+      - id: title-required
+        states: residence title
+        source: '§4 AufenthG — Erfordernis eines Aufenthaltstitels'
+        quote: Ausländer bedürfen für die Einreise und den Aufenthalt im Bundesgebiet eines Aufenthaltstitels
