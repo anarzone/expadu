@@ -293,7 +293,9 @@ export function EventsStreet({
                     className="ev-street-fit"
                     style={
                         {
-                            zoom: fit.zoom,
+                            // Applied to four places, as the mock's
+                            // street.js does; the sums keep the exact zoom.
+                            zoom: Number(fit.zoom.toFixed(4)),
                             width: fit.width,
                             height,
                             // The chip sits 20px (12px on a phone) in from

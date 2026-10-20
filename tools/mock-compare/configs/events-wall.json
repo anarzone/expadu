@@ -1,0 +1,229 @@
+{
+    "name": "events-wall",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-weather",
+        "screenshotStyle": ".rainfall, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-weather",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "screenshotStyle": ".m-rainfall, .shell-composer-round, .shell-composer-round * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "column",
+            "mock": "#wall > :nth-child(5)",
+            "app": ".st-column",
+            "contentDiffers": true,
+            "reason": "The column's drum shows the posters on its faces as each side draws them: the app's faces are its own poster pictures turned on the drum (EV2d), the mock's its live SVG; the drum's box and styles are compared, and the posters themselves pixel for pixel in the wall pairs."
+        },
+        {
+            "name": "column body",
+            "mock": "#wall > :nth-child(5) > :nth-child(1)",
+            "app": ".st-column-body",
+            "contentDiffers": true,
+            "reason": "The column's drum shows the posters on its faces as each side draws them: the app's faces are its own poster pictures turned on the drum (EV2d), the mock's its live SVG; the drum's box and styles are compared, and the posters themselves pixel for pixel in the wall pairs."
+        },
+        {
+            "name": "drum",
+            "mock": "#wall > :nth-child(5) > :nth-child(1) > :nth-child(2)",
+            "app": ".st-drum",
+            "contentDiffers": true,
+            "reason": "The column's drum shows the posters on its faces as each side draws them: the app's faces are its own poster pictures turned on the drum (EV2d), the mock's its live SVG; the drum's box and styles are compared, and the posters themselves pixel for pixel in the wall pairs."
+        },
+        {
+            "name": "dots",
+            "mock": "#wall > :nth-child(5) > :nth-child(1) > :nth-child(3)",
+            "app": ".st-dots",
+            "contentDiffers": true,
+            "reason": "Its box takes in the column (or the wall) behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its box and styles are compared, and its mark pixel for pixel."
+        },
+        {
+            "name": "current dot",
+            "mock": "#wall > :nth-child(5) > :nth-child(1) > :nth-child(3) > button",
+            "app": ".st-dots button",
+            "contentDiffers": true,
+            "reason": "Its box takes in the column (or the wall) behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its box and styles are compared, and its mark pixel for pixel."
+        },
+        {
+            "name": "next dot",
+            "mock": "#wall > :nth-child(5) > :nth-child(1) > :nth-child(3) > button",
+            "app": ".st-dots button",
+            "index": 1,
+            "contentDiffers": true,
+            "reason": "Its box takes in the column (or the wall) behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its box and styles are compared, and its mark pixel for pixel."
+        },
+        {
+            "name": "dot mark",
+            "mock": "#wall > :nth-child(5) > :nth-child(1) > :nth-child(3) > button i",
+            "app": ".st-dots button i",
+            "widths": [360],
+            "pixels": false,
+            "reason": "At 360 the column's dot is 4.1px across: its edge anti-aliases differently on a mark that small. Its box and styles are compared exactly; at the other widths its pixels too."
+        },
+        {
+            "name": "dot mark",
+            "mock": "#wall > :nth-child(5) > :nth-child(1) > :nth-child(3) > button i",
+            "app": ".st-dots button i",
+            "widths": [390, 768, 1280, 1440, 1512]
+        },
+        {
+            "name": "previous poster",
+            "mock": "#wall > :nth-child(5) > :nth-child(1) > :nth-child(4)",
+            "app": ".st-col-prev",
+            "contentDiffers": true,
+            "reason": "Its box takes in the column (or the wall) behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its box and styles are compared, and its mark pixel for pixel."
+        },
+        {
+            "name": "next poster",
+            "mock": "#wall > :nth-child(5) > :nth-child(1) > :nth-child(5)",
+            "app": ".st-col-next",
+            "contentDiffers": true,
+            "reason": "Its box takes in the column (or the wall) behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its box and styles are compared, and its mark pixel for pixel."
+        },
+        {
+            "name": "phone pager",
+            "mock": "#wall > :nth-child(3)",
+            "app": ".st-pages",
+            "widths": [360, 390],
+            "contentDiffers": true,
+            "reason": "Its box takes in the column (or the wall) behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its box and styles are compared, and its mark pixel for pixel."
+        },
+        {
+            "name": "later",
+            "mock": "#wall > :nth-child(3) > button",
+            "app": ".st-pages button",
+            "widths": [360, 390],
+            "contentDiffers": true,
+            "reason": "Its box takes in the column (or the wall) behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its box and styles are compared, and its mark pixel for pixel."
+        },
+        {
+            "name": "earlier",
+            "mock": "#wall > :nth-child(3) > button",
+            "app": ".st-pages button",
+            "index": 1,
+            "widths": [360, 390],
+            "contentDiffers": true,
+            "reason": "Its box takes in the column (or the wall) behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its box and styles are compared, and its mark pixel for pixel."
+        },
+        {
+            "name": "page mark",
+            "mock": "#wall > :nth-child(3) > button i",
+            "app": ".st-pages button i",
+            "widths": [360, 390]
+        },
+        {
+            "name": "first poster category",
+            "mock": ".st-slot .pp .pp-front .pp-category",
+            "app": ".st-slot .pp .pp-front .pp-category",
+            "index": 0,
+            "contentDiffers": true,
+            "reason": "Frosted (a 8–10px backdrop blur): the blur reaches the poster's tilted top edge and the wall behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky). With the blur off on both sides the part is pixel-identical; its box and styles are compared exactly."
+        },
+        {
+            "name": "first poster tape",
+            "mock": ".st-slot .pp .pp-front .pp-tape",
+            "app": ".st-slot .pp .pp-front .pp-tape",
+            "index": 0
+        },
+        {
+            "name": "first poster title",
+            "mock": ".st-slot .pp .pp-front .pp-title",
+            "app": ".st-slot .pp .pp-front .pp-title",
+            "index": 0
+        },
+        {
+            "name": "first poster time",
+            "mock": ".st-slot .pp .pp-front .pp-time",
+            "app": ".st-slot .pp .pp-front .pp-time",
+            "index": 0
+        },
+        {
+            "name": "first poster meta",
+            "mock": ".st-slot .pp .pp-front .pp-meta",
+            "app": ".st-slot .pp .pp-front .pp-meta",
+            "index": 0
+        },
+        {
+            "name": "first poster price",
+            "mock": ".st-slot .pp .pp-front .pp-price",
+            "app": ".st-slot .pp .pp-front .pp-price",
+            "index": 0
+        },
+        {
+            "name": "first poster save",
+            "mock": ".st-slot .pp .pp-front .pp-save",
+            "app": ".st-slot .pp .pp-front .pp-save",
+            "index": 0,
+            "contentDiffers": true,
+            "reason": "Frosted (a 8–10px backdrop blur): the blur reaches the poster's tilted top edge and the wall behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky). With the blur off on both sides the part is pixel-identical; its box and styles are compared exactly."
+        },
+        {
+            "name": "second poster category",
+            "mock": ".st-slot .pp .pp-front .pp-category",
+            "app": ".st-slot .pp .pp-front .pp-category",
+            "index": 1,
+            "contentDiffers": true,
+            "reason": "Frosted (a 8–10px backdrop blur): the blur reaches the poster's tilted top edge and the wall behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky). With the blur off on both sides the part is pixel-identical; its box and styles are compared exactly."
+        },
+        {
+            "name": "second poster tape",
+            "mock": ".st-slot .pp .pp-front .pp-tape",
+            "app": ".st-slot .pp .pp-front .pp-tape",
+            "index": 1
+        },
+        {
+            "name": "second poster title",
+            "mock": ".st-slot .pp .pp-front .pp-title",
+            "app": ".st-slot .pp .pp-front .pp-title",
+            "index": 1
+        },
+        {
+            "name": "second poster time",
+            "mock": ".st-slot .pp .pp-front .pp-time",
+            "app": ".st-slot .pp .pp-front .pp-time",
+            "index": 1
+        },
+        {
+            "name": "second poster meta",
+            "mock": ".st-slot .pp .pp-front .pp-meta",
+            "app": ".st-slot .pp .pp-front .pp-meta",
+            "index": 1
+        },
+        {
+            "name": "second poster price",
+            "mock": ".st-slot .pp .pp-front .pp-price",
+            "app": ".st-slot .pp .pp-front .pp-price",
+            "index": 1
+        },
+        {
+            "name": "second poster save",
+            "mock": ".st-slot .pp .pp-front .pp-save",
+            "app": ".st-slot .pp .pp-front .pp-save",
+            "index": 1,
+            "contentDiffers": true,
+            "reason": "Frosted (a 8–10px backdrop blur): the blur reaches the poster's tilted top edge and the wall behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky). With the blur off on both sides the part is pixel-identical; its box and styles are compared exactly."
+        },
+        {
+            "name": "hint",
+            "mock": ".st-hint",
+            "app": ".ev-street-hint",
+            "widths": [360, 390],
+            "contentDiffers": true,
+            "reason": "Its rounded corners show the street behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky); its words, box and styles are compared."
+        }
+    ],
+    "screenshotStyleReason": "The street's rain falls across the posters, the column and the pager; each side draws it its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky), so it is hidden only while these elements are shot, as is each side's floating Composer button.",
+    "pixelThreshold": 0.03,
+    "pixelThresholdReason": "Posters are tilted (1.4° or -1.1°) and zoomed, and their tapes tilted again (-3°): with geometry and styles identical to a thousandth of a pixel, their edges still anti-alias a few pixels apart (at most 2.9% of a part). Up to 3% of a part's pixels may differ; a changed word or shape moves far more than that."
+}

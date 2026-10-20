@@ -1,0 +1,65 @@
+{
+    "name": "events-flags",
+    "clock": "2026-09-30T18:45:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30&at=18:45",
+        "wait": ".st-weather",
+        "screenshotStyle": ".rainfall, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-weather",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T18:45:00%2B02:00"
+        },
+        "screenshotStyle": ".m-rainfall, .shell-composer-round, .shell-composer-round * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "poster on now",
+            "mock": ".st-slot .pp",
+            "app": ".st-slot .pp"
+        },
+        {
+            "name": "its flags",
+            "mock": ".st-slot .pp .pp-flags",
+            "app": ".st-slot .pp .pp-flags"
+        },
+        {
+            "name": "its category",
+            "mock": ".st-slot .pp .pp-category",
+            "app": ".st-slot .pp .pp-category",
+            "contentDiffers": true,
+            "reason": "Frosted (a 8–10px backdrop blur): the blur reaches the poster's tilted top edge and the wall behind it, which each side draws its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky). With the blur off on both sides the part is pixel-identical; its box and styles are compared exactly."
+        },
+        {
+            "name": "its tape",
+            "mock": ".st-slot .pp .pp-tape",
+            "app": ".st-slot .pp .pp-tape"
+        },
+        {
+            "name": "next poster",
+            "mock": ".st-slot .pp",
+            "app": ".st-slot .pp",
+            "index": 1,
+            "contentDiffers": true,
+            "reason": "The rain flag names where the weather comes from: the mock's 'sample forecast' (its sample data), the app's 'forecast'. The flag's words before it and its place are the same."
+        },
+        {
+            "name": "its flags (next)",
+            "mock": ".st-slot .pp .pp-flags",
+            "app": ".st-slot .pp .pp-flags",
+            "index": 1,
+            "contentDiffers": true,
+            "reason": "The rain flag names where the weather comes from: the mock's 'sample forecast' (its sample data), the app's 'forecast'. The flag's words before it and its place are the same."
+        }
+    ],
+    "screenshotStyleReason": "The street's rain falls across the posters, the column and the pager; each side draws it its own way (the app as pictures within EV2a's agreed budget, the mock as live SVG; compared in events-sky), so it is hidden only while these elements are shot, as is each side's floating Composer button.",
+    "pixelThreshold": 0.03,
+    "pixelThresholdReason": "Posters are tilted (1.4° or -1.1°) and zoomed, and their tapes tilted again (-3°): with geometry and styles identical to a thousandth of a pixel, their edges still anti-alias a few pixels apart (at most 2.9% of a part). Up to 3% of a part's pixels may differ; a changed word or shape moves far more than that."
+}
