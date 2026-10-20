@@ -3,13 +3,16 @@
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
-        "url": "http://127.0.0.1:8791/dev/design/events-next/?date=2026-09-30",
+        "url": "/dev/design/events-next/?date=2026-09-30",
         "wait": "header"
     },
     "app": {
-        "url": "http://127.0.0.1:8041/events?date=2026-09-30",
+        "url": "/events?date=2026-09-30",
         "wait": "header",
-        "login": { "email": "e2e@expadu.test", "password": "e2e-password" }
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
     },
     "pairs": [
         {

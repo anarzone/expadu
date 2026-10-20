@@ -57,6 +57,14 @@ if (!cfgPath) {
 }
 const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7);
 const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+// Paths in a config resolve against each session's own servers.
+const bases = {
+    mock: process.env.MOCK_COMPARE_MOCK ?? 'http://127.0.0.1:8781',
+    app: process.env.MOCK_COMPARE_APP ?? 'http://127.0.0.1:8021',
+};
+for (const side of ['mock', 'app'])
+    if (cfg[side]?.url?.startsWith('/'))
+        cfg[side].url = bases[side] + cfg[side].url;
 const widths = cfg.widths ?? [360, 390, 768, 1440];
 const height = cfg.height ?? 900;
 const tolerance = cfg.tolerance ?? 0.5; // px; 1:1 allows sub-pixel rounding only

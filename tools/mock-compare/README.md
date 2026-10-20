@@ -30,6 +30,10 @@ node tools/mock-compare/compare.mjs tools/mock-compare/configs/shell.json
 node tools/mock-compare/compare.mjs tools/mock-compare/configs/shell.json --only="saved icon"
 ```
 
+URLs in a config may be paths: they resolve against `MOCK_COMPARE_MOCK` (default
+`http://127.0.0.1:8781`) and `MOCK_COMPARE_APP` (default `http://127.0.0.1:8021`), so each session points
+the same config at its own servers.
+
 The report lands in `storage/mock-compare/<name>/report.md` with one image per pair and width
 (mock · app · diff). Exit code 1 means something differs.
 
