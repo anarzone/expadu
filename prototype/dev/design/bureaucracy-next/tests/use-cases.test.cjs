@@ -120,7 +120,13 @@ test('a non-EU employee with a D visa aiming for the Blue Card', () => {
     assert.ok(!asked.includes('residence_title_expires_at'));
     assert.ok(!asked.includes('permit_track'));
     assert.deepEqual(pauses, [3, 6, 9]);
-    assert.deepEqual(opened.sort(), ['address', 'bank', 'blue-card', 'health']);
+    assert.deepEqual(opened.sort(), [
+        'address',
+        'bank',
+        'blue-card',
+        'health',
+        'tax',
+    ]);
     const p = plan(s);
     // Every task a proposal until started; the Blue Card's targets aim for
     // the visa expiry; the address target is move-in + the card's days.
@@ -184,7 +190,10 @@ test('still planning: what applies after arrival is listed, not a to-do', () => 
         p.processes[0].steps[0].title,
     );
     const later = p.guidance.filter((g) => g.after_arrival);
-    assert.deepEqual([...later.map((g) => g.id)], ['core.bank_account']);
+    assert.deepEqual(
+        [...later.map((g) => g.id)],
+        ['core.bank_account', 'nee.tax_return'],
+    );
     assert.ok(later.every((g) => g.applies && !g.actionable));
     // Nothing is asked for it before arrival.
     assert.ok(!J.questions(s).includes('bank_account_help_needed'));
@@ -488,7 +497,12 @@ test('options for a Blue Card holder: routes to choose, never tasks', () => {
     const s = J.settling();
     P.hydrate(s);
     const p = plan(s);
-    assert.deepEqual(p.processes, []);
+    // Settling routes are options; the one task is the employee's income
+    // tax return, which every employee has.
+    assert.deepEqual(
+        [...p.processes.map((x) => x.occurrence_key)],
+        ['tax'],
+    );
     assert.deepEqual(
         [...shown(p, 'option').map((g) => g.id)],
         ['case.bc.settlement.track_21_months', 'bc.ne_fast_track'],

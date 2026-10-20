@@ -573,7 +573,7 @@ test('on the sample day Nearby leads with the appointment trip and Today’s tim
     assert.equal(card.hidden, false);
     // Labels: the line with its vehicle, the spare time, the sample.
     const text = card.innerHTML.replace(/<[^>]+>/g, '');
-    assert.match(text, /Next · Blue Card appointment · 14:00 · Mülheim/);
+    assert.match(text, /Next · EU Blue Card appointment · 14:00 · Mülheim/);
     assert.match(card.innerHTML, /<h2 id="next-trip-title">Leave now<\/h2>/);
     assert.match(card.innerHTML, /class="tl-line"[\s\S]*?Tram <\/span>4/);
     assert.match(text, /13:14 from Neumarkt/);
@@ -619,7 +619,7 @@ test('opening the next trip compares both trams against the 14:00 start', () => 
     const results = w.element('#results').innerHTML;
     assert.match(
         results,
-        /<h2 id="results-title" tabindex="-1">To Blue Card appointment/,
+        /<h2 id="results-title" tabindex="-1">To EU Blue Card appointment/,
     );
     assert.match(results, /Arrive by 14:00 · from Neumarkt/);
     // What was checked, and what the sample has of it.

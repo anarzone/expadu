@@ -3,6 +3,22 @@
         storageKey = 'expadu-connected-design-v1';
     let memory = M.fresh(),
         persistent = true;
+    // The sample appointment is "EU Blue Card appointment", the catalogue's
+    // process title (20 Oct 2026); a day or plan saved before keeps up.
+    for (const key of [storageKey, 'expadu-composer-studio-v1'])
+        try {
+            const saved = localStorage.getItem(key);
+            if (saved?.includes('"Blue Card appointment"'))
+                localStorage.setItem(
+                    key,
+                    saved.replaceAll(
+                        '"Blue Card appointment"',
+                        '"EU Blue Card appointment"',
+                    ),
+                );
+        } catch {
+            /* Without storage there is nothing saved to rename. */
+        }
     function read() {
         if (!persistent) return M.clone(memory);
         try {

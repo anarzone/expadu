@@ -102,6 +102,8 @@
                     planStatus: 'Confirmed',
                 },
             ];
+        // Only the timetable's times for this trip, no live ones.
+        if (name === 'scheduled') day.agenda[0].journey.status = 'scheduled';
         if (name === 'unavailable')
             Object.assign(day.agenda[0].journey, {
                 status: 'stale',

@@ -63,28 +63,12 @@ export function tripMoment(
 }
 
 /**
- * Travel's trip page for the trip you're on. It reopens the live journey from
- * the trip's own destination and origin.
+ * Travel's trip page for the trip you're on. The trip is your account's
+ * own (activeTrip), so the address carries nothing about it: no
+ * destination and no starting point in links or history.
  */
-export function activeTripHref(trip: ActiveTrip): string {
-    const params = new URLSearchParams({
-        to_name: trip.destination.name,
-        to_lat: String(trip.destination.lat),
-        to_lng: String(trip.destination.lng),
-    });
-
-    if (trip.origin) {
-        params.set('from_lat', String(trip.origin.lat));
-        params.set('from_lng', String(trip.origin.lng));
-
-        if (trip.origin.name) {
-            params.set('from_name', trip.origin.name);
-        }
-    }
-
-    params.set('view', 'route');
-
-    return `/timetable?${params.toString()}`;
+export function activeTripHref(trip: ActiveTrip | null): string {
+    return trip ? '/timetable?view=route' : '/timetable';
 }
 
 /*

@@ -31,8 +31,11 @@ class PlannedTripController extends Controller
                 'depart_at' => DepartureTime::parse($journey['depart_at']),
                 'arrive_at' => DepartureTime::parse($journey['arrive_at']),
                 'remind' => $request->boolean('remind'),
-                // A new way is a new reminder.
+                // A new way is a new reminder, and watched afresh.
+                'planned_at' => now(),
                 'reminded_at' => null,
+                'alerted_kind' => null,
+                'alerted_at' => null,
             ],
         );
 
