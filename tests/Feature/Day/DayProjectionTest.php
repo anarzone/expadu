@@ -1,10 +1,14 @@
 <?php
 
+use App\Bureaucracy\Catalogue\CatalogueCompiler;
+use App\Bureaucracy\Catalogue\CatalogueReleaseStore;
+use App\Bureaucracy\People\EnsureAccountHolder;
+use App\Bureaucracy\Processes\ReconcileProcesses;
+use App\Bureaucracy\Processes\RecordProcessEvent;
 use App\Models\ComposerWorkspace;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\UserPlace;
-use App\Models\UserTask;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
@@ -12,6 +16,7 @@ use App\Transit\Dto\JourneyResult;
 use App\Transit\Dto\Leg;
 use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 /**
  * A router that answers from fixtures: arrive-by searches and depart-at
@@ -88,6 +93,27 @@ function ride(string $date, string $leave, string $arrive, bool $realtime = fals
     ], $depart, $arrival, $minutes, 0);
 }
 
+/**
+ * A Paperwork v2 appointment the person recorded on their own plan: its
+ * place (a label alone, or with coordinates) and its length, when known.
+ */
+function recordedAppointment(User $user, string $at, array $location, ?int $duration = null, string $title = 'Day appointment'): void
+{
+    $case = app(EnsureAccountHolder::class)->dossier($user);
+    $task = Task::factory()->approvedFixture()->create(['key' => 'fixture.day_appointment', 'title' => $title,
+        'applies_if' => [], 'deadline_type' => 'none', 'depends_on' => [], 'type' => 'task',
+        'documents_required' => [], 'how_to_steps' => [], 'links' => []])->fresh();
+    $store = app(CatalogueReleaseStore::class);
+    $store->activate($store->stage(app(CatalogueCompiler::class)->compile([$task], [$task->key => [
+        'process_id' => 'fixture.day_appointment', 'topic' => 'residence', 'kind' => 'preparation', 'coverage' => 'partial',
+    ]]))->id, null);
+    $process = app(ReconcileProcesses::class)->execute($user, $case->person, 'de-nrw-cologne')[0];
+    app(RecordProcessEvent::class)->execute($user, $process, 'appointment_recorded', [
+        'appointment_id' => (string) Str::uuid(), 'starts_at' => CarbonImmutable::parse($at, 'Europe/Berlin')->toIso8601String(),
+        'timezone' => 'Europe/Berlin', 'duration_minutes' => $duration, 'location' => $location,
+    ], 1, (string) Str::uuid());
+}
+
 /** One confirmed Composer day with the given slots. */
 function confirmedDay(User $user, string $date, array $slots, int $revision = 1): ComposerWorkspace
 {
@@ -129,7 +155,7 @@ test('one account never reads another account\'s day', function () {
     $a = User::factory()->onboarded()->create();
     $b = User::factory()->onboarded()->create();
     confirmedDay($b, '2026-10-19', [personalSlot('personal:b-plan', '2026-10-19', '15:00', '16:00', ['name' => 'B private dentist'] + WIENER_PLATZ)]);
-    UserTask::factory()->create(['user_id' => $b->id, 'task_id' => Task::factory()->create(['title' => 'B Blue Card'])->id, 'appointment_at' => CarbonImmutable::parse('2026-10-19 14:00', 'Europe/Berlin')]);
+    recordedAppointment($b, '2026-10-19 14:00', ['label' => 'B office', 'lat' => 50.9416, 'lng' => 7.0009], 30, 'B Blue Card');
     $bHome = UserPlace::factory()->create(['user_id' => $b->id, 'category' => 'home', 'name' => 'B home', 'lat' => 50.95, 'lng' => 6.92]);
 
     $this->actingAs($a)->getJson('/api/day?date=2026-10-19&from_place='.$bHome->id)
@@ -268,13 +294,16 @@ test('when nothing arrives in time the earliest arrival says how late', function
 test('the trip says what is missing instead of guessing', function () {
     $routes = dayRoutes();
     $user = User::factory()->onboarded()->create();
-    // A v1 Paperwork appointment records only its time: no office is guessed.
-    UserTask::factory()->create(['user_id' => $user->id, 'appointment_at' => CarbonImmutable::parse('2026-10-19 14:00', 'Europe/Berlin')]);
+    // An appointment recorded with a text-only place and no length: no
+    // office is located and no end is guessed.
+    recordedAppointment($user, '2026-10-19 14:00', ['label' => 'Ausländerbehörde']);
 
     $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9363&lng=6.9469')
         ->assertJsonPath('items.0.kind', 'appointment')
+        ->assertJsonPath('items.0.source', 'paperwork')
         ->assertJsonPath('items.0.official', true)
-        ->assertJsonPath('items.0.location', null)
+        ->assertJsonPath('items.0.location.label', 'Ausländerbehörde')
+        ->assertJsonPath('items.0.location.routable', false)
         ->assertJsonPath('items.0.duration_known', false)
         ->assertJsonPath('items.0.end_at', null)
         ->assertJsonPath('next_trip.status', 'unavailable')
@@ -383,4 +412,23 @@ test('trips between plans are checked or say they were not', function () {
         ->and($links[0])->toMatchArray(['from_id' => 'personal:a', 'to_id' => 'personal:b', 'gap_min' => 30, 'travel_min' => 12, 'basis' => 'walk', 'status' => 'ok'])
         ->and($links[1])->toMatchArray(['status' => 'not_checked', 'reason' => 'location_unknown', 'travel_min' => null])
         ->and($links[2])->toMatchArray(['status' => 'conflict', 'reason' => 'overlap']);
+});
+
+test('a recorded Paperwork appointment is an official plan with its own place and length, and its trip', function () {
+    $routes = dayRoutes();
+    $routes->arriveBy = [ride('2026-10-19', '13:14', '13:42')];
+    $user = User::factory()->onboarded()->create();
+    recordedAppointment($user, '2026-10-19 14:00', ['label' => 'Mülheim', 'lat' => 50.96103, 'lng' => 7.0048], 30, 'EU Blue Card');
+
+    $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9363&lng=6.9469')
+        ->assertJsonPath('items.0.source', 'paperwork')
+        ->assertJsonPath('items.0.title', 'EU Blue Card appointment')
+        ->assertJsonPath('items.0.official', true)
+        ->assertJsonPath('items.0.start_time', '14:00')
+        ->assertJsonPath('items.0.end_time', '14:30')
+        ->assertJsonPath('items.0.location.label', 'Mülheim')
+        ->assertJsonPath('items.0.location.routable', true)
+        ->assertJsonPath('next_trip.target.id', fn (string $id) => str_starts_with($id, 'appointment:'))
+        ->assertJsonPath('next_trip.margin_min', 10)
+        ->assertJsonPath('next_trip.leave_time', '13:14');
 });
