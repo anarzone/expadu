@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Venue;
 use App\Notifications\EventOccurrenceReminder;
 use App\Services\UserLocationService;
+use App\Support\EventOccurrencePresenter;
 use App\Transit\TravelTimes;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
@@ -395,4 +396,13 @@ test('due reminders are delivered once through the notification channel', functi
         1,
     );
     expect($reminder->refresh()->sent_at)->not->toBeNull();
+});
+
+test('the free chip shows only when the price fields say free', function () {
+    $presenter = app(EventOccurrencePresenter::class);
+    $guessed = Event::factory()->make(['chips' => ['free', 'solo-OK'], 'is_free' => false, 'price_text' => null]);
+    $free = Event::factory()->make(['chips' => [], 'is_free' => true]);
+
+    expect($presenter->chips($guessed))->toBe(['solo-OK'])
+        ->and($presenter->chips($free))->toBe(['free']);
 });
