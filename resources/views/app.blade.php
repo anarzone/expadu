@@ -1,33 +1,15 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta http-equiv="Cache-Control" content="no-cache">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
-        <script>
-            (function() {
-                const appearance = '{{ $appearance ?? "system" }}';
-
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    }
-                }
-            })();
-        </script>
-
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- Light only at launch: the page background paints before app.css. --}}
+        <meta name="color-scheme" content="light">
         <style>
             html {
                 background-color: #faf6ee;
-            }
-
-            html.dark {
-                background-color: #18170f;
             }
         </style>
 
@@ -53,8 +35,7 @@
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=1">
         <meta name="apple-mobile-web-app-title" content="Expadu">
         <link rel="manifest" href="/site.webmanifest">
-        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf6ee">
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#18170f">
+        <meta name="theme-color" content="#faf6ee">
 
         {{-- Preload only the faces painted above the fold on every app page:
              Geist 400 (body), 600 (nav, and 550 resolves up to it), 700 (page

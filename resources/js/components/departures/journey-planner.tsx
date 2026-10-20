@@ -1123,7 +1123,7 @@ function SwitchTripDialog({
                 }
             }}
         >
-            <DialogContent className="gap-3 rounded-2xl border-border bg-card sm:max-w-sm">
+            <DialogContent className="gap-3 rounded-2xl border-border bg-card md:max-w-sm">
                 <DialogHeader>
                     <DialogTitle className="font-sans text-xl">
                         Switch your trip?
@@ -1898,7 +1898,7 @@ export function JourneyPlanner({
             <section className="min-w-0 lg:border-l lg:border-border lg:pl-8">
                 <div className="mb-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                        <h2 className="truncate text-base font-semibold sm:text-lg">
+                        <h2 className="truncate text-base font-semibold md:text-lg">
                             Routes to {destination.name}
                         </h2>
                         <p
