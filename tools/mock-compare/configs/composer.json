@@ -549,7 +549,7 @@
             "mock": ".day-selector",
             "app": ".day-selector",
             "contentDiffers": true,
-            "ignoreReason": "Dots mark the days with a plan. The account has the sample day's plans (30 Sept, 1 and 3 Oct), as Your day shows; the mock's My Plans reads its own empty Composer state, so it draws none."
+            "ignoreReason": "Dots mark the days with a plan. The account has the sample day's coming plans (1 and 3 Oct), as Your day's Coming up shows; the mock's My Plans reads its own empty Composer state, so it draws none."
         },
         {
             "name": "week back",
@@ -564,9 +564,7 @@
         {
             "name": "day today",
             "mock": ".days button.is-today",
-            "app": ".days button.is-today",
-            "contentDiffers": true,
-            "ignoreReason": "Today has a plan in the account (the sample day), so its dot shows; the mock's Composer state has none."
+            "app": ".days button.is-today"
         },
         {
             "name": "date line",

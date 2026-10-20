@@ -671,6 +671,14 @@
         resize: vertical;
         min-height: 100px;
     }
+    /* Phones: a field under 16px makes iOS Safari zoom in when it takes focus,
+       so fields are 16px there (build, 20 Oct 2026); time fields keep their
+       larger size (discovery.css, place-sheet.css). */
+    @media (max-width: 700px) {
+        .form-field :is(input, select, textarea) {
+            font-size: 16px;
+        }
+    }
     .form-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -3499,9 +3507,11 @@
         .date-jump svg {
             display: none;
         }
+        /* 16px on phones, or iOS Safari zooms into the field (build, 20 Oct
+           2026). */
         .date-jump input {
-            font-size: var(--text-micro);
-            max-width: 110px;
+            font-size: 16px;
+            max-width: 150px;
         }
         .empty-day,
         .saved-empty {
