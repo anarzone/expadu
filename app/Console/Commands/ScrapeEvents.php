@@ -53,20 +53,30 @@ class ScrapeEvents extends Command
         $created = 0;
         $page = 1;
         $totalPages = 1;
+        $fetched = [];
 
         // koeln.de returns events chronologically, so the first page of 50 only
         // covers the next couple of days — the weekend never arrived. Page
         // through the whole 30-day window (Tribe reports total_pages).
         try {
             do {
-                $response = Http::timeout(15)
-                    ->withHeaders(['User-Agent' => 'Expadu/1.0 (Event Aggregator for Expats)'])
-                    ->get('https://www.koeln.de/wp-json/tribe/events/v1/events', [
-                        'per_page' => 50,
-                        'page' => $page,
-                        'start_date' => now()->toDateString(),
-                        'end_date' => now()->addDays(30)->toDateString(),
-                    ]);
+                // Pages come in first and are matched after, so one copy per
+                // occurrence can be chosen across all of them. A page that
+                // fails ends the paging; what came in is still used.
+                try {
+                    $response = Http::timeout(15)
+                        ->withHeaders(['User-Agent' => 'Expadu/1.0 (Event Aggregator for Expats)'])
+                        ->get('https://www.koeln.de/wp-json/tribe/events/v1/events', [
+                            'per_page' => 50,
+                            'page' => $page,
+                            'start_date' => now()->toDateString(),
+                            'end_date' => now()->addDays(30)->toDateString(),
+                        ]);
+                } catch (\Exception $e) {
+                    Log::warning("events:scrape — koeln.de page {$page} failed: ".$e->getMessage());
+
+                    break;
+                }
 
                 if (! $response->successful()) {
                     // A 400 past the last page is how Tribe signals "no more" —
@@ -78,89 +88,165 @@ class ScrapeEvents extends Command
                     break;
                 }
 
-                $events = $response->json('events', []);
+                $fetched = [...$fetched, ...$response->json('events', [])];
                 $totalPages = (int) $response->json('total_pages', 1);
-
-                foreach ($events as $ev) {
-                    $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
-                    if (! $title) {
-                        continue;
-                    }
-
-                    $startsAt = Carbon::parse($ev['start_date'] ?? now());
-                    if ($startsAt->isPast()) {
-                        continue;
-                    }
-
-                    // Dedupe on the source's own id when it has one; fall
-                    // back to title+date for sources without stable ids.
-                    $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
-                    $existingEvent = $sourceUid
-                        ? Event::query()->where('source', 'koeln.de')->where('source_uid', $sourceUid)->first()
-                        : null;
-                    $event = $existingEvent ?? new Event([
-                        'source' => 'koeln.de',
-                        'source_uid' => $sourceUid,
-                    ]);
-                    $isNew = ! $event->exists;
-                    $attributes = $this->koelnAttributes($ev, $title, $startsAt, $organiserId);
-                    $copyChanged = ! $isNew
-                        && ($event->title !== $attributes['title'] || $event->description !== $attributes['description']);
-                    $classifierInputChanged = ! $isNew && ($copyChanged
-                        || ! $event->starts_at?->equalTo($attributes['starts_at'])
-                        || ! $event->ends_at?->equalTo($attributes['ends_at'])
-                        || $event->location_name !== $attributes['location_name']
-                        || $event->address !== $attributes['address']
-                        || $event->price_text !== $attributes['price_text']
-                        || $event->is_free !== $attributes['is_free']);
-                    $venueChanged = ! $isNew
-                        && ($event->location_name !== $attributes['location_name'] || $event->address !== $attributes['address']);
-
-                    $event->fill($attributes);
-
-                    if ($copyChanged) {
-                        $event->fill([
-                            'title_en' => null,
-                            'description_en' => null,
-                            'language' => null,
-                        ]);
-                    }
-
-                    if ($classifierInputChanged) {
-                        $event->fill([
-                            'summary_en' => null,
-                            'tip_en' => null,
-                            'chips' => null,
-                            'relevance' => null,
-                            'classification_input_hash' => null,
-                        ]);
-                    }
-
-                    if ($venueChanged) {
-                        $event->venue_id = null;
-                    }
-
-                    $sourceChanged = $event->isDirty();
-                    $event->save();
-
-                    $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
-
-                    if ($isNew || $classifierInputChanged) {
-                        ProcessEventJob::dispatch($event);
-                    }
-
-                    if ($isNew || $sourceChanged) {
-                        $created++;
-                    }
-                }
-
                 $page++;
             } while ($page <= min($totalPages, self::KOELN_MAX_PAGES));
+
+            foreach ($this->oneCopyPerOccurrence($fetched) as $ev) {
+                $title = html_entity_decode(trim($ev['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+                if (! $title) {
+                    continue;
+                }
+
+                $startsAt = Carbon::parse($ev['start_date'] ?? now());
+                if ($startsAt->isPast()) {
+                    continue;
+                }
+
+                // koeln.de deletes and re-creates posts, so the same
+                // occurrence comes back under a new id (and sometimes a new
+                // page): match on the id, then the page, then the title and
+                // venue, all at the same start. A hidden copy is never revived.
+                $sourceUid = isset($ev['id']) ? (string) $ev['id'] : null;
+                $sourceUrl = is_string($ev['url'] ?? null) ? $ev['url'] : null;
+                $copies = fn () => Event::query()->where('source', 'koeln.de')->where('status', '<>', 'hidden');
+                $existingEvent = ($sourceUid ? $copies()->where('source_uid', $sourceUid)->first() : null)
+                    ?? ($sourceUrl ? $copies()->where('source_url', $sourceUrl)->where('starts_at', $startsAt)->latest('id')->first() : null)
+                    ?? $copies()->whereRaw('lower(title) = ?', [mb_strtolower(mb_substr($title, 0, 255))])->where('starts_at', $startsAt)->latest('id')->get()
+                        ->first(fn (Event $copy) => $this->sameVenue($copy->location_name, is_array($ev['venue'] ?? null) ? ($ev['venue']['venue'] ?? null) : null));
+                $event = $existingEvent ?? new Event(['source' => 'koeln.de']);
+                $event->source_uid = $sourceUid;
+                $isNew = ! $event->exists;
+                $attributes = $this->koelnAttributes($ev, $title, $startsAt, $organiserId);
+                $copyChanged = ! $isNew
+                    && ($event->title !== $attributes['title'] || $event->description !== $attributes['description']);
+                $classifierInputChanged = ! $isNew && ($copyChanged
+                    || ! $event->starts_at?->equalTo($attributes['starts_at'])
+                    || ! $event->ends_at?->equalTo($attributes['ends_at'])
+                    || $event->location_name !== $attributes['location_name']
+                    || $event->address !== $attributes['address']
+                    || $event->price_text !== $attributes['price_text']
+                    || $event->is_free !== $attributes['is_free']);
+                $venueChanged = ! $isNew
+                    && ($event->location_name !== $attributes['location_name'] || $event->address !== $attributes['address']);
+
+                $event->fill($attributes);
+
+                if ($copyChanged) {
+                    $event->fill([
+                        'title_en' => null,
+                        'description_en' => null,
+                        'language' => null,
+                    ]);
+                }
+
+                if ($classifierInputChanged) {
+                    $event->fill([
+                        'summary_en' => null,
+                        'tip_en' => null,
+                        'chips' => null,
+                        'relevance' => null,
+                        'classification_input_hash' => null,
+                    ]);
+                }
+
+                if ($venueChanged) {
+                    $event->venue_id = null;
+                }
+
+                $sourceChanged = $event->isDirty();
+                $event->save();
+
+                $this->captureKoelnImage($event, $ev, $captureMediaCandidate);
+
+                if ($isNew || $classifierInputChanged) {
+                    ProcessEventJob::dispatch($event);
+                }
+
+                if ($isNew || $sourceChanged) {
+                    $created++;
+                }
+            }
         } catch (\Exception $e) {
             Log::warning('events:scrape — koeln.de API error: '.$e->getMessage());
         }
 
         return $created;
+    }
+
+    /**
+     * koeln.de can list one occurrence twice at once (a re-created post next
+     * to the old one). Keep one copy per title, start and venue, the newest;
+     * a copy without a venue ("Siehe Beschreibung") goes when a copy with one
+     * exists. Same title and time at different venues stay apart.
+     *
+     * @param  list<array<string, mixed>>  $events
+     * @return list<array<string, mixed>>
+     */
+    private function oneCopyPerOccurrence(array $events): array
+    {
+        $venue = fn (array $ev): ?string => $this->knownVenue(is_array($ev['venue'] ?? null) ? ($ev['venue']['venue'] ?? null) : null);
+
+        return collect($events)
+            ->groupBy(fn (array $ev) => mb_strtolower(html_entity_decode(trim((string) ($ev['title'] ?? '')), ENT_QUOTES, 'UTF-8')).'|'.($ev['start_date'] ?? ''))
+            ->flatMap(function ($copies) use ($venue) {
+                $withVenue = $copies->filter(fn (array $ev) => $venue($ev) !== null);
+                $kept = $withVenue->isNotEmpty() ? $withVenue->groupBy(fn (array $ev) => mb_strtolower($venue($ev))) : collect([$copies]);
+
+                // values(): keyed by venue, two events at one venue would
+                // overwrite each other when the groups are flattened.
+                return $kept->map(fn ($same) => $same->sortByDesc(fn (array $ev) => (int) ($ev['id'] ?? 0))->first())->values();
+            })
+            ->values()
+            ->all();
+    }
+
+    private function knownVenue(mixed $venue): ?string
+    {
+        $venue = is_string($venue) ? trim(html_entity_decode($venue, ENT_QUOTES, 'UTF-8')) : '';
+
+        return in_array(mb_strtolower($venue), ['', 'siehe beschreibung'], true) ? null : $venue;
+    }
+
+    private function sameVenue(mixed $stored, mixed $incoming): bool
+    {
+        $stored = $this->knownVenue($stored);
+        $incoming = $this->knownVenue($incoming);
+
+        return $stored === null || $incoming === null || mb_strtolower($stored) === mb_strtolower($incoming);
+    }
+
+    /**
+     * koeln.de sends the whole rendered page block: an empty date line (the
+     * stray "|"), the text, ticket links and a "Zum Kalender hinzufügen"
+     * menu. Keep the text, one line per block.
+     */
+    private function koelnDescription(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        $document = new \DOMDocument;
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML('<?xml encoding="utf-8"?><div>'.$html.'</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        $xpath = new \DOMXPath($document);
+        $chrome = $xpath->query('//*[contains(@class, "tribe-events-schedule") or contains(@class, "tribe-events-c-subscribe-dropdown")
+            or contains(@class, "tribe-block__events-link") or contains(@class, "tribe-events-c-ical")]|//script|//style|//svg|//button');
+        foreach (iterator_to_array($chrome ?: []) as $node) {
+            $node->parentNode?->removeChild($node);
+        }
+
+        $markup = (string) $document->saveHTML();
+        $markup = preg_replace('/<br\s*\/?>|<\/(p|div|li|h[1-6]|ul|ol|tr|section|blockquote)>/i', "\n", $markup) ?? $markup;
+        $text = html_entity_decode(strip_tags($markup), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $lines = array_filter(array_map(fn (string $line) => trim(preg_replace('/[ \t\x{00A0}]+/u', ' ', $line) ?? ''), explode("\n", $text)));
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -173,7 +259,7 @@ class ScrapeEvents extends Command
     {
         // Preserve the complete German source. The classifier uses a bounded
         // excerpt for categorisation and translates the full text in chunks.
-        $description = trim(strip_tags((string) ($sourceEvent['description'] ?? '')));
+        $description = $this->koelnDescription((string) ($sourceEvent['description'] ?? ''));
         $venue = $sourceEvent['venue']['venue'] ?? null;
         $address = $sourceEvent['venue']['address'] ?? null;
         $sourceUrl = $sourceEvent['url'] ?? null;
