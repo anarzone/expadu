@@ -280,12 +280,6 @@
                 item.dueDate === day.date &&
                 item.targetDate >= day.date,
         );
-        const composer = content.composer;
-        const todayDecision =
-            ['proposal', 'selections'].includes(composer?.kind) &&
-            composer.date === day.date &&
-            (!composer.items?.length ||
-                composer.items.some((item) => unfinished(item, now)));
         const events = day.events.filter((item) => {
             if (item.date !== day.date || !unfinished(item, now)) return false;
             const start = minutes(item.start),
@@ -313,15 +307,13 @@
             ? 'agenda'
             : preparation
               ? 'preparation'
-              : todayDecision
-                ? 'composer'
-                : highlight
-                  ? 'event'
-                  : active.length
-                    ? 'agenda'
-                    : day.firstVisit
-                      ? 'essentials'
-                      : 'discovery';
+              : highlight
+                ? 'event'
+                : active.length
+                  ? 'agenda'
+                  : day.firstVisit
+                    ? 'essentials'
+                    : 'discovery';
         const order = [
             ...(active.length
                 ? ['agenda', 'essentials']
@@ -337,10 +329,6 @@
             const index = order.indexOf(lead);
             if (index >= 0) order.splice(index, 1);
             order.unshift(lead);
-        }
-        if (todayDecision && lead !== 'composer') {
-            order.splice(order.indexOf('composer'), 1);
-            order.splice(1, 0, 'composer');
         }
         if (preparation && lead !== 'preparation')
             order.splice(1, 0, 'preparation');
@@ -365,7 +353,6 @@
             preparation,
             events,
             order,
-            todayDecision,
             emptyLabel: 'No plans added for today',
         };
     }
@@ -449,71 +436,21 @@
         }
         return null;
     }
-    function decision(composer, day) {
-        if (!composer) return null;
-        if (composer.kind === 'message')
+    // What to pick up in Composer: an unsent message or the conversation.
+    function decision(composer) {
+        if (composer?.kind === 'message')
             return {
                 kind: 'message',
                 title: 'Your message is still unsent',
                 detail: 'Continue writing when you’re ready.',
             };
-        if (composer.kind === 'conversation')
+        if (composer?.kind === 'conversation')
             return {
                 kind: 'conversation',
                 title: 'Continue the conversation',
                 detail: 'Your previous choices stay with you.',
             };
-        const items = composer.items || [];
-        if (!items.length)
-            return {
-                kind: 'changes',
-                title: 'Review the changes to your plan',
-                detail: 'Your saved plan stays as it is until you confirm.',
-            };
-        if (composer.pending)
-            return {
-                kind: 'selections',
-                count: composer.pending,
-                title: `${composer.pending} more ${composer.pending === 1 ? 'selection' : 'selections'} to review`,
-                detail: 'Bring them into your draft before confirming.',
-            };
-        const passed =
-            day &&
-            composer.date === day.date &&
-            items.filter(
-                (item) =>
-                    minutes(item.start) !== null &&
-                    minutes(item.start) < minutes(day.time),
-            );
-        if (passed?.length)
-            return {
-                kind: 'passed-time',
-                count: passed.length,
-                title: `Recheck ${passed.length === 1 ? 'the start time' : 'the start times'}`,
-                detail: passed
-                    .slice(0, 2)
-                    .map((item) => `${item.title} · ${item.start} has passed`)
-                    .join(' · '),
-            };
-        const missing = items.filter(
-            (item) => root.TodayNext.minutes(item.start) === null,
-        );
-        if (missing.length)
-            return {
-                kind: 'time',
-                count: missing.length,
-                title: `Choose ${missing.length === 1 ? 'a time' : `${missing.length} times`}`,
-                detail: missing
-                    .slice(0, 2)
-                    .map((item) => item.title)
-                    .join(' · '),
-            };
-        return {
-            kind: 'review',
-            count: items.length,
-            title: `${items.length} ${items.length === 1 ? 'activity' : 'activities'} ready to review`,
-            detail: 'Your draft has not been added to My plans.',
-        };
+        return null;
     }
     function updates(feed, city, date) {
         if (!feed?.connected || !root.TodayContinuity.validDate(date))
