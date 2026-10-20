@@ -113,7 +113,7 @@ export function BackButton() {
             onClick={() => router.visit(origin.url)}
         >
             <Icon name="back" variant="line" />
-            <span>Back to {origin.name}</span>
+            <span>{`Back to ${origin.name}`}</span>
         </button>
     );
 }
@@ -401,21 +401,18 @@ export function YourDay({
                 <BackButton />
             </div>
             <h2 id="composer-day-title">
-                Your {berlin(day.now, { weekday: 'long' })}
+                {`Your ${berlin(day.now, { weekday: 'long' })}`}
             </h2>
             <p className="composer-day-note">
-                {berlin(day.now, {
+                {`${berlin(day.now, {
                     weekday: 'short',
                     day: 'numeric',
                     month: 'short',
-                })}{' '}
-                ·{' '}
-                {berlin(day.now, {
+                })} · ${berlin(day.now, {
                     hour: '2-digit',
                     minute: '2-digit',
                     hourCycle: 'h23',
-                })}
-                . Composer plans around this. Tap one to ask.
+                })}. Composer plans around this. Tap one to ask.`}
             </p>
             {facts.length > 0 && (
                 <div className="day-items">
@@ -438,8 +435,8 @@ export function YourDay({
                             key={plan.date}
                             onClick={() => onPanel('plans')}
                         >
-                            <strong>{plan.label}</strong> · {plan.first.name},{' '}
-                            {plan.first.start_time}
+                            <strong>{plan.label}</strong>
+                            {` · ${plan.first.name}, ${plan.first.start_time}`}
                         </button>
                     ))}
                 </div>

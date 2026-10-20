@@ -783,18 +783,18 @@ function History({
                 >
                     <strong>{conversation.title}</strong>
                     <small>
-                        {new Intl.DateTimeFormat('en-GB', {
+                        {`${new Intl.DateTimeFormat('en-GB', {
                             timeZone: 'Europe/Berlin',
                             day: 'numeric',
                             month: 'short',
-                        }).format(new Date(conversation.created_at))}{' '}
-                        ·{' '}
-                        {plural(
+                        }).format(
+                            new Date(conversation.created_at),
+                        )} · ${plural(
                             conversation.messages.filter(
                                 (message) => message.role === 'user',
                             ).length,
                             'message',
-                        )}
+                        )}`}
                     </small>
                 </button>
             ))}

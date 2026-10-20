@@ -78,9 +78,7 @@
                 1280,
                 1440,
                 1512
-            ],
-            "contentDiffers": true,
-            "ignoreReason": "One glyph rasterises differently (same text, font, styles and box); see the image."
+            ]
         },
         {
             "name": "your day note",
@@ -209,9 +207,7 @@
                 1280,
                 1440,
                 1512
-            ],
-            "contentDiffers": true,
-            "ignoreReason": "One glyph rasterises differently (same text, font, styles and box); see the image."
+            ]
         },
         {
             "name": "coming up row",
@@ -222,9 +218,7 @@
                 1280,
                 1440,
                 1512
-            ],
-            "contentDiffers": true,
-            "ignoreReason": "One glyph rasterises differently (same text, font, styles and box); see the image."
+            ]
         },
         {
             "name": "day tools",
