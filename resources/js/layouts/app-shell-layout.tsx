@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { FlashToast } from '@/components/flash-toast';
 import { ShellHeader } from '@/components/shell/shell-header';
+import { OnYourWayBar } from '@/components/travel/on-your-way-bar';
 import { useBackgroundLocation } from '@/hooks/use-background-location';
 import { useShellScroll } from '@/hooks/use-shell-scroll';
 import { useTracker } from '@/hooks/use-tracker';
@@ -59,8 +60,8 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
                 Skip to content
             </a>
             {!bare && <ShellHeader />}
-            {/* The On your way bar (Travel's OnYourWayBar, session 3 F6)
-                mounts here. */}
+            {/* The trip you're on, on every page (Travel's own bar). */}
+            {!bare && <OnYourWayBar />}
             {children}
             <FlashToast />
         </>
