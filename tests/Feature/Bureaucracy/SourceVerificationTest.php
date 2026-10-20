@@ -288,6 +288,9 @@ it('publishes an automatically checked card only after its source check passes, 
 
 it('withholds an unconfirmed card from a release without blocking the rest', function () {
     $this->artisan('bureaucracy:import-tasks')->assertSuccessful();
+    // Only the family permit card has been checked against its pages so far.
+    fakeOfficialPages();
+    $this->artisan('bureaucracy:verify-sources --key=case.family.first_permit.prepare')->assertSuccessful();
 
     $artifact = app(CatalogueCompiler::class)->compile(Task::query()->whereNotNull('key')->orderBy('key')->get()->all());
 

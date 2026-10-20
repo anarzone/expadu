@@ -294,11 +294,11 @@ tasks:
       - id: two-weeks
         states: within two weeks after moving into the dwelling
         source: '§17 BMG'
-        quote: Wer eine Wohnung bezieht, hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden.
+        quote: hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden
       - id: deadline
         covers: deadline
         source: '§17 BMG'
-        quote: Wer eine Wohnung bezieht, hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden.
+        quote: hat sich innerhalb von zwei Wochen nach dem Einzug bei der Meldebehörde anzumelden
       - id: passport
         states: Bring the passport
         source: 'Stadt Köln · Anmeldung'
