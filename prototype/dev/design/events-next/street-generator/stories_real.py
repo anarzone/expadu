@@ -138,7 +138,7 @@ LOGIC = r'''
       getStyle: tab === 'get' ? 'background:#fffdf8;box-shadow:0 2px 6px -3px #0004;font-weight:700' : '',
       toAbout: go({ tab: 'about' }), toPlan: go({ tab: 'plan' }), toGet: go({ tab: 'get' }),
       rain: !past && !!e.outdoors && k.rain > 0.3, rainText: 'Rain likely at ' + e.start.slice(0, 2) + ':00 · sample forecast',
-      fit: past ? 'Already happened. Captured for Tuesday 8 September 2026.' : 'It starts ' + gapText + ' after your Blue Card appointment ends.',
+      fit: past ? 'Already happened. Captured for Tuesday 8 September 2026.' : 'It starts ' + gapText + ' after your EU Blue Card appointment ends.',
       fitDot: past ? '#b9ab90' : '#00a0b5',
       venue: e.venue, area: e.area,
       about: e.description || e.about || '', hasAbout: !!(e.description || e.about), aboutSource: e.aboutSource || '', hasAboutSource: !!e.aboutSource,
@@ -155,12 +155,12 @@ LOGIC = r'''
       // Plan.
       month: 'SEPT', dnum: past ? '8' : '30', dayLabel, start: e.start, end: e.end || 'Not listed', past,
       duration: e.end ? (() => { const d = mins(e.end) - mins(e.start); return (Math.floor(d / 60) ? Math.floor(d / 60) + ' hr' : '') + (d % 60 ? ' ' + (d % 60) + ' min' : ''); })() : 'Length not listed',
-      yourDay: past ? 'This already happened' : 'Blue Card appointment 14:00–14:30' + (Object.keys(s.planned || {}).length ? ' · ' + Object.keys(s.planned || {}).length + ' event' + (Object.keys(s.planned || {}).length === 1 ? '' : 's') + ' planned' : ''),
+      yourDay: past ? 'This already happened' : 'EU Blue Card appointment 14:00–14:30' + (Object.keys(s.planned || {}).length ? ' · ' + Object.keys(s.planned || {}).length + ' event' + (Object.keys(s.planned || {}).length === 1 ? '' : 's') + ' planned' : ''),
       planned, notPlanned: !planned && !past, canPlan: !past,
       plan: () => { const p = Object.assign({}, s.planned); if (p[e.n]) delete p[e.n]; else p[e.n] = true; this.setState({ planned: p }); },
       planLabel: planned ? 'In your plan' : 'Add to plan', planBtnStyle: planned ? 'background:#fffdf8;color:#00566a;border:1.5px solid #00566a' : 'background:#c23b0e;color:#fff;border:0',
       // Get there.
-      from: past ? 'Not available for a past event' : 'After Blue Card appointment, which ends at 14:30', to: e.venue, arriveBy: 'Arrive ' + e.start,
+      from: past ? 'Not available for a past event' : 'After EU Blue Card appointment, which ends at 14:30', to: e.venue, arriveBy: 'Arrive ' + e.start,
       openPlanner: () => { clearTimeout(this._toastT); this.setState({ toast: 'Travel is its own page in the mock. This board shows Events.' }); this._toastT = setTimeout(() => this.setState({ toast: '' }), 2800); },
       // Footer.
       saved: !!(s.saved || {})[e.n], saveLabel: (s.saved || {})[e.n] ? 'Saved' : 'Save for later',

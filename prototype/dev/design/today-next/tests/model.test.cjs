@@ -15,7 +15,7 @@ test('day brief follows the next active plan and does not reuse a finished plan'
         activityId: day.agenda[0].id,
         label: 'Next departure',
         value: '13:24',
-        detail: 'Blue Card appointment · 14:00',
+        detail: 'EU Blue Card appointment · 14:00',
     });
     day.time = '15:00';
     assert.equal(M.dayBrief(day).kind, 'open');
@@ -47,7 +47,7 @@ test('coming-up records stay outside today and suggestion drafts preserve existi
     assert.equal(original.prompt, 'Keep this question.');
     assert.equal(
         M.suggestion(day, 'day'),
-        'Help me plan the rest of Wednesday 30 September. I already have Blue Card appointment in Mülheim at 14:00.',
+        'Help me plan the rest of Wednesday 30 September. I already have EU Blue Card appointment in Mülheim at 14:00.',
     );
     assert.equal(
         M.suggestion({ ...day, agenda: [] }, 'day'),
@@ -138,7 +138,7 @@ test('Composer receives unscheduled context with exact appointment/date and orig
     assert.equal(result.prompt, before.prompt);
     assert.equal(
         M.withContext({}, day.agenda[0], day.date).prompt,
-        'How do I get to Mülheim by 14:00 on Wednesday 30 September? It’s for my Blue Card appointment.',
+        'How do I get to Mülheim by 14:00 on Wednesday 30 September? It’s for my EU Blue Card appointment.',
     );
     assert.equal(result.draft[0].id, 'existing');
     assert.equal(result.draft[1].scheduled, false);
