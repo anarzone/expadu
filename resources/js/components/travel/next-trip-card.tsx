@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { sourceLabel } from '@/components/ui/state-notice';
 import type { NextTrip, TripOption } from '@/types/day';
 import type { Journey, JourneyLeg } from '@/types/transit';
 import { TravelChip } from './labels';
@@ -183,7 +184,7 @@ function optionDetail(option: TripOption, trip: NextTrip): string {
     );
 
     if (option.ride && option.time_basis === 'scheduled') {
-        parts.push('timetable time');
+        parts.push(sourceLabel({ source: 'scheduled' }));
     }
 
     return parts.join(' · ');
@@ -352,7 +353,7 @@ export function NextTripCard({
         ) : null,
         ride && trip.time_basis === 'scheduled' ? (
             <TravelChip key="basis" kind="unsure" icon={icons.unsure} size="sm">
-                Timetable times · not live
+                {sourceLabel({ source: 'scheduled' })}
             </TravelChip>
         ) : null,
     ].filter(Boolean);
