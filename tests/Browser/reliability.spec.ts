@@ -195,7 +195,7 @@ test('logout clears encrypted private page history on a shared browser', async (
             )
             .toBe(true);
         await page
-            .getByRole('button', { name: 'Account menu', exact: true })
+            .getByRole('button', { name: 'Your account', exact: true })
             .click();
         await page
             .locator('[data-test="logout-button"]')

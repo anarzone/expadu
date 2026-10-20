@@ -114,7 +114,7 @@ test.describe('Dashboard (Today)', () => {
         expect(errors).toHaveLength(0);
     });
 
-    test('keeps five labelled top destinations and account settings accessible', async ({
+    test('keeps four labelled sections and account settings accessible', async ({
         page,
     }) => {
         await page.goto('/dashboard');
@@ -130,13 +130,12 @@ test.describe('Dashboard (Today)', () => {
             'Events',
             'Paperwork',
             'Travel',
-            'Services',
         ]);
         await expect(nav.getByRole('link', { name: 'Today' })).toHaveAttribute(
             'aria-current',
             'page',
         );
-        await page.getByRole('button', { name: 'Account menu' }).click();
+        await page.getByRole('button', { name: 'Your account' }).click();
         await expect(
             page.getByRole('menuitem', { name: 'Settings' }),
         ).toBeVisible();
