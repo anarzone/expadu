@@ -473,11 +473,11 @@
                 .reverse()
                 .map(
                     (ch) =>
-                        `<button class="history-section" data-open-section="${E(ch.id)}" aria-current="${ch.id === state.conversation.currentId}"><strong>${E(ch.title)}</strong><small>${E(new Date(ch.startedAt).toDateString() === new Date().toDateString() ? new Date(M.today() + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : new Date(ch.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} · ${((n) => `${n} message${n === 1 ? '' : 's'}`)(ch.entries.filter((e) => e.role === 'user').length)}</small>${ch.summary ? `<small>${E(ch.summary.replace('Deterministic topic summary (not AI memory). ', ''))}</small>` : ''}</button>`,
+                        `<button class="history-section" data-open-section="${E(ch.id)}" aria-current="${ch.id === state.conversation.currentId}"><strong>${E(ch.title)}</strong><small>${E(new Date(ch.startedAt).toDateString() === new Date().toDateString() ? new Date(M.today() + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : new Date(ch.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} · ${((n) => `${n} message${n === 1 ? '' : 's'}`)(ch.entries.filter((e) => e.role === 'user').length)}</small></button>`,
                 )
                 .join(
                     '',
-                )}<p class="history-intro">Sample responses · history stays in this browser. Summaries list recent topics; they do not replace your original messages.</p></div>`;
+                )}<p class="history-intro">History stays in your account. Earlier conversations are not used as automatic AI memory.</p></div>`;
             return;
         }
         const scroll = drawer?.querySelector('.panel-body')?.scrollTop || 0;
