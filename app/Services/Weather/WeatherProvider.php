@@ -21,8 +21,12 @@ interface WeatherProvider
      *     humidity: float|null,
      *     precipitation: float,
      *   },
-     *   hourly: list<array{hour: int, precipitation: float}>,
+     *   hourly: list<array{hour: int, precipitation: float, time?: string|null, precipitation_probability?: int|null, temperature?: float|null, cloud_cover?: int|null, visibility?: int|null, icon?: string|null}>,
+     *   sun?: array<string, array{sunrise: string|null, sunset: string|null}>,
      * }|null
+     *
+     * `time` is the hour's instant (ISO 8601, Europe/Berlin) where the provider
+     * gives one; the extra fields are null when it doesn't measure them.
      */
     public function fetch(float $lat, float $lng): ?array;
 

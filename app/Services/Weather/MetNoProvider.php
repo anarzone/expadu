@@ -76,7 +76,7 @@ class MetNoProvider implements WeatherProvider
     }
 
     /**
-     * @return list<array{hour: int, precipitation: float}>
+     * @return list<array<string, mixed>>
      */
     private function buildHourly(array $timeseries): array
     {
@@ -95,9 +95,18 @@ class MetNoProvider implements WeatherProvider
                 break;
             }
 
+            $details = $entry['data']['instant']['details'] ?? [];
+            $symbol = $entry['data']['next_1_hours']['summary']['symbol_code'] ?? null;
             $hourly[] = [
                 'hour' => $local->hour,
+                'time' => $local->toIso8601String(),
                 'precipitation' => (float) ($entry['data']['next_1_hours']['details']['precipitation_amount'] ?? 0),
+                'precipitation_probability' => null,
+                'temperature' => is_numeric($details['air_temperature'] ?? null) ? round((float) $details['air_temperature'], 1) : null,
+                'cloud_cover' => is_numeric($details['cloud_area_fraction'] ?? null) ? (int) round((float) $details['cloud_area_fraction']) : null,
+                // The compact feed has no visibility.
+                'visibility' => null,
+                'icon' => is_string($symbol) ? $this->symbolToIcon($symbol) : null,
             ];
         }
 

@@ -5,6 +5,7 @@
 | group in routes/web.php.
 */
 
+use App\Http\Controllers\Api\DayController;
 use App\Http\Controllers\Api\GeocodeController;
 use App\Http\Controllers\Api\JourneySuggestController;
 use App\Http\Controllers\Api\NearbyDeparturesController;
@@ -30,6 +31,9 @@ Route::delete('api/saved-journeys/{savedJourney}', [SavedJourneyController::clas
 // Live trip session — persists the chosen journey across screens/closes.
 Route::post('api/trip/start', [TripController::class, 'start'])->name('api.trip.start');
 Route::post('api/trip/end', [TripController::class, 'end'])->name('api.trip.end');
+// The signed-in person's day (DayProjection); plans the next trip, so it
+// shares the journey planner's rate limit.
+Route::get('api/day', DayController::class)->middleware('throttle:journey')->name('api.day');
 
 // Live departures (KVB-style board)
 Route::get('timetable', TimetableController::class)->name('timetable');

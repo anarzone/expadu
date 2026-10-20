@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Day\DayProjection;
 use App\Models\JourneyRecent;
 use App\Models\UserPlace;
 use App\Services\GtfsDepartureService;
@@ -45,6 +46,8 @@ class TimetableController extends Controller
                 return $boards;
             }),
             'locationRequired' => ! $location->hasOrigin(),
+            // Your next thing and My day: the shared server-side day projection.
+            'day' => DayProjection::deferred($request),
             // Saved places (Home / Work / pins) offered as one-tap journey
             // destinations in the "Where to?" card. Unlike the Places "From"
             // picker, coordinates are sent to the client here because the journey
