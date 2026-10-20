@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Day\DayProjection;
+use App\Home\TodayPaperwork;
 use App\Http\Controllers\Api\FavouriteStopController;
 use App\Services\KvbApiService;
 use App\Services\UserLocationService;
@@ -36,6 +37,10 @@ class HomeFeedController extends Controller
                 return $location->hasOrigin() ? $nearby->closest((float) $location->lat, (float) $location->lng) : null;
             }, 'station'),
             'stop' => $stop,
+            // The deadline strip and the Paperwork panel: the reviewed v2
+            // plan's urgent date and next step (TodayPaperwork).
+            // Same group as the day, so the strip never pushes the day down later.
+            'paperwork' => Inertia::defer(fn () => app(TodayPaperwork::class)->for($request->user()), 'day'),
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
         ]);
     }

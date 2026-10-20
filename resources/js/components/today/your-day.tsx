@@ -3,6 +3,8 @@ import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
 import { changeDay, failure } from '@/components/today/day-commands';
 import { LeaveNow } from '@/components/today/leave-now';
+import { WhatToBring } from '@/components/today/paperwork';
+import type { TodayPaperwork } from '@/components/today/paperwork';
 import {
     ItemStatus,
     PlanDetailsSheet,
@@ -37,7 +39,14 @@ const dateLine = (day: DayProjection) =>
 
 const isDone = (item: DayItem) => item.completed || item.state === 'elapsed';
 
-export function YourDay({ day }: { day: DayProjection }) {
+export function YourDay({
+    day,
+    paperwork,
+}: {
+    day: DayProjection;
+    /** Paperwork's processes, for What to bring under an appointment. */
+    paperwork?: NonNullable<TodayPaperwork>['processes'];
+}) {
     const [adding, setAdding] = useState(false);
     const [details, setDetails] = useState<DayItem | null>(null);
     // Kept after closing so Edit plan can slide away with its words in it.
@@ -138,6 +147,18 @@ export function YourDay({ day }: { day: DayProjection }) {
                                     onEdit={() => edit(item)}
                                     onDone={() => void markDone(item, true)}
                                     onRemove={() => void remove(item)}
+                                    bring={
+                                        item.source === 'paperwork' &&
+                                        item.process_id !== null ? (
+                                            <WhatToBring
+                                                process={
+                                                    paperwork?.[
+                                                        String(item.process_id)
+                                                    ]
+                                                }
+                                            />
+                                        ) : null
+                                    }
                                 >
                                     {day.next_trip?.target.id === item.id && (
                                         <LeaveNow
@@ -205,7 +226,7 @@ export function YourDay({ day }: { day: DayProjection }) {
                         className="add-plan text-action"
                         onClick={() => setAdding(true)}
                     >
-                        <Icon name="plus" variant="line" />
+                        <Icon name="plus" />
                         Add a plan
                     </button>
                 </div>
@@ -248,6 +269,8 @@ type AgendaItemProps = {
     onEdit: () => void;
     onDone: () => void;
     onRemove: () => void;
+    /** What to bring, for an appointment from Paperwork. */
+    bring?: ReactNode;
     children?: ReactNode;
 };
 
@@ -258,6 +281,7 @@ function AgendaItem({
     onEdit,
     onDone,
     onRemove,
+    bring,
     children,
 }: AgendaItemProps) {
     const workspace = item.source === 'workspace';
@@ -285,6 +309,7 @@ function AgendaItem({
                 <div className="status-row">
                     <ItemStatus item={item} />
                 </div>
+                {bring}
                 <AnchoredMenu
                     label={`${item.title}: options`}
                     head={false}

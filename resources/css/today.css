@@ -27,8 +27,12 @@
     color: var(--color-attention-text);
 }
 .deadline-symbol svg {
-    width: 22px;
-    height: 22px;
+    width: 21px;
+    height: 21px;
+}
+.deadline-copy {
+    display: grid;
+    gap: 4px;
 }
 .deadline-copy strong {
     display: block;
@@ -40,11 +44,12 @@
     display: block;
     color: var(--color-text-soft);
     font-size: var(--text-small);
+    line-height: 1.35;
 }
 .deadline-strip > svg {
     width: 18px;
     height: 18px;
-    color: var(--color-text-soft);
+    color: var(--color-attention-text);
 }
 
 /* ── The canvas ─────────────────────────────────────────────────────── */
@@ -607,6 +612,109 @@ a.plan-link:hover {
     background: var(--color-bg-hover);
 }
 
+/* ── Paperwork: the next step and its documents (the mock's
+   .paperwork-panel) ─────────────────────────────────────────────────── */
+.paperwork-panel .section-head {
+    align-items: start;
+    margin: 0;
+}
+.section-tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.section-tools .record-label {
+    max-width: 74px;
+    line-height: 15.4px;
+}
+.paperwork-focus {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px -8px 12px;
+    padding: 8px;
+    border-radius: var(--radius-lg);
+    color: var(--color-text);
+    text-decoration: none;
+}
+.paperwork-focus:hover {
+    background: var(--color-paper-bg-quiet);
+}
+.paperwork-copy h3 {
+    margin: 8px 0 7px;
+    font-size: clamp(var(--text-title-sm), 2vw, var(--text-title-lg));
+    font-weight: var(--weight-bold);
+    line-height: 1.12;
+    letter-spacing: -0.8px;
+}
+.paperwork-copy p {
+    color: var(--color-text-soft);
+    font-size: var(--text-control);
+}
+.document-progress {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex: 0 0 78px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: conic-gradient(
+        var(--color-paper-progress) var(--progress),
+        var(--color-paper-track) var(--progress)
+    );
+}
+.document-progress::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 7px;
+    border-radius: 50%;
+    background: var(--color-paper-inset);
+}
+.document-progress strong {
+    color: var(--color-paper-ink);
+    font-size: 28px;
+    line-height: 33.6px;
+}
+.document-progress small {
+    color: var(--color-paper-ink-soft);
+    font-size: var(--text-control);
+    font-weight: var(--weight-regular);
+    line-height: 16.8px;
+}
+.document-progress span {
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+.paperwork-followups {
+    display: grid;
+    gap: 8px;
+}
+.situation-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 44px;
+    padding: 2px 12px;
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-small);
+    text-decoration: none;
+}
+.situation-link span {
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.situation-link span::after {
+    content: ' →';
+}
+
 /* ── What's next: the city's help (the mock's .practical-surface) ────── */
 .practical-surface {
     position: relative;
@@ -619,7 +727,6 @@ a.plan-link:hover {
 .city-help {
     position: relative;
     display: grid;
-    grid-column: 2;
     grid-template-columns: auto minmax(0, 1fr);
     gap: 0 12px;
     align-content: start;

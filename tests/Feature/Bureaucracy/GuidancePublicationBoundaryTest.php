@@ -22,6 +22,7 @@ use App\ContextEngine\ContextNotificationFactory;
 use App\ContextEngine\Evaluators\BureaucracyEvaluator;
 use App\Home\CurrentBureaucracyPlan;
 use App\Home\DiscoveryFeed;
+use App\Home\TodayPaperwork;
 use App\Http\Controllers\BureaucracyController;
 use App\Models\BureaucracyCase;
 use App\Models\Task;
@@ -304,6 +305,8 @@ test('a prebuilt home context cannot replay withdrawn rule text', function (stri
     $context = homeContext($user, ['bureaucracyPlan' => app(AccountHolderPlan::class)->for($user)]);
     $visible = fn () => match ($surface) {
         'paperwork' => collect(app(DiscoveryFeed::class)->for($context))->contains('key', 'paperwork'),
+        // Today's deadline strip and Paperwork panel read the live plan.
+        'today' => (fn (?array $today) => $today !== null && ($today['focus'] !== null || $today['strip'] !== null))(app(TodayPaperwork::class)->for($user)),
     };
     expect($visible())->toBeTrue();
     match ($change) {
@@ -317,7 +320,7 @@ test('a prebuilt home context cannot replay withdrawn rule text', function (stri
     };
 
     expect($visible())->toBeFalse();
-})->with(['paperwork'])->with(['withdrawal', 'content edit', 'city', 'verification', 'inactive dossier', 'retired person', 'facts']);
+})->with(['paperwork', 'today'])->with(['withdrawal', 'content edit', 'city', 'verification', 'inactive dossier', 'retired person', 'facts']);
 
 test('home never trusts a foreign or tampered plan snapshot', function (string $change) {
     $user = publicationBoundaryUser();
