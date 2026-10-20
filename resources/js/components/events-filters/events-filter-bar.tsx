@@ -48,6 +48,18 @@ function Glyph({ name }: { name: keyof typeof glyphs }) {
     );
 }
 
+// The page's width, for the calendar that spans a phone's page.
+const usePageWidth = () =>
+    useSyncExternalStore(
+        (notify) => {
+            window.addEventListener('resize', notify);
+
+            return () => window.removeEventListener('resize', notify);
+        },
+        () => window.innerWidth,
+        () => 0,
+    );
+
 const chevron = (
     <svg
         className="evf-chevron"
@@ -116,11 +128,15 @@ export function EventsFilterBar({
 }) {
     const chosenCategory = categories.find((c) => c.value === filters.category);
     const canClosest = !!from?.point;
+    // The pickers line up with the row's edges, as the mock's panels do.
+    const row = useRef<HTMLElement>(null);
+    const rowEdge = () => row.current;
+    const pageWidth = usePageWidth();
 
     const freeButton = (
         <button
             type="button"
-            className="evf-square evf-wide-only"
+            className="evf-square evf-free evf-wide-only"
             aria-pressed={filters.free}
             aria-label="Free only"
             title="Free only"
@@ -146,8 +162,9 @@ export function EventsFilterBar({
         <AnchoredMenu
             label="Sort events"
             sheet="tablet"
-            width={320}
+            width={where === 'phone' ? 320 : 200}
             align={where === 'phone' ? 'start' : 'end'}
+            anchor={where === 'phone' ? undefined : rowEdge}
             trigger={(props) => (
                 <button
                     {...props}
@@ -163,9 +180,11 @@ export function EventsFilterBar({
                 </button>
             )}
         >
-            <MenuOptions>
-                {SORTS.filter((s) => s.value !== 'closest' || canClosest).map(
-                    (s) => (
+            <div className="evf-sorts">
+                <MenuOptions>
+                    {SORTS.filter(
+                        (s) => s.value !== 'closest' || canClosest,
+                    ).map((s) => (
                         <MenuOption
                             key={s.value}
                             selected={filters.sort === s.value}
@@ -173,9 +192,9 @@ export function EventsFilterBar({
                         >
                             {s.label}
                         </MenuOption>
-                    ),
-                )}
-            </MenuOptions>
+                    ))}
+                </MenuOptions>
+            </div>
         </AnchoredMenu>
     );
 
@@ -186,6 +205,7 @@ export function EventsFilterBar({
             sheet="tablet"
             width={320}
             align={where === 'phone' ? 'start' : 'end'}
+            anchor={where === 'phone' ? undefined : rowEdge}
             trigger={(props) => (
                 <button
                     {...props}
@@ -230,14 +250,16 @@ export function EventsFilterBar({
     );
 
     return (
-        <section className="evf" aria-label="Find events">
+        <section ref={row} className="evf" aria-label="Find events">
             <div className="evf-search-row">
                 <AnchoredMenu
                     label="Choose an event date"
                     kind="dialog"
                     head={false}
-                    sheet="tablet"
-                    width={340}
+                    anchor={rowEdge}
+                    // On a phone the calendar spans the page, with even
+                    // edges (the mock's wall.css).
+                    width={pageWidth && pageWidth <= 700 ? pageWidth - 32 : 340}
                     trigger={(props) => (
                         <button
                             {...props}
@@ -314,10 +336,14 @@ export function EventsFilterBar({
                             }
                             aria-label={`Event category: ${chosenCategory?.label ?? 'All events'}${filters.free ? ', free only' : ''}${filters.saved ? ', saved only' : ''}`}
                         >
-                            <Icon
-                                name={chosenCategory?.icon ?? 'grid'}
-                                variant="line"
-                            />
+                            {/* Its icon's slot stays on a small phone, as in
+                                the mock, so the name keeps its offset. */}
+                            <span className="evf-category-icon">
+                                <Icon
+                                    name={chosenCategory?.icon ?? 'grid'}
+                                    variant="line"
+                                />
+                            </span>
                             <span>{chosenCategory?.label ?? 'Category'}</span>
                             {filters.free || filters.saved ? (
                                 <i className="evf-dot" aria-hidden="true" />
@@ -382,6 +408,7 @@ export function EventsFilterBar({
                     sheet="tablet"
                     width={320}
                     align="end"
+                    anchor={rowEdge}
                     trigger={(props) => (
                         <button
                             {...props}
@@ -532,8 +559,22 @@ function StartingPointForm({
         q: '',
         rows: [],
     });
+    const field = useRef<HTMLInputElement>(null);
     const typed = text.trim();
     const typing = typed !== '' && typed !== from?.name;
+
+    // On a desktop the field takes the focus as the panel opens (after the
+    // menu's own), as the mock's does; a sheet doesn't, so a phone's
+    // keyboard doesn't cover it.
+    useEffect(() => {
+        if (!window.matchMedia('(min-width: 1000px)').matches) {
+            return;
+        }
+
+        const frame = requestAnimationFrame(() => field.current?.focus());
+
+        return () => cancelAnimationFrame(frame);
+    }, []);
     const found = results.q === typed ? results.rows : [];
 
     // Suggestions come by POST, so what's typed stays out of URLs and logs.
@@ -612,6 +653,7 @@ function StartingPointForm({
             <label>
                 <span className="sr-only">Address, place or stop</span>
                 <input
+                    ref={field}
                     name="from"
                     value={text}
                     maxLength={120}

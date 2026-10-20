@@ -469,3 +469,18 @@
     width: 20px;
     height: 20px;
 }
+
+/* Below 1000px the wall's posters sit as the mock's wall.css sets them
+   (2px down, inline). */
+@media (max-width: 999px) {
+    .st-slot > .pp {
+        display: inline-block;
+        margin: 2px 14px 22px 0;
+        vertical-align: top;
+    }
+}
+@media (max-width: 700px) {
+    .st-slot > .pp {
+        margin-right: 10px;
+    }
+}

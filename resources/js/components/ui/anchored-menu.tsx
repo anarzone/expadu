@@ -70,6 +70,10 @@ type AnchoredMenuProps = {
     trigger: (props: TriggerProps) => ReactNode;
     children: ReactNode | ((api: MenuApi) => ReactNode);
     align?: 'start' | 'end';
+    /** The element whose left or right edge the panel lines up with
+     *  (default: its button), e.g. a filter row's edge. It still opens
+     *  under the button. */
+    anchor?: () => Element | null;
     /** Panel width in px (default 320). */
     width?: number;
     /** Becomes a bottom sheet up to this screen size. */
@@ -110,12 +114,18 @@ export function AnchoredMenu({
     trigger,
     children,
     align = 'start',
+    anchor,
     width = 320,
     sheet,
     head = true,
     kind = 'menu',
 }: AnchoredMenuProps) {
     const id = useId();
+    // The latest edge to line up with, read when the panel is placed.
+    const edgeOf = useRef(anchor);
+    useLayoutEffect(() => {
+        edgeOf.current = anchor;
+    });
     const open = useOpenId() === id;
     const button = useRef<HTMLButtonElement>(null);
     const panel = useRef<HTMLDivElement>(null);
@@ -156,9 +166,12 @@ export function AnchoredMenu({
 
         const position = () => {
             const anchor = button.current?.getBoundingClientRect();
+            const edge = (
+                edgeOf.current?.() ?? button.current
+            )?.getBoundingClientRect();
             const box = panel.current;
 
-            if (!anchor || !box) {
+            if (!anchor || !edge || !box) {
                 return;
             }
 
@@ -170,7 +183,7 @@ export function AnchoredMenu({
                     ? below
                     : anchor.top - h - 4;
             const left =
-                align === 'end' ? anchor.right - w : Math.max(8, anchor.left);
+                align === 'end' ? edge.right - w : Math.max(8, edge.left);
             box.style.top = `${top}px`;
             box.style.left = `${Math.max(8, Math.min(left, window.innerWidth - w - 8))}px`;
         };

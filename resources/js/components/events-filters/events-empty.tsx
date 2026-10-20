@@ -29,7 +29,7 @@ export function EmptyDay({
     return (
         <div className="ev-empty" role="status">
             <Icon name="calendar" variant="line" />
-            <h2>No events listed for {shortDate(date)}.</h2>
+            <h2>{`No events listed for ${shortDate(date)}.`}</h2>
             {other?.date ? (
                 <>
                     <p>
@@ -44,7 +44,7 @@ export function EmptyDay({
                             className="ev-empty-other"
                             onClick={() => onDate(other.date!)}
                         >
-                            See {shortDate(other.date)}
+                            {`See ${shortDate(other.date)}`}
                         </button>
                     </div>
                 </>
@@ -80,11 +80,13 @@ export function NoMatch({
     return (
         <div className="ev-empty" role="status">
             <Icon name="search" variant="line" />
+            {/* One text node, so it's shaped as the mock's is. */}
             <h2>
-                {q
-                    ? `No events match “${q}”${narrowed ? ' with your filters' : ''}`
-                    : 'No events match your filters'}{' '}
-                on {shortDate(date)}.
+                {`${
+                    q
+                        ? `No events match “${q}”${narrowed ? ' with your filters' : ''}`
+                        : 'No events match your filters'
+                } on ${shortDate(date)}.`}
             </h2>
             <p>
                 {other?.date
@@ -107,7 +109,7 @@ export function NoMatch({
                         className="ev-empty-other"
                         onClick={() => onDate(other.date!)}
                     >
-                        See {shortDate(other.date)}
+                        {`See ${shortDate(other.date)}`}
                     </button>
                 ) : null}
             </div>

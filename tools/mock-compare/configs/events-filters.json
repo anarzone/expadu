@@ -1,0 +1,295 @@
+{
+    "name": "events-filters",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/events-next/?date=2026-09-30",
+        "wait": ".st-weather"
+    },
+    "app": {
+        "url": "/events?date=2026-09-30",
+        "wait": ".st-weather",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        }
+    },
+    "pairs": [
+        {
+            "name": "filter rows",
+            "mock": "section.event-discovery",
+            "app": "section.evf",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "filter rows",
+            "mock": "section.event-discovery",
+            "app": "section.evf",
+            "widths": [1280, 1440, 1512],
+            "contentDiffers": true,
+            "reason": "The category chips are the day's own, in the app's categories: the mock offers every category in its catalogue, in its own names (Games, Outdoors, Language), which aren't the app's. The chips both sides have are compared one by one below."
+        },
+        {
+            "name": "date chip",
+            "mock": "#event-calendar-toggle",
+            "app": ".evf-date"
+        },
+        {
+            "name": "date words",
+            "mock": "#event-calendar-toggle > span",
+            "app": ".evf-date > span"
+        },
+        {
+            "name": "date arrow",
+            "mock": "#event-calendar-toggle > svg:last-child",
+            "app": ".evf-date > svg"
+        },
+        {
+            "name": "search",
+            "mock": "label.event-search",
+            "app": "label.evf-search"
+        },
+        {
+            "name": "search icon",
+            "mock": "label.event-search > svg",
+            "app": "label.evf-search > svg"
+        },
+        {
+            "name": "search field",
+            "mock": "#event-search",
+            "app": "label.evf-search input"
+        },
+        {
+            "name": "Free",
+            "mock": "#free-only",
+            "app": ".evf-search-row .evf-square",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "Saved",
+            "mock": "#saved-events",
+            "app": ".evf-search-row .evf-square",
+            "appIndex": 1,
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "All events",
+            "mock": ".event-categories button",
+            "app": ".evf-categories button",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "Culture",
+            "mock": ".event-categories button",
+            "app": ".evf-categories button",
+            "index": 1,
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "chip icon",
+            "mock": ".event-categories button .event-control-icon svg",
+            "app": ".evf-categories button svg",
+            "index": 1,
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "chip words",
+            "mock": ".event-categories button > span:last-child",
+            "app": ".evf-categories button > span:last-child",
+            "index": 1,
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "controls",
+            "mock": ".event-control-scroller",
+            "app": ".evf-controls",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "controls",
+            "mock": ".event-controls",
+            "app": ".evf-controls",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "Category",
+            "mock": ".event-category-trigger",
+            "app": ".evf-category",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "Category words",
+            "mock": ".event-category-trigger [data-category-label]",
+            "app": ".evf-category > span:not(.evf-category-icon)",
+            "widths": [360, 390, 768]
+        },
+        {
+            "name": "Area",
+            "mock": ".event-filter-group button",
+            "app": ".evf-area"
+        },
+        {
+            "name": "Area words",
+            "mock": ".event-filter-group [data-area-label]",
+            "app": ".evf-area > span"
+        },
+        {
+            "name": "Area arrow",
+            "mock": ".event-filter-group .event-picker-chevron",
+            "app": ".evf-area > .evf-chevron"
+        },
+        {
+            "name": "starting point",
+            "mock": ".event-travel-control",
+            "app": ".evf-travel.evf-phone-only",
+            "widths": [360, 390]
+        },
+        {
+            "name": "starting point",
+            "mock": ".event-travel-control",
+            "app": ".evf-travel.evf-not-phone",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Sort",
+            "mock": ".event-sort-control",
+            "app": ".evf-icon-control.evf-phone-only",
+            "widths": [360, 390]
+        },
+        {
+            "name": "Sort",
+            "mock": ".event-sort-control",
+            "app": ".evf-icon-control.evf-not-phone",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Free on",
+            "mock": "#free-only",
+            "app": ".evf-search-row .evf-square",
+            "widths": [1280, 1440, 1512],
+            "mockBefore": [
+                {
+                    "click": "#free-only"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": ".evf-search-row .evf-square"
+                },
+                {
+                    "wait": 5000
+                }
+            ]
+        },
+        {
+            "name": "Reset",
+            "mock": "#reset-event-filters",
+            "app": ".evf-reset",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "no match",
+            "mock": ".event-empty",
+            "app": ".ev-empty",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "no match title",
+            "mock": ".event-empty h2",
+            "app": ".ev-empty h2",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "no match words",
+            "mock": ".event-empty p",
+            "app": ".ev-empty p",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "Clear filters",
+            "mock": "#event-empty-reset",
+            "app": ".ev-empty-clear",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "See another day",
+            "mock": ".event-empty .event-text-button",
+            "app": ".ev-empty-other",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "a category with nothing on the day",
+            "mock": ".event-categories button",
+            "app": ".evf-categories button",
+            "index": 2,
+            "widths": [1280, 1440, 1512],
+            "mockBefore": [
+                {
+                    "click": "#reset-event-filters"
+                },
+                {
+                    "wait": 700
+                },
+                {
+                    "click": ".event-categories button:nth-child(3)"
+                },
+                {
+                    "wait": 900
+                }
+            ],
+            "appBefore": [
+                {
+                    "click": ".evf-reset"
+                },
+                {
+                    "wait": 2500
+                },
+                {
+                    "click": ".evf-categories button:nth-child(3)"
+                },
+                {
+                    "wait": 5000
+                }
+            ],
+            "contentDiffers": true,
+            "reason": "The chip names the category in each side's own taxonomy (the mock's Games, the app's Sports: the same chess listing on 8 September), so its width follows its word; the empty state below must read the same.",
+            "ignore": ["w"]
+        },
+        {
+            "name": "its empty state",
+            "mock": ".event-empty",
+            "app": ".ev-empty",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "its title",
+            "mock": ".event-empty h2",
+            "app": ".ev-empty h2",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "its other day",
+            "mock": ".event-empty p",
+            "app": ".ev-empty p",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "its Clear filters",
+            "mock": "#event-empty-reset",
+            "app": ".ev-empty-clear",
+            "widths": [1280, 1440, 1512]
+        },
+        {
+            "name": "its way to the other day",
+            "mock": ".event-empty .event-text-button",
+            "app": ".ev-empty-other",
+            "widths": [1280, 1440, 1512]
+        }
+    ]
+}

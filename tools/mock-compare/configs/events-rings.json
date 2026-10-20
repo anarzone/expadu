@@ -7,11 +7,14 @@
         "wait": ".st-rings button"
     },
     "app": {
-        "url": "/events",
+        "url": "/events?date=2026-09-30",
         "wait": ".st-rings button",
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
         }
     },
     "pairs": [
@@ -19,39 +22,61 @@
             "name": "rings row",
             "mock": ".st-rings > div",
             "app": ".st-rings > div",
+            "ignore": ["w"],
             "contentDiffers": true,
-            "ignore": ["w"]
+            "reason": "The ring's transparent edge shows the street's sky behind it: pictures in the app, live SVG in the mock, so a few edge pixels rasterise differently."
         },
         {
             "name": "first ring",
             "mock": ".st-rings button",
             "app": ".st-rings button",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "The ring's transparent edge shows the street's sky behind it: pictures in the app, live SVG in the mock, so a few edge pixels rasterise differently."
         },
         {
             "name": "second ring",
             "mock": ".st-rings button",
             "app": ".st-rings button",
             "index": 1,
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "The ring's transparent edge shows the street's sky behind it: pictures in the app, live SVG in the mock, so a few edge pixels rasterise differently."
         },
         {
             "name": "ring circle",
-            "mock": ".st-root > .st-rings button:first-child > span:first-child",
+            "mock": ".st-rings button > span:has(> .st-art)",
             "app": ".st-ring",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "The tool's screenshot of the ring before this one scrolls the mock's ring row sideways (Playwright scrolls an element into view), so the mock's circle reads 8 px (390) or 24 px (360) left of where it stands; measured on its own it sits at 28 px, as the app's. The ring's place is checked by 'first ring' and 'ring picture'. The ring's transparent edge shows the street's sky behind it: pictures in the app, live SVG in the mock, so a few edge pixels rasterise differently.",
+            "ignore": ["x"]
         },
         {
             "name": "ring picture",
             "mock": ".st-art",
             "app": ".st-art",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "The ring's transparent edge shows the street's sky behind it: pictures in the app, live SVG in the mock, so a few edge pixels rasterise differently."
         },
         {
             "name": "ring label",
             "mock": ".st-rings button > span:last-child",
             "app": ".st-ring-label",
-            "contentDiffers": true
+            "contentDiffers": true,
+            "reason": "The label's soft shadow lies on the street's sky. The app draws the street as pictures (EV2a's agreed budget: 31 SVG nodes against the mock's 3,937), the mock as live SVG; edges and thin strokes (the rain, the clouds' rims) anti-alias a pixel apart."
+        },
+        {
+            "name": "wall poster",
+            "mock": ".st-slot .pp",
+            "app": ".st-slot .pp",
+            "contentDiffers": true,
+            "reason": "The poster itself matches; the rain over it differs by a pixel's anti-aliasing: the app draws the street (rain included) as pictures (EV2a's agreed budget: 31 SVG nodes against the mock's 3,937), the mock as live SVG."
+        },
+        {
+            "name": "second wall poster",
+            "mock": ".st-slot .pp",
+            "app": ".st-slot .pp",
+            "index": 1,
+            "contentDiffers": true,
+            "reason": "The poster itself matches; the rain over it differs by a pixel's anti-aliasing: the app draws the street (rain included) as pictures (EV2a's agreed budget: 31 SVG nodes against the mock's 3,937), the mock as live SVG."
         }
     ]
 }

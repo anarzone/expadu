@@ -131,6 +131,7 @@ const reducedMotion = () =>
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function StoryViewer({
+    waiting = false,
     story,
     hours,
     listings,
@@ -140,6 +141,8 @@ export function StoryViewer({
     poster,
     onStory,
 }: {
+    /** A details page is open over the story: it waits, and keys are its. */
+    waiting?: boolean;
     story: Story;
     hours: number[];
     listings: StoryListing[];
@@ -159,7 +162,7 @@ export function StoryViewer({
     const [pressed, setPressed] = useState(false);
     const [turned, setTurned] = useState(false);
     const [reduce] = useState(reducedMotion);
-    const held = paused || pressed || turned;
+    const held = paused || pressed || turned || waiting;
     const bar = useRef<HTMLElement>(null);
     const clock = useRef<Animation | null>(null);
     const stage = useRef<HTMLDivElement>(null);
@@ -262,6 +265,10 @@ export function StoryViewer({
     // arrow keys step.
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
+            if (waiting) {
+                return;
+            }
+
             if (e.key === 'Escape') {
                 onStory(null);
             } else if (e.key === 'ArrowRight') {
@@ -273,7 +280,7 @@ export function StoryViewer({
         document.addEventListener('keydown', onKey);
 
         return () => document.removeEventListener('keydown', onKey);
-    }, [onStory]);
+    }, [onStory, waiting]);
 
     // Focus moves into the viewer (EventsStreet returns it to the ring).
     const dialog = useRef<HTMLDivElement>(null);
@@ -289,8 +296,11 @@ export function StoryViewer({
     const k = skyAt(story.hour + 0.5);
     const wx = weather(story.hour);
     const desktop = layout === 'desktop';
-    // The mock's story poster: 380 × 532 on a desktop, 300 × 420 on a phone.
-    const size: CSSProperties = desktop ? { zoom: 380 / 300 } : {};
+    // The mock's story poster: the wall's poster zoomed to 380 × 532 on a
+    // desktop, drawn at 300 × 420 on a phone.
+    const size: CSSProperties = desktop
+        ? { zoom: 380 / 300 }
+        : { width: 300, height: 420 };
     // A tap right after a swipe or a hold is theirs; it doesn't step.
     const tap = (dir: number) => () => {
         if (Date.now() - swiped.current > 400) {

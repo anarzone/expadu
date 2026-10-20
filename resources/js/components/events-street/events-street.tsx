@@ -14,7 +14,7 @@ import {
 import type { PosterEvent } from '@/components/posters/poster-model';
 import { berlinClock, berlinDate } from '@/components/posters/poster-model';
 import type { StreetLayoutName } from './street-layout';
-import { STREET, streetFit } from './street-layout';
+import { phonePages, STREET, streetFit } from './street-layout';
 import { MotionLab, readMotion } from './street-motion-lab';
 import StreetScene, { forgetPasted } from './street-scene';
 import type { StreetMotion } from './street-scene';
@@ -69,7 +69,10 @@ export function EventsStreet({
     column,
     poster,
     forecast,
+    waiting = false,
 }: {
+    /** A details page is open over the street: stories and the column wait. */
+    waiting?: boolean;
     date: string;
     today: string;
     /** The day's forecast (EventController's deferred weather). */
@@ -80,7 +83,7 @@ export function EventsStreet({
     column: StreetListing[];
     poster: (
         listing: StreetListing,
-        where: 'wall' | 'column',
+        where: 'wall' | 'column' | 'story',
         style?: CSSProperties,
     ) => ReactNode;
 }) {
@@ -179,7 +182,8 @@ export function EventsStreet({
     // The column turns to its next poster every 6s (the mock's tick), but
     // not while you point at it, while one of its posters is turned over,
     // while a story is open, or with reduced motion.
-    const turning = motion !== 'still' && column.length > 1 && !story;
+    const turning =
+        motion !== 'still' && column.length > 1 && !story && !waiting;
 
     useEffect(() => {
         if (
@@ -204,11 +208,32 @@ export function EventsStreet({
 
     const isToday = date === today && berlinDate() === today;
     const timed = wall.filter((l) => l.poster.start);
-    // Today's sky is now; another day's opens on its first listing's hour.
-    const firstHour = timed.length
-        ? Math.min(...timed.map((l) => parseInt(l.poster.start!, 10))) + 0.5
-        : 12;
-    const skyHour = isToday ? nowHour : firstHour;
+    // The sky follows the hour you look at (the mock's street): the wall's
+    // first hour on a desktop, the page's hour on a phone, half past; the
+    // current hour shows now. A day with nothing timed shows now, or noon.
+    const slotted = timed.map((l) => parseInt(l.poster.start!, 10));
+    const lookedAt = !slotted.length
+        ? null
+        : layout === 'phone'
+          ? (() => {
+                const pages = phonePages(
+                    slotted.map((hour) => ({ item: null, hour })),
+                    isToday ? Math.floor(nowHour) : null,
+                );
+
+                return slotted[
+                    Math.min(phonePage ?? pages.page, slotted.length - 1)
+                ];
+            })()
+          : Math.min(...slotted);
+    const skyHour =
+        lookedAt === null
+            ? isToday
+                ? nowHour
+                : 12
+            : isToday && lookedAt === Math.floor(nowHour)
+              ? nowHour
+              : lookedAt + 0.5;
     const fit = box
         ? streetFit(layout, { hostWidth: box.width, room: box.room })
         : null;
@@ -336,6 +361,7 @@ export function EventsStreet({
             ) : null}
             {story ? (
                 <StoryViewer
+                    waiting={waiting}
                     story={story}
                     hours={hours}
                     listings={timed}
@@ -344,7 +370,7 @@ export function EventsStreet({
                     weather={(hour) =>
                         weatherWords(forecast, hour, skyAt(hour + 0.5).daylight)
                     }
-                    poster={(item, style) => poster(item, 'wall', style)}
+                    poster={(item, style) => poster(item, 'story', style)}
                     onStory={(next) => {
                         if (next) {
                             setSeen((was) => new Set(was).add(next.hour));
