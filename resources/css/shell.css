@@ -402,9 +402,9 @@ html {
         background: none;
         box-shadow: none;
     }
+    /* The row keeps its own 8px, as the mock's header does. */
     :root[data-shell-header='aside'] .shell-header {
         min-height: 0;
-        padding: 0;
     }
     :root[data-shell-header='aside'] .shell-header > :not(.shell-nav) {
         display: none;
