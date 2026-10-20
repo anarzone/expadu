@@ -188,6 +188,24 @@ class WorkspaceStore
                         $this->planMessage($s, $s['plans'][$date]);
                     }
                     break;
+                case 'complete':
+                case 'uncomplete':
+                    // A check mark on a confirmed plan, not a plan change: no
+                    // draft, no version, no message. Only the account's own
+                    // workspace row is ever read here.
+                    $date = $input['date'];
+                    $this->require(isset($s['plans'][$date]), 'That plan is no longer in your day.');
+                    $identity = app(PlaceIdentity::class);
+                    $s['plans'][$date] = $identity->normalizePlan($s['plans'][$date]);
+                    $id = $identity->candidateIds([$input['id']])[0];
+                    $index = collect($s['plans'][$date]['slots'])->search(fn ($slot) => $slot['id'] === $id);
+                    $this->require($index !== false, 'That plan is no longer in your day.');
+                    if ($action === 'complete') {
+                        $s['plans'][$date]['slots'][$index]['completed_at'] ??= now('Europe/Berlin')->toIso8601String();
+                    } else {
+                        unset($s['plans'][$date]['slots'][$index]['completed_at']);
+                    }
+                    break;
                 case 'undo':
                     $last = end($s['versions']);
                     $this->require($last && ! ($last['undone'] ?? false) && $s['draft'] === null, 'Apply or discard any draft before undoing the latest change.');
