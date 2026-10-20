@@ -1,0 +1,237 @@
+{
+    "name": "travel-nearby",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/",
+        "wait": "#nearby .nearby-strip",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '#departures > .trip-line { display: none !important; }'; document.head.append(s); })"
+        ]
+    },
+    "app": {
+        "url": "/timetable",
+        "wait": "#departures .nearby-strip",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '#departures > .trip-line { display: none !important; }'; document.head.append(s); })"
+        ]
+    },
+    "pairs": [
+        {
+            "name": "phone bar",
+            "mock": ".travel-phone-bar",
+            "app": ".travel-phone-bar",
+            "widths": [360, 390, 768],
+            "contentDiffers": true,
+            "reason": "The Nearby | My day switch (TR6) is in the mock's bar."
+        },
+        {
+            "name": "Where to?",
+            "mock": ".travel-phone-bar .where-to",
+            "app": ".travel-phone-bar .where-to",
+            "widths": [360, 390, 768],
+            "ignore": ["w"],
+            "reason": "The mock shares the phone bar with the Nearby | My day switch; My day is TR6 (EXP-142)."
+        },
+        {
+            "name": "station bar",
+            "mock": ".nearby-bar",
+            "app": ".nearby-bar",
+            "contentDiffers": true,
+            "reason": "Holds the live/recorded times chip (live data) and, in the mock, the list | map switch (call #9)."
+        },
+        {
+            "name": "station button",
+            "mock": ".nearby-stop",
+            "app": ".nearby-stop",
+            "ignore": ["w"],
+            "reason": "The mock's list | map switch sits beside it; the map is deferred (plan call #9)."
+        },
+        {
+            "name": "station name",
+            "mock": ".nearby-stop-name",
+            "app": ".nearby-stop-name",
+            "ignore": ["w"],
+            "reason": "The mock's list | map switch sits beside it; the map is deferred (plan call #9)."
+        },
+        {
+            "name": "closest chip",
+            "mock": ".nearby-bar .tl-chip",
+            "app": ".nearby-bar .tl-chip",
+            "index": 0
+        },
+        {
+            "name": "times chip",
+            "mock": ".nearby-bar .tl-chip",
+            "app": ".nearby-bar .tl-chip",
+            "index": 1,
+            "contentDiffers": true,
+            "ignore": [
+                "background-color",
+                "border-bottom-color",
+                "border-bottom-style",
+                "border-bottom-width",
+                "border-left-color",
+                "border-left-style",
+                "border-left-width",
+                "border-right-color",
+                "border-right-style",
+                "border-right-width",
+                "border-top-color",
+                "border-top-style",
+                "border-top-width",
+                "color",
+                "padding-bottom",
+                "padding-top",
+                "w"
+            ],
+            "reason": "Live data: the mock's capture is recorded (the unsure chip), the app's times are live (the calm chip)."
+        },
+        {
+            "name": "favourite star",
+            "mock": ".nearby-star",
+            "app": ".nearby-star",
+            "ignore": ["x"],
+            "reason": "Same box and styles; the map switch (call #9) puts the mock's star at another x, so its edge anti-aliasing differs by a few pixels.",
+            "pixels": false
+        },
+        {
+            "name": "filters",
+            "mock": ".nearby-chips",
+            "app": ".nearby-chips",
+            "contentDiffers": true,
+            "reason": "\"Leaving via\" is offered only when the feed has via stops; the local feed has none, so the app leaves it out (CLAUDE.md: only choices backed by data)."
+        },
+        {
+            "name": "filter: type",
+            "mock": ".nearby-chips .nearby-chip",
+            "app": ".nearby-chips .nearby-chip",
+            "index": 0
+        },
+        {
+            "name": "filter: lines",
+            "mock": ".nearby-chips .nearby-chip",
+            "app": ".nearby-chips .nearby-chip",
+            "index": 1
+        },
+        {
+            "name": "departures count",
+            "mock": ".nearby-count",
+            "app": ".nearby-count",
+            "contentDiffers": true
+        },
+        {
+            "name": "boarding area",
+            "mock": ".nearby-area",
+            "app": ".nearby-area",
+            "contentDiffers": true,
+            "ignore": ["h"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        },
+        {
+            "name": "area head",
+            "mock": ".nearby-area-head",
+            "app": ".nearby-area-head",
+            "contentDiffers": true,
+            "ignore": ["h"],
+            "reason": "The mock's \"Show on the map\" (call #9) wraps the head on phones."
+        },
+        {
+            "name": "area badges",
+            "mock": ".nearby-area-head .nearby-badges",
+            "app": ".nearby-area-head .nearby-badges",
+            "contentDiffers": true,
+            "ignore": ["x", "w"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        },
+        {
+            "name": "area badge",
+            "mock": ".nearby-area-head .nearby-badges > *",
+            "app": ".nearby-area-head .nearby-badges > *",
+            "contentDiffers": true,
+            "ignore": ["x", "w", "background-color", "border-radius", "color"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        },
+        {
+            "name": "platform chip",
+            "mock": ".nearby-area-head .tl-chip",
+            "app": ".nearby-area-head .tl-chip",
+            "contentDiffers": true,
+            "ignore": [
+                "background-color",
+                "border-bottom-color",
+                "border-bottom-style",
+                "border-bottom-width",
+                "border-left-color",
+                "border-left-style",
+                "border-left-width",
+                "border-right-color",
+                "border-right-style",
+                "border-right-width",
+                "border-top-color",
+                "border-top-style",
+                "border-top-width",
+                "color",
+                "padding-bottom",
+                "padding-top",
+                "w",
+                "x",
+                "y"
+            ],
+            "reason": "Where to stand: the mock shows OSM platforms; the app says \"Platform not known\" until the data pipeline (call #9)."
+        },
+        {
+            "name": "line strip",
+            "mock": ".nearby-strip",
+            "app": ".nearby-strip",
+            "contentDiffers": true,
+            "ignore": ["y", "h"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        },
+        {
+            "name": "strip badge",
+            "mock": ".nearby-strip .strip-badge",
+            "app": ".nearby-strip .strip-badge",
+            "contentDiffers": true,
+            "ignore": ["y", "w", "background-color", "border-radius", "color"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        },
+        {
+            "name": "strip destination",
+            "mock": ".nearby-strip .strip-dest",
+            "app": ".nearby-strip .strip-dest",
+            "contentDiffers": true,
+            "ignore": ["x", "y", "w"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        },
+        {
+            "name": "strip track",
+            "mock": ".nearby-strip .strip-track",
+            "app": ".nearby-strip .strip-track",
+            "contentDiffers": true,
+            "ignore": ["y", "h"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        },
+        {
+            "name": "strip time",
+            "mock": ".nearby-strip .nearby-time",
+            "app": ".nearby-strip .nearby-time",
+            "contentDiffers": true,
+            "ignore": ["x", "y", "w"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        },
+        {
+            "name": "change note",
+            "mock": ".nearby-change",
+            "app": ".nearby-change",
+            "contentDiffers": true,
+            "ignore": ["y", "w", "h"],
+            "reason": "Live departures (contentDiffers): which area leads, how many strips, \"via\" stops (not in the local feed) and the times change the size, place and line colours."
+        }
+    ]
+}

@@ -18,16 +18,29 @@ Use relevant instructions in `.agents/skills/` or `.claude/skills/` when needed.
 **Bureaucracy requires verified sources.**
 
 - Never invent fees, deadlines or legal references. Figures need an official source
-  and a `verified_at` date.
+  on an allow-listed host (`config/bureaucracy_sources.php`) and a `verified_at` date.
+  Adding a source host is a policy decision: record who decided it next to the host.
 - Preserve `Task::authoritative()` and `RuleSourcePolicy`. Approved content must
   satisfy their publication, jurisdiction, version, reviewer, source-verification,
   source-host and validity-window checks. Never bypass these gates.
+- Cards are checked by machine, not signed off by a person (owner decision,
+  7 Oct 2026). A `quote_checked` card (`reviewed_by: automated_source_check`)
+  carries `claims`: each ties a piece of card text to the exact sentence on its
+  official page. The import rejects a card if any figure on it is unquoted or differs
+  from its quote. `bureaucracy:verify-sources` re-reads the pages daily and at
+  deploy; only a passing check gives the card its `verified_at` and `review_due_at`,
+  and a failed check withdraws it at once (users see "check the official page").
+  Never author those dates on a `quote_checked` card, and never weaken `ClaimCheck`.
+  Cards still stamped by a person (`expadu_content_owner`) keep the human path.
+- AI may write and update cards only in this checked form. Prose without figures is
+  not machine-verifiable, so keep it to what the quoted sources say.
+- People are contacted only through `bureaucracy_escalations`: a failed check on a
+  high-stakes card (residence, dated deadlines, money, urgent) or a plan the app
+  cannot answer. High severity reaches the owner through Sentry, once per opening.
+  Escalations never carry personal data.
 - Authoritative catalogue data lives in `database/seeders/data/bureaucracy/*.yaml`
   and is compiled by `php artisan bureaucracy:import-tasks`. Volatile figures live
   in `config/bureaucracy_figures.php`.
-- AI must not author user-facing bureaucracy content. It may extract facts against
-  a tool schema for user confirmation or draft gap notes for human review.
-  `docs/bureaucracy-gaps/` drafts are not imported as-is.
 - Missing or partial coverage must remain explicit. Showing nothing beats guessing.
 
 **Media requires approved rights.**
@@ -112,6 +125,9 @@ with relevant data or a screenshot. A successful push alone does not prove it is
 - The app is light only at launch (no dark mode). The mock's tokens live in
   `resources/css/app.css`; breakpoints are Tailwind's `sm` 360, `md` 701 (tablet),
   `lg` 1000 (desktop) and `xl` 1500, so `max-md:` is a phone.
-- QA persona switching uses `ResetPersonaState` and starts from a clean slate.
+- QA previews are read-only (`ScenarioAssessmentPreview`). The old reset/become
+  endpoints and `ResetPersonaState` return 410 without changing account or family
+  data. Do not restore destructive switching; test persistent workflows in
+  isolated services.
 - Local and production datasets differ. Check the affected environment's data when
   investigating a data issue; local counts do not establish production behavior.

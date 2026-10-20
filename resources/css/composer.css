@@ -1265,3 +1265,32 @@
     outline: 2px solid #008ea7;
     outline-offset: 2px;
 }
+
+/* "About: …" from the page a request came from; × leaves it out. */
+.composer-about {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    margin: 0 0 8px;
+    padding: 4px 4px 4px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-surface);
+    color: var(--color-text-soft);
+    font-size: var(--text-caption);
+}
+.composer-about span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.composer-about button {
+    display: grid;
+    place-content: center;
+    /* A 44px target that doesn't make the chip taller. */
+    width: 44px;
+    height: 44px;
+    margin: -10px -6px -10px -8px;
+    border-radius: 50%;
+}

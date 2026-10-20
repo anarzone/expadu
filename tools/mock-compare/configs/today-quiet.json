@@ -1,0 +1,62 @@
+{
+    "name": "today-quiet",
+    "seed": "php artisan mock:sample-day quiet --email=<account>",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=quiet",
+        "wait": ".day-panel"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "Your day",
+            "mock": ".day-heading h2",
+            "app": ".day-heading h2",
+            "ignore": ["y"]
+        },
+        {
+            "name": "date",
+            "mock": ".day-heading small",
+            "app": ".day-heading small",
+            "contentDiffers": true,
+            "ignore": ["x", "w", "y"]
+        },
+        {
+            "name": "Your day panel",
+            "mock": ".day-panel",
+            "app": ".day-panel",
+            "pixels": false,
+            "ignore": ["y"]
+        },
+        {
+            "name": "nothing planned",
+            "mock": ".day-empty strong",
+            "app": ".day-empty strong",
+            "ignore": ["y"]
+        },
+        {
+            "name": "Add a plan",
+            "mock": ".add-plan",
+            "app": ".add-plan",
+            "ignore": ["y"]
+        },
+        {
+            "name": "Add a plan icon",
+            "mock": ".add-plan svg",
+            "app": ".add-plan svg",
+            "ignore": ["y"]
+        }
+    ],
+    "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land."
+}

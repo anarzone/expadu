@@ -25,6 +25,9 @@ use App\Events\Context\TransitDelayDetected;
 use App\Events\Context\TransitDisruptionDetected;
 use App\Events\Context\WeatherChanged;
 use App\Jobs\ValidateMediaAssetJob;
+use App\Models\User;
+use App\Observers\BureaucracyAccountObserver;
+use App\Privacy\ProcessingPurpose;
 use App\Services\AnthropicEventClassifier;
 use App\Services\ClassifiesEvents;
 use App\Support\Ssr\SsrGateway;
@@ -59,9 +62,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(ExtractsCaseFact::class, function ($app): ExtractsCaseFact {
-            $configuration = config('services.bureaucracy_llm');
-
-            if (! is_array($configuration) || ! $this->bureaucracyLlmIsConfigured($configuration)) {
+            if (! ProcessingPurpose::FactExtraction->available()) {
                 return $app->make(UnavailableCaseFactExtractor::class);
             }
 
@@ -82,7 +83,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ParsesPrompt::class, function ($app) {
             $heuristic = $app->make(HeuristicPromptParser::class);
 
-            if (config('services.llm.driver') === 'openai' && config('services.llm.key')) {
+            if (ProcessingPurpose::ComposerParse->available()) {
                 return new OpenAiCompatiblePromptParser($heuristic);
             }
 
@@ -128,26 +129,6 @@ class AppServiceProvider extends ServiceProvider
     /**
      * @param  array<string, mixed>  $configuration
      */
-    private function bureaucracyLlmIsConfigured(array $configuration): bool
-    {
-        if (($configuration['enabled'] ?? false) !== true) {
-            return false;
-        }
-
-        foreach (['base_url', 'model', 'key', 'processor_name', 'processor_privacy_url', 'prompt_version'] as $key) {
-            if (! is_string($configuration[$key] ?? null) || trim($configuration[$key]) === '') {
-                return false;
-            }
-        }
-
-        return filter_var($configuration['base_url'], FILTER_VALIDATE_URL) !== false
-            && filter_var($configuration['processor_privacy_url'], FILTER_VALIDATE_URL) !== false
-            && is_int($configuration['timeout'] ?? null)
-            && $configuration['timeout'] > 0
-            && is_int($configuration['daily_limit'] ?? null)
-            && $configuration['daily_limit'] > 0;
-    }
-
     /**
      * Bootstrap any application services.
      */
@@ -156,6 +137,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDefaults();
         $this->configureRateLimiting();
 
+        User::observe(BureaucracyAccountObserver::class);
+
+        // CreateAlertFromNotification is registered by listener discovery.
         Event::listen(NotificationSent::class, RecordReservedPushSent::class);
 
         Event::listen(TransitDisruptionDetected::class, TransitDisruptionEvaluator::class);
@@ -253,21 +237,15 @@ class AppServiceProvider extends ServiceProvider
             ->by('composer-parse:'.$request->user()?->getAuthIdentifier()));
         RateLimiter::for('composer-compose', fn (Request $request): Limit => Limit::perMinute(6)
             ->by('composer-compose:'.$request->user()?->getAuthIdentifier()));
-        RateLimiter::for('bureaucracy-ai-burst', function (Request $request): array {
-            $response = fn (Request $_request, array $headers) => response()->json([
-                'outcome' => 'limited',
-                'message' => 'Please wait a moment before trying again. You can still use the choices below.',
-            ], 429, $headers);
-
-            return [
-                Limit::perMinute(5)
-                    ->by('bureaucracy-ai-user:'.$request->user()?->getAuthIdentifier())
-                    ->response($response),
-                Limit::perMinute(5)
-                    ->by('bureaucracy-ai-ip:'.$request->ip())
-                    ->response($response),
-            ];
-        });
+        // Bureaucracy v2 limiters are named so each budget keeps its own key: unnamed
+        // `throttle:N,M` middleware shares one per-user signature, so a stacked group
+        // limit's shorter decay would reset the hourly caps on the routes below.
+        $bureaucracyKey = fn (string $purpose, Request $request): string => 'bureaucracy-'.$purpose.':'.$userOrIp($request);
+        RateLimiter::for('bureaucracy-v2', fn (Request $request): Limit => Limit::perMinute(60)->by($bureaucracyKey('v2', $request)));
+        RateLimiter::for('bureaucracy-extract', fn (Request $request): Limit => Limit::perMinute(20)->by($bureaucracyKey('extract', $request)));
+        RateLimiter::for('bureaucracy-invitations', fn (Request $request): Limit => Limit::perHour(10)->by($bureaucracyKey('invitations', $request)));
+        RateLimiter::for('bureaucracy-dependents', fn (Request $request): Limit => Limit::perHour(5)->by($bureaucracyKey('dependents', $request)));
+        RateLimiter::for('privacy-processing', fn (Request $request): Limit => Limit::perMinute(60)->by('privacy-processing:'.$userOrIp($request)));
         RateLimiter::for('media-validation', fn (ValidateMediaAssetJob $job): Limit => Limit::perMinute(30)
             ->by('media-validation:'.$job->asset->provider));
     }

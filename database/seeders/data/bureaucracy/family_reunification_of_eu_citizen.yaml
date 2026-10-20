@@ -7,34 +7,75 @@ situation: family_reunification_of_eu_citizen
 tasks:
   - title: Get your Aufenthaltskarte (family member of an EU citizen)
     key: fameu.aufenthaltskarte
-    depends_on: [fam.anmeldung]
+    depends_on: []
     description: |
-      As the non-EU family member of an EU citizen you're covered by freedom-of-movement
-      law, not the regular immigration law — a completely different, easier track. Your
-      right of residence exists by law; the Aufenthaltskarte (issued for 5 years) merely
-      documents it. No language requirement, no livelihood test of the family member,
-      and no fee. Report to the Ausländerbehörde after arrival; the documents below are
-      the typical requirements.
+      As the non-EU family member of an EU citizen who has freedom of movement, you
+      follow EU free-movement law rather than the regular residence rules. If you meet
+      the conditions, Cologne issues you an Aufenthaltskarte, which should be valid for
+      five years. Contact the Bezirksausländeramt for the district you live in: an
+      in-person appointment is required within the first three months after entry.
+      Cologne lists a fee of €22.80 for under-24s and €37 for over-24s. Bring documents
+      like the ones below; the office tells you if it needs anything else.
     phase: first_30_days
     urgency: critical
-    deadline_type: permit_window
-    deadline_days: 90
+    deadline_type: none
     applies_if:
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
       - label: National passport
       - label: Marriage or birth certificate proving the family link
-        note: Sworn-translation rules apply — translator publicly appointed/sworn in Germany.
-      - label: Proof the EU citizen exercises free movement in Germany
-        note: Their work contract, university enrollment, or sufficient funds + health insurance.
+      - label: Proof that the EU citizen has freedom of movement in Germany
       - label: Biometric photo
     links:
-      - https://www.gesetze-im-internet.de/freiz_gg_eu_2004/
+      - https://www.stadt-koeln.de/service/produkt/freizuegigkeit-angehoerige-der-europaeischen-union
+      - https://www.gesetze-im-internet.de/freiz_gg_eu_2004/__5.html
     how_to_steps:
-      - title: Contact the Ausländeramt to start the process
-        body: Use Cologne's Ausländeramt contact form and state you're applying for an Aufenthaltskarte as the family member of a Union citizen — the office has limited discretion here; the right exists by law.
-      - title: Entering Germany, if visa-required
-        body: Visa-required nationals get a free, fast-tracked entry visa at the consulate; visa-free nationals can enter directly.
-      - title: Expect a 5-year card, free of charge
-        body: The Aufenthaltskarte is declaratory — while it's in production you're already legal; ask for a confirmation of application if you need to prove status.
+      - title: Request an appointment with your Bezirksausländeramt
+        body: Cologne's page links an online form to request the appointment. Say you are applying for an Aufenthaltskarte as the family member of an EU citizen.
+        link: https://www.stadt-koeln.de/service/produkt/freizuegigkeit-angehoerige-der-europaeischen-union
+      - title: Entering Germany
+        body: Depending on your nationality, you may need a family-reunification visa to enter.
+      - title: Keep the confirmation you receive
+        body: Once you have given the required information, you receive a certificate confirming it straight away. The card itself is issued within six months.
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§5 FreizügG/EU', url: 'https://www.gesetze-im-internet.de/freiz_gg_eu_2004/__5.html'}
+      - {kind: implementation, label: 'Stadt Köln · EU free movement, family members', url: 'https://www.stadt-koeln.de/service/produkt/freizuegigkeit-angehoerige-der-europaeischen-union'}
+    claims:
+      - id: card-issued
+        states: If you meet the conditions, Cologne issues you an Aufenthaltskarte
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Erfüllen Sie die Voraussetzungen für das Freizügigkeitsrecht, stellen wir Ihnen eine Aufenthaltskarte aus.
+      - id: five-years
+        states: should be valid for five years
+        source: '§5 FreizügG/EU'
+        quote: eine Aufenthaltskarte für Familienangehörige von Unionsbürgern ausgestellt, die fünf Jahre gültig sein soll.
+      - id: district-office
+        states: Contact the Bezirksausländeramt for the district you live in
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Zuständig ist das Bezirksausländeramt, in dessen Bezirk Sie wohnen.
+      - id: three-months
+        states: an in-person appointment is required within the first three months after entry
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Eine Vorsprache ist zwingend innerhalb der ersten drei Monate nach Einreise notwendig.
+      - id: fee
+        states: €22.80 for under-24s and €37 for over-24s
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: 'unter 24-Jährige: 22,80 Euro über 24-Jährige: 37 Euro'
+      - id: visa
+        states: you may need a family-reunification visa to enter
+        source: 'Stadt Köln · EU free movement, family members'
+        quote: Je nach Staatsangehörigkeit kann es sein, dass Sie ein Visum zur Familienzusammenführung benötigen, um nach Deutschland einreisen zu können.
+      - id: confirmation
+        states: you receive a certificate confirming it straight away
+        source: '§5 FreizügG/EU'
+        quote: Eine Bescheinigung darüber, dass die erforderlichen Angaben gemacht worden sind, erhält der Familienangehörige unverzüglich.
+      - id: six-months
+        states: The card itself is issued within six months
+        source: '§5 FreizügG/EU'
+        quote: innerhalb von sechs Monaten, nachdem sie die erforderlichen Angaben gemacht haben

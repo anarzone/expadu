@@ -26,37 +26,45 @@ function applicabilityFor(string $key, User $user): Applicability
     );
 }
 
+/** The settlement card is gated on the v2 residence-title fact, which the legacy profile does not carry. */
+function longGameFor(string $title): Applicability
+{
+    return Applicability::evaluate(Task::query()->where('key', 'shared.long_game')->firstOrFail()->applies_if,
+        ['citizenship_group' => 'non_eu', 'current_residence_title' => $title]);
+}
+
 it('shows citizenship to someone who already holds permanent residence', function () {
     $settled = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
         'is_eu' => false,
-        'profile_attributes' => ['settled_at' => now()->subYear()->toDateString()],
+        'profile_attributes' => ['current_residence_title' => 'settlement_permit_18c'],
     ]);
 
     expect(applicabilityFor('shared.citizenship', $settled))->toBe(Applicability::Yes)
         // ...and still does not offer them the thing they already have.
-        ->and(applicabilityFor('shared.long_game', $settled))->toBe(Applicability::No);
+        ->and(longGameFor('settlement_permit_18c'))->toBe(Applicability::No);
 });
 
 it('still shows both to someone who is not settled yet', function () {
     $arriving = User::factory()->onboarded()->create([
         'situation' => 'non_eu_employee',
         'is_eu' => false,
-        'profile_attributes' => [],
+        'profile_attributes' => ['current_residence_title' => 'standard_work_permit'],
     ]);
 
     expect(applicabilityFor('shared.citizenship', $arriving))->toBe(Applicability::Yes)
-        ->and(applicabilityFor('shared.long_game', $arriving))->toBe(Applicability::Yes);
+        ->and(longGameFor('standard_work_permit'))->toBe(Applicability::Yes);
 });
 
-it('keeps the citizenship figures exactly as they were reviewed', function () {
+it('keeps the citizenship figures backed by quotes from the law and the city', function () {
     $citizenship = Task::query()->where('key', 'shared.citizenship')->firstOrFail();
     $longGame = Task::query()->where('key', 'shared.long_game')->firstOrFail();
 
-    // The sentence was moved, not rewritten. Nothing here may drift into a
-    // figure or a deadline that no human reviewed.
-    expect($citizenship->description)->toContain('5 years + B1 + Einbürgerungstest, €255')
-        ->and($citizenship->description)->toContain('abolished in October 2025')
+    // Every figure is quoted (§10 StAG, Stadt Köln); the unsourced remark about the
+    // abolished fast track was removed when the card moved to the automated check.
+    expect($citizenship->description)->toContain('five years of lawful residence')->toContain('level B1')->toContain('€255')
+        ->and($citizenship->source_verification)->toBe('quote_checked')
+        ->and($citizenship->description)->not->toContain('abolished')
         // And it must not have been left behind in the card it came from.
         ->and($longGame->description)->not->toContain('Einbürgerungstest');
 });

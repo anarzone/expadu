@@ -69,6 +69,9 @@ return [
         // Share of users (stable per user) whose plans the LLM ranks; the rest
         // get the deterministic ranker, so the two can be compared.
         'rollout_percent' => (int) env('COMPOSER_LLM_ROLLOUT_PERCENT', 100),
+        'processor_name' => env('COMPOSER_LLM_PROCESSOR_NAME'),
+        'processor_privacy_url' => env('COMPOSER_LLM_PROCESSOR_PRIVACY_URL'),
+        'prompt_version' => '2026-09-08.ranking.1',
     ],
 
     /*
@@ -89,6 +92,9 @@ return [
         'base_url' => env('LLM_BASE_URL', 'https://api.deepseek.com'),
         'model' => env('LLM_MODEL', 'deepseek-chat'),
         'key' => env('LLM_KEY'),
+        'processor_name' => env('LLM_PROCESSOR_NAME'),
+        'processor_privacy_url' => env('LLM_PROCESSOR_PRIVACY_URL'),
+        'prompt_version' => '2026-09-08.parser.1',
     ],
 
     'bureaucracy_llm' => [

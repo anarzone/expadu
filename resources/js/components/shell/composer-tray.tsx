@@ -12,6 +12,7 @@ import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { useCurrentPageContext } from '@/lib/page-context';
 import { composer } from '@/routes';
+import { store as composerEntry } from '@/routes/composer/entry';
 
 /*
  * Composer's tray (the mock's connected/composer-entry + today-c/composer-
@@ -198,12 +199,12 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
         setText('');
         setMenuOpen(false);
         setOpen(false);
-        router.visit(
-            composer({
-                query: about
-                    ? { prompt: request, about: about.label }
-                    : { prompt: request },
-            }),
+        // By POST, so the words stay out of the URL, history and logs.
+        router.post(
+            composerEntry.url(),
+            about
+                ? { prompt: request, about: about.label }
+                : { prompt: request },
         );
     };
 
@@ -242,7 +243,9 @@ export function ComposerTray({ onComposer }: { onComposer: boolean }) {
                     data-composer-opener
                     onClick={() => setOpen(true)}
                 >
-                    <Icon name="spark" variant="line" />
+                    <span className="shell-composer-round-icon">
+                        <Icon name="spark" variant="line" />
+                    </span>
                 </button>
             )}
             {isOpen && (

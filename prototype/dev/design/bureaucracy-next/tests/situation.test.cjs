@@ -35,7 +35,7 @@ test('loading a legacy sample never turns its populated plan into a new-user pro
     const db = storage();
     db.setItem(G.key, JSON.stringify(B.fresh()));
     const s = G.load(db);
-    assert.equal(P.projection(s).total, 6);
+    assert.equal(P.projection(s).total, 7);
 });
 function answer(s, value) {
     const r = G.hydrate(s).details;

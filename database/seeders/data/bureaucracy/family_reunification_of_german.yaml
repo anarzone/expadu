@@ -3,18 +3,18 @@
 situation: family_reunification_of_german
 
 tasks:
-  # Book-before-ready: file the online application on day one — the
-  # appointment wait starts at submission.
-  - title: Submit your §28 permit application online — today
+  - title: Submit your §28 permit application online
     key: famde.submit_application
-    depends_on: [fam.anmeldung]
-    verified_at: 2026-06-11
+    depends_on: []
     description: |
-      Spouses, minor children and parents of minor German children apply under §28 —
-      the privileged family track. Notably absent compared to other family permits:
-      the livelihood-proof block (no payslip parade). The A1 German requirement for
-      spouses still applies. File Cologne's online Erstantrag as soon as the family's
-      Anmeldung is done — the appointment wait only starts when you submit.
+      Spouses and minor unmarried children of a German, and parents of a minor unmarried
+      German child who exercise parental care, apply for a residence permit under §28.
+      The German family member must usually live in Germany. Spouses normally need basic
+      German (A1); this applies only to spouses and registered partners. File Cologne's
+      online application; the authority reviews it and sends an appointment invitation
+      once it can issue the permit. If you entered on a D visa, apply before the visa
+      expires. If you entered visa-free under §41 AufenthV (for example as a citizen of
+      Australia, Canada, Japan, the UK or the USA), apply within 90 days of entry.
     phase: first_30_days
     urgency: critical
     deadline_type: permit_window
@@ -22,28 +22,74 @@ tasks:
     applies_if:
       entry_mode: [d_visa, visa_free]
     documents_required:
-      - label: Online application form (Erstantrag 33-F07; renewals 33-F06)
+      - label: Cologne's online application for a family-reunification residence permit
         note: Upload scans of the documents listed on the appointment task.
       - label: A1 German certificate (spouses)
-        note: Only Goethe-Institut, TestDaF or telc certificates are accepted — other certificates are rejected.
+        note: Cologne accepts certificates from the Goethe-Institut, TestDaF-Institut or telc, for example the "Deutsch-Test für Zuwandernde".
         tone: warn
     links:
       - https://www.stadt-koeln.de/service/produkte/20334/index.html
     how_to_steps:
       - title: Download Cologne's official checklist
-        body: This case has an official "Checkliste Unterlagen" PDF on the product page — print it and tick it off; it's the list the case worker uses.
+        body: The product page links a "Checkliste Unterlagen" PDF for family members of German citizens.
         link: https://www.stadt-koeln.de/service/produkte/20334/index.html
-      - title: Submit the online Erstantrag now
-        body: Same online form as all first applications (33-F07), with the §28 uploads.
+      - title: Submit the online application
+        body: Upload the documents for your situation; bring the originals to the appointment.
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§28 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__28.html'}
+      - {kind: primary, label: '§81 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__81.html'}
+      - {kind: primary, label: '§41 AufenthV', url: 'https://www.gesetze-im-internet.de/aufenthv/__41.html'}
+      - {kind: implementation, label: 'Stadt Köln · family of German citizens', url: 'https://www.stadt-koeln.de/service/produkte/20334/index.html'}
+    claims:
+      - id: title-section
+        states: Submit your §28 permit application online
+        source: '§28 AufenthG'
+        quote: Die Aufenthaltserlaubnis ist dem ausländischen 1. Ehegatten eines Deutschen, 2. minderjährigen ledigen Kind eines Deutschen, 3. Elternteil eines minderjährigen ledigen Deutschen zur Ausübung der Personensorge zu erteilen, wenn der Deutsche seinen gewöhnlichen Aufenthalt im Bundesgebiet hat.
+      - id: who-applies
+        states: apply for a residence permit under §28
+        source: '§28 AufenthG'
+        quote: Die Aufenthaltserlaubnis ist dem ausländischen 1. Ehegatten eines Deutschen, 2. minderjährigen ledigen Kind eines Deutschen, 3. Elternteil eines minderjährigen ledigen Deutschen zur Ausübung der Personensorge zu erteilen, wenn der Deutsche seinen gewöhnlichen Aufenthalt im Bundesgebiet hat.
+      - id: a1
+        states: Spouses normally need basic German (A1)
+        source: 'Stadt Köln · family of German citizens'
+        quote: Sie müssen in der Regel über einfache deutsche Sprachkenntnisse (A1) verfügen.
+      - id: a1-certificate
+        states: A1 German certificate (spouses)
+        source: 'Stadt Köln · family of German citizens'
+        quote: Sie müssen einfache deutsche Sprachkenntnisse Stufe A1 durch ein geeignetes Sprachstandszeugnis der Stufe A1
+      - id: invitation
+        states: sends an appointment invitation once it can issue the permit
+        source: 'Stadt Köln · family of German citizens'
+        quote: Sie erhalten eine Termineinladung zur Vorsprache, wenn wir Ihnen die Aufenthaltserlaubnis zur Familienzusammenführung ausstellen können.
+      - id: before-expiry
+        states: apply before the visa expires
+        source: '§81 AufenthG'
+        quote: Ein Aufenthaltstitel, der nach Maßgabe der Rechtsverordnung nach § 99 Abs. 1 Nr. 2 nach der Einreise eingeholt werden kann, ist unverzüglich nach der Einreise oder innerhalb der in der Rechtsverordnung bestimmten Frist zu beantragen.
+      - id: visa-free-countries
+        states: visa-free under §41 AufenthV (for example as a citizen of
+        source: '§41 AufenthV'
+        quote: Staatsangehörige von Australien, Israel, Japan, Kanada, der Republik Korea, von Neuseeland, des Vereinigten Königreichs
+      - id: visa-free-window
+        states: apply within 90 days of entry
+        source: '§41 AufenthV'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
+      - id: visa-free-deadline
+        covers: deadline
+        source: '§41 AufenthV'
+        quote: Ein erforderlicher Aufenthaltstitel ist innerhalb von 90 Tagen nach der Einreise zu beantragen.
 
   - title: Attend your permit appointment with the originals (§28)
     key: famde.residence_permit
     depends_on: [famde.submit_application]
-    verified_at: 2026-06-11
     description: |
-      After the online application, the Bezirksausländeramt invites you to an
-      appointment — bring the originals of everything you uploaded. Assemble them with
-      the checklist below while you wait.
+      After the online application, the Ausländerbehörde invites you to an appointment
+      when it can issue the permit. Bring the originals of everything you uploaded;
+      Cologne may ask for further documents in individual cases.
     phase: first_30_days
     urgency: critical
     deadline_type: none
@@ -51,36 +97,91 @@ tasks:
       entry_mode: [d_visa, visa_free]
     booking_service_key: auslaenderbehoerde
     documents_required:
-      - label: National passport of the applying family member
+      - label: National passport of each applying family member
       - label: 'German spouse: their Personalausweis'
-        note: 'The German partner only shows their ID card. German children: a birth certificate suffices.'
-      - label: Copy of the entry visa, if visa-required
+        note: 'For German spouses the German ID card is enough. For German children the birth certificate is enough.'
+      - label: Copy of the entry visa, if you needed one
       - label: A1 German certificate (spouses)
-        note: The original of the certificate you uploaded — Goethe-Institut, TestDaF or telc only.
-      - label: Marriage certificate / child's birth certificate
-        note: Certified translations of all foreign certificates + apostille/legalization depending on the origin country.
-      - label: Custody-exercise proof, if the German parent doesn't live with the child
-        note: Required whenever you apply as the parent of a German child without cohabiting.
+        note: The original of the certificate you uploaded.
+      - label: Marriage certificate or child's birth certificate (first application only)
+        note: Bring a certified translation of every foreign certificate; depending on the country an apostille or legalisation is also needed.
+      - label: Proof that you exercise parental care, if the German parent does not live with the child
       - label: Digital biometric photo
     links:
       - https://www.stadt-koeln.de/service/produkte/20334/index.html
     how_to_steps:
-      - title: Bring originals AND certified translations
-        body: Foreign certificates need apostille/legalization + a sworn German translation — "any translation" fails.
+      - title: Bring originals and certified translations
+        body: Cologne asks for a certified translation of all foreign certificates, plus an apostille or legalisation depending on the country of origin.
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§28 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__28.html'}
+      - {kind: implementation, label: 'Stadt Köln · family of German citizens', url: 'https://www.stadt-koeln.de/service/produkte/20334/index.html'}
+    claims:
+      - id: title-section
+        states: Attend your permit appointment with the originals (§28)
+        source: '§28 AufenthG'
+        quote: Die Aufenthaltserlaubnis ist dem ausländischen 1. Ehegatten eines Deutschen, 2. minderjährigen ledigen Kind eines Deutschen, 3. Elternteil eines minderjährigen ledigen Deutschen zur Ausübung der Personensorge zu erteilen, wenn der Deutsche seinen gewöhnlichen Aufenthalt im Bundesgebiet hat.
+      - id: invitation
+        states: invites you to an appointment when it can issue the permit
+        source: 'Stadt Köln · family of German citizens'
+        quote: Sie erhalten eine Termineinladung zur Vorsprache, wenn wir Ihnen die Aufenthaltserlaubnis zur Familienzusammenführung ausstellen können.
+      - id: a1-certificate
+        states: A1 German certificate (spouses)
+        source: 'Stadt Köln · family of German citizens'
+        quote: Sie müssen einfache deutsche Sprachkenntnisse Stufe A1 durch ein geeignetes Sprachstandszeugnis der Stufe A1
+      - id: german-id
+        states: For German spouses the German ID card is enough
+        source: 'Stadt Köln · family of German citizens'
+        quote: Bei deutschen Ehepartner*innen oder eingetragenen Lebenspartner*innen genügt der deutsche Personalausweis.
 
-  - title: 'Permanent residency after just 3 years (§28 Abs. 2)'
+  - title: 'Permanent residency after three years (§28 Abs. 2)'
     key: famde.ne_three_years
     type: info
     depends_on: []
     description: |
-      Family members of German citizens qualify for the Niederlassungserlaubnis after
-      only 3 years — not the usual 5 — if the family community continues (cohabiting,
-      or regularly caring for German children), the livelihood works without benefits,
-      and you have B1 German. Book the Integrationskurs early; its closing B1 exam is
-      exactly the certificate you'll need.
+      If you hold a residence permit under §28(1) as the family member of a German, you
+      can apply for a Niederlassungserlaubnis after three years. Cologne lists these
+      conditions: the family community with your German family member continues (you
+      live together, or you regularly care for your German children); your livelihood
+      is secured without benefits such as Bürgergeld; you have adequate health
+      insurance; you have no criminal convictions in Germany, since even fines can
+      prevent it; and your German is at B1 level.
     phase: ongoing
     urgency: low
     deadline_type: none
     documents_required: []
     links:
       - https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-familienangehoerige-von-deutschen-personen
+    review_status: approved
+    jurisdiction: de-nrw-cologne
+    reviewed_by: automated_source_check
+    content_version: 2026-10-08.1
+    source_verification: quote_checked
+    legal_sources:
+      - {kind: primary, label: '§28 AufenthG', url: 'https://www.gesetze-im-internet.de/aufenthg_2004/__28.html'}
+      - {kind: implementation, label: 'Stadt Köln · settlement permit for family of Germans', url: 'https://www.stadt-koeln.de/service/produkt/niederlassungserlaubnis-fuer-familienangehoerige-von-deutschen-personen'}
+    claims:
+      - id: title-three-years
+        states: 'Permanent residency after three years (§28 Abs. 2)'
+        source: '§28 AufenthG'
+        quote: Dem Ausländer ist in der Regel eine Niederlassungserlaubnis zu erteilen, wenn er drei Jahre im Besitz einer Aufenthaltserlaubnis ist
+      - id: after-three-years
+        states: residence permit under §28(1) as the family member of a German, you can apply for a Niederlassungserlaubnis after three years
+        source: 'Stadt Köln · settlement permit for family of Germans'
+        quote: Wenn Sie eine Aufenthaltserlaubnis nach § 28 Absatz 1 Aufenthaltsgesetz über einen deutschen Familienangehörigen besitzen, können Sie bereits nach drei Jahren eine Niederlassungserlaubnis beantragen.
+      - id: family-community
+        states: you live together, or you regularly care for your German children
+        source: 'Stadt Köln · settlement permit for family of Germans'
+        quote: Das bedeutet, Sie wohnen mit Ihrem deutschen Familienmitglied zusammen oder betreuen Ihre deutschen Kinder regelmäßig.
+      - id: fines
+        states: even fines can prevent it
+        source: 'Stadt Köln · settlement permit for family of Germans'
+        quote: Hierbei können schon Geldstrafen die Erteilung einer Niederlassungserlaubnis verhindern.
+      - id: b1
+        states: your German is at B1 level
+        source: 'Stadt Köln · settlement permit for family of Germans'
+        quote: Ihre Deutschkenntnisse entsprechen dem Niveau B1 des Gemeinsamen Europäischen Referenzrahmens für Sprachen.
