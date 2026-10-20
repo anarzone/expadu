@@ -14,8 +14,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Server-owned plan commands. Every change goes straight into the plan with
  * its own Undo; one that can't go in (a clash, a time outside listed hours)
- * changes nothing and says why. Conversation text never changes a plan by
- * itself: only these structured, validated commands do.
+ * changes nothing and says why (a 422 with its reason). Conversation text
+ * never changes a plan by itself: only these structured, validated commands do.
  */
 class WorkspaceStore
 {
@@ -58,23 +58,23 @@ class WorkspaceStore
             $row = ComposerWorkspace::query()->firstOrCreate(['user_id' => $user->id], ['state' => $this->initial()]);
             abort_if($row->revision !== $input['revision'], 409, 'Your plan changed in another tab. The latest version has been loaded; review it before trying again.');
             $s = $this->state($row);
-            $refusal = null;
-            $displaced = null;
             try {
                 $displaced = $this->run($s, $user, $input);
             } catch (WorkspaceRefusal $error) {
-                $refusal = ['code' => $error->reason, 'message' => $error->getMessage()];
-                $this->message($s, 'assistant', $error->getMessage().' Your plan hasn’t changed.', ['kind' => 'refusal', 'code' => $error->reason]);
+                // A change that can't go in changes nothing, not even the revision;
+                // the reply says why, and the workspace comes back as it was.
+                return $this->projectState($this->state($row)) + ['revision' => $row->revision,
+                    'refusal' => ['code' => $error->reason, 'message' => $error->getMessage()]];
             }
             $row->update(['state' => $s, 'revision' => $row->revision + 1]);
             if ($displaced !== null) {
                 app(TasteSignals::class)->swappedAway($user, $displaced);
             }
-            if ($input['action'] === 'proposal' && $refusal === null) {
+            if ($input['action'] === 'proposal') {
                 DB::afterCommit(fn () => Cache::forget("composer:handoff:{$user->id}:{$input['token']}"));
             }
 
-            return $this->projectState($s) + ['revision' => $row->revision, 'refusal' => $refusal];
+            return $this->projectState($s) + ['revision' => $row->revision, 'refusal' => null];
         });
     }
 

@@ -26,8 +26,8 @@ class ComposerWorkspaceController extends Controller
     }
 
     /**
-     * A change that can't go in answers 422 with its reason, and carries the
-     * workspace as it now is (the reply saying why is in the conversation).
+     * A change that can't go in answers 422 with its reason and the workspace,
+     * unchanged, so the reply can say why without a reload.
      */
     public function update(WorkspaceCommandRequest $request, WorkspaceStore $store): JsonResponse
     {

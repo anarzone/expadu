@@ -98,19 +98,20 @@ test('a clash or a fixed time changes nothing and says why', function () {
     $before = ComposerWorkspace::query()->where('user_id', $user->id)->sole()->state['plans'];
 
     $clash = $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'spot:1', 'start' => '15:30', 'end' => '16:30'])
-        ->assertUnprocessable()->assertJsonPath('refusal.code', 'clash')->assertJsonPath('workspace.revision', 2);
+        ->assertUnprocessable()->assertJsonPath('refusal.code', 'clash')->assertJsonPath('workspace.revision', 1)
+        ->assertJsonPath("workspace.plans.{$date}.slots.0.start_time", '13:00');
     expect($clash->json('message'))->toBe('Park overlaps Concert.');
-    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'edit', 'id' => 'event:2', 'start' => '18:00', 'end' => '19:00'])
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'edit', 'id' => 'event:2', 'start' => '18:00', 'end' => '19:00'])
         ->assertUnprocessable()->assertJsonPath('refusal.code', 'fixed_time');
-    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'appointment', 'date' => $date, 'name' => 'Dentist', 'start' => '13:30', 'end' => '14:30'])
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'appointment', 'date' => $date, 'name' => 'Dentist', 'start' => '13:30', 'end' => '14:30'])
         ->assertUnprocessable()->assertJsonPath('refusal.code', 'clash');
 
-    $stored = ComposerWorkspace::query()->where('user_id', $user->id)->sole()->state;
-    $refusals = collect($stored['conversations'][0]['messages'])->where('kind', 'refusal')->pluck('text')->all();
-    expect($stored['plans'])->toBe($before)
-        ->and($stored['changes'])->toHaveCount(1)
-        ->and($refusals)->toHaveCount(3)
-        ->and($refusals[0])->toBe('Park overlaps Concert. Your plan hasn’t changed.');
+    // Nothing is written: not the plan, not the conversation, not the revision.
+    $row = ComposerWorkspace::query()->where('user_id', $user->id)->sole();
+    expect($row->state['plans'])->toBe($before)
+        ->and($row->state['changes'])->toHaveCount(1)
+        ->and($row->revision)->toBe(1)
+        ->and(collect($row->state['conversations'][0]['messages'])->where('kind', 'refusal'))->toBeEmpty();
 });
 
 test('a time outside the listed hours changes nothing', function () {
@@ -146,14 +147,14 @@ test('each change has its own Undo, newest first per day', function () {
     // The first day's older change waits for its newer one; the other day is independent.
     $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'undo', 'change' => $planned])
         ->assertUnprocessable()->assertJsonPath('refusal.code', 'changed_since');
-    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'undo', 'change' => $moved])->assertOk()
+    $this->postJson('/composer/workspace', ['revision' => 3, 'action' => 'undo', 'change' => $moved])->assertOk()
         ->assertJsonPath("plans.{$day}.slots.0.start_time", '13:00')->assertJsonPath("plans.{$other}.slots.0.name", 'Coffee');
-    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'undo', 'change' => $planned])->assertOk()
+    $this->postJson('/composer/workspace', ['revision' => 4, 'action' => 'undo', 'change' => $planned])->assertOk()
         ->assertJsonMissingPath("plans.{$day}")->assertJsonPath("plans.{$other}.slots.0.name", 'Coffee');
     // An undone change can't be undone twice; without an id, the newest change goes.
-    $this->postJson('/composer/workspace', ['revision' => 6, 'action' => 'undo', 'change' => $moved])
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'undo', 'change' => $moved])
         ->assertUnprocessable()->assertJsonPath('refusal.code', 'nothing_to_undo');
-    $this->postJson('/composer/workspace', ['revision' => 7, 'action' => 'undo'])->assertOk()->assertJsonCount(0, 'plans');
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'undo'])->assertOk()->assertJsonCount(0, 'plans');
     expect($coffee)->toBeString();
 });
 
@@ -232,7 +233,7 @@ test('an unfinished draft from before is kept to reapply, never applied by itsel
     $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'reapply', 'id' => $draft['draft_id']])
         ->assertUnprocessable()->assertJsonPath('refusal.code', 'already_reapplied');
     // Its Undo takes the day back to what it was before the reapply.
-    $this->postJson('/composer/workspace', ['revision' => 6, 'action' => 'undo'])->assertOk()->assertJsonCount(1, "plans.{$date}.slots");
+    $this->postJson('/composer/workspace', ['revision' => 5, 'action' => 'undo'])->assertOk()->assertJsonCount(1, "plans.{$date}.slots");
 });
 
 test('the upgrade migration moves stored workspaces once and makes open tabs reload', function () {
@@ -335,7 +336,7 @@ test('a selection that is no longer available is refused and the plan stays', fu
     $date = now('Europe/Berlin')->addDay()->format('Y-m-d');
     $this->actingAs($user)->postJson('/composer/workspace', [
         'revision' => 0, 'action' => 'add', 'date' => $date, 'candidate' => 'spot:'.$place->id,
-    ])->assertUnprocessable()->assertJsonPath('workspace.plans', [])->assertJsonPath('workspace.revision', 1);
+    ])->assertUnprocessable()->assertJsonPath('workspace.plans', [])->assertJsonPath('workspace.revision', 0);
 });
 
 test('saved unavailable places retain history and permit unrelated personal plan edits', function () {
@@ -374,7 +375,7 @@ test('canonical saved aliases cannot be added twice and still support removal', 
     $this->postJson('/composer/workspace', [
         'revision' => 1, 'action' => 'add', 'date' => $date, 'candidate' => 'spot:'.$canonical->id,
     ])->assertUnprocessable()->assertJsonPath('refusal.code', 'duplicate');
-    $this->postJson('/composer/workspace', ['revision' => 2, 'action' => 'remove', 'id' => 'spot:'.$alias->id])
+    $this->postJson('/composer/workspace', ['revision' => 1, 'action' => 'remove', 'id' => 'spot:'.$alias->id])
         ->assertSuccessful()->assertJsonCount(0, 'plans');
 });
 
@@ -425,7 +426,7 @@ test('manual additions measure the radius from the saved plan origin', function 
         'revision' => 1, 'action' => 'add', 'candidate' => 'spot:'.$far->id, 'start' => '15:00', 'end' => '16:00',
     ])->assertUnprocessable()->assertJsonPath('refusal.code', 'outside_hours');
     $this->postJson('/composer/workspace', [
-        'revision' => 2, 'action' => 'add', 'candidate' => 'spot:'.$near->id, 'start' => '15:00', 'end' => '16:00',
+        'revision' => 1, 'action' => 'add', 'candidate' => 'spot:'.$near->id, 'start' => '15:00', 'end' => '16:00',
     ])->assertSuccessful()->assertJsonPath("plans.{$plan['date']}.slots.1.recommendation_status", 'available');
 });
 

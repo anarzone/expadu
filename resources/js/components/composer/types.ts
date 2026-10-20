@@ -52,7 +52,7 @@ export type Message = {
     role: 'user' | 'assistant';
     text: string;
     created_at: string;
-    /** plan · change · undone · refusal · earlier_draft · bureaucracy · find · journey · unknown · failed */
+    /** plan · change · undone · earlier_draft · bureaucracy · find · journey · unknown · failed */
     kind?: string;
     query?: string;
     /** A plan card's day, as it is now (null once cancelled); an earlier draft's own copy. */
