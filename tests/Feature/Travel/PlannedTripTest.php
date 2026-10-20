@@ -7,6 +7,7 @@ use App\Models\PlannedTrip;
 use App\Models\User;
 use App\Notifications\PlannedTripChangeOfPlan;
 use App\Notifications\PlannedTripLeaveReminder;
+use App\Services\WeatherService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
@@ -22,7 +23,8 @@ use Illuminate\Support\Facades\Redis;
 // they can change or remove it, Leave now leads with it while it leaves the
 // margin, and its reminder goes once, when they asked for it. "We keep
 // watching it": a Change of plan goes to its owner once per severity, from
-// live data only, by the plan's id only.
+// live data only, by the plan's id only; rain on a long walk only when
+// another way walks half as much.
 
 const PLANNED_DAY = '2026-10-21';
 
@@ -304,6 +306,8 @@ function watchedRoutes(): object
         }
     };
     app()->instance(RouteService::class, $routes);
+    // A dry day unless a test says otherwise: the forecast is never fetched.
+    rainAt(0.0, 0);
 
     return $routes;
 }
@@ -386,4 +390,55 @@ test('a KVB notice for its line counts only when published after the way was pic
     $notice('Linie 4: Störung zwischen Neumarkt und Wiener Platz', '12:55');
     $this->artisan('travel:watch-planned-trips')->assertSuccessful();
     Notification::assertSentTo($this->user, PlannedTripChangeOfPlan::class, fn (PlannedTripChangeOfPlan $change) => $change->toArray($this->user)['body'] === 'KVB notice for tram 4: Linie 4: Störung zwischen Neumarkt und Wiener Platz');
+});
+
+/** A drier way: a minute to the bus, two from it, there 13:45. */
+function busWay(): Journey
+{
+    $at = fn (string $t) => CarbonImmutable::parse(PLANNED_DAY." {$t}", 'Europe/Berlin');
+    $start = new Place('', new GeoPoint(50.9361, 6.9473));
+    $stop = new Place('Köln Heumarkt', new GeoPoint(50.9360, 6.9500));
+    $off = new Place('Köln Mülheim Wiener Platz', new GeoPoint(50.9610, 7.0040));
+    $end = new Place('', new GeoPoint(50.96103, 7.0048));
+
+    return new Journey([
+        new Leg('walk', $start, $stop, $at('13:16'), $at('13:17'), 1),
+        new Leg('bus', $stop, $off, $at('13:17'), $at('13:43'), 26, '150', 'Mülheim'),
+        new Leg('walk', $off, $end, $at('13:43'), $at('13:45'), 2),
+    ], $at('13:16'), $at('13:45'), 29, 0);
+}
+
+/** The city's forecast for the sample day: this much rain at 13:00. */
+function rainAt(float $mm, int $chance): void
+{
+    $hours = array_map(fn (int $h) => [
+        'time' => CarbonImmutable::parse(PLANNED_DAY.sprintf(' %02d:00', $h), 'Europe/Berlin')->toIso8601String(),
+        'precip' => $h === 13 ? $mm : 0.0,
+        'precip_probability' => $h === 13 ? $chance : 10,
+    ], range(10, 16));
+    app()->instance(WeatherService::class, Mockery::mock(WeatherService::class, fn ($mock) => $mock->shouldReceive('getDayForecast')->andReturn(['hours' => $hours])));
+}
+
+test('rain on a long walk sends one Change of plan with a way that walks half as much, and only then', function () {
+    Notification::fake();
+    $routes = watchedRoutes();
+    $trip = watchedTrip($this->user);
+
+    // Dry, or rain without a better way: nothing.
+    rainAt(0.0, 20);
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48'), busWay()];
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    rainAt(1.4, 80);
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48')];
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    Notification::assertNothingSent();
+
+    // Rain on the 10-minute walk, and a way that walks 3: once.
+    $routes->journeys = [watchedRide('13:14', '13:42', '13:10', '13:48'), busWay()];
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    $this->artisan('travel:watch-planned-trips')->assertSuccessful();
+    Notification::assertSentToTimes($this->user, PlannedTripChangeOfPlan::class, 1);
+    Notification::assertSentTo($this->user, PlannedTripChangeOfPlan::class, fn (PlannedTripChangeOfPlan $change) => $change->toArray($this->user)['body']
+        === 'Rain on your 10-min walk · this way walks 3: leave 13:16 for bus 150 at 13:17, there 13:45.');
+    expect($trip->fresh()->alerted_kind)->toBe('weather');
 });

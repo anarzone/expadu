@@ -5,6 +5,7 @@ namespace App\Day;
 use App\Composer\TravelEstimator;
 use App\Models\PlannedTrip;
 use App\Services\DisruptionService;
+use App\Services\WeatherService;
 use App\Transit\Contracts\RouteService;
 use App\Transit\Dto\GeoPoint;
 use App\Transit\Dto\Journey;
@@ -17,8 +18,10 @@ use Carbon\CarbonImmutable;
  * (by the feed's trip id, else its line, boarding stop and timetable time);
  * the way changes when that ride is cancelled, when it runs late into the
  * margin before the plan starts, or when KVB publishes a notice for its line
- * after the way was picked. A ride that can't be found again, or times
- * without live data, say nothing: showing nothing beats guessing.
+ * after the way was picked. And the weather: rain forecast on a long walk,
+ * when another way still in time walks half as much (no better way, no
+ * message). A ride that can't be found again, or times without live data,
+ * say nothing: showing nothing beats guessing.
  */
 class PlannedTripWatch
 {
@@ -29,18 +32,30 @@ class PlannedTripWatch
 
     private const SAME_TIME_SECONDS = 60;
 
+    /** The weather: a walk this long (in all) is worth a drier way… */
+    private const RAIN_WALK_MIN = 8;
+
+    /** …when an hour of it brings this much rain (mm/h) or this likely (%). */
+    private const RAIN_MM = 1.0;
+
+    private const RAIN_PROBABILITY = 70;
+
+    /** A departure in the last minute still counts as catchable. */
+    private const GRACE_SECONDS = 60;
+
     public function __construct(
         private readonly RouteService $routes,
         private readonly DayProjection $day,
         private readonly NextTrip $next,
         private readonly DisruptionService $disruptions,
         private readonly TravelEstimator $distance,
+        private readonly WeatherService $weather,
     ) {}
 
     /**
      * The change of plan, or null while the way holds (or can't be told).
      *
-     * @return array{kind: string, ride: array{line: ?string, mode: string, time: string}, arrive_time: ?string, late_min: ?int, spare_min: ?int, start_time: string, notice: ?string, instead: ?array{leave_time: string, arrive_time: string, spare_min: int, status: string, ride: ?array{line: ?string, mode: string, time: string}}}|null
+     * @return array{kind: string, ride: array{line: ?string, mode: string, time: string}, arrive_time: ?string, late_min: ?int, spare_min: ?int, start_time: string, notice: ?string, walk_min: ?int, instead: ?array{leave_time: string, arrive_time: string, spare_min: int, status: string, ride: ?array{line: ?string, mode: string, time: string}, walk_min?: int}}|null
      */
     public function check(PlannedTrip $trip, CarbonImmutable $now): ?array
     {
@@ -85,6 +100,11 @@ class PlannedTripWatch
             $notice = $this->noticeFor($planned, $trip->planned_at ?? $trip->created_at?->toImmutable());
             $kind = $notice === null ? null : 'notice';
         }
+        $drier = null;
+        if ($kind === null) {
+            $drier = $this->drierWay($planned, $target, $from, $to, $now);
+            $kind = $drier === null ? null : 'weather';
+        }
         if ($kind === null) {
             return null;
         }
@@ -97,8 +117,93 @@ class PlannedTripWatch
             'spare_min' => $spare,
             'start_time' => $target->startAt->setTimezone('Europe/Berlin')->format('H:i'),
             'notice' => $notice,
-            'instead' => $kind === 'notice' ? null : $this->instead($target, $from, $ride, $now),
+            'walk_min' => $kind === 'weather' ? $this->walking($planned) : null,
+            'instead' => match ($kind) {
+                'notice' => null,
+                'weather' => $drier,
+                default => $this->instead($target, $from, $ride, $now),
+            },
         ];
+    }
+
+    /**
+     * Rain on the planned way's walk (8 min or more in all): an hour of the
+     * city's forecast while walking brings 1 mm/h or a 70% chance. Then the
+     * way still in time that walks least, if it walks half as much or less.
+     *
+     * @return array{leave_time: string, arrive_time: string, spare_min: int, status: string, ride: ?array{line: ?string, mode: string, time: string}, walk_min: int}|null
+     */
+    private function drierWay(Journey $planned, DayItem $target, GeoPoint $from, GeoPoint $to, CarbonImmutable $now): ?array
+    {
+        $walk = $this->walking($planned);
+        if ($walk < self::RAIN_WALK_MIN || ! $this->rainOnTheWalk($planned)) {
+            return null;
+        }
+
+        $result = $this->routes->withTimeBudget(self::BUDGET_SECONDS)->plan($from, $to, $target->startAt, 8, true);
+        if ($result->source === 'degraded') {
+            return null;
+        }
+        $margin = NextTrip::marginFor($target);
+        $ways = array_values(array_filter(
+            $result->journeys,
+            fn (Journey $j) => $j->departAt->getTimestamp() >= $now->getTimestamp() - self::GRACE_SECONDS
+                && ! collect($j->legs)->contains(fn (Leg $l) => $l->cancelled)
+                && $this->minutes($j->arriveAt, $target->startAt) >= $margin
+                && $this->walking($j) <= intdiv($walk, 2),
+        ));
+        if ($ways === []) {
+            return null;
+        }
+        // The least walking; the latest leave between equals.
+        usort($ways, fn (Journey $a, Journey $b) => [$this->walking($a), $b->departAt] <=> [$this->walking($b), $a->departAt]);
+        $way = $ways[0];
+        $first = collect($way->legs)->first(fn (Leg $leg) => $leg->isTransit());
+        $tz = 'Europe/Berlin';
+
+        return [
+            'leave_time' => $way->departAt->setTimezone($tz)->format('H:i'),
+            'arrive_time' => $way->arriveAt->setTimezone($tz)->format('H:i'),
+            'spare_min' => $this->minutes($way->arriveAt, $target->startAt),
+            'status' => 'fits',
+            'ride' => $first === null ? null : $this->rideOf($first),
+            'walk_min' => $this->walking($way),
+        ];
+    }
+
+    private function rainOnTheWalk(Journey $journey): bool
+    {
+        $tz = 'Europe/Berlin';
+        $days = [];
+        foreach ($journey->legs as $leg) {
+            if ($leg->mode !== 'walk') {
+                continue;
+            }
+            $start = $leg->departAt->setTimezone($tz);
+            $end = $leg->arriveAt->setTimezone($tz);
+            foreach (array_unique([$start->toDateString(), $end->toDateString()]) as $date) {
+                $days[$date] ??= $this->weather->getDayForecast($date)['hours'] ?? [];
+                foreach ($days[$date] as $hour) {
+                    if (! is_string($hour['time'] ?? null)) {
+                        continue;
+                    }
+                    $at = CarbonImmutable::parse($hour['time'])->setTimezone($tz);
+                    $overlaps = $at->lessThan($end) && $at->addHour()->greaterThan($start);
+                    if ($overlaps && ((float) ($hour['precip'] ?? 0) >= self::RAIN_MM
+                        || (int) ($hour['precip_probability'] ?? 0) >= self::RAIN_PROBABILITY)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /** Minutes on foot, in all. */
+    private function walking(Journey $journey): int
+    {
+        return (int) collect($journey->legs)->filter(fn (Leg $leg) => $leg->mode === 'walk')->sum(fn (Leg $leg) => $leg->durationMin);
     }
 
     /**

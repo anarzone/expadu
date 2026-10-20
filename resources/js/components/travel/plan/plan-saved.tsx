@@ -111,8 +111,9 @@ export function PlanSaved({
                     <span>
                         <strong>We keep watching it</strong>
                         <small>
-                            Live delays and KVB notices. If something changes,
-                            you get a “Change of plan” with a new way.
+                            Live delays, KVB notices and the weather. If
+                            something changes, you get a “Change of plan” with a
+                            new way.
                         </small>
                     </span>
                 </li>
