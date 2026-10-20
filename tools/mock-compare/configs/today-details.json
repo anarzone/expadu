@@ -82,6 +82,12 @@
             "pixels": false
         },
         {
+            "name": "trip row",
+            "mock": "dialog[open] .sheet-row.is-trip",
+            "app": "dialog[open] .sheet-row.is-trip",
+            "ignore": ["y"]
+        },
+        {
             "name": "booking",
             "mock": "dialog[open] .detail-grid > div",
             "app": "dialog[open] .detail-grid > div",

@@ -5,6 +5,7 @@ import { changeDay, failure } from '@/components/today/day-commands';
 import { routeTo } from '@/components/today/route-to';
 import { LineBadge } from '@/components/travel/line-badge';
 import { vehicleOf, vehicleWord } from '@/components/travel/line-look';
+import { stopName } from '@/components/travel/stop-name';
 import { Icon } from '@/components/ui/icon';
 import { Pill } from '@/components/ui/pill';
 import { Sheet } from '@/components/ui/sheet';
@@ -262,6 +263,13 @@ function TripRow({ item, day }: { item: DayItem; day: DayProjection }) {
     if (trip?.leave_time && ride) {
         const kind = vehicleOf(ride.mode);
         const line = ride.line ?? '';
+        // One string, so it reads (and shapes) as the mock's line does.
+        const ridden = [
+            `${line ? `${vehicleWord(kind)} ${line} at ` : ''}${ride.depart_time} from ${stopName(ride.from.name, trip.city)}`,
+            trip.arrive_time ? `there ${trip.arrive_time}` : null,
+        ]
+            .filter(Boolean)
+            .join(' · ');
 
         return (
             <Link className="sheet-row is-trip" href={route ?? timetable.url()}>
@@ -276,12 +284,7 @@ function TripRow({ item, day }: { item: DayItem; day: DayProjection }) {
                             ? 'Leave now'
                             : `Leave at ${trip.leave_time}`}
                     </strong>
-                    <small>
-                        {line ? `${vehicleWord(kind)} ${line} at ` : ''}
-                        {ride.depart_time}
-                        {` from ${ride.from.name}`}
-                        {trip.arrive_time ? ` · there ${trip.arrive_time}` : ''}
-                    </small>
+                    <small>{ridden}</small>
                 </span>
                 <Icon name="arrow" variant="line" />
             </Link>
