@@ -2874,22 +2874,17 @@
             undo?.();
             document.querySelector('#studio-toast').hidden = true;
         }
-        // Deleting history happens straight away, with its Undo, as Cancel
-        // day does (owner, 18 Oct 2026); plans and saved ideas stay.
-        if (action === 'delete-history') {
-            const kept = JSON.parse(JSON.stringify(state.conversation));
-            C.deleteHistory(state);
-            state.response = null;
-            store();
-            closePanel();
-            render();
-            notify('Conversation history deleted.', () => {
-                state.conversation = kept;
-                C.ensure(state);
+        // Deleting history asks first (owner, 21 Oct 2026): it's permanent.
+        // Plans and saved ideas stay.
+        if (action === 'delete-history')
+            features.confirmDeleteHistory(el, () => {
+                C.deleteHistory(state);
+                state.response = null;
                 store();
+                closePanel();
                 render();
+                notify('Conversation history deleted.');
             });
-        }
         if (action === 'new') {
             C.startFresh(state);
             state.response = null;
