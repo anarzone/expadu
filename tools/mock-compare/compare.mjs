@@ -233,6 +233,9 @@ async function shot(page, pair, sideName) {
         .locator(sel)
         .nth(pair[`${sideName}Index`] ?? pair.index ?? 0);
     try {
+        // An element shot scrolls the page; start every shot from the top so
+        // both sides land on the same offset whatever was shot before.
+        await page.evaluate(() => window.scrollTo(0, 0));
         return await loc.screenshot({
             animations: 'disabled',
             caret: 'hide',
