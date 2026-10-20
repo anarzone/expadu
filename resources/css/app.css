@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
+@import './shell.css';
 
 /* Self-hosted fonts — eliminates Google Fonts render-blocking request */
 @font-face {

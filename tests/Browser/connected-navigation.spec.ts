@@ -7,29 +7,40 @@ for (const route of [
     '/timetable',
     '/services',
 ]) {
-    test(`top navigation remains available on ${route}`, async ({ page }) => {
+    test(`the shared header and sections stay available on ${route}`, async ({
+        page,
+        isMobile,
+    }) => {
         await page.goto(route);
         const navigation = page.getByRole('navigation', {
             name: 'Main navigation',
         });
         await expect(navigation).toBeVisible();
-
-        for (const name of [
+        await expect(navigation.getByRole('link')).toHaveText([
             'Today',
             'Events',
             'Paperwork',
             'Travel',
-            'Services',
-        ]) {
-            await expect(
-                navigation.getByRole('link', { name, exact: true }),
-            ).toBeVisible();
-        }
+        ]);
 
+        // Composer: the header's "Ask Composer" from 701px, the round button
+        // beside the floating sections on phones.
         await expect(
-            page.getByRole('link', { name: 'Open Composer', exact: true }),
+            isMobile
+                ? page.getByRole('link', { name: 'Open Composer', exact: true })
+                : page
+                      .getByRole('banner')
+                      .getByRole('link', { name: 'Ask Composer', exact: true }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Your account', exact: true }),
         ).toBeVisible();
         await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+        expect(
+            await page.evaluate(
+                () => document.documentElement.scrollWidth <= innerWidth,
+            ),
+        ).toBe(true);
     });
 }
 
