@@ -2,7 +2,6 @@ import { Head, router, usePage } from '@inertiajs/react';
 import type { CSSProperties } from 'react';
 import { useEffect, useState } from 'react';
 import EventOtherDayController from '@/actions/App/Http/Controllers/Api/EventOtherDayController';
-import GeocodeController from '@/actions/App/Http/Controllers/Api/GeocodeController';
 import TransportModeController from '@/actions/App/Http/Controllers/Api/TransportModeController';
 import { api } from '@/components/composer/types';
 import { occurrenceKey } from '@/components/events/event-presentation';
@@ -52,7 +51,20 @@ type Props = {
     filters: EventFilters;
     /** The day's forecast, deferred (WeatherService::getDayForecast). */
     weather?: DayForecast;
+    /** The URL's starting point, when it names a public point or one of
+        the person's saved places (EventStartingPoint). */
+    starting_point: PlacePoint | null;
+    /** The person's own Home and Work, when saved. */
+    saved_places: PlacePoint[];
 };
+
+type PlacePoint = { key: string; name: string; lat: number; lng: number };
+
+const asStartingPoint = (p: PlacePoint): StartingPoint => ({
+    name: p.name,
+    key: p.key,
+    point: { lat: p.lat, lng: p.lng },
+});
 
 type Listing = StreetListing & {
     occurrence: EventOccurrence;
@@ -115,6 +127,8 @@ export default function Events({
     listings,
     filters,
     weather,
+    starting_point,
+    saved_places,
 }: Props) {
     const { auth } = usePage<{ auth: Auth }>().props;
     const saved = useSavedEvents(auth.user.id);
@@ -168,43 +182,24 @@ export default function Events({
             },
         );
 
-    // The starting point: its name is in the URL, its place found here
-    // (recognised places only; an unknown name shows no distances).
-    const [from, setFrom] = useState<StartingPoint | null>(null);
+    // The starting point. The URL carries only a public point's name or a
+    // saved place's key, resolved on the server; a typed address stays in
+    // this state, out of the URL, history and server logs.
+    const [chosen, setChosen] = useState<StartingPoint | null>(null);
     const [mode, setMode] = useState<TravelMode>(
         (auth.user.transport_mode as TravelMode | null) ?? 'transit',
     );
-
-    useEffect(() => {
-        if (!f.from || from?.name === f.from) {
-            return;
-        }
-
-        const controller = new AbortController();
-        api<{ name: string; lat: number; lng: number }[]>(
-            GeocodeController.url({ query: { q: f.from } }),
-            undefined,
-            controller.signal,
-        )
-            .then((rows) =>
-                setFrom({
-                    name: f.from!,
-                    point: rows[0]
-                        ? { lat: rows[0].lat, lng: rows[0].lng }
-                        : null,
-                }),
-            )
-            .catch(() => setFrom({ name: f.from!, point: null }));
-
-        return () => controller.abort();
-    }, [f.from, from?.name]);
-
-    const shownFrom = f.from ? (from?.name === f.from ? from : null) : null;
+    const shownFrom =
+        chosen && chosen.key === (f.from ?? null)
+            ? chosen
+            : f.from && starting_point?.key === f.from
+              ? asStartingPoint(starting_point)
+              : null;
 
     const onFrom = (next: StartingPoint | null) => {
-        setFrom(next);
+        setChosen(next);
         onFilters({
-            from: next?.name ?? null,
+            from: next?.key ?? null,
             sort:
                 !next && current.sort === 'closest' ? 'soonest' : current.sort,
         });
@@ -419,6 +414,7 @@ export default function Events({
                 categories={dayCategories(listings, current.category)}
                 areas={dayAreas(listings, current.area)}
                 from={shownFrom}
+                savedPlaces={saved_places.map(asStartingPoint)}
                 mode={mode}
                 onFrom={onFrom}
                 onMode={onMode}

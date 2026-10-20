@@ -6,6 +6,7 @@ use App\Enums\EventCategory;
 use App\Models\Event;
 use App\Services\WeatherService;
 use App\Support\EventOccurrencePresenter;
+use App\Support\EventStartingPoint;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,16 +23,27 @@ class EventController extends Controller
 {
     public function __construct(private readonly EventOccurrencePresenter $presenter) {}
 
-    public function index(Request $request): Response
+    public function index(Request $request, EventStartingPoint $points): Response
     {
         $input = $request->validate(['date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before:2100-01-01']]);
         $today = CarbonImmutable::now('Europe/Berlin');
         $day = isset($input['date']) ? CarbonImmutable::parse($input['date'], 'Europe/Berlin') : $today;
+        $filters = $this->filters($request);
+        // The URL's starting point counts only as a public point or the
+        // person's own saved place; anything else is dropped.
+        $from = $points->resolve($filters['from'], $request->user());
+        $filters['from'] = $from['key'] ?? null;
+
+        if ($from === null && $filters['sort'] === 'closest') {
+            $filters['sort'] = 'soonest';
+        }
 
         return Inertia::render('events', [
             'date' => $day->toDateString(),
             'today' => $today->toDateString(),
-            'filters' => $this->filters($request),
+            'filters' => $filters,
+            'starting_point' => $from,
+            'saved_places' => $points->savedPlaces($request->user()),
             'listings' => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
                 ->values()
