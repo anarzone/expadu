@@ -1547,18 +1547,8 @@ body.today-next {
 .today-next .event-ticket-poster {
     background: #3b352c;
 }
-/* Keep the shared Composer's layout and behavior, with this page's palette. */
-.today-next.department-composer #composer-tray {
-    color: var(--ink-soft);
-    border-color: var(--line);
-    background: var(--surface);
-    box-shadow: 0 4px 20px #3e352b14;
-}
-.today-next.department-composer #composer-tray:has(#request:focus) {
-    box-shadow:
-        0 0 0 1px #ad9c89,
-        0 4px 20px #3e352b14;
-}
+/* The shared Composer tray looks as on every page (shell-review.css);
+   only its launcher keeps this page's colours. */
 .today-next.department-composer .composer-launcher:is(:hover, :focus-visible) {
     outline-color: var(--focus);
 }

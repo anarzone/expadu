@@ -7,7 +7,26 @@
     border-radius: var(--radius-xl);
     background: var(--color-bg-surface, #fff);
     box-shadow: 0 4px 20px #3e352b0d;
-    backdrop-filter: none;
+}
+/* Frosted, as the shell's tray is on every page: Today loads this file
+   but not shell-review.css, which does the same for the others. */
+@supports (backdrop-filter: blur(20px)) {
+    :is(.today-c, .department-composer) #composer-tray {
+        background: color-mix(
+            in srgb,
+            var(--color-bg-surface, rgb(245 251 252)) 72%,
+            transparent
+        );
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+}
+@media (prefers-reduced-transparency: reduce) {
+    :is(.today-c, .department-composer) #composer-tray {
+        background: var(--color-bg-surface, #fff);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
 }
 /* The shell's focus ring, the same on every page. */
 :is(.today-c, .department-composer)
