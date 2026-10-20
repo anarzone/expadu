@@ -184,7 +184,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
 /* Prevent iOS auto-zoom on input focus (triggers when font-size < 16px);
    the time fields are larger already. */
 @media screen and (max-width: 700px) {
-    input:not(.ui-time-input),
+    input:not(:where(.ui-time-input)),
     select,
     textarea {
         font-size: 16px !important;

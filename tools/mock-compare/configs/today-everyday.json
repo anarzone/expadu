@@ -96,6 +96,6 @@
         }
     ],
     "ignoreNote": "y: the sections above Your day are not built yet (the deadline strip needs Paperwork v2, #109; the phone order is TD2–TD5). Drop it when they land.",
-    "contentNote": "Leave now is Travel's NextTripCard (compact) on the sample route. It matches the mock except where 'Scheduled · not live' sits: the mock has a chip row above the tiles, the card says it in the ride tile (asked of session 3), so its height and pixels differ and what follows sits a fraction of a pixel off; Add a plan's pixels are not compared.",
+    "contentNote": "Leave now is Travel's NextTripCard (compact) on the sample route. It says 'Scheduled · not live' in the ride tile's sub-line, the coordinator's call for Travel and Today (20 Oct); the design session is redrawing Today's mock to match, which still shows a chip row. Until then its height and pixels differ and what follows sits a fraction of a pixel off, so Add a plan's pixels are not compared.",
     "subpixelNote": "At 768 the missing deadline strip (76.8 px) leaves the first plan's place and status a fraction of a pixel off, so their text rasterises differently; boxes and styles are still exact."
 }
