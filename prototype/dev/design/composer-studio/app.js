@@ -217,19 +217,10 @@
             .filter((x) => x.start)
             .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`))
             .slice(0, 2);
-        // The nearest pharmacy to the appointment, for its map picture (the
-        // approved design's Nearby starter asks about a pharmacy).
-        const P = window.ExpaduPlaces;
-        const anchor = P?.anchors?.['wiener-platz'];
-        const nearby =
-            appointment && anchor && P.near
-                ? P.near(anchor, {
-                      kinds: ['pharmacy'],
-                      limit: 1,
-                      at: { date: today, time: appointment.end || appointment.start },
-                  })[0]?.place
-                : null;
-        return { today, now, appointment, trip, record, deadlines, tonight, planned, upcoming, anchor, nearby };
+        // The appointment's area, for the Nearby starter and tile: drawn
+        // with a pin, as the app draws it (it has no map pictures).
+        const anchor = window.ExpaduPlaces?.anchors?.['wiener-platz'];
+        return { today, now, appointment, trip, record, deadlines, tonight, planned, upcoming, anchor };
     }
     const eventById = (id) =>
         allEvents().find((x) => x.id === String(id).replace(/^event:/, ''));
@@ -685,8 +676,6 @@
     document.addEventListener('focusin', (e) => {
         if (!e.target.closest('.composer-actions')) closeComposerActions();
     });
-    const mapPicture = (place) =>
-        place ? `<img src="../connected/place-maps/${E(place.id)}.png" alt="" loading="lazy" onerror="this.remove()">` : '';
     const weekday = (date) =>
         new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long' });
     const stamp = (date) =>
@@ -865,7 +854,6 @@
                 icon: 'pin',
                 label: 'Is there a pharmacy near my appointment?',
                 detail: `Around ${x.anchor.name}`,
-                picture: mapPicture(x.nearby),
             },
         ].filter(Boolean);
         return cards;
@@ -887,7 +875,7 @@
             ? `<div class="starter-cards">${cards
                   .map(
                       (c) =>
-                          `<button class="starter-card starter-${c.kind}" data-prompt="${E(c.label)}">${c.picture || ''}<span class="starter-tag">${I(c.icon)}${E(c.tag)}</span>${c.stamp ? `<span class="starter-stamp" aria-hidden="true">${E(c.stamp)}</span>` : ''}<strong>${E(c.label)}</strong><small>${E(c.detail)}</small></button>`,
+                          `<button class="starter-card starter-${c.kind}" data-prompt="${E(c.label)}"><span class="starter-tag">${I(c.icon)}${E(c.tag)}</span>${c.stamp ? `<span class="starter-stamp" aria-hidden="true">${E(c.stamp)}</span>` : ''}<strong>${E(c.label)}</strong><small>${E(c.detail)}</small></button>`,
                   )
                   .join('')}</div>`
             : '';
@@ -943,7 +931,7 @@
             facts.push({
                 prompt: 'Is there a pharmacy near my appointment?',
                 tile: 'is-map',
-                icon: mapPicture(x.nearby) || I('pin'),
+                icon: I('pin'),
                 small: `After ${a.end || a.start}`,
                 strong: `Near ${x.anchor.name.split(',')[0]}`,
             });
