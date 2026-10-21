@@ -666,6 +666,7 @@ export default function Timetable() {
                                 onPickStop={pickStop}
                                 onToggleFavourite={toggleFavourite}
                                 favouriteBusy={favouriteBusy}
+                                stepFreeNeed={page.props.stepFreeNeed ?? false}
                             />
                         ) : (
                             <div className="nearby-empty">

@@ -61,8 +61,8 @@ class TimetableController extends Controller
                 ? app(EventHandoff::class)->for($request->query('event'), $request->query('start'), CarbonImmutable::now())
                 : null,
             'favouriteStops' => fn () => FavouriteStopController::forUser($userId, $kvb),
-            // The person's own step-free need: Plan a trip starts with
-            // Step-free on. Hidden from the user's serialisation, so it's
+            // The person's own step-free need: Plan a trip and Nearby start
+            // with Step-free on. Hidden from the user's serialisation, so it's
             // only ever read here, for them.
             'stepFreeNeed' => fn () => (bool) $request->user()->needs_step_free,
             // Your next thing and My day: the shared server-side day projection.
