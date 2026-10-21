@@ -3,6 +3,7 @@
 use App\Models\ComposerWorkspace;
 use App\Models\Spot;
 use App\Models\User;
+use App\Models\UserPlace;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -79,6 +80,22 @@ test('a plan names its point by its id; another person’s plan names none', fun
         ->assertInertia(fn ($page) => $page->where('point', null)->where('places', []));
 });
 
+test('🔒 the person’s own place goes by its key: near=home resolves here, and no coordinates come back into the address', function () {
+    aroundSpot('Near bakery', 'bakery', 0.0005);
+    $me = User::factory()->onboarded()->create();
+    UserPlace::factory()->create(['user_id' => $me->id, 'category' => 'home', 'lat' => AROUND_LAT, 'lng' => AROUND_LNG]);
+
+    $this->actingAs($me)->get('/explore?kind=bakery&near=home')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->url('/explore?kind=bakery&near=home')
+            ->where('point', ['name' => 'Home', 'lat' => AROUND_LAT, 'lng' => AROUND_LNG])
+            ->where('places.0.name', 'Near bakery'));
+
+    // Without a home of their own, the key names nothing.
+    $this->actingAs(User::factory()->onboarded()->create())->get('/explore?kind=bakery&near=home')
+        ->assertInertia(fn ($page) => $page->where('point', null)->where('places', []));
+});
+
 test('"Open at" keeps only the places listed as open then', function () {
     aroundSpot('Open', 'pharmacy', 0.0005);
     aroundSpot('Opens later', 'pharmacy', 0.0006, 'Mo-Fr 15:00-19:00');
@@ -106,6 +123,7 @@ test('🔒 the point and the time are only read: nothing is written, cached or l
     aroundSpot('Near pharmacy', 'pharmacy', 0.0005);
     $me = User::factory()->onboarded()->create();
     aroundPlan($me, 'my-appointment');
+    UserPlace::factory()->create(['user_id' => $me->id, 'category' => 'home', 'lat' => AROUND_LAT, 'lng' => AROUND_LNG]);
     $this->actingAs($me);
     Cache::spy();
     Log::spy();
@@ -129,4 +147,4 @@ test('🔒 the point and the time are only read: nothing is written, cached or l
     Log::shouldNotHaveReceived('info');
     Log::shouldNotHaveReceived('debug');
     Log::shouldNotHaveReceived('warning');
-})->with(['a public point' => '50.96103,7.0048', 'a plan on my day' => 'plan:my-appointment']);
+})->with(['a public point' => '50.96103,7.0048', 'a plan on my day' => 'plan:my-appointment', 'my home' => 'home']);

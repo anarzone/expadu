@@ -27,6 +27,11 @@ use Inertia\Response;
  *    on a way);
  *  - a district, stop or venue by its name, or `home` / `work`
  *    (EventStartingPoint).
+ * 🔒 Bare coordinates only ever name a public point. The person's own
+ * position never goes in a URL: their saved places go by their keys and
+ * their plans by their ids, resolved here, and a live position would need
+ * a private path (a POST, or `near=here` read from what the page already
+ * sends privately), never `near=<lat>,<lng>`.
  * When (`time`, HH:MM): today's listed hours at that time, now by default.
  *
  * 🔒 The point and the time are inputs only: nothing here stores, caches or

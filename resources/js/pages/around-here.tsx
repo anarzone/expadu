@@ -84,7 +84,9 @@ export default function AroundHere({
         : `No ${countNoun(kind, kinds, false)}${open ? ` listed as open at ${at.time}` : ''} near ${point?.name ?? 'here'}.`;
 
     // A choice of kind or "Open at" asks the server again; the point and
-    // the time stay as the URL has them.
+    // the time stay as the URL has them. Never write the resolved point
+    // back as coordinates: `home`, `work` and `plan:…` resolve on the
+    // server, and bare coordinates only ever name a public point.
     const choose = (next: { kind?: string; open?: boolean }) => {
         const query = new URLSearchParams(location.search);
         const k = next.kind ?? kind;
