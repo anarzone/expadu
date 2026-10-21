@@ -26,6 +26,9 @@ class EventOccurrencePresenter
         $venue = $event->venue;
         $venueName = $this->venueName($venue->name ?? $event->location_name);
         $media = $this->selectMedia($event);
+        // The model's words show only with the listing's evidence; manual events are ours.
+        $manual = $event->source === 'manual';
+        $source = EventEvidence::source($event);
 
         return [
             'id' => $event->id,
@@ -35,7 +38,7 @@ class EventOccurrencePresenter
             'title_original' => $event->title,
             'title_lang' => $event->source_lang,
             'time_listed' => $this->timeListed($startsAt, $endsAt),
-            'language' => $event->language,
+            'language' => $manual ? $event->language : EventEvidence::language($event->language, $source),
             'category' => $category->value,
             'category_label' => $category->label(),
             'emoji' => $category->emoji(),
@@ -46,8 +49,10 @@ class EventOccurrencePresenter
             'photo_license_url' => $media?->license_url,
             'chips' => $this->chips($event),
             // Hand-written (manual) tips are ours; the model's are checked again here.
-            'tip' => $event->source === 'manual' ? $event->tip_en : EventTipGuard::grounded($event->tip_en, $event->title.' '.$event->description.' '.$event->price_text),
-            'summary' => $event->summary_en ?: ($event->description_en ?: null),
+            'tip' => $manual ? $event->tip_en : EventTipGuard::grounded($event->tip_en, $source),
+            'summary' => $manual
+                ? ($event->summary_en ?: ($event->description_en ?: null))
+                : (EventEvidence::text($event->summary_en, $source) ?? EventEvidence::text($event->description_en, $source)),
             'price_text' => $event->price_text ?: ($event->is_free ? 'free' : null),
             'venue' => [
                 'name' => $venueName,
@@ -153,7 +158,11 @@ class EventOccurrencePresenter
         // "free" comes from the source's own price fields only. A stored
         // "free" chip from the classifier was a guess when the source said
         // nothing about the price.
-        $chips = array_diff(is_array($event->chips) ? $event->chips : [], ['free']);
+        $chips = array_values(array_diff(is_array($event->chips) ? $event->chips : [], ['free']));
+        // The classifier's chips show only when the listing says so.
+        if ($event->source !== 'manual') {
+            $chips = EventEvidence::chips($chips, EventEvidence::source($event));
+        }
 
         if ($event->is_free || strtolower((string) $event->price_text) === 'free') {
             $chips[] = 'free';
