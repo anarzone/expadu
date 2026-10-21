@@ -21,7 +21,7 @@ export default function Profile({
     const { auth } = usePage().props;
 
     return (
-        <AppLayout rightPanel={null}>
+        <AppLayout>
             <Head title="Profile settings" />
 
             <h1 className="sr-only">Profile settings</h1>
@@ -85,13 +85,13 @@ export default function Profile({
                                 {mustVerifyEmail &&
                                     auth.user.email_verified_at === null && (
                                         <div>
-                                            <p className="-mt-4 text-sm text-muted-foreground">
+                                            <p className="-mt-4 text-sm text-text-muted">
                                                 Your email address is
                                                 unverified.{' '}
                                                 <Link
                                                     href={send()}
                                                     as="button"
-                                                    className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                                    className="text-text underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current!"
                                                 >
                                                     Click here to resend the
                                                     verification email.
@@ -100,7 +100,7 @@ export default function Profile({
 
                                             {status ===
                                                 'verification-link-sent' && (
-                                                <div className="mt-2 text-sm font-medium text-green-600">
+                                                <div className="mt-2 text-sm font-medium text-success">
                                                     A new verification link has
                                                     been sent to your email
                                                     address.
@@ -124,7 +124,7 @@ export default function Profile({
                                         leave="transition ease-in-out"
                                         leaveTo="opacity-0"
                                     >
-                                        <p className="text-sm text-neutral-600">
+                                        <p className="text-sm text-text-soft">
                                             Saved
                                         </p>
                                     </Transition>
