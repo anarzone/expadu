@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Ai\LlmRollout;
 use App\Composer\ActivePlanStore;
 use App\Composer\AnthropicCandidateRanker;
+use App\Composer\AnthropicPromptParser;
 use App\Composer\AppointmentRepository;
 use App\Composer\Candidate;
 use App\Composer\CandidateRepository;
@@ -16,7 +17,6 @@ use App\Composer\DayAround;
 use App\Composer\FeasibilityFilter;
 use App\Composer\IntentWeights;
 use App\Composer\MatrixTravelEstimator;
-use App\Composer\OpenAiCompatiblePromptParser;
 use App\Composer\PaperworkGlance;
 use App\Composer\Plan;
 use App\Composer\PlanCatalogue;
@@ -181,9 +181,9 @@ class ComposerController extends Controller
     {
         $validated = $request->validated();
         $profile = $profiles->build($request->user());
-        $permit = $parser instanceof OpenAiCompatiblePromptParser && isset($validated['processing'])
+        $permit = $parser instanceof AnthropicPromptParser && isset($validated['processing'])
             ? app(ProcessingConsentStore::class)->grant($request->user(), ProcessingPurpose::ComposerParse,
-                OpenAiCompatiblePromptParser::processingContext($validated['text'], $profile), $validated['processing'])
+                AnthropicPromptParser::processingContext($validated['text'], $profile), $validated['processing'])
             : null;
 
         $parsed = $parser->parse(

@@ -20,7 +20,7 @@ beforeEach(function () {
     $this->travelTo('2026-09-08 12:00:00');
     config()->set('services.llm.base_url', 'https://processor.example.test');
     config()->set('services.llm.model', 'synthetic-parser');
-    config()->set('services.llm.driver', 'openai');
+    config()->set('services.llm.driver', 'anthropic');
     config()->set('services.llm.key', 'synthetic-key');
     config()->set('services.llm.processor_name', 'Synthetic processor');
     config()->set('services.llm.processor_privacy_url', 'https://processor.example.test/privacy');

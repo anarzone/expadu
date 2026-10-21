@@ -2,14 +2,14 @@
 
 namespace App\Providers;
 
+use App\Bureaucracy\Ai\AnthropicCaseFactExtractor;
 use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
-use App\Bureaucracy\Ai\DeepSeekCaseFactExtractor;
 use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
 use App\Composer\AnthropicCandidateRanker;
+use App\Composer\AnthropicPromptParser;
 use App\Composer\Contracts\ParsesPrompt;
 use App\Composer\Contracts\RanksCandidates;
 use App\Composer\HeuristicPromptParser;
-use App\Composer\OpenAiCompatiblePromptParser;
 use App\ContextEngine\Evaluators\MarketEvaluator;
 use App\ContextEngine\Evaluators\RhineEvaluator;
 use App\ContextEngine\Evaluators\TransitDelayEvaluator;
@@ -66,7 +66,7 @@ class AppServiceProvider extends ServiceProvider
                 return $app->make(UnavailableCaseFactExtractor::class);
             }
 
-            return $app->make(DeepSeekCaseFactExtractor::class);
+            return $app->make(AnthropicCaseFactExtractor::class);
         });
 
         $this->app->singleton(
@@ -77,14 +77,14 @@ class AppServiceProvider extends ServiceProvider
         // Inertia SSR with a short timeout instead of Laravel's 30 s default.
         $this->app->singleton(Gateway::class, SsrGateway::class);
 
-        // The composer parser: heuristic by default (no key), the
-        // OpenAI-compatible driver once a provider key is configured. The
-        // driver always wraps the heuristic as its degradation path.
+        // The composer parser: heuristic by default, Claude once the anthropic
+        // driver and a key are configured. Claude always wraps the heuristic
+        // as its degradation path.
         $this->app->bind(ParsesPrompt::class, function ($app) {
             $heuristic = $app->make(HeuristicPromptParser::class);
 
             if (ProcessingPurpose::ComposerParse->available()) {
-                return new OpenAiCompatiblePromptParser($heuristic);
+                return new AnthropicPromptParser($heuristic);
             }
 
             return $heuristic;

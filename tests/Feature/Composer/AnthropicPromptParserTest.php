@@ -1,7 +1,7 @@
 <?php
 
+use App\Composer\AnthropicPromptParser;
 use App\Composer\HeuristicPromptParser;
-use App\Composer\OpenAiCompatiblePromptParser;
 use App\Composer\ParsedPrompt;
 use App\Composer\PromptIntent;
 use App\Enums\GermanLevel;
@@ -12,15 +12,16 @@ use App\Privacy\ProcessingPurpose;
 use App\Profile\Profile;
 use App\Profile\TicketAdvice;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Tests\Support\ExternalProcessingFixtures;
 
 /**
- * The OpenAI-compatible driver is dormant until a key lands, but its
- * mapping and degradation path are proven here against a faked provider —
- * so flipping LLM_DRIVER=openai is a config change, not a leap of faith.
+ * The Anthropic driver is dormant until a key lands, but its mapping and
+ * degradation path are proven here against a faked provider — so flipping
+ * LLM_DRIVER=anthropic is a config change, not a leap of faith.
  */
 function llmProfile(): Profile
 {
@@ -36,17 +37,17 @@ function llmProfile(): Profile
     );
 }
 
-function llmParser(): OpenAiCompatiblePromptParser
+function llmParser(): AnthropicPromptParser
 {
-    config()->set('services.llm.driver', 'openai');
+    config()->set('services.llm.driver', 'anthropic');
     config()->set('services.llm.processor_name', 'Synthetic processor');
     config()->set('services.llm.processor_privacy_url', 'https://processor.example.test/privacy');
     config()->set('services.llm.prompt_version', 'synthetic.1');
-    config()->set('services.llm.base_url', 'https://api.deepseek.com');
-    config()->set('services.llm.model', 'deepseek-chat');
+    config()->set('services.llm.base_url', 'https://api.anthropic.com');
+    config()->set('services.llm.model', 'claude-haiku-5-5');
     config()->set('services.llm.key', 'test-key');
 
-    return new OpenAiCompatiblePromptParser(new HeuristicPromptParser);
+    return new AnthropicPromptParser(new HeuristicPromptParser);
 }
 
 function parseWithConsent(string $text, Profile $profile, CarbonImmutable $now): ParsedPrompt
@@ -54,22 +55,29 @@ function parseWithConsent(string $text, Profile $profile, CarbonImmutable $now):
     test()->travelTo($now);
     $parser = llmParser();
     $permit = app(ProcessingConsentStore::class)->grant(User::factory()->create(), ProcessingPurpose::ComposerParse,
-        OpenAiCompatiblePromptParser::processingContext($text, $profile), ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerParse));
+        AnthropicPromptParser::processingContext($text, $profile), ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerParse));
 
     return $parser->parse($text, $profile, $now, $permit);
 }
 
-function fakeToolCall(array $arguments): void
+function fakeToolReply(array $content): void
 {
     Http::fake([
-        'api.deepseek.com/*' => Http::response([
-            'choices' => [
-                ['message' => ['tool_calls' => [
-                    ['function' => ['name' => 'route_prompt', 'arguments' => json_encode($arguments)]],
-                ]]],
-            ],
+        'api.anthropic.com/*' => Http::response([
+            'id' => 'msg_1',
+            'type' => 'message',
+            'role' => 'assistant',
+            'model' => 'claude-haiku-5-5',
+            'stop_reason' => 'tool_use',
+            'content' => $content,
+            'usage' => ['input_tokens' => 120, 'output_tokens' => 40],
         ]),
     ]);
+}
+
+function fakeToolCall(array $arguments): void
+{
+    fakeToolReply([['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt', 'input' => $arguments]]);
 }
 
 test('the driver maps a plan_day tool call into clamped constraints', function () {
@@ -102,7 +110,7 @@ test('the driver maps a non-plan tool call into intent + query', function () {
 });
 
 test('a provider failure degrades to the heuristic, never throws', function () {
-    Http::fake(['api.deepseek.com/*' => Http::response('overloaded', 503)]);
+    Http::fake(['api.anthropic.com/*' => Http::response('overloaded', 503)]);
 
     $result = parseWithConsent('do I need an appointment for Anmeldung?', llmProfile(), CarbonImmutable::now('Europe/Berlin'));
 
@@ -148,7 +156,7 @@ test('an invalid model date falls back to the heuristic parser', function () {
 
 test('provider failure logging excludes echoed private input and response bodies', function () {
     Log::spy();
-    Http::fake(['api.deepseek.com/*' => Http::response('Private permit reference SECRET-1234', 503)]);
+    Http::fake(['api.anthropic.com/*' => Http::response('Private permit reference SECRET-1234', 503)]);
 
     $result = parseWithConsent('My private permit reference SECRET-1234', llmProfile(), CarbonImmutable::now());
 
@@ -201,8 +209,50 @@ test('the model receives the complete supported venue category vocabulary', func
     fakeToolCall(['intent' => 'plan_day', 'window_start' => $now->addHour()->toIso8601String(), 'window_end' => $now->addHours(6)->toIso8601String(), 'categories' => ['pharmacy']]);
     parseWithConsent('recommend a nearby pharmacy', llmProfile(), $now);
     Http::assertSent(function ($request) {
-        $values = $request['tools'][0]['function']['parameters']['properties']['categories']['items']['enum'] ?? [];
+        $values = $request['tools'][0]['input_schema']['properties']['categories']['items']['enum'] ?? [];
 
         return in_array('shopping', $values, true) && in_array('pharmacy', $values, true) && in_array('hairdresser', $values, true);
     });
 });
+
+test('the driver posts one forced route_prompt tool call in the Messages API shape', function () {
+    $now = CarbonImmutable::parse('2026-06-10 09:00', 'Europe/Berlin');
+    fakeToolCall(['intent' => 'bureaucracy_q', 'query' => 'anmeldung appointment days']);
+
+    parseWithConsent('when can I register?', llmProfile(), $now);
+
+    Http::assertSentCount(1);
+    Http::assertSent(function (Request $request): bool {
+        $payload = $request->data();
+
+        return $request->url() === 'https://api.anthropic.com/v1/messages'
+            && $request->hasHeader('x-api-key', 'test-key')
+            && $request->hasHeader('anthropic-version', '2023-06-01')
+            && ! $request->hasHeader('Authorization')
+            && array_keys($payload) === ['model', 'max_tokens', 'output_config', 'tools', 'tool_choice', 'system', 'messages']
+            && $payload['model'] === 'claude-haiku-5-5'
+            && $payload['max_tokens'] === 600
+            && $payload['output_config'] === ['effort' => 'low']
+            && count($payload['tools']) === 1
+            && ($payload['tools'][0]['name'] ?? null) === 'route_prompt'
+            && $payload['tool_choice'] === ['type' => 'tool', 'name' => 'route_prompt']
+            && is_string($payload['system'])
+            && count($payload['messages']) === 1
+            && ($payload['messages'][0]['role'] ?? null) === 'user'
+            && str_contains((string) ($payload['messages'][0]['content'] ?? ''), 'when can I register?');
+    });
+});
+
+test('a reply without a usable route_prompt tool call degrades to the heuristic', function (array $content) {
+    fakeToolReply($content);
+
+    $result = parseWithConsent('do I need an appointment for Anmeldung?', llmProfile(), CarbonImmutable::now('Europe/Berlin'));
+
+    expect($result->intent)->toBe(PromptIntent::BureaucracyQ)
+        ->and($result->source)->toBe('heuristic');
+})->with([
+    'prose only' => [[['type' => 'text', 'text' => 'You need an appointment.']]],
+    'wrong tool' => [[['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'another_tool', 'input' => ['intent' => 'find']]]],
+    'non-object input' => [[['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt', 'input' => 'find']]],
+    'missing input' => [[['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt']]],
+]);

@@ -26,7 +26,7 @@ enum ProcessingPurpose: string
     public function available(): bool
     {
         $prefix = $this->configPrefix();
-        $enabled = $this === self::ComposerParse ? config($prefix.'.driver') === 'openai' : config($prefix.'.enabled') === true;
+        $enabled = $this === self::ComposerParse ? config($prefix.'.driver') === 'anthropic' : config($prefix.'.enabled') === true;
         if (! $enabled) {
             return false;
         }
