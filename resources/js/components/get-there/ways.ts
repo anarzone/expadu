@@ -10,6 +10,7 @@ import type {
     PlanAnswer,
     PlanOption,
 } from '@/components/travel/plan/plan-model';
+import type { SignalSurface } from '@/lib/signals';
 
 export type WayMode = 'transit' | 'walk' | 'bike';
 
@@ -62,11 +63,18 @@ export function useWays({
     to,
     departAt = null,
     arriveBy = false,
+    tag = null,
 }: {
     from: WayPlace | null;
     to: WayPlace | null;
     departAt?: string | null;
     arriveBy?: boolean;
+    /** The place or event whose Get there this is (#210's `get_there`
+        signal; the server counts it once a day, with the opt-in). */
+    tag?: {
+        item: `spot:${number}` | `event:${number}`;
+        surface: SignalSurface;
+    } | null;
 }) {
     const [status, setStatus] = useState<WayStatus>({ kind: 'idle' });
     const [attempt, setAttempt] = useState(0);
@@ -82,7 +90,7 @@ export function useWays({
             return;
         }
 
-        const body: Record<string, string | number> = {
+        const body: Record<string, unknown> = {
             to_name: to.name,
             to_lat: to.lat,
             to_lng: to.lng,
@@ -97,6 +105,10 @@ export function useWays({
 
         if (arriveBy) {
             body.arrive_by = '1';
+        }
+
+        if (tag) {
+            body.get_there = tag;
         }
 
         const controller = new AbortController();

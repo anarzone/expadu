@@ -294,7 +294,7 @@ function PlaceTabs({
                     {section === 'plan' ? (
                         <PlanVisitPanel visit={visit} />
                     ) : section === 'way' && point ? (
-                        <PlaceWay to={point} from={from} />
+                        <PlaceWay place={d.id} to={point} from={from} />
                     ) : (
                         <About detail={d} />
                     )}

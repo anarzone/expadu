@@ -126,6 +126,7 @@ export default function GetThere({
                   ? o.occurrence_end
                   : null,
         arriveBy: when === 'arrive',
+        tag: { item: `event:${o.id}`, surface: 'event_sheet' },
     });
     const shown = ways[mode];
     const pickedId = picked[0] === answer ? picked[1] : '';

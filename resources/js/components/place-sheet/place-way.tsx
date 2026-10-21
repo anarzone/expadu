@@ -22,9 +22,12 @@ const MODES: [WayMode, string][] = [
 ];
 
 export function PlaceWay({
+    place,
     to,
     from: start,
 }: {
+    /** The place's id. */
+    place: number;
     to: WayPlace;
     from: WayPlace | null;
 }) {
@@ -58,6 +61,7 @@ export function PlaceWay({
     const { status, answer, ways, retry } = useWays({
         from: from.place,
         to,
+        tag: { item: `spot:${place}`, surface: 'place_sheet' },
     });
     const shown = ways[mode];
     const pickedId = picked[0] === answer ? picked[1] : '';
