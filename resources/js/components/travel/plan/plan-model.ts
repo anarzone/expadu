@@ -111,6 +111,9 @@ export const rides = (journey: Journey) => journey.legs.filter(isRide);
 export const marginOf = (target: PlanTarget) =>
     target.official ? OFFICIAL_MARGIN_MIN : PLAN_MARGIN_MIN;
 
+/** An event from Events: there a little before it starts, as a plan on your day is. */
+export const EVENT_MARGIN_MIN = PLAN_MARGIN_MIN;
+
 /** Minutes on foot (or by bike, for a bike trip). */
 export function walkingMin(journey: Journey): number {
     if (journey.mode !== 'transit') {

@@ -58,14 +58,10 @@ class TimetableController extends Controller
             'stop' => $stop,
             // Events' "Open in Travel": the occurrence by its id and local start
             // (`context`, `date`, `arrive`), resolved here so its place never
-            // sits in the address. `event` + `start` is the older link.
-            'handoffEvent' => fn () => match (true) {
-                $request->filled('context') => app(EventHandoff::class)->forLocal(
-                    $request->query('context'), $request->query('date'), $request->query('arrive'), CarbonImmutable::now(),
-                ),
-                $request->filled('event') => app(EventHandoff::class)->for($request->query('event'), $request->query('start'), CarbonImmutable::now()),
-                default => null,
-            },
+            // sits in the address.
+            'handoffEvent' => fn () => $request->filled('context')
+                ? app(EventHandoff::class)->forLocal($request->query('context'), $request->query('date'), $request->query('arrive'), CarbonImmutable::now())
+                : null,
             // A place's "Get there": the place by its id, resolved here too.
             'handoffPlace' => fn () => $request->filled('place')
                 ? app(PlaceHandoff::class)->for($request->query('place'))

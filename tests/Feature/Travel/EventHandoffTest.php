@@ -18,10 +18,13 @@ beforeEach(function () {
 
 function handoffUrl(Event $event, ?string $start = null): string
 {
+    $at = CarbonImmutable::parse($start ?? $event->starts_at)->setTimezone('Europe/Berlin');
+
     return '/timetable?'.http_build_query([
-        'view' => 'journey',
-        'event' => $event->id,
-        'start' => $start ?? CarbonImmutable::parse($event->starts_at)->toIso8601String(),
+        'to' => 'Stadtgarten',
+        'context' => $event->id,
+        'date' => $at->format('Y-m-d'),
+        'arrive' => $at->format('H:i'),
     ]);
 }
 
@@ -56,7 +59,11 @@ test('Plan a trip finds a visible, current occurrence by its id and start, and n
     $this->actingAs($this->user)->get(handoffUrl($over))
         ->assertInertia(fn ($page) => $page->where('handoffEvent', null));
 
-    $this->actingAs($this->user)->get('/timetable?view=journey&event=999999&start=2026-10-21T20:00:00%2B02:00')
+    $this->actingAs($this->user)->get('/timetable?to=Stadtgarten&context=999999&date=2026-10-21&arrive=20%3A00')
+        ->assertInertia(fn ($page) => $page->where('handoffEvent', null));
+
+    // The older link (`event`, `start`) is gone with Events' own (#290).
+    $this->actingAs($this->user)->get('/timetable?'.http_build_query(['view' => 'journey', 'event' => $tonight->id, 'start' => '2026-10-21T20:00:00+02:00']))
         ->assertInertia(fn ($page) => $page->where('handoffEvent', null));
 });
 
