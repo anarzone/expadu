@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { clsx } from 'clsx';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { CommandError, read, send } from './api';
 import { ConfirmItsYou } from './confirm-its-you';
 import { formatDate } from './format';
@@ -26,6 +26,13 @@ interface RecordUi {
     closeSheet: () => void;
     toast: (message: string) => void;
 }
+
+/**
+ * Stop, Resume and Delete change the page: the view they ran in goes, and its
+ * toast with it. The page keeps their notice across the change and the next
+ * view shows it (RecordNoticeToast).
+ */
+export const RecordNotice = createContext<(message: string) => void>(() => {});
 
 const scopeLabels: Record<string, string> = {
     view_plan: 'Your plan',
@@ -147,17 +154,8 @@ export function StoppedRecord({ personId }: { personId: number }) {
         title: string;
         body: ReactNode;
     } | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
-    const timer = useRef<number | null>(null);
-    const toast = useCallback((text: string) => {
-        setMessage(text);
-
-        if (timer.current) {
-            window.clearTimeout(timer.current);
-        }
-
-        timer.current = window.setTimeout(() => setMessage(null), 4200);
-    }, []);
+    // The page's own toast (RecordNoticeToast), so the page has one.
+    const toast = useContext(RecordNotice);
 
     return (
         <>
@@ -178,13 +176,6 @@ export function StoppedRecord({ personId }: { personId: number }) {
                 />
             </section>
             <LocalSheet sheet={sheet} onClose={() => setSheet(null)} />
-            <div
-                className={clsx('toast', message && 'show')}
-                role="status"
-                aria-live="polite"
-            >
-                {message}
-            </div>
         </>
     );
 }
@@ -218,6 +209,7 @@ function RecordActions({
     const [switching, setSwitching] = useState(false);
     const [now, setNow] = useState(stopped);
     const [error, setError] = useState<string | null>(null);
+    const notice = useContext(RecordNotice);
 
     async function setProcessing(stop: boolean) {
         if (switching) {
@@ -242,20 +234,17 @@ function RecordActions({
 
         setNow(stop);
         setSwitching(false);
-        ui.toast(
-            stop
-                ? 'Paperwork stops using your record now. Nothing is deleted.'
-                : 'Paperwork uses your record again.',
-        );
-        // The entry says whether there's still a plan to show; the switch keeps focus.
+        // The entry says whether there's still a plan to show.
         router.reload({
             only: ['entry'],
-            onFinish: () =>
-                document
-                    .querySelector<HTMLButtonElement>(
-                        '[data-record-processing]',
-                    )
-                    ?.focus({ preventScroll: true }),
+            onFinish: () => {
+                notice(
+                    stop
+                        ? 'Paperwork stops using your record now. Nothing is deleted.'
+                        : 'Paperwork uses your record again.',
+                );
+                focusRecordView();
+            },
         });
     }
 
@@ -339,11 +328,16 @@ function RecordActions({
                                     onKeep={ui.closeSheet}
                                     onErased={() => {
                                         ui.closeSheet();
-                                        ui.toast(
-                                            'Your Paperwork record is deleted.',
-                                        );
                                         router.visit('/bureaucracy', {
                                             replace: true,
+                                            // Keeps the page, and the notice it carries.
+                                            preserveState: true,
+                                            onFinish: () => {
+                                                notice(
+                                                    'Your Paperwork record is deleted.',
+                                                );
+                                                focusRecordView();
+                                            },
                                         });
                                     }}
                                 />
@@ -487,6 +481,66 @@ function LocalSheet({
             ) : null}
         </dialog>
     );
+}
+
+/**
+ * The page's carried record notice (RecordNotice), shown for a moment, where
+ * there's no plan's workspace (the stopped and deleted pages).
+ */
+export function RecordNoticeToast({
+    notice,
+    clear,
+}: {
+    notice: string | null;
+    clear: (next: null) => void;
+}) {
+    useEffect(() => {
+        if (!notice) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => clear(null), 4200);
+
+        return () => window.clearTimeout(timer);
+    }, [notice, clear]);
+
+    return (
+        <div
+            className={clsx('toast', notice && 'show')}
+            role="status"
+            aria-live="polite"
+        >
+            {notice}
+        </div>
+    );
+}
+
+/** The page's carried record notice in the workspace's own toast, so a view has one. */
+export function WorkspaceNotice({
+    notice,
+    clear,
+}: {
+    notice: string | null;
+    clear: (next: null) => void;
+}) {
+    const { toast } = usePaperwork();
+
+    useEffect(() => {
+        if (notice) {
+            toast(notice);
+            clear(null);
+        }
+    }, [notice, toast, clear]);
+
+    return null;
+}
+
+/** After the page changes: the record's switch if it's still there, else the page's heading. */
+function focusRecordView() {
+    (
+        document.querySelector<HTMLElement>('[data-record-processing]') ??
+        document.querySelector<HTMLElement>('.paperwork-page h1')
+    )?.focus({ preventScroll: true });
 }
 
 /** The Cologne calendar day of a timestamp, as formatDate takes it (YYYY-MM-DD). */
