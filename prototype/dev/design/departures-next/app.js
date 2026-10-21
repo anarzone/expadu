@@ -69,6 +69,9 @@ const placeName = (name) => name.replace(/^Köln\s+/, '');
 // anchors), so a stop can open "Around here".
 const placeAnchors = {
     neumarkt: 'neumarkt',
+    // KVB names the appointment's stop Mülheim Wiener Platz; the area is
+    // the place layer's Wiener Platz.
+    'mülheim wiener platz': 'wiener-platz',
     'wiener platz': 'wiener-platz',
     rheinauhafen: 'rheinauhafen',
     stadtgarten: 'stadtgarten',
