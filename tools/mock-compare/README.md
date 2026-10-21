@@ -142,6 +142,11 @@ On your machine (`APP_ENV=local` only):
   export of our 7 Oct catalogue; it adds missing places and never changes one) and its two evening
   events (`E2E_EMAIL=<you>@expadu.test php artisan db:seed
 --class='Database\Seeders\MockSample\EventsSeeder'`, Events' seeder). Both are local only.
+- **Saved ideas and a conversation:** `today-continuity` needs both sides seeded. The mock keeps them
+  in its own store, which the config's mock `init` fills before load. The app gets the same from
+  `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\TodaySeeder'`
+  (after PlacesSeeder and EventsSeeder). `today-first-visit` wants a new account with nothing on it:
+  `mock:sample-day first-visit --email=<new account>` creates one with no plans at all.
 - **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
 --seed` (create it with the postgis and vector extensions first), and start the compare app server
   with the same `DB_DATABASE`. Never `migrate:fresh` the shared one. Put `DB_DATABASE` (and your

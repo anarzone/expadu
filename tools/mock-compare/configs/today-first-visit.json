@@ -1,0 +1,158 @@
+{
+    "name": "today-first-visit",
+    "seed": "php artisan mock:sample-day first-visit --email=<account> && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\" (a new account with nothing saved, asked or recorded)",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=first-visit",
+        "wait": ".today-welcome"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".day-panel:not([aria-busy])",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "welcome",
+            "mock": ".today-welcome",
+            "app": ".today-welcome",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "welcome (phone)",
+            "mock": ".today-welcome",
+            "app": ".today-welcome",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "welcome mark",
+            "mock": ".welcome-symbol",
+            "app": ".welcome-symbol",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "welcome mark (phone)",
+            "mock": ".welcome-symbol",
+            "app": ".welcome-symbol",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "welcome heading",
+            "mock": ".today-welcome h2",
+            "app": ".today-welcome h2",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "welcome heading (phone)",
+            "mock": ".today-welcome h2",
+            "app": ".today-welcome h2",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "welcome line",
+            "mock": ".today-welcome p",
+            "app": ".today-welcome p",
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "welcome line (phone)",
+            "mock": ".today-welcome p",
+            "app": ".today-welcome p",
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "Plan my day",
+            "mock": ".welcome-choices > *",
+            "app": ".welcome-choices > *",
+            "index": 0,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Plan my day (phone)",
+            "mock": ".welcome-choices > *",
+            "app": ".welcome-choices > *",
+            "index": 0,
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "Find a route",
+            "mock": ".welcome-choices > *",
+            "app": ".welcome-choices > *",
+            "index": 1,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Find a route (phone)",
+            "mock": ".welcome-choices > *",
+            "app": ".welcome-choices > *",
+            "index": 1,
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "Help me settle in",
+            "mock": ".welcome-choices > *",
+            "app": ".welcome-choices > *",
+            "index": 2,
+            "widths": [768, 1280, 1440, 1512]
+        },
+        {
+            "name": "Help me settle in (phone)",
+            "mock": ".welcome-choices > *",
+            "app": ".welcome-choices > *",
+            "index": 2,
+            "widths": [360, 390],
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "Settling in?",
+            "mock": ".paperwork-optional a",
+            "app": ".paperwork-optional a",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "Settling in title",
+            "mock": ".paperwork-optional strong",
+            "app": ".paperwork-optional strong",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "Settling in line",
+            "mock": ".paperwork-optional small",
+            "app": ".paperwork-optional small",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "Your day",
+            "mock": ".day-panel .day-heading h2",
+            "app": ".day-panel .day-heading h2",
+            "ignore": ["y"],
+            "pixels": false
+        }
+    ],
+    "seedNote": "The mock's first visit has nothing planned, saved, asked or recorded; the app account is new (mock:sample-day first-visit creates it with no plans at all).",
+    "ignoreNote": "y below the welcome: City help sits above 'Settling in?' and Your day, and its departures and forecast are live (see today-city), so what follows sits at another height and fraction of a pixel; boxes (but y) and styles are compared.",
+    "phoneNote": "Phones (360, 390): y waits for the phone order (TD5), as in the other Today configs."
+}

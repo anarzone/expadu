@@ -124,7 +124,8 @@
             "name": "Leave now",
             "mock": ".agenda-item .trip-line",
             "app": ".agenda-item .trip-line",
-            "widths": [768, 1280, 1440, 1512]
+            "widths": [768, 1280, 1440, 1512],
+            "pixelThreshold": 0.001
         },
         {
             "name": "Leave now (phone)",
@@ -150,5 +151,6 @@
         }
     ],
     "ignoreNote": "Phones (360, 390): y is set aside until the phone order (TD5). From 768 px y is compared everywhere.",
-    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel."
+    "phoneNote": "Phone pairs don't compare pixels: the strip wraps taller there, so text sits at other fractions of a pixel.",
+    "cardNote": "Leave now is Travel's card unchanged (the mock carries Travel's type and ink on Today since 979f0bb6). The mock page's 1.7px svg stroke still reaches the card's two line icons, which Travel draws at 1.75px: up to 0.1% of the card's pixels may differ there (reported to the coordinator)."
 }
