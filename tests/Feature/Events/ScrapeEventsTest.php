@@ -324,3 +324,44 @@ test('a koeln.de listing that says it is cancelled leaves Events, and comes back
 
     expect(Event::where('source_uid', 'du-maroc')->value('status'))->toBe('active');
 });
+
+test('a koeln.de listing without an end keeps none, and an end made up before goes without a new classification', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    $start = now()->addDays(3)->setTime(19, 0);
+    $listing = koelnEvent('no-end', 'Jazz im Keller', $start->toDateTimeString());
+    $event = Event::factory()->create([
+        'source' => 'koeln.de',
+        'source_uid' => 'no-end',
+        'status' => 'active',
+        'title' => 'Jazz im Keller',
+        'description' => $listing['description'],
+        'starts_at' => $start,
+        'ends_at' => $start->copy()->addHours(2),
+        'location_name' => 'Bürgerhaus Stollwerck',
+        'address' => 'Dreikönigenstr. 23',
+        'is_free' => false,
+        'price_text' => null,
+        'summary_en' => 'Kept summary',
+    ]);
+    Queue::fake();
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [$listing]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect($event->fresh())
+        ->ends_at->toBeNull()
+        ->summary_en->toBe('Kept summary');
+    Queue::assertNotPushed(ProcessEventJob::class);
+});
+
+test('a koeln.de listing without a start is skipped, not given one', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    $listing = koelnEvent('no-start', 'Ohne Datum', now()->addDay()->toDateTimeString());
+    unset($listing['start_date']);
+    Queue::fake();
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [$listing]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect(Event::where('source_uid', 'no-start')->exists())->toBeFalse();
+});
