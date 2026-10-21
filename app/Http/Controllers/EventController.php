@@ -13,6 +13,7 @@ use App\Support\EventStartingPoint;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -50,21 +51,24 @@ class EventController extends Controller
             $filters['sort'] = 'soonest';
         }
 
+        // The day's listings, the catalogue, the saved places and the appointment are
+        // read only when the response carries them, not again for Get there's
+        // `only: ['day']` or the deferred weather.
         return Inertia::render('events', [
             'date' => $day->toDateString(),
             'today' => $today->toDateString(),
             'filters' => $filters,
             'starting_point' => $from,
-            'saved_places' => $points->savedPlaces($request->user()),
-            'appointment' => $day->isSameDay($today) ? $this->appointment($request, $today) : null,
+            'saved_places' => fn () => $points->savedPlaces($request->user()),
+            'appointment' => fn () => $day->isSameDay($today) ? $this->appointment($request, $today) : null,
             // The day shown, as Travel reads it: what Get there checks a way
             // against ("My day"). Only when Get there asks for it; a past day
             // has nothing to plan.
             'day' => $day->lessThan($today->startOfDay())
                 ? null
                 : Inertia::optional(fn () => app(DayProjection::class)->for($request->user(), $day->toDateString(), $request)),
-            'catalogue' => $this->catalogue(),
-            'listings' => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
+            'catalogue' => fn () => $this->catalogue(),
+            'listings' => fn () => $this->withVenueFacts(Event::occurringBetween($day->startOfDay(), $day->endOfDay())
                 ->map(fn (array $o) => $this->presenter->present($o['event'], $o['starts_at'], $o['ends_at']))
                 ->values()
                 ->all()),
@@ -99,24 +103,27 @@ class EventController extends Controller
     /**
      * What the filters offer: every category and area the listed events
      * have, on any day, as the mock's pickers do (its whole catalogue), so a
-     * choice can point to another day.
+     * choice can point to another day. The same for everyone and changed only
+     * by an import or a moderator, so it is read once every five minutes.
      *
      * @return array{categories: list<string>, areas: list<string>}
      */
     private function catalogue(): array
     {
-        $categories = Event::query()->visible()->distinct()->pluck('category')
-            ->map(fn (?string $category) => EventCategory::fromLegacy($category)->value)
-            ->unique()->values()->all();
-        $areas = Event::query()->visible()
-            ->join('venues', 'venues.id', '=', 'events.venue_id')
-            ->whereNotNull('venues.veedel')
-            ->distinct()
-            ->orderBy('venues.veedel')
-            ->pluck('venues.veedel')
-            ->all();
+        return Cache::remember('events:catalogue', now()->addMinutes(5), function (): array {
+            $categories = Event::query()->visible()->distinct()->pluck('category')
+                ->map(fn (?string $category) => EventCategory::fromLegacy($category)->value)
+                ->unique()->values()->all();
+            $areas = Event::query()->visible()
+                ->join('venues', 'venues.id', '=', 'events.venue_id')
+                ->whereNotNull('venues.veedel')
+                ->distinct()
+                ->orderBy('venues.veedel')
+                ->pluck('venues.veedel')
+                ->all();
 
-        return ['categories' => $categories, 'areas' => $areas];
+            return ['categories' => $categories, 'areas' => $areas];
+        });
     }
 
     /**
