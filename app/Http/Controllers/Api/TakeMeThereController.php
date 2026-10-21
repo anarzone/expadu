@@ -82,7 +82,8 @@ class TakeMeThereController extends Controller
         ]);
 
         $user = $request->user();
-        app(SignalRecorder::class)->getThere($user, $request->input('get_there'));
+        // Only the sheet's own request body carries a Get there tap; never a query string.
+        app(SignalRecorder::class)->getThere($user, $request->json('get_there'));
 
         if (isset($validated['from_lat'], $validated['from_lng'])) {
             // An explicit origin (the Places list's resolved From, or an "I'm
