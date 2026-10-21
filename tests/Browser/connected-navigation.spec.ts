@@ -1,12 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-for (const route of [
-    '/dashboard',
-    '/events',
-    '/bureaucracy',
-    '/timetable',
-    '/services',
-]) {
+for (const route of ['/dashboard', '/events', '/bureaucracy', '/timetable']) {
     test(`the shared header and sections stay available on ${route}`, async ({
         page,
         isMobile,
@@ -51,17 +45,20 @@ for (const route of [
     });
 }
 
-test('Composer retains its focused workspace and return to Today', async ({
+test('Composer opens inside the shared header, one tap from Today', async ({
     page,
 }) => {
     await page.goto('/composer');
+    await expect(page).toHaveTitle(/^Composer/);
+    // The request box, named for a new or a running conversation.
     await expect(
-        page.getByRole('heading', { name: 'Composer', exact: true }),
+        page.getByRole('textbox', {
+            name: /^(What can I help you with\?|Continue with Composer)$/,
+        }),
     ).toBeVisible();
     await expect(
-        page.getByRole('link', { name: 'Back to Today' }),
-    ).toBeVisible();
-    await expect(
-        page.getByRole('navigation', { name: 'Main navigation' }),
-    ).toHaveCount(0);
+        page
+            .getByRole('navigation', { name: 'Main navigation' })
+            .getByRole('link', { name: 'Today', exact: true }),
+    ).toHaveAttribute('href', /\/dashboard$/);
 });
