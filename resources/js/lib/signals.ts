@@ -83,8 +83,35 @@ export function signal(entry: Signal) {
     }
 }
 
+/** Signals held back while an Undo can still take them back. */
+const held = new Map<number, Signal>();
+
+/**
+ * Sends a signal once `ms` have passed (an Undo's time), unless the
+ * returned cancel is called first. Leaving the page sends it.
+ */
+export function signalLater(entry: Signal, ms: number): () => void {
+    const timeout = window.setTimeout(() => {
+        held.delete(timeout);
+        signal(entry);
+    }, ms);
+    held.set(timeout, entry);
+
+    return () => {
+        window.clearTimeout(timeout);
+        held.delete(timeout);
+    };
+}
+
 if (typeof window !== 'undefined') {
-    window.addEventListener('pagehide', flushSignals);
+    window.addEventListener('pagehide', () => {
+        held.forEach((entry, timeout) => {
+            window.clearTimeout(timeout);
+            signal(entry);
+        });
+        held.clear();
+        flushSignals();
+    });
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
             flushSignals();

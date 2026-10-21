@@ -40,6 +40,7 @@ import { showToast } from '@/components/ui/toast';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import AppLayout from '@/layouts/app-layout';
 import { kmBetween } from '@/lib/geo';
+import { isHidden, useHidden } from '@/lib/not-now';
 import { usePageContext } from '@/lib/page-context';
 import { useImpressions } from '@/lib/signals';
 import type { Auth } from '@/types';
@@ -145,6 +146,7 @@ export default function Events({
     const detail = detailIn(url);
     const saved = useSavedEvents(auth.user.id);
     const shown = useImpressions('events', 'event');
+    const hidden = useHidden();
     const f = { ...noFilters, ...filters };
 
     // The search follows typing at once; the URL catches up after a pause.
@@ -229,12 +231,18 @@ export default function Events({
 
     // The day, and what passes the filters, in the chosen order.
     const point = shownFrom?.point ?? null;
-    const day: Listing[] = listings.map((occurrence) => ({
-        key: occurrenceKey(occurrence),
-        poster: { ...posterEvent(occurrence), id: occurrenceKey(occurrence) },
-        occurrence,
-        km: point ? kmBetween(point, occurrence.venue) : null,
-    }));
+    // Less what was put away with Not now this week.
+    const day: Listing[] = listings
+        .filter((o) => !isHidden(hidden, 'event', o.id))
+        .map((occurrence) => ({
+            key: occurrenceKey(occurrence),
+            poster: {
+                ...posterEvent(occurrence),
+                id: occurrenceKey(occurrence),
+            },
+            occurrence,
+            km: point ? kmBetween(point, occurrence.venue) : null,
+        }));
     const wall = day
         .filter((l) => matches(l.occurrence, current, l.key, saved.keys))
         .sort((a, b) => {

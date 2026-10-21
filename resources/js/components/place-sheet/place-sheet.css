@@ -279,6 +279,12 @@
     color: var(--color-select-text);
 }
 
+/* Not now sits by Save; Plan a visit keeps the end. */
+.place-sheet-not-now {
+    margin-right: auto;
+    color: var(--color-text-soft);
+}
+
 /* The part's one main action: Plan a visit, Add to plan, Back to place. */
 .place-sheet-primary {
     display: flex;
