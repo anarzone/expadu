@@ -8,8 +8,13 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialLoginController extends Controller
 {
-    /** @var array<int, string> */
-    private const PROVIDERS = ['google', 'apple'];
+    /**
+     * Google only: no Apple sign-in yet (owner, 19 Oct 2026). Apple's
+     * settings stay in config/services.php for when it comes.
+     *
+     * @var array<int, string>
+     */
+    public const PROVIDERS = ['google'];
 
     public function redirect(string $provider)
     {
@@ -25,7 +30,8 @@ class SocialLoginController extends Controller
         try {
             $socialUser = Socialite::driver($provider)->user();
         } catch (\Throwable) {
-            return redirect()->route('login')->with('status', 'Social login was cancelled or failed.');
+            // Said on the sign-in poster, in the conflict colour.
+            return redirect()->route('login')->with('error', 'Signing in with '.ucfirst($provider).' didn’t finish. Try again, or use your email.');
         }
 
         $user = User::where('social_provider', $provider)
