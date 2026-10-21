@@ -23,6 +23,54 @@
     },
     "pairs": [
         {
+            "name": "around heading",
+            "mock": ".around-heading h3",
+            "app": ".around-heading h3",
+            "ignore": ["y"]
+        },
+        {
+            "name": "around source",
+            "mock": ".around-heading small",
+            "app": ".around-heading small",
+            "ignore": ["y"]
+        },
+        {
+            "name": "around context",
+            "mock": ".around-context",
+            "app": ".around-context",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea near the plan",
+            "mock": ".around-item",
+            "app": ".around-item",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea mark",
+            "mock": ".around-symbol",
+            "app": ".around-symbol",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea title",
+            "mock": ".around-open strong",
+            "app": ".around-open strong",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea meta",
+            "mock": ".around-open small",
+            "app": ".around-open small",
+            "ignore": ["y"]
+        },
+        {
+            "name": "saved idea plan",
+            "mock": ".around-item > .icon-button",
+            "app": ".around-item > .icon-button",
+            "ignore": ["y"]
+        },
+        {
             "name": "saved",
             "mock": ".saved-ideas",
             "app": ".saved-ideas",
@@ -164,6 +212,6 @@
         }
     ],
     "seedNote": "The mock keeps saved ideas and Composer's conversation in its own store; its side seeds them before load (Bau, then Cinema under the stars, and 'Saturday with Maya'), as MockSample\\TodaySeeder seeds the app account.",
-    "ignoreNote": "y: the around-plan block above them has no idea row in the app (see today-discovery), so these sections sit higher; phones wait for the phone order (TD5).",
+    "ignoreNote": "y: the around-plan block above them is shorter in the app, which leaves out 'More nearby on the map' until Around here exists (AH1) and credits OpenStreetMap without the mock's 'sample export of 7 Oct 2026', so these sections sit higher; phones wait for the phone order (TD5).",
     "antialiasNote": "The conversation card and its button may differ in a few anti-aliased edge pixels (0.02% at most), as they sit at other fractions of a pixel below the around block; 0.1% is allowed there."
 }

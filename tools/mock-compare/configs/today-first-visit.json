@@ -145,6 +145,13 @@
             "pixels": false
         },
         {
+            "name": "discovery heading",
+            "mock": ".discovery-heading h2",
+            "app": ".discovery-heading h2",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
             "name": "Your day",
             "mock": ".day-panel .day-heading h2",
             "app": ".day-panel .day-heading h2",

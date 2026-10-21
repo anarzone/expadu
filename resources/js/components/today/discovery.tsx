@@ -12,7 +12,7 @@ import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { useSavedEvents } from '@/hooks/use-saved-events';
 import { CURRENT_CITY } from '@/lib/cities';
-import { events } from '@/routes';
+import { composer, events } from '@/routes';
 
 /*
  * Today's discovery (the mock's .discovery and .around-plan), from
@@ -52,6 +52,8 @@ export type TodayDiscovery = {
         };
         at: string;
         idea: DiscoveryEvent | null;
+        place: { id: number; title: string; area: string } | null;
+        saved: boolean;
         places: DiscoveryPlace[];
     } | null;
 } | null;
@@ -304,21 +306,50 @@ export function AroundPlan({
 }: {
     around: NonNullable<NonNullable<TodayDiscovery>['around']>;
 }) {
-    const { anchor, idea, places } = around;
+    const { anchor, idea, place, saved, places } = around;
+    const also = idea !== null || place !== null;
 
     return (
         <section className="around-plan" aria-labelledby="around-plan-title">
             <div className="around-heading">
                 <h3 id="around-plan-title">
-                    {idea ? `Also in ${anchor.area}` : `Near ${anchor.title}`}
+                    {also ? `Also in ${anchor.area}` : `Near ${anchor.title}`}
                 </h3>
-                {idea && <small>From Events</small>}
+                {also && (
+                    <small>
+                        {saved ? 'From your saved ideas' : 'From Events'}
+                    </small>
+                )}
             </div>
             <p className="around-context">
-                {idea
+                {also
                     ? `Today · ${anchor.title}`
                     : `Today · ${[anchor.start, anchor.end].filter(Boolean).join('–')}`}
             </p>
+            {/* A saved place opens Composer's Saved ideas, as in Saved for later. */}
+            {place && (
+                <div className="around-item">
+                    <Link
+                        className="around-open"
+                        href={composer({ query: { panel: 'saved' } })}
+                    >
+                        <span className="around-symbol">
+                            <Icon name="pin" />
+                        </span>
+                        <span>
+                            <strong>{place.title}</strong>
+                            <small>{`No time set · ${place.area}`}</small>
+                        </span>
+                    </Link>
+                    <Link
+                        className="icon-button"
+                        href={composer({ query: { panel: 'saved' } })}
+                        aria-label={`Plan ${place.title}`}
+                    >
+                        <Icon name="plus" />
+                    </Link>
+                </div>
+            )}
             {idea && (
                 <div className="around-item">
                     <Link

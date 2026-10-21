@@ -8,16 +8,17 @@ use App\Enums\SpotCategory;
 use App\Models\Event;
 use App\Models\User;
 use App\Places\OpenNearby;
+use App\Saved\SavedCollection;
 use App\Support\EventOccurrencePresenter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
  * Today's discovery (the mock's "A little Cologne" and "Also in ‹area›"),
- * from listings only: tonight's events that are still to come and fit around
- * the person's plans, and the everyday places whose listed hours say they're
- * open near the next plan when it ends. Nothing is sample or guessed; with no
- * listings a block is simply absent.
+ * from listings and the person's own saved ideas: tonight's events that are
+ * still to come and fit around the person's plans, and the everyday places
+ * whose listed hours say they're open near the next plan when it ends.
+ * Nothing is sample or guessed; with nothing listed a block is simply absent.
  */
 final class TodayDiscovery
 {
@@ -33,6 +34,7 @@ final class TodayDiscovery
         private DayProjection $days,
         private EventOccurrencePresenter $presenter,
         private OpenNearby $open,
+        private SavedCollection $saved,
     ) {}
 
     /** @return array{free: bool, part: string, events: list<array<string, mixed>>, around: array<string, mixed>|null} */
@@ -45,7 +47,7 @@ final class TodayDiscovery
             ->values();
 
         $events = $this->events($now, $active);
-        $around = $this->around($now, $active, $events);
+        $around = $this->around($user, $now, $active, $events);
         $idea = $around['idea']['id'] ?? null;
         $ideaStart = $around['idea']['occurrence_start'] ?? null;
 
@@ -97,15 +99,18 @@ final class TodayDiscovery
     }
 
     /**
-     * Around the next plan with a place: an event listed in the same area,
-     * and the everyday places open there when the plan ends (or now, once it
-     * has). The point and time stay in this request (OpenNearby).
+     * Around the next plan with a place: one idea in the same area, and the
+     * everyday places open there when the plan ends (or now, once it has).
+     * The idea is the person's own saved idea first, as the mock's around()
+     * has it: a saved place there, or a saved event there after the plan.
+     * Then tonight's listings. The point and time stay in this request
+     * (OpenNearby).
      *
      * @param  Collection<int, DayItem>  $active
      * @param  Collection<int, array<string, mixed>>  $events
      * @return array<string, mixed>|null
      */
-    private function around(CarbonImmutable $now, Collection $active, Collection $events): ?array
+    private function around(User $user, CarbonImmutable $now, Collection $active, Collection $events): ?array
     {
         $anchor = $active->first(fn (DayItem $item) => $item->routable() && $item->locationLabel !== null);
         if (! $anchor instanceof DayItem) {
@@ -114,8 +119,27 @@ final class TodayDiscovery
 
         $at = $anchor->endAt !== null && $anchor->endAt->greaterThan($now) ? $anchor->endAt : $now;
         $area = mb_strtolower(trim((string) $anchor->locationLabel));
-        $idea = $events->first(fn (array $event) => mb_strtolower(trim((string) ($event['venue']['veedel'] ?? ''))) === $area
-            && ($anchor->endAt === null || CarbonImmutable::parse($event['occurrence_start'])->greaterThanOrEqualTo($anchor->endAt)));
+        $inArea = fn (?string $value) => mb_strtolower(trim((string) $value)) === $area;
+        $fits = fn (array $event) => $inArea($event['venue']['veedel'] ?? null)
+            && ($anchor->endAt === null || CarbonImmutable::parse($event['occurrence_start'])->greaterThanOrEqualTo($anchor->endAt));
+
+        // A saved event counts only as one of tonight's eligible listings.
+        $listed = $events->keyBy(fn (array $event) => "event:{$event['id']}:".CarbonImmutable::parse($event['occurrence_start'])->getTimestamp());
+        $kept = $this->saved->for($user)
+            ->filter(fn (array $item) => $item['available'])
+            ->map(fn (array $item) => match ($item['type']) {
+                'place' => $inArea($item['area']) ? ['place' => $item] : null,
+                default => ($event = $listed->get($item['key'])) !== null && $fits($event) ? ['event' => $event] : null,
+            })
+            ->filter()
+            ->first();
+
+        $place = isset($kept['place']) ? [
+            'id' => $kept['place']['id'],
+            'title' => $kept['place']['title'],
+            'area' => $kept['place']['area'],
+        ] : null;
+        $idea = $kept['event'] ?? ($place === null ? $events->first($fits) : null);
 
         $places = collect(self::KINDS)
             ->map(fn (array $kinds) => $this->open->around(
@@ -130,7 +154,7 @@ final class TodayDiscovery
             ->map(fn (array $place) => [...$place, 'label' => SpotCategory::tryFrom($place['kind'])?->label() ?? $place['kind']])
             ->values();
 
-        if ($idea === null && $places->isEmpty()) {
+        if ($idea === null && $place === null && $places->isEmpty()) {
             return null;
         }
 
@@ -144,6 +168,8 @@ final class TodayDiscovery
             ],
             'at' => $at->format('H:i'),
             'idea' => $idea,
+            'place' => $place,
+            'saved' => $kept !== null,
             'places' => $places->all(),
         ];
     }

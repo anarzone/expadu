@@ -62,6 +62,12 @@ export default function Today() {
         (item) => !item.completed && item.state !== 'elapsed',
     );
     const firstName = auth.user.name.trim().split(/\s+/)[0];
+    // A first visit keeps "A little Cologne" rather than a free day's ideas
+    // (the mock's freeDay).
+    const ideas = discovery && {
+        ...discovery,
+        free: discovery.free && !welcome,
+    };
 
     useDayRefresh(day);
 
@@ -123,18 +129,12 @@ export default function Today() {
                     </div>
                     <div className="next-area">
                         {/* A free day leads with ideas (the mock's arrange()). */}
-                        {discovery?.free && (
-                            <Discovery
-                                discovery={discovery}
-                                weather={weather}
-                            />
+                        {ideas?.free && (
+                            <Discovery discovery={ideas} weather={weather} />
                         )}
                         {!welcome && practical}
-                        {discovery && !discovery.free && (
-                            <Discovery
-                                discovery={discovery}
-                                weather={weather}
-                            />
+                        {ideas && !ideas.free && (
+                            <Discovery discovery={ideas} weather={weather} />
                         )}
                         <div className="continue-support">
                             <CityLinks />
