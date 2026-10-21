@@ -411,8 +411,8 @@ jobs:
             docker compose pull
             docker compose up -d --force-recreate
             sleep 5
-            docker exec staging-app php artisan migrate --force
-            docker exec staging-app php artisan bureaucracy:import-tasks --prune
+            docker exec -u www-data staging-app php artisan migrate --force
+            docker exec -u www-data staging-app php artisan bureaucracy:import-tasks --prune
             docker image prune -f
 
   deploy-production:
@@ -433,6 +433,6 @@ jobs:
             docker pull ghcr.io/anarzone/expadu/app:latest
             docker compose up -d app
             sleep 5
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force
-            docker exec app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --prune
+            docker exec -u www-data app-eg4gsc4ok8g0cwkcsso48wso php artisan migrate --force  # gitleaks:allow — container name, not a key
+            docker exec -u www-data app-eg4gsc4ok8g0cwkcsso48wso php artisan bureaucracy:import-tasks --prune  # gitleaks:allow — container name, not a key
             docker image prune -f
