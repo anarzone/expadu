@@ -48,7 +48,7 @@ export type Forecast = {
     }[];
 };
 
-const weatherIcon = (icon?: string | null): IconName =>
+export const weatherIcon = (icon?: string | null): IconName =>
     icon === 'clear-day'
         ? 'sun'
         : icon === 'clear-night' || icon === 'partly-cloudy-night'

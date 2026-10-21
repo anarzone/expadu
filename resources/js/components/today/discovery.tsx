@@ -8,6 +8,8 @@ import {
     posterInk,
 } from '@/components/posters/poster-model';
 import type { PosterSource } from '@/components/posters/poster-model';
+import { weatherIcon } from '@/components/today/city-help';
+import type { Weather } from '@/components/today/city-help';
 import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { useSavedEvents } from '@/hooks/use-saved-events';
@@ -56,8 +58,6 @@ export type TodayDiscovery = {
         places: DiscoveryPlace[];
     } | null;
 } | null;
-
-type Weather = { available: boolean; temperature?: number; condition?: string };
 
 /** The event's own details in Events. */
 const eventHref = (event: DiscoveryEvent) =>
@@ -136,7 +136,12 @@ export function Discovery({
                             Ideas for this {discovery.part}
                         </h2>
                         <p>
-                            <Icon name="sun" variant="line" />
+                            {weather?.available && (
+                                <Icon
+                                    name={weatherIcon(weather.icon)}
+                                    variant="line"
+                                />
+                            )}
                             <span>
                                 {weather?.available &&
                                 weather.temperature !== undefined
