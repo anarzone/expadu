@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { clsx } from 'clsx';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { AskBody } from '@/components/paperwork/ask';
 import { TaskDetail } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
@@ -9,6 +9,7 @@ import { taskGroup } from '@/components/paperwork/format';
 import { Icon } from '@/components/paperwork/icons';
 import { AllActions, History, SourcesBody } from '@/components/paperwork/lists';
 import { Overview } from '@/components/paperwork/overview';
+import { Sharing } from '@/components/paperwork/sharing';
 import { StarterWelcome, useFreshStart } from '@/components/paperwork/starter';
 import {
     PaperworkProvider,
@@ -67,14 +68,15 @@ function SearchField() {
     );
 }
 
-/** Whose plan: your own, or someone who shared theirs with you. */
+/** Whose plan: your own, or someone who shared theirs with you; and sharing your own. */
 function PersonPicker({ people }: { people: Person[] }) {
-    const { plan } = usePaperwork();
+    const { plan, openEditor } = usePaperwork();
+    const menu = useRef<HTMLDetailsElement>(null);
     const current = people.find((p) => p.id === plan.person_id);
     const name = (p: Person | undefined) => (!p || p.is_self ? 'You' : p.label);
 
     return (
-        <details className="person-picker">
+        <details className="person-picker" ref={menu}>
             <summary aria-label={`Whose plan: ${name(current)}`}>
                 <span className="person-name">{name(current)}</span>
                 <Icon name="down" />
@@ -110,6 +112,24 @@ function PersonPicker({ people }: { people: Person[] }) {
                         </button>
                     );
                 })}
+                {current?.is_self ? (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            menu.current?.removeAttribute('open');
+                            openEditor({
+                                title: 'Share your plan',
+                                body: <Sharing personId={plan.person_id} />,
+                            });
+                        }}
+                    >
+                        <Icon name="people" />
+                        <span>
+                            Share your plan
+                            <small>Choose who sees what</small>
+                        </span>
+                    </button>
+                ) : null}
             </div>
         </details>
     );

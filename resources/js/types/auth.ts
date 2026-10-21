@@ -13,6 +13,8 @@ export type User = {
 
 export type Auth = {
     user: User;
+    /** False for an account made with Google: it confirms with an emailed code. */
+    has_password: boolean;
 };
 
 export type TwoFactorSetupData = {

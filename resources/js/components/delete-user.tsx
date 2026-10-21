@@ -1,5 +1,5 @@
-import { Form, router } from '@inertiajs/react';
-import { useRef } from 'react';
+import { Form, router, usePage } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -14,11 +14,35 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { clearPrivateBrowserData } from '@/lib/private-browser-data';
+import { send } from '@/routes/email-confirmation';
+import type { Auth } from '@/types';
 
 export default function DeleteUser() {
+    const { auth } = usePage<{ auth: Auth }>().props;
     const passwordInput = useRef<HTMLInputElement>(null);
+    // An account made with Google has no password: it confirms with a code.
+    const [codeSent, setCodeSent] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [sendError, setSendError] = useState<string>();
+
+    function sendCode() {
+        setSending(true);
+        setSendError(undefined);
+        router.post(
+            send.url(),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => setCodeSent(true),
+                onError: (errors) => setSendError(errors.code),
+                onFinish: () => setSending(false),
+            },
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -50,9 +74,10 @@ export default function DeleteUser() {
                         </DialogTitle>
                         <DialogDescription>
                             Once your account is deleted, all of its resources
-                            and data will also be permanently deleted. Please
-                            enter your password to confirm you would like to
-                            permanently delete your account.
+                            and data will also be permanently deleted.{' '}
+                            {auth.has_password
+                                ? 'Please enter your password to confirm you would like to permanently delete your account.'
+                                : `To confirm, enter the code we email to ${auth.user.email}.`}
                         </DialogDescription>
 
                         <Form
@@ -70,24 +95,69 @@ export default function DeleteUser() {
                         >
                             {({ resetAndClearErrors, processing, errors }) => (
                                 <>
-                                    <div className="grid gap-2">
-                                        <Label
-                                            htmlFor="password"
-                                            className="sr-only"
-                                        >
-                                            Password
-                                        </Label>
+                                    {auth.has_password ? (
+                                        <div className="grid gap-2">
+                                            <Label
+                                                htmlFor="password"
+                                                className="sr-only"
+                                            >
+                                                Password
+                                            </Label>
 
-                                        <PasswordInput
-                                            id="password"
-                                            name="password"
-                                            ref={passwordInput}
-                                            placeholder="Password"
-                                            autoComplete="current-password"
-                                        />
+                                            <PasswordInput
+                                                id="password"
+                                                name="password"
+                                                ref={passwordInput}
+                                                placeholder="Password"
+                                                autoComplete="current-password"
+                                            />
 
-                                        <InputError message={errors.password} />
-                                    </div>
+                                            <InputError
+                                                message={errors.password}
+                                            />
+                                        </div>
+                                    ) : codeSent ? (
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="code">
+                                                Code from your email
+                                            </Label>
+
+                                            <Input
+                                                id="code"
+                                                name="code"
+                                                inputMode="numeric"
+                                                maxLength={6}
+                                                autoComplete="one-time-code"
+                                                required
+                                            />
+
+                                            <InputError message={errors.code} />
+
+                                            <Button
+                                                type="button"
+                                                variant="link"
+                                                className="justify-self-start px-0"
+                                                disabled={sending}
+                                                onClick={sendCode}
+                                            >
+                                                Send a new code
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                className="justify-self-start"
+                                                disabled={sending}
+                                                onClick={sendCode}
+                                            >
+                                                Email me a code
+                                            </Button>
+
+                                            <InputError message={sendError} />
+                                        </div>
+                                    )}
 
                                     <DialogFooter className="gap-2">
                                         <DialogClose asChild>
@@ -103,7 +173,11 @@ export default function DeleteUser() {
 
                                         <Button
                                             variant="destructive"
-                                            disabled={processing}
+                                            disabled={
+                                                processing ||
+                                                (!auth.has_password &&
+                                                    !codeSent)
+                                            }
                                             asChild
                                         >
                                             <button
