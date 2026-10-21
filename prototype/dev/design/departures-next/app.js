@@ -952,12 +952,28 @@ function sampleWeather(date, time) {
     const [sky, degrees, rain] = hour;
     return { sky: skies[sky] || sky, degrees, rain, wet: rain >= 50 };
 }
+// The way to take to be somewhere by a time (owner, 9 Oct 2026): the
+// latest leave that still keeps the margin (10 min for an official
+// appointment, else 5), the earliest arrival breaking a tie; when none
+// keeps it, the one with the most room.
+function wayFor(ways, start, official) {
+    const room = (route) => minutesOf(start) - minutesOf(route.arrive);
+    const keeps = ways.filter((route) => room(route) >= (official ? 10 : 5));
+    return (
+        keeps.sort(
+            (a, b) =>
+                minutesOf(b.depart) - minutesOf(a.depart) ||
+                minutesOf(a.arrive) - minutesOf(b.arrive),
+        )[0] ||
+        ways.slice().sort((a, b) => room(b) - room(a))[0] ||
+        null
+    );
+}
 function nextTripChoice(trip = J.day) {
     const spare = (route) => minutesOf(trip.start) - minutesOf(route.arrive);
-    const margin = trip.kind === 'official' ? 10 : 5;
     const planned = J.dayRoutes.find((route) => route.inPlan);
-    const earlier = J.dayRoutes.find((route) => !route.inPlan);
-    const best = spare(planned) < margin && earlier ? earlier : planned;
+    const best =
+        wayFor(J.dayRoutes, trip.start, trip.kind === 'official') || planned;
     return { best, planned, spare };
 }
 // Your next thing as one line (owner, 15 Oct 2026: option B on the Travel
@@ -1838,13 +1854,18 @@ function renderDay() {
     // option that arrives by the start (VRS timetable).
     const going = state.dayPick === 'cinema' && second ? second : first;
     const goingTrip = going && J.tripFor(trip.to, going.venue);
+    // Chosen as Leave now chooses (wayFor), not the earliest arrival.
     const way = goingTrip
-        ? J.filtered({
-              trip: goingTrip,
-              schedule: 'arrive',
-              date: trip.date,
-              time: going.start,
-          })[0]
+        ? wayFor(
+              J.filtered({
+                  trip: goingTrip,
+                  schedule: 'arrive',
+                  date: trip.date,
+                  time: going.start,
+              }),
+              going.start,
+              going.kind === 'official',
+          )
         : null;
     // The trip: the same line as Nearby's.
     const tripBlock = next

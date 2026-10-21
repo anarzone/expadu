@@ -26,17 +26,13 @@
             "name": "phone bar",
             "mock": ".travel-phone-bar",
             "app": ".travel-phone-bar",
-            "widths": [360, 390, 768],
-            "contentDiffers": true,
-            "reason": "The Nearby | My day switch (TR6) is in the mock's bar."
+            "widths": [360, 390, 768]
         },
         {
             "name": "Where to?",
             "mock": ".travel-phone-bar .where-to",
             "app": ".travel-phone-bar .where-to",
-            "widths": [360, 390, 768],
-            "ignore": ["w"],
-            "reason": "The mock shares the phone bar with the Nearby | My day switch; My day is TR6 (EXP-142)."
+            "widths": [360, 390, 768]
         },
         {
             "name": "station bar",

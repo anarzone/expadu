@@ -1,6 +1,8 @@
 import { Deferred, Head, router, usePage, usePoll } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShellHeaderAside } from '@/components/shell/use-shell-header-aside';
+import { MyDay } from '@/components/travel/day/my-day';
+import type { DayWeather } from '@/components/travel/day/my-day';
 import { NearbyView } from '@/components/travel/nearby/nearby-view';
 import type { FavouriteStop, Station } from '@/components/travel/nearby/types';
 import { NextTripCard } from '@/components/travel/next-trip-card';
@@ -10,6 +12,7 @@ import {
 } from '@/components/travel/on-your-way-bar';
 import { PlanPanel } from '@/components/travel/plan/plan-panel';
 import type {
+    HandoffEvent,
     PlanStage,
     SavedPlace,
     ShownWay,
@@ -39,11 +42,11 @@ import '../../css/travel-page.css';
  * Travel (departures-next/): Nearby, the closest station by boarding area,
  * opens first (owner, 9 Oct 2026). On desktop Plan a trip's panel sits
  * beside it; on phones "Where to?" opens it. `?stop=` shows another station
- * (Today's old `?view=timetable&stop=` too). `?view=route` is the trip you
- * started, in the older planner until the trip page (TR4) replaces it.
+ * (Today's old `?view=timetable&stop=` too). `?view=route` is the trip
+ * page; `?view=day` is My day (phones' Nearby | My day switch).
  */
 
-type View = 'stop' | 'journey' | 'route';
+type View = 'stop' | 'journey' | 'route' | 'day';
 
 type PageProps = {
     station?: Station | null;
@@ -51,6 +54,8 @@ type PageProps = {
     favouriteStops?: FavouriteStop[];
     savedPlaces?: SavedPlace[];
     day?: DayProjection | null;
+    dayWeather?: DayWeather | null;
+    handoffEvent?: HandoffEvent | null;
 };
 
 function csrfToken(): string {
@@ -67,6 +72,10 @@ const viewOf = (url: string): View => {
 
     if (params.get('view') === 'route' || params.get('journey_open') === '1') {
         return 'route';
+    }
+
+    if (params.get('view') === 'day') {
+        return 'day';
     }
 
     return params.get('view') === 'journey' ||
@@ -191,7 +200,13 @@ const sameWay = (a: Journey, b: Journey) =>
 
 export default function Timetable() {
     const page = usePage<PageProps>();
-    const { station, day, favouriteStops = [], savedPlaces = [] } = page.props;
+    const {
+        station,
+        day,
+        dayWeather,
+        favouriteStops = [],
+        savedPlaces = [],
+    } = page.props;
     const [view, setView] = useState<View>(() => viewOf(page.url));
     const [planStage, setPlanStage] = useState<PlanStage>({
         stage: 'rest',
@@ -403,6 +418,24 @@ export default function Timetable() {
         });
     };
 
+    // Nearby | My day: the address follows, so a reload keeps the view.
+    const showView = (next: 'stop' | 'day') => {
+        setBoardReturn(null);
+        setView(next);
+        router.replace({
+            url: next === 'day' ? '/timetable?view=day' : '/timetable',
+            preserveState: true,
+            preserveScroll: true,
+        });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    // Plan a trip from My day: by the plans' ids, never their places.
+    const planFrom = (params: Record<string, string>) =>
+        router.visit(
+            `/timetable?${new URLSearchParams({ view: 'journey', ...params, compare: '1' })}`,
+            { preserveScroll: false },
+        );
+
     // The planner's day and clock, in Cologne's time.
     const todayLabel = new Intl.DateTimeFormat('en-GB', {
         weekday: 'short',
@@ -415,6 +448,36 @@ export default function Timetable() {
     const target = trip
         ? today?.items.find((item) => item.id === trip.target.id)
         : undefined;
+    // Your next trip: Nearby's card, and compact on My day's rail.
+    const tripCard = (id: string, compact = false) =>
+        trip ? (
+            <NextTripCard
+                trip={trip}
+                id={id}
+                compact={compact}
+                going={going}
+                onStart={() => void startTrip()}
+                confirm={starter.confirm}
+                starting={starter.busy}
+                tripHref={
+                    starter.activeTrip
+                        ? activeTripHref(starter.activeTrip)
+                        : undefined
+                }
+                onPlan={
+                    target?.location?.routable
+                        ? () => planToItem(target)
+                        : undefined
+                }
+                onLocate={location.locate}
+                icons={{
+                    clock: <TravelIcon name="clock" />,
+                    unsure: <TravelIcon name="info" />,
+                    offline: <TravelIcon name="offline" />,
+                    timer: <TravelIcon name="timer" />,
+                }}
+            />
+        ) : null;
 
     return (
         <AppLayout>
@@ -445,10 +508,31 @@ export default function Timetable() {
                         </span>
                         Where to?
                     </button>
+                    <div
+                        className="travel-switch"
+                        role="group"
+                        aria-label="Travel view"
+                    >
+                        <button
+                            type="button"
+                            aria-pressed={view !== 'day'}
+                            onClick={() => showView('stop')}
+                        >
+                            Nearby
+                        </button>
+                        <button
+                            type="button"
+                            aria-pressed={view === 'day'}
+                            onClick={() => showView('day')}
+                        >
+                            My day
+                        </button>
+                    </div>
                 </div>
 
                 <PlanPanel
                     url={page.url}
+                    handoffEvent={page.props.handoffEvent ?? null}
                     day={today}
                     favouriteStops={favouriteStops}
                     savedPlaces={savedPlaces}
@@ -456,7 +540,9 @@ export default function Timetable() {
                     clock={todayLabel}
                     desktop={desktop}
                     hidden={
-                        view === 'route' || (!desktop && view !== 'journey')
+                        view === 'route' ||
+                        view === 'day' ||
+                        (!desktop && view !== 'journey')
                     }
                     onStage={onPlanStage}
                     onFold={() => {
@@ -468,6 +554,7 @@ export default function Timetable() {
                         });
                     }}
                     onBoardStop={openBoardingStop}
+                    onDay={() => showView('day')}
                     onAbout={setAbout}
                     onShowTheWay={(way) => {
                         setShownWay(way);
@@ -539,7 +626,7 @@ export default function Timetable() {
                 <section
                     id="departures"
                     aria-label="Nearby"
-                    hidden={!desktop && view === 'journey'}
+                    hidden={view === 'day' || (!desktop && view === 'journey')}
                 >
                     {boardReturn ? (
                         <button
@@ -556,31 +643,7 @@ export default function Timetable() {
                     {/* The day arrives deferred; while it reloads, the last one stays. */}
                     {trip ? (
                         <>
-                            <NextTripCard
-                                trip={trip}
-                                id="nearby-trip"
-                                going={going}
-                                onStart={() => void startTrip()}
-                                confirm={starter.confirm}
-                                starting={starter.busy}
-                                tripHref={
-                                    starter.activeTrip
-                                        ? activeTripHref(starter.activeTrip)
-                                        : undefined
-                                }
-                                onPlan={
-                                    target?.location?.routable
-                                        ? () => planToItem(target)
-                                        : undefined
-                                }
-                                onLocate={location.locate}
-                                icons={{
-                                    clock: <TravelIcon name="clock" />,
-                                    unsure: <TravelIcon name="info" />,
-                                    offline: <TravelIcon name="offline" />,
-                                    timer: <TravelIcon name="timer" />,
-                                }}
-                            />
+                            {tripCard('nearby-trip')}
                             {starter.error ? (
                                 <p className="nearby-stepnote" role="status">
                                     {starter.error}
@@ -632,6 +695,33 @@ export default function Timetable() {
                         <p className="nearby-stepnote" role="status">
                             {notice}
                         </p>
+                    ) : null}
+                </section>
+                <section
+                    id="day-view"
+                    className="day-view"
+                    aria-label="My day"
+                    hidden={view !== 'day'}
+                >
+                    {view === 'day' ? (
+                        today ? (
+                            <MyDay
+                                day={today}
+                                weather={dayWeather}
+                                trip={tripCard('day-trip', true)}
+                                onPlan={(to, after) =>
+                                    planFrom({
+                                        activity: to.id,
+                                        ...(after ? { after: after.id } : {}),
+                                    })
+                                }
+                                onWayBack={(after, to) =>
+                                    planFrom({ after: after.id, to })
+                                }
+                            />
+                        ) : (
+                            <Waiting label="Reading your day…" />
+                        )
                     ) : null}
                 </section>
             </div>

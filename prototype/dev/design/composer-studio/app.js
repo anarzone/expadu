@@ -217,19 +217,10 @@
             .filter((x) => x.start)
             .sort((a, b) => `${a.date}${a.start}`.localeCompare(`${b.date}${b.start}`))
             .slice(0, 2);
-        // The nearest pharmacy to the appointment, for its map picture (the
-        // approved design's Nearby starter asks about a pharmacy).
-        const P = window.ExpaduPlaces;
-        const anchor = P?.anchors?.['wiener-platz'];
-        const nearby =
-            appointment && anchor && P.near
-                ? P.near(anchor, {
-                      kinds: ['pharmacy'],
-                      limit: 1,
-                      at: { date: today, time: appointment.end || appointment.start },
-                  })[0]?.place
-                : null;
-        return { today, now, appointment, trip, record, deadlines, tonight, planned, upcoming, anchor, nearby };
+        // The appointment's area, for the Nearby starter and tile: drawn
+        // with a pin, as the app draws it (it has no map pictures).
+        const anchor = window.ExpaduPlaces?.anchors?.['wiener-platz'];
+        return { today, now, appointment, trip, record, deadlines, tonight, planned, upcoming, anchor };
     }
     const eventById = (id) =>
         allEvents().find((x) => x.id === String(id).replace(/^event:/, ''));
@@ -262,6 +253,10 @@
             .map((x) => ({ ...x, id: 'event:' + x.id, label: 'Event' }))
             .find((x) => x.id === id);
     const planFor = (date) => state.plans.find((p) => p.date === date);
+    // The week strip marks any day with something planned: a Composer plan,
+    // Today's day or the sample's coming plans, as the app marks the
+    // person's plans.
+    const hasPlans = (date) => !!planFor(date) || knownPlans(date).length > 0;
     const ordered = (p) =>
         [...p.items].sort((a, b) => a.start.localeCompare(b.start));
     function syncStorageNotice() {
@@ -478,11 +473,11 @@
                 .reverse()
                 .map(
                     (ch) =>
-                        `<button class="history-section" data-open-section="${E(ch.id)}" aria-current="${ch.id === state.conversation.currentId}"><strong>${E(ch.title)}</strong><small>${E(new Date(ch.startedAt).toDateString() === new Date().toDateString() ? new Date(M.today() + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : new Date(ch.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} · ${((n) => `${n} message${n === 1 ? '' : 's'}`)(ch.entries.filter((e) => e.role === 'user').length)}</small>${ch.summary ? `<small>${E(ch.summary.replace('Deterministic topic summary (not AI memory). ', ''))}</small>` : ''}</button>`,
+                        `<button class="history-section" data-open-section="${E(ch.id)}" aria-current="${ch.id === state.conversation.currentId}"><strong>${E(ch.title)}</strong><small>${E(new Date(ch.startedAt).toDateString() === new Date().toDateString() ? new Date(M.today() + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : new Date(ch.startedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} · ${((n) => `${n} message${n === 1 ? '' : 's'}`)(ch.entries.filter((e) => e.role === 'user').length)}</small></button>`,
                 )
                 .join(
                     '',
-                )}<p class="history-intro">Sample responses · history stays in this browser. Summaries list recent topics; they do not replace your original messages.</p></div>`;
+                )}<p class="history-intro">History stays in your account. Earlier conversations are not used as automatic AI memory.</p><button type="button" class="plain-button" data-action="delete-history">${I('trash')}Delete conversation history</button></div>`;
             return;
         }
         const scroll = drawer?.querySelector('.panel-body')?.scrollTop || 0;
@@ -681,8 +676,6 @@
     document.addEventListener('focusin', (e) => {
         if (!e.target.closest('.composer-actions')) closeComposerActions();
     });
-    const mapPicture = (place) =>
-        place ? `<img src="../connected/place-maps/${E(place.id)}.png" alt="" loading="lazy" onerror="this.remove()">` : '';
     const weekday = (date) =>
         new Date(`${date}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'long' });
     const stamp = (date) =>
@@ -861,7 +854,6 @@
                 icon: 'pin',
                 label: 'Is there a pharmacy near my appointment?',
                 detail: `Around ${x.anchor.name}`,
-                picture: mapPicture(x.nearby),
             },
         ].filter(Boolean);
         return cards;
@@ -883,7 +875,7 @@
             ? `<div class="starter-cards">${cards
                   .map(
                       (c) =>
-                          `<button class="starter-card starter-${c.kind}" data-prompt="${E(c.label)}">${c.picture || ''}<span class="starter-tag">${I(c.icon)}${E(c.tag)}</span>${c.stamp ? `<span class="starter-stamp" aria-hidden="true">${E(c.stamp)}</span>` : ''}<strong>${E(c.label)}</strong><small>${E(c.detail)}</small></button>`,
+                          `<button class="starter-card starter-${c.kind}" data-prompt="${E(c.label)}"><span class="starter-tag">${I(c.icon)}${E(c.tag)}</span>${c.stamp ? `<span class="starter-stamp" aria-hidden="true">${E(c.stamp)}</span>` : ''}<strong>${E(c.label)}</strong><small>${E(c.detail)}</small></button>`,
                   )
                   .join('')}</div>`
             : '';
@@ -939,7 +931,7 @@
             facts.push({
                 prompt: 'Is there a pharmacy near my appointment?',
                 tile: 'is-map',
-                icon: mapPicture(x.nearby) || I('pin'),
+                icon: I('pin'),
                 small: `After ${a.end || a.start}`,
                 strong: `Near ${x.anchor.name.split(',')[0]}`,
             });
@@ -1290,7 +1282,7 @@
             x.setDate(d.getDate() + i);
             return M.iso(x);
         });
-        return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}" ${date === M.today() ? 'aria-current="date" class="is-today"' : ''}><span>${date === M.today() ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${planFor(date) ? 'has-plan' : ''}" aria-label="${planFor(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}In your plans</span><button class="plain-button" data-open-plan="${E(p.date)}">${I('spark')}Change it with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off</div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}`;
+        return `<div class="plans-heading"><div><h1>Your days, together.</h1><p>Plan one day at a time.</p></div></div><div class="day-selector"><button class="date-step" data-day-step="-7" aria-label="Previous week">${I('back')}</button><div class="days">${days.map((date) => `<button data-date="${date}" aria-pressed="${date === selected}" ${date === M.today() ? 'aria-current="date" class="is-today"' : ''}><span>${date === M.today() ? 'Today' : new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short' })}</span><strong>${Number(date.slice(-2))}</strong><i class="${hasPlans(date) ? 'has-plan' : ''}" aria-label="${hasPlans(date) ? 'Has a plan' : 'No plan'}"></i></button>`).join('')}</div><button class="date-step" data-day-step="7" aria-label="Next week">${I('arrow')}</button></div><div class="plans-date-line"><h2>${E(longDate(selected))}</h2><label class="date-jump">${I('calendar')}<span class="sr-only">Choose a date</span><input id="plan-date" type="date" value="${selected}"></label></div>${p ? `<section class="timeline-paper confirmed-plan"><div class="paper-heading"><span class="confirmed-label">${I('check')}In your plans</span><button class="plain-button" data-open-plan="${E(p.date)}">${I('spark')}Change it with Composer</button></div>${timeline(p)}<div class="travel-note">${I('route')}<p>Routes and current availability need checking.</p></div><div class="plan-management"><button class="plain-button" data-action="appointment">${I('plus')}Add appointment</button><button class="plain-button" data-cancel-day="${E(p.date)}">Cancel day</button></div><div class="plan-reminders">${I('bell')}Reminders off</div></section>` : `<section class="empty-day"><div class="empty-day-art">${I('calendar')}</div><h2>Nothing planned. Room for anything.</h2><p>Start with an idea, or ask Composer to help shape this day.</p><button class="studio-button primary" data-action="plan-example">${I('spark')}Plan this day</button><a class="plain-button" href="#saved" data-nav="saved">Choose from saved ideas</a></section>`}`;
     }
     const entryMarkup = new Map();
     const dayMarkup = new WeakMap();
@@ -2882,6 +2874,17 @@
             undo?.();
             document.querySelector('#studio-toast').hidden = true;
         }
+        // Deleting history asks first (owner, 21 Oct 2026): it's permanent.
+        // Plans and saved ideas stay.
+        if (action === 'delete-history')
+            features.confirmDeleteHistory(el, () => {
+                C.deleteHistory(state);
+                state.response = null;
+                store();
+                closePanel();
+                render();
+                notify('Conversation history deleted.');
+            });
         if (action === 'new') {
             C.startFresh(state);
             state.response = null;

@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\CityNews;
+use App\Models\NoticeBrief;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -30,11 +32,12 @@ class DisruptionService
     }
 
     /**
-     * Line disruptions from scraped KVB aktuelles/news.
+     * Open KVB notices: the live service page and KVB news, newest first
+     * within each severity.
      *
-     * @return array<int, array<string, mixed>>
+     * @return Collection<int, CityNews>
      */
-    public function getLineDisruptions(): array
+    public function openNotices(): Collection
     {
         return CityNews::query()
             ->where('category', 'transit')
@@ -44,20 +47,43 @@ class DisruptionService
             // ones that rotated back in were announced again as new.
             ->orderByRaw("case severity when 'critical' then 4 when 'major' then 3 when 'moderate' then 2 else 1 end desc")
             ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Line disruptions from scraped KVB aktuelles/news, each with its English
+     * brief when one has been written (null otherwise: show the notice as is).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getLineDisruptions(): array
+    {
+        $notices = $this->openNotices();
+        $briefs = NoticeBrief::query()
+            ->where('locale', 'en')
+            ->whereIn('input_hash', $notices->map(fn (CityNews $n) => NoticeBrief::hashFor((string) $n->title, $n->summary)))
             ->get()
-            ->map(fn (CityNews $n) => [
-                'id' => 'news_'.$n->id,
-                'title' => $n->title,
-                'description' => $n->summary ?? '',
-                'severity' => $n->severity ?? 'minor',
-                'type' => 'line',
-                'affected_lines' => $n->affected_lines ?? [],
-                // A live KVB notice's published_at is when it was last seen
-                // (every scrape); it started when it was first seen.
-                'started_at' => ($n->source === 'kvb-betriebslage' ? $n->created_at : $n->published_at)->toIso8601String(),
-                'estimated_end' => $n->expires_at?->toIso8601String(),
-                'source' => $n->source,
-            ])
+            ->keyBy('input_hash');
+
+        return $notices
+            ->map(function (CityNews $n) use ($briefs) {
+                $brief = $briefs->get(NoticeBrief::hashFor((string) $n->title, $n->summary));
+
+                return [
+                    'id' => 'news_'.$n->id,
+                    'title' => $n->title,
+                    'description' => $n->summary ?? '',
+                    'severity' => $n->severity ?? 'minor',
+                    'type' => 'line',
+                    'affected_lines' => $n->affected_lines ?? [],
+                    // A live KVB notice's published_at is when it was last seen
+                    // (every scrape); it started when it was first seen.
+                    'started_at' => ($n->source === 'kvb-betriebslage' ? $n->created_at : $n->published_at)->toIso8601String(),
+                    'estimated_end' => $n->expires_at?->toIso8601String(),
+                    'source' => $n->source,
+                    'brief' => $brief ? ['headline' => $brief->headline, 'text' => $brief->body !== '' ? $brief->body : null, 'impact' => $brief->impact] : null,
+                ];
+            })
             ->all();
     }
 
