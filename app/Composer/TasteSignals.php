@@ -70,6 +70,10 @@ class TasteSignals
      */
     private function record(User $user, string $type, Spot|array $subject): void
     {
+        // Learning from what someone does is personalisation: only with the opt-in.
+        if (! $user->personalises()) {
+            return;
+        }
         $category = $subject instanceof Spot
             ? ($subject->category instanceof \BackedEnum ? $subject->category->value : (string) $subject->category)
             : (is_string($subject['category'] ?? null) ? $subject['category'] : null);
@@ -86,7 +90,7 @@ class TasteSignals
         ]);
     }
 
-    private function spotAt(string $name, float $lat, float $lng): ?Spot
+    public function spotAt(string $name, float $lat, float $lng): ?Spot
     {
         $nearby = Spot::query()
             ->canonical()

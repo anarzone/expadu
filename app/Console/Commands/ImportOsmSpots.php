@@ -30,7 +30,7 @@ class ImportOsmSpots extends Command
     /**
      * @var string
      */
-    protected $description = 'Import cafes, coworking spaces, and libraries from OpenStreetMap via Overpass API';
+    protected $description = 'Import Cologne places (parks, culture, cafés, pharmacies, groceries and more) from OpenStreetMap via Overpass API';
 
     public function handle(
         CaptureMediaCandidate $captureMediaCandidate,
@@ -102,6 +102,14 @@ class ImportOsmSpots extends Command
             'bakery' => "[out:json][timeout:40];nwr[\"shop\"=\"bakery\"]({$bbox});out center;",
             'coworking' => "[out:json][timeout:25];(nwr[\"amenity\"=\"coworking_space\"]({$bbox});nwr[\"office\"=\"coworking\"]({$bbox}););out center;",
             'library' => "[out:json][timeout:25];nwr[\"amenity\"=\"library\"]({$bbox});out center;",
+            // Everyday errands for Today's "Near ‹plan›" and Around here's
+            // pharmacy and grocery kinds. City-wide with no `out` limit: a
+            // capped query silently drops whole districts.
+            'pharmacy' => "[out:json][timeout:60];nwr[\"amenity\"=\"pharmacy\"]({$bbox});out center;",
+            'supermarket' => "[out:json][timeout:60];nwr[\"shop\"=\"supermarket\"]({$bbox});out center;",
+            'convenience' => "[out:json][timeout:60];nwr[\"shop\"=\"convenience\"]({$bbox});out center;",
+            'drugstore' => "[out:json][timeout:60];nwr[\"shop\"=\"chemist\"]({$bbox});out center;",
+            'greengrocer' => "[out:json][timeout:60];nwr[\"shop\"=\"greengrocer\"]({$bbox});out center;",
             // Named lakes, woods, reserves and recreation grounds that people
             // visit but OSM does not tag as parks (Königsforst, Fühlinger See,
             // Poller Wiesen). Bounds let greenSpaceQualifies() skip fountains,

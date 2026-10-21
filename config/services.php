@@ -74,6 +74,21 @@ return [
         'prompt_version' => '2026-10-21',
     ],
 
+    // Place descriptions and evidence-backed vibe tags (App\Places\Enrichment).
+    // Public OSM data only. Off by default; uses ANTHROPIC_API_KEY. The
+    // daily budget covers sync calls, collected batch results and the
+    // estimate for batches still open; a submission is cut to fit it.
+    'place_enrichment' => [
+        'enabled' => env('PLACE_ENRICHMENT_ENABLED', false),
+        'model' => env('PLACE_ENRICHMENT_MODEL', 'claude-haiku-5-5'),
+        'effort' => env('PLACE_ENRICHMENT_EFFORT', 'low'),
+        'max_tokens' => (int) env('PLACE_ENRICHMENT_MAX_TOKENS', 1024),
+        'daily_budget_usd' => (float) env('PLACE_ENRICHMENT_DAILY_BUDGET_USD', 3),
+        'batch_size' => (int) env('PLACE_ENRICHMENT_BATCH_SIZE', 2000),
+        'sync_concurrency' => (int) env('PLACE_ENRICHMENT_SYNC_CONCURRENCY', 3),
+        'prompt_version' => '2026-10-21.1',
+    ],
+
     'composer_llm' => [
         'enabled' => env('COMPOSER_LLM_ENABLED', false),
         'key' => env('COMPOSER_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
