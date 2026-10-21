@@ -19,6 +19,11 @@ import {
     event as selectedEvent,
     update,
 } from '@/actions/App/Http/Controllers/ComposerWorkspaceController';
+import {
+    AiNoticeLine,
+    aiPermit,
+    useAiNotice,
+} from '@/components/composer/ai-notice';
 import { AnswerBody, isAnswer } from '@/components/composer/answers';
 import { Catalogue } from '@/components/composer/catalogue';
 import {
@@ -134,6 +139,7 @@ export default function ComposerPage({
     const page = usePage();
     const userId = page.props.auth.user.id;
     const [workspace, setWorkspace] = useState(initial);
+    const aiNotice = useAiNotice();
     const stateRef = useRef(initial);
     const receivedUrl = useRef('');
     const [entry, setEntry] = useState<ComposerEntry | null>(() =>
@@ -456,12 +462,22 @@ export default function ComposerPage({
                     );
                 }
             } else {
-                const parsed = await api<{
+                type Parsed = {
                     intent: string;
                     constraints: Record<string, unknown> | null;
                     kind: string;
                     answer: boolean;
-                }>(parse.url(), { text });
+                };
+                // Read with the AI service under the line's say-so; if that's refused (an
+                // outdated notice, the service off), the request is read without it.
+                const parsed = await api<Parsed>(parse.url(), {
+                    text,
+                    ...aiPermit(aiNotice),
+                }).catch((error: unknown) =>
+                    aiNotice
+                        ? api<Parsed>(parse.url(), { text })
+                        : Promise.reject(error),
+                );
 
                 if (parsed.answer) {
                     // Composer answers it from your day and records (the server works
@@ -1362,6 +1378,7 @@ export default function ComposerPage({
                                 </button>
                             </div>
                         </form>
+                        {aiNotice && <AiNoticeLine notice={aiNotice} />}
                     </div>
                 </div>
                 {/* Phones: Composer's round button, where you are (focuses the box). */}

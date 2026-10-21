@@ -1031,3 +1031,17 @@
     margin: -10px -6px -10px -8px;
     border-radius: 50%;
 }
+
+/* The AI disclosure under the box (owner, 21 Oct 2026): the box's helper text, as
+   the planning context's small line (.input-context small). */
+.composer-ai-notice {
+    margin: 6px 6px 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+    line-height: 1.45;
+}
+.composer-ai-notice a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
