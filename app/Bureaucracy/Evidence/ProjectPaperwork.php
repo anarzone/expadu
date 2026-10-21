@@ -29,6 +29,12 @@ final class ProjectPaperwork
             $inventory = $ownItems->mapWithKeys(fn ($item) => [$item->id => $this->item($item)])->all();
             $uses = BureaucracyRequirementUse::query()->whereIn('process_id', array_column($input->processes, 'id'))->whereNull('superseded_at')->get()
                 ->keyBy(fn ($use) => $use->process_id.':'.$use->requirement_id);
+            // Evidence shared for these processes' requirements: the live shares and the items
+            // they point at, read once for the plan rather than twice per requirement.
+            $shares = BureaucracyEvidenceShare::query()->whereIn('process_id', array_column($input->processes, 'id'))
+                ->whereNull('revoked_at')->where('expires_at', '>', $input->at)->get(['process_id', 'requirement_id', 'requirement_hash', 'evidence_id']);
+            $sharedItems = $shares->isEmpty() ? collect()
+                : BureaucracyEvidenceItem::query()->whereIn('id', $shares->pluck('evidence_id')->unique()->values())->where('status', 'active')->orderBy('id')->sharedLock()->get();
             $facts = (new AssessmentFacts)->combine($input->facts, $input->relationships);
             $rows = [];
             foreach ($proposals as $proposal) {
@@ -42,9 +48,10 @@ final class ProjectPaperwork
                     $readiness = 'missing';
                     $suggestions = $ownItems->filter(fn ($item) => $this->evidenceAccess->suggests($item, $input->at->toDateString(), $requirement['id'], $requirement['evidence_kind']))->values()->pluck('id')->all();
                     if ($processId !== null) {
-                        $sharedIds = BureaucracyEvidenceShare::query()->where('process_id', $processId)->where('requirement_id', $requirement['id'])
-                            ->where('requirement_hash', $requirement['semantic_hash'])->whereNull('revoked_at')->where('expires_at', '>', $input->at)->pluck('evidence_id');
-                        foreach (BureaucracyEvidenceItem::query()->whereIn('id', $sharedIds)->where('status', 'active')->orderBy('id')->sharedLock()->get() as $sharedItem) {
+                        $sharedIds = $shares->filter(fn (BureaucracyEvidenceShare $share): bool => (int) $share->process_id === (int) $processId
+                            && (string) $share->requirement_id === (string) $requirement['id'] && (string) $share->requirement_hash === (string) $requirement['semantic_hash'])
+                            ->pluck('evidence_id')->map(fn ($id): string => (string) $id)->all();
+                        foreach ($sharedItems->filter(fn (BureaucracyEvidenceItem $item): bool => in_array((string) $item->id, $sharedIds, true)) as $sharedItem) {
                             if ($this->evidenceAccess->shareFor($sharedItem, $processId, $requirement['id'], $requirement['semantic_hash']) !== null) {
                                 $inventory[$sharedItem->id] = $this->item($sharedItem);
                                 if ($this->evidenceAccess->fits($sharedItem, $input->at->toDateString(), $requirement['id'], $requirement['evidence_kind'])) {
