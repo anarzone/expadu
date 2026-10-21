@@ -43,7 +43,7 @@
             "mock": "#shared-dialog",
             "app": "dialog.place-sheet",
             "pixels": false,
-            "reason": "The mock\u2019s tab bar (About, Plan a visit, Get there) and Plan a visit arrive in AH2 (coordinator, EXP-161): AH1 ships About only, with no dead tabs, so what follows the place\u2019s kind and area sits higher by the tab bar. Its x, width, height and styles are compared. The page behind shows through at its corners."
+            "reason": "The page behind shows through at its corners. Its box and styles are compared."
         },
         {
             "name": "title",
@@ -76,64 +76,80 @@
             "app": ".place-sheet-hero a"
         },
         {
+            "name": "tabs",
+            "mock": ".place-sheet-tabs",
+            "app": ".place-sheet-tabs"
+        },
+        {
+            "name": "About (on)",
+            "mock": ".place-sheet-tabs button",
+            "app": ".place-sheet-tabs button",
+            "index": 0
+        },
+        {
+            "name": "Plan a visit tab",
+            "mock": ".place-sheet-tabs button",
+            "app": ".place-sheet-tabs button",
+            "index": 1
+        },
+        {
+            "name": "Get there tab",
+            "mock": ".place-sheet-tabs button",
+            "app": ".place-sheet-tabs button",
+            "index": 2
+        },
+        {
             "name": "Today",
             "mock": "dl.place-facts > div",
             "app": "dl.place-facts > div",
-            "index": 0,
-            "ignore": ["y"],
-            "reason": "The mock\u2019s tab bar (About, Plan a visit, Get there) and Plan a visit arrive in AH2 (coordinator, EXP-161): AH1 ships About only, with no dead tabs, so what follows the place\u2019s kind and area sits higher by the tab bar. Its x, width, height and styles are compared."
+            "index": 0
         },
         {
             "name": "Address",
             "mock": "dl.place-facts > div",
             "app": "dl.place-facts > div",
-            "index": 1,
-            "ignore": ["y"],
-            "reason": "The mock\u2019s tab bar (About, Plan a visit, Get there) and Plan a visit arrive in AH2 (coordinator, EXP-161): AH1 ships About only, with no dead tabs, so what follows the place\u2019s kind and area sits higher by the tab bar. Its x, width, height and styles are compared."
+            "index": 1
         },
         {
             "name": "Wheelchair",
             "mock": "dl.place-facts > div",
             "app": "dl.place-facts > div",
-            "index": 2,
-            "ignore": ["y"],
-            "reason": "The mock\u2019s tab bar (About, Plan a visit, Get there) and Plan a visit arrive in AH2 (coordinator, EXP-161): AH1 ships About only, with no dead tabs, so what follows the place\u2019s kind and area sits higher by the tab bar. Its x, width, height and styles are compared."
+            "index": 2
         },
         {
             "name": "Website",
             "mock": "dl.place-facts > div",
             "app": "dl.place-facts > div",
-            "index": 3,
-            "ignore": ["y"],
-            "reason": "The mock\u2019s tab bar (About, Plan a visit, Get there) and Plan a visit arrive in AH2 (coordinator, EXP-161): AH1 ships About only, with no dead tabs, so what follows the place\u2019s kind and area sits higher by the tab bar. Its x, width, height and styles are compared."
+            "index": 3
         },
         {
             "name": "Phone",
             "mock": "dl.place-facts > div",
             "app": "dl.place-facts > div",
-            "index": 4,
-            "ignore": ["y"],
-            "reason": "The mock\u2019s tab bar (About, Plan a visit, Get there) and Plan a visit arrive in AH2 (coordinator, EXP-161): AH1 ships About only, with no dead tabs, so what follows the place\u2019s kind and area sits higher by the tab bar. Its x, width, height and styles are compared."
+            "index": 4
         },
         {
             "name": "All listed hours",
             "mock": "details.place-week summary",
-            "app": "details.place-week summary",
-            "ignore": ["y"],
-            "reason": "The mock\u2019s tab bar (About, Plan a visit, Get there) and Plan a visit arrive in AH2 (coordinator, EXP-161): AH1 ships About only, with no dead tabs, so what follows the place\u2019s kind and area sits higher by the tab bar. Its x, width, height and styles are compared."
+            "app": "details.place-week summary"
         },
         {
             "name": "source",
             "mock": "p.place-source",
             "app": "p.place-source",
-            "ignore": ["y", "h"],
+            "ignore": ["h"],
             "contentDiffers": true,
-            "reason": "The mock\u2019s tab bar (About, Plan a visit, Get there) and Plan a visit arrive in AH2 (coordinator, EXP-161): AH1 ships About only, with no dead tabs, so what follows the place\u2019s kind and area sits higher by the tab bar. Its x, width, height and styles are compared. The app\u2019s sample places record no date their hours were observed, so the source line leaves \u201c, observed \u2026\u201d out."
+            "reason": "The app\u2019s sample places record no date their hours were observed, so the source line leaves \u201c, observed \u2026\u201d out, and it\u2019s a line shorter."
         },
         {
             "name": "Save for later",
             "mock": ".place-sheet-footer .button.secondary",
             "app": ".place-sheet-save"
+        },
+        {
+            "name": "Plan a visit",
+            "mock": ".place-sheet-footer .button.primary",
+            "app": ".place-sheet-footer .place-sheet-primary"
         }
     ]
 }
