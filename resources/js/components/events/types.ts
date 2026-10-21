@@ -6,6 +6,8 @@ export type EventOccurrence = {
     /** The title as listed, and its language; `title` is its English meaning when there is one. */
     title_original?: string;
     title_lang?: string | null;
+    /** Whether `title` is a checked English translation, not the listing's own. */
+    title_translated?: boolean;
     /** False for a listing that gives a date but no time. */
     time_listed?: boolean;
     language?: string | null;

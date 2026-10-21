@@ -17,12 +17,14 @@ export type PosterEvent = {
     start: string | null;
     /** HH:MM, or null when the listing gives no end. */
     end: string | null;
-    /** The title as listed (usually German). */
+    /** The title shown: in English when there's a checked translation
+        (owner, 21 Oct), otherwise as listed. */
     title: string;
-    /** The listed title's language (e.g. "de"), so it hyphenates as German. */
+    /** Set when the title shown is the listing's own, untranslated (e.g.
+        "de"), so it hyphenates as German and says it's the original. */
     titleLang: string | null;
-    /** Its English meaning, only when it differs from the listed title. */
-    titleEnglish: string | null;
+    /** The listing's own title, behind the English one, when they differ. */
+    titleOriginal: string | null;
     /** The app's category value (EventCategory). */
     category: string;
     venue: string | null;
@@ -42,6 +44,7 @@ export type PosterSource = {
     title: string;
     title_original?: string | null;
     title_lang?: string | null;
+    title_translated?: boolean;
     time_listed?: boolean;
     category: string;
     price_text: string | null;
@@ -88,10 +91,9 @@ function admission(price: string | null): string | null {
 export function posterEvent(source: PosterSource): PosterEvent {
     const timed = source.time_listed !== false;
     const original = source.title_original?.trim() || source.title;
-    const english =
-        source.title_original && source.title !== source.title_original
-            ? source.title
-            : null;
+    const translated =
+        source.title_translated ??
+        (!!source.title_original && source.title !== original);
 
     return {
         id: String(source.id),
@@ -101,9 +103,10 @@ export function posterEvent(source: PosterSource): PosterEvent {
             timed && source.occurrence_end
                 ? berlinClock(source.occurrence_end)
                 : null,
-        title: original,
-        titleLang: source.title_original ? (source.title_lang ?? null) : null,
-        titleEnglish: english,
+        title: translated ? source.title : original,
+        titleLang: translated ? null : (source.title_lang ?? null),
+        titleOriginal:
+            translated && original !== source.title ? original : null,
         category: source.category,
         venue: source.venue.name,
         area: source.venue.veedel,
