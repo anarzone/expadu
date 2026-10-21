@@ -4,8 +4,11 @@ test('time picker closes from its trigger without changing the selected time', a
     page,
 }) => {
     await page.goto('/composer');
-    await page.getByRole('button', { name: 'Composer actions' }).click();
-    await page.getByRole('menuitem', { name: 'Add an appointment' }).click();
+    await page.locator('summary[aria-label="Composer actions"]').click();
+    await page
+        .locator('.composer-actions-menu')
+        .getByRole('button', { name: 'Add appointment' })
+        .click();
     const form = page.getByRole('dialog', { name: 'Add an appointment' });
     const trigger = form.getByRole('button', { name: 'Until time 11:00' });
     const picker = page.getByRole('dialog', { name: 'Choose until time' });
@@ -21,8 +24,11 @@ test('wheel animation cannot replace a chosen hour or an independently chosen mi
     page,
 }) => {
     await page.goto('/composer');
-    await page.getByRole('button', { name: 'Composer actions' }).click();
-    await page.getByRole('menuitem', { name: 'Add an appointment' }).click();
+    await page.locator('summary[aria-label="Composer actions"]').click();
+    await page
+        .locator('.composer-actions-menu')
+        .getByRole('button', { name: 'Add appointment' })
+        .click();
     const form = page.getByRole('dialog', { name: 'Add an appointment' });
     await form.getByRole('button', { name: 'Until time 11:00' }).click();
     const picker = page.getByRole('dialog', { name: 'Choose until time' });

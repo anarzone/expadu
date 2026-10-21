@@ -3,6 +3,7 @@ import { clsx } from 'clsx';
 import { TaskDetail } from '@/components/paperwork/detail';
 import { Documents } from '@/components/paperwork/documents';
 import { InlineEditor, SheetDialog } from '@/components/paperwork/editors';
+import { taskGroup } from '@/components/paperwork/format';
 import { Icon } from '@/components/paperwork/icons';
 import { AllActions, History, SourcesBody } from '@/components/paperwork/lists';
 import { Overview } from '@/components/paperwork/overview';
@@ -123,9 +124,16 @@ function Workspace({ people }: { people: Person[] }) {
     const coverage = () =>
         openSheet({ title: 'Source and coverage', body: <SourcesBody /> });
 
+    // What Composer's tray says this page is about: the task on screen, otherwise the
+    // person's next one to do (blocked and waiting ones aren't), as the mock's
+    // page-context.js names it.
+    const next = plan.processes.find(
+        (p) => !p.is_closed && taskGroup(p) === 'todo',
+    );
+    const about = process ?? next;
     usePageContext({
         page: 'paperwork',
-        label: titled ? `Paperwork · ${heading}` : 'Your paperwork',
+        label: about ? `Paperwork · ${about.title}` : 'Paperwork',
     });
 
     return (
