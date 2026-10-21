@@ -125,5 +125,8 @@ Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withou
 // Personalisation: decayed affinities and place negatives from the signal ledger.
 Schedule::command('signals:aggregate')->dailyAt('04:30')->withoutOverlapping()->onOneServer()->runInBackground();
 
+// Place enrichment batches (places:enrich submits them): apply finished results.
+Schedule::command('places:enrich-collect')->everyTenMinutes()->withoutOverlapping()->onOneServer()->runInBackground();
+
 // Model-ready place features, rebuilt from the effective facts each night.
 Schedule::command('places:build-features')->dailyAt('04:15')->withoutOverlapping()->onOneServer();
