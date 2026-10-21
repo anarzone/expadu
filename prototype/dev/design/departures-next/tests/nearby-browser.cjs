@@ -73,7 +73,7 @@ const status = (page) =>
             await page.getByRole('button', { name: 'Show the way' }).click();
             assert.match(
                 await page.locator('.trip-line-way').innerText(),
-                /Neumarkt[\s\S]*Wiener Platz[\s\S]*The 13:24 tram 4[\s\S]*2 min spare[\s\S]*Bike or walk/,
+                /Neumarkt[\s\S]*Mülheim Wiener Platz[\s\S]*The 13:24 tram 4[\s\S]*2 min spare[\s\S]*Bike or walk/,
             );
             await page.getByRole('button', { name: 'Hide the way' }).click();
             await page.getByRole('button', { name: 'I’m on my way' }).click();
@@ -97,7 +97,7 @@ const status = (page) =>
             // sample's moments stand in for the time and your location.
             const moments = [
                 [1, /Take tram 4 to Schlebusch[\s\S]*take the 4/, '2 of 4'],
-                [2, /Ride to Wiener Platz[\s\S]*Nächster Halt/, '3 of 4'],
+                [2, /Ride to Mülheim Wiener Platz[\s\S]*Nächster Halt/, '3 of 4'],
                 [4, /Walk to your appointment[\s\S]*Ausgang/, '4 of 4'],
                 [5, /You’re 12 min early[\s\S]*What to bring/, 'Arrived'],
             ];

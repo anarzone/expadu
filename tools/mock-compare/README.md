@@ -137,6 +137,11 @@ On your machine (`APP_ENV=local` only):
   Paperwork record through the v2 commands. `configs/paperwork.json` and the Today configs expect it
   (`PAPERWORK_SAMPLE=quiet` for `today-quiet`): the Blue Card appointment on the sample day is that
   record, not a plan of `mock:sample-day`'s.
+- **Places and events:** Today's discovery compares against the mock's sample places around Wiener
+  Platz (`php artisan db:seed --class='Database\Seeders\MockSample\PlacesSeeder'`, the mock's own
+  export of our 7 Oct catalogue; it adds missing places and never changes one) and its two evening
+  events (`E2E_EMAIL=<you>@expadu.test php artisan db:seed
+--class='Database\Seeders\MockSample\EventsSeeder'`, Events' seeder). Both are local only.
 - **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
 --seed` (create it with the postgis and vector extensions first), and start the compare app server
   with the same `DB_DATABASE`. Never `migrate:fresh` the shared one. Put `DB_DATABASE` (and your

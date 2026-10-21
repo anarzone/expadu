@@ -13,6 +13,11 @@
  */
 
 export const lineIcons = {
+    // Everyday places (connected/places.js), drawn as the mock's place icons.
+    pharmacy: '<path d="M3 5h18v16H3zM8 5V2h8v3M12 9v8M8 13h8"/>',
+    cafe: '<path d="M3 8h14v7a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8Zm14 1h2a3 3 0 0 1 0 6h-2M6 2v3m5-3v3"/>',
+    bakery: '<path d="M4 15c-1-4 2-8 8-8s9 4 8 8c-1 3-4 4-8 4s-7-1-8-4Z"/><path d="m9 8 2 10m4-10-2 10"/>',
+    grocery: '<path d="M3 8h18l-2 12H5L3 8Zm5 0 3-5m5 5-3-5M9 12v5m6-5v5"/>',
     people: '<circle cx="9" cy="7" r="3"/><path d="M3 21v-4a6 6 0 0 1 12 0v4m2-16a3 3 0 0 1 0 6m1 3a5 5 0 0 1 3 5v2"/>',
     home: '<path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8"/>',
     arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',

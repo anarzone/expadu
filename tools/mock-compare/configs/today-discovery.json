@@ -1,0 +1,196 @@
+{
+    "name": "today-discovery",
+    "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/today-next/brief/?view=everyday",
+        "wait": ".deadline-strip"
+    },
+    "app": {
+        "url": "/dashboard",
+        "wait": ".deadline-strip",
+        "init": [
+            "document.cookie = 'mock_clock=2026-09-30T13:10:00%2B02:00; path=/'"
+        ],
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        }
+    },
+    "pairs": [
+        {
+            "name": "around plan",
+            "mock": ".around-plan",
+            "app": ".around-plan",
+            "ignore": ["y", "h"],
+            "contentDiffers": true
+        },
+        {
+            "name": "around heading",
+            "mock": ".around-heading h3",
+            "app": ".around-heading h3",
+            "ignore": ["y", "w"],
+            "contentDiffers": true
+        },
+        {
+            "name": "around context",
+            "mock": ".around-context",
+            "app": ".around-context",
+            "ignore": ["y", "w"],
+            "contentDiffers": true
+        },
+        {
+            "name": "places title",
+            "mock": ".around-places-title",
+            "app": ".around-places-title",
+            "ignore": ["y", "h"],
+            "contentDiffers": true,
+            "pixels": false
+        },
+        {
+            "name": "first place",
+            "mock": ".nearby-place--line",
+            "app": ".nearby-place--line",
+            "index": 0,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "second place",
+            "mock": ".nearby-place--line",
+            "app": ".nearby-place--line",
+            "index": 1,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "third place",
+            "mock": ".nearby-place--line",
+            "app": ".nearby-place--line",
+            "index": 2,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "place icon",
+            "mock": ".nearby-place-icon",
+            "app": ".nearby-place-icon",
+            "index": 0,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "place name",
+            "mock": ".nearby-place-copy strong",
+            "app": ".nearby-place-copy strong",
+            "index": 0,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "place facts",
+            "mock": ".nearby-place-copy small",
+            "app": ".nearby-place-copy small",
+            "index": 0,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "place hours",
+            "mock": ".place-hours",
+            "app": ".place-hours",
+            "index": 0,
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "places credit",
+            "mock": ".around-places-source",
+            "app": ".around-places-source",
+            "ignore": ["y", "w", "h"],
+            "contentDiffers": true,
+            "pixels": false
+        },
+        {
+            "name": "discovery heading",
+            "mock": ".discovery-heading h2",
+            "app": ".discovery-heading h2",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "All events",
+            "mock": ".discovery-heading > a",
+            "app": ".discovery-heading > a",
+            "ignore": ["y"],
+            "pixels": false
+        },
+        {
+            "name": "poster rail",
+            "mock": ".event-rail",
+            "app": ".event-rail",
+            "ignore": ["y", "h"],
+            "pixels": false
+        },
+        {
+            "name": "first poster",
+            "mock": ".event-card",
+            "app": ".event-card",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        },
+        {
+            "name": "second poster",
+            "mock": ".event-card",
+            "app": ".event-card",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 1
+        },
+        {
+            "name": "poster title",
+            "mock": ".event-copy strong",
+            "app": ".event-copy strong",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        },
+        {
+            "name": "poster time",
+            "mock": ".event-copy small",
+            "app": ".event-copy small",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        },
+        {
+            "name": "poster venue",
+            "mock": ".event-copy small",
+            "app": ".event-copy small",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 1
+        },
+        {
+            "name": "poster save",
+            "mock": ".event-save",
+            "app": ".event-save",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        },
+        {
+            "name": "poster plan",
+            "mock": ".event-plan",
+            "app": ".event-plan",
+            "ignore": ["y"],
+            "pixels": false,
+            "index": 0
+        }
+    ],
+    "contentNote": "The mock's around-plan has its own sample idea ('Language café', a content.js sample) under 'Also in Mülheim'; real listings have no event in Mülheim that day, so the app says 'Near EU Blue Card appointment' with the plan's time, its places sit lower in the mock, and their titles name the plan's area ('Mülheim'; the mock's sample anchor says 'Wiener Platz'). The mock's credit adds 'sample export of 7 Oct 2026'. Its compact listings (Chess & coffee, the riverside walk) are content.js samples with no listing behind them, so the app has none that day.",
+    "subpixelNote": "Discovery sits under City help, whose departures and forecast are live (today-city), and the places sit under the mock's sample idea, so they land at other fractions of a pixel than the mock's: text rasterises differently. Boxes (but y) and styles are compared; the element shots look the same.",
+    "mapNote": "'More nearby on the map' is left out until Around here (AH1) exists (coordinator, 20 Oct); then it carries the plan's id, never coordinates or a time."
+}

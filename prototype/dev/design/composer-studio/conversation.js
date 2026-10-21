@@ -152,6 +152,19 @@
         return next;
     }
 
+    // Deletes every conversation and the plan snapshots kept with it; plans
+    // and saved ideas stay. Composer starts again with one empty one.
+    function deleteHistory(s) {
+        const conversation = s.conversation;
+        conversation.chapters = [];
+        conversation.versions = [];
+        const next = chapter(conversation);
+        conversation.chapters.push(next);
+        conversation.currentId = next.id;
+        conversation.activeDate = null;
+        return next;
+    }
+
     function activatePlan(s, date) {
         const section = current(s);
         s.conversation.activeDate = date;
@@ -264,6 +277,7 @@
         append,
         updateEntry,
         startFresh,
+        deleteHistory,
         activatePlan,
         presentPlan,
         recordPlan,

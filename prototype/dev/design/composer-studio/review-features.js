@@ -349,6 +349,20 @@
                 }
             });
         }
+        // Deleting conversation history asks first: it's permanent, unlike
+        // cancelling a day (owner, 21 Oct 2026). Keep it is the safe default.
+        function confirmDeleteHistory(anchor, onDelete) {
+            const body = shell('Delete conversation history?', anchor);
+            body.innerHTML = `<p>Your messages will be permanently deleted. Saved places and your plans will remain.</p><div class="detail-actions"><button type="button" class="plain-button" data-detail-close>Keep it</button><button type="button" class="studio-button primary" data-delete-history>Delete history</button></div>`;
+            body.querySelector('[data-delete-history]').addEventListener(
+                'click',
+                () => {
+                    close();
+                    onDelete();
+                },
+            );
+            body.querySelector('.plain-button').focus({ preventScroll: true });
+        }
         // Cancel day happens straight away, with its Undo in the conversation
         // (owner, 18 Oct 2026, Composer review canvas board 3).
         function cancelDay(anchor, date) {
@@ -666,7 +680,13 @@
                 });
             keyboardLayout();
         });
-        return { serviceCard, appointment, examples, mountGuides };
+        return {
+            serviceCard,
+            appointment,
+            examples,
+            mountGuides,
+            confirmDeleteHistory,
+        };
     }
     root.StudioReviewFeatures = { create };
 })(globalThis);

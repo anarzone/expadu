@@ -1,6 +1,8 @@
 import { Deferred, Head, usePage } from '@inertiajs/react';
 import { CityHelp, CityLinks } from '@/components/today/city-help';
 import type { Forecast, Weather } from '@/components/today/city-help';
+import { AroundPlan, Discovery } from '@/components/today/discovery';
+import type { TodayDiscovery } from '@/components/today/discovery';
 import { DeadlineStrip, PaperworkPanel } from '@/components/today/paperwork';
 import type { TodayPaperwork } from '@/components/today/paperwork';
 import { useDayRefresh } from '@/components/today/use-day-refresh';
@@ -26,6 +28,7 @@ export default function Today() {
         stop,
         favouriteStops,
         paperwork,
+        discovery,
     } = usePage<{
         day?: DayProjection;
         weather?: Weather;
@@ -34,6 +37,7 @@ export default function Today() {
         stop: string | null;
         favouriteStops?: FavouriteStop[];
         paperwork?: TodayPaperwork;
+        discovery?: TodayDiscovery;
     }>().props;
     const planned = !!day?.items.some(
         (item) => !item.completed && item.state !== 'elapsed',
@@ -60,8 +64,20 @@ export default function Today() {
                                 <DayLoading />
                             )}
                         </Deferred>
+                        {discovery?.around && (
+                            <div id="around-plan-slot">
+                                <AroundPlan around={discovery.around} />
+                            </div>
+                        )}
                     </div>
                     <div className="next-area">
+                        {/* A free day leads with ideas (the mock's arrange()). */}
+                        {discovery?.free && (
+                            <Discovery
+                                discovery={discovery}
+                                weather={weather}
+                            />
+                        )}
                         <div className="practical-surface">
                             {paperwork?.focus && (
                                 <div className="practical-personal">
@@ -77,6 +93,12 @@ export default function Today() {
                                 planned={planned}
                             />
                         </div>
+                        {discovery && !discovery.free && (
+                            <Discovery
+                                discovery={discovery}
+                                weather={weather}
+                            />
+                        )}
                         <div className="continue-support">
                             <CityLinks />
                         </div>
