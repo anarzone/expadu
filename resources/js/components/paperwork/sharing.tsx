@@ -29,15 +29,19 @@ const base = '/bureaucracy/v2';
 
 /**
  * Share your plan (the mock's bureaucracy-next "sharing" editor): who sees
- * what now, with Remove access, and the record itself, to download or delete.
- * Invite someone waits for EXP-79 and the design (how an invitation travels,
- * its email field and the accept screen), so it isn't here yet.
+ * what now, with Remove access, and the record itself, to download, to stop
+ * or resume its processing (GDPR Art. 18), or to delete. Invite someone waits
+ * for EXP-79 and the design (how an invitation travels, its email field and
+ * the accept screen), so it isn't here yet.
  */
 export function Sharing({ personId }: { personId: number }) {
     const { toast, openSheet, closeSheet } = usePaperwork();
     const [grants, setGrants] = useState<Grant[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [downloading, setDownloading] = useState(false);
+    // Whether the record's processing is stopped; null until it's read.
+    const [stopped, setStopped] = useState<boolean | null>(null);
+    const [switching, setSwitching] = useState(false);
 
     useEffect(() => {
         read<{ grants: Grant[] }>(`${base}/people/${personId}/sharing`)
@@ -45,7 +49,41 @@ export function Sharing({ personId }: { personId: number }) {
                 setGrants(data.grants.filter((grant) => !grant.revoked_at)),
             )
             .catch((e: Error) => setError(e.message));
+        read<{ stopped: boolean }>(`${base}/people/${personId}/restriction`)
+            .then((data) => setStopped(data.stopped))
+            .catch((e: Error) => setError(e.message));
     }, [personId]);
+
+    /** Stop or resume: one tap, said on the record, undone by the other. */
+    async function setProcessing(stop: boolean) {
+        setSwitching(true);
+        setError(null);
+
+        try {
+            await send(
+                stop ? 'POST' : 'DELETE',
+                `${base}/people/${personId}/restriction`,
+                {},
+            );
+            setStopped(stop);
+            toast(
+                stop
+                    ? 'Paperwork stops using your record now. Nothing is deleted.'
+                    : 'Paperwork uses your record again.',
+            );
+            requestAnimationFrame(() =>
+                document
+                    .querySelector<HTMLButtonElement>(
+                        '[data-record-processing]',
+                    )
+                    ?.focus({ preventScroll: true }),
+            );
+        } catch (e) {
+            setError((e as Error).message);
+        } finally {
+            setSwitching(false);
+        }
+    }
 
     async function remove(grant: Grant) {
         try {
@@ -148,35 +186,52 @@ export function Sharing({ personId }: { personId: number }) {
             <section className="sharing-grants">
                 <h3>Your record</h3>
                 <p className="muted">
-                    Download a copy of everything Paperwork keeps about you, or
-                    delete it.
+                    Download a copy of everything Paperwork keeps about you,
+                    stop its processing, or delete it.
                 </p>
-                <div className="actions">
-                    <button
-                        type="button"
-                        className="button secondary"
-                        disabled={downloading}
-                        onClick={() => void download()}
-                    >
-                        Download a copy
-                    </button>
-                    <button
-                        type="button"
-                        className="button secondary"
-                        onClick={() =>
-                            openSheet({
-                                title: 'Delete your record?',
-                                body: (
-                                    <DeleteRecord
-                                        personId={personId}
-                                        onKeep={closeSheet}
-                                    />
-                                ),
-                            })
-                        }
-                    >
-                        Delete your record
-                    </button>
+                <div className="record-actions">
+                    {stopped ? (
+                        <p className="record-paused" role="status">
+                            <strong>Processing stopped.</strong> Paperwork keeps
+                            your record but doesn’t use it until you resume.
+                        </p>
+                    ) : null}
+                    <div className="actions">
+                        <button
+                            type="button"
+                            className="button secondary"
+                            disabled={downloading}
+                            onClick={() => void download()}
+                        >
+                            Download a copy
+                        </button>
+                        <button
+                            type="button"
+                            className="button secondary"
+                            data-record-processing
+                            disabled={stopped === null || switching}
+                            onClick={() => void setProcessing(!stopped)}
+                        >
+                            {stopped ? 'Resume processing' : 'Stop processing'}
+                        </button>
+                        <button
+                            type="button"
+                            className="button secondary"
+                            onClick={() =>
+                                openSheet({
+                                    title: 'Delete your record?',
+                                    body: (
+                                        <DeleteRecord
+                                            personId={personId}
+                                            onKeep={closeSheet}
+                                        />
+                                    ),
+                                })
+                            }
+                        >
+                            Delete your record
+                        </button>
+                    </div>
                 </div>
             </section>
         </>

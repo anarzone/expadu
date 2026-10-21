@@ -18,6 +18,7 @@ use App\Http\Controllers\Bureaucracy\V2\PeopleController;
 use App\Http\Controllers\Bureaucracy\V2\PersonDataController;
 use App\Http\Controllers\Bureaucracy\V2\PersonFactController;
 use App\Http\Controllers\Bureaucracy\V2\PersonPlanController;
+use App\Http\Controllers\Bureaucracy\V2\PersonRestrictionController;
 use App\Http\Controllers\Bureaucracy\V2\ProcessController;
 use App\Http\Controllers\Bureaucracy\V2\QuestionSessionController;
 use App\Http\Controllers\Bureaucracy\V2\RelationshipController;
@@ -74,6 +75,10 @@ Route::prefix('bureaucracy/v2')->name('bureaucracy.v2.')->middleware('throttle:b
     Route::post('question-sessions/{session}/candidates/{candidate}/confirm', [FactExtractionController::class, 'confirm'])->whereUuid('candidate')->name('questions.confirm-extraction');
     Route::delete('question-sessions/{session}/candidates/{candidate}', [FactExtractionController::class, 'reject'])->whereUuid('candidate')->name('questions.reject-extraction');
     Route::delete('people/{person}/processing', [FactExtractionController::class, 'withdraw'])->name('people.processing.withdraw');
+    // Stop / Resume processing (GDPR Art. 18): the record holder's own switch.
+    Route::get('people/{person}/restriction', [PersonRestrictionController::class, 'show'])->name('people.restriction.show');
+    Route::post('people/{person}/restriction', [PersonRestrictionController::class, 'store'])->middleware('throttle:10,1')->name('people.restriction.store');
+    Route::delete('people/{person}/restriction', [PersonRestrictionController::class, 'destroy'])->middleware('throttle:10,1')->name('people.restriction.destroy');
     Route::get('people/{person}/onboarding/draft', [OnboardingDraftController::class, 'show'])->name('onboarding.draft.show');
     Route::put('people/{person}/onboarding/draft', [OnboardingDraftController::class, 'update'])->name('onboarding.draft.update');
     Route::delete('people/{person}/onboarding/draft', [OnboardingDraftController::class, 'destroy'])->name('onboarding.draft.destroy');
