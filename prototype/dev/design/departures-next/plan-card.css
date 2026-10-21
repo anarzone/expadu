@@ -1,0 +1,485 @@
+/* Plan a trip's way card and "We checked" card (plan-card.js), shared with
+   the pages that plan a trip outside Travel (Events' Get there): trips
+   outside Travel reuse Travel's own pieces unchanged. Moved here from
+   style.css (the steps), workspace.css (Journey details and its opening)
+   and plan.css (the card and the checks); Travel loads it after
+   workspace.css. Its body.travel-palette rules also apply inside the card
+   (:is(), at the same weight). Needs labels.css. */
+
+/* Travel's own type wherever the cards sit (Events' Get there), so a host
+   page's base size doesn't reach them; on Travel it's the page's own. */
+.plan-checks,
+.plan-options {
+    font-family: Geist, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+/* ---------- The way, step by step ---------- */
+.route-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.route-step {
+    display: grid;
+    grid-template-columns: 42px 28px minmax(0, 1fr);
+    gap: 10px;
+    position: relative;
+    min-height: 70px;
+    padding: 10px 0 14px;
+}
+.route-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 65px;
+    top: 36px;
+    bottom: -10px;
+    border-left: 2px dotted #c4dae0;
+}
+.route-step.transit::before,
+.route-step.ride::before {
+    border-left: 2px solid #81c9d9;
+}
+.route-step time {
+    padding-top: 4px;
+    color: #52656d;
+    font-variant-numeric: tabular-nums;
+    font-size: var(--text-caption);
+}
+.step-node {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    width: 28px;
+    position: relative;
+    z-index: 1;
+    background: var(--paper);
+    border-radius: var(--radius-sm);
+    color: #476e78;
+}
+.step-node svg {
+    width: 16px;
+    height: 16px;
+}
+.route-step.transit .step-node {
+    /* Travel's palette blue (--blue there); a host that tints --blue (the
+       Events sheet) keeps Travel's. */
+    background: var(--color-select-bg, var(--blue));
+    color: var(--ink);
+}
+.route-step.arrive .step-node {
+    color: var(--action);
+    background: #fff1ea;
+}
+.route-step strong {
+    display: block;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+    line-height: 1.4;
+    padding-top: 3px;
+}
+.route-step small {
+    display: block;
+    font-size: var(--text-caption);
+    line-height: 1.45;
+    color: var(--muted);
+    margin-top: 4px;
+}
+.route-step.ride {
+    min-height: 54px;
+}
+.route-step.ride strong {
+    font-weight: var(--weight-regular);
+}
+.route-step.ride .step-node {
+    background: transparent;
+}
+.route-step.ride .step-node svg {
+    width: 12px;
+    height: 12px;
+}
+.route-note,
+.route-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: var(--text-caption);
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 12px 0 8px;
+}
+.route-note > svg,
+.route-notice > svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    margin-top: 1px;
+}
+.route-notice {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: #fff5dd;
+    color: #805717;
+}
+
+/* ---------- Journey details ---------- */
+:is(body.travel-palette, .plan-option) .details-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 6px 0;
+    color: var(--teal);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+}
+:is(body.travel-palette, .plan-option) .details-toggle svg {
+    height: 14px;
+    width: 14px;
+    transition: rotate 220ms var(--ease);
+}
+:is(body.travel-palette, .plan-option) .details-toggle[aria-expanded='true'] svg {
+    rotate: 180deg;
+}
+:is(body.travel-palette, .plan-option) .route-disclosure {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 220ms var(--ease),
+        opacity 180ms ease;
+}
+:is(body.travel-palette, .plan-option) .route-disclosure[aria-hidden='false'] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+:is(body.travel-palette, .plan-option) .route-disclosure-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+@media (hover: hover) {
+    :is(body.travel-palette, .plan-option) .details-toggle:hover {
+        color: var(--ink);
+    }
+}
+:is(body.travel-palette, .plan-option) .details-toggle:active {
+    opacity: 0.65;
+}
+@media (prefers-reduced-motion: reduce) {
+    :is(body.travel-palette, .plan-option)
+        :is(.route-disclosure, .details-toggle svg) {
+        transition: none;
+    }
+}
+
+/* ---------- The checks and the options: what we checked, best first ---------- */
+.plan-checks {
+    margin-bottom: var(--space-12);
+    border-block: 1px solid var(--color-border);
+}
+.plan-checks-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8) var(--space-12);
+    width: 100%;
+    min-height: 56px;
+    padding: var(--space-8) 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.plan-check-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+.plan-check-chips:not(.tl-chips) span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 var(--space-8);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+}
+.plan-check-chips:not(.tl-chips) span::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+}
+.plan-check-chips .is-muted {
+    color: var(--color-text-soft);
+}
+.plan-check-chips .is-flag {
+    background: var(--color-attention-bg);
+    color: var(--color-attention-text);
+}
+.plan-checks-more {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+.plan-checks-more svg {
+    width: 14px;
+    height: 14px;
+    transition: transform var(--duration-fast) var(--ease-standard);
+}
+.plan-checks-toggle[aria-expanded='true'] .plan-checks-more svg {
+    transform: rotate(180deg);
+}
+.plan-checks-detail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0 var(--space-24);
+    padding-bottom: var(--space-10);
+}
+.plan-checks-detail[hidden] {
+    display: none;
+}
+.plan-checks-detail p {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: var(--space-8) 0;
+    border-top: 1px solid var(--color-border);
+    line-height: var(--leading-snug);
+}
+.plan-checks-detail span {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+@media (prefers-reduced-motion: reduce) {
+    .plan-checks-more svg {
+        transition: none;
+    }
+}
+/* The options */
+.plan-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+}
+.plan-option {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: color-mix(in srgb, var(--color-bg-surface) 60%, transparent);
+    transition:
+        border-color var(--duration-fast) var(--ease-standard),
+        background-color var(--duration-fast) var(--ease-standard);
+}
+.plan-option.is-on {
+    border-color: var(--color-text);
+    background: var(--color-bg-surface);
+    box-shadow: inset 0 0 0 0.5px var(--color-text);
+}
+.plan-option-pick {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-12);
+    width: 100%;
+    padding: var(--space-14) var(--space-14) var(--space-4);
+    border: 0;
+    border-radius: var(--radius-xl);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    line-height: var(--leading-snug);
+    cursor: pointer;
+}
+.plan-option-pick:focus-visible {
+    outline: 2px solid var(--color-focus, var(--color-text));
+    outline-offset: 2px;
+}
+.plan-radio {
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+    border: 2px solid var(--color-border-strong);
+    border-radius: var(--radius-round);
+    background: var(--color-bg-surface);
+    transition: border-width var(--duration-fast) var(--ease-standard);
+}
+.is-on .plan-radio {
+    border: 6px solid var(--color-text);
+}
+.plan-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.plan-option-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-8);
+    margin-bottom: 2px;
+}
+.plan-option-head .best-tag {
+    margin: 2px 0 0;
+}
+.plan-option-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-6);
+}
+.plan-option-title strong {
+    font-size: var(--text-section);
+    font-weight: var(--weight-semibold);
+}
+.plan-option-at {
+    margin-left: 2px;
+    font-size: var(--text-control);
+    font-weight: var(--weight-semibold);
+}
+.plan-option-times {
+    font-size: var(--text-body);
+    font-variant-numeric: tabular-nums;
+}
+.plan-option-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 2px;
+    font-size: var(--text-small);
+}
+.plan-option-reasons > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.plan-option-reasons > span:not(:has(.plan-reason-icon))::before {
+    content: '';
+    flex: none;
+    width: 5px;
+    height: 5px;
+    border-radius: var(--radius-round);
+    background: currentColor;
+    transform: translateY(-2px);
+}
+.plan-option-reasons .is-warn {
+    color: var(--color-attention-text);
+}
+:is(body.travel-palette, .plan-options) .plan-option > .details-toggle {
+    margin-left: 48px;
+    padding-block: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--text-small);
+    cursor: pointer;
+}
+.plan-option .route-disclosure-inner {
+    padding: 0 var(--space-14);
+}
+.plan-option-way {
+    display: grid;
+    gap: var(--space-12);
+    padding: var(--space-4) 0 var(--space-14);
+    border-top: 1px solid var(--color-border);
+}
+.plan-option-way .route-steps {
+    margin: var(--space-10) 0 0;
+}
+.plan-option-side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+/* The note keeps its own size where a host styles paragraphs (the Events
+   sheet's). */
+.plan-option-side p.route-note {
+    margin: 0;
+    font-size: var(--text-caption);
+    line-height: 1.5;
+}
+@media (max-width: 999px) {
+    .plan-check-chips {
+        order: 2;
+        flex-basis: 100%;
+    }
+    .plan-checks {
+        margin-bottom: var(--space-12);
+        padding: 0 var(--space-14);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        background: var(--color-bg-surface);
+    }
+}
+@media (min-width: 1000px) {
+    .plan-option-side {
+        padding-top: var(--space-4);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .plan-option,
+    .plan-radio {
+        transition: none;
+    }
+}
+.plan-option-way .route-step {
+    min-height: 0;
+    padding: 6px 0 10px;
+}
+/* Labels in Plan a trip (owner-approved 10 Oct 2026). */
+.plan-option-reasons {
+    gap: 4px;
+    margin-top: var(--space-6);
+}
+.plan-option-reasons .is-warn {
+    font-weight: var(--weight-semibold);
+}
+.plan-reason-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+}
+.is-warn > .plan-reason-icon {
+    background: var(--color-attention);
+    color: var(--color-attention-text);
+}
+.plan-reason-icon svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+}
+.plan-option-title {
+    gap: 4px;
+}
+.plan-option-head + .plan-option-title {
+    margin-top: 4px;
+}
+.plan-then svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: var(--color-text-soft);
+    stroke-width: 2.2;
+}
+.plan-option-times {
+    margin-top: 4px;
+}

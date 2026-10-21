@@ -23,10 +23,12 @@
     html body:has(#shell .service-nav) {
         padding-bottom: var(--section-bar);
     }
+    /* The shell's phone header, 54px on every page (today-header.css
+       says the same for the others; Today reads it here). */
     html body #shell .app-header {
         grid-template-columns: 1fr auto;
-        min-height: 52px;
-        padding: 0;
+        min-height: 54px;
+        padding: 4px 0;
     }
     html body #shell .app-header .service-nav {
         position: fixed;

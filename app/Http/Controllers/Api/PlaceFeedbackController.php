@@ -6,6 +6,7 @@ use App\Enums\SpotFeedbackState;
 use App\Http\Controllers\Controller;
 use App\Models\Spot;
 use App\Models\SpotFeedback;
+use App\Personalisation\SignalRecorder;
 use App\Places\PlaceIdentity;
 use App\Services\EventTrackingService;
 use Illuminate\Http\JsonResponse;
@@ -36,6 +37,7 @@ class PlaceFeedbackController extends Controller
                     ->where('user_id', $user->id)
                     ->whereIn('spot_id', app(PlaceIdentity::class)->familyIds($spot->id))
                     ->delete();
+                app(SignalRecorder::class)->placeFeedback($user, $spot, null);
 
                 return response()->json(['state' => null, 'rating' => null]);
             }
@@ -48,6 +50,7 @@ class PlaceFeedbackController extends Controller
                 ['state' => $state, 'rating' => $rating],
             );
             $feedback->touch();
+            app(SignalRecorder::class)->placeFeedback($user, $spot, $state, $rating);
 
             // Emit the ranking signal through the same pipeline as every other
             // intent signal, keyed on category × Veedel (what IntentWeights reads).

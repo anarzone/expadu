@@ -2696,6 +2696,10 @@ body[data-page='bureaucracy'] .sr-only {
     color: var(--color-text-soft);
     font-size: var(--text-caption);
 }
+/* Processing stopped: said above your record's actions. */
+.record-paused {
+    margin: 0 0 10px;
+}
 .sharing-scope {
     display: flex;
     align-items: center;

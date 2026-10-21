@@ -34,4 +34,6 @@ Route::post('composer/compose', [ComposerController::class, 'compose'])
 Route::post('composer/swap', [ComposerController::class, 'swap'])->name('composer.swap');
 // Pin / un-pin the composed plan to the Today screen.
 Route::post('composer/save', [ComposerController::class, 'save'])->name('composer.save');
+// Keep the composed plan as it is (a personalisation signal, with the opt-in).
+Route::post('composer/keep', [ComposerController::class, 'keep'])->name('composer.keep');
 Route::delete('composer/today', [ComposerController::class, 'clearToday'])->name('composer.today.clear');
