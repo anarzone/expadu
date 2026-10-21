@@ -8,6 +8,7 @@ const ctx = await b.newContext({
     serviceWorkers: 'block',
 });
 const p = await ctx.newPage();
+
 if (login) {
     await p.goto(new URL(url).origin + '/login');
     await p
@@ -28,22 +29,39 @@ if (login) {
             .click(),
     ]);
 }
+
 await p.goto(url, { waitUntil: 'networkidle' });
 await p.waitForTimeout(800);
 console.log(
     await p.evaluate((root) => {
         const h = document.querySelector(root);
-        if (!h) return 'no root';
+
+        if (!h) {
+            return 'no root';
+        }
+
         const walk = (el, d) => {
-            if (d > 5) return [];
+            if (d > 5) {
+                return [];
+            }
+
             const r = el.getBoundingClientRect();
-            if (!r.width && !r.height) return [];
+
+            if (!r.width && !r.height) {
+                return [];
+            }
+
             const out = [
                 `${'  '.repeat(d)}${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}${el.classList.length ? '.' + [...el.classList].join('.') : ''} ${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)} ${el.children.length ? '' : JSON.stringify((el.textContent || '').trim().slice(0, 30))}`,
             ];
-            for (const c of el.children) out.push(...walk(c, d + 1));
+
+            for (const c of el.children) {
+                out.push(...walk(c, d + 1));
+            }
+
             return out;
         };
+
         return walk(h, 0).join('\n');
     }, root),
 );

@@ -21,8 +21,10 @@ test.describe('Dashboard (Today)', () => {
         await page.waitForLoadState('networkidle');
 
         await expect(page.locator('h1')).toContainText('Today');
+        // An empty day drops its heading on phones (the mock), so the
+        // section is found by the name it keeps.
         await expect(
-            page.getByRole('heading', { name: 'Your day', level: 2 }),
+            page.getByRole('region', { name: 'Your day' }),
         ).toBeVisible();
         const nav = page.getByRole('navigation', { name: 'Main navigation' });
         await expect(nav.getByRole('link')).toHaveText([

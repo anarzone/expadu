@@ -16,7 +16,7 @@ For each pair of elements (one selector in the mock, one in the app), at each wi
   pixel fails the pair unless the pair says `"contentDiffers": true` (live data that can't match).
 - **The viewport:** both pages side by side with a diff, for the eye.
 
-Both browsers run with the same clock (`clock`), time zone, locale, `reducedMotion: reduce`,
+Both browsers run with the same clock (`clock`, frozen; `"clockRuns": true` starts it there and lets it run, for pages that wait on elapsed time such as Composer's answers), time zone, locale, `reducedMotion: reduce`,
 device scale 1 and service workers blocked. Phones (< 701 px) get touch and mobile emulation.
 
 ## Run it
@@ -93,7 +93,9 @@ for a tilted, zoomed part that anti-aliases differently while its box and styles
 `pixelThreshold` applies otherwise, default 0), `before` (steps run on both pages just before this pair, and left done for
 the pairs after it, so open states go last; `mockBefore` / `appBefore` when the selectors differ).
 Per side: `wait`, `init` (scripts run before the page), `before` (`[{ "click": "selector" },
-{ "key": "Escape" }, { "wait": 300 }]` to open a menu or sheet first), `cookies` (`{ "name": "value" }`
+{ "key": "Escape" }, { "wait": 300 }]` to open a menu or sheet first; `{ "fill": "selector", "value": "text" }`
+types into a field, and `{ "waitFor": "selector" }` waits until something appears, such as an answer the
+server builds), `cookies` (`{ "name": "value" }`
 on that side's origin, e.g. the app's `mock_clock`; PHP decodes cookie values, so write `+` as `%2B`),
 `screenshotStyle` (CSS applied only while element screenshots are taken, to hide that side's own
 chrome that can sit over an element: a sticky header, the floating Composer button, the local QA

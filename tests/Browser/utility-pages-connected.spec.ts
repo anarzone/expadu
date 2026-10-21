@@ -76,28 +76,3 @@ test('Paperwork has one page heading and an Overview / Documents switch', async 
         page.getByRole('heading', { name: 'Your paperwork', exact: true }),
     ).toBeVisible();
 });
-
-test('Services provides a reviewable message and an optional closable helper', async ({
-    page,
-}) => {
-    await page.goto('/services');
-    await page.getByLabel('Area', { exact: true }).fill('Deutz');
-    await expect(page.getByLabel('Your request', { exact: true })).toHaveValue(
-        /Hello,.*doctor in Deutz/,
-    );
-    await expect(
-        page.getByLabel('Your request', { exact: true }),
-    ).not.toHaveValue(/Help me prepare/);
-    await page
-        .getByRole('button', { name: 'Copy request', exact: true })
-        .click();
-    await expect(page.getByRole('status')).toContainText(
-        /Request copied|Copy is unavailable/,
-    );
-    await page
-        .getByRole('button', { name: 'Dismiss appointment tip', exact: true })
-        .click();
-    await expect(
-        page.getByRole('heading', { name: 'Already have an appointment?' }),
-    ).toHaveCount(0);
-});

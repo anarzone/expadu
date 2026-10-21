@@ -6,6 +6,7 @@ import {
     useId,
     useLayoutEffect,
     useRef,
+    useState,
     useSyncExternalStore,
 } from 'react';
 import type {
@@ -147,6 +148,10 @@ export function AnchoredMenu({
         [id],
     );
 
+    // Where the panel goes: inside the dialog the button sits in (a modal
+    // Sheet makes everything outside it inert), else the page.
+    const [host, setHost] = useState<Element | null>(null);
+
     const toggle = () => {
         if (open) {
             close();
@@ -154,6 +159,7 @@ export function AnchoredMenu({
             return;
         }
 
+        setHost(button.current?.closest('dialog') ?? document.body);
         setOpenId(id);
     };
 
@@ -368,7 +374,7 @@ export function AnchoredMenu({
                             )}
                         </div>
                     </MenuContext.Provider>,
-                    document.body,
+                    host ?? document.body,
                 )}
         </>
     );

@@ -49,12 +49,14 @@ const DEFAULT_PROPS = [
 ];
 
 const cfgPath = process.argv[2];
+
 if (!cfgPath) {
     console.error(
         'usage: node tools/mock-compare/compare.mjs <config.json> [--only=<pair name>]',
     );
     process.exit(2);
 }
+
 const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7);
 const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
 // Paths in a config resolve against each session's own servers.
@@ -62,9 +64,13 @@ const bases = {
     mock: process.env.MOCK_COMPARE_MOCK ?? 'http://127.0.0.1:8781',
     app: process.env.MOCK_COMPARE_APP ?? 'http://127.0.0.1:8021',
 };
-for (const side of ['mock', 'app'])
-    if (cfg[side]?.url?.startsWith('/'))
+
+for (const side of ['mock', 'app']) {
+    if (cfg[side]?.url?.startsWith('/')) {
         cfg[side].url = bases[side] + cfg[side].url;
+    }
+}
+
 const widths = cfg.widths ?? [360, 390, 768, 1440];
 const height = cfg.height ?? 900;
 const tolerance = cfg.tolerance ?? 0.5; // px; 1:1 allows sub-pixel rounding only
@@ -88,7 +94,11 @@ const firstFamily = (v) =>
         .toLowerCase();
 const norm = (prop, v) => {
     const s = String(v ?? '').trim();
-    if (prop === 'font-family') return firstFamily(s);
+
+    if (prop === 'font-family') {
+        return firstFamily(s);
+    }
+
     return s.replace(/\s+/g, ' ');
 };
 
@@ -96,7 +106,10 @@ const norm = (prop, v) => {
 // Sign-in sends them as well: a page loaded without the mock's clock can change what the
 // comparison then shows (a sample trip in the past ends).
 async function addSideCookies(context, side) {
-    if (!side.cookies) return;
+    if (!side.cookies) {
+        return;
+    }
+
     await context.addCookies(
         Object.entries(side.cookies).map(([name, value]) => ({
             name,
@@ -108,7 +121,11 @@ async function addSideCookies(context, side) {
 
 async function login(browser, side) {
     const l = side.login;
-    if (!l) return undefined;
+
+    if (!l) {
+        return undefined;
+    }
+
     const origin = new URL(side.url).origin;
     // Reuse a saved session while it still opens the app: repeated sign-ins
     // trip the login rate limit.
@@ -125,6 +142,7 @@ async function login(browser, side) {
         'mock-compare',
         `.session-${new URL(origin).port || 'default'}-${email.replace(/[^a-z0-9]+/gi, '_')}.json`,
     );
+
     if (fs.existsSync(cache)) {
         const context = await browser.newContext({
             storageState: cache,
@@ -135,8 +153,12 @@ async function login(browser, side) {
         await page.goto(side.url, { waitUntil: 'commit' });
         const ok = !new URL(page.url()).pathname.startsWith('/login');
         await context.close();
-        if (ok) return cache;
+
+        if (ok) {
+            return cache;
+        }
     }
+
     const context = await browser.newContext({
         viewport: { width: 1280, height: 900 },
         serviceWorkers: 'block',
@@ -159,6 +181,7 @@ async function login(browser, side) {
         .getByRole('button', { name: /log in|sign in/i })
         .first()
         .click();
+
     try {
         await page.waitForURL((u) => !u.pathname.startsWith('/login'), {
             timeout: 30000,
@@ -172,17 +195,22 @@ async function login(browser, side) {
         )
             .join(' ')
             .trim();
+
         throw new Error(
             `Sign-in to ${origin} failed${error ? `: ${error}` : ''}`,
         );
     }
+
     // The saved session is shared by every config on this port, so it keeps none of this
     // config's own cookies.
-    for (const name of Object.keys(side.cookies ?? {}))
+    for (const name of Object.keys(side.cookies ?? {})) {
         await context.clearCookies({ name });
+    }
+
     fs.mkdirSync(path.dirname(cache), { recursive: true });
     await context.storageState({ path: cache });
     await context.close();
+
     return cache;
 }
 
@@ -190,9 +218,31 @@ const sessions = {};
 
 async function steps(page, list) {
     for (const step of list ?? []) {
-        if (step.click) await page.locator(step.click).first().click();
-        if (step.key) await page.keyboard.press(step.key);
-        if (step.wait) await page.waitForTimeout(step.wait);
+        if (step.fill) {
+            await page
+                .locator(step.fill)
+                .first()
+                .fill(step.value ?? '');
+        }
+
+        if (step.click) {
+            await page.locator(step.click).first().click();
+        }
+
+        if (step.key) {
+            await page.keyboard.press(step.key);
+        }
+
+        if (step.waitFor) {
+            await page
+                .locator(step.waitFor)
+                .first()
+                .waitFor({ state: 'visible', timeout: 60000 });
+        }
+
+        if (step.wait) {
+            await page.waitForTimeout(step.wait);
+        }
     }
 }
 
@@ -215,31 +265,60 @@ async function open(browser, sideName, width) {
     });
     await addSideCookies(context, side);
     const page = await context.newPage();
-    if (cfg.clock) await page.clock.setFixedTime(new Date(cfg.clock));
-    for (const s of side.init ?? []) await page.addInitScript(s);
+
+    // A frozen clock by default. `clockRuns` starts it at that moment and lets it run, for
+    // pages that wait on elapsed time (the mock's answers "think" before they appear).
+    if (cfg.clock && cfg.clockRuns) {
+        await page.clock.install({ time: new Date(cfg.clock) });
+    } else if (cfg.clock) {
+        await page.clock.setFixedTime(new Date(cfg.clock));
+    }
+
+    for (const s of side.init ?? []) {
+        await page.addInitScript(s);
+    }
+
     await page.goto(side.url, { waitUntil: 'networkidle', timeout: 45000 });
-    if (side.wait) await page.waitForSelector(side.wait, { timeout: 20000 });
+
+    if (side.wait) {
+        await page.waitForSelector(side.wait, { timeout: 20000 });
+    }
+
     await page.evaluate(() => document.fonts.ready);
     await steps(page, side.before);
     await page.waitForTimeout(cfg.settle ?? 400);
+
     return { context, page };
 }
 
 async function measure(page, pair, sideName) {
     const sel = pair[sideName];
-    if (!sel) return null;
+
+    if (!sel) {
+        return null;
+    }
+
     return page.evaluate(
         ([selector, index, props]) => {
             const el = document.querySelectorAll(selector)[index ?? 0];
-            if (!el) return null;
+
+            if (!el) {
+                return null;
+            }
+
             const r = el.getBoundingClientRect();
             const cs = getComputedStyle(el);
             const style = {};
-            for (const p of props) style[p] = cs.getPropertyValue(p);
+
+            for (const p of props) {
+                style[p] = cs.getPropertyValue(p);
+            }
+
             // Text styles only matter where the element itself holds text.
             const hasText = [...el.childNodes].some(
                 (n) => n.nodeType === 3 && n.textContent.trim(),
             );
+
             return {
                 hasText,
                 box: {
@@ -269,10 +348,12 @@ async function shot(page, pair, sideName) {
     const loc = page
         .locator(sel)
         .nth(pair[`${sideName}Index`] ?? pair.index ?? 0);
+
     try {
         // An element shot scrolls the page; start every shot from the top so
         // both sides land on the same offset whatever was shot before.
         await page.evaluate(() => window.scrollTo(0, 0));
+
         return await loc.screenshot({
             animations: 'disabled',
             caret: 'hide',
@@ -318,6 +399,7 @@ async function compose(canvasPage, a, b, label) {
             x.drawImage(ia, 0, 22);
             x.drawImage(ib, ia.width + gap, 22);
             let diffPixels = null;
+
             if (same) {
                 const t = document.createElement('canvas');
                 t.width = ia.width;
@@ -330,11 +412,13 @@ async function compose(canvasPage, a, b, label) {
                 const db = tx.getImageData(0, 0, t.width, t.height);
                 const o = tx.createImageData(t.width, t.height);
                 diffPixels = 0;
+
                 for (let i = 0; i < da.length; i += 4) {
                     const d =
                         Math.abs(da[i] - db.data[i]) +
                         Math.abs(da[i + 1] - db.data[i + 1]) +
                         Math.abs(da[i + 2] - db.data[i + 2]);
+
                     if (d > 24) {
                         diffPixels++;
                         o.data[i] = 255;
@@ -348,10 +432,12 @@ async function compose(canvasPage, a, b, label) {
                         o.data[i + 3] = 50;
                     }
                 }
+
                 tx.putImageData(o, 0, 0);
                 x.fillText('diff', ia.width * 2 + gap * 2 + 2, 14);
                 x.drawImage(t, ia.width * 2 + gap * 2, 22);
             }
+
             return {
                 same,
                 diffPixels,
@@ -373,8 +459,11 @@ const report = {
 let failures = 0;
 
 const browser = await chromium.launch();
-for (const sideName of ['mock', 'app'])
+
+for (const sideName of ['mock', 'app']) {
     sessions[sideName] = await login(browser, cfg[sideName]);
+}
+
 const canvas = await (await browser.newContext()).newPage();
 await canvas.setContent('<html><body></body></html>');
 
@@ -387,8 +476,12 @@ for (const width of widths) {
         app.page.screenshot({ animations: 'disabled' }),
     ]);
     const rows = [];
+
     for (const pair of pairs) {
-        if (pair.widths && !pair.widths.includes(width)) continue;
+        if (pair.widths && !pair.widths.includes(width)) {
+            continue;
+        }
+
         // A pair's own steps (opening a sheet) run on both pages and stay done for the pairs after it.
         await Promise.all([
             steps(mock.page, pair.mockBefore ?? pair.before),
@@ -399,18 +492,33 @@ for (const width of widths) {
             measure(app.page, pair, 'app'),
         ]);
         const row = { name: pair.name, mock: m, app: a, problems: [] };
-        if (!m) row.problems.push('missing in mock');
-        if (!a) row.problems.push('missing in app');
+
+        if (!m) {
+            row.problems.push('missing in mock');
+        }
+
+        if (!a) {
+            row.problems.push('missing in app');
+        }
+
         if (m && a) {
-            if (m.visible !== a.visible)
+            if (m.visible !== a.visible) {
                 row.problems.push(`visible ${m.visible} → ${a.visible}`);
+            }
+
             for (const k of ['x', 'y', 'w', 'h']) {
                 const d = a.box[k] - m.box[k];
-                if (Math.abs(d) > tolerance && !(pair.ignore ?? []).includes(k))
+
+                if (
+                    Math.abs(d) > tolerance &&
+                    !(pair.ignore ?? []).includes(k)
+                ) {
                     row.problems.push(
                         `${k} ${fmt(m.box[k])} → ${fmt(a.box[k])} (${d > 0 ? '+' : ''}${fmt(d)})`,
                     );
+                }
             }
+
             const TEXT = [
                 'font-family',
                 'font-size',
@@ -430,26 +538,44 @@ for (const width of widths) {
                 ['top', 'right', 'bottom', 'left'].every(
                     (e) => parseFloat(side.style[`border-${e}-width`]) === 0,
                 );
+
             for (const p of pair.props ?? props) {
-                if ((pair.ignore ?? []).includes(p)) continue;
+                if ((pair.ignore ?? []).includes(p)) {
+                    continue;
+                }
+
                 // A colour or style on a 0px border draws nothing.
                 if (
                     /^border-top-(color|style)$/.test(p) &&
                     noBorder(m) &&
                     noBorder(a)
-                )
+                ) {
                     continue;
-                if (TEXT.includes(p) && !m.hasText && !a.hasText && !pair.props)
+                }
+
+                if (
+                    TEXT.includes(p) &&
+                    !m.hasText &&
+                    !a.hasText &&
+                    !pair.props
+                ) {
                     continue;
+                }
+
                 const mv = norm(p, m.style[p]);
                 const av = norm(p, a.style[p]);
-                if (mv !== av) row.problems.push(`${p}: ${mv} → ${av}`);
+
+                if (mv !== av) {
+                    row.problems.push(`${p}: ${mv} → ${av}`);
+                }
             }
+
             if (pair.pixels !== false) {
                 const [sa, sb] = await Promise.all([
                     shot(mock.page, pair, 'mock'),
                     shot(app.page, pair, 'app'),
                 ]);
+
                 if (sa && sb) {
                     const c = await compose(
                         canvas,
@@ -463,23 +589,31 @@ for (const width of widths) {
                         Buffer.from(c.png, 'base64'),
                     );
                     row.image = file;
+
                     if (c.same) {
                         row.diffShare = c.diffPixels / c.total;
+
                         if (
                             row.diffShare >
                                 (pair.pixelThreshold ?? pixelThreshold) &&
                             !pair.contentDiffers
-                        )
+                        ) {
                             row.problems.push(
                                 `pixels differ: ${(row.diffShare * 100).toFixed(2)}%`,
                             );
+                        }
                     }
                 }
             }
         }
-        if (row.problems.length) failures++;
+
+        if (row.problems.length) {
+            failures++;
+        }
+
         rows.push(row);
     }
+
     const full = await compose(canvas, fa, fb, `viewport @${width}`);
     fs.writeFileSync(
         path.join(out, `${width}-viewport.png`),
@@ -492,6 +626,7 @@ for (const width of widths) {
     await mock.context.close();
     await app.context.close();
 }
+
 await browser.close();
 
 const md = [
@@ -502,6 +637,7 @@ const md = [
     `Clock: ${cfg.clock ?? 'live'} · tolerance ${tolerance}px · styles exact`,
     '',
 ];
+
 for (const [width, w] of Object.entries(report.widths)) {
     const bad = w.rows.filter((r) => r.problems.length).length;
     md.push(
@@ -509,6 +645,7 @@ for (const [width, w] of Object.entries(report.widths)) {
         '',
     );
     md.push('| Element | Mock box | Result |', '| --- | --- | --- |');
+
     for (const r of w.rows) {
         const box = r.mock
             ? `${fmt(r.mock.box.x)},${fmt(r.mock.box.y)} ${fmt(r.mock.box.w)}×${fmt(r.mock.box.h)}`
@@ -517,8 +654,10 @@ for (const [width, w] of Object.entries(report.widths)) {
             `| ${r.name} | ${box} | ${r.problems.length ? r.problems.join('<br>') : '✓'} |`,
         );
     }
+
     md.push('', `![viewport ${width}](${width}-viewport.png)`, '');
 }
+
 fs.writeFileSync(path.join(out, 'report.md'), md.join('\n'));
 fs.writeFileSync(
     path.join(out, 'report.json'),
