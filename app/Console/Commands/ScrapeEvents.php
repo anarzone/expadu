@@ -413,8 +413,13 @@ class ScrapeEvents extends Command
 
         $cleaned = trim(html_entity_decode($raw, ENT_QUOTES, 'UTF-8'));
 
-        // Explicitly free by keyword
-        if (preg_match('/\b(frei|free|kostenlos|gratis|eintritt frei)\b/i', $cleaned)) {
+        // Free by keyword, unless someone still pays: "Kinder frei,
+        // Erwachsene 12 €" is a paid event. Only an amount in euros counts,
+        // so "Eintritt frei ab 18 Jahren" stays free.
+        $paid = preg_match_all('/(\d+(?:[,.]\d+)?)\s*(?:€|eur\b|euro)|(?:€|eur\b|euro)\s*(\d+(?:[,.]\d+)?)/iu', $cleaned, $amounts) > 0
+            && collect([...$amounts[1], ...$amounts[2]])->contains(fn (string $amount): bool => (float) str_replace(',', '.', $amount) > 0);
+
+        if (! $paid && preg_match('/\b(frei|free|kostenlos|gratis|eintritt frei)\b/i', $cleaned)) {
             return [true, null, 'Free'];
         }
 

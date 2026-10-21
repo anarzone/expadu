@@ -324,3 +324,20 @@ test('a koeln.de listing that says it is cancelled leaves Events, and comes back
 
     expect(Event::where('source_uid', 'du-maroc')->value('status'))->toBe('active');
 });
+
+test('a price only some get in free for is not a free event', function () {
+    User::factory()->create(['email' => 'system@expadu.com']);
+    $partly = koelnEvent('partly-free', 'Familienkonzert', now()->addDays(2)->setTime(15, 0)->toDateTimeString());
+    $partly['cost'] = 'Kinder frei, Erwachsene 12 €';
+    $free = koelnEvent('free-over-18', 'Offene Bühne', now()->addDays(2)->setTime(20, 0)->toDateTimeString());
+    $free['cost'] = 'Eintritt frei ab 18 Jahren';
+    Queue::fake();
+    Http::fake(['www.koeln.de/*' => Http::response(['total_pages' => 1, 'events' => [$partly, $free]])]);
+
+    $this->artisan('events:scrape')->assertSuccessful();
+
+    expect(Event::where('source_uid', 'partly-free')->first())
+        ->is_free->toBeFalse()
+        ->price->toBe('12.00')
+        ->and(Event::where('source_uid', 'free-over-18')->first()->is_free)->toBeTrue();
+});
