@@ -336,15 +336,7 @@ export function EventDetails({
                 l && date >= today ? (
                     way ? (
                         <div className="evd-bar">
-                            <Link
-                                className="evd-plan"
-                                href={`/timetable?${new URLSearchParams({
-                                    view: 'journey',
-                                    event: String(l.occurrence.id),
-                                    start: l.occurrence.occurrence_start,
-                                    ...(when === 'back' ? { back: '1' } : {}),
-                                })}`}
-                            >
+                            <Link className="evd-plan" href={travelUrl(l)}>
                                 <Icon name="route" variant="line" />
                                 Open in Travel
                             </Link>
@@ -661,6 +653,23 @@ function Body({
             </div>
         </div>
     );
+}
+
+/**
+ * Open in Travel (the mock's event-sheet.js, agreed with Travel): the way
+ * to the venue, there by the start. Travel finds the event by its id
+ * (`context`), so no point goes in the address; `to` names the venue while
+ * it loads. Without a listed time, Travel plans leaving now.
+ */
+function travelUrl(listing: DetailsListing): string {
+    const venue = listing.poster.venue ?? listing.occurrence.venue.name;
+
+    return `/timetable?${new URLSearchParams({
+        ...(venue ? { to: venue } : {}),
+        context: String(listing.occurrence.id),
+        ...(listing.poster.date ? { date: listing.poster.date } : {}),
+        ...(listing.poster.start ? { arrive: listing.poster.start } : {}),
+    })}`;
 }
 
 /** The bar: Save, a reminder before it starts, and Add to plan. */
