@@ -200,6 +200,15 @@ test('🔒 guests can\'t ask for or use a code', function () {
     Mail::assertNothingSent();
 });
 
+test('🔒 a code the page sends is never kept in the session, even when it is wrong', function () {
+    $this->actingAs(googleOnly());
+    mailedCode($this);
+
+    $this->post(route('email-confirmation.confirm'), ['code' => '000000'])
+        ->assertSessionHasErrors('code')
+        ->assertSessionMissing('_old_input.code');
+});
+
 test('🔒 the confirm page goes back to where the person was going, on this site only', function () {
     $user = googleOnly();
     $this->actingAs($user);
