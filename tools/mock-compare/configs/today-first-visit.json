@@ -1,6 +1,6 @@
 {
     "name": "today-first-visit",
-    "seed": "php artisan mock:sample-day first-visit --email=<account> && php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PlacesSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\" (a new account with nothing saved, asked or recorded)",
+    "seed": "php artisan mock:sample-day first-visit --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\EventsSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
     "mock": {
@@ -15,7 +15,8 @@
         ],
         "login": {
             "email": "e2e@expadu.test",
-            "password": "e2e-password"
+            "password": "e2e-password",
+            "sibling": "first-visit"
         }
     },
     "pairs": [
@@ -159,7 +160,7 @@
             "pixels": false
         }
     ],
-    "seedNote": "The mock's first visit has nothing planned, saved, asked or recorded; the app account is new (mock:sample-day first-visit creates it with no plans at all).",
+    "seedNote": "The mock's first visit has nothing planned, saved, asked or recorded. The app signs in as the compared account's sibling (<name>+first-visit@…), which `mock:sample-day first-visit` makes when missing and leaves with no plans at all, so the account's own data from the other configs stays and nothing is cleared. The command stops with a message if the sibling has picked up a plan, a save, a conversation or a Paperwork record. EventsSeeder lists tonight's two events for discovery.",
     "ignoreNote": "y below the welcome: City help sits above 'Settling in?' and Your day, and its departures and forecast are live (see today-city), so what follows sits at another height and fraction of a pixel; boxes (but y) and styles are compared.",
     "phoneNote": "Phones (360, 390): y waits for the phone order (TD5), as in the other Today configs."
 }

@@ -40,7 +40,9 @@ The report lands in `storage/mock-compare/<name>/report.md` with one image per p
 Sign-in uses the E2E account (`MOCK_COMPARE_EMAIL` / `MOCK_COMPARE_PASSWORD` override the config) and
 the session is cached per port and account in `storage/mock-compare/.session-<port>-<account>.json`, so
 repeated runs don't trip the login rate limit. Sign-in sends the side's `cookies` too, so a page loaded
-while signing in already has the mock's clock; the cached session keeps none of them.
+while signing in already has the mock's clock; the cached session keeps none of them. A config that needs
+an untouched account sets `"sibling"` in its `login`: it signs in as `<name>+<sibling>@…` of that
+account instead, which its seed makes.
 
 ## Config
 
@@ -145,8 +147,11 @@ On your machine (`APP_ENV=local` only):
 - **Saved ideas and a conversation:** `today-continuity` needs both sides seeded. The mock keeps them
   in its own store, which the config's mock `init` fills before load. The app gets the same from
   `E2E_EMAIL=<you>@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\TodaySeeder'`
-  (after PlacesSeeder and EventsSeeder). `today-first-visit` wants a new account with nothing on it:
-  `mock:sample-day first-visit --email=<new account>` creates one with no plans at all.
+  (after PlacesSeeder and EventsSeeder). `today-first-visit` needs an account with nothing on it, so
+  it signs in as your account's sibling (`<name>+first-visit@…`): `mock:sample-day first-visit
+--email=<account>` makes it when missing, with no plans at all, and never clears your account. It
+  stops with a message if the sibling has picked up a plan, a save, a conversation or a Paperwork
+  record.
 - **Your own database** keeps a comparison reproducible: `DB_DATABASE=<yours> php artisan migrate
 --seed` (create it with the postgis and vector extensions first), and start the compare app server
   with the same `DB_DATABASE`. Never `migrate:fresh` the shared one. Put `DB_DATABASE` (and your
