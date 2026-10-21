@@ -34,39 +34,38 @@ function sharedWith(User $holder, BureaucracyPerson $person): User
 
 test('🔒 the record holder stops and resumes processing, and the stop stays until they resume', function () {
     [$holder, $person] = recordHolder();
-    $url = "/bureaucracy/v2/people/{$person->id}/restriction";
+    $url = "/bureaucracy/v2/people/{$person->id}/processing-restriction";
 
-    $this->actingAs($holder)->getJson($url)->assertOk()->assertExactJson(['stopped' => false]);
-    $this->postJson($url)->assertOk()->assertExactJson(['stopped' => true]);
+    $stoppedAt = $this->actingAs($holder)->putJson($url, ['stopped' => true])->assertOk()->json('processing_stopped_at');
 
-    expect($person->fresh()->processing_stopped_at)->not->toBeNull()
+    expect($stoppedAt)->toBeString()
+        ->and($person->fresh()->processing_stopped_at?->toIso8601String())->toBe($stoppedAt)
         ->and($person->fresh()->record_status)->toBe('active');
-    $this->getJson($url)->assertOk()->assertExactJson(['stopped' => true]);
-    $this->postJson($url)->assertOk();
+    // Stopping again keeps the first stop.
+    $this->putJson($url, ['stopped' => true])->assertOk()->assertJsonPath('processing_stopped_at', $stoppedAt);
 
-    $this->deleteJson($url)->assertOk()->assertExactJson(['stopped' => false]);
+    $this->putJson($url, ['stopped' => false])->assertOk()->assertExactJson(['processing_stopped_at' => null]);
     expect($person->fresh()->processing_stopped_at)->toBeNull();
+    $this->putJson($url, [])->assertUnprocessable();
 });
 
-test('🔒 only the record holder can stop, resume or see it: not someone it is shared with, nor anyone else', function () {
+test('🔒 only the record holder can stop or resume: not someone it is shared with, nor anyone else', function () {
     [$holder, $person] = recordHolder();
     $helper = sharedWith($holder, $person);
     $stranger = User::factory()->onboarded()->create();
-    $url = "/bureaucracy/v2/people/{$person->id}/restriction";
+    $url = "/bureaucracy/v2/people/{$person->id}/processing-restriction";
 
     foreach ([$helper, $stranger] as $other) {
-        $this->actingAs($other)->getJson($url)->assertForbidden();
-        $this->postJson($url)->assertForbidden();
-        $this->deleteJson($url)->assertForbidden();
+        $this->actingAs($other)->putJson($url, ['stopped' => true])->assertForbidden();
     }
     expect($person->fresh()->processing_stopped_at)->toBeNull();
 
-    $this->actingAs($holder)->postJson($url)->assertOk();
-    $this->actingAs($helper)->deleteJson($url)->assertForbidden();
+    $this->actingAs($holder)->putJson($url, ['stopped' => true])->assertOk();
+    $this->actingAs($helper)->putJson($url, ['stopped' => false])->assertForbidden();
     expect($person->fresh()->processing_stopped_at)->not->toBeNull();
 
     auth()->logout();
-    $this->postJson($url)->assertUnauthorized();
+    $this->putJson($url, ['stopped' => false])->assertUnauthorized();
 });
 
 test('🔒 stopping withdraws the record\'s AI processing', function () {
@@ -78,7 +77,7 @@ test('🔒 stopping withdraws the record\'s AI processing', function () {
         'state' => 'granted', 'result' => 'private', 'granted_at' => now(), 'expires_at' => now()->addHour(), 'delete_after' => now()->addDay(),
     ]);
 
-    $this->actingAs($holder)->postJson("/bureaucracy/v2/people/{$person->id}/restriction")->assertOk();
+    $this->actingAs($holder)->putJson("/bureaucracy/v2/people/{$person->id}/processing-restriction", ['stopped' => true])->assertOk();
 
     expect($consent->fresh()->state)->toBe('withdrawn')
         ->and($consent->fresh()->result)->toBeNull()

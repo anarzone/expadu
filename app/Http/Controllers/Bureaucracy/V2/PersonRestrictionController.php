@@ -8,32 +8,24 @@ use App\Models\BureaucracyPerson;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-/** Your record's Stop / Resume processing (GDPR Art. 18): the holder's own switch. */
+/**
+ * Your record's Stop / Resume processing (GDPR Art. 18): the holder's own
+ * switch. PUT people/{person}/processing-restriction {stopped} answers with
+ * when it was stopped, or null.
+ */
 class PersonRestrictionController extends Controller
 {
     public function __construct(private RestrictPersonProcessing $restriction) {}
 
-    public function show(Request $request, BureaucracyPerson $person): JsonResponse
+    public function update(Request $request, BureaucracyPerson $person): JsonResponse
     {
-        return $this->state($this->restriction->stopped($request->user(), $person));
-    }
+        $stop = $request->validate(['stopped' => ['required', 'boolean']])['stopped'];
 
-    public function store(Request $request, BureaucracyPerson $person): JsonResponse
-    {
-        $this->restriction->stop($request->user(), $person);
+        $stoppedAt = $stop
+            ? $this->restriction->stop($request->user(), $person)
+            : $this->restriction->resume($request->user(), $person);
 
-        return $this->state(true);
-    }
-
-    public function destroy(Request $request, BureaucracyPerson $person): JsonResponse
-    {
-        $this->restriction->resume($request->user(), $person);
-
-        return $this->state(false);
-    }
-
-    private function state(bool $stopped): JsonResponse
-    {
-        return response()->json(['stopped' => $stopped])->header('Cache-Control', 'private, no-store');
+        return response()->json(['processing_stopped_at' => $stoppedAt?->toIso8601String()])
+            ->header('Cache-Control', 'private, no-store');
     }
 }

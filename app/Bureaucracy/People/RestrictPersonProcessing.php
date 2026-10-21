@@ -5,6 +5,7 @@ namespace App\Bureaucracy\People;
 use App\Bureaucracy\Ai\WithdrawPersonProcessing;
 use App\Models\BureaucracyPerson;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
@@ -19,27 +20,26 @@ final class RestrictPersonProcessing
 {
     public function __construct(private WithdrawPersonProcessing $withdraw) {}
 
-    public function stopped(User $actor, BureaucracyPerson $person): bool
-    {
-        return $this->holderRecord($actor, $person)->processing_stopped_at !== null;
-    }
-
-    public function stop(User $actor, BureaucracyPerson $person): void
+    /** @return CarbonImmutable when processing stopped (now, or earlier if it already was) */
+    public function stop(User $actor, BureaucracyPerson $person): CarbonImmutable
     {
         $this->holderRecord($actor, $person);
         // Withdraw first, while the record is still processed as usual: it
         // runs under the holder's own access.
         $this->withdraw->execute($actor, $person);
 
-        DB::transaction(function () use ($actor, $person): void {
+        return DB::transaction(function () use ($actor, $person): CarbonImmutable {
             $current = $this->holderRecord($actor, $person, lock: true);
             if ($current->processing_stopped_at === null) {
                 $current->forceFill(['processing_stopped_at' => now()->utc()])->save();
             }
+
+            return $current->processing_stopped_at;
         });
     }
 
-    public function resume(User $actor, BureaucracyPerson $person): void
+    /** @return null processing goes on as usual */
+    public function resume(User $actor, BureaucracyPerson $person): null
     {
         DB::transaction(function () use ($actor, $person): void {
             $current = $this->holderRecord($actor, $person, lock: true);
@@ -47,6 +47,8 @@ final class RestrictPersonProcessing
                 $current->forceFill(['processing_stopped_at' => null])->save();
             }
         });
+
+        return null;
     }
 
     /** The active record, when the actor is its own verified holder. */
