@@ -3,10 +3,12 @@
 
 import type {
     Answer,
+    Extraction,
     FactConflict,
     FactDefinition,
     FactHistory,
     FactView,
+    ProcessingDisclosure,
     QuestionOffer,
 } from './types';
 
@@ -129,6 +131,9 @@ export const reads = {
         read<{ revision: number; conflicts: FactConflict[] }>(
             `${base}/people/${personId}/fact-conflicts`,
         ),
+    /** Who "Say it in your own words" sends to; read fresh before every send. */
+    extractionDisclosure: () =>
+        read<ProcessingDisclosure>('/privacy/processing/extract_case_fact'),
 };
 
 export const commands = {
@@ -303,5 +308,46 @@ export const commands = {
                 request_id: requestId(),
                 expected_version: version,
             },
+        ),
+    /** "Say it in your own words": the tap is the consent for this one request. */
+    extractAnswer: (
+        sessionId: number,
+        questionId: number,
+        token: string,
+        message: string,
+        disclosure: ProcessingDisclosure,
+    ) =>
+        send<Extraction>(
+            'POST',
+            `${base}/question-sessions/${sessionId}/extract/${questionId}`,
+            {
+                token,
+                message,
+                processing: {
+                    consent: true,
+                    request_id: requestId(),
+                    notice_version: disclosure.notice_version,
+                    provider_version: disclosure.provider_version,
+                },
+            },
+        ),
+    /** Saves a suggested answer the person reviewed and confirmed. */
+    confirmSuggestion: (
+        sessionId: number,
+        candidateId: string,
+        token: string,
+        value: unknown,
+    ) =>
+        send(
+            'POST',
+            `${base}/question-sessions/${sessionId}/candidates/${candidateId}/confirm`,
+            { token, value, request_id: requestId(), confirmed: true },
+        ),
+    /** "Not right": the suggestion is dropped. */
+    rejectSuggestion: (sessionId: number, candidateId: string, token: string) =>
+        send(
+            'DELETE',
+            `${base}/question-sessions/${sessionId}/candidates/${candidateId}`,
+            { token },
         ),
 };

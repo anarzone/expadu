@@ -240,6 +240,7 @@ class CandidateRepository
             closedToday: $closedToday,
             hoursAssumed: $hoursAssumed,
             description: $spot->englishEnrichment?->summary,
+            vibeTags: $spot->englishEnrichment?->vibeTagNames() ?? [],
             tags: $this->textTags([
                 ...$tags,
                 ...collect($facts['negative_facts'])->mapWithKeys(fn (mixed $value, string $key): array => ["negative:{$key}" => $value])->all(),

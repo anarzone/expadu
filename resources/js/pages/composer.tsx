@@ -775,6 +775,7 @@ export default function ComposerPage({
                                             <>
                                                 <PlanCard
                                                     plan={focused!}
+                                                    changes={workspace.changes}
                                                     busy={!!busy}
                                                     command={command}
                                                     swap={startSwap}

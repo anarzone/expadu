@@ -7,6 +7,8 @@ enum ProcessingPurpose: string
     case FactExtraction = 'extract_case_fact';
     case ComposerParse = 'composer_parse';
     case ComposerRank = 'composer_rank';
+    /** A question about one person's case, answered only from source-checked cards. Bound to that case. */
+    case PaperworkAnswer = 'paperwork_answer';
 
     public function providerVersion(): string
     {
@@ -59,6 +61,7 @@ enum ProcessingPurpose: string
                 self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference'],
                 self::ComposerParse => ['your_text', 'home_area', 'reference_time'],
                 self::ComposerRank => ['planning_constraints', 'preferences', 'candidate_activities'],
+                self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
             },
         ];
     }
@@ -69,13 +72,16 @@ enum ProcessingPurpose: string
             self::FactExtraction => 'services.bureaucracy_llm',
             self::ComposerParse => 'services.llm',
             self::ComposerRank => 'services.composer_llm',
+            self::PaperworkAnswer => 'services.paperwork_analyser',
         };
     }
 
     public function dailyLimit(): int
     {
-        return max(0, (int) ($this === self::FactExtraction
-            ? config('services.bureaucracy_llm.daily_limit', 20)
-            : config('bureaucracy_privacy.daily_limits.'.$this->value, 20)));
+        return max(0, (int) match ($this) {
+            self::FactExtraction => config('services.bureaucracy_llm.daily_limit', 20),
+            self::PaperworkAnswer => config('services.paperwork_analyser.daily_limit', 20),
+            default => config('bureaucracy_privacy.daily_limits.'.$this->value, 20),
+        });
     }
 }

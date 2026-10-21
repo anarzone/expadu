@@ -1,4 +1,4 @@
-import { IconCheck, IconChevronDown } from '@tabler/icons-react';
+import { IconChevronDown } from '@tabler/icons-react';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
 function Wheel({
@@ -257,45 +257,6 @@ export function TimePicker({
                     </>
                 )}
             </div>
-        </div>
-    );
-}
-
-export function TimeEditor({
-    start,
-    end,
-    busy,
-    onSave,
-}: {
-    start: string;
-    end: string;
-    busy: boolean;
-    onSave: (start: string, end: string) => void;
-}) {
-    const [from, setFrom] = useState(start);
-    const [until, setUntil] = useState(end);
-    const valid =
-        /^([01]\d|2[0-3]):[0-5]\d$/.test(from) &&
-        /^([01]\d|2[0-3]):[0-5]\d$/.test(until) &&
-        until > from;
-
-    return (
-        <div className="composer-time-editor">
-            <TimePicker label="From" value={from} onChange={setFrom} />
-            <span aria-hidden="true">–</span>
-            <TimePicker label="Until" value={until} onChange={setUntil} />
-            <button
-                type="button"
-                className="composer-icon-button is-soft"
-                aria-label="Keep time"
-                disabled={busy || !valid}
-                onClick={() => onSave(from, until)}
-            >
-                <IconCheck size={19} />
-            </button>
-            {!valid && (
-                <small role="alert">Choose an end time after the start.</small>
-            )}
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { Icon } from '@/components/ui/icon';
 
@@ -68,7 +68,9 @@ export function TimeSheet({
         }
     }
 
-    useEffect(() => {
+    // A layout effect: the wheels' own effects run first, and they can only
+    // scroll to their times once the dialog is showing.
+    useLayoutEffect(() => {
         const box = dialog.current;
 
         if (!box) {

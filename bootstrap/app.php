@@ -72,7 +72,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // validation redirect must not flash personal prompts into a session.
         $exceptions->shouldRenderJsonWhen(fn (Request $request, Throwable $error): bool => $request->is('composer/parse', 'composer/compose', 'bureaucracy/v2/*', 'privacy/processing/*')
             || $request->expectsJson());
-        $exceptions->dontFlash(['text', 'message', 'answer', 'answers', 'payload', 'value', 'facts', 'processing', 'token', 'label', 'evidence_reference']);
+        $exceptions->dontFlash(['text', 'message', 'answer', 'answers', 'payload', 'value', 'facts', 'processing', 'token', 'label', 'evidence_reference', 'question']);
 
         // Report every unhandled exception to Sentry (Laravel 11 needs this
         // wired explicitly). The scrub + user-id attribution happen in
