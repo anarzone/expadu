@@ -70,7 +70,15 @@ export default function Today() {
     );
     const firstName = auth.user.name.trim().split(/\s+/)[0];
     const phone = usePhone();
-    const lead = useSteadyLead(day, !!welcome);
+    const lead = useSteadyLead(
+        day,
+        !!welcome,
+        // Whether there are ideas left; unknown until discovery loads.
+        discovery === undefined
+            ? undefined
+            : !!discovery &&
+                  (discovery.events.length > 0 || !!discovery.around),
+    );
 
     useDayRefresh(day);
     // Check departures' times move: re-read the station every 30 s, as
