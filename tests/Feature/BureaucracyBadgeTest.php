@@ -1,5 +1,6 @@
 <?php
 
+use App\Bureaucracy\OpenTaskCount;
 use App\Bureaucracy\Processes\ReconcileProcesses;
 use App\Bureaucracy\Processes\RecordProcessEvent;
 use App\Enums\TaskStatus;
@@ -24,7 +25,7 @@ function attachUserTask(User $user, array $taskAttributes, array $userTaskAttrib
     ]);
 }
 
-test('bureaucracy badge counts only open action tasks that are overdue or due within two weeks', function () {
+test('the attention count counts only open action tasks that are overdue or due within two weeks', function () {
     // Arrived 10 days ago: deadline = arrival + deadline_days.
     $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(10)->toDateString()]);
 
@@ -46,19 +47,15 @@ test('bureaucracy badge counts only open action tasks that are overdue or due wi
     $cancelled = $processes['fixture.badge.cancelled'];
     app(RecordProcessEvent::class)->execute($user, $cancelled, 'cancellation_reported', [], $cancelled->version, (string) Str::uuid());
 
-    $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page->where('bureaucracyAttentionCount', 2));
+    expect(app(OpenTaskCount::class)->forUser($user))->toBe(2);
 });
 
-test('retained legacy progress alone cannot create a new plan badge', function () {
+test('retained legacy progress alone cannot create attention', function () {
     $user = User::factory()->onboarded()->create(['arrival_date' => now()->subDays(10)->toDateString()]);
 
     // Only a far-off task and a completed one — nothing needs attention.
     attachUserTask($user, ['is_published' => true, 'type' => 'task', 'deadline_days' => 120], ['status' => TaskStatus::NotStarted->value, 'is_applicable' => true]);
     attachUserTask($user, ['is_published' => true, 'type' => 'task', 'deadline_days' => 3], ['status' => TaskStatus::Done->value, 'is_applicable' => true]);
 
-    $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertInertia(fn ($page) => $page->where('bureaucracyAttentionCount', 0));
+    expect(app(OpenTaskCount::class)->forUser($user))->toBe(0);
 });

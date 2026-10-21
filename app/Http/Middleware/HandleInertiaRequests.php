@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Bureaucracy\OpenTaskCount;
 use App\Models\ActiveTrip;
 use App\Models\NotificationPreference;
 use App\Models\UserSetting;
@@ -65,12 +64,6 @@ class HandleInertiaRequests extends Middleware
             ],
             'vapidPublicKey' => config('webpush.vapid.public_key'),
             'unreadAlertCount' => fn () => $request->user()?->alerts()->publishable()->whereNull('dismissed_at')->whereNull('read_at')->count() ?? 0,
-            // The sidebar's Bureaucracy badge: open action tasks that need
-            // attention now (overdue or due within two weeks), never a fixed
-            // placeholder. See OpenTaskCount for why it isn't "every open task".
-            'bureaucracyAttentionCount' => fn () => $request->user()
-                ? app(OpenTaskCount::class)->forUser($request->user())
-                : 0,
             'serviceErrors' => fn () => session('serviceErrors', []),
             'notificationPreferences' => fn () => $request->user()?->notificationPreference?->preferences ?? NotificationPreference::defaults(),
             'userSettings' => fn () => $request->user()?->userSetting?->settings ?? UserSetting::defaults(),
