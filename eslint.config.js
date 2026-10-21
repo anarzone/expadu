@@ -121,7 +121,7 @@ export default [
         },
     },
     {
-        files: ['tests/**/*.{js,mjs,cjs,ts,tsx}'],
+        files: ['tests/**/*.{js,mjs,cjs,ts,tsx}', 'tools/**/*.{js,mjs}'],
         languageOptions: {
             globals: {
                 ...globals.node,

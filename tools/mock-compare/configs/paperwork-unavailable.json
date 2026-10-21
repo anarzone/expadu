@@ -1,0 +1,61 @@
+{
+    "name": "paperwork-unavailable",
+    "seed": "PAPERWORK_ENTRY=unavailable E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkEntrySeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }",
+        "init": [
+            "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '.persona-preview, [data-preview-exit] { display: none !important; }'; document.head.append(s); });"
+        ],
+        "before": [
+            {
+                "click": ".review-tools > summary"
+            },
+            {
+                "click": "[data-preview-persona=\"unavailable\"]"
+            },
+            {
+                "wait": 600
+            }
+        ]
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".access-blank",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password",
+            "sibling": "unavailable"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "pairs": [
+        {
+            "name": "screen",
+            "mock": ".access-blank",
+            "app": ".access-blank",
+            "ignore": ["y"]
+        },
+        {
+            "name": "heading",
+            "mock": ".access-blank h2",
+            "app": ".access-blank h2",
+            "ignore": ["y"]
+        },
+        {
+            "name": "line",
+            "mock": ".access-blank p",
+            "app": ".access-blank p",
+            "ignore": ["y"]
+        }
+    ],
+    "previewNote": "The mock shows these entry states as Review personas: its 'Previewing' banner and the preview-only 'My area is Cologne' button are review tools, so the mock side hides them (init) before anything is measured.",
+    "rowNote": "Setup required and record unavailable stay bare on the app's page frame, without the Paperwork row of tabs, whose plan and Your situation: there's nothing yet to switch, pick or open (coordinator, 21 Oct). The mock's row there is its persona preview over the sample plan; the mock follows (design session item 18), so until then y is set aside.",
+    "seedNote": "The app signs in as the sibling <name>+unavailable@…, whose sample record (PaperworkSeeder's) is paused (MockSample\\PaperworkEntrySeeder)."
+}

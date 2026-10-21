@@ -24,10 +24,14 @@ use App\Http\Controllers\Bureaucracy\V2\RelationshipController;
 use App\Http\Controllers\Bureaucracy\V2\RequirementUseController;
 use App\Http\Controllers\Bureaucracy\V2\ScenarioPreviewController;
 use App\Http\Controllers\BureaucracyController;
+use App\Http\Controllers\Paperwork\CoverageWaitlistController;
 use App\Http\Controllers\QA\PersonaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('bureaucracy', [BureaucracyController::class, 'index'])->name('bureaucracy');
+// Outside Cologne: "Tell me when it's covered" joins the city waitlist,
+// confirmed by the website's double opt-in (EXP-80).
+Route::post('paperwork/waitlist', [CoverageWaitlistController::class, 'store'])->middleware('throttle:6,1')->name('paperwork.waitlist');
 // Retired QA writes: explicit 410 for stale clients; use the v2 read-only preview.
 Route::post('qa/become/{persona}', [PersonaController::class, 'become'])->name('qa.become');
 Route::post('qa/reset-tasks', [PersonaController::class, 'resetTasks'])->name('qa.reset-tasks');
