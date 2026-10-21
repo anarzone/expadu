@@ -264,6 +264,11 @@ class ScrapeNews extends Command
             // Extract headings which contain disruption info
             preg_match_all('/<h[234][^>]*>(.*?)<\/h[234]>/si', $html, $headings);
 
+            // Open KVB news, so a reworded heading updates its notice instead of adding a twin.
+            $open = CityNews::query()->where('source', 'kvb')
+                ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->get();
+
             foreach ($headings[1] ?? [] as $raw) {
                 $title = trim(strip_tags(html_entity_decode($raw, ENT_QUOTES, 'UTF-8')));
 
@@ -297,7 +302,22 @@ class ScrapeNews extends Command
                 $lines = $this->extractLines($title);
                 $severity = $this->inferSeverity($title);
 
-                CityNews::create([
+                // KVB rewords headings ("Linien 1, 7, 9" → "Linien 1, 7 und 9"): the
+                // same notice, so its row takes the new wording.
+                $twin = $open->first(fn (CityNews $row): bool => self::aktuellesKey((string) $row->title) === self::aktuellesKey($title));
+                if ($twin !== null) {
+                    $twin->update([
+                        'title' => mb_substr($title, 0, 255),
+                        'summary' => $this->buildSummary($title, $lines),
+                        'affected_lines' => $lines ?: null,
+                        'severity' => $severity,
+                        'source_url' => $url,
+                    ]);
+
+                    continue;
+                }
+
+                $open->push(CityNews::create([
                     'title' => mb_substr($title, 0, 255),
                     'summary' => $this->buildSummary($title, $lines),
                     'source' => 'kvb',
@@ -310,7 +330,7 @@ class ScrapeNews extends Command
                     // published_at sorted the notice first and showed it early.
                     'published_at' => $dateRange['start']?->isPast() ? $dateRange['start'] : now(),
                     'expires_at' => $dateRange['end'],
-                ]);
+                ]));
 
                 $created++;
 
@@ -323,6 +343,18 @@ class ScrapeNews extends Command
         }
 
         return $created;
+    }
+
+    /**
+     * A KVB news heading's identity, whatever separators it lists lines with:
+     * "Linien 1, 7, 9", "Linien 1, 7 und 9" and "Linien 1 + 7 + 9" are one notice.
+     */
+    public static function aktuellesKey(string $title): string
+    {
+        $key = mb_strtolower($title);
+        $key = preg_replace('/\b(und|and)\b|[,+&]/u', ' ', $key);
+
+        return trim((string) preg_replace('/\s+/u', ' ', (string) $key));
     }
 
     /**
