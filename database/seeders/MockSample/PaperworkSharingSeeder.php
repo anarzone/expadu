@@ -14,7 +14,8 @@ use Illuminate\Database\Seeder;
  * account's own Paperwork record, for tools/mock-compare. Alex is the
  * account's sibling <name>+alex@…, so no real person is involved. Seed
  * MockSample\PaperworkSeeder first; running this again puts the one grant
- * back as it was.
+ * back as it was. PAPERWORK_PROCESSING=stopped also stops the record's
+ * processing, as Your record's Stop processing does (EXP-180).
  *
  *   E2E_EMAIL=you@expadu.test php artisan db:seed --class='Database\Seeders\MockSample\PaperworkSharingSeeder'
  */
@@ -52,6 +53,9 @@ class PaperworkSharingSeeder extends Seeder
             'expires_at' => CarbonImmutable::parse('2027-09-12 10:00', 'Europe/Berlin'),
         ]);
 
-        $this->command?->info("{$email}'s plan is shared with Alex (Your plan, Your documents).");
+        $stopped = env('PAPERWORK_PROCESSING') === 'stopped';
+        $person->forceFill(['processing_stopped_at' => $stopped ? now()->utc() : null])->save();
+
+        $this->command?->info("{$email}'s plan is shared with Alex (Your plan, Your documents)".($stopped ? '; its processing is stopped.' : '.'));
     }
 }

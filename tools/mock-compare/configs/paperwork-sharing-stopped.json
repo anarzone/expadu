@@ -1,0 +1,118 @@
+{
+    "name": "paperwork-sharing-stopped",
+    "seed": "E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\" && PAPERWORK_PROCESSING=stopped E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSharingSeeder\"",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "mock": {
+        "url": "/dev/design/bureaucracy-next/",
+        "wait": ".process-grid",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
+    },
+    "app": {
+        "url": "/bureaucracy",
+        "wait": ".process-grid",
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00"
+        },
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
+    },
+    "seedNote": "As paperwork-sharing, with the record's processing stopped (PAPERWORK_PROCESSING=stopped). The mock stops its sample with Stop processing before it's measured, since it keeps that in the browser.",
+    "menuNote": "The mock leaves its person menu open over the panel after Share your plan; the app closes it, as choosing a menu item does. The mock side closes it (a second click on its summary) before the panel is measured.",
+    "heldNote": "Invite someone is held until EXP-79 and the design settle the invitation's email field, how it travels and the accept screen (coordinator, 21 Oct 2026), so the app has no invitation form between Shared now and Your record. Everything below it sits higher in the app: those pairs set y aside, and the panel's height and pixels with them.",
+    "pairs": [
+        {
+            "name": "panel",
+            "before": [
+                {
+                    "click": ".person-picker > summary"
+                },
+                {
+                    "wait": 300
+                },
+                {
+                    "click": ".person-menu button:last-child"
+                },
+                {
+                    "wait": 800
+                }
+            ],
+            "mockBefore": [
+                {
+                    "click": ".person-picker > summary"
+                },
+                {
+                    "wait": 300
+                },
+                {
+                    "click": ".person-menu [data-case=\"sharing\"]"
+                },
+                {
+                    "click": ".person-picker > summary"
+                },
+                {
+                    "wait": 600
+                },
+                {
+                    "click": "[data-case=\"record-pause\"]"
+                },
+                {
+                    "wait": 600
+                }
+            ],
+            "mock": "#case-editor .case-inline",
+            "app": "#case-editor .case-inline",
+            "ignore": [
+                "h"
+            ],
+            "pixels": false,
+            "reason": "Held: Invite someone isn't in the app yet (heldNote), so the panel is shorter."
+        },
+        {
+            "name": "Processing stopped",
+            "mock": ".record-paused",
+            "app": ".record-paused",
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Held: below where Invite someone would be (heldNote), on another fraction of a pixel."
+        },
+        {
+            "name": "Resume processing",
+            "mock": "[data-case=\"record-resume\"]",
+            "app": "[data-record-processing]",
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Held: below where Invite someone would be (heldNote), on another fraction of a pixel."
+        },
+        {
+            "name": "Download a copy",
+            "mock": ".record-actions .actions .button",
+            "app": ".record-actions .actions .button",
+            "index": 0,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Held: below where Invite someone would be (heldNote), on another fraction of a pixel."
+        },
+        {
+            "name": "Delete your record",
+            "mock": ".record-actions .actions .button",
+            "app": ".record-actions .actions .button",
+            "index": 2,
+            "ignore": [
+                "y"
+            ],
+            "pixels": false,
+            "reason": "Held: below where Invite someone would be (heldNote), on another fraction of a pixel."
+        }
+    ],
+    "mockNote": "Your record's Stop / Resume processing is #209's (owner, 21 Oct); compare it against a mock with #209 merged."
+}
