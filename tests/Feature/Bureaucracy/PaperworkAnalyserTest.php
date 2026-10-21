@@ -136,9 +136,9 @@ test('a sentence survives only when every check passes', function (array $senten
         'quote' => 'Registration normally follows moving into a dwelling'], 'figure_not_in_quote'],
     'deadline word not in the quote' => [['text' => 'The deadline: registration normally follows moving into a dwelling.',
         'quote' => 'Registration normally follows moving into a dwelling'], 'figure_not_in_quote'],
-    'entitlement not in the quote' => [['text' => 'You are entitled to registration after moving into a dwelling.',
+    'entitlement not in the quote' => [['text' => 'You are entitled to registration when moving into a dwelling.',
         'quote' => 'Registration normally follows moving into a dwelling'], 'legal_outcome'],
-    'outcome promise not in the quote' => [['text' => 'You will get registration after moving into a dwelling.',
+    'outcome promise not in the quote' => [['text' => 'You will get registration when moving into a dwelling.',
         'quote' => 'Registration normally follows moving into a dwelling'], 'legal_outcome'],
     'obligation not in the quote' => [['text' => 'You must notify the registration authority.',
         'quote' => 'notify the registration authority without delay'], 'legal_outcome'],
@@ -166,7 +166,7 @@ test('only verified sentences reach the person, with card titles and the claim s
             'quote' => 'Registration normally follows moving into a dwelling'],
         ['text' => 'You can always register your address later at no cost.', 'card_id' => 'fixture.unchecked',
             'quote' => 'You can always register your address later at no cost.'],
-        ['text' => 'You are entitled to registration after moving into a dwelling.', 'card_id' => 'fixture.registration',
+        ['text' => 'You are entitled to registration when moving into a dwelling.', 'card_id' => 'fixture.registration',
             'quote' => 'Registration normally follows moving into a dwelling'],
     ]]))]);
 
@@ -278,8 +278,9 @@ test('another account cannot ask about someone else\'s case', function () {
 test('a member who may only view the plan gets the cards without answers and nothing is sent', function () {
     [$owner, $case] = analyserCase();
     $helper = User::factory()->onboarded()->create();
-    $invite = app(ManageDelegation::class)->invite($owner, $case->person->workspace, $helper->email, ['view_plan']);
-    app(ManageDelegation::class)->accept($helper, $invite['token'], ['view_plan']);
+    // Accepting an invitation grants the inviter access to the accepting person's plan.
+    $invite = app(ManageDelegation::class)->invite($helper, app(EnsureAccountHolder::class)->dossier($helper)->person->workspace, $owner->email, ['view_plan']);
+    app(ManageDelegation::class)->accept($owner, $invite['token'], ['view_plan']);
     Http::fake();
 
     $response = analyserAsk($helper, $case->person_id)->assertSuccessful()->assertJsonPath('status', 'permission_required');
