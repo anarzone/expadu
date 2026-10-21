@@ -16,6 +16,8 @@ import type { Journey } from '@/types/transit';
 import { EventAnswer } from './event-answer';
 import type { AnsweredEvent } from './event-answer';
 import type { Panel } from './frame';
+import { PlaceAnswer } from './place-answer';
+import type { AnsweredPlace } from './place-answer';
 import type { Message } from './types';
 
 /*
@@ -73,6 +75,7 @@ export type AnswerMessage = Message & {
     facts?: Fact[];
     trip?: TripAnswer;
     events?: AnsweredEvent[];
+    places?: AnsweredPlace[];
 };
 
 /** Whether a message is one of these answers (the server marks them with their request's kind). */
@@ -184,6 +187,9 @@ export function AnswerBody({
                     planned={planned}
                     onAdd={onAddEvent}
                 />
+            )}
+            {message.kind === 'places' && !!message.places?.length && (
+                <PlaceAnswer places={message.places} />
             )}
             {trip && (
                 <>

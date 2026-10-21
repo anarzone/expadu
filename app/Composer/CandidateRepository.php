@@ -28,9 +28,9 @@ class CandidateRepository
     private const PER_CATEGORY = 12;
 
     /** Cologne centre — the origin a plan falls back to when the user has no location. */
-    private const COLOGNE_LAT = 50.9375;
+    public const COLOGNE_LAT = 50.9375;
 
-    private const COLOGNE_LNG = 6.9603;
+    public const COLOGNE_LNG = 6.9603;
 
     private const OUTDOOR_CATEGORIES = ['park', 'playground', 'pitch', 'basketball', 'tennis', 'table_tennis', 'boules', 'lake', 'nature', 'dog_park', 'bbq', 'picnic', 'viewpoint', 'skatepark', 'market', 'campsite'];
 
