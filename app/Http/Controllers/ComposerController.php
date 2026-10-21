@@ -96,12 +96,20 @@ class ComposerController extends Controller
     public function page(Request $request, ProfileEngine $profiles, VeedelDirectory $veedels): Response
     {
         $homeVeedel = $profiles->build($request->user())->veedel;
-        $homeBezirk = $homeVeedel
-            ? DB::table('veedels')->where('name', $homeVeedel)->value('bezirk')
-            : null;
+        // Read when a response carries it (the page, or its deferred Bezirk rail),
+        // and once: the deferred requests don't look it up for props they skip.
+        $bezirk = false;
+        $homeBezirk = function () use (&$bezirk, $homeVeedel): ?string {
+            if ($bezirk === false) {
+                $bezirk = $homeVeedel ? DB::table('veedels')->where('name', $homeVeedel)->value('bezirk') : null;
+            }
+
+            return $bezirk;
+        };
 
         return Inertia::render('composer', [
-            'workspace' => app(WorkspaceStore::class)->read($request->user()),
+            // Lazy, so the deferred requests don't read the workspace again.
+            'workspace' => fn () => app(WorkspaceStore::class)->read($request->user()),
             // Your day: the shared day projection (plans, appointments, when to leave for
             // the next) and what the person's Paperwork record has coming up. Deferred
             // together, so the frame paints first.
@@ -131,7 +139,7 @@ class ComposerController extends Controller
                 ])
                 ->all(),
             // Deferred so the page shell paints before the directory loads.
-            'bezirke' => Inertia::defer(fn () => $veedels->bezirkRail($homeBezirk)),
+            'bezirke' => Inertia::defer(fn () => $veedels->bezirkRail($homeBezirk())),
             'veedelsByBezirk' => Inertia::defer(fn () => $veedels->veedelsByBezirk()),
         ]);
     }
