@@ -38,11 +38,6 @@ Route::post('user/confirm-email/code', [EmailConfirmationController::class, 'sen
 Route::post('user/confirm-email', [EmailConfirmationController::class, 'confirm'])
     ->middleware('throttle:10,1')->name('email-confirmation.confirm');
 
-// Card showcase — dev-only reference for ContentCard variants
-if (! app()->environment('production')) {
-    Route::get('dev/cards', fn () => Inertia::render('dev/cards'))->name('dev.cards');
-}
-
 // The shared primitives (components/ui), for checking against the mock —
 // local + staging only, like the design-system reference below.
 Route::get('dev/primitives', function () {

@@ -1,0 +1,439 @@
+/* Around here: a list beside a map (the mock's around-here/style.css, with
+   connected/place-card.css's row card). Phones put a short map above the
+   list; larger screens keep the map beside it while the list scrolls. */
+
+.around {
+    display: grid;
+    gap: 12px;
+}
+
+.around-head {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.around-head h1 {
+    margin: 0;
+    font-size: var(--text-title);
+    font-weight: var(--weight-semibold);
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+}
+
+.around-head p {
+    margin: 4px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.around-back {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    min-height: 44px;
+    margin-left: -10px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.around-back svg {
+    width: 18px;
+    height: 18px;
+}
+
+.around-back span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.around-filters {
+    display: flex;
+    gap: 6px;
+    margin-inline: -16px;
+    padding: 2px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.around-filters::-webkit-scrollbar {
+    display: none;
+}
+
+.around-filters button,
+.around-open-toggle {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 6px;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--text-small);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.around-filters button[aria-pressed='true'],
+.around-open-toggle[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+    font-weight: var(--weight-semibold);
+}
+
+/* "Open at" filters the list, so it sits with the count above it. */
+.around-list-head {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.around-body {
+    display: grid;
+    gap: 12px;
+}
+
+.around-list {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+}
+
+.around-count {
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.around-results {
+    display: grid;
+    gap: 8px;
+}
+
+.around-further {
+    margin: 10px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+}
+
+.around-map {
+    position: relative;
+    order: -1;
+    height: 34svh;
+    min-height: 220px;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-quiet);
+}
+
+/* MapLibre's own stylesheet makes the container position: relative. */
+.around-map .around-map-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.around-map-fallback {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    gap: 6px;
+    place-content: center;
+    justify-items: center;
+    margin: 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.around-map-fallback svg {
+    width: 24px;
+    height: 24px;
+}
+
+.around-marker {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 2px solid #fff;
+    border-radius: var(--radius-round);
+    background: var(--color-bg-surface);
+    box-shadow: 0 2px 6px #3e352b33;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.around-marker .place-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.around-marker.is-hovered,
+.around-marker.is-selected {
+    z-index: 2;
+    background: var(--color-select-text);
+    color: #fff;
+}
+
+.around-marker.is-selected {
+    width: 38px;
+    height: 38px;
+}
+
+.around-here-marker {
+    width: 16px;
+    height: 16px;
+    border: 3px solid #fff;
+    border-radius: var(--radius-round);
+    background: var(--color-text);
+    box-shadow: 0 0 0 6px #211d1526;
+}
+
+@media (min-width: 1000px) {
+    .around-body {
+        grid-template-columns: minmax(360px, 440px) 1fr;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .around-map {
+        position: sticky;
+        top: 88px;
+        order: 0;
+        height: calc(100vh - 120px);
+    }
+
+    .around-filters {
+        flex-wrap: wrap;
+        margin-inline: 0;
+        padding-inline: 0;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .around-filters button,
+    .around-open-toggle,
+    .around-marker {
+        transition:
+            background 160ms ease,
+            color 160ms ease;
+    }
+}
+
+/* ---------- A place in the list (connected/place-card.css, row) ----------
+   Scoped here: Today's discovery rows share the class names. */
+
+.around .place-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.around .nearby-place {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    color: var(--color-text);
+}
+
+.around .nearby-place.is-selected {
+    border-color: var(--color-select-text);
+    box-shadow: inset 0 0 0 1px var(--color-select-text);
+}
+
+.around .nearby-place-open {
+    display: flex;
+    flex: 1;
+    flex-direction: row;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+    padding: 8px 56px 8px 8px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.around .nearby-place-open:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: -2px;
+}
+
+.around .place-map-snippet {
+    position: relative;
+    display: grid;
+    flex: 0 0 64px;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-quiet);
+    color: var(--color-text-soft);
+}
+
+.around .place-map-fallback svg {
+    /* Inline, as the mock's: the line under it lifts it off the middle. */
+    display: inline;
+    width: 28px;
+    height: 28px;
+    vertical-align: baseline;
+}
+
+.around .nearby-place-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.around .nearby-place-copy strong {
+    overflow: hidden;
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.around .nearby-place-copy small {
+    color: var(--color-text-soft);
+    font-size: var(--text-small);
+}
+
+.around .nearby-place-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    margin-top: 2px;
+    font-size: var(--text-small);
+}
+
+.around .nearby-place-facts > span {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.around .place-hours.is-open {
+    color: var(--color-select-text);
+    font-weight: var(--weight-medium);
+}
+
+.around .place-hours.is-closed,
+.around .place-hours.is-unknown,
+.around .place-access,
+.around .place-detail {
+    color: var(--color-text-soft);
+}
+
+.around .place-cuisine {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.around .place-cuisine.is-unknown {
+    color: var(--color-text-soft);
+}
+
+.around .nearby-place-actions {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    transform: translateY(-50%);
+}
+
+.around .nearby-place-actions button {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: var(--color-bg-quiet);
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+/* A larger tap area than the button. */
+.around .nearby-place-actions button::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+}
+
+.around .nearby-place-actions .place-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.around .nearby-place-save[aria-pressed='true'] {
+    background: var(--color-select-bg);
+    color: var(--color-select-text);
+}
+
+.around .nearby-place-save[aria-pressed='true'] .place-icon {
+    fill: currentColor;
+}
+
+.around .place-map-credit {
+    margin: 8px 0 0;
+    color: var(--color-text-soft);
+    font-size: var(--text-micro);
+}
+
+@media (hover: hover) {
+    .around .nearby-place-open:hover strong {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .around .nearby-place-actions button {
+        transition:
+            background 160ms ease,
+            transform 160ms ease;
+    }
+
+    .around .nearby-place-actions button:active {
+        transform: scale(0.94);
+    }
+}

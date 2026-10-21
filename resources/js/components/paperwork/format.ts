@@ -45,9 +45,9 @@ export const stepStatusLabels: Record<StepStatus, string> = {
 };
 
 export const readinessLabels: Record<Readiness, string> = {
-    missing: 'Not ready yet',
-    reported_available: 'You have it · check for this task',
-    confirmed_for_use: 'Ready for this task',
+    missing: 'Still to get',
+    reported_available: 'You have it · not checked yet',
+    confirmed_for_use: 'Checked and ready',
     needs_reconfirmation: 'Check again',
 };
 

@@ -277,6 +277,34 @@ class UserLocationService
         }
     }
 
+    /**
+     * The person's own accepted pings between two moments, oldest first,
+     * skipping rejected weak-signal readings. Read only: for checks that
+     * need where they've been in the last few minutes (a missed tram), never
+     * stored again.
+     *
+     * @return list<array{lat: float, lng: float, at: int}>
+     */
+    public function pingsBetween(User $user, int $from, int $to): array
+    {
+        try {
+            $entries = Redis::zrangebyscore("location_history:{$user->id}", $from, $to);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $pings = [];
+        foreach ($entries as $raw) {
+            $data = json_decode((string) $raw, true);
+            if (! is_array($data) || ! isset($data['lat'], $data['lng']) || ! empty($data['rejected'])) {
+                continue;
+            }
+            $pings[] = ['lat' => (float) $data['lat'], 'lng' => (float) $data['lng'], 'at' => $this->locationTimestamp($data['at'] ?? null)];
+        }
+
+        return $pings;
+    }
+
     private function locationTimestamp(mixed $value): int
     {
         if (is_numeric($value)) {

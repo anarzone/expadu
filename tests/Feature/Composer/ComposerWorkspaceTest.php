@@ -295,6 +295,12 @@ test('a hand-off waits for Composer itself, not the next request, and goes stale
     $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry.prompt', 'Something near my appointment'));
     $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry', null));
 
+    // Nor does one that ends after the hand-off and saves the session as it was before it.
+    $before = session()->all();
+    $this->post('/composer/entry', ['prompt' => 'Something near my appointment']);
+    session()->replace($before);
+    $this->get('/composer')->assertInertia(fn ($page) => $page->where('entry.prompt', 'Something near my appointment'));
+
     // Words left waiting (the visit never came) aren't shown later.
     $this->post('/composer/entry', ['prompt' => 'An old thought']);
     $this->travel(6)->minutes();

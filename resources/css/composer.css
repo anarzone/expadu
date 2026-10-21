@@ -27,12 +27,6 @@
     outline: 2px solid #50b1c8;
     outline-offset: 3px;
 }
-.composer-conversation-date {
-    text-align: center;
-    font-size: 11px;
-    color: var(--composer-muted);
-    margin-bottom: 26px;
-}
 .composer-message {
     margin-bottom: 26px;
     scroll-margin: 24px;
