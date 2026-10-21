@@ -23,6 +23,8 @@ class EventOccurrencePresenter
      */
     public function present(Event $event, CarbonImmutable $startsAt, ?CarbonImmutable $endsAt): array
     {
+        // An end at or before the start isn't an end ("20:00 · until 20:00").
+        $endsAt = $endsAt !== null && $endsAt->lessThanOrEqualTo($startsAt) ? null : $endsAt;
         $category = EventCategory::fromLegacy($event->category);
         $venue = $event->venue;
         $venueName = $this->venueName($venue->name ?? $event->location_name);
@@ -65,7 +67,7 @@ class EventOccurrencePresenter
             'summary' => $translated ?? $original,
             // The listing's language when the summary is its own words, not a translation.
             'summary_lang' => $original !== null ? ($event->source_lang ?: 'de') : null,
-            'price_text' => $event->price_text ?: ($event->is_free ? 'free' : null),
+            'price_text' => $this->priceText($event),
             'venue' => [
                 'name' => $venueName,
                 'veedel' => $venue->veedel ?? null,
@@ -134,6 +136,24 @@ class EventOccurrencePresenter
             $venueName,
             $veedel,
         ]));
+    }
+
+    /**
+     * The price as the listing gives it; a text that only says it's free
+     * ("Die Teilnahme ist kostenlos.") is "free", never shown in German.
+     * Any amount in euros keeps it a price.
+     */
+    private function priceText(Event $event): ?string
+    {
+        $text = trim((string) $event->price_text);
+
+        if ($text === '') {
+            return $event->is_free ? 'free' : null;
+        }
+
+        $paid = preg_match('/[1-9]\d*(?:[,.]\d+)?\s*(?:€|eur\b|euro)|(?:€|eur\b|euro)\s*[1-9]/iu', $text) === 1;
+
+        return ! $paid && preg_match('/\b(kostenlos|gratis|umsonst|frei|free)\b/iu', $text) === 1 ? 'free' : $text;
     }
 
     /**
