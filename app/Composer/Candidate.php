@@ -54,6 +54,15 @@ final readonly class Candidate
     ) {}
 
     /** Earliest complete visit, retaining split and overnight source intervals. */
+    /** Verified step-free (OSM wheelchair=yes|designated); unknown or limited is not. */
+    public function stepFree(): bool
+    {
+        $fact = $this->placeFacts['practical']['wheelchair'] ?? [];
+
+        return $this->type === 'spot' && ($fact['status'] ?? null) === 'known'
+            && in_array($fact['value'] ?? null, ['yes', 'designated'], true);
+    }
+
     public function nextVisitStart(CarbonImmutable $earliest, CarbonImmutable $latestEnd, ?int $duration = null): ?CarbonImmutable
     {
         $duration ??= $this->typicalDurationMin;

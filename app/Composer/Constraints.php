@@ -27,7 +27,31 @@ final readonly class Constraints
         /** @var list<string> */
         public array $activities = [],
         public ?float $radiusKm = null,
+        /** @var list<string> mood words read from the request (Mood values); soft, they rank */
+        public array $moods = [],
+        /** @var list<string> categories the request rules out ("not a loud club"); hard */
+        public array $avoid = [],
+        /** @var list<string> stops in the order asked ("museum, then coffee"); each a category or selector */
+        public array $sequence = [],
+        /** @var list<string> hard needs (Need values), e.g. step_free; places without the verified fact drop out */
+        public array $needs = [],
     ) {}
+
+    /** Mood words the request may carry; soft preferences for ranking and the judge. */
+    public const MOODS = ['quiet', 'lively', 'cosy', 'relaxed', 'active', 'romantic', 'cultural', 'social', 'scenic', 'local'];
+
+    /** Hard needs a place must meet with a verified fact. */
+    public const NEEDS = ['step_free'];
+
+    /**
+     * The same constraints with some fields replaced.
+     *
+     * @param  array<string, mixed>  $changes  constructor argument names
+     */
+    public function with(array $changes): self
+    {
+        return new self(...[...get_object_vars($this), ...$changes]);
+    }
 
     public function windowMinutes(): int
     {
@@ -37,13 +61,13 @@ final readonly class Constraints
     /** Same constraints with the budget cap lifted — used when a filter combination leaves nothing feasible. */
     public function withoutBudget(): self
     {
-        return new self($this->windowStart, $this->windowEnd, $this->areas, $this->categories, $this->companions, null, $this->archetype, $this->vibe, $this->activities, $this->radiusKm);
+        return $this->with(['budget' => null]);
     }
 
     /** Same constraints with the category filter lifted — the deepest relaxation before giving up. */
     public function withoutCategories(): self
     {
-        return new self($this->windowStart, $this->windowEnd, $this->areas, [], $this->companions, $this->budget, $this->archetype, $this->vibe, $this->activities, $this->radiusKm);
+        return $this->with(['categories' => [], 'sequence' => []]);
     }
 
     /**
@@ -54,7 +78,7 @@ final readonly class Constraints
      */
     public function withCategories(array $categories): self
     {
-        return new self($this->windowStart, $this->windowEnd, $this->areas, array_values($categories), $this->companions, $this->budget, $this->archetype, $this->vibe, $this->activities, $this->radiusKm);
+        return $this->with(['categories' => array_values($categories)]);
     }
 
     /**
@@ -73,6 +97,10 @@ final readonly class Constraints
             'vibe' => $this->vibe,
             'activities' => $this->activities,
             'radius_km' => $this->radiusKm,
+            'moods' => $this->moods,
+            'avoid' => $this->avoid,
+            'sequence' => $this->sequence,
+            'needs' => $this->needs,
         ];
     }
 
@@ -92,6 +120,10 @@ final readonly class Constraints
             vibe: $data['vibe'] ?? null,
             activities: array_values((array) ($data['activities'] ?? [])),
             radiusKm: isset($data['radius_km']) ? (float) $data['radius_km'] : null,
+            moods: array_values(array_intersect((array) ($data['moods'] ?? []), self::MOODS)),
+            avoid: array_values((array) ($data['avoid'] ?? [])),
+            sequence: array_values((array) ($data['sequence'] ?? [])),
+            needs: array_values(array_intersect((array) ($data['needs'] ?? []), self::NEEDS)),
         );
     }
 }

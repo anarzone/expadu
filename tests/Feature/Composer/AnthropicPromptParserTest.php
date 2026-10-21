@@ -236,7 +236,8 @@ test('the driver posts one forced route_prompt tool call in the Messages API sha
             && count($payload['tools']) === 1
             && ($payload['tools'][0]['name'] ?? null) === 'route_prompt'
             && $payload['tool_choice'] === ['type' => 'tool', 'name' => 'route_prompt']
-            && is_string($payload['system'])
+            && is_string($payload['system'][0]['text'] ?? null)
+            && ($payload['system'][0]['cache_control'] ?? null) === ['type' => 'ephemeral']
             && count($payload['messages']) === 1
             && ($payload['messages'][0]['role'] ?? null) === 'user'
             && str_contains((string) ($payload['messages'][0]['content'] ?? ''), 'when can I register?');
@@ -270,4 +271,37 @@ test('a reply cut off at max_tokens falls back to the heuristic, even with a cal
     $parsed = parseWithConsent('Museum this afternoon', llmProfile(), CarbonImmutable::parse('2026-06-12 10:00', 'Europe/Berlin'));
 
     expect($parsed->source)->not->toBe('llm');
+});
+
+it('reads the order of stops, moods, exclusions and needs, and keeps only known values', function () {
+    fakeToolCall([
+        'intent' => 'plan_day',
+        'window_start' => '2026-10-24T13:00:00+02:00',
+        'window_end' => '2026-10-24T18:00:00+02:00',
+        'categories' => ['museum'],
+        'sequence' => ['museum', 'cafe'],
+        'avoid' => ['bar', 'nightclub-ish'],
+        'moods' => ['quiet', 'mysterious'],
+        'needs' => ['step_free', 'jetpack'],
+    ]);
+
+    $plan = parseWithConsent('A quiet museum and then coffee, step-free, no bars', llmProfile(), CarbonImmutable::parse('2026-10-24 10:00', 'Europe/Berlin'))->plan;
+
+    expect($plan->sequence)->toBe(['museum', 'cafe'])
+        ->and($plan->categories)->toBe(['museum', 'cafe'])
+        ->and($plan->avoid)->toBe(['bar'])
+        ->and($plan->moods)->toBe(['quiet'])
+        ->and($plan->vibe)->toBe('chill')
+        ->and($plan->needs)->toBe(['step_free']);
+});
+
+it('ignores a one-stop sequence', function () {
+    fakeToolCall([
+        'intent' => 'plan_day',
+        'window_start' => '2026-10-24T13:00:00+02:00',
+        'window_end' => '2026-10-24T18:00:00+02:00',
+        'sequence' => ['park'],
+    ]);
+
+    expect(parseWithConsent('A park', llmProfile(), CarbonImmutable::parse('2026-10-24 10:00', 'Europe/Berlin'))->plan->sequence)->toBe([]);
 });

@@ -34,6 +34,7 @@ use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
 use App\Composer\WorkspaceStore;
 use App\Day\DayProjection;
+use App\Enums\EventCategory;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Http\Requests\ParseComposerPromptRequest;
@@ -247,6 +248,14 @@ class ComposerController extends Controller
             'constraints.budget' => ['nullable', Rule::in(['free', 'low', 'normal'])],
             'constraints.archetype' => ['nullable', 'string'],
             'constraints.vibe' => ['nullable', Rule::in(['chill', 'active'])],
+            'constraints.moods' => ['array', 'max:5'],
+            'constraints.moods.*' => ['string', Rule::in(Constraints::MOODS)],
+            'constraints.avoid' => ['array', 'max:10'],
+            'constraints.avoid.*' => ['string', Rule::in($categories)],
+            'constraints.sequence' => ['array', 'max:5'],
+            'constraints.sequence.*' => ['string', Rule::in($categories)],
+            'constraints.needs' => ['array'],
+            'constraints.needs.*' => ['string', Rule::in(Constraints::NEEDS)],
             'pins' => ['array'],
             'pins.*' => ['string'],
             'locked' => ['array'],
@@ -315,13 +324,18 @@ class ComposerController extends Controller
             ? $locations->veedelAt($originLat, $originLng)
             : null;
 
-        // The candidate pool, nearest-per-category to where the day starts.
-        $rawPool = $candidates->candidatesFor($this->itineraryConstraints($constraints, $this->soloCategory($constraints)), $originLat, $originLng);
-
         // A single chosen activity ("Pitches") shapes the day differently from a
         // broad prompt: the activity is the day's ANCHOR, not its whole content —
-        // a day is one pitch + a bite + somewhere green, never six pitches.
-        $soloCategory = $this->soloCategory($constraints);
+        // a day is one pitch + a bite + somewhere green, never six pitches. Stops
+        // asked in an order ("a museum, then coffee") are the day's shape instead.
+        $sequenceRoles = $this->sequenceRoles($constraints);
+        $soloCategory = $sequenceRoles === null ? $this->soloCategory($constraints) : null;
+
+        // The candidate pool, nearest-per-category to where the day happens: the
+        // named Veedel when there is one ("an afternoon in Ehrenfeld"), else where
+        // it starts. Travel is still timed from the start.
+        [$poolLat, $poolLng] = $this->areaCentre($constraints) ?? [$originLat, $originLng];
+        $rawPool = $candidates->candidatesFor($this->itineraryConstraints($constraints, $soloCategory), $poolLat, $poolLng);
 
         // ── Itinerary (Just this / Full day / Today) ──
         // For a solo activity the pool is widened to refuel/relax complements so
@@ -378,7 +392,7 @@ class ComposerController extends Controller
 
         $estimator = $this->travelEstimator($user, $originLat, $originLng, $pool);
         $filler = new SlotFiller(new PlanScorer($estimator), $estimator);
-        $roles = $soloCategory !== null ? $this->activityRoles($soloCategory) : null;
+        $roles = $sequenceRoles ?? ($soloCategory !== null ? $this->activityRoles($soloCategory) : null);
         $plan = $filler->fill($itineraryConstraints, $pool, $context, $originLat, $originLng, $roles, self::SAME_COARSE_CAP);
         $this->recordRun($user, $plan, $filler->pickedScores(), $llmBucket, $llmRankWeights, count($rankable));
 
@@ -541,6 +555,44 @@ class ComposerController extends Controller
         }
 
         return [[], false];
+    }
+
+    /**
+     * The stops in the order the request asked for them ("a museum, then
+     * coffee"), one each; the first leads as the day's hero. Null when the
+     * request named no order.
+     *
+     * @return list<Role>|null
+     */
+    private function sequenceRoles(Constraints $constraints): ?array
+    {
+        if (count($constraints->sequence) < 2) {
+            return null;
+        }
+
+        return array_map(
+            fn (string $selector, int $i): Role => new Role($selector === 'event'
+                // Events carry their own categories, not place ones.
+                ? ['event', ...array_map(fn (EventCategory $category): string => $category->value, EventCategory::cases())]
+                : SpotCategory::finesForSelector($selector), 1, hero: $i === 0),
+            $constraints->sequence,
+            array_keys($constraints->sequence),
+        );
+    }
+
+    /**
+     * The middle of the first named Veedel, where its places are looked for.
+     *
+     * @return array{0: float, 1: float}|null
+     */
+    private function areaCentre(Constraints $constraints): ?array
+    {
+        $area = $constraints->areas[0] ?? null;
+        $row = $area === null ? null : DB::table('veedels')->where('name', $area)->first(['centroid_lat', 'centroid_lng']);
+
+        return $row?->centroid_lat !== null && $row?->centroid_lng !== null
+            ? [(float) $row->centroid_lat, (float) $row->centroid_lng]
+            : null;
     }
 
     /**
