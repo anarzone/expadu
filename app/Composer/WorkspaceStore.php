@@ -137,7 +137,14 @@ class WorkspaceStore
                 $plan = app(PrivatePlanCache::class)->handoff($user, $input['token']);
                 $this->require(is_array($plan), 'expired', 'This suggestion expired. Please ask again.');
                 $date = CarbonImmutable::parse($plan['constraints']['window_start'])->setTimezone('Europe/Berlin')->format('Y-m-d');
-                $this->apply($s, $date, $plan, 'Planned '.$this->weekday($date));
+                try {
+                    $this->apply($s, $date, $plan, 'Planned '.$this->weekday($date));
+                } catch (WorkspaceRefusal $refusal) {
+                    // A composed plan's times are the planner's, not the person's: said in their terms.
+                    throw $refusal->reason === 'invalid_time'
+                        ? new WorkspaceRefusal('invalid_time', 'That plan runs past midnight, and a plan holds one day. Try an earlier time or another day.')
+                        : $refusal;
+                }
 
                 return null;
             case 'reapply':

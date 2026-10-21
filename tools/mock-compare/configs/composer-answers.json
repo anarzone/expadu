@@ -126,14 +126,8 @@
                 }
             ],
             "contentDiffers": true,
-            "ignoreReason": "The mock says “isn’t something this preview knows”; the app says “isn’t something Composer knows”, as it isn't a preview. Its options are the welcome's starters (see clarify options). On a phone the mock's longer Nearby option wraps, so the answer is taller.",
+            "ignoreReason": "The mock says “isn’t something this preview knows”; the app says “isn’t something Composer knows”, as it isn't a preview. The app has no title above it (the mock's “I can’t answer that here yet.”): the owner found it shouting (21 Oct 2026, from staging), so the sentence says it alone and the answer is shorter. Its options are the welcome's starters (see clarify options). On a phone the mock's longer Nearby option wraps, so the answer is taller.",
             "ignore": ["h"]
-        },
-        {
-            "name": "clarify title",
-            "mock": "article.chat-entry.chat-assistant .chat-answer-title",
-            "app": "article.chat-entry.chat-assistant .chat-answer-title",
-            "index": 2
         },
         {
             "name": "clarify options",
