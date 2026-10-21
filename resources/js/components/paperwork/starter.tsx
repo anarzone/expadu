@@ -11,8 +11,10 @@ import type { Answer, AnswerState, Question } from './types';
 
 /**
  * Who gets the starter path, in one place (coordinator, 21 Oct 2026): your own
- * plan, answers you may see and change, and none of them confirmed yet. Until
- * the answers are read it's false, so a plan never flickers into it.
+ * plan, answers you may see and change, and no answer of yours yet beyond the
+ * ones setup recorded (onboarding writes confirmed answers, so "none at all"
+ * would reach almost nobody). Until the answers are read it's false, so a plan
+ * never flickers into it.
  */
 export function useFreshStart(self: boolean): boolean {
     const { plan } = usePaperwork();
@@ -32,7 +34,11 @@ export function useFreshStart(self: boolean): boolean {
             .facts(plan.person_id)
             .then((view) => {
                 if (live) {
-                    setFresh(Object.keys(view.evidence).length === 0);
+                    setFresh(
+                        Object.values(view.evidence).every(
+                            (answer) => answer.source === 'onboarding',
+                        ),
+                    );
                 }
             })
             .catch(() => live && setFresh(false));
