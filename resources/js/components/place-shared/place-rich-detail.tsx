@@ -9,17 +9,17 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { ItemDetailLayout } from '@/components/details/item-detail-shell';
-import { MiniMap } from '@/components/places/mini-map';
+import { MiniMap } from '@/components/place-shared/mini-map';
 import {
     placePracticalDetails,
     placeRoutingPoint,
-} from '@/components/places/place-evidence';
-import { PlaceFeedbackBar } from '@/components/places/place-feedback-menu';
+} from '@/components/place-shared/place-evidence';
+import { PlaceFeedbackBar } from '@/components/place-shared/place-feedback-menu';
 import type {
     NearbyPlace,
     Place,
     PlaceContext,
-} from '@/components/places/types';
+} from '@/components/place-shared/types';
 import { ICON_STROKE } from '@/constants/icons';
 import type {
     FeedbackAction,
