@@ -133,6 +133,28 @@ class PlaceFacts
     /** An explicit, current review can qualify an otherwise hidden facility for activity search. */
     public function activityQualified(Builder $query): Builder
     {
+        // Evidence decides (owner, 21 Oct 2026; no manual review): OSM names a
+        // sport, public access is allowed, and the tags ask for no private
+        // access, membership or booking. A reviewed approval still counts.
+        $query->where(fn (Builder $either) => $either->where(fn (Builder $evidence) => $evidence
+            ->where('spots.public_access_allowed', true)
+            ->whereRaw("coalesce(spots.tags::jsonb->>'sport', '') <> ''")
+            ->whereRaw("coalesce(lower(spots.tags::jsonb->>'access'), 'yes') not in ('private', 'no', 'customers', 'members', 'permit')")
+            ->whereRaw("coalesce(lower(spots.tags::jsonb->>'membership'), 'no') not in ('required', 'yes')")
+            ->whereRaw("coalesce(lower(spots.tags::jsonb->>'reservation'), 'no') not in ('required', 'only')")
+            // A reviewer's current access finding outranks the OSM tag.
+            ->whereNotExists(fn ($review) => $review->selectRaw('1')->from('place_fact_corrections as access_review')
+                ->whereColumn('access_review.spot_id', 'spots.id')->where('access_review.field', 'access')
+                ->whereNull('access_review.revoked_at')
+                ->whereRaw("coalesce(access_review.value->>'value', '') not in ('public', 'permissive')")))
+            ->orWhere(fn (Builder $reviewed) => $this->reviewedActivity($reviewed)));
+
+        return $query;
+    }
+
+    /** An approved activity_discovery review that still matches the place's current facts. */
+    private function reviewedActivity(Builder $query): Builder
+    {
         $basis = 'jsonb_build_object('.implode(', ', array_map(fn (string $field): string => "'{$field}', spots.{$field}", self::ACTIVITY_REVIEW_FIELDS)).')';
 
         return $query->whereRaw(str_replace('__BASIS__', $basis, <<<'SQL'

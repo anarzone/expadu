@@ -52,6 +52,10 @@ trait NormalisesConstraints
             $end = $start->addMinutes(self::MIN_WINDOW_MINUTES)->min($horizon);
         }
 
+        // A plan is one day: the workspace refuses a stop that ends tomorrow, so
+        // "tonight" asked at 22:00 stops at 23:59 instead of running to 01:00.
+        $end = $end->min($start->setTime(23, 59));
+
         // Everything the user asked for survives the window rescue. Dropping the
         // categories here is what made "pitch today" at 22:00 compose "anything"
         // and then return nothing. Areas stay exactly as named; when none were
