@@ -13,6 +13,7 @@ import {
     whenOf,
 } from '@/components/travel/nearby/nearby-model';
 import type {
+    NearbyFilters,
     ShownDir,
     ShownLine,
 } from '@/components/travel/nearby/nearby-model';
@@ -155,18 +156,39 @@ export function CityHelp({
     );
 }
 
-/** Whether a station's times are live, recorded, the timetable's or missing. */
+/** Live times paused: the backend's last-good copy (Travel's stale). */
+const isPaused = (station: Station) =>
+    station.is_stale || station.time_basis === 'stale';
+
+/** When a departure leaves, so a paused board's past times keep their order. */
+const leaves = (dir: ShownDir) => Date.parse(dir.next?.at ?? '') || 0;
+
+/** Nearby's filters with no time window: every departure the feed has. */
+const ANY_TIME = Number.POSITIVE_INFINITY as NearbyFilters['win'];
+
+/** The clock of a reading, as Travel says it ("last times 22:19"). */
+const clockOf = (iso: string) =>
+    new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Berlin',
+    }).format(new Date(iso));
+
+/**
+ * Whether a station's times are live, paused, the timetable's or missing,
+ * in Travel's words (Nearby): live; the last-good copy when live times
+ * pause; the timetable when there are none; unavailable only when there
+ * isn't even a timetable.
+ */
 function captureLabel(station: Station): string {
-    // The board's feed failed: Travel's own words, never the timetable's.
     if (station.time_basis === 'unavailable') {
         return 'Times unavailable right now';
     }
 
-    if (station.is_stale || station.time_basis === 'stale') {
-        return sourceLabel({
-            source: 'recorded',
-            at: station.observed_at ?? undefined,
-        });
+    if (isPaused(station)) {
+        return station.observed_at
+            ? `Not live · last times ${clockOf(station.observed_at)}`
+            : 'Not live';
     }
 
     return station.time_basis === 'realtime'
@@ -198,14 +220,16 @@ function DepartureBoard({
         }
     }, [planned]);
 
+    // The next departures, however far off (the mock's next twelve, three
+    // lines at most): a late timetable board still shows its next trams.
     const lines: ShownLine[] = station
-        ? nearbyView(station, filterDefaults())
+        ? nearbyView(station, { ...filterDefaults(), win: ANY_TIME })
               .areas.flatMap((area) => area.cards)
               .filter((line) => line.shown.length > 0)
-              .sort((a, b) => a.shown[0].mins - b.shown[0].mins)
+              .sort((a, b) => leaves(a.shown[0]) - leaves(b.shown[0]))
               .slice(0, 3)
         : [];
-    const live = station?.time_basis === 'realtime' && !station.is_stale;
+    const paused = !!station && isPaused(station);
     const href = timetable({
         query: station ? { stop: station.name } : {},
     });
@@ -215,8 +239,10 @@ function DepartureBoard({
             return null;
         }
 
+        // As Travel's strips: paused times are the last ones read, so their
+        // clocks; a timetable time leaving now shows its clock, quietly.
         const when = whenOf(dir);
-        const paused = !live || !dir.live;
+        const quiet = paused || !dir.live;
 
         return {
             dest: dir.dest,
@@ -224,11 +250,11 @@ function DepartureBoard({
             when: (
                 <StripTime
                     when={
-                        paused && when.big === 'now'
+                        paused || (quiet && when.big === 'now')
                             ? { big: dir.clock, unit: '' }
                             : when
                     }
-                    paused={paused}
+                    paused={quiet}
                 />
             ),
         };
@@ -291,7 +317,7 @@ function DepartureBoard({
                             </LineStrips>
                         ) : station.time_basis === 'unavailable' ? null : (
                             <p className="board-empty">
-                                No departures in the next half hour.
+                                No departures from {station.name} in the feed.
                             </p>
                         )}
                         <a
