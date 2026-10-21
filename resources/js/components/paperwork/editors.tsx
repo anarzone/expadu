@@ -13,6 +13,7 @@ import {
 } from './format';
 import { Icon } from './icons';
 import { Situation } from './situation';
+import { Starter } from './starter';
 import { usePaperwork } from './state';
 import type { Process, TimelineRow } from './types';
 
@@ -49,6 +50,14 @@ export function InlineEditor() {
         (origin.current as HTMLElement).focus?.({ preventScroll: true });
         origin.current = null;
     }, [editor]);
+
+    if (situation?.starter) {
+        return (
+            <div id="case-editor">
+                <Starter />
+            </div>
+        );
+    }
 
     if (situation) {
         return (
