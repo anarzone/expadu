@@ -9,16 +9,22 @@ import {
 import { ShellHeader } from '@/components/shell/shell-header';
 import { OnYourWayBar } from '@/components/travel/on-your-way-bar';
 import { Toaster } from '@/components/ui/toast';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { useBackgroundLocation } from '@/hooks/use-background-location';
 import { useShellScroll } from '@/hooks/use-shell-scroll';
 import { useTracker } from '@/hooks/use-tracker';
+// Travel's styles (the trip bar's, and every page's trips and lines), imported
+// here directly so the server-rendered head links them for every page inside
+// the shell: Laravel's @vite only follows a chunk's direct imports.
+import '../../css/travel.css';
 
 /**
  * The app's persistent layout: Inertia keeps it mounted across page visits,
  * so the header, the sections, Composer's entry and the trip bar never
  * remount and keep their state; only the page inside changes. Attached to
  * every app page by resolvePage(); a page renders its own <AppLayout> (the
- * page frame) inside it.
+ * page frame) inside it. Tooltips belong to the shell's pages, so their
+ * provider is here rather than around every page (sign-in has none).
  */
 export default function AppShellLayout({ children }: { children: ReactNode }) {
     const { url, component } = usePage();
@@ -65,7 +71,7 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
     }, []);
 
     return (
-        <>
+        <TooltipProvider delayDuration={0}>
             <a href="#main" className="skip-link">
                 Skip to content
             </a>
@@ -75,6 +81,6 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
             {children}
             <ComposerTray onComposer={onComposer} />
             <Toaster />
-        </>
+        </TooltipProvider>
     );
 }

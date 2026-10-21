@@ -3,7 +3,6 @@ import { Component, StrictMode } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { showToast } from '@/components/ui/toast';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { resolvePage } from '@/lib/resolve-page';
 import '../css/app.css';
 
@@ -88,9 +87,7 @@ createInertiaApp({
         const app = (
             <StrictMode>
                 <ErrorBoundary>
-                    <TooltipProvider delayDuration={0}>
-                        <App {...props} />
-                    </TooltipProvider>
+                    <App {...props} />
                 </ErrorBoundary>
             </StrictMode>
         );
