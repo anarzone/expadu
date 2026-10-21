@@ -135,7 +135,7 @@
 
 :is(.ev-details, .place-sheet) .gt .plan-option {
     border: 1px solid #e0d7c4;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     background: #fffdf8;
     transition: border-color 160ms ease;
 }
@@ -153,11 +153,11 @@
     width: 100%;
     padding: 14px 14px 4px;
     border: 0;
-    border-radius: 18px;
+    border-radius: var(--radius-xl);
     background: none;
     color: var(--color-text);
     font: inherit;
-    line-height: 1.35;
+    line-height: var(--leading-snug);
     text-align: left;
     cursor: pointer;
 }
@@ -168,7 +168,7 @@
     margin-top: 2px;
     border: 2px solid #b9ad95;
     border-radius: 50%;
-    background: #fff;
+    background: var(--color-bg-surface);
 }
 
 :is(.ev-details, .place-sheet) .gt .is-on .plan-radio {
@@ -178,7 +178,7 @@
 :is(.ev-details, .place-sheet) .gt .plan-option-body {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
 }
 
@@ -187,13 +187,18 @@
     gap: 8px;
     align-items: flex-start;
     justify-content: space-between;
+    margin-bottom: 2px;
 }
 
 :is(.ev-details, .place-sheet) .gt .plan-option-title {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
     align-items: center;
+}
+
+:is(.ev-details, .place-sheet) .gt .plan-option-head + .plan-option-title {
+    margin-top: 4px;
 }
 
 :is(.ev-details, .place-sheet) .gt .plan-then svg {
@@ -210,7 +215,9 @@
 }
 
 :is(.ev-details, .place-sheet) .gt .plan-option-times {
-    font-size: 16px;
+    margin-top: 4px;
+    font-size: var(--text-body);
+    line-height: 1.25;
     font-variant-numeric: tabular-nums;
 }
 
@@ -251,17 +258,18 @@
 
 :is(.ev-details, .place-sheet) .gt .details-toggle {
     display: inline-flex;
-    gap: 4px;
+    gap: 8px;
     align-items: center;
     min-height: 44px;
     margin-left: 48px;
     padding: 0;
     border: 0;
     background: none;
-    color: var(--gt-where-icon);
+    color: var(--color-select-text);
     font: inherit;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--text-small);
+    font-weight: var(--weight-regular);
+    line-height: 1.45;
     cursor: pointer;
 }
 
