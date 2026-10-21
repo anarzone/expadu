@@ -138,6 +138,7 @@ function WithEmailCode({ email }: { email: string }) {
                 id="code"
                 label="Code"
                 inputMode="numeric"
+                maxLength={6}
                 autoComplete="one-time-code"
                 value={form.data.code}
                 onChange={(v) => form.setData('code', v)}
