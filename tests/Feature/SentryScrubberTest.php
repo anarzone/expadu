@@ -140,3 +140,17 @@ test('object shaped telemetry is withheld without invoking its serializers', fun
     expect($serialized)->not->toContain('Private response', 'Private serialized value')
         ->and($serializable->called)->toBeFalse();
 });
+
+test('a reset link\'s token never reaches error reports or traces', function () {
+    $request = ['url' => 'https://app.expadu.com/reset-password/a-reset-token?email=someone%40example.com', 'query_string' => 'email=someone%40example.com'];
+
+    $error = Event::createEvent();
+    $error->setRequest($request);
+    $trace = Event::createTransaction();
+    $trace->setRequest($request);
+
+    foreach ([SentryScrubber::scrub($error), SentryScrubber::scrubTransaction($trace)] as $out) {
+        expect($out->getRequest()['url'])->toBe('https://app.expadu.com/reset-password/[redacted]');
+        expect($out->getRequest()['query_string'])->toBe('[redacted]');
+    }
+});

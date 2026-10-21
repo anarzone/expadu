@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import {
+    AccountFlash,
     AccountLabel,
     AccountPassword,
 } from '@/components/account/account-parts';
@@ -25,6 +26,7 @@ export default function ConfirmPassword() {
                 <p className="account-lead">
                     This part of your account asks for it once more.
                 </p>
+                <AccountFlash />
                 <AccountPassword
                     id="password"
                     label="Password"

@@ -8,8 +8,13 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialLoginController extends Controller
 {
-    /** @var array<int, string> */
-    private const PROVIDERS = ['google', 'apple'];
+    /**
+     * Google only: no Apple sign-in yet (owner, 19 Oct 2026). Apple's
+     * settings stay in config/services.php for when it comes.
+     *
+     * @var array<int, string>
+     */
+    public const PROVIDERS = ['google'];
 
     public function redirect(string $provider)
     {

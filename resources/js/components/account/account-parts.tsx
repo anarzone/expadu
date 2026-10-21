@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import type { ChangeEvent, ReactNode, Ref } from 'react';
 import { useState } from 'react';
 import { redirect } from '@/routes/social';
@@ -186,8 +187,20 @@ export function AccountMessage({
     );
 }
 
-/** Continue with Google, then "or with email". Google only: there's no
-    Apple sign-in yet (owner, 19 Oct 2026); its provider config stays. */
+/** What the server flashed back, said on the poster (the auth pages have no
+    toast): a form sent too often ("Too many requests — please wait…"), or
+    a Google sign-in that didn't finish. */
+export function AccountFlash() {
+    const error = usePage<{ flash?: { error?: string | null } }>().props.flash
+        ?.error;
+
+    return error ? (
+        <AccountMessage kind="mismatch">{error}</AccountMessage>
+    ) : null;
+}
+
+/** Continue with Google, then "or with email". Google is the only provider
+    (SocialLoginController::PROVIDERS). */
 export function AccountSocial({ providers }: { providers: string[] }) {
     if (!providers.includes('google')) {
         return null;

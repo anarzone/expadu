@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import {
+    AccountFlash,
     AccountLabel,
     AccountField,
     AccountPassword,
@@ -49,6 +50,7 @@ export default function Register({ socialProviders, privacyUrl }: Props) {
                 <AccountLabel>Willkommen in Köln</AccountLabel>
                 <h1 tabIndex={-1}>New in Cologne? Start here.</h1>
                 <p className="account-lead">Free to start. Cologne, for now.</p>
+                <AccountFlash />
                 <AccountSocial providers={socialProviders} />
                 <AccountField
                     id="name"

@@ -89,3 +89,10 @@ test('invalid provider returns 404', function () {
     $this->get('/auth/facebook/redirect')->assertNotFound();
     $this->get('/auth/facebook/callback')->assertNotFound();
 });
+
+test('there is no Apple sign-in, even with Apple configured', function () {
+    config(['services.apple.client_id' => 'configured', 'services.apple.client_secret' => 'configured']);
+
+    $this->get('/auth/apple/redirect')->assertNotFound();
+    $this->get('/auth/apple/callback')->assertNotFound();
+});

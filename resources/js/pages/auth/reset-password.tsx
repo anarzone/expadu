@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import {
+    AccountFlash,
     AccountLabel,
     AccountMessage,
     AccountPassword,
@@ -43,6 +44,7 @@ export default function ResetPassword({ token, email }: Props) {
                 <p className="account-lead">
                     For <b>{email}</b>.
                 </p>
+                <AccountFlash />
                 {/* An expired or used link comes back on the email. */}
                 {form.errors.email ? (
                     <AccountMessage kind="mismatch">

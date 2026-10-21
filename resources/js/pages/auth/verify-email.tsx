@@ -1,5 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
+    AccountFlash,
     AccountLabel,
     AccountMessage,
 } from '@/components/account/account-parts';
@@ -33,6 +34,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                 <p className="account-note">
                     It works for 60 minutes. Not there? Look in spam.
                 </p>
+                <AccountFlash />
                 {status === 'verification-link-sent' ? (
                     <AccountMessage>A new link is on its way.</AccountMessage>
                 ) : null}

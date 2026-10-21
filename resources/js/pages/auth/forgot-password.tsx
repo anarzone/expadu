@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import {
+    AccountFlash,
     AccountLabel,
     AccountField,
     AccountMessage,
@@ -68,6 +69,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     <p className="account-lead">
                         We’ll email you a link to choose a new one.
                     </p>
+                    <AccountFlash />
                     <AccountField
                         id="email"
                         label="Email"

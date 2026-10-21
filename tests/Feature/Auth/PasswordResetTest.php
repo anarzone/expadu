@@ -83,8 +83,20 @@ test('a reset link request answers the same whether or not the email has an acco
 
     $known = $this->from(route('password.request'))->post(route('password.email'), ['email' => $user->email]);
     $unknown = $this->from(route('password.request'))->post(route('password.email'), ['email' => 'nobody-here@example.com']);
+    // Only an account's link can be throttled: asking again within the
+    // minute must not answer differently.
+    $again = $this->from(route('password.request'))->post(route('password.email'), ['email' => $user->email]);
 
-    $known->assertSessionHasNoErrors()->assertSessionHas('status', __('passwords.sent'))->assertRedirect(route('password.request'));
-    $unknown->assertSessionHasNoErrors()->assertSessionHas('status', __('passwords.sent'))->assertRedirect(route('password.request'));
+    foreach ([$known, $unknown, $again] as $response) {
+        $response->assertSessionHasNoErrors()->assertSessionHas('status', __('passwords.sent'))->assertRedirect(route('password.request'));
+    }
     Notification::assertSentTimes(ResetPassword::class, 1);
+});
+
+test('the reset page asks for no referrer, so its token stays out of other requests', function () {
+    $this->get(route('password.reset', ['token' => 'a-reset-token', 'email' => 'someone@example.com']))
+        ->assertOk()
+        ->assertHeader('Referrer-Policy', 'no-referrer');
+
+    $this->get(route('password.request'))->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 });

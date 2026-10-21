@@ -1,7 +1,11 @@
 import { Head, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
-import { AccountField, AccountLabel } from '@/components/account/account-parts';
+import {
+    AccountField,
+    AccountFlash,
+    AccountLabel,
+} from '@/components/account/account-parts';
 import { OTP_MAX_LENGTH } from '@/hooks/use-two-factor-auth';
 import AuthLayout from '@/layouts/auth-layout';
 import { store } from '@/routes/two-factor/login';
@@ -41,6 +45,7 @@ export default function TwoFactorChallenge() {
                         ? 'One of the recovery codes you saved when you turned on two-step sign-in.'
                         : 'The code your authenticator app shows for Expadu.'}
                 </p>
+                <AccountFlash />
                 {recovery ? (
                     <AccountField
                         key="recovery"

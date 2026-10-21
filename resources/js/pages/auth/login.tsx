@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { useEffect, useRef } from 'react';
 import {
+    AccountFlash,
     AccountLabel,
     AccountField,
     AccountMessage,
@@ -15,8 +16,6 @@ import { request } from '@/routes/password';
 
 type Props = {
     status?: string;
-    /** A sign-in with Google that didn't finish. */
-    error?: string;
     canResetPassword: boolean;
     canRegister: boolean;
     socialProviders: string[];
@@ -29,7 +28,6 @@ const MISMATCH = 'That email and password don’t match.';
     details don't match, and the password takes the focus. */
 export default function Login({
     status,
-    error,
     canResetPassword,
     canRegister,
     socialProviders,
@@ -89,11 +87,8 @@ export default function Login({
                 ) : (
                     <>
                         <p className="account-lead">Sign in to see your day.</p>
-                        {error ? (
-                            <AccountMessage kind="mismatch">
-                                {error}
-                            </AccountMessage>
-                        ) : status ? (
+                        <AccountFlash />
+                        {status ? (
                             <AccountMessage kind="done">
                                 {status}
                             </AccountMessage>

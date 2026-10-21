@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Http\Controllers\SocialLoginController;
 use App\Http\Responses\PasswordResetLinkFailedResponse;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -65,8 +66,6 @@ class FortifyServiceProvider extends ServiceProvider
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'canRegister' => Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
-            // A sign-in with Google that didn't finish.
-            'error' => $request->session()->get('error'),
             'socialProviders' => $socialProviders,
         ]));
 
@@ -104,7 +103,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $providers = [];
 
-        foreach (['google', 'apple'] as $provider) {
+        foreach (SocialLoginController::PROVIDERS as $provider) {
             if (config("services.{$provider}.client_id")) {
                 $providers[] = $provider;
             }
