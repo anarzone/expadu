@@ -159,6 +159,8 @@ type PlanPanelProps = {
     handoffEvent?: HandoffEvent | null;
     /** `?place=`: the place, as the server found it (else null). */
     handoffPlace?: HandoffPlace | null;
+    /** The person's saved step-free need: "What matters" starts with Step-free on. */
+    stepFreeNeed?: boolean;
     day: DayProjection | null | undefined;
     favouriteStops: FavouriteStop[];
     savedPlaces: SavedPlace[];
@@ -186,6 +188,7 @@ export function PlanPanel({
     url,
     handoffEvent = null,
     handoffPlace = null,
+    stepFreeNeed = false,
     day,
     favouriteStops,
     savedPlaces,
@@ -209,7 +212,10 @@ export function PlanPanel({
     const [schedule, setSchedule] = useState<Schedule>('now');
     const [date, setDate] = useState(today);
     const [time, setTime] = useState(() => berlinNow().time);
-    const [prefs, setPrefs] = useState<Pref[]>([]);
+    // Their own need starts Step-free on; they can still turn it off here.
+    const [prefs, setPrefs] = useState<Pref[]>(() =>
+        stepFreeNeed ? ['stepfree'] : [],
+    );
     const [sort, setSort] = useState<SortKey>('arrival');
     const [choicesOpen, setChoicesOpen] = useState(false);
     const [results, setResults] = useState(false);

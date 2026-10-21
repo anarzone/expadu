@@ -1,6 +1,13 @@
 {
     "name": "travel-nearby-lift",
-    "widths": [360, 390, 768, 1280, 1440, 1512],
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
     "height": 900,
     "tolerance": 0.5,
     "mock": {
@@ -15,7 +22,8 @@
         "wait": "#departures .nearby-strip",
         "login": {
             "email": "e2e@expadu.test",
-            "password": "e2e-password"
+            "password": "e2e-password",
+            "sibling": "stepfree"
         },
         "init": [
             "document.addEventListener('DOMContentLoaded', () => { const s = document.createElement('style'); s.textContent = '#departures > .trip-line { display: none !important; }'; document.head.append(s); })"
@@ -23,22 +31,16 @@
         "cookies": {
             "mock_clock": "2026-09-30T13:10:00%2B02:00",
             "mock_scenario": "lift"
-        },
-        "before": [
-            {
-                "click": ".nearby-chips .nearby-chip"
-            },
-            {
-                "wait": 400
-            }
-        ]
+        }
     },
     "pairs": [
         {
             "name": "banner",
             "mock": "#departures .nearby-banner .tl-banner",
             "app": "#departures .nearby-banner .tl-banner",
-            "ignore": ["h"],
+            "ignore": [
+                "h"
+            ],
             "contentDiffers": true,
             "reason": "The mock's sample words: \"A lift at Neumarkt is out of order · sample\" over \"Step-free is on: the platforms for 3, 4, 16 and 18 are hidden. In the app this comes from KVB's lift status.\" The app names the lift as KVB's feed lists it, and the feed doesn't say which platforms a lift serves, so it hides nothing."
         },
@@ -46,7 +48,10 @@
             "name": "banner title",
             "mock": "#departures .nearby-banner .tl-banner strong",
             "app": "#departures .nearby-banner .tl-banner strong",
-            "ignore": ["h", "y"],
+            "ignore": [
+                "h",
+                "y"
+            ],
             "contentDiffers": true,
             "reason": "The mock's sample words: \"A lift at Neumarkt is out of order · sample\" over \"Step-free is on: the platforms for 3, 4, 16 and 18 are hidden. In the app this comes from KVB's lift status.\" The app names the lift as KVB's feed lists it, and the feed doesn't say which platforms a lift serves, so it hides nothing. On a narrow screen the mock's longer title takes a second line."
         },
@@ -54,7 +59,10 @@
             "name": "banner text",
             "mock": "#departures .nearby-banner .tl-banner p > span",
             "app": "#departures .nearby-banner .tl-banner p > span",
-            "ignore": ["h", "y"],
+            "ignore": [
+                "h",
+                "y"
+            ],
             "contentDiffers": true,
             "reason": "The mock's sample words: \"A lift at Neumarkt is out of order · sample\" over \"Step-free is on: the platforms for 3, 4, 16 and 18 are hidden. In the app this comes from KVB's lift status.\" The app names the lift as KVB's feed lists it, and the feed doesn't say which platforms a lift serves, so it hides nothing."
         },
@@ -62,19 +70,30 @@
             "name": "phone bar",
             "mock": ".travel-phone-bar",
             "app": ".travel-phone-bar",
-            "widths": [360, 390, 768]
+            "widths": [
+                360,
+                390,
+                768
+            ]
         },
         {
             "name": "Where to?",
             "mock": ".travel-phone-bar .where-to",
             "app": ".travel-phone-bar .where-to",
-            "widths": [360, 390, 768]
+            "widths": [
+                360,
+                390,
+                768
+            ]
         },
         {
             "name": "station bar",
             "mock": ".nearby-bar",
             "app": ".nearby-bar",
-            "ignore": ["h", "y"],
+            "ignore": [
+                "h",
+                "y"
+            ],
             "contentDiffers": true,
             "reason": "The mock labels its capture \"Recorded Sun 4 Oct, 22:19\" in the uncertain chip. The app shows the same captured board (MockSample\\SampleTimetable, under the mock clock) as the board it would read live, so \"Live times\" in the calm chip. At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so the bar is 30px lower in the mock. Below the banner, whose sample text is longer in the mock (see banner), so it sits lower there."
         },
@@ -82,14 +101,21 @@
             "name": "station button",
             "mock": ".nearby-stop",
             "app": ".nearby-stop",
-            "ignore": ["h", "w", "y"],
+            "ignore": [
+                "h",
+                "w",
+                "y"
+            ],
             "reason": "The mock's list | map switch sits beside it; the map is deferred (plan call #9). At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so it is 30px taller in the mock. Below the banner, whose sample text is longer in the mock (see banner), so it sits lower there."
         },
         {
             "name": "station name",
             "mock": ".nearby-stop-name",
             "app": ".nearby-stop-name",
-            "ignore": ["w", "y"],
+            "ignore": [
+                "w",
+                "y"
+            ],
             "reason": "The mock's list | map switch sits beside it; the map is deferred (plan call #9). Below the banner, whose sample text is longer in the mock (see banner), so it sits lower there."
         },
         {
@@ -97,7 +123,9 @@
             "mock": ".nearby-bar .tl-chip",
             "app": ".nearby-bar .tl-chip",
             "index": 0,
-            "ignore": ["y"],
+            "ignore": [
+                "y"
+            ],
             "contentDiffers": true,
             "reason": "Below the banner, whose sample text is longer in the mock (see banner), so it sits lower there."
         },
@@ -126,7 +154,10 @@
             "name": "favourite star",
             "mock": ".nearby-star",
             "app": ".nearby-star",
-            "ignore": ["x", "y"],
+            "ignore": [
+                "x",
+                "y"
+            ],
             "reason": "Same box and styles; the map switch (call #9) puts the mock's star at another x, and at 390 the mock's bar wraps (see station bar), so its edge anti-aliasing differs by a few pixels.",
             "pixels": false
         },
@@ -134,7 +165,9 @@
             "name": "filters",
             "mock": ".nearby-chips",
             "app": ".nearby-chips",
-            "ignore": ["y"],
+            "ignore": [
+                "y"
+            ],
             "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Below the banner, whose sample text is longer in the mock (see banner), so it sits lower there. Moved by that, it lands on another sub-pixel offset.",
             "pixels": false
         },
@@ -142,7 +175,9 @@
             "name": "departures count",
             "mock": ".nearby-count",
             "app": ".nearby-count",
-            "ignore": ["y"],
+            "ignore": [
+                "y"
+            ],
             "reason": "At 390 the mock's longer times chip (see times chip) wraps the station bar onto a second row, so what follows sits 30px lower in the mock. Below the banner, whose sample text is longer in the mock (see banner), so it sits lower there. Its words: the mock's sample hides the 3 · 4 · 16 · 18 platforms (\"Showing 8 of 16 departures\"); the app hides nothing it can't tie to a lift (\"All 16 departures · soonest first\").",
             "contentDiffers": true
         },
@@ -151,11 +186,13 @@
             "mock": ".nearby-chips .nearby-chip",
             "app": ".nearby-chips .nearby-chip",
             "index": 0,
-            "ignore": ["y"],
+            "ignore": [
+                "y"
+            ],
             "pixels": false,
             "reason": "Below the banner, whose sample text is longer in the mock (see banner), so it sits lower there. Moved by that, it lands on another sub-pixel offset."
         }
     ],
     "clock": "2026-09-30T13:10:00+02:00",
-    "note": "A lift out of order at Neumarkt (the mock's ?scenario=lift): MockSample\\SampleKvb with the local mock_scenario cookie. The mock's sample also has Step-free switched on; the app's filter is the person's own, so the app side switches it on first. The board itself is travel-nearby's; this compares what the situation changes at the top: the banner and Step-free leading the filters."
+    "note": "A lift out of order at Neumarkt (the mock's ?scenario=lift): MockSample\\SampleKvb with the local mock_scenario cookie. The mock's sample also has Step-free switched on: the app side signs in as the account's `+stepfree` sibling (seeded with MOCK_STEP_FREE=1, see travel-trip-lift-need), whose saved need starts Step-free on. The board itself is travel-nearby's; this compares what the situation changes at the top: the banner and Step-free leading the filters."
 }

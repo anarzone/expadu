@@ -58,6 +58,7 @@ type PageProps = {
     dayWeather?: DayWeather | null;
     handoffEvent?: HandoffEvent | null;
     handoffPlace?: HandoffPlace | null;
+    stepFreeNeed?: boolean;
 };
 
 function csrfToken(): string {
@@ -536,6 +537,7 @@ export default function Timetable() {
                     url={page.url}
                     handoffEvent={page.props.handoffEvent ?? null}
                     handoffPlace={page.props.handoffPlace ?? null}
+                    stepFreeNeed={page.props.stepFreeNeed ?? false}
                     day={today}
                     favouriteStops={favouriteStops}
                     savedPlaces={savedPlaces}
@@ -667,6 +669,7 @@ export default function Timetable() {
                                 onPickStop={pickStop}
                                 onToggleFavourite={toggleFavourite}
                                 favouriteBusy={favouriteBusy}
+                                stepFreeNeed={page.props.stepFreeNeed ?? false}
                             />
                         ) : (
                             <div className="nearby-empty">
