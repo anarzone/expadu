@@ -23,6 +23,9 @@ class UserSetting extends Model
             'personalised_content' => true,
             'share_anonymised' => true,
             'profile_visibility' => 'partners',
+            // Learn from what the person does (the signal ledger). A separate
+            // opt-in, off until they turn it on.
+            'personalisation' => false,
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\UserSetting;
+use App\Personalisation\SignalRecorder;
 use App\Services\LocationDataRetention;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class UserSettingController extends Controller
             'settings.personalised_content' => ['sometimes', 'boolean'],
             'settings.share_anonymised' => ['sometimes', 'boolean'],
             'settings.profile_visibility' => ['sometimes', 'string', 'in:everyone,partners,nobody'],
+            'settings.personalisation' => ['sometimes', 'boolean'],
         ]);
 
         $user = $request->user();
@@ -35,6 +37,10 @@ class UserSettingController extends Controller
 
             if (($validated['settings']['share_location'] ?? null) === false) {
                 $retention->purgeUser($user->id);
+            }
+            // Turning personalisation off erases what was learned, not just pauses it.
+            if (($validated['settings']['personalisation'] ?? null) === false) {
+                app(SignalRecorder::class)->forget($user);
             }
 
             $user->userSetting()->updateOrCreate(

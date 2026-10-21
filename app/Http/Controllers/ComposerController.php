@@ -41,6 +41,8 @@ use App\Models\ComposerRun;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
+use App\Personalisation\SignalAction;
+use App\Personalisation\SignalRecorder;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceIdentity;
 use App\Privacy\ProcessingAcceptanceRules;
@@ -716,6 +718,7 @@ class ComposerController extends Controller
                     'veedel' => $outgoing->veedel,
                 ],
             ]);
+            app(SignalRecorder::class)->planSlots($user, SignalAction::StopSwappedOut, [$plan->slots[$slotIndex]->toArray()], $plan->constraints->companions);
         }
 
         // Re-narrate so the swapped slot (and the one after it) keep their "why".
@@ -789,11 +792,28 @@ class ComposerController extends Controller
             return response()->json(['message' => $exception->getMessage()], 409);
         }
         $today->save($request->user(), $stored, $validated['prompt'] ?? null);
+        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: isset($validated['keep']));
 
         return response()->json(['saved' => true]);
     }
 
     /** Un-pin the Today plan (the dismiss control on the home card). */
+    /**
+     * The person keeps the composed plan as it is: each stop counts as kept
+     * unedited (personalisation, with the opt-in). A plan with swaps or
+     * exclusions is not "unedited" and records nothing.
+     */
+    public function keep(Request $request): JsonResponse
+    {
+        $stored = $this->plans->get($request->user());
+        if (! is_array($stored)) {
+            return response()->json(['message' => 'There is no plan to keep.'], 404);
+        }
+        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: false);
+
+        return response()->json(['kept' => true]);
+    }
+
     public function clearToday(Request $request, TodayPlanStore $today): JsonResponse
     {
         $today->forget($request->user());

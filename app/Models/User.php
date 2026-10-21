@@ -174,4 +174,10 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
         return $settings[$key] ?? UserSetting::defaults()[$key] ?? null;
     }
+
+    /** Opted in to personalisation from their own activity (off by default). */
+    public function personalises(): bool
+    {
+        return $this->setting('personalisation') === true;
+    }
 }
