@@ -454,7 +454,9 @@ export function PlanTimeline({ plan }: { plan: Plan }) {
                     <li key={slot.id} className={fixed ? 'fixed-item' : ''}>
                         <div className="timeline-time">
                             <strong>{slot.start_time}</strong>
-                            <span>{slot.end_time}</span>
+                            {slot.end_listed !== false && (
+                                <span>{slot.end_time}</span>
+                            )}
                         </div>
                         <div className="timeline-node">
                             <Icon

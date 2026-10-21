@@ -67,6 +67,10 @@ export type PlanAnswer = {
         severity: string;
         lines: string[];
         brief?: NoticeBrief | null;
+        /** KVB's own text (German), for when there's no brief. */
+        details?: string | null;
+        /** KVB's page for the notice; null when it isn't KVB's. */
+        url?: string | null;
     }[];
     conditions?: {
         weather: { available: boolean; hours: WeatherHour[] };
@@ -332,6 +336,8 @@ export type Check = {
     text: string;
     icon: TravelIconName;
     tone: 'calm' | 'unsure' | 'attention' | 'conflict';
+    /** The KVB notices check: each notice's words, with its page. */
+    notices?: { words: string; lang: 'en' | 'de'; url: string | null }[];
 };
 
 const conditionWord: Record<string, string> = {
@@ -396,6 +402,17 @@ export function checksFor(
                       .join(' · '),
                   icon: 'alert',
                   tone: 'attention',
+                  notices: notices.map((n) => {
+                      const { headline, text, lang } = noticeWords(n);
+
+                      return {
+                          words: text
+                              ? `${headline.replace(/\.$/, '')}. ${text}`
+                              : headline,
+                          lang,
+                          url: n.url ?? null,
+                      };
+                  }),
               }
             : {
                   short: 'No notices',

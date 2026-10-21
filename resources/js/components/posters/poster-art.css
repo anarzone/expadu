@@ -11,7 +11,9 @@
     font-family: 'Festival Marker';
     font-weight: 400;
     font-display: swap;
-    src: url('/fonts/permanent-marker-400.ttf') format('truetype');
+    src:
+        url('/fonts/permanent-marker-400.woff2') format('woff2'),
+        url('/fonts/permanent-marker-400.ttf') format('truetype');
 }
 @font-face {
     font-family: 'Poster Grotesque';

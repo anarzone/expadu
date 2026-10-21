@@ -2032,10 +2032,14 @@ a.plan-link:hover {
 .welcome-choices svg {
     color: var(--color-welcome-icon);
 }
-/* On a first visit City help and the way into Paperwork lead the day's
-   column, one under the other. */
+/* On a first visit (or a free evening with no ideas left) City help and
+   the way into Paperwork lead the day's column, one under the other, City
+   help flush with the column (the mock's priorities.css). */
 .day-area > .practical-surface {
     grid-template-columns: minmax(0, 1fr);
+}
+.day-area > .practical-surface .city-help {
+    padding: 0;
 }
 .paperwork-optional a {
     display: flex;

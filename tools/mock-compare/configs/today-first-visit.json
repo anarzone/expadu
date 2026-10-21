@@ -136,6 +136,21 @@
             "ignore": ["y"]
         },
         {
+            "name": "City help",
+            "mock": ".day-area .city-help",
+            "app": ".day-area .city-help",
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["h"],
+            "pixels": false
+        },
+        {
+            "name": "City help heading",
+            "mock": ".day-area .city-help > .section-head",
+            "app": ".day-area .city-help > .section-head",
+            "widths": [768, 1280, 1440, 1512],
+            "pixels": false
+        },
+        {
             "name": "Settling in?",
             "mock": ".paperwork-optional a",
             "app": ".paperwork-optional a",

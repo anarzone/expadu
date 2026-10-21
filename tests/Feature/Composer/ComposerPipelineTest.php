@@ -162,7 +162,8 @@ test('a slot exposes a soft time band and rough duration', function () {
 
 test('the narrator explains a pick from the data we have', function () {
     $indoorLandmark = new PlanSlot(
-        makeCandidate(['category' => 'museum', 'outdoor' => false, 'isLandmark' => true, 'closesAt' => saturday('18:00')]),
+        makeCandidate(['category' => 'museum', 'outdoor' => false, 'isLandmark' => true, 'closesAt' => saturday('18:00'),
+            'placeFacts' => ['practical' => ['indoor' => ['status' => 'known', 'value' => 'yes']]]]),
         saturday('14:00'),
         saturday('16:00'),
         0,
@@ -170,9 +171,16 @@ test('the narrator explains a pick from the data we have', function () {
     $why = PlanNarrator::for($indoorLandmark, null, rain: true);
     expect($why)->toContain('⭐ landmark')->toContain('indoor — beats the rain')->toContain('open till 18:00');
 
+    // A category that's usually indoors says nothing about the rain without the place's own fact.
+    $museum = new PlanSlot(makeCandidate(['category' => 'museum', 'outdoor' => false]), saturday('14:00'), saturday('16:00'), 0);
+    expect(PlanNarrator::for($museum, null, rain: true))->not->toContain('rain');
+
+    // Minutes between stops are a straight-line estimate, said as one; on foot only for a walk.
     $prev = new PlanSlot(makeCandidate(['veedel' => 'Ehrenfeld']), saturday('14:00'), saturday('15:00'), 0);
     $next = new PlanSlot(makeCandidate(['id' => 'spot:2', 'veedel' => 'Ehrenfeld']), saturday('15:10'), saturday('16:10'), 6);
-    expect(PlanNarrator::for($next, $prev, rain: false))->toContain('🚶 6 min · same area');
+    expect(PlanNarrator::for($next, $prev, rain: false))->toBe('about 6 min on foot · same area');
+    $far = new PlanSlot(makeCandidate(['id' => 'spot:3', 'lat' => 50.9, 'lng' => 7.05, 'veedel' => 'Kalk']), saturday('15:40'), saturday('16:40'), 25);
+    expect(PlanNarrator::for($far, $prev, rain: false))->toBe('about 25 min away');
 });
 
 test('the narrator gives an appointment a leave-by line', function () {
@@ -196,7 +204,7 @@ test('narrate fills the why line for the whole sequence', function () {
     $narrated = PlanNarrator::narrate($slots, false);
 
     expect($narrated[0]->why)->toContain('⭐ landmark');
-    expect($narrated[1]->why)->toContain('🚶 6 min');
+    expect($narrated[1]->why)->toContain('about 6 min on foot');
 });
 
 // ── FeasibilityFilter ──────────────────────────────────────────────────

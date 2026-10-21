@@ -1,4 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, usePoll } from '@inertiajs/react';
 import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 import { CityHelp, CityLinks } from '@/components/today/city-help';
@@ -70,9 +70,20 @@ export default function Today() {
     );
     const firstName = auth.user.name.trim().split(/\s+/)[0];
     const phone = usePhone();
-    const lead = useSteadyLead(day, !!welcome);
+    const lead = useSteadyLead(
+        day,
+        !!welcome,
+        // Whether there are ideas left; unknown until discovery loads.
+        discovery === undefined
+            ? undefined
+            : !!discovery &&
+                  (discovery.events.length > 0 || !!discovery.around),
+    );
 
     useDayRefresh(day);
+    // Check departures' times move: re-read the station every 30 s, as
+    // Travel does (the server's cache).
+    usePoll(30_000, { only: ['station'], async: true });
     const dayLoad = useDayLoad(day !== undefined);
 
     // Paperwork's next step, or with no record yet its way in ("Settling

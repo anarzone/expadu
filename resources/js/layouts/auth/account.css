@@ -26,7 +26,9 @@
     font-family: 'Poster Marker';
     font-weight: 400;
     font-display: swap;
-    src: url('/fonts/permanent-marker-400.ttf') format('truetype');
+    src:
+        url('/fonts/permanent-marker-400.woff2') format('woff2'),
+        url('/fonts/permanent-marker-400.ttf') format('truetype');
 }
 
 /* The page: the street behind (its own layer, so it shows above the
@@ -421,8 +423,13 @@ button.account-quiet {
         position: absolute;
         bottom: auto;
         height: 220px;
-        /* Close enough to see the Dom and the rooftops above the poster. */
-        background-size: auto 520px;
+        /* Close enough to see the Dom and the rooftops above the poster: the
+           street drawn 520px tall. The strip shows only its top 220px, so it
+           loads street-strip-*.webp, the street's top 540 rows (of 1252) at
+           three densities, drawn at the same width and place. AuthLayout
+           preloads the same file under the same media queries. */
+        background-image: url('/images/account/street-strip-2400.webp');
+        background-size: calc(520px * 2400 / 1252) auto;
         background-position: 68% top;
     }
     .account-top {
@@ -494,6 +501,16 @@ button.account-quiet {
     }
     .account-mail {
         font-size: 16px;
+    }
+}
+@media (max-width: 899px) and (resolution < 1.85dppx) {
+    .account-street {
+        background-image: url('/images/account/street-strip-1800.webp');
+    }
+}
+@media (max-width: 899px) and (resolution < 1.25dppx) {
+    .account-street {
+        background-image: url('/images/account/street-strip-1200.webp');
     }
 }
 @media (prefers-reduced-motion: reduce) {
