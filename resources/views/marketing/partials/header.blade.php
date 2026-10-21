@@ -17,7 +17,7 @@
     </nav>
     <div class="xv-nav__cta">
         <details class="xv-menu">
-            <summary aria-label="Menu">Menu</summary>
+            <summary aria-label="Menu"><svg class="xv-ico xv-menu__open" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><svg class="xv-ico xv-menu__close" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></summary>
             <div class="xv-menu__panel">
                 <a href="{{ $home }}#day">The day</a>
                 <a href="{{ $home }}#street">Events</a>

@@ -69,8 +69,8 @@ export function DateControl({
                     className="ui-date-toggle"
                     aria-label={`${label}: ${value ? dateLabel(value) : 'not chosen'}`}
                 >
-                    <span>{value ? dateLabel(value) : 'Choose a date'}</span>
-                    <Icon name="down" variant="line" />
+                    {/* One text, as the mock's date-control.js writes it. */}
+                    {`${value ? dateLabel(value) : 'Choose a date'} ▾`}
                 </button>
             )}
         >
