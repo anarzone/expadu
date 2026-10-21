@@ -36,9 +36,14 @@ def lift(css: str) -> str:
     def keep(match):
         block = match.group(0).strip()
         if block.startswith('@font-face'):
-            if 'Bricolage' in block:
+            if 'Bricolage' in block or 'Geist' in block:
                 return ''  # resources/css/app.css defines it
-            block = block.replace("url('../events-next/fonts/", "url('/fonts/events/")
+            # The app's one Permanent Marker, woff2 first.
+            block = block.replace(
+                "url('../events-next/fonts/PermanentMarker-Regular.ttf') format('truetype')",
+                "url('/fonts/permanent-marker-400.woff2') format('woff2'),\n"
+                "        url('/fonts/permanent-marker-400.ttf') format('truetype')",
+            )
         lifted.append(block)
         return ''
 

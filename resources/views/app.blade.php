@@ -47,15 +47,20 @@
                 ...($inShell ? ['resources/js/layouts/app-shell-layout.tsx'] : []),
                 "resources/js/pages/{$page['component']}.tsx",
             ];
+            // Pages whose first screen sets a heading in Fraunces 500.
+            $firstScreenFraunces = in_array($page['component'], ['onboarding', 'alerts', 'profile'], true);
         @endphp
 
-        {{-- Preload only the faces painted above the fold on every app page:
-             Geist 400 (body), 600 (nav, and 550 resolves up to it), 700 (page
-             h1/h2, and 650 resolves up to it) and Fraunces 500 (wordmark). --}}
+        {{-- Preload only the faces painted above the fold: Geist 400 (body),
+             600 (nav, and 550 resolves up to it) and 700 (page h1/h2, and 650
+             resolves up to it) everywhere, Fraunces 500 only where a first-
+             screen heading uses it. --}}
         <link rel="preload" href="/fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin>
         <link rel="preload" href="/fonts/geist-600.woff2" as="font" type="font/woff2" crossorigin>
         <link rel="preload" href="/fonts/geist-700.woff2" as="font" type="font/woff2" crossorigin>
-        <link rel="preload" href="/fonts/fraunces-500.woff2" as="font" type="font/woff2" crossorigin>
+        @if ($firstScreenFraunces)
+            <link rel="preload" href="/fonts/fraunces-500.woff2" as="font" type="font/woff2" crossorigin>
+        @endif
 
         @viteReactRefresh
         @vite($viteEntries)
