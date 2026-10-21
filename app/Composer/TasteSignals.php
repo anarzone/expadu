@@ -86,7 +86,7 @@ class TasteSignals
         ]);
     }
 
-    private function spotAt(string $name, float $lat, float $lng): ?Spot
+    public function spotAt(string $name, float $lat, float $lng): ?Spot
     {
         $nearby = Spot::query()
             ->canonical()

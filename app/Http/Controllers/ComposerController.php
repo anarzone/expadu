@@ -39,6 +39,8 @@ use App\Models\ComposerRun;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
+use App\Personalisation\SignalAction;
+use App\Personalisation\SignalRecorder;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceIdentity;
 use App\Privacy\ProcessingAcceptanceRules;
@@ -696,6 +698,7 @@ class ComposerController extends Controller
                     'veedel' => $outgoing->veedel,
                 ],
             ]);
+            app(SignalRecorder::class)->planSlots($user, SignalAction::StopSwappedOut, [$plan->slots[$slotIndex]->toArray()], $plan->constraints->companions);
         }
 
         // Re-narrate so the swapped slot (and the one after it) keep their "why".
@@ -769,6 +772,7 @@ class ComposerController extends Controller
             return response()->json(['message' => $exception->getMessage()], 409);
         }
         $today->save($request->user(), $stored, $validated['prompt'] ?? null);
+        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: isset($validated['keep']));
 
         return response()->json(['saved' => true]);
     }
