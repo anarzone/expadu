@@ -152,7 +152,7 @@ return [
         'processor_name' => env('BUREAUCRACY_LLM_PROCESSOR_NAME', 'Anthropic PBC'),
         'processor_privacy_url' => env('BUREAUCRACY_LLM_PROCESSOR_PRIVACY_URL', 'https://www.anthropic.com/legal/privacy'),
         'timeout' => (int) env('BUREAUCRACY_LLM_TIMEOUT', 8),
-        'prompt_version' => env('BUREAUCRACY_LLM_PROMPT_VERSION', '2026-10-21.claude.1'),
+        'prompt_version' => env('BUREAUCRACY_LLM_PROMPT_VERSION', '2026-10-21.claude.2'),
         'daily_limit' => (int) env('BUREAUCRACY_LLM_DAILY_LIMIT', 20),
     ],
 

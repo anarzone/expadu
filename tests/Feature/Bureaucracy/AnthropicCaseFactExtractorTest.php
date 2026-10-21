@@ -4,6 +4,7 @@ use App\Bureaucracy\Ai\AnthropicCaseFactExtractor;
 use App\Bureaucracy\Ai\CaseFactExtractionRequest;
 use App\Bureaucracy\Ai\Contracts\ExtractsCaseFact;
 use App\Bureaucracy\Ai\UnavailableCaseFactExtractor;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -148,7 +149,7 @@ test('it sends only the authored question schema and user message in one forced 
             && count($payload['messages']) === 1
             && ($payload['messages'][0]['role'] ?? null) === 'user'
             && str_contains((string) ($payload['messages'][0]['content'] ?? ''), $injection)
-            && array_keys($userContext) === ['question', 'why', 'allowed_type', 'allowed_options', 'message']
+            && array_keys($userContext) === ['today', 'question', 'why', 'allowed_type', 'allowed_options', 'message']
             && ($userContext['message'] ?? null) === $injection
             && ! array_key_exists('fact_key', $userContext)
             && ! array_key_exists('confirmed_facts', $userContext)
@@ -306,3 +307,19 @@ test('connection and timeout failures return unavailable without logging excepti
     'connection error' => 'Could not connect SECRET-123',
     'timeout' => 'Operation timed out SECRET-123',
 ]);
+
+test('it sends the person\'s today, so a relative date resolves to their year', function () {
+    // 23:30 UTC on 21 October is already 22 October in Cologne.
+    $this->travelTo(CarbonImmutable::parse('2026-10-21 23:30:00', 'UTC'));
+    Http::fake(['api.anthropic.com/*' => Http::response(extractionToolResponse(['outcome' => 'unknown']))]);
+
+    app(AnthropicCaseFactExtractor::class)->extract(extractionRequest('weekly_work_hours', '1 September this year'));
+
+    Http::assertSent(function (Request $request): bool {
+        $payload = $request->data();
+        $userContext = json_decode((string) $payload['messages'][0]['content'], true, 512, JSON_THROW_ON_ERROR);
+
+        return ($userContext['today'] ?? null) === '2026-10-22'
+            && str_contains((string) $payload['system'], 'never guess a year');
+    });
+});

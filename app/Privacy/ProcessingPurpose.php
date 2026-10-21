@@ -58,7 +58,7 @@ enum ProcessingPurpose: string
             'processor_privacy_url' => config($this->configPrefix().'.processor_privacy_url'),
             'response_retention_minutes' => min(15, max(1, (int) config('bureaucracy_privacy.request_minutes', 15))),
             'payload_categories' => match ($this) {
-                self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference'],
+                self::FactExtraction => ['current_question', 'permitted_answer_schema', 'your_text', 'selected_person_reference', 'reference_date'],
                 self::ComposerParse => ['your_text', 'home_area', 'reference_time'],
                 self::ComposerRank => ['planning_constraints', 'preferences', 'candidate_activities'],
                 self::PaperworkAnswer => ['your_question', 'checked_card_text', 'confirmed_answers_the_cards_use'],
