@@ -10,6 +10,40 @@ export function useFrom(start: WayPlace | null) {
     const [text, setText] = useState(start?.name ?? '');
     const [place, setPlace] = useState<WayPlace | null>(start);
     const [finding, setFinding] = useState(false);
+    const [unavailable, setUnavailable] = useState(false);
+
+    /** A start picked from "Where do you start?". */
+    function pick(next: WayPlace) {
+        setText(next.name);
+        setPlace(next);
+        setUnavailable(false);
+    }
+
+    /** Where you are now, asked only on the tap; nothing is kept. */
+    function locate() {
+        if (!('geolocation' in navigator)) {
+            setUnavailable(true);
+
+            return;
+        }
+
+        setFinding(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setFinding(false);
+                pick({
+                    name: 'Your location',
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                });
+            },
+            () => {
+                setFinding(false);
+                setUnavailable(true);
+            },
+            { timeout: 10000, maximumAge: 60000 },
+        );
+    }
 
     /** Looks up what's typed, unless it's already the place found. */
     function commit() {
@@ -44,6 +78,10 @@ export function useFrom(start: WayPlace | null) {
         place,
         finding,
         commit,
+        pick,
+        locate,
+        /** Your location was asked for and isn't available. */
+        unavailable,
         /** Still the start it was given (its note still holds). */
         atStart:
             !!start &&

@@ -122,6 +122,8 @@ export function PlaceWay({
                     place={from.place}
                     text={from.text}
                     finding={from.finding}
+                    onLocate={from.locate}
+                    unavailable={from.unavailable}
                     mode={mode}
                     shown={shown}
                     chosen={chosen}

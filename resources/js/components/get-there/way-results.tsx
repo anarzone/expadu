@@ -63,6 +63,10 @@ export function WayResults({
     onToggle,
     onRetry,
     onWalk,
+    starts = [],
+    onStart,
+    onLocate,
+    unavailable = false,
 }: {
     status: WayStatus;
     /** Where the way starts (or, on the way back, ends): null until found. */
@@ -83,6 +87,13 @@ export function WayResults({
     onToggle: (id: string) => void;
     onRetry: () => void;
     onWalk: () => void;
+    /** Where a way can start: saved places and starred stops, real ones only. */
+    starts?: WayPlace[];
+    onStart?: (place: WayPlace) => void;
+    /** Asks for where you are now. */
+    onLocate?: () => void;
+    /** Your location was asked for and isn't available. */
+    unavailable?: boolean;
 }) {
     const named = text.trim();
 
@@ -119,8 +130,43 @@ export function WayResults({
                           ? 'Where are you going back to?'
                           : 'Where do you start?'
                 }
-                text="Type an address, a place or a stop above."
-            />
+                text={
+                    unavailable
+                        ? 'Your location isn’t available. Pick a start or type one above.'
+                        : onLocate || starts.length
+                          ? 'Pick one, or type an address, a place or a stop above.'
+                          : 'Type an address, a place or a stop above.'
+                }
+            >
+                {onLocate || starts.length ? (
+                    <div className="gt-starts">
+                        {onLocate ? (
+                            <button
+                                type="button"
+                                className="gt-start"
+                                disabled={finding}
+                                onClick={onLocate}
+                            >
+                                <TravelIcon name="locate" />
+                                Your location
+                            </button>
+                        ) : null}
+                        {starts.map((start) => (
+                            <button
+                                key={`${start.name}|${start.lat}|${start.lng}`}
+                                type="button"
+                                className="gt-start"
+                                onClick={() => onStart?.(start)}
+                            >
+                                <TravelIcon name="pin" />
+                                {back
+                                    ? `Back to ${start.name}`
+                                    : `From ${start.name}`}
+                            </button>
+                        ))}
+                    </div>
+                ) : null}
+            </Empty>
         );
     }
 

@@ -49,6 +49,7 @@ export default function GetThere({
     onWhen,
     initialMode,
     day,
+    starts = [],
 }: {
     occurrence: EventOccurrence;
     title: string;
@@ -59,6 +60,8 @@ export default function GetThere({
     initialMode: WayMode;
     /** The day shown, as Travel reads it (loaded with this page). */
     day: DayProjection | null | undefined;
+    /** Where a way can start: Home, Work and starred stops, real ones. */
+    starts?: WayPlace[];
 }) {
     const venue: WayPlace | null =
         o.venue.lat !== null && o.venue.lng !== null
@@ -354,6 +357,10 @@ export default function GetThere({
                     target={target}
                     day={day}
                     destination={venue?.name ?? o.venue.name ?? 'the venue'}
+                    starts={starts}
+                    onStart={from.pick}
+                    onLocate={from.locate}
+                    unavailable={from.unavailable}
                     onPick={(id) => setPicked([answer, id])}
                     expanded={expanded}
                     onToggle={(id) => {

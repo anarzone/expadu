@@ -15,6 +15,7 @@ import EventReminderController from '@/actions/App/Http/Controllers/Api/EventRem
 import ComposerController from '@/actions/App/Http/Controllers/ComposerController';
 import { api } from '@/components/composer/types';
 import type { EventOccurrence } from '@/components/events/types';
+import type { WayPlace } from '@/components/get-there/ways';
 import { PosterArt } from '@/components/posters/poster-art';
 import type { PosterEvent } from '@/components/posters/poster-model';
 import {
@@ -191,6 +192,7 @@ export function EventDetails({
     saved,
     onSave,
     onClose,
+    starts = [],
 }: {
     /** The listing shown; null closes the page. */
     listing: DetailsListing | null;
@@ -207,6 +209,8 @@ export function EventDetails({
     saved: boolean;
     onSave: () => void;
     onClose: () => void;
+    /** Get there's starts: Home, Work and starred stops, real ones. */
+    starts?: WayPlace[];
 }) {
     // The page keeps what it showed while it slides away.
     const [shown, setShown] = useState(listing);
@@ -381,6 +385,7 @@ export function EventDetails({
                         onWhen={setWhen}
                         initialMode={mode}
                         day={day}
+                        starts={starts}
                     />
                 </Suspense>
             ) : (

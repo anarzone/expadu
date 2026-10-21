@@ -490,6 +490,13 @@
     cursor: pointer;
 }
 
+/* The mock's start icon size (wall.css .gt-start svg). */
+:is(.ev-details, .place-sheet) .gt-start svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+}
+
 :is(.ev-details, .place-sheet) .gt-none {
     margin: 0;
     font-size: 14px;
