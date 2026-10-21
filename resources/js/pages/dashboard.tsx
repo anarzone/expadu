@@ -141,9 +141,11 @@ export default function Today() {
         <AppLayout>
             <Head title="Today" />
             <h1 className="sr-only">Today, {firstName}</h1>
+            {/* The welcome and a deadline sit on the page, above the day's
+                surface (the mock's main). */}
+            {welcome && <TodayWelcome />}
+            <DeadlineStrip strip={paperwork?.strip ?? null} />
             <div className="today-workspace">
-                {welcome && <TodayWelcome />}
-                <DeadlineStrip strip={paperwork?.strip ?? null} />
                 {/* Phones read one column in priority order; wider screens
                     keep the day on the left and what's next on the right.
                     The elements themselves move, so reading, keyboard and

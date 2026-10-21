@@ -22,6 +22,22 @@
     },
     "pairs": [
         {
+            "name": "workspace",
+            "mock": ".today-workspace",
+            "app": ".today-workspace",
+            "widths": [768, 1280, 1440, 1512],
+            "ignore": ["h"],
+            "pixels": false
+        },
+        {
+            "name": "workspace (phone)",
+            "mock": ".today-workspace",
+            "app": ".today-workspace",
+            "widths": [360, 390],
+            "ignore": ["y", "h"],
+            "pixels": false
+        },
+        {
             "name": "welcome",
             "mock": ".today-welcome",
             "app": ".today-welcome",
@@ -157,5 +173,6 @@
     "seedNote": "The mock's first visit has nothing planned, saved, asked or recorded; the app account is new (mock:sample-day first-visit creates it with no plans at all).",
     "ignoreNote": "y below the welcome: City help sits above 'Settling in?' and Your day, and its departures and forecast are live (see today-city), so what follows sits at another height and fraction of a pixel; boxes (but y) and styles are compared.",
     "phoneNote": "Phones (360, 390): y is set aside for 2px. Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (reported to the design session). With y compared, every phone pair is exactly 2px lower.",
-    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot."
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot.",
+    "workspaceNote": "The day's surface starts below the welcome and any deadline, which sit on the page; its height follows the sections' content, so only its place and width are compared."
 }
