@@ -693,7 +693,8 @@ export function NearbyView({
             ) : null}
             {station.notices.slice(0, 2).map((notice) => {
                 const { headline, text } = noticeWords(notice);
-                const lines = `Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}${notice.source ? ` · ${notice.source}` : ''}`;
+                // Every notice is KVB's; its feed's own name ("kvb-betriebslage") isn't one to show.
+                const lines = `Line${notice.lines.length === 1 ? '' : 's'} ${notice.lines.join(', ')}${notice.source?.startsWith('kvb') ? ' · KVB' : ''}`;
 
                 return (
                     <div key={notice.id} className="nearby-banner is-labelled">
