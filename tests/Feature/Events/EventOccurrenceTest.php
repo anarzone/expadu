@@ -180,3 +180,19 @@ test('the model\'s chips, language and summary show only with the listing\'s evi
         ->and($shown['language'])->toBe('en')
         ->and($shown['summary'])->toBe('An English Stammtisch at 19:00.');
 });
+
+test('the English title leads only as checked; otherwise the listing\'s own, marked untranslated', function () {
+    $base = ['starts_at' => '2026-06-10 19:00:00', 'recurrence' => null, 'quality_score' => 0.9, 'source_lang' => 'de', 'source' => 'koeln.de'];
+    $checked = Event::factory()->create([...$base, 'title' => 'Jazzabend im Stadtgarten', 'description' => 'Jazz um 20 Uhr.', 'title_en' => 'Jazz evening at the Stadtgarten']);
+    $unbacked = Event::factory()->create([...$base, 'title' => 'Jazzabend', 'description' => 'Jazz im Stadtgarten.', 'title_en' => 'Jazz night, 3 bands']);
+    $presenter = app(EventOccurrencePresenter::class);
+    $start = CarbonImmutable::parse('2026-06-10 19:00', 'Europe/Berlin');
+
+    expect($presenter->present($checked, $start, null))
+        ->title->toBe('Jazz evening at the Stadtgarten')
+        ->title_original->toBe('Jazzabend im Stadtgarten')
+        ->title_translated->toBeTrue()
+        ->and($presenter->present($unbacked, $start, null))
+        ->title->toBe('Jazzabend') // "3 bands" isn't in the listing
+        ->title_translated->toBeFalse();
+});

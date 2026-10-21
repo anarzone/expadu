@@ -339,7 +339,19 @@
         font-size: clamp(20px, 12.4cqi, 60px);
     }
 }
-.pp-translation {
+/* The listing's own title, behind the English one (hover shows it). */
+.pp-original {
+    display: inline-flex;
+    margin-left: 0.2em;
+    color: var(--pp-soft);
+    vertical-align: 0.15em;
+}
+.pp-original svg {
+    width: 16px;
+    height: 16px;
+}
+/* An untranslated title says it's the listing's own. */
+.pp-title-note {
     margin-top: 6px;
     color: var(--pp-soft);
     font-size: var(--text-small);

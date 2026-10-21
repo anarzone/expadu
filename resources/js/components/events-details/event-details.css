@@ -251,6 +251,32 @@
     line-height: 1.2;
 }
 
+/* The title's small icon: the listing's own title, on tap or hover. */
+.evd-original-toggle {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    margin: -6px 0 -6px 2px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: none;
+    color: inherit;
+    opacity: 0.8;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.evd-original-toggle[aria-expanded='true'] {
+    opacity: 1;
+}
+
+.evd-original-toggle svg {
+    width: 20px;
+    height: 20px;
+}
+
 .evd-translation {
     display: flex;
     flex-direction: column;
