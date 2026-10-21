@@ -8,6 +8,7 @@ use App\Bureaucracy\Processes\ReconcileProcesses;
 use App\Models\ActiveTrip;
 use App\Models\Task;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
 /** One reviewed fixture card that applies to everyone, with two documents to bring. */
@@ -111,13 +112,16 @@ function tripUnderWay(User $user): void
 }
 
 test('🔒 on the way, Composer answers from the asker\'s own trip, never another account\'s', function () {
+    // A fixed clock: the trip's times and the expected one are read at different moments,
+    // which can fall either side of a minute.
+    $this->travelTo(CarbonImmutable::parse('2026-10-21 14:00', 'Europe/Berlin'));
     $traveller = User::factory()->onboarded()->create();
     tripUnderWay($traveller);
 
     $this->actingAs($traveller);
     $reply = askComposer($this, 'Where do I get off?');
     expect($reply)->kind->toBe('trip')->request->toBe('onway')
-        ->title->toBe('Get off at Mülheim Wiener Platz at '.now('Europe/Berlin')->addMinutes(32)->format('H:i').'.')
+        ->title->toBe('Get off at Mülheim Wiener Platz at 14:32.')
         ->and($reply['trip'])->link->toBe('trip')
         ->and($reply['trip']['for']['place'])->toBe('Private appointment');
 
