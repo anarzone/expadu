@@ -186,7 +186,7 @@ export function TimePicker({
                 <button
                     ref={trigger}
                     type="button"
-                    aria-label={`${label} time ${value}`}
+                    aria-label={`${label} time ${value || 'not chosen'}`}
                     aria-haspopup="dialog"
                     aria-expanded={open}
                     aria-controls={id}
@@ -198,7 +198,7 @@ export function TimePicker({
                         setTyping(true);
                     }}
                 >
-                    {value}
+                    {value || 'Choose'}
                     <IconChevronDown size={12} />
                 </button>
             )}

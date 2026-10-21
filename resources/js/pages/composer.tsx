@@ -202,8 +202,9 @@ export default function ComposerPage({
     const [destination, setDestination] = useState<Destination | null>(null);
     const [appointmentName, setAppointmentName] = useState('');
     const [appointmentLocation, setAppointmentLocation] = useState('');
-    const [appointmentStart, setAppointmentStart] = useState('10:00');
-    const [appointmentEnd, setAppointmentEnd] = useState('11:00');
+    // The person's own times: nothing is chosen until they choose it.
+    const [appointmentStart, setAppointmentStart] = useState('');
+    const [appointmentEnd, setAppointmentEnd] = useState('');
     const [pendingText, setPendingText] = useState('');
     const [newBelow, setNewBelow] = useState(false);
     const root = useRef<HTMLDivElement>(null);
@@ -1661,7 +1662,12 @@ export default function ComposerPage({
                                 </p>
                                 <button
                                     className="composer-primary"
-                                    disabled={!!busy || !appointmentName.trim()}
+                                    disabled={
+                                        !!busy ||
+                                        !appointmentName.trim() ||
+                                        !appointmentStart ||
+                                        !appointmentEnd
+                                    }
                                 >
                                     {busy ? (
                                         <ComposerLoading compact />

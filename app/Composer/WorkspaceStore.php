@@ -280,7 +280,7 @@ class WorkspaceStore
                     $this->require($candidate->fixedStart->equalTo($startAt), 'fixed_time', "{$candidate->name} has a fixed time.");
                     $endAt = $candidate->fixedStart->addMinutes($candidate->typicalDurationMin);
                 }
-                $this->require(app(PlanCatalogue::class)->available($candidate, Constraints::fromArray($plan['constraints']), $startAt, $endAt), 'outside_hours', "{$candidate->name} isn’t listed as open then.");
+                $this->require(app(PlanCatalogue::class)->available($candidate, Constraints::fromArray($plan['constraints']), $startAt, $endAt), 'outside_hours', $this->closedThen($candidate));
                 $slot = (new PlanSlot($candidate, $startAt, $endAt, 0))->toArray();
                 if ($input['action'] === 'replace') {
                     $displaced = $slots[$index];
@@ -620,6 +620,18 @@ class WorkspaceStore
                 $conversation['title'] = Str::limit($text, 64);
             }
         }
+    }
+
+    /** Why a place can't go in then: its listed hours, or, when it lists none, the usual hours it's planned within. */
+    private function closedThen(Candidate $candidate): string
+    {
+        if (! $candidate->hoursAssumed) {
+            return "{$candidate->name} isn’t listed as open then.";
+        }
+
+        return $candidate->opensAt !== null && $candidate->closesAt !== null
+            ? "Opening hours aren’t listed for {$candidate->name}, so Composer plans it between {$candidate->opensAt->format('H:i')} and {$candidate->closesAt->format('H:i')}, as is usual for its kind. Choose a time then."
+            : "Opening hours aren’t listed for {$candidate->name}, so Composer can’t plan it for that time.";
     }
 
     private function weekday(string $date): string

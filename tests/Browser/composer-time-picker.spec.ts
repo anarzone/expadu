@@ -10,7 +10,10 @@ test('time picker closes from its trigger without changing the selected time', a
         .getByRole('button', { name: 'Add appointment' })
         .click();
     const form = page.getByRole('dialog', { name: 'Add an appointment' });
-    const trigger = form.getByRole('button', { name: 'Until time 11:00' });
+    // Nothing is chosen until the person chooses it.
+    const trigger = form.getByRole('button', {
+        name: 'Until time not chosen',
+    });
     const picker = page.getByRole('dialog', { name: 'Choose until time' });
 
     await trigger.click();
@@ -30,7 +33,7 @@ test('wheel animation cannot replace a chosen hour or an independently chosen mi
         .getByRole('button', { name: 'Add appointment' })
         .click();
     const form = page.getByRole('dialog', { name: 'Add an appointment' });
-    await form.getByRole('button', { name: 'Until time 11:00' }).click();
+    await form.getByRole('button', { name: 'Until time not chosen' }).click();
     const picker = page.getByRole('dialog', { name: 'Choose until time' });
     const hours = picker.getByRole('listbox', { name: 'Until hours' });
     const minutes = picker.getByRole('listbox', { name: 'Until minutes' });
@@ -44,7 +47,7 @@ test('wheel animation cannot replace a chosen hour or an independently chosen mi
         wheel.dispatchEvent(new Event('scroll'));
     });
     await page.clock.runFor(300);
-    const selected = form.getByRole('button', { name: 'Until time 12:01' });
+    const selected = form.getByRole('button', { name: 'Until time 01:01' });
     await expect(selected).toBeVisible();
     await picker.getByRole('button', { name: 'Done', exact: true }).click();
     await expect(picker).not.toBeVisible();
@@ -52,7 +55,7 @@ test('wheel animation cannot replace a chosen hour or an independently chosen mi
 
     await selected.click();
     await expect(
-        hours.getByRole('option', { name: '12', exact: true }),
+        hours.getByRole('option', { name: '01', exact: true }),
     ).toHaveAttribute('aria-selected', 'true');
     await expect(
         minutes.getByRole('option', { name: '01', exact: true }),
