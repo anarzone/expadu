@@ -1,6 +1,6 @@
 <?php
 
-use App\Composer\OpenAiCompatiblePromptParser;
+use App\Composer\AnthropicPromptParser;
 use App\Models\BureaucracyProcessingConsent;
 use App\Models\User;
 use App\Privacy\ProcessingConsentStore;
@@ -10,14 +10,22 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
 use Tests\Support\ExternalProcessingFixtures;
 
+/** An Anthropic Messages reply holding one forced route_prompt tool call. */
+function routeReply(array $input): array
+{
+    return [
+        'id' => 'msg_1', 'type' => 'message', 'role' => 'assistant', 'model' => 'synthetic-parser', 'stop_reason' => 'tool_use',
+        'content' => [['type' => 'tool_use', 'id' => 'toolu_1', 'name' => 'route_prompt', 'input' => $input]],
+        'usage' => ['input_tokens' => 120, 'output_tokens' => 40],
+    ];
+}
+
 beforeEach(function () {
     config()->set('services.llm', [
-        'driver' => 'openai', 'base_url' => 'https://processor.example.test', 'model' => 'synthetic-parser', 'key' => 'synthetic',
+        'driver' => 'anthropic', 'base_url' => 'https://processor.example.test', 'model' => 'synthetic-parser', 'key' => 'synthetic',
         'processor_name' => 'Synthetic processor', 'processor_privacy_url' => 'https://processor.example.test/privacy', 'prompt_version' => 'test.1',
     ]);
-    Http::fake(['processor.example.test/*' => Http::response(['choices' => [['message' => ['tool_calls' => [[
-        'function' => ['name' => 'route_prompt', 'arguments' => json_encode(['intent' => 'bureaucracy_q', 'query' => 'registration'])],
-    ]]]]]])]);
+    Http::fake(['processor.example.test/*' => Http::response(routeReply(['intent' => 'bureaucracy_q', 'query' => 'registration']))]);
     $this->actingAs(User::factory()->onboarded()->create());
 });
 
@@ -73,16 +81,14 @@ test('an identical parser retry preserves its original resolved time window', fu
     $this->travelTo('2026-09-08 12:00:00 Europe/Berlin');
     // Different synthetic host avoids an earlier registered fake for this test.
     config()->set('services.llm.base_url', 'https://time-engine.invalid');
-    Http::fake(['time-engine.invalid/*' => Http::response(['choices' => [['message' => ['tool_calls' => [[
-        'function' => ['name' => 'route_prompt', 'arguments' => json_encode([
-            'intent' => 'plan_day', 'window_start' => '2026-09-08T12:00:00+02:00', 'window_end' => '2026-09-08T15:00:00+02:00',
-        ])],
-    ]]]]]])]);
+    Http::fake(['time-engine.invalid/*' => Http::response(routeReply([
+        'intent' => 'plan_day', 'window_start' => '2026-09-08T12:00:00+02:00', 'window_end' => '2026-09-08T15:00:00+02:00',
+    ]))]);
     $input = ['text' => 'A plan from now', 'processing' => ExternalProcessingFixtures::acceptance(ProcessingPurpose::ComposerParse)];
     $profile = app(ProfileEngine::class)->build(auth()->user());
     $permit = app(ProcessingConsentStore::class)->grant(auth()->user(), ProcessingPurpose::ComposerParse,
-        OpenAiCompatiblePromptParser::processingContext($input['text'], $profile), $input['processing']);
-    $parser = app(OpenAiCompatiblePromptParser::class);
+        AnthropicPromptParser::processingContext($input['text'], $profile), $input['processing']);
+    $parser = app(AnthropicPromptParser::class);
     $first = $parser->parse($input['text'], $profile, CarbonImmutable::parse('2026-09-08 12:00:00 Europe/Berlin'), $permit)->toArray();
     $this->travel(1)->minutes();
     $second = $parser->parse($input['text'], $profile, CarbonImmutable::parse('2026-09-08 12:01:00 Europe/Berlin'), $permit)->toArray();

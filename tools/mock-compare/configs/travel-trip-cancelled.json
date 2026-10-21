@@ -1,0 +1,215 @@
+{
+    "name": "travel-trip-cancelled",
+    "clock": "2026-09-30T13:10:00+02:00",
+    "widths": [
+        360,
+        390,
+        768,
+        1280,
+        1440,
+        1512
+    ],
+    "height": 900,
+    "tolerance": 0.5,
+    "mock": {
+        "url": "/dev/design/departures-next/?scenario=cancelled",
+        "wait": "#next-trip .trip-line-row",
+        "before": [
+            {
+                "click": "#departures > .trip-line .trip-line-more"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "app": {
+        "url": "/timetable",
+        "wait": "#departures > .trip-line .trip-line-row",
+        "login": {
+            "email": "e2e@expadu.test",
+            "password": "e2e-password"
+        },
+        "cookies": {
+            "mock_clock": "2026-09-30T13:10:00%2B02:00",
+            "mock_scenario": "cancelled"
+        },
+        "before": [
+            {
+                "click": "#departures > .trip-line .trip-line-more"
+            },
+            {
+                "wait": 400
+            }
+        ]
+    },
+    "note": "Your tram is cancelled (the mock's ?scenario=cancelled), with the way open: MockSample\\SampleRoutes marks the 13:14 cancelled on live times under the local mock_scenario cookie, so the card says \"13:14 cancelled\" and takes the 13:24.",
+    "pairs": [
+        {
+            "name": "card",
+            "mock": "#departures > .trip-line",
+            "app": "#departures > .trip-line",
+            "ignore": [
+                "h"
+            ],
+            "reason": "The app lists one other way (the cancelled 13:14) where the mock's sample lists two placeholder rows (see other ways), so the opened card is one row shorter."
+        },
+        {
+            "name": "card row",
+            "mock": "#departures > .trip-line .trip-line-row",
+            "app": "#departures > .trip-line .trip-line-row"
+        },
+        {
+            "name": "ring",
+            "mock": "#departures > .trip-line .trip-ring",
+            "app": "#departures > .trip-line .trip-ring"
+        },
+        {
+            "name": "ring mark",
+            "mock": "#departures > .trip-line .trip-ring strong",
+            "app": "#departures > .trip-line .trip-ring strong"
+        },
+        {
+            "name": "title",
+            "mock": "#departures > .trip-line .trip-title strong",
+            "app": "#departures > .trip-line .trip-title strong"
+        },
+        {
+            "name": "plan and time",
+            "mock": "#departures > .trip-line .trip-title span",
+            "app": "#departures > .trip-line .trip-title span"
+        },
+        {
+            "name": "flags",
+            "mock": "#departures > .trip-line .trip-flags",
+            "app": "#departures > .trip-line .trip-flags"
+        },
+        {
+            "name": "cancelled chip",
+            "mock": "#departures > .trip-line .trip-flags .tl-chip",
+            "app": "#departures > .trip-line .trip-flags .tl-chip"
+        },
+        {
+            "name": "facts",
+            "mock": "#departures > .trip-line .trip-facts",
+            "app": "#departures > .trip-line .trip-facts"
+        },
+        {
+            "name": "fact: the ride",
+            "mock": "#departures > .trip-line .trip-fact",
+            "app": "#departures > .trip-line .trip-fact",
+            "index": 0
+        },
+        {
+            "name": "fact: there",
+            "mock": "#departures > .trip-line .trip-fact",
+            "app": "#departures > .trip-line .trip-fact",
+            "index": 1
+        },
+        {
+            "name": "fact: spare",
+            "mock": "#departures > .trip-line .trip-fact",
+            "app": "#departures > .trip-line .trip-fact",
+            "index": 2
+        },
+        {
+            "name": "fact label",
+            "mock": "#departures > .trip-line .trip-fact-label",
+            "app": "#departures > .trip-line .trip-fact-label",
+            "index": 1
+        },
+        {
+            "name": "fact value",
+            "mock": "#departures > .trip-line .trip-fact strong",
+            "app": "#departures > .trip-line .trip-fact strong",
+            "index": 1
+        },
+        {
+            "name": "fact sub",
+            "mock": "#departures > .trip-line .trip-fact small",
+            "app": "#departures > .trip-line .trip-fact small",
+            "index": 1
+        },
+        {
+            "name": "ride badge",
+            "mock": "#departures > .trip-line .trip-fact .tl-line",
+            "app": "#departures > .trip-line .trip-fact .tl-line"
+        },
+        {
+            "name": "I'm on my way",
+            "mock": "#departures > .trip-line .next-trip-go",
+            "app": "#departures > .trip-line .next-trip-go"
+        },
+        {
+            "name": "show the way toggle",
+            "mock": "#departures > .trip-line .trip-line-more",
+            "app": "#departures > .trip-line .trip-line-more"
+        },
+        {
+            "name": "the way (open)",
+            "mock": "#departures > .trip-line .way-strip",
+            "app": "#departures > .trip-line .way-strip"
+        },
+        {
+            "name": "way: start",
+            "mock": "#departures > .trip-line .way-node.is-start",
+            "app": "#departures > .trip-line .way-node.is-start"
+        },
+        {
+            "name": "way: boarding stop",
+            "mock": "#departures > .trip-line .way-node.is-stop",
+            "app": "#departures > .trip-line .way-node.is-stop",
+            "index": 0
+        },
+        {
+            "name": "way: ride",
+            "mock": "#departures > .trip-line .way-ride",
+            "app": "#departures > .trip-line .way-ride"
+        },
+        {
+            "name": "way: there",
+            "mock": "#departures > .trip-line .way-node.is-there",
+            "app": "#departures > .trip-line .way-node.is-there"
+        },
+        {
+            "name": "why (open)",
+            "mock": "#departures > .trip-line .trip-line-note",
+            "app": "#departures > .trip-line .trip-line-note",
+            "contentDiffers": true,
+            "reason": "How it's known: the mock's sample line is \"The stop display says „Fällt aus“, which means cancelled (sample)\"; the app reads it from the live times, not the stop display, so it says that and what the display shows."
+        },
+        {
+            "name": "other ways (open)",
+            "mock": "#departures > .trip-line .trip-line-others",
+            "app": "#departures > .trip-line .trip-line-others",
+            "contentDiffers": true,
+            "ignore": [
+                "h"
+            ],
+            "reason": "Other ways: the app lists the sample's other way as the router answers it; the mock's \"Bike or walk · Times aren't in the sample\" and \"Taxi\" rows are its sample's placeholders, not app copy. The app's is the cancelled 13:14 itself, so one row, not two."
+        },
+        {
+            "name": "other ways heading",
+            "mock": "#departures > .trip-line .trip-line-others h3",
+            "app": "#departures > .trip-line .trip-line-others h3"
+        },
+        {
+            "name": "other way",
+            "mock": "#departures > .trip-line .trip-line-others li",
+            "app": "#departures > .trip-line .trip-line-others li",
+            "index": 0,
+            "contentDiffers": true,
+            "reason": "Other ways: the app lists the sample's other way as the router answers it; the mock's \"Bike or walk · Times aren't in the sample\" and \"Taxi\" rows are its sample's placeholders, not app copy."
+        },
+        {
+            "name": "compare link (open)",
+            "mock": "#departures > .trip-line .trip-line-others .text-action",
+            "app": "#departures > .trip-line .trip-line-others .text-action",
+            "ignore": [
+                "y"
+            ],
+            "reason": "Below the other ways, one row fewer in the app (see other ways). Moved by that row, it lands on another sub-pixel offset: same link.",
+            "pixels": false
+        }
+    ]
+}

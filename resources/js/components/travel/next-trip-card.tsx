@@ -292,9 +292,24 @@ export function NextTripCard({
     const minutes = leaveIn ?? trip.leave_in_min ?? 0;
     const late = trip.status === 'late';
     const tight = trip.status === 'tight';
-    const tone: TripTone = minutes <= 0 || late || tight ? 'attention' : 'calm';
-    const ring: TripRingState = { kind: 'trip', leaveIn: minutes };
-    const title = minutes <= 0 ? 'Leave now' : `Leave at ${trip.leave_time}`;
+    // The way it would have taken is gone (cancelled, or missed): the card
+    // leads with the one to take instead.
+    const gone = trip.gone?.ride ? trip.gone : null;
+    const tone: TripTone =
+        gone?.kind === 'cancelled'
+            ? 'conflict'
+            : gone || minutes <= 0 || late || tight
+              ? 'attention'
+              : 'calm';
+    const ring: TripRingState = gone
+        ? { kind: 'alert' }
+        : { kind: 'trip', leaveIn: minutes };
+    const title =
+        gone && ride
+            ? `Take the ${ride.depart_time}`
+            : minutes <= 0
+              ? 'Leave now'
+              : `Leave at ${trip.leave_time}`;
     const spare = trip.spare_min ?? 0;
 
     const facts = [
@@ -357,9 +372,27 @@ export function NextTripCard({
         ),
     ];
 
-    const skipped = trip.skipped?.ride
-        ? `Your ${trip.skipped.ride.time} has only ${trip.skipped.spare_min}\u00a0min spare${compact ? '' : ' · listed under Other ways'}`
+    const skipped =
+        trip.skipped?.ride && !gone
+            ? `Your ${trip.skipped.ride.time} has only ${trip.skipped.spare_min}\u00a0min spare${compact ? '' : ' · listed under Other ways'}`
+            : null;
+    // A lift out at one of the way's stations, as KVB files it: which
+    // platform it serves isn't matched to the way, and no step-free need is
+    // assumed, so the card keeps its title and facts; the chip says it, the
+    // way says just that.
+    const liftStops = [
+        ...new Set((trip.lifts ?? []).map((l) => stopName(l.stop, trip.city))),
+    ];
+    const lift = liftStops.length
+        ? `${liftStops.length > 1 ? 'Lifts' : 'A lift'} at ${liftStops.join(' and ')} ${liftStops.length > 1 ? 'are' : 'is'} out of order; KVB doesn’t say if ${liftStops.length > 1 ? 'they’re' : 'it’s'} on your way.`
         : null;
+    // Why, with the way: how it's known.
+    const goneNote =
+        gone?.kind === 'cancelled'
+            ? 'The live times mark it cancelled; on the stop display it says „Fällt aus“.'
+            : gone?.kind === 'missed'
+              ? `We noticed because your location didn’t change after ${gone.leave_time}. Indoors this can be wrong.`
+              : null;
 
     // Timetable times only: said first, over the facts, so the ride tile
     // keeps its boarding stop (departures-next, 20 Oct 2026).
@@ -376,6 +409,28 @@ export function NextTripCard({
         late ? (
             <TravelChip key="late" kind="attention" icon={icons.clock}>
                 Nothing gets there by {trip.target.start_time}
+            </TravelChip>
+        ) : null,
+        gone?.kind === 'cancelled' ? (
+            <TravelChip
+                key="gone"
+                kind="conflict"
+                icon={<TravelIcon name="alert" />}
+            >
+                {`${gone.ride!.time} cancelled`}
+            </TravelChip>
+        ) : gone?.kind === 'missed' ? (
+            <TravelChip key="gone" kind="attention" icon={icons.clock}>
+                {`Missed the ${gone.ride!.time}`}
+            </TravelChip>
+        ) : null,
+        lift ? (
+            <TravelChip
+                key="lift"
+                kind="conflict"
+                icon={<TravelIcon name="lift" />}
+            >
+                Lift out of order
             </TravelChip>
         ) : null,
     ].filter(Boolean);
@@ -407,6 +462,14 @@ export function NextTripCard({
                 compact ? undefined : (
                     <>
                         <WayStrip nodes={wayNodes(journey, trip.city)} />
+                        {[goneNote, lift].map((line) =>
+                            line ? (
+                                <p key={line} className="trip-line-note">
+                                    {icons.unsure}
+                                    <span>{line}</span>
+                                </p>
+                            ) : null,
+                        )}
                         <OtherWays trip={trip} onCompare={onPlan} />
                     </>
                 )

@@ -30,11 +30,6 @@ Route::get('onboarding', [OnboardingController::class, 'index'])->name('onboardi
 Route::post('onboarding/complete', [OnboardingController::class, 'complete'])->name('onboarding.complete');
 Route::post('onboarding/restart', [OnboardingController::class, 'restart'])->name('onboarding.restart');
 
-// Card showcase — dev-only reference for ContentCard variants
-if (! app()->environment('production')) {
-    Route::get('dev/cards', fn () => Inertia::render('dev/cards'))->name('dev.cards');
-}
-
 // The shared primitives (components/ui), for checking against the mock —
 // local + staging only, like the design-system reference below.
 Route::get('dev/primitives', function () {

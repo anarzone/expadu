@@ -16,6 +16,7 @@ use App\Transit\Dto\JourneyResult;
 use App\Transit\Dto\Leg;
 use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 
 /**
@@ -137,6 +138,28 @@ function personalSlot(string $id, string $date, string $start, string $end, arra
 }
 
 const WIENER_PLATZ = ['lat' => 50.96103, 'lng' => 7.0048];
+
+/** One location ping as the app stores it for $user, at a Berlin time on 19 Oct. */
+function storedPing(User $user, string $time, float $lat = 50.9416, float $lng = 6.9300): void
+{
+    $at = CarbonImmutable::parse("2026-10-19 {$time}", 'Europe/Berlin');
+    Redis::zadd("location_history:{$user->id}", $at->getTimestamp(), json_encode(['lat' => $lat, 'lng' => $lng, 'accuracy' => 15, 'at' => $at->toIso8601String()]));
+}
+
+/**
+ * At 13:14, the official 14:00 appointment's way that keeps the margin left
+ * at 13:10 (the person 1.3 km from Neumarkt, where it boards); the 13:20 is
+ * still to come.
+ */
+function missedSetup(): User
+{
+    CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-10-19 13:14', 'Europe/Berlin'));
+    dayRoutes()->arriveBy = [ride('2026-10-19', '13:10', '13:42'), ride('2026-10-19', '13:20', '13:52')];
+    $user = User::factory()->onboarded()->create();
+    confirmedDay($user, '2026-10-19', [personalSlot('personal:x', '2026-10-19', '14:00', '14:30', ['type' => 'appointment', 'id' => 'appointment:7'] + WIENER_PLATZ)]);
+
+    return $user;
+}
 
 beforeEach(function () {
     CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-10-19 13:10', 'Europe/Berlin'));
@@ -431,4 +454,50 @@ test('a recorded Paperwork appointment is an official plan with its own place an
         ->assertJsonPath('next_trip.target.id', fn (string $id) => str_starts_with($id, 'appointment:'))
         ->assertJsonPath('next_trip.margin_min', 10)
         ->assertJsonPath('next_trip.leave_time', '13:14');
+});
+
+test('a way is missed only when the person\'s own fresh pings stayed at the start, read and never stored', function () {
+    $user = missedSetup();
+    storedPing($user, '13:12');
+    storedPing($user, '13:14');
+
+    $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9416&lng=6.9300')
+        ->assertJsonPath('next_trip.leave_time', '13:20')
+        ->assertJsonPath('next_trip.gone.kind', 'missed')
+        ->assertJsonPath('next_trip.gone.leave_time', '13:10')
+        ->assertJsonPath('next_trip.gone.ride.time', '13:10');
+    expect(Redis::zcard("location_history:{$user->id}"))->toBe(2);
+});
+
+test('another account\'s pings never make a missed way', function () {
+    $user = missedSetup();
+    $other = User::factory()->create();
+    storedPing($other, '13:12');
+    storedPing($other, '13:14');
+
+    $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9416&lng=6.9300')
+        ->assertJsonPath('next_trip.leave_time', '13:20')
+        ->assertJsonPath('next_trip.gone', null);
+});
+
+test('with location sharing off no way is called missed', function () {
+    $user = missedSetup();
+    $user->userSetting()->create(['settings' => ['share_location' => false]]);
+    storedPing($user, '13:12');
+    storedPing($user, '13:14');
+
+    $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9416&lng=6.9300')
+        ->assertJsonPath('next_trip.gone', null);
+});
+
+test('one old ping is not enough to call a way missed', function () {
+    $user = missedSetup();
+    // Before the leave time, then just after it: neither says where they are now.
+    storedPing($user, '13:05');
+    $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9416&lng=6.9300')
+        ->assertJsonPath('next_trip.gone', null);
+
+    storedPing($user, '13:11');
+    $this->actingAs($user)->getJson('/api/day?date=2026-10-19&lat=50.9416&lng=6.9300')
+        ->assertJsonPath('next_trip.gone', null);
 });
