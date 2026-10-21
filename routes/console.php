@@ -122,5 +122,8 @@ Schedule::command('queue:prune-failed --hours=168')->dailyAt('03:50')->withoutOv
 
 Schedule::command('controls:synthetic-disruption')->everyThirtyMinutes()->withoutOverlapping();
 
+// Place enrichment batches (places:enrich submits them): apply finished results.
+Schedule::command('places:enrich-collect')->everyTenMinutes()->withoutOverlapping()->onOneServer()->runInBackground();
+
 // Model-ready place features, rebuilt from the effective facts each night.
 Schedule::command('places:build-features')->dailyAt('04:15')->withoutOverlapping()->onOneServer();
