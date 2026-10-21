@@ -70,6 +70,7 @@ export type Station = {
         lines: string[];
         source: string | null;
         since: string | null;
+        brief?: NoticeBrief | null;
     }[];
     /** A `?stop=` name KVB doesn't know: the closest station shows instead. */
     unknown_stop?: string | null;
@@ -81,3 +82,23 @@ export type FavouriteStop = {
     lng: number | null;
     lines: string[];
 };
+
+/**
+ * KVB's notice in plain English (App\Transit\NoticeBriefWriter), when one
+ * is written: Travel shows it in place of KVB's own title. Its impact isn't
+ * shown (the mock draws no label).
+ */
+export type NoticeBrief = {
+    headline: string;
+    text: string | null;
+    impact?: string | null;
+};
+
+/** A notice's words: the brief's headline and text, else KVB's own title. */
+export const noticeWords = (notice: {
+    title: string;
+    brief?: NoticeBrief | null;
+}): { headline: string; text: string | null } =>
+    notice.brief
+        ? { headline: notice.brief.headline, text: notice.brief.text }
+        : { headline: notice.title, text: null };

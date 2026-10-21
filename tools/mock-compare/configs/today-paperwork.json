@@ -3,10 +3,11 @@
     "seed": "php artisan mock:sample-day everyday --email=<account> && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\TravelSeeder\" && E2E_EMAIL=<account> php artisan db:seed --class=\"Database\\Seeders\\MockSample\\PaperworkSeeder\"",
     "clock": "2026-09-30T13:10:00+02:00",
     "widths": [360, 390, 768, 1280, 1440, 1512],
-    "contentNote": "Paperwork's own words where the mock's sample differs: 'Visa expires tomorrow' (the mock says 'D visa'), the engine's next step 'Prepare the evidence for your first Blue Card application' (the mock: 'Submit your Blue Card application' / 'Review your documents'), and 'Your records' without the mock's '· Sample'. On phones the engine's longer next step wraps to more lines, so the strip is taller and its icons sit lower.",
+    "contentNote": "Paperwork's own words where the mock's sample differs: 'Visa expires tomorrow' (the mock says 'D visa'), the engine's next step 'Prepare the evidence for your first Blue Card application' (the mock: 'Submit your Blue Card application' / 'Review your documents'), and 'Your records' without the mock's '· Sample'.",
     "mock": {
         "url": "/dev/design/today-next/brief/?view=everyday",
-        "wait": ".deadline-strip"
+        "wait": ".deadline-strip",
+        "screenshotStyle": "#shell, #shell *, #composer-tray, #composer-tray * { visibility: hidden !important; }"
     },
     "app": {
         "url": "/dashboard",
@@ -17,7 +18,8 @@
         "login": {
             "email": "e2e@expadu.test",
             "password": "e2e-password"
-        }
+        },
+        "screenshotStyle": ".shell, .shell *, .shell-composer-round, .shell-composer-round *, .fixed.right-4.bottom-24, .fixed.right-4.bottom-24 * { visibility: hidden !important; }"
     },
     "pairs": [
         {
@@ -129,14 +131,14 @@
             "app": "a.deadline-strip",
             "contentDiffers": true,
             "widths": [360, 390],
-            "ignore": ["h", "y"]
+            "ignore": ["y"]
         },
         {
             "name": "deadline symbol (phone)",
             "mock": ".deadline-symbol",
             "app": ".deadline-symbol",
             "widths": [360, 390],
-            "ignore": ["h", "y"],
+            "ignore": ["y"],
             "contentDiffers": true
         },
         {
@@ -144,7 +146,7 @@
             "mock": ".deadline-copy strong",
             "app": ".deadline-copy strong",
             "contentDiffers": true,
-            "ignore": ["h", "w", "y"],
+            "ignore": ["w", "y"],
             "widths": [360, 390]
         },
         {
@@ -153,16 +155,18 @@
             "app": ".deadline-copy small",
             "contentDiffers": true,
             "widths": [360, 390],
-            "ignore": ["h", "y"]
+            "ignore": ["y"]
         },
         {
             "name": "deadline arrow (phone)",
             "mock": "a.deadline-strip > svg",
             "app": "a.deadline-strip > svg",
             "widths": [360, 390],
-            "ignore": ["h", "y"],
+            "ignore": ["y"],
             "contentDiffers": true
         }
     ],
-    "subpixelNote": "The engine's next step is two lines where the mock's is one. The panel's copy is centred beside the ring, so the process title sits higher (its y is aside) and the ring and Your situation sit at other fractions of a pixel, where their text rasterises differently: boxes and styles are exact."
+    "subpixelNote": "The engine's next step is two lines where the mock's is one. The panel's copy is centred beside the ring, so the process title sits higher (its y is aside) and the ring and Your situation sit at other fractions of a pixel, where their text rasterises differently: boxes and styles are exact.",
+    "phoneNote": "Phones (360, 390): y is set aside for 2px. Today's mock header is 52px on phones, where the shared shell's (and the mock's other pages', with body.today-header) is 54px, so everything below sits 2px higher in the mock (reported to the design session). With y compared, every phone pair is exactly 2px lower.",
+    "screenshotStyleReason": "Each side's shell (header, floating sections, Composer's button) is hidden while page elements are shot, so a phone's floating sections don't cover an element near the screen's foot."
 }

@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { rememberComposerOrigin } from '@/components/composer/frame';
 import {
     ComposerTray,
     openComposerTray,
@@ -22,10 +23,8 @@ import { useTracker } from '@/hooks/use-tracker';
 export default function AppShellLayout({ children }: { children: ReactNode }) {
     const { url, component } = usePage();
     const { track } = useTracker();
-    // The old Composer page is its own full-screen workspace with a heading
-    // row and a bottom text box, so it keeps the shell's header out until
-    // session 2 rebuilds it on the shared header (CO2), as the mock shows.
-    const bare = component === 'composer';
+    // Composer's own page has its box already: there the tray is the page's box.
+    const onComposer = component === 'composer';
 
     // Keep the user's home Veedel current from background GPS (permission-
     // aware; never prompts on its own). The server throttles to real moves.
@@ -36,13 +35,16 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
         track('page_viewed', { page: window.location.pathname });
     }, [track, url]);
 
-    // ⌘K / Ctrl K opens Composer's tray from anywhere (Composer's own page
-    // has its box already).
+    // Composer's "Back to ‹page›" returns to the page you opened it from.
     useEffect(() => {
-        if (bare) {
-            return;
+        if (!onComposer) {
+            rememberComposerOrigin(url);
         }
+    }, [url, onComposer]);
 
+    // ⌘K / Ctrl K opens Composer's tray from anywhere (on Composer's own page,
+    // its box).
+    useEffect(() => {
         const onKey = (event: KeyboardEvent) => {
             if (
                 !(event.metaKey || event.ctrlKey) ||
@@ -60,18 +62,18 @@ export default function AppShellLayout({ children }: { children: ReactNode }) {
         document.addEventListener('keydown', onKey);
 
         return () => document.removeEventListener('keydown', onKey);
-    }, [bare]);
+    }, []);
 
     return (
         <>
             <a href="#main" className="skip-link">
                 Skip to content
             </a>
-            {!bare && <ShellHeader />}
+            <ShellHeader />
             {/* The trip you're on, on every page (Travel's own bar). */}
-            {!bare && <OnYourWayBar />}
+            <OnYourWayBar />
             {children}
-            <ComposerTray onComposer={bare} />
+            <ComposerTray onComposer={onComposer} />
             <Toaster />
         </>
     );

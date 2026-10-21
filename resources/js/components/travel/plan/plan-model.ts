@@ -1,6 +1,8 @@
 import type { DayItem, DayProjection } from '@/types/day';
 import type { Journey, JourneyLeg } from '@/types/transit';
 import { vehicleOf } from '../line-look';
+import { noticeWords } from '../nearby/types';
+import type { NoticeBrief } from '../nearby/types';
 import { stopName } from '../stop-name';
 import type { TravelIconName } from '../travel-icon';
 
@@ -60,7 +62,12 @@ export type PlanAnswer = {
     journeys: Journey[];
     from: { name: string; lat: number; lng: number };
     to: { name: string; lat: number; lng: number };
-    disruptions: { title: string; severity: string; lines: string[] }[];
+    disruptions: {
+        title: string;
+        severity: string;
+        lines: string[];
+        brief?: NoticeBrief | null;
+    }[];
     conditions?: {
         weather: { available: boolean; hours: WeatherHour[] };
         lifts: { known: boolean; by_journey: (LiftOut[] | null)[] };
@@ -373,7 +380,13 @@ export function checksFor(
             ? {
                   short: `${notices.length} notice${notices.length > 1 ? 's' : ''}`,
                   title: 'KVB notices',
-                  text: notices.map((n) => n.title).join(' · '),
+                  text: notices
+                      .map((n) => {
+                          const { headline, text } = noticeWords(n);
+
+                          return text ? `${headline}. ${text}` : headline;
+                      })
+                      .join(' · '),
                   icon: 'alert',
                   tone: 'attention',
               }

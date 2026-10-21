@@ -12,13 +12,16 @@ use App\Transit\Dto\Place;
 use Carbon\CarbonImmutable;
 
 /**
- * The mock's sample ways (prototype/dev/design/connected/sample-day.js: the
- * Blue Card appointment's trip) while the local mock clock is on, so
- * tools/mock-compare sees the mock's Leave now: Tram 4 from Neumarkt at
- * 13:14 or 13:24 to Wiener Platz, scheduled times. Routing has nothing for
- * a past day, so without this the trip couldn't be compared. Everything
- * else, and every request without the mock clock, goes to the real router.
- * Bound only in local (TravelServiceProvider).
+ * The mock's sample ways while the local mock clock is on, so
+ * tools/mock-compare sees the mock's trips. Routing has nothing for a past
+ * day, so without these they couldn't be compared:
+ * - the Blue Card appointment's trip (prototype/dev/design/connected/sample-day.js):
+ *   Tram 4 from Neumarkt at 13:14 or 13:24 to Wiener Platz, scheduled times;
+ * - the evening events' ways from Mülheim and Neumarkt (SampleEveningWays):
+ *   there by the start, leaving now, and back after the event, with the
+ *   direct walk and bike, each leg with its captured shape.
+ * Everything else, and every request without the mock clock, goes to the
+ * real router. Bound only in local (TravelServiceProvider).
  */
 final class SampleRoutes implements RouteService
 {
@@ -44,13 +47,101 @@ final class SampleRoutes implements RouteService
 
     public function plan(GeoPoint $from, GeoPoint $to, ?CarbonImmutable $departAt = null, int $max = 6, bool $arriveBy = false, bool $variety = false): JourneyResult
     {
-        if (! MockClock::active() || abs($to->lat - self::TO[0]) > 0.003 || abs($to->lng - self::TO[1]) > 0.005) {
+        $at = MockClock::at()?->setTimezone('Europe/Berlin');
+        if ($at === null) {
             return $this->routes->plan($from, $to, $departAt, $max, $arriveBy, $variety);
         }
+        $day = $at->format('Y-m-d');
 
-        $day = (MockClock::at() ?? CarbonImmutable::now())->setTimezone('Europe/Berlin')->format('Y-m-d');
+        $evening = self::evening($day, $from, $to, $departAt ?? $at, $arriveBy && $departAt !== null);
+        if ($evening !== null) {
+            return new JourneyResult($evening, 'transitous');
+        }
+        if (self::near($to, ...self::TO)) {
+            return new JourneyResult(self::ways($day, $from, $to), 'transitous');
+        }
 
-        return new JourneyResult(self::ways($day, $from, $to), 'transitous');
+        return $this->routes->plan($from, $to, $departAt, $max, $arriveBy, $variety);
+    }
+
+    /**
+     * An evening event's captured ways, as a router would answer: there by
+     * the time asked (arrive-by), else leaving from it; from the event, the
+     * ways back. Null when the trip isn't one of the sample's.
+     *
+     * @return list<Journey>|null
+     */
+    private static function evening(string $day, GeoPoint $from, GeoPoint $to, CarbonImmutable $at, bool $arriveBy): ?array
+    {
+        foreach (SampleEveningWays::TRIPS as $trip) {
+            if ($trip['date'] !== $day) {
+                continue;
+            }
+            [, $startLat, $startLng] = $trip['from'];
+            [, $venueLat, $venueLng] = $trip['to'];
+            if (self::near($from, $startLat, $startLng) && self::near($to, $venueLat, $venueLng)) {
+                $ways = $arriveBy ? $trip['arrive'] : [...$trip['now'], ...$trip['arrive']];
+                $direct = ['walk' => $trip['walk'], 'bike' => $trip['bike']];
+            } elseif (self::near($from, $venueLat, $venueLng) && self::near($to, $startLat, $startLng)) {
+                $ways = $trip['back'];
+                $direct = ['walk' => $trip['back_walk'], 'bike' => $trip['back_bike']];
+            } else {
+                continue;
+            }
+
+            $journeys = array_values(array_filter(
+                array_map(fn (array $way) => self::captured($day, $from, $to, ...$way), $ways),
+                fn (Journey $journey) => $arriveBy
+                    ? ! $journey->arriveAt->greaterThan($at)
+                    : ! $journey->departAt->lessThan($at->subMinute()),
+            ));
+            usort($journeys, fn (Journey $a, Journey $b) => $a->departAt <=> $b->departAt);
+
+            // The direct ways, as Transitous times them: there by the time
+            // asked (arrive-by), else leaving at it.
+            foreach ($direct as $mode => $way) {
+                if ($way !== null) {
+                    [$minutes, $shape] = $way;
+                    $leaves = $arriveBy ? $at->subMinutes($minutes) : $at;
+                    $journeys[] = new Journey(
+                        [new Leg($mode, new Place('', $from), new Place('', $to), $leaves, $leaves->addMinutes($minutes), $minutes, polyline: $shape)],
+                        $leaves, $leaves->addMinutes($minutes), $minutes, 0,
+                    );
+                }
+            }
+
+            return $journeys;
+        }
+
+        return null;
+    }
+
+    private static function near(GeoPoint $point, float $lat, float $lng): bool
+    {
+        return abs($point->lat - $lat) <= 0.003 && abs($point->lng - $lng) <= 0.005;
+    }
+
+    /**
+     * One captured way: its legs as the router gives them, scheduled times.
+     *
+     * @param  list<array{0: string, 1: ?string, 2: ?string, 3: string, 4: string, 5: string, 6: string, 7: ?int, 8: ?array{0: float, 1: float}, 9: ?array{0: float, 1: float}, 10: string}>  $legs
+     */
+    private static function captured(string $day, GeoPoint $from, GeoPoint $to, string $leave, string $there, array $legs): Journey
+    {
+        $at = fn (string $time) => CarbonImmutable::parse("{$day} {$time}", 'Europe/Berlin');
+        $last = count($legs) - 1;
+        $built = [];
+        foreach ($legs as $i => [$mode, $line, $towards, $fromName, $toName, $leaves, $arrives, $stops, $fromPoint, $toPoint, $shape]) {
+            $start = $i === 0 ? new Place('', $from) : new Place($fromName, new GeoPoint(...($fromPoint ?? [$from->lat, $from->lng])), kind: 'stop');
+            $end = $i === $last ? new Place('', $to) : new Place($toName, new GeoPoint(...($toPoint ?? [$to->lat, $to->lng])), kind: 'stop');
+            $ride = $mode !== 'walk';
+            $built[] = new Leg($mode, $start, $end, $at($leaves), $at($arrives), (int) $at($leaves)->diffInMinutes($at($arrives)),
+                $line, $towards, polyline: $shape !== '' ? $shape : null, stopsCount: $stops,
+                scheduledDepartAt: $ride ? $at($leaves) : null, scheduledArriveAt: $ride ? $at($arrives) : null);
+        }
+        $rides = count(array_filter($legs, fn (array $leg) => $leg[0] !== 'walk'));
+
+        return new Journey($built, $at($leave), $at($there), (int) $at($leave)->diffInMinutes($at($there)), max(0, $rides - 1));
     }
 
     /**

@@ -3810,11 +3810,6 @@
     color: var(--color-text-soft);
     font-size: var(--text-small);
 }
-:where(.travel-page)
-    .day-river
-    small:where(.trip-line *):where(:not(.trip-ring *)) {
-    color: var(--color-text-soft);
-}
 :where(.travel-page) .day-now-weather {
     display: flex;
     align-items: center;

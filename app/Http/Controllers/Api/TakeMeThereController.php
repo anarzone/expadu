@@ -193,6 +193,8 @@ class TakeMeThereController extends Controller
                 'title' => $d['title'] ?? '',
                 'severity' => $d['severity'] ?? 'minor',
                 'lines' => $d['affected_lines'] ?? [],
+                // KVB's notice in plain English, when one is written.
+                'brief' => $d['brief'] ?? null,
             ])
             ->values()
             ->all();
