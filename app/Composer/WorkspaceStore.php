@@ -116,8 +116,13 @@ class WorkspaceStore
                 $again = ($messages->last(fn ($message) => $message['role'] === 'assistant')['kind'] ?? null) === 'clarify';
                 $reply = $answers->answer($user, $asked['text'], $request, $s['plans'], $now, $again);
                 if ($reply === null) {
-                    // Not one it answers yet: the page's own reply for the kind (no checklist is a paperwork question).
-                    $kind = in_array($request['kind'], ['checklist', 'bureaucracy'], true) ? 'bureaucracy' : 'unknown';
+                    // Not one it answers yet: the page's own reply for the kind (no checklist is a
+                    // paperwork question; a trip it can't time is a journey to look up).
+                    $kind = match ($request['kind']) {
+                        'checklist', 'bureaucracy' => 'bureaucracy',
+                        'journey', 'onway' => 'journey',
+                        default => 'unknown',
+                    };
                     $this->message($s, 'assistant', self::REPLIES[$kind], ['kind' => $kind, 'query' => $asked['text']]);
                 } else {
                     $this->message($s, 'assistant', $reply['text'], $reply['extra'] + ['request' => $request['kind']]);

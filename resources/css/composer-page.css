@@ -1,12 +1,13 @@
 /* Composer — ported from the approved prototype (prototype/dev/design/composer-studio)
-   by a script, in the mock's own order, scoped to .composer-page so it cannot reach other
-   pages. Tokens come from resources/css/app.css (F1); the shell (header, menu) is the app
-   shell's. Regenerate rather than edit the ported part by hand. */
+   by tools/composer-css/port.py, in the mock's own order, scoped to .composer-page so it
+   cannot reach other pages. Tokens come from resources/css/app.css (F1); the shell (header,
+   menu) is the app shell's. Regenerate rather than edit the ported part by hand. */
 
 /* The prototype leaves some things to the browser's defaults, which the app's base reset
    changes: a button's padding (1px 6px), an icon's flow (inline, on the baseline) and a
-   border's style and colour (none, and the text's colour, until a rule sets them). Give them back in the base layer: every
-   rule below and every utility class still wins. */
+   border's style and colour (none, and the text's colour, until a rule sets them) and a
+   heading's bold. Give them back in the base layer: every rule below and every utility
+   class still wins. */
 @layer base {
     .composer-page button {
         padding: 1px 6px;
@@ -20,6 +21,9 @@
     .composer-page ::after {
         border-style: none;
         border-color: currentColor;
+    }
+    .composer-page :is(h1, h2, h3, h4, h5, h6) {
+        font-weight: bold;
     }
 }
 
@@ -7697,6 +7701,12 @@
         &#composer-page #studio-request {
             font-size: var(--text-section) !important;
         }
+    }
+
+    /* ── Travel's way in an answer: the page's type, as the mock's way.css leaves it ── */
+    & .answer-way .nav-way {
+        font-size: inherit;
+        line-height: inherit;
     }
 }
 

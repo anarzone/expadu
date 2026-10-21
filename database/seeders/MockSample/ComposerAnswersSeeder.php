@@ -3,8 +3,10 @@
 namespace Database\Seeders\MockSample;
 
 use App\Composer\WorkspaceStore;
+use App\Models\ActiveTrip;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
+use App\Support\MockClock;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -33,6 +35,10 @@ class ComposerAnswersSeeder extends Seeder
         'main' => ['What do I need to bring at 14:00?', 'Is the cinema step-free?', 'blorp fizz'],
         // composer-answers-help.json: what's next, then help and its next steps.
         'help' => ['When is my next appointment?', 'Hi'],
+        // composer-answers-trip.json: the Travel starter's request, then whether it's on time.
+        'trip' => ['When should I leave for my 14:00?', 'Is my tram on time?'],
+        // composer-answers-onway.json: on the way (TravelSeeder with MOCK_TRIP=started).
+        'onway' => ['Where do I get off?', 'When will I get there?', 'What’s next?', 'Is my tram on time?'],
     ];
 
     public function run(): void
@@ -59,9 +65,17 @@ class ComposerAnswersSeeder extends Seeder
 
         $this->call(ComposerSeeder::class);
 
+        if ($set === 'onway' && ActiveTrip::query()->where('user_id', $user->id)->doesntExist()) {
+            $this->command?->error('No trip under way. Run MockSample\\TravelSeeder with MOCK_TRIP=started first.');
+
+            return;
+        }
+
         $moment = CarbonImmutable::parse('2026-09-30 13:10', 'Europe/Berlin');
         Carbon::setTestNow($moment);
         CarbonImmutable::setTestNow($moment);
+        // The sample's ways answer only at the mock's moment (MockClock, SampleRoutes).
+        request()->cookies->set(MockClock::COOKIE, $moment->toIso8601String());
 
         try {
             $store = app(WorkspaceStore::class);
@@ -73,6 +87,7 @@ class ComposerAnswersSeeder extends Seeder
         } finally {
             Carbon::setTestNow();
             CarbonImmutable::setTestNow();
+            request()->cookies->remove(MockClock::COOKIE);
         }
 
         $this->command?->info("Composer answered the {$set} sample requests.");
