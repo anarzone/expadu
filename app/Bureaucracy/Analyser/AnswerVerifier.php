@@ -16,7 +16,7 @@ use App\Bureaucracy\Verification\Figures;
  *  - it keeps the quote's negations and conditions (not, if, unless, only…);
  *  - apart from a small allow-list of grammar and attribution words ("The card says"),
  *    every word comes from the quote or the card's title, and it restates at least
- *    half of the quote's own words.
+ *    half of the quote's own words, largely in the quote's order.
  * Anything else is dropped; the reason is kept for telemetry, never the text.
  */
 final class AnswerVerifier
@@ -30,6 +30,9 @@ final class AnswerVerifier
     private const MaxQuoteLength = 600;
 
     private const QuoteCoverage = 0.5;
+
+    /** Share of the restated quote words that must keep the quote's order. */
+    private const OrderKept = 0.75;
 
     /** Grammar and attribution only: none of these carries a fact on its own. */
     private const Glue = ['a', 'an', 'the', 'and', 'but', 'nor', 'so', 'yet', 'then', 'than', 'that', 'this', 'these', 'those', 'there',
@@ -177,8 +180,41 @@ final class AnswerVerifier
         if (! $this->grounded(AnswerText::words($text), AnswerText::words($quote), AnswerText::words($card->title))) {
             return 'ungrounded_words';
         }
+        if (! $this->inQuoteOrder(AnswerText::words($text), AnswerText::words($quote))) {
+            return 'reordered';
+        }
 
         return null;
+    }
+
+    /**
+     * The quote's words must keep the quote's order, so a restatement cannot swap who
+     * does what ("Cologne accepts a blocked account" into "a blocked account is a permit").
+     *
+     * @param  list<string>  $text
+     * @param  list<string>  $quote
+     */
+    private function inQuoteOrder(array $text, array $quote): bool
+    {
+        $content = fn (string $word): bool => ! in_array($word, self::Glue, true) && ! in_array($word, self::Negations, true)
+            && preg_match('/^\d+$/', $word) !== 1;
+        $quote = array_values(array_filter($quote, $content));
+        $text = array_values(array_filter($text, fn (string $word): bool => $content($word)
+            && collect($quote)->contains(fn ($known) => AnswerText::sameWord($word, $known))));
+        if (count($text) < 4) {
+            return true;
+        }
+        // Longest common subsequence of the two word lists.
+        $previous = array_fill(0, count($quote) + 1, 0);
+        foreach ($text as $word) {
+            $current = [0];
+            foreach ($quote as $index => $known) {
+                $current[$index + 1] = AnswerText::sameWord($word, $known) ? $previous[$index] + 1 : max($previous[$index + 1], $current[$index]);
+            }
+            $previous = $current;
+        }
+
+        return end($previous) / count($text) >= self::OrderKept;
     }
 
     private function figuresSupported(string $text, string $quote): bool

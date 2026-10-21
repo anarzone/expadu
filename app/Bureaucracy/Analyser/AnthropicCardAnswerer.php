@@ -24,6 +24,8 @@ final class AnthropicCardAnswerer
         .'(1) Every sentence must rest on one card. Set card_id to that card and quote to an exact excerpt of that card\'s text, copied character for character, '
         .'one sentence or clause long, containing only the words you restate. '
         .'(2) Write each sentence as a close restatement of its quote in the quote\'s own words. You may begin with "The card says". '
+        .'Use only the quote\'s words plus small grammar words; do not add words such as fee, paid, required, deadline, can or should. '
+        .'Write an instruction as "The card says to …", never as "you should", "you must" or "you need to". '
         .'Add nothing that is not in the quote: no advice, examples, documents, steps, offices, websites, amounts, fees, dates, periods, numbers or legal sections. '
         .'Copy any figure exactly as the quote writes it. Keep every "not" or "no" the quote has; add none. '
         .'(3) Never use your own knowledge of German law or procedures. If the cards do not answer the question, set answerable to false, '

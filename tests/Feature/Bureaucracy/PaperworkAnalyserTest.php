@@ -151,6 +151,7 @@ test('a sentence survives only when every check passes', function (array $senten
         'quote' => 'If confirmation is refused, notify the registration authority without delay.'], 'negation_or_condition_changed'],
     'word from outside the card' => [['text' => 'Registration normally follows moving into a dwelling; bring your passport.',
         'quote' => 'Registration normally follows moving into a dwelling'], 'ungrounded_words'],
+    'words reordered into another meaning' => [['text' => 'The card says a dwelling normally follows registration under §17 BMG, with a two-week period, moving into it.'], 'reordered'],
     'swapped timing' => [['text' => 'Keep the confirmation before registration.', 'quote' => 'Keep the confirmation after registration.'], 'figure_not_in_quote'],
     'invented link' => [['text' => 'Registration normally follows moving into a dwelling, see www.example.test.',
         'quote' => 'Registration normally follows moving into a dwelling'], 'link_or_markup'],
