@@ -170,9 +170,14 @@ export function AnswerBody({
     const share = record?.total
         ? Math.round((record.prepared / record.total) * 100)
         : 0;
-    // "It can do these:" lists the person's own starters; with none, the
-    // reply's everyday suggestions instead.
+    // "It can do these:" always lists them: the person's own starters on the
+    // latest reply; otherwise (none, or an older reply) the everyday ones the
+    // reply carries. Next steps on other older replies don't pile up.
     const showOptions = latest && !!message.options && starters.length > 0;
+    const showSuggestions =
+        !showOptions &&
+        !!message.suggestions?.length &&
+        (latest || !!message.options);
 
     return (
         <>
@@ -284,7 +289,7 @@ export function AnswerBody({
                     ))}
                 </div>
             )}
-            {latest && !showOptions && !!message.suggestions?.length && (
+            {showSuggestions && message.suggestions && (
                 <div className="reply-suggestions">
                     {message.suggestions.map((suggestion) =>
                         suggestion.href ? (

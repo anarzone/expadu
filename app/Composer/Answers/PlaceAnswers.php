@@ -10,6 +10,7 @@ use App\Enums\SpotCategory;
 use App\Models\User;
 use App\Services\UserLocationService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 /**
  * "Somewhere nearby to play football" (owner's staging test, 21 Oct 2026): the
@@ -21,6 +22,12 @@ use Carbon\CarbonImmutable;
 class PlaceAnswers
 {
     private const SHOWN = 5;
+
+    /** How far the answer looks: past "nearby" when only one or two are within it. */
+    private const FURTHEST_KM = 12.0;
+
+    /** A few: with fewer than this within the distance asked, the answer looks further. */
+    private const ENOUGH = 3;
 
     /** How the reply says each activity (PlaceCapabilities::ACTIVITIES). */
     private const DOING = [
@@ -47,31 +54,43 @@ class PlaceAnswers
         $activities = array_values((array) $request['activities']);
         $doing = self::DOING[$activities[0]] ?? 'do that';
 
+        // The nearest few, looking past "nearby" (or the distance named) until there are a
+        // few: the catalogue keeps the nearest dozen of each kind, so one search out to the
+        // furthest distance finds the same nearest places as widening step by step.
         // The whole day: the question is where, not whether it's open this minute.
+        $within = isset($request['radius']) ? (float) $request['radius'] : null;
         $found = collect($this->catalogue->candidatesFor(new Constraints(
             windowStart: $day->startOfDay(),
             windowEnd: $day->endOfDay(),
             activities: $activities,
-            radiusKm: isset($request['radius']) ? (float) $request['radius'] : null,
+            radiusKm: max($within ?? 0, self::FURTHEST_KM),
         ), $lat, $lng))
             ->filter(fn (Candidate $candidate): bool => $candidate->type === 'spot')
             ->sortBy(fn (Candidate $candidate): float => $candidate->distanceKmFromOrigin ?? INF)
-            ->take(self::SHOWN)
             ->values();
+        $inside = $within === null ? $found : $found->filter(fn (Candidate $candidate): bool => $candidate->distanceKmFromOrigin <= $within);
+        $found = ($inside->count() >= self::ENOUGH ? $inside : $found)->take(self::SHOWN)->values();
         $unknown = $location->hasOrigin() ? '' : ' I don’t know where you are, so I measured from the city centre.';
 
         if ($found->isEmpty()) {
-            return ['text' => "I don’t find a public place to {$doing} listed near {$from}.{$unknown}", 'extra' => [
+            return ['text' => "I don’t find a public place to {$doing} listed within ".self::km(self::FURTHEST_KM)." of {$from}.{$unknown}", 'extra' => [
                 'kind' => 'places', 'title' => 'None listed nearby.',
                 'suggestions' => [['label' => 'Explore places', 'href' => route('explore', [], false)]],
             ]];
         }
 
+        $furthest = (float) $found->last()->distanceKmFromOrigin;
+        $reach = $within !== null && $furthest > $within
+            ? ($inside->isEmpty() ? 'None is within '.self::km($within) : ($inside->count() === 1 ? 'Only one is' : 'Only '.mb_strtolower(self::NUMBERS[$inside->count() - 1]).' are').' within '.self::km($within))
+                .', so I looked further: nearest first, up to '.self::km($furthest)
+            : 'Nearest first, up to '.self::km($furthest);
+
         return [
-            'text' => "Nearest first, in a straight line from {$from}. Each is listed as public, with no booking needed.{$unknown}",
+            'text' => "{$reach} in a straight line from {$from}. Each is listed as public, with no booking needed.{$unknown}",
             'extra' => [
                 'kind' => 'places',
-                'title' => ($found->count() === 1 ? 'One place' : self::NUMBERS[$found->count() - 1].' places')." to {$doing} near {$from}.",
+                // The area of an address ("Causemannstraße 109, Merkenich" → "Merkenich").
+                'title' => ($found->count() === 1 ? 'One place' : self::NUMBERS[$found->count() - 1].' places')." to {$doing} near ".Str::afterLast($from, ', ').'.',
                 'places' => $found->map(fn (Candidate $candidate): array => [
                     'id' => (int) substr($candidate->id, 5),
                     'name' => $candidate->name,
@@ -82,6 +101,11 @@ class PlaceAnswers
                 ])->all(),
             ],
         ];
+    }
+
+    private static function km(float $km): string
+    {
+        return rtrim(rtrim(number_format($km, 1), '0'), '.').' km';
     }
 
     /** The starting point as the reply names it. */
