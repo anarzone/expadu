@@ -13,6 +13,7 @@ import type { FavouriteStop } from '../nearby/types';
 import { stopName } from '../stop-name';
 import { TravelIcon } from '../travel-icon';
 import type { TripFor } from '../trip/trip-model';
+import type { LocateError } from '../use-travel-location';
 import { PlanFields, findPlace } from './plan-fields';
 import type { FieldValue } from './plan-fields';
 import {
@@ -182,6 +183,25 @@ type PlanPanelProps = {
     onAbout: (label: string | null) => void;
     onLocate: () => void;
     locating: boolean;
+    /** Why the last "Use my location" didn't work. */
+    locateError?: LocateError | null;
+};
+
+/** Why From couldn't be where you are, and what to do instead. */
+const fromLocateText: Record<LocateError, string> = {
+    off: 'Location sharing is off. Type where you’re starting, or turn it on in Settings.',
+    unsupported:
+        'Location isn’t available on this device. Type where you’re starting.',
+    blocked:
+        'Location is blocked for this site. Allow it from the address bar, or type where you’re starting.',
+    unavailable:
+        'Your device couldn’t find a location. Type where you’re starting.',
+    imprecise:
+        'That location isn’t precise enough. Type where you’re starting.',
+    unsaved:
+        'Your location couldn’t be used. Try again, or type where you’re starting.',
+    timeout:
+        'Locating took too long. Try again, or type where you’re starting.',
 };
 
 export function PlanPanel({
@@ -204,6 +224,7 @@ export function PlanPanel({
     onAbout,
     onLocate,
     locating,
+    locateError = null,
 }: PlanPanelProps) {
     const today = berlinToday();
     const [from, setFrom] = useState<FieldValue>(EMPTY);
@@ -219,6 +240,9 @@ export function PlanPanel({
     const [sort, setSort] = useState<SortKey>('arrival');
     const [choicesOpen, setChoicesOpen] = useState(false);
     const [results, setResults] = useState(false);
+    // "Use my location" from From: asked here, so its answer is said here.
+    const [relocated, setRelocated] = useState(false);
+    const relocating = useRef(false);
     const [status, setStatus] = useState<Status>({ kind: 'idle' });
     const [selected, setSelected] = useState<string | null>(null);
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -852,6 +876,30 @@ export function PlanPanel({
                   : null,
         [target, schedule, date, time],
     );
+    // From becomes where the device is now: the fix goes to the server as
+    // "I'm here", so an empty From plans from it. A shown answer is planned
+    // again from there once the fix is in.
+    const useMyLocation = () => {
+        setFrom(EMPTY);
+        setRelocated(true);
+        relocating.current = true;
+        onLocate();
+    };
+
+    useEffect(() => {
+        if (!relocating.current || locating) {
+            return;
+        }
+
+        relocating.current = false;
+
+        if (!locateError && results && (to.place || to.text.trim())) {
+            void plan({ from: null });
+        }
+        // Once, when locating ends.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [locating]);
+
     const ranked = useMemo(
         () => rankOptions(options, sort, prefs, deadline),
         [options, sort, prefs, deadline],
@@ -1319,6 +1367,13 @@ export function PlanPanel({
                                 setPicked(null);
                             }}
                             toRef={toField}
+                            onUseLocation={useMyLocation}
+                            locating={locating}
+                            locateNote={
+                                relocated && locateError
+                                    ? fromLocateText[locateError]
+                                    : null
+                            }
                         />
                         <button
                             type="button"
