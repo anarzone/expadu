@@ -7,9 +7,10 @@ use Carbon\CarbonImmutable;
 use Throwable;
 
 /**
- * Events' "Get there" hands an event to Plan a trip by its id and the
- * occurrence's public start (`/timetable?view=journey&event=&start=`), never
- * by coordinates. The occurrence is found as Events lists it (visible
+ * Events' "Open in Travel" hands an event to Plan a trip by its id and the
+ * occurrence's local start (`/timetable?to=<venue>&context=<id>&date=&arrive=`,
+ * as the mock; the older `event=&start=` gives the start as ISO), never by
+ * coordinates. The occurrence is found as Events lists it (visible
  * events only, Event::occurringBetween); a hidden, unknown, pointless or
  * finished one gives nothing, and the page opens empty.
  */
@@ -17,6 +18,28 @@ final class EventHandoff
 {
     /** An occurrence with no end listed counts as over this long after it starts. */
     private const ASSUMED_LENGTH_HOURS = 3;
+
+    /**
+     * The occurrence starting on `$date` (Y-m-d) at `$time` (H:i), Cologne's
+     * time: the link Events builds.
+     *
+     * @return array{id: int, start: string, title: string, place: string, area: ?string, lat: float, lng: float, start_at: string, start_time: string, end_at: ?string, end_time: ?string}|null
+     */
+    public function forLocal(mixed $id, mixed $date, mixed $time, CarbonImmutable $now): ?array
+    {
+        if (! is_string($date) || ! is_string($time)
+            || preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1 || preg_match('/^\d{2}:\d{2}$/', $time) !== 1) {
+            return null;
+        }
+
+        try {
+            $start = CarbonImmutable::createFromFormat('!Y-m-d H:i', "{$date} {$time}", 'Europe/Berlin');
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $start === false || $start === null ? null : $this->for($id, $start->toIso8601String(), $now);
+    }
 
     /**
      * @return array{id: int, start: string, title: string, place: string, area: ?string, lat: float, lng: float, start_at: string, start_time: string, end_at: ?string, end_time: ?string}|null
