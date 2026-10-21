@@ -5,6 +5,7 @@ import { lineIcons } from '@/components/ui/icon-paths';
 import { loadBasemap } from '@/lib/basemap';
 import type { Basemap } from '@/lib/basemap';
 import { decodePolyline } from '@/lib/polyline';
+import { cn } from '@/lib/utils';
 import type { Journey } from '@/types/transit';
 
 /* Get there's map (the mock's wall.js getThere() and get-there.js paint()):
@@ -188,7 +189,11 @@ export function GetThereMap({
 
     return (
         <div
-            className={`event-way-map${state === 'ready' ? 'is-ready' : ''}${state === 'failed' ? 'is-failed' : ''}`}
+            className={cn(
+                'event-way-map',
+                state === 'ready' && 'is-ready',
+                state === 'failed' && 'is-failed',
+            )}
             role="img"
             aria-label={
                 start

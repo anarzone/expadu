@@ -25,6 +25,7 @@ import { Icon } from '@/components/ui/icon';
 import type { IconName } from '@/components/ui/icon';
 import { Sheet } from '@/components/ui/sheet';
 import { kmBetween } from '@/lib/geo';
+import { cn } from '@/lib/utils';
 import type { DayProjection } from '@/types/day';
 import type { WayMode, WayStart, WayWhen } from './get-there';
 import { addToPlan, candidateFor, inPlan, readPlan, undoChange } from './plan';
@@ -248,7 +249,11 @@ export function EventDetails({
         <Sheet
             open={!!listing}
             onClose={onClose}
-            className={`ev-details pp--${posterInk(l?.poster.start)}${way ? 'is-way' : ''}`}
+            className={cn(
+                'ev-details',
+                `pp--${posterInk(l?.poster.start)}`,
+                way && 'is-way',
+            )}
             title={
                 l ? (
                     <span lang={l.poster.titleLang ?? undefined}>
@@ -440,7 +445,10 @@ function Body({
                     </p>
                 ) : null}
                 <p
-                    className={`evd-description${o.summary ? '' : 'is-unknown'}`}
+                    className={cn(
+                        'evd-description',
+                        !o.summary && 'is-unknown',
+                    )}
                 >
                     {o.summary ?? 'The listing has no description.'}
                 </p>

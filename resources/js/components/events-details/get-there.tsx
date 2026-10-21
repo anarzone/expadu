@@ -27,6 +27,7 @@ import type {
 import { PlanChecks, PlanOptions } from '@/components/travel/plan/plan-results';
 import { TravelIcon } from '@/components/travel/travel-icon';
 import { Icon } from '@/components/ui/icon';
+import { cn } from '@/lib/utils';
 import type { DayProjection } from '@/types/day';
 import { GetThereMap } from './get-there-map';
 import './get-there.css';
@@ -326,7 +327,7 @@ export default function GetThere({
 
     return (
         <form className="place-journey" onSubmit={commit}>
-            <div className={`place-route${back ? 'is-back' : ''}`}>
+            <div className={cn('place-route', back && 'is-back')}>
                 <div className="event-route-rail" aria-hidden="true">
                     <span className="route-dot" />
                     <span className="event-route-connector" />
@@ -537,7 +538,7 @@ function Empty({
 }) {
     return (
         <div
-            className={`gt-empty${loading ? 'is-loading' : ''}`}
+            className={cn('gt-empty', loading && 'is-loading')}
             role={loading ? 'status' : undefined}
         >
             {chip}
