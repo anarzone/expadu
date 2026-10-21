@@ -548,7 +548,12 @@ function QuestionCard() {
                     disabled={pending}
                     onClick={() =>
                         void act(
-                            () => commands.resumeQuestions(session, false),
+                            // When only skipped questions are left, keeping going means those.
+                            () =>
+                                commands.resumeQuestions(
+                                    session,
+                                    !q.remaining_information_count,
+                                ),
                             'Questions are back on.',
                         )
                     }
