@@ -137,32 +137,32 @@
             "name": "bar",
             "mock": ".place-sheet-footer",
             "app": ".ev-details .ui-sheet-foot",
-            "ignore": ["y"],
-            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
+            "ignore": ["x", "y", "w", "h"],
+            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter. Not now shares the bar (approved by the design session on 21 Oct; the frozen mock has no slot for it), and on phones Add to plan takes its own row under Save, the reminder and Not now, so the bar's parts are compared by their styles, not their boxes.",
             "contentDiffers": true
         },
         {
             "name": "Save",
             "mock": ".place-sheet-footer [data-save-item]",
             "app": ".evd-save",
-            "ignore": ["y"],
-            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
+            "ignore": ["x", "y", "w", "h"],
+            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter. Not now shares the bar (approved by the design session on 21 Oct; the frozen mock has no slot for it), and on phones Add to plan takes its own row under Save, the reminder and Not now, so the bar's parts are compared by their styles, not their boxes.",
             "contentDiffers": true
         },
         {
             "name": "reminder",
             "mock": ".place-sheet-footer .event-bell",
             "app": ".evd-bell",
-            "ignore": ["y"],
-            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
+            "ignore": ["x", "y", "w", "h"],
+            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter. Not now shares the bar (approved by the design session on 21 Oct; the frozen mock has no slot for it), and on phones Add to plan takes its own row under Save, the reminder and Not now, so the bar's parts are compared by their styles, not their boxes.",
             "contentDiffers": true
         },
         {
             "name": "Add to plan",
             "mock": ".place-sheet-footer .button.primary",
             "app": ".evd-plan",
-            "ignore": ["y"],
-            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter.",
+            "ignore": ["x", "y", "w", "h"],
+            "reason": "Follows the Not listed row to another sub-pixel. When to arrive is never inferred (plan §2.3: not stored, so Not listed); the mock's sample event carries a fixed arrival policy, so its When reads 'Listed times · arrive by the start time' and its Not listed leaves it out, one line shorter. Not now shares the bar (approved by the design session on 21 Oct; the frozen mock has no slot for it), and on phones Add to plan takes its own row under Save, the reminder and Not now, so the bar's parts are compared by their styles, not their boxes.",
             "contentDiffers": true
         }
     ]

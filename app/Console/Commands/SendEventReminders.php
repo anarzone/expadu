@@ -19,7 +19,9 @@ class SendEventReminders extends Command
         $tomorrow = now()->addDay()->startOfDay();
         $tomorrowEnd = now()->addDay()->endOfDay();
 
-        $events = Event::whereBetween('starts_at', [$tomorrow, $tomorrowEnd])
+        // Only events still on: a cancelled or unlisted one sends nothing.
+        $events = Event::where('status', 'active')
+            ->whereBetween('starts_at', [$tomorrow, $tomorrowEnd])
             ->withCount('attendees')
             ->get();
 
