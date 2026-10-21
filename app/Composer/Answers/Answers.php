@@ -4,6 +4,7 @@ namespace App\Composer\Answers;
 
 use App\Bureaucracy\ReadModel\AccountPlanEntry;
 use App\Bureaucracy\ReadModel\RecordedAppointmentsBetween;
+use App\Composer\PromptIntent;
 use App\Models\ActiveTrip;
 use App\Models\Event;
 use App\Models\User;
@@ -24,6 +25,9 @@ final class Answers
 {
     /** The kinds this class answers. */
     public const KINDS = ['help', 'clarify', 'next', 'checklist', 'access', 'service', 'unavailable'];
+
+    /** Questions about your own day and records, answered even when the words read as a plan. */
+    private const ABOUT_YOUR_DAY = ['next', 'checklist'];
 
     /** The four everyday requests (app.js `everyday`). */
     private const EVERYDAY = [
@@ -51,6 +55,25 @@ final class Answers
         private RecordedAppointmentsBetween $appointments,
         private AccountPlanEntry $plans,
     ) {}
+
+    /**
+     * Whether Composer answers this request itself, given what the prompt parser made of it.
+     * A plan the parser understood is planned: only questions about your own day and
+     * records answer instead. "I can't answer that" and "the listings can't vouch for it"
+     * come only when nothing else understood the request; a search the parser reads goes
+     * to the search. A preference about a listing is the places' to answer.
+     *
+     * @param  array<string, mixed>  $request
+     */
+    public static function handles(array $request, PromptIntent $intent): bool
+    {
+        $kind = $request['kind'];
+
+        return in_array($kind, self::KINDS, true)
+            && ($intent !== PromptIntent::PlanDay || in_array($kind, self::ABOUT_YOUR_DAY, true))
+            && (! in_array($kind, ['clarify', 'unavailable'], true) || $intent === PromptIntent::Unknown)
+            && ! ($kind === 'unavailable' && ($request['topic'] ?? null) === 'listing');
+    }
 
     /** What the router needs to know about this person's day right now. */
     public function context(User $user, CarbonImmutable $now, ?string $focus): RouterContext

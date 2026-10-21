@@ -235,7 +235,37 @@ export interface Question {
     token?: string;
     can_skip?: boolean;
     can_answer_unknown?: boolean;
+    /** What answering needs; `available` is false when this viewer may not do it. */
+    action?: { type: string; fact_key: string; available?: boolean };
 }
+
+/** What "Say it in your own words" sends, and to whom (fetched fresh before each send). */
+export interface ProcessingDisclosure {
+    available: boolean;
+    notice_version: string;
+    provider_version: string;
+    processor_name: string | null;
+    processor_privacy_url: string | null;
+}
+
+/** An answer the AI suggested; nothing is saved until the person confirms it. */
+export type Extraction =
+    | {
+          outcome: 'candidate';
+          candidate_id: string;
+          token: string;
+          value: string | number | boolean;
+      }
+    | {
+          outcome:
+              | 'consent_required'
+              | 'limited'
+              | 'unavailable'
+              | 'off_topic'
+              | 'unclear_subject'
+              | 'unknown'
+              | 'invalid';
+      };
 
 export interface QuestionOffer {
     status:
@@ -389,6 +419,12 @@ export interface Plan {
         | { available: false; reason: string }
         | { requirements: Requirement[]; evidence: EvidenceItem[] };
     scopes: string[];
+    /** "Say it in your own words": only when this viewer may use it and the service is set up. */
+    ai?: {
+        available: boolean;
+        consent_scope: string;
+        confirmation_required: boolean;
+    };
     /** Notes from the person's own answers; null for a viewer who may not see them. */
     notes: { no_residence_task: boolean | null };
     attention: AttentionRow[];

@@ -4,12 +4,14 @@
    planner, for the sample day, captured 13 Oct 2026): arriving by the start,
    leaving now (the sample day's clock) or the way back after it ends, from
    any start the preview recognises (Neumarkt and Cologne's districts; a
-   district's journeys load when you start from it). The options use
-   Travel's card, its line badges and labels (departures-next/labels.css);
-   the chosen way is drawn on the map. Nothing here is live, and it says so.
-   wall.js mounts it in the details' Get there page. */
+   district's journeys load when you start from it). The checks and the
+   ways are Travel's own cards (departures-next/plan-card.js and .css),
+   drawn from Travel's routes for the same trip (journeys.js), so they
+   look and read as in Plan a trip; the chosen way is drawn on the map.
+   Nothing here is live, and it says so. wall.js mounts it in the
+   details' Get there page. */
 (function (root) {
-    // KVB line colours as Travel shows them (departures-next/nearby.js:
+    // The map's line colours, as Travel shows them (departures-next/nearby.js:
     // darkened where white text needs 4.5:1). Other lines are a dark slate
     // here rather than Travel's teal, which the Events details don't use;
     // buses are grey.
@@ -18,21 +20,12 @@
         colour: KVB[leg.line] || (leg.mode === 'bus' ? '#4A4A4A' : '#3B4A54'),
         ink: String(leg.line) === '12' ? '#1D2A05' : '#FFFFFF',
     });
-    const vehicle = (leg) => (leg.mode === 'bus' ? 'Bus' : leg.mode === 'rail' ? 'Train' : 'Tram');
-    const shape = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
-    // Travel's label icons the Events set doesn't have.
-    const extra = {
-        star: shape('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/>'),
-        cloud: shape('<path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.6 1.5A3.3 3.3 0 0 1 17.5 18H7Z"/><path d="m9 21 .6-1.5m3.4 1.5.6-1.5"/>'),
-        timer: shape('<circle cx="12" cy="13" r="7"/><path d="M12 13V9.5M10 3h4"/>'),
-    };
     const mins = (t) => {
         const [h, m] = t.split(':').map(Number);
         return h * 60 + m;
     };
     // The way back can run past midnight: before noon counts as that night.
     const late = (t) => mins(t) + (mins(t) < 720 ? 1440 : 0);
-    const clock = (n) => `${String(Math.floor(n / 60) % 24).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
     const span = (n) => (n < 60 ? `${n} min` : `${Math.floor(n / 60)} h${n % 60 ? ` ${n % 60} min` : ''}`);
     const data = () => root.ExpaduSampleJourneys;
 
@@ -48,25 +41,10 @@
     function mount(box, ctx) {
         const { item, input, panel, I, E } = ctx;
         const J = data();
-        const icon = (name) => extra[name] || I(name);
-        const chip = (kind, name, text) => `<span class="tl-chip is-${kind}">${icon(name)}<span>${E(text)}</span></span>`;
-        const badge = (leg, word) => {
-            const l = look(leg);
-            return `<span class="tl-line" style="--line:${l.colour};--ink:${l.ink}">${I(leg.mode === 'bus' ? 'bus' : 'train')}<span>${word ? `${vehicle(leg)} ${E(leg.line)}` : `<span class="sr-only">${vehicle(leg)} </span>${E(leg.line)}`}</span></span>`;
-        };
-        // The sample day's weather, hour by hour; none after midnight.
-        const weatherAt = (time) => {
-            const day = root.ExpaduSampleWeather?.days?.[item.date];
-            const hour = late(time) < 1440 ? day?.[Number(time.slice(0, 2))] : null;
-            return hour ? { wet: ['showers', 'rain'].includes(hour[0]), sky: hour[0] === 'rain' ? 'Rain' : 'Showers' } : null;
-        };
-        const weatherReason = (time) => {
-            const w = weatherAt(time);
-            return w ? [w.wet ? [`${w.sky} likely on the way (sample)`, 'warn', 'cloud'] : ['Dry on the way (sample)', 'ok', 'sun']] : [];
-        };
-        const reasonList = (reasons) =>
-            `<span class="plan-option-reasons">${reasons.map(([text, kind, name]) => `<span class="is-${kind}"><span class="plan-reason-icon">${icon(name)}</span>${E(text)}</span>`).join('')}</span>`;
-        const state = { pick: null, open: null, when: 'arrive' };
+        const chip = (kind, name, text) => `<span class="tl-chip is-${kind}">${I(name)}<span>${E(text)}</span></span>`;
+        const P = root.TravelPlanCard;
+        const TJ = root.JourneyModel;
+        const state = { pick: null, open: null, when: 'arrive', checksOpen: false };
         const failed = new Set();
 
         // When and how, as small filters under the route (owner, 14 Oct
@@ -136,87 +114,6 @@
             menu?.querySelectorAll('[data-gt-when]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.gtWhen === state.when)));
         }
 
-        // Steps of one option, as Travel's journey details list them.
-        function steps(option, trip) {
-            const back = state.when === 'back';
-            const end = back ? trip.from.name : item.venue;
-            const out = [];
-            option.legs.forEach((leg, i) => {
-                const last = i === option.legs.length - 1;
-                if (leg.mode === 'walk') {
-                    const change = i > 0 && !last;
-                    out.push({
-                        kind: 'walk',
-                        time: leg.depart,
-                        title: change ? (leg.from === leg.to ? `Change at ${leg.to}` : `Change: walk to ${leg.to}`) : last ? `Walk to ${end}` : `Walk to ${leg.to}`,
-                        detail: `${leg.minutes} min on foot`,
-                    });
-                } else {
-                    out.push({ kind: 'ride', time: leg.depart, title: `Take ${vehicle(leg)} ${leg.line}${i === 0 ? ` at ${leg.from}` : ''}`, detail: `Towards ${leg.towards} · ${leg.stops} stop${leg.stops > 1 ? 's' : ''}`, leg });
-                    out.push({ kind: 'alight', time: leg.arrive, title: `Get off at ${leg.to}`, detail: '', leg });
-                }
-            });
-            out.push(
-                back
-                    ? { kind: 'arrive', time: option.arrive, title: end, detail: `${span(option.duration)} from ${item.venue}` }
-                    : { kind: 'arrive', time: option.arrive, title: item.venue, detail: `${item.title} starts at ${item.start}` },
-            );
-            return `<ol class="gt-steps">${out
-                .map((s) => {
-                    const l = s.leg ? look(s.leg) : null;
-                    return `<li class="gt-step is-${s.kind}"${l ? ` style="--line:${l.colour}"` : ''}><time>${s.time}</time><span class="gt-node">${s.kind === 'ride' ? badge(s.leg) : I(s.kind === 'arrive' ? 'pin' : s.kind === 'alight' ? (s.leg.mode === 'bus' ? 'bus' : 'train') : 'walk')}</span><div><strong>${E(s.title)}</strong>${s.detail ? `<small>${E(s.detail)}</small>` : ''}</div></li>`;
-                })
-                .join('')}</ol>`;
-        }
-        // What an option's timing means: spare before the start, how early
-        // leaving now gets you there, or how soon after the end you leave.
-        function timing(depart, arrive) {
-            if (state.when === 'back') {
-                const after = late(depart) - late(item.end);
-                return { tag: chip('calm', 'clock', after ? `${span(after)} after it ends` : 'As it ends'), tight: false };
-            }
-            const spare = mins(item.start) - mins(arrive);
-            if (state.when === 'now') return { tag: chip('calm', 'clock', `${span(spare)} early`), tight: false };
-            return spare < 5
-                ? { tag: chip('attention', 'timer', `Only ${spare} min spare`), tight: true, spare }
-                : { tag: chip('calm', 'check', `${spare} min spare`), tight: false, spare };
-        }
-        function option(o, best, trip) {
-            const rides = o.legs.filter((l) => l.mode !== 'walk');
-            const title = `<span class="plan-option-title">${rides.map((l, i) => badge(l, i === 0)).join(`<span class="plan-then">${I('arrow')}</span>`)}</span>`;
-            const t = timing(o.depart, o.arrive);
-            const reasons = [
-                o.changes ? [`${o.changes} change${o.changes > 1 ? 's' : ''}`, 'ok', 'route'] : ['No change', 'ok', 'check'],
-                [`${o.walking} min walking`, 'ok', 'walk'],
-                ...weatherReason(o.depart),
-                ...(t.tight ? [[`Only ${t.spare} min before ${item.start}`, 'warn', 'timer']] : []),
-            ];
-            const on = state.pick === o.id,
-                open = state.open === o.id;
-            return `<article class="plan-option${on ? ' is-on' : ''}" aria-label="${E(rides.map((l) => `${vehicle(l)} ${l.line}`).join(', then '))}, leave ${o.depart}, there ${o.arrive}">
-                <button type="button" class="plan-option-pick" role="radio" aria-checked="${on}" tabindex="${on ? 0 : -1}" data-gt-pick="${o.id}">
-                    <span class="plan-radio" aria-hidden="true"></span>
-                    <span class="plan-option-body"><span class="plan-option-head">${best ? chip('best', 'star', 'Best for you') : title}${t.tag}</span>${best ? title : ''}<span class="plan-option-times">Leave <strong>${o.depart}</strong> → there <strong>${o.arrive}</strong></span>${reasonList(reasons)}</span>
-                </button>
-                <button type="button" class="details-toggle" data-gt-details="${o.id}" aria-expanded="${open}">Journey details ${I('down')}</button>
-                <div class="gt-disclosure"${open ? '' : ' hidden'}>${steps(o, trip)}</div>
-            </article>`;
-        }
-        // On foot or by bike: one way, whenever you go. By the start it's
-        // there five minutes early (as Travel shows it: the margin it calls
-        // tight); now it leaves at the sample clock; back, as it ends.
-        function direct(trip, mode) {
-            const back = state.when === 'back';
-            const way = (back ? trip.back : trip)[mode];
-            const doing = mode === 'bike' ? 'cycling' : 'walking';
-            if (!way?.minutes)
-                return `<p class="gt-none">${chip('unsure', 'info', 'Not in the capture')} The planner found no ${doing} way under 2 hours ${back ? `back to ${E(trip.from.name)}` : `from ${E(trip.from.name)}`}.</p>`;
-            const leave = state.when === 'arrive' ? clock(mins(item.start) - 5 - way.minutes) : state.when === 'now' ? J.now : item.end;
-            const there = state.when === 'arrive' ? clock(mins(item.start) - 5) : clock(mins(leave) + way.minutes);
-            const tag = state.when === 'arrive' ? chip('calm', 'check', '5 min spare') : timing(leave, there).tag;
-            const reasons = [[`${way.minutes} min ${doing} · ${way.km} km`, 'ok', mode], ...weatherReason(leave)];
-            return `<div class="plan-options"><article class="plan-option is-on"><div class="plan-option-pick is-static"><span class="plan-radio" aria-hidden="true"></span><span class="plan-option-body"><span class="plan-option-head"><span class="tl-line is-mode">${I(mode)}<span>${mode === 'bike' ? 'By bike' : 'On foot'}</span></span>${tag}</span><span class="plan-option-times">Leave <strong>${leave}</strong> → there <strong>${there}</strong></span>${reasonList(reasons)}</span></div></article></div>`;
-        }
         // Only what changed is redrawn: leaving the From field (a change)
         // as you tap a button below must not replace that button mid-tap.
         const put = (html) => {
@@ -268,27 +165,54 @@
             }
             const ways = back ? trip.back : trip;
             const list = state.when === 'now' ? trip.now : ways.options;
-            // As Travel orders them: the earliest arrival first, and best.
-            const options = [...list].sort((a, b) => late(a.arrive) - late(b.arrive));
-            const best = options[0];
-            if (!options.some((o) => o.id === state.pick)) state.pick = best?.id || null;
-            minutes(trip, best);
-            const sky = weatherAt(state.when === 'now' ? J.now : back ? item.end : item.start);
-            // What the plan used, as one quiet line (owner, 14 Oct 2026); wet
-            // weather keeps its warning colour.
-            const checked = [
-                'Timetable',
-                'your day',
-                ...(sky ? [sky.wet ? `<b>${sky.sky.toLowerCase()} (sample)</b>` : 'dry (sample)'] : []),
-                'not live',
+            // Travel's trip and routes for the same journeys, as Plan a trip
+            // orders them: the earliest arrival first, with Best for you
+            // leading. By the start, that's the way Travel would take
+            // (wayFor; owner, 21 Oct 2026); now or back, the earliest.
+            const tid = `evening-${back ? 'back-' : ''}${trip.id}`;
+            const tt = TJ.trips[tid];
+            const routes = TJ.routesOf(tid).filter((r) => r.when === state.when);
+            const earliest = routes
+                .filter((r) => r.mode === 'transit')
+                .sort((a, b) => late(a.arrive) - late(b.arrive));
+            const best = state.when === 'arrive' ? P.wayFor(earliest, item.start, false) : earliest[0];
+            const transit = best ? [best, ...earliest.filter((r) => r !== best)] : earliest;
+            const shown = mode === 'transit' ? transit : routes.filter((r) => r.mode === mode);
+            if (!shown.some((r) => r.id === state.pick)) state.pick = shown[0]?.id || null;
+            minutes(trip, transit[0]);
+            const card = (route, index) =>
+                P.option(route, {
+                    trip: tt,
+                    on: route.id === state.pick,
+                    expanded: route.id === state.open,
+                    best: index === 0 && shown.length > 1,
+                    why: P.reasons(route, tt, P.weather(tt.date, route.depart)),
+                    way: P.steps(route, TJ.tripSteps(route), tt),
+                    note: P.note(tt),
+                });
+            // What Plan a trip checked: the sample day's plans before the
+            // start (the appointment, the evening's events).
+            const places = [
+                ...(TJ.day ? [{ time: TJ.day.start, title: TJ.day.place }] : []),
+                ...(root.ExpaduSampleDay?.events || []).map((e) => ({ time: e.start, title: e.title })),
             ];
+            const checks = P.checks(
+                P.facts(tt, {
+                    day: true,
+                    weather: transit[0] ? P.weather(tt.date, transit[0].depart) : null,
+                    between: places.filter((place) => place.time > tt.time && place.time < tt.start),
+                    scenario: null,
+                    stepfree: false,
+                    dateLabel: (d) => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }),
+                }),
+                state.checksOpen,
+            );
             const walk = ways.walk;
-            const body =
-                mode !== 'transit'
-                    ? direct(trip, mode)
-                    : options.length
-                      ? `<div class="plan-options" role="radiogroup" aria-label="Ways ${back ? `back to ${E(trip.from.name)}` : `to ${E(item.venue)}`}">${options.map((o) => option(o, o === best, trip)).join('')}</div>`
-                      : `<div class="gt-empty">${chip('calm', 'walk', 'Walk')}<p><strong>Walking is quickest</strong><span>No tram or bus beats the ${walk?.minutes ? `${walk.minutes}-minute ` : ''}walk ${back ? `back to ${E(trip.from.name)}` : `from ${E(trip.from.name)}`}.</span></p>${walk?.minutes ? '<div class="gt-starts"><button type="button" class="gt-start" data-gt-mode="walk">Show the walk</button></div>' : ''}</div>`;
+            const body = shown.length
+                ? `<div class="plan-options" role="radiogroup" aria-label="Ways ${back ? `back to ${E(trip.from.name)}` : `to ${E(item.venue)}`}">${shown.map(card).join('')}</div>`
+                : mode !== 'transit'
+                  ? `<p class="gt-none">${chip('unsure', 'info', 'Not in the capture')} The planner found no ${mode === 'bike' ? 'cycling' : 'walking'} way under 2 hours ${back ? `back to ${E(trip.from.name)}` : `from ${E(trip.from.name)}`}.</p>`
+                  : `<div class="gt-empty">${chip('calm', 'walk', 'Walk')}<p><strong>Walking is quickest</strong><span>No tram or bus beats the ${walk?.minutes ? `${walk.minutes}-minute ` : ''}walk ${back ? `back to ${E(trip.from.name)}` : `from ${E(trip.from.name)}`}.</span></p></div>`;
             // A district whose centre the planner can't reach starts (or
             // ends) at its nearest stop, and says so.
             const known = J.starts.find((s) => s.id === trip.from.id);
@@ -296,9 +220,10 @@
             const day = new Date(item.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
             const captured = new Date(J.captured + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
             put(
-                `<p class="gt-checked">${I('check')}<span><span class="sr-only">We checked: </span>${checked.join(' · ')}</span></p>${body}<p class="gt-source">${I('info')}<span>Scheduled times from the VRS timetable for ${E(day)}, captured ${E(captured)}.${snapped ? ` The way ${back ? 'ends' : 'starts'} at ${E(trip.from.stop)}, the stop nearest ${E(trip.from.name)}’s centre.` : ''}${state.when === 'now' ? ` “Now” is the sample day’s ${E(J.now)}.` : ''} Not live: check departures before you go.</span></p>`,
+                `${checks}${body}<p class="gt-source">${I('info')}<span>Scheduled times from the VRS timetable for ${E(day)}, captured ${E(captured)}.${snapped ? ` The way ${back ? 'ends' : 'starts'} at ${E(trip.from.stop)}, the stop nearest ${E(trip.from.name)}’s centre.` : ''}${state.when === 'now' ? ` “Now” is the sample day’s ${E(J.now)}.` : ''} Not live: check departures before you go.</span></p>`,
             );
-            const picked = mode === 'transit' ? options.find((o) => o.id === state.pick) : null;
+            // The chosen way on the map, from the captured journey itself.
+            const picked = mode === 'transit' ? list.find((o) => `evening-${o.id}` === state.pick) : null;
             ctx.onWay?.({
                 from: trip.from,
                 legs: picked
@@ -309,20 +234,25 @@
             });
         }
         box.addEventListener('click', (event) => {
-            const pick = event.target.closest('[data-gt-pick]');
-            const details = event.target.closest('[data-gt-details]');
+            const pick = event.target.closest('[data-pick-route]');
+            const details = event.target.closest('[data-route-details]');
+            const checks = event.target.closest('[data-action="checks"]');
             const start = event.target.closest('[data-gt-start]');
             const retry = event.target.closest('[data-gt-retry]');
             const walk = event.target.closest('[data-gt-mode]');
             if (pick) {
-                state.pick = pick.dataset.gtPick;
+                state.pick = pick.dataset.pickRoute;
                 render();
-                box.querySelector(`[data-gt-pick="${state.pick}"]`)?.focus({ preventScroll: true });
+                box.querySelector(`[data-pick-route="${state.pick}"]`)?.focus({ preventScroll: true });
             } else if (details) {
-                state.open = state.open === details.dataset.gtDetails ? null : details.dataset.gtDetails;
-                state.pick = details.dataset.gtDetails;
+                state.open = state.open === details.dataset.routeDetails ? null : details.dataset.routeDetails;
+                state.pick = details.dataset.routeDetails;
                 render();
-                box.querySelector(`[data-gt-details="${details.dataset.gtDetails}"]`)?.focus({ preventScroll: true });
+                box.querySelector(`[data-route-details="${details.dataset.routeDetails}"]`)?.focus({ preventScroll: true });
+            } else if (checks) {
+                state.checksOpen = !state.checksOpen;
+                render();
+                box.querySelector('[data-action="checks"]')?.focus({ preventScroll: true });
             } else if (start && input) {
                 input.value = start.dataset.gtStart;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -341,9 +271,9 @@
         });
         // Arrow keys move between the options, as in a radio group.
         box.addEventListener('keydown', (event) => {
-            const pick = event.target.closest('[data-gt-pick]');
+            const pick = event.target.closest('[data-pick-route]');
             if (!pick || !['ArrowDown', 'ArrowUp'].includes(event.key)) return;
-            const all = [...box.querySelectorAll('[data-gt-pick]')];
+            const all = [...box.querySelectorAll('[data-pick-route]')];
             const next = all[(all.indexOf(pick) + (event.key === 'ArrowDown' ? 1 : -1) + all.length) % all.length];
             event.preventDefault();
             next.click();

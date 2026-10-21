@@ -100,6 +100,12 @@ class CategoryHours
         return $fit[self::band($at)];
     }
 
+    /** The daypart a time falls in, on the same bands as dayFit(). */
+    public static function daypart(CarbonImmutable $at): string
+    {
+        return ['morning', 'midday', 'afternoon', 'evening', 'night'][self::band($at)];
+    }
+
     /** When outdoor daylight ends in Cologne, by season — coarse on purpose. */
     private static function dusk(CarbonImmutable $day): CarbonImmutable
     {

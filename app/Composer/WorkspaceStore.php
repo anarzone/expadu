@@ -5,6 +5,8 @@ namespace App\Composer;
 use App\Composer\Answers\Answers;
 use App\Models\ComposerWorkspace;
 use App\Models\User;
+use App\Personalisation\SignalAction;
+use App\Personalisation\SignalRecorder;
 use App\Places\PlaceIdentity;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -78,6 +80,7 @@ class WorkspaceStore
             $row->update(['state' => $s, 'revision' => $row->revision + 1]);
             if ($displaced !== null) {
                 app(TasteSignals::class)->swappedAway($user, $displaced);
+                app(SignalRecorder::class)->planSlots($user, SignalAction::StopSwappedOut, [$displaced]);
             }
             if ($input['action'] === 'proposal') {
                 DB::afterCommit(fn () => app(PrivatePlanCache::class)->forgetHandoff($user, $input['token']));

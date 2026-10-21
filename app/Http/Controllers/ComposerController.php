@@ -25,7 +25,6 @@ use App\Composer\PlanNarrator;
 use App\Composer\PlanScorer;
 use App\Composer\PlanSlot;
 use App\Composer\PrivatePlanCache;
-use App\Composer\PromptIntent;
 use App\Composer\Role;
 use App\Composer\ScoringContext;
 use App\Composer\SlotFiller;
@@ -34,6 +33,7 @@ use App\Composer\TodayPlanStore;
 use App\Composer\TravelEstimator;
 use App\Composer\WorkspaceStore;
 use App\Day\DayProjection;
+use App\Enums\EventCategory;
 use App\Enums\LocationSource;
 use App\Enums\SpotCategory;
 use App\Http\Requests\ParseComposerPromptRequest;
@@ -41,6 +41,8 @@ use App\Models\ComposerRun;
 use App\Models\User;
 use App\Models\UserEvent;
 use App\Models\UserPlace;
+use App\Personalisation\SignalAction;
+use App\Personalisation\SignalRecorder;
 use App\Places\PlaceCapabilities;
 use App\Places\PlaceIdentity;
 use App\Privacy\ProcessingAcceptanceRules;
@@ -209,9 +211,7 @@ class ComposerController extends Controller
         // whether Composer answers it itself (the `answer` command) rather than planning.
         $routed = $answers->route($request->user(), $validated['text'], CarbonImmutable::now('Europe/Berlin'),
             app(WorkspaceStore::class)->read($request->user())['focus'] ?? null);
-        $answered = in_array($routed['kind'], Answers::KINDS, true)
-            && ! ($routed['kind'] === 'clarify' && $parsed->intent === PromptIntent::PlanDay)
-            && ! ($routed['kind'] === 'unavailable' && ($routed['topic'] ?? null) === 'listing');
+        $answered = Answers::handles($routed, $parsed->intent);
 
         return response()->json($parsed->toArray() + ['kind' => $routed['kind'], 'answer' => $answered]);
     }
@@ -247,6 +247,14 @@ class ComposerController extends Controller
             'constraints.budget' => ['nullable', Rule::in(['free', 'low', 'normal'])],
             'constraints.archetype' => ['nullable', 'string'],
             'constraints.vibe' => ['nullable', Rule::in(['chill', 'active'])],
+            'constraints.moods' => ['array', 'max:5'],
+            'constraints.moods.*' => ['string', Rule::in(Constraints::MOODS)],
+            'constraints.avoid' => ['array', 'max:60'],
+            'constraints.avoid.*' => ['string', Rule::in($categories)],
+            'constraints.sequence' => ['array', 'max:5'],
+            'constraints.sequence.*' => ['string', Rule::in($categories)],
+            'constraints.needs' => ['array'],
+            'constraints.needs.*' => ['string', Rule::in(Constraints::NEEDS)],
             'pins' => ['array'],
             'pins.*' => ['string'],
             'locked' => ['array'],
@@ -315,13 +323,18 @@ class ComposerController extends Controller
             ? $locations->veedelAt($originLat, $originLng)
             : null;
 
-        // The candidate pool, nearest-per-category to where the day starts.
-        $rawPool = $candidates->candidatesFor($this->itineraryConstraints($constraints, $this->soloCategory($constraints)), $originLat, $originLng);
-
         // A single chosen activity ("Pitches") shapes the day differently from a
         // broad prompt: the activity is the day's ANCHOR, not its whole content —
-        // a day is one pitch + a bite + somewhere green, never six pitches.
-        $soloCategory = $this->soloCategory($constraints);
+        // a day is one pitch + a bite + somewhere green, never six pitches. Stops
+        // asked in an order ("a museum, then coffee") are the day's shape instead.
+        $sequenceRoles = $this->sequenceRoles($constraints);
+        $soloCategory = $sequenceRoles === null ? $this->soloCategory($constraints) : null;
+
+        // The candidate pool, nearest-per-category to where the day happens: the
+        // named Veedel when there is one ("an afternoon in Ehrenfeld"), else where
+        // it starts. Travel is still timed from the start.
+        [$poolLat, $poolLng] = $this->areaCentre($constraints) ?? [$originLat, $originLng];
+        $rawPool = $candidates->candidatesFor($this->itineraryConstraints($constraints, $soloCategory), $poolLat, $poolLng);
 
         // ── Itinerary (Just this / Full day / Today) ──
         // For a solo activity the pool is widened to refuel/relax complements so
@@ -357,6 +370,7 @@ class ComposerController extends Controller
             affinity: $affinity,
             rotationSeed: $this->rotationSeed($user, $constraints),
             llmRankWeights: $llmRankWeights,
+            moods: $constraints->moods,
         );
         $pinned = collect([
             ...$candidates->byIds($pins, $constraints->windowStart, $originLat, $originLng),
@@ -378,7 +392,7 @@ class ComposerController extends Controller
 
         $estimator = $this->travelEstimator($user, $originLat, $originLng, $pool);
         $filler = new SlotFiller(new PlanScorer($estimator), $estimator);
-        $roles = $soloCategory !== null ? $this->activityRoles($soloCategory) : null;
+        $roles = $sequenceRoles ?? ($soloCategory !== null ? $this->activityRoles($soloCategory) : null);
         $plan = $filler->fill($itineraryConstraints, $pool, $context, $originLat, $originLng, $roles, self::SAME_COARSE_CAP);
         $this->recordRun($user, $plan, $filler->pickedScores(), $llmBucket, $llmRankWeights, count($rankable));
 
@@ -544,6 +558,44 @@ class ComposerController extends Controller
     }
 
     /**
+     * The stops in the order the request asked for them ("a museum, then
+     * coffee"), one each; the first leads as the day's hero. Null when the
+     * request named no order.
+     *
+     * @return list<Role>|null
+     */
+    private function sequenceRoles(Constraints $constraints): ?array
+    {
+        if (count($constraints->sequence) < 2) {
+            return null;
+        }
+
+        return array_map(
+            fn (string $selector, int $i): Role => new Role($selector === 'event'
+                // Events carry their own categories, not place ones.
+                ? ['event', ...array_map(fn (EventCategory $category): string => $category->value, EventCategory::cases())]
+                : SpotCategory::finesForSelector($selector), 1, hero: $i === 0),
+            $constraints->sequence,
+            array_keys($constraints->sequence),
+        );
+    }
+
+    /**
+     * The middle of the first named Veedel, where its places are looked for.
+     *
+     * @return array{0: float, 1: float}|null
+     */
+    private function areaCentre(Constraints $constraints): ?array
+    {
+        $area = $constraints->areas[0] ?? null;
+        $row = $area === null ? null : DB::table('veedels')->where('name', $area)->first(['centroid_lat', 'centroid_lng']);
+
+        return $row?->centroid_lat !== null && $row?->centroid_lng !== null
+            ? [(float) $row->centroid_lat, (float) $row->centroid_lng]
+            : null;
+    }
+
+    /**
      * "Anchor + around it" roles for a solo activity: the activity leads as the
      * day's hero, then a refuel, then somewhere to wind down.
      *
@@ -684,6 +736,7 @@ class ComposerController extends Controller
             pinnedIds: $pins,
             affinity: $this->planAffinity($profile, $plan->constraints->companions),
             rotationSeed: $this->rotationSeed($user, $plan->constraints),
+            moods: $plan->constraints->moods,
         );
 
         [$originLat, $originLng] = $stored['origin'] ?? $this->origin($user);
@@ -716,6 +769,7 @@ class ComposerController extends Controller
                     'veedel' => $outgoing->veedel,
                 ],
             ]);
+            app(SignalRecorder::class)->planSlots($user, SignalAction::StopSwappedOut, [$plan->slots[$slotIndex]->toArray()], $plan->constraints->companions);
         }
 
         // Re-narrate so the swapped slot (and the one after it) keep their "why".
@@ -789,11 +843,28 @@ class ComposerController extends Controller
             return response()->json(['message' => $exception->getMessage()], 409);
         }
         $today->save($request->user(), $stored, $validated['prompt'] ?? null);
+        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: isset($validated['keep']));
 
         return response()->json(['saved' => true]);
     }
 
     /** Un-pin the Today plan (the dismiss control on the home card). */
+    /**
+     * The person keeps the composed plan as it is: each stop counts as kept
+     * unedited (personalisation, with the opt-in). A plan with swaps or
+     * exclusions is not "unedited" and records nothing.
+     */
+    public function keep(Request $request): JsonResponse
+    {
+        $stored = $this->plans->get($request->user());
+        if (! is_array($stored)) {
+            return response()->json(['message' => 'There is no plan to keep.'], 404);
+        }
+        app(SignalRecorder::class)->planKept($request->user(), $stored, edited: false);
+
+        return response()->json(['kept' => true]);
+    }
+
     public function clearToday(Request $request, TodayPlanStore $today): JsonResponse
     {
         $today->forget($request->user());

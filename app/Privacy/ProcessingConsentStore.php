@@ -3,6 +3,7 @@
 namespace App\Privacy;
 
 use App\Bureaucracy\Ai\FactExtractionAccess;
+use App\Bureaucracy\Analyser\AnalyserAccess;
 use App\Models\BureaucracyCase;
 use App\Models\BureaucracyCaseMessage;
 use App\Models\BureaucracyCaseQuestion;
@@ -38,6 +39,11 @@ final class ProcessingConsentStore
             if ($purpose === ProcessingPurpose::FactExtraction) {
                 $current = $case && $question ? app(FactExtractionAccess::class)->question($actor, $case, $question->id, $context) : null;
                 if ($current === null || $question === null || $current->id !== $question->id || $current->answered_at !== null) {
+                    throw new AuthorizationException;
+                }
+            } elseif ($purpose === ProcessingPurpose::PaperworkAnswer) {
+                // Bound to one case, so withdrawing or erasing that person ends it too.
+                if ($case === null || $question !== null || ! app(AnalyserAccess::class)->allows($actor, $case)) {
                     throw new AuthorizationException;
                 }
             } elseif ($case !== null || $question !== null) {
