@@ -63,6 +63,8 @@ type Props = {
     starting_point: PlacePoint | null;
     /** The person's own Home and Work, when saved. */
     saved_places: PlacePoint[];
+    /** Stops starred in Travel, where the timetable knows them. */
+    favourite_stops?: PlacePoint[];
     /** Today's last recorded appointment, for the details' "For you" and
         Get there's start (its place, when the person recorded one). */
     appointment: {
@@ -135,6 +137,7 @@ export default function Events({
     weather,
     starting_point,
     saved_places,
+    favourite_stops = [],
     appointment,
     day: dayPlan,
     catalogue,
@@ -581,6 +584,9 @@ export default function Events({
                 saved={opened ? saved.keys.has(opened.key) : false}
                 onSave={() => opened && toggleSave(opened)}
                 onClose={() => showDetail(null)}
+                starts={[...saved_places, ...favourite_stops].map(
+                    ({ name, lat, lng }) => ({ name, lat, lng }),
+                )}
             />
         </AppLayout>
     );

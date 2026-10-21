@@ -7,6 +7,8 @@ use App\Day\DayProjection;
 use App\Enums\EventCategory;
 use App\Models\ComposerWorkspace;
 use App\Models\Event;
+use App\Models\FavouriteStop;
+use App\Models\User;
 use App\Services\WeatherService;
 use App\Support\EventOccurrencePresenter;
 use App\Support\EventStartingPoint;
@@ -60,6 +62,8 @@ class EventController extends Controller
             'filters' => $filters,
             'starting_point' => $from,
             'saved_places' => fn () => $points->savedPlaces($request->user()),
+            // Get there's "Where do you start?": the stops starred in Travel.
+            'favourite_stops' => fn () => $this->favouriteStops($request->user(), $points),
             'appointment' => fn () => $day->isSameDay($today) ? $this->appointment($request, $today) : null,
             // The day shown, as Travel reads it: what Get there checks a way
             // against ("My day"). Only when Get there asks for it; a past day
@@ -134,6 +138,27 @@ class EventController extends Controller
      *
      * @return array{title: string, end: string, place: array{name: string, lat: float, lng: float}|null}|null
      */
+    /**
+     * The stops the person starred in Travel, where the timetable knows them,
+     * as starting points (at most six). A name it doesn't know is left out.
+     *
+     * @return list<array{key: string, name: string, lat: float, lng: float}>
+     */
+    private function favouriteStops(?User $user, EventStartingPoint $points): array
+    {
+        if ($user === null) {
+            return [];
+        }
+
+        $names = FavouriteStop::query()->where('user_id', $user->id)->orderBy('id')->limit(6)->pluck('name')->all();
+        $found = $points->publicMany($names);
+
+        return array_values(array_filter(array_map(
+            fn (string $name) => $found[mb_strtolower(trim($name))] ?? null,
+            $names,
+        )));
+    }
+
     private function appointment(Request $request, CarbonImmutable $today): ?array
     {
         $user = $request->user();
