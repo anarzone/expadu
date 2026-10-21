@@ -673,7 +673,10 @@ class TransitousAdapter implements RouteService
                 durationMin: (int) ceil(($rawLeg['duration'] ?? 0) / 60),
                 lineName: $rawLeg['routeShortName'] ?? null,
                 headsign: $rawLeg['headsign'] ?? null,
-                polyline: $rawLeg['legGeometry']['points'] ?? null,
+                // One precision for every map (MOTIS's 7); Transitous's v3 sends 6.
+                polyline: isset($rawLeg['legGeometry']['points'])
+                    ? Polyline::atPrecision((string) $rawLeg['legGeometry']['points'], (int) ($rawLeg['legGeometry']['precision'] ?? Polyline::PRECISION))
+                    : null,
                 // Stops ridden = intermediate stops passed + the get-off stop.
                 stopsCount: $mode !== 'walk' && isset($rawLeg['intermediateStops'])
                     ? count($rawLeg['intermediateStops']) + 1

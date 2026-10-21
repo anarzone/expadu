@@ -2,6 +2,7 @@
 
 use App\Services\GtfsRailStations;
 use App\Transit\Dto\GeoPoint;
+use App\Transit\Polyline;
 use App\Transit\TransitousAdapter;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\RequestException;
@@ -385,4 +386,18 @@ test('a black feed colour falls back to the branded S-Bahn green', function () {
     // 000000 is treated as "unset" → S-Bahn green; a real colour passes through.
     expect($rail->lineColor)->toBe('#008D4B');
     expect($tram->lineColor)->toBe('#E2001A');
+});
+
+test('a leg\'s line comes at one precision (7) whatever MOTIS sends, so maps draw it where it is', function () {
+    $neumarktToStadtgarten = [[50.93577, 6.947677], [50.9365, 6.933054], [50.9405, 6.9343]];
+    Http::fake(['api.transitous.org/api/v3/plan*' => Http::response(['itineraries' => [fakeItinerary([
+        fakeLeg('TRAM', ['routeShortName' => '1', 'legGeometry' => ['points' => Polyline::encode($neumarktToStadtgarten, 6), 'precision' => 6, 'length' => 3]]),
+        fakeLeg('WALK', ['legGeometry' => ['points' => Polyline::encode($neumarktToStadtgarten, 7), 'precision' => 7]]),
+    ], 0, 1200)]])]);
+
+    $legs = (new TransitousAdapter)->plan(new GeoPoint(50.93577, 6.947677), new GeoPoint(50.9405, 6.9343))->journeys[0]->legs;
+
+    foreach ($legs as $leg) {
+        expect(Polyline::decode($leg->polyline, 7))->toEqualWithDelta($neumarktToStadtgarten, 0.000001);
+    }
 });
