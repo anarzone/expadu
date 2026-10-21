@@ -89,6 +89,17 @@ return [
         'prompt_version' => '2026-10-21.1',
     ],
 
+    // The nightly taste profile (App\Personalisation\TasteProfileWriter):
+    // 3–5 sentences from bucketed facts, for people who opted in to
+    // personalisation. Off unless switched on; a daily cap on calls.
+    'taste_profile' => [
+        'enabled' => env('TASTE_PROFILE_ENABLED', false),
+        'model' => env('TASTE_PROFILE_MODEL', 'claude-haiku-5-5'),
+        'effort' => env('TASTE_PROFILE_EFFORT', 'low'),
+        'daily_limit' => (int) env('TASTE_PROFILE_DAILY_LIMIT', 500),
+        'prompt_version' => '2026-10-21.taste.1',
+    ],
+
     'composer_llm' => [
         'enabled' => env('COMPOSER_LLM_ENABLED', false),
         'key' => env('COMPOSER_LLM_KEY') ?: env('ANTHROPIC_API_KEY'),
