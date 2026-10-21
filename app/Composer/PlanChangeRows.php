@@ -46,12 +46,12 @@ final class PlanChangeRows
         return ['id' => (string) $slot['id'], 'title' => (string) ($slot['name'] ?? ''), 'type' => (string) ($slot['type'] ?? '')];
     }
 
-    /** "13:00–14:00", or just the start when the end isn't known. */
+    /** "13:00–14:00", or just the start when the end isn't known or listed. */
     private static function span(array $slot): string
     {
         $start = (string) ($slot['start_time'] ?? '');
         $end = $slot['end_time'] ?? null;
 
-        return is_string($end) && $end !== '' ? "{$start}–{$end}" : $start;
+        return is_string($end) && $end !== '' && ($slot['end_listed'] ?? true) ? "{$start}–{$end}" : $start;
     }
 }

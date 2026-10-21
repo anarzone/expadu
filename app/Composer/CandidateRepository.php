@@ -366,9 +366,11 @@ class CandidateRepository
                     veedel: $event->venue?->veedel,
                     category: (string) ($event->category ?? 'event'),
                     outdoor: $this->eventIsOutdoor($event),
+                    // No listed end: the plan still needs a length to schedule around.
                     typicalDurationMin: $occurrence['ends_at']
                         ? max(1, (int) $occurrence['starts_at']->diffInMinutes($occurrence['ends_at']))
                         : 120,
+                    endListed: $occurrence['ends_at'] !== null,
                     costTier: $event->is_free ? 'free' : 'normal',
                     opensAt: null,
                     closesAt: null,
