@@ -502,8 +502,14 @@ export function NearbyView({
                             kind="attention"
                             icon={<TravelIcon name="moon" />}
                         >
+                            {/* Each way's next one, soonest first: "Then 00:56 · 00:59". */}
                             {`Then ${l.shown
-                                .flatMap((d) => d.laterClocks.slice(0, 1))
+                                .flatMap((d) => d.later.slice(0, 1))
+                                .sort(
+                                    (a, b) =>
+                                        Date.parse(a.at) - Date.parse(b.at),
+                                )
+                                .map((run) => run.time)
                                 .join(' · ')}`}
                         </CardStrip>
                     ) : undefined
