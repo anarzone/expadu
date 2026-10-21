@@ -2,6 +2,7 @@
 
 namespace App\Composer\Answers;
 
+use App\Composer\DayAround;
 use App\Exceptions\CologneBoundaryUnavailable;
 use App\Models\Event;
 use App\Services\CologneServiceArea;
@@ -43,12 +44,12 @@ class EventAnswers
         $days = max(1, (int) ($request['days'] ?? 1));
         $evening = (bool) ($request['evening'] ?? false);
         $from = $day->toDateString() === $now->toDateString() ? $now : $day;
-        if ($evening) {
-            $from = $from->max($day->setTime(17, 0));
-        }
         $until = $day->addDays($days - 1)->endOfDay();
-
-        $listed = $this->stillToCome(Event::occurringBetween($day, $until), $from);
+        // Tonight is the day row's tonight (DayAround): what starts from 18:00, or from now
+        // when that's later, until midnight; so both say the same count and first time.
+        $listed = $evening && $days === 1
+            ? Event::occurringBetween($from->max($day->setTimeFromTimeString(DayAround::EVENING)), $until)
+            : $this->stillToCome(Event::occurringBetween($day, $until), $from);
         $topic = self::TOPICS[$request['topic'] ?? ''] ?? null;
         $matching = $topic === null ? $listed : $listed->filter(fn (array $occurrence): bool => (bool) preg_match($topic[0],
             $occurrence['event']->title.' '.$occurrence['event']->title_en.' '.$occurrence['event']->category.' '.$occurrence['event']->description));
@@ -57,7 +58,7 @@ class EventAnswers
         $when = match (true) {
             $days === 2 => 'this weekend',
             $days === 7 => 'this week',
-            $day->toDateString() === $now->toDateString() => $evening || $now->hour >= 17 ? 'tonight' : 'today',
+            $day->toDateString() === $now->toDateString() => $evening || $now->format('H:i') >= DayAround::EVENING ? 'tonight' : 'today',
             default => 'on '.$day->isoFormat('dddd D MMMM'),
         };
         $browse = ['label' => 'See everything on Events', 'href' => route('events', ['date' => $day->toDateString()], false)];
