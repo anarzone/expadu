@@ -10,6 +10,24 @@
         const [h, m] = time.split(':').map(Number);
         return h * 60 + m;
     };
+    // The way to take to be somewhere by a time (owner, 9 Oct 2026): the
+    // latest leave that still keeps the margin (10 min for an official
+    // appointment, else 5), the earliest arrival breaking a tie; when none
+    // keeps it, the one with the most room. Leave now, My day and each
+    // planner's Best for you choose with it (owner, 21 Oct 2026).
+    function wayFor(ways, start, official) {
+        const room = (route) => minutes(start) - minutes(route.arrive);
+        const keeps = ways.filter((route) => room(route) >= (official ? 10 : 5));
+        return (
+            keeps.sort(
+                (a, b) =>
+                    minutes(b.depart) - minutes(a.depart) ||
+                    minutes(a.arrive) - minutes(b.arrive),
+            )[0] ||
+            ways.slice().sort((a, b) => room(b) - room(a))[0] ||
+            null
+        );
+    }
     // A time before the planner's own clock is the next day.
     const overnight = (time, trip) =>
         trip?.time && time < trip.time
@@ -299,5 +317,6 @@
         facts,
         weather,
         note,
+        wayFor,
     };
 })(globalThis);

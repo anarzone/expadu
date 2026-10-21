@@ -127,6 +127,21 @@ function routeList(tripId = requestTrip(), mode = state.routeMode) {
         )
         .map(({ route }) => route);
 }
+// Best for you leads Plan a trip's ways. Arriving by a time, it's the way
+// Leave now and My day would take (wayFor; owner, 21 Oct 2026), not the
+// earliest arrival; leaving at or now, or ranked your own way, it's the
+// first of that order.
+function bestFirst(list, trip) {
+    if (
+        state.schedule !== 'arrive' ||
+        state.sort !== 'arrival' ||
+        state.fewer ||
+        state.lessWalk
+    )
+        return list;
+    const best = P.wayFor(list, state.time, trip.kind === 'official');
+    return best ? [best, ...list.filter((route) => route !== best)] : list;
+}
 const currentRoute = (id) =>
     window.JourneyNavigation?.currentRoute?.(id) ||
     J.fromStop(findRoute(id), state.boardingStop);
@@ -927,28 +942,11 @@ const P = window.TravelPlanCard;
 // Today's rule for tight official appointments (owner-approved design).
 // The shared sample weather at a sample-day clock, or nothing.
 const sampleWeather = (date, time) => P.weather(date, time);
-// The way to take to be somewhere by a time (owner, 9 Oct 2026): the
-// latest leave that still keeps the margin (10 min for an official
-// appointment, else 5), the earliest arrival breaking a tie; when none
-// keeps it, the one with the most room.
-function wayFor(ways, start, official) {
-    const room = (route) => minutesOf(start) - minutesOf(route.arrive);
-    const keeps = ways.filter((route) => room(route) >= (official ? 10 : 5));
-    return (
-        keeps.sort(
-            (a, b) =>
-                minutesOf(b.depart) - minutesOf(a.depart) ||
-                minutesOf(a.arrive) - minutesOf(b.arrive),
-        )[0] ||
-        ways.slice().sort((a, b) => room(b) - room(a))[0] ||
-        null
-    );
-}
 function nextTripChoice(trip = J.day) {
     const spare = (route) => minutesOf(trip.start) - minutesOf(route.arrive);
     const planned = J.dayRoutes.find((route) => route.inPlan);
     const best =
-        wayFor(J.dayRoutes, trip.start, trip.kind === 'official') || planned;
+        P.wayFor(J.dayRoutes, trip.start, trip.kind === 'official') || planned;
     return { best, planned, spare };
 }
 // Your next thing as one line (owner, 15 Oct 2026: option B on the Travel
@@ -1314,7 +1312,7 @@ function renderResults() {
     const tripId = requestTrip(),
         matched = !!tripId,
         trip = J.trips?.[tripId] || J.capture,
-        list = routeList(tripId);
+        list = bestFirst(routeList(tripId), trip);
     // A district's evening journeys load when someone plans from (or back
     // to) it.
     const loading = !tripId && J.pending?.(fromPlace(), to.value);
@@ -1623,7 +1621,7 @@ function renderDay() {
     const goingTrip = going && J.tripFor(trip.to, going.venue);
     // Chosen as Leave now chooses (wayFor), not the earliest arrival.
     const way = goingTrip
-        ? wayFor(
+        ? P.wayFor(
               J.filtered({
                   trip: goingTrip,
                   schedule: 'arrive',
